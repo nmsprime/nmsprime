@@ -28,7 +28,7 @@ class TreeTopographyController extends HfcBaseController {
 	 */
 	public function __construct()
 	{ 
-		$this->filename = sha1(uniqid(mt_rand(), true)).'kml';	// the filename based on a random hash
+		$this->filename = sha1(uniqid(mt_rand(), true)).'.kml';	// the filename based on a random hash
 		$this->path     = public_path().$this->path_rel;		// absolute path
 		$this->file     = $this->path.'/'.$this->filename;		// absolute path of file
 	}
