@@ -7,6 +7,7 @@
 	{{-- We need to include sections dynamically: always content left and if needed content right - more than 1 time possible --}}
 
 	<div class="col-md-8 ui-sortable">
+		@include ('bootstrap.panel-no-div', array ('content' => 'content_dash', 'view_header' => 'Dashboard / Forecast', 'md' => 8))
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_realtime', 'view_header' => 'Real Time Values', 'md' => 8))
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_log', 'view_header' => 'Logfile', 'md' => 8))
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'md' => 8))	
