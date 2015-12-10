@@ -77,7 +77,7 @@ class TreeTableSeeder extends \BaseSeeder {
 				'parent' => rand (2,$i++),
 				'descr' => $faker->sentence(),
 				'pos' => $x.','.$y,
-				'link' => url()
+				'link' => $faker->url()
 			]);
 		}
 
