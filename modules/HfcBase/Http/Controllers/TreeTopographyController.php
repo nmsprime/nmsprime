@@ -53,6 +53,9 @@ class TreeTopographyController extends HfcBaseController {
 		// Generate SVG file 
 		$file = $this->kml_generate (Tree::whereRaw($s));
 
+		if(!$file)
+			return \View::make('errors.error');
+
 		// Prepare and Topography Map
 		$target = $this->html_target;
 
@@ -91,6 +94,10 @@ class TreeTopographyController extends HfcBaseController {
 		# Draw: Parent - Child - Relationship
 		#
 		$trees = $_trees->orderBy('pos')->get();
+
+		if (!$trees->count())
+			return null;
+		
 		foreach ($trees as $tree) 
 		{
 			$pos1   = $tree->pos;	

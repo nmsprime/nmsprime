@@ -74,7 +74,7 @@ class TreeErdController extends HfcBaseController {
 		$file = $this->graph_generate (Tree::whereRaw($s));
 
 		if(!$file)
-			return \View::make('error');
+			return \View::make('errors.error');
 
 		// Prepare and display SVG
 		$is_pos = $this->_is_valid_geopos($search);
