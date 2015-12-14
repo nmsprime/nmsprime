@@ -54,7 +54,7 @@ class TreeTopographyController extends HfcBaseController {
 		$file = $this->kml_generate (Tree::whereRaw($s));
 
 		if(!$file)
-			return \View::make('errors.error');
+			return \View::make('errors.generic');
 
 		// Prepare and Topography Map
 		$target = $this->html_target;

@@ -145,7 +145,7 @@ class CustomerTopoController extends TreeController {
 	public function show_modems($modems, $field=null, $search=null)
 	{
 		if (!$modems->count())
-			return \View::make('errors.error')->with('message', 'No Modem Entry found');
+			return \View::make('errors.generic')->with('message', 'No Modem Entry found');
 
 		// Generate SVG file 
 		$file = $this->kml_generate ($modems);
