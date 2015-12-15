@@ -17,6 +17,7 @@ class HfcbaseTableSeeder extends Seeder {
 		Model::unguard();
 		
 		$this->call("Modules\HfcBase\Database\Seeders\TreeTableSeeder");
+		$this->call("Modules\HfcBase\Database\Seeders\HfcBaseConfigTableSeeder");
 	}
 
 }

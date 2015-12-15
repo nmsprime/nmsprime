@@ -2,21 +2,18 @@
 
 namespace Modules\HfcBase\Entities;
 
-class HfcBaseModel extends \BaseModel {
+class HfcBase extends \BaseModel {
 
 	// The associated SQL table for this Model
 	protected $table = 'hfcbase';
 
 	// Don't forget to fill this array
-	protected $fillable = ['name', 'type', 'ip', 'pos', 'link', 'state', 'options', 'descr', 'parent', 'access', 'net', 'cluster', 'layer', 'kml_file'];
+	protected $fillable = ['ro_community', 'rw_community'];
 
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
 		return array(
-			'name' => 'required|string',
-			'ip' => 'ip',
-			'pos' => 'geopos'
 		);
 	}
 	
