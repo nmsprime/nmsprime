@@ -1,14 +1,14 @@
 <?php
 
-namespace Modules\HfcBase\Entities;
+namespace Modules\ProvVoip\Entities;
 
-class HfcBase extends \BaseModel {
+class ProvVoip extends \BaseModel {
 
 	// The associated SQL table for this Model
-	protected $table = 'hfcbase';
+	protected $table = 'provvoip';
 
 	// Don't forget to fill this array
-	protected $fillable = ['ro_community', 'rw_community'];
+	protected $fillable = ['startid_mta'];
 
 	// Add your validation rules here
 	public static function rules($id = null)
@@ -20,13 +20,13 @@ class HfcBase extends \BaseModel {
 	// Name of View
 	public static function get_view_header()
 	{
-		return 'Hfc Base Config';
+		return 'ProvVoip Config';
 	}
 
 	// link title in index view
 	public function get_view_link_title()
 	{
-		return "HfcBase";
+		return "ProvVoip";
 	}	
 
 
