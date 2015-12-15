@@ -116,8 +116,8 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// TODO: add error handling for not existing keys
 		// after defining a project wide policy for this kind of problems
-		$username = $_ENV['provVoipEnviaResellerUsernameFromDotenv'];
-		$password = $_ENV['provVoipEnviaResellerPasswordFromDotenv'];
+		$username = $_ENV['PROVVOIPENVIA__RESELLER_USERNAME'];
+		$password = $_ENV['PROVVOIPENVIA__RESELLER_PASSWORD'];
 
 		$inner_xml = $this->xml->addChild('reseller_identifier');
 		$inner_xml->addChild('username', $username);
