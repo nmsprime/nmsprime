@@ -26,10 +26,43 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$base = "/lara/provvoipenvia/request";
 
 		$jobs = array(
+			'contract_create?contract_id=500000',
 			'misc_ping',
 			'misc_get_free_numbers',
 			'misc_get_free_numbers?localareacode=03725',
 			'misc_get_free_numbers?localareacode=03725&amp;baseno=110',
+			'',
+			'blacklist_create_entry',
+			'blacklist_delete_entry',
+			'blacklist_get',
+			'calllog_delete',
+			'calllog_delete_entry',
+			'calllog_get',
+			'configuration_get',
+			'configuration_update',
+			'contract_change_method',
+			'contract_change_sla',
+			'contract_change_tariff',
+			'contract_change_variation',
+			'contract_get_reference',
+			'contract_get_voice_data',
+			'contract_lock',
+			'contract_terminate',
+			'contract_unlock',
+			'customer_get_reference',
+			'customer_update',
+			'misc_get_orders_csv',
+			'misc_get_usage_csv',
+			'order_add_mgcp_details',
+			'order_cancel',
+			'order_create_attachment',
+			'order_get_status',
+			'phonebookentry_create',
+			'phonebookentry_delete',
+			'phonebookentry_get',
+			'voip_account_create',
+			'voip_account_terminate',
+			'voip_account_update',
 		);
 
 		foreach ($jobs as $job) {
@@ -172,10 +205,54 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 */
 	public function request($job) {
 
+		$domain = 'https://www.enviatel.de';
+		$sub_url = '/portal/api/rest/v1/';
+		$base_url = $domain.$sub_url;
+
 		// the URLs to use for the jobs to do
 		$urls = array(
-			'misc_ping' => 'https://www.enviatel.de/portal/api/rest/v1/misc/ping',
-			'misc_get_free_numbers' => 'https://www.enviatel.de/portal/api/rest/v1/misc/get_free_numbers',
+			'blacklist_create_entry' => $base_url.'____TODO____',
+			'blacklist_delete_entry' => $base_url.'____TODO____',
+			'blacklist_get' => $base_url.'____TODO____',
+
+			'calllog_delete' => $base_url.'____TODO____',
+			'calllog_delete_entry' => $base_url.'____TODO____',
+			'calllog_get' => $base_url.'____TODO____',
+
+			'configuration_get' => $base_url.'____TODO____',
+			'configuration_update' => $base_url.'____TODO____',
+
+			'contract_change_method' => $base_url.'____TODO____',
+			'contract_change_sla' => $base_url.'____TODO____',
+			'contract_change_tariff' => $base_url.'____TODO____',
+			'contract_change_variation' => $base_url.'____TODO____',
+			'contract_create' => $base_url.'contract/create',
+			'contract_get_reference' => $base_url.'____TODO____',
+			'contract_get_voice_data' => $base_url.'____TODO____',
+			'contract_lock' => $base_url.'____TODO____',
+			'contract_terminate' => $base_url.'____TODO____',
+			'contract_unlock' => $base_url.'____TODO____',
+
+			'customer_get_reference' => $base_url.'____TODO____',
+			'customer_update' => $base_url.'____TODO____',
+
+			'misc_get_free_numbers' => $base_url.'misc/get_free_numbers',
+			'misc_get_orders_csv' => $base_url.'____TODO____',
+			'misc_get_usage_csv' => $base_url.'____TODO____',
+			'misc_ping' => $base_url.'misc/ping',
+
+			'order_add_mgcp_details' => $base_url.'____TODO____',
+			'order_cancel' => $base_url.'____TODO____',
+			'order_create_attachment' => $base_url.'____TODO____',
+			'order_get_status' => $base_url.'____TODO____',
+
+			'phonebookentry_create' => $base_url.'____TODO____',
+			'phonebookentry_delete' => $base_url.'____TODO____',
+			'phonebookentry_get' => $base_url.'____TODO____',
+
+			'voip_account_create' => $base_url.'____TODO____',
+			'voip_account_terminate' => $base_url.'____TODO____',
+			'voip_account_update' => $base_url.'____TODO____',
 		);
 
 		// TODO: improve error handling

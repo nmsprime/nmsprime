@@ -2,6 +2,8 @@
 
 namespace Modules\ProvVoipEnvia\Entities;
 
+use Modules\ProvBase\Entities\Contract;
+
 // Model not found? execute composer dump-autoload in lara root dir
 class ProvVoipEnvia extends \BaseModel {
 
@@ -91,12 +93,112 @@ class ProvVoipEnvia extends \BaseModel {
 		// e.g. in reseller_identifier man will put username and password for
 		// authentication against the API
 		$second_level_nodes = array(
-			'misc_ping' => array(
+			'blacklist_create_entry' => array(
+				'reseller_identifier',
+			),
+			'blacklist_delete_entry' => array(
+				'reseller_identifier',
+			),
+			'blacklist_get' => array(
+				'reseller_identifier',
+			),
+			'calllog_delete' => array(
+				'reseller_identifier',
+			),
+			'calllog_delete_entry' => array(
+				'reseller_identifier',
+			),
+			'calllog_get' => array(
+				'reseller_identifier',
+			),
+			'configuration_get' => array(
+				'reseller_identifier',
+			),
+			'configuration_update' => array(
+				'reseller_identifier',
+			),
+			'contract_change_method' => array(
+				'reseller_identifier',
+			),
+			'contract_change_sla' => array(
+				'reseller_identifier',
+			),
+			'contract_change_tariff' => array(
+				'reseller_identifier',
+			),
+			'contract_change_variation' => array(
+				'reseller_identifier',
+			),
+			'contract_create' => array(
+				'reseller_identifier',
+				'customer_identifier',
+				'customer_data',
+				'contract_data',
+				'subscriber_data',
+			),
+			'contract_get_reference' => array(
+				'reseller_identifier',
+			),
+			'contract_get_voice_data' => array(
+				'reseller_identifier',
+			),
+			'contract_lock' => array(
+				'reseller_identifier',
+			),
+			'contract_terminate' => array(
+				'reseller_identifier',
+			),
+			'contract_unlock' => array(
+				'reseller_identifier',
+			),
+			'customer_get_reference' => array(
+				'reseller_identifier',
+			),
+			'customer_update' => array(
 				'reseller_identifier',
 			),
 			'misc_get_free_numbers' => array(
 				'reseller_identifier',
 				'filter_data',
+			),
+			'misc_get_orders_csv' => array(
+				'reseller_identifier',
+			),
+			'misc_get_usage_csv' => array(
+				'reseller_identifier',
+			),
+			'misc_ping' => array(
+				'reseller_identifier',
+			),
+			'order_add_mgcp_details' => array(
+				'reseller_identifier',
+			),
+			'order_cancel' => array(
+				'reseller_identifier',
+			),
+			'order_create_attachment' => array(
+				'reseller_identifier',
+			),
+			'order_get_status' => array(
+				'reseller_identifier',
+			),
+			'phonebookentry_create' => array(
+				'reseller_identifier',
+			),
+			'phonebookentry_delete' => array(
+				'reseller_identifier',
+			),
+			'phonebookentry_get' => array(
+				'reseller_identifier',
+			),
+			'voip_account_create' => array(
+				'reseller_identifier',
+			),
+			'voip_account_terminate' => array(
+				'reseller_identifier',
+			),
+			'voip_account_update' => array(
+				'reseller_identifier',
 			),
 		);
 
@@ -162,6 +264,60 @@ class ProvVoipEnvia extends \BaseModel {
 		// baseno is valid
 		$inner_xml->addChild('baseno', $baseno);
 
+	}
+
+
+	/**
+	 * Method to add customer identifier
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_customer_identifier() {
+
+		$contract = Contract::findOrFail(500000);
+
+		// needed: our customer number
+		$customerno = $contract->id;
+
+		$inner_xml = $this->xml->addChild('customer_identifier');
+		$inner_xml->addChild('customerno', $customerno);
+
+		// optional: envia customer reference
+		if (!is_null($contract->number2) && ($contract->number2 != '')) {
+			$customerreference = $contract->number2;
+			$inner_xml->addChild('customerreference', $customerreference);
+		}
+
+	}
+
+	/**
+	 * Method to add customer data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_customer_data() {
+		// TODO
+		$inner_xml = $this->xml->addChild('customer_data');
+	}
+
+	/**
+	 * Method to add contract data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_contract_data() {
+		// TODO
+		$inner_xml = $this->xml->addChild('contract_data');
+	}
+
+	/**
+	 * Method to add subscriber data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_subscriber_data() {
+		// TODO
+		$inner_xml = $this->xml->addChild('subscriber_data');
 	}
 
 }
