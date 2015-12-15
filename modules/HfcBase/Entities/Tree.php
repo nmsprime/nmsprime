@@ -7,9 +7,6 @@ class Tree extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'tree';
 
-	// Don't forget to fill this array
-	protected $fillable = ['name', 'type', 'ip', 'pos', 'link', 'state', 'options', 'descr', 'parent', 'access', 'net', 'cluster', 'layer', 'kml_file'];
-
 
 	public $kml_path = '/var/www/lara/app/storage/hfc/kml/static/';
     private $max_parents = 25;
