@@ -19,12 +19,29 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	public function get_xml($job) {
 
+		$this->_get_model_data($job);
+
 		$this->_create_base_xml_by_topic($job);
 		$this->_create_final_xml_by_topic($job);
 
 		return $this->xml->asXML();
 	}
 
+
+	/**
+	 * Get all the data needed for this job
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_model_data() {
+
+		// entry point to database is contract
+		$contract_id = \Input::get('contract_id', null);
+		if (!is_null($contract_id)) {
+			$this->contract = Contract::findOrFail($contract_id);
+		}
+
+	}
 
 	/**
 	 * Used to extract error messages from returned XML.
@@ -274,17 +291,15 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _add_customer_identifier() {
 
-		$contract = Contract::findOrFail(500000);
-
 		// needed: our customer number
-		$customerno = $contract->id;
+		$customerno = $this->contract->customer_number;
 
 		$inner_xml = $this->xml->addChild('customer_identifier');
 		$inner_xml->addChild('customerno', $customerno);
 
+		$customerreference = $this->contract->customer_external_id;
 		// optional: envia customer reference
-		if (!is_null($contract->number2) && ($contract->number2 != '')) {
-			$customerreference = $contract->number2;
+		if (!is_null($customerreference) && ($customerreference != '')) {
 			$inner_xml->addChild('customerreference', $customerreference);
 		}
 
@@ -296,8 +311,23 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @author Patrick Reichel
 	 */
 	protected function _add_customer_data() {
-		// TODO
+
 		$inner_xml = $this->xml->addChild('customer_data');
+
+		// mapping database to xml
+		$fields = array(
+			'salutation' => 'salutation',
+			'firstname' => 'firstname',
+			'lastname' => 'lastname',
+			'street' => 'street',
+			'house_number' => 'houseno',
+			'zip' => 'zipcode',
+			'city' => 'city',
+			'birthday' => 'birthday',
+			'company' => 'company',
+		);
+
+		$this->_add_fields($inner_xml, $fields, $this->contract);
 	}
 
 	/**
@@ -306,8 +336,27 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @author Patrick Reichel
 	 */
 	protected function _add_contract_data() {
-		// TODO
+
 		$inner_xml = $this->xml->addChild('contract_data');
+
+		// for this values there (still) exists no db data => fill hardcoded…
+		// TODO: this has to be changed!
+		$defaults = array(
+			'variation_id' => 'MISSING',
+			'porting' => 'MISSING',
+			'tariff' => 'MISSING',
+			'phonebookentry_fax' => 0,
+			'phonebookentry_reverse_search' => 1,
+		);
+
+		// mapping database to xml
+		$fields_contract = array(
+			'contract_start' => 'orderdate',
+			'phonebook_entry' => 'phonebookentry_phone',
+		);
+
+		$this->_add_fields($inner_xml, $fields_contract, $this->contract, $defaults);
+
 	}
 
 	/**
@@ -318,6 +367,52 @@ class ProvVoipEnvia extends \BaseModel {
 	protected function _add_subscriber_data() {
 		// TODO
 		$inner_xml = $this->xml->addChild('subscriber_data');
+	}
+
+
+	/**
+	 * Method to add  callnumbers
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_callnumbers() {
+
+		$inner_xml = $this->xml->addChild('callnumbers');
+
+		// TODO: this contains callnumber_single_data, callnumber_range_data or callnumber_new_data objects – format unknown…
+
+	}
+
+
+	/**
+	 * Method to add fields to xml node
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_fields($xml, $fields, &$model, $defaults=array()) {
+
+		// lambda function to add the data to xml
+		$add = function($xml, $xml_field, $payload) {
+			$cur_node = $xml->addChild($xml_field, $payload);
+			if ((is_null($payload)) || ($payload === "")) {
+				$cur_node->addAttribute('nil', 'true');
+			};
+		};
+
+
+		// process db data
+		foreach ($fields as $db_field => $xml_field) {
+
+			$payload = $model->$db_field;
+			$add($xml, $xml_field, $payload);
+		}
+
+		// process defaults (for fields not filled yet)
+		foreach ($defaults as $xml_field => $payload) {
+			if (array_search($xml_field, $fields) === False) {
+				$add($xml, $xml_field, $payload);
+			}
+		}
 	}
 
 }

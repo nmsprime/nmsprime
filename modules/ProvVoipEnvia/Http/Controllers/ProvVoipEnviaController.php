@@ -189,7 +189,28 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$dom->preserveWhiteSpace = false;
 		$dom->formatOutput = true;
 		$dom->loadXML($xml);
-		echo htmlentities($dom->saveXML());
+		$pretty = htmlentities($dom->saveXML());
+		$lines = explode("\n", $pretty);
+
+		$declaration = array_shift($lines);
+		$declaration = '<span style="color: #0000ff; font-weight: normal">'.$declaration.'</span>';
+		$output = array();
+		foreach ($lines as $line) {
+			$pretty = $line;
+			$pretty = str_replace('/', 'dummy_slash', $pretty);
+			$pretty = str_replace('&quot; ', '</span>&quot; ', $pretty);
+			$pretty = str_replace('&quot;/', '</span>&quot;/', $pretty);
+			$pretty = str_replace('=&quot;', '=&quot;<span style="color: black; font-weight: bold">', $pretty);
+			$pretty = str_replace('&lt;', '</span>&lt;<span style="color: #660000; font-weight: normal">', $pretty);
+			$pretty = str_replace('&gt;', '</span>&gt;<span style="color: black; font-weight: bold">', $pretty);
+			$pretty = str_replace('&lt;', '<span style="color: #0000ff; font-weight: normal">&lt;</span>', $pretty);
+			$pretty = str_replace('&gt;', '<span style="color: #0000ff; font-weight: normal">&gt;</span>', $pretty);
+			$pretty = str_replace('dummy_slash', '<span style="color: #0000ff; font-weight: normal">/</span>', $pretty);
+			array_push($output, $pretty);
+		}
+
+		array_unshift($output, $declaration);
+		echo implode("\n", $output);
 		echo "<br><hr>";
 		echo "<h5>Original:</h5>";
 		echo htmlentities($xml);
@@ -268,6 +289,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		$this->__debug_xml($payload);
 
+		echo "We are not sending data to Envia yet! Will now exit";
+		exit();
 		// perform the request and receive the result (meta and content)
 		$data = $this->_ask_envia($url, $payload);
 
