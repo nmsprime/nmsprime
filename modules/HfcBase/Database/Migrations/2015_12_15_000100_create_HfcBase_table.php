@@ -22,9 +22,12 @@ class CreateHfcBaseTable extends BaseMigration {
 			$table->string('ro_community');
 			$table->string('rw_community');
 		});
+		
+		DB::update("INSERT INTO ".$this->tablename." (ro_community, rw_community) VALUES('public', 'private');");
 
 		return parent::up();
 	}
+
 
 
 	/**
