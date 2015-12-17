@@ -10,6 +10,7 @@ use Modules\ProvBase\Entities\Modem;
 use Modules\ProvBase\Entities\Endpoint;
 use Modules\ProvBase\Entities\Configfile;
 use Modules\ProvBase\Entities\Qos;
+use Modules\ProvBase\Entities\ProvBase;
 
 
 /*
@@ -45,10 +46,11 @@ class ProvMonController extends \BaseModuleController {
 		// Log
 		exec ('cat /var/log/messages | egrep "('.$modem->mac.'|'.$hostname.')" | tail -n 20  | sort -r', $log);
 
+
 		// Realtime Measure
 		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
 		{
-			$realtime['measure']  = $this->realtime($hostname, $modem->community_ro);
+			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community);
 			$realtime['forecast'] = 'TODO';
 		}
 
