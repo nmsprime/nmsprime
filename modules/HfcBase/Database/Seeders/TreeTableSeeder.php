@@ -74,7 +74,7 @@ class TreeTableSeeder extends \BaseSeeder {
 				'ip' => $faker->ipv4(),
 				'type' => $this->type(rand(1,20)),
 				'state' => $this->state(rand(0,10)),
-				'parent' => rand (2,$i++),
+				'parent' => Tree::where('id', '>', '1')->get()->random(1)->id,
 				'descr' => $faker->sentence(),
 				'pos' => $x.','.$y,
 				'link' => $faker->url()
