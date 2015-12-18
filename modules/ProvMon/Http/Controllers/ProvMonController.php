@@ -12,7 +12,6 @@ use Modules\ProvBase\Entities\Configfile;
 use Modules\ProvBase\Entities\Qos;
 use Modules\ProvBase\Entities\ProvBase;
 
-
 /*
  * This is the Basic Stuff for Modem Analyses Page
  * Note: this class does not have a corresponding Model
@@ -22,6 +21,12 @@ use Modules\ProvBase\Entities\ProvBase;
  */
 class ProvMonController extends \BaseModuleController {
 
+	protected $domain_name = "";
+
+	public function __construct()
+	{
+		$this->domain_name = ProvBase::first()->domain_name;
+	}
 
 	/**
 	 * Main Analyses Function
@@ -32,8 +37,7 @@ class ProvMonController extends \BaseModuleController {
 	{
 		$modem = Modem::find($id);
 
-		// TODO: use DNS name from a global config
-		$hostname = $modem->hostname.'.test2.erznet.tv';
+		$hostname = $modem->hostname.'.'.$this->domain_name;
 
 		$ping = $lease = $log = $dash = $realtime = null;
 		
@@ -44,7 +48,7 @@ class ProvMonController extends \BaseModuleController {
 		$lease = $this->search_lease('hardware ethernet '.$modem->mac);
 
 		// Log
-		exec ('cat /var/log/messages | egrep "('.$modem->mac.'|'.$hostname.')" | tail -n 20  | sort -r', $log);
+		exec ('egrep "('.$modem->mac.'|'.$hostname.')" /var/log/messages | grep -v CPE | tail -n 20  | sort -r', $log);
 
 
 		// Realtime Measure
@@ -62,10 +66,33 @@ class ProvMonController extends \BaseModuleController {
 
 		// Prepare Output
 		$panel_right = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]], 
-						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]]];
+						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
+						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]]];
 
 		// View
 		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring')));
+	}
+
+
+	public function cpe_analysis($id)
+	{
+		$modem = Modem::find($id);
+		$ping = $lease = $log = $dash = $realtime = null;
+
+		$lease = $this->search_lease('billing subclass', $modem->mac);
+
+		// Log
+		$lease_s = implode($lease);
+		preg_match_all('/hardware ethernet(.*?);/', $lease_s, $cpe_mac_match);
+		$cpe_mac = str_replace(" ", "", $cpe_mac_match[1])[0];
+		exec ('grep '.$cpe_mac.' /var/log/messages | tail -n 20  | sort -r', $log);
+
+		// Prepare Output
+		$panel_right = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]], 
+						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
+						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]]];
+
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime')));
 	}
 
 
@@ -200,16 +227,19 @@ class ProvMonController extends \BaseModuleController {
 
 
 	/**
-	 * Search String in dhcpd.lease file and
-	 * return the matching host
+	 * Returns the lease entry that contains 1 or 2 strings specified in the function arguments
 	 *
 	 * TODO: make a seperate class for dhcpd
 	 * lease stuff (search, replace, ..)
 	 *
 	 * @return Response
 	 */
-	public function search_lease ($search)
+	public function search_lease ()
 	{
+		$search = func_get_arg(0);
+		if (func_num_args() == 2)
+			$search2 = func_get_arg(1);
+
 		// parse dhcpd.lease file
 		$file   = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
 		$string = preg_replace( "/\r|\n/", "", $file );
@@ -221,8 +251,13 @@ class ProvMonController extends \BaseModuleController {
 		// fetch all lines matching hw mac
 		foreach (array_reverse(array_unique($section[0])) as $s)
 		{
-		    if(strpos($s, $search)) 
+		    if(strpos($s, $search))
 		    {
+		    	if (isset($search2))
+		    	{
+		    		if (!strpos($s, $search2))
+		    			continue;
+		    	}
 		    	/*
 		    	if ($i == 0)
 		    		array_push($ret, "<b>Last Lease:</b>");
@@ -254,6 +289,7 @@ if (0)
 
 		return $ret;
 	}
+
 
 
 	/*
