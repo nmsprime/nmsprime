@@ -67,9 +67,9 @@ echo "*/5 * * * * cacti /usr/bin/php /usr/share/cacti/poller.php > /dev/null 2>&
 #
 # Copy Plugins
 #
-cp cacti/ss_docsis_stats.php /usr/share/cacti/scripts/
-cp cacti/cisco_cmts.xml /usr/share/cacti/resource/snmp_queries/ 
-cp cacti/ss_docsis_cmts_cm_count.php /usr/share/cacti/scripts/
+cp $SCRIPTPATH/cacti/ss_docsis_stats.php /usr/share/cacti/scripts/
+cp $SCRIPTPATH/cacti/cisco_cmts.xml /usr/share/cacti/resource/snmp_queries/ 
+cp $SCRIPTPATH/cacti/ss_docsis_cmts_cm_count.php /usr/share/cacti/scripts/
 
 
 #
