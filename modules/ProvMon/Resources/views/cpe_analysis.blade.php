@@ -12,8 +12,8 @@
 @section('content_lease')
 
 	@if ($lease)
-		<font color="green"><b>CPE has a valid lease</b></font><br>
-		@foreach ($lease as $line)
+		<font color="{{$lease['state']}}"><b>{{$lease['forecast']}}</b></font><br>
+		@foreach ($lease['text'] as $line)
 				<table>
 				<tr>
 					<td> 

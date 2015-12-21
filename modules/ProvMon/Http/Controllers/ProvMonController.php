@@ -43,6 +43,8 @@ class ProvMonController extends \BaseModuleController {
 		
 		// Ping
 		exec ('ping -c5 -i0.2 '.$hostname, $ping);
+		if (count(array_keys($ping)) <= 9)
+			$ping = null;
 
 		// Lease
 		$lease = $this->search_lease('hardware ethernet '.$modem->mac);
@@ -74,18 +76,48 @@ class ProvMonController extends \BaseModuleController {
 	}
 
 
+
 	public function cpe_analysis($id)
 	{
+		$logfile = "/var/log/messages";
 		$modem = Modem::find($id);
 		$ping = $lease = $log = $dash = $realtime = null;
 
-		$lease = $this->search_lease('billing subclass', $modem->mac);
+		// get MAC of CPE first
+		exec ('grep '.$modem->mac." $logfile| grep CPE | tail -n 1  | sort -r", $str);
+		if (isset($str[0]))
+			preg_match_all('/(?:[0-9a-fA-F]{2}[:]?){6}/', $str[0], $cpe_mac);
 
 		// Log
-		$lease_s = implode($lease);
-		preg_match_all('/hardware ethernet(.*?);/', $lease_s, $cpe_mac_match);
-		$cpe_mac = str_replace(" ", "", $cpe_mac_match[1])[0];
-		exec ('grep '.$cpe_mac.' /var/log/messages | tail -n 20  | sort -r', $log);
+		if (isset($cpe_mac[0][0]))
+			exec ('grep '.$cpe_mac[0][0]." $logfile | tail -n 20  | sort -r", $log);
+
+		// Lease
+		// TODO: This is just for a fast first commit. This requires more work ..
+		// TODO: we should consider using the same function for lease preparation and checking in Modem,CPE,MTA ..
+		$lease['text'] = $this->search_lease('billing subclass', $modem->mac);
+
+		if ($lease['text'])
+		{
+			// calculate endtime
+			preg_match ('/ends [1-7] (.*?);/', $lease['text'][0], $endtime);
+			$et = explode (',', str_replace ([':', '/', ' '], ',', $endtime[1]));
+			$endtime = \Carbon\Carbon::create($et[0], $et[1], $et[2], $et[3], $et[4], $et[5], 'UTC');
+
+			// lease calculation
+			$lease['state']    = 'green';
+			$lease['forecast'] = 'CPE has a valid lease.';
+			if ($endtime < \Carbon\Carbon::now())
+			{
+				$lease['state'] = 'red';
+				$lease['forecast'] = 'Lease is out of date';
+			}
+		}
+		else
+		{
+			$lease['state']    = 'red';
+			$lease['forecast'] = 'No valid lease found';
+		}
 
 		// Prepare Output
 		$panel_right = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]], 
