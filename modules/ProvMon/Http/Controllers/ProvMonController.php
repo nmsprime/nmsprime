@@ -341,7 +341,7 @@ if (0)
 	 * ]
 	 *
 	 * @param modem: The modem to look for Cacti Graphs
-	 * @return: the prepared monitoring array for view.
+	 * @return: the prepared monitoring array for view. Returns false if no diagram exists.
 	 *          No other adaptions required. See example in comment above
 	 *
 	 * @author: Torsten Schmidt
@@ -397,6 +397,9 @@ if (0)
 			if ($img)	// if valid image
 				$ret['graphs'][$id] = 'data:application/octet-stream;base64,'.$img;
 		}
+
+		if (!isset($ret['graphs']))
+			return false;
 
 		return $ret;
 	}

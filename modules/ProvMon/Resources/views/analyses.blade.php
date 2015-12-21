@@ -23,6 +23,11 @@
 			<img width=100% src={{$graph}}></img>
 			<br><br>
 		@endforeach
+	@else
+		<font color="red">No Diagrams available</font><br>
+		This could be because the Modem was not online until now. Please note that Diagrams only available
+		from the point that a modem was online. If all diagrams did not show propeply then it should be a
+		stronger problem and there should be a cacti misconfiguration. For stronger problems please consider the administrator.
 	@endif
 
 @stop
@@ -41,7 +46,7 @@
 				</table>
 		@endforeach
 	@else
-		<font color="red"> Modem is Offline</font>
+		<font color="red">Modem is Offline</font>
 	@endif
 
 @stop
