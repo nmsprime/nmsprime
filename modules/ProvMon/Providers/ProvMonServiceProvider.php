@@ -12,6 +12,13 @@ class ProvMonServiceProvider extends ServiceProvider {
 	protected $defer = false;
 
 	/**
+	 * The artisan commands provided by this module
+	 */
+	protected $commands = [
+		'Modules\ProvMon\Console\cactiCommand',
+	];
+
+	/**
 	 * Boot the application events.
 	 * 
 	 * @return void
@@ -30,7 +37,7 @@ class ProvMonServiceProvider extends ServiceProvider {
 	 */
 	public function register()
 	{		
-		//
+		$this->commands($this->commands);
 	}
 
 	/**

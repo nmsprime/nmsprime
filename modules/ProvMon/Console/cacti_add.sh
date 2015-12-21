@@ -7,14 +7,13 @@ name=$1
 hostname=$2
 community=$3
 
-cacti="/var/lib/cacti/cli"
+cacti="/usr/share/cacti/cli"
 
 
 #
 # Add Host
 #
-host_id=`php -q $cacti/add_device.php --description=$name --ip=$hostname --template=9 --community=$community | grep Success | tr '()' '\n\n' | head -n 2 | tail -n1`
-
+host_id=`php -q $cacti/add_device.php --description=$name --ip=$hostname --template=9 --community=$community --avail=snmp --version=2 | grep Success | tr '()' '\n\n' | head -n 2 | tail -n1`
 
 echo -e "added Host with ID $host_id\n";
 
@@ -25,7 +24,7 @@ php -q $cacti/add_graphs.php --host-id=$host_id --graph-type=cg --graph-template
 php -q $cacti/add_graphs.php --host-id=$host_id --graph-type=cg --graph-template-id=36
 php -q $cacti/add_graphs.php --host-id=$host_id --graph-type=cg --graph-template-id=37
 php -q $cacti/add_graphs.php --host-id=$host_id --graph-type=cg --graph-template-id=38
-
+php -q $cacti/add_graphs.php --host-id=$host_id --graph-type=cg --graph-template-id=39
 
 #
 # Add Host to Tree Page
