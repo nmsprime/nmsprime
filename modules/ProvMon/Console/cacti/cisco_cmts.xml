@@ -1,0 +1,227 @@
+<interface>
+        <name>Get SNMP Interfaces</name>
+        <description>Queries a host for a list of monitorable interfaces</description>
+        <oid_index>.1.3.6.1.2.1.2.2.1.1</oid_index>
+        <oid_num_indexes>.1.3.6.1.2.1.2.1.0</oid_num_indexes>
+        <index_order>ifDescr:ifName:ifHwAddr:ifIndex</index_order>
+        <index_order_type>numeric</index_order_type>
+        <index_title_format>|chosen_order_field|</index_title_format>
+
+        <fields>
+                <ifIndex>
+                        <name>Index</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>input</direction>
+                        <oid>.1.3.6.1.2.1.2.2.1.1</oid>
+                </ifIndex>
+                <ifOperStatus>
+                        <name>Status</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>input</direction>
+                        <oid>.1.3.6.1.2.1.2.2.1.8</oid>
+                </ifOperStatus>
+                <ifDescr>
+                        <name>Description</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>input</direction>
+                        <oid>.1.3.6.1.2.1.2.2.1.2</oid>
+                </ifDescr>
+                <ifName>
+                        <name>Name (IF-MIB)</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>input</direction>
+                        <oid>.1.3.6.1.2.1.31.1.1.1.1</oid>
+                </ifName>
+                <ifAlias>
+                        <name>Alias (IF-MIB)</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>input</direction>
+                        <oid>.1.3.6.1.2.1.31.1.1.1.18</oid>
+                </ifAlias>
+                <ifType>
+                        <name>Type</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>input</direction>
+                        <oid>.1.3.6.1.2.1.2.2.1.3</oid>
+                </ifType>
+                <ifSpeed>
+                        <name>Speed</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>input</direction>
+                        <oid>.1.3.6.1.2.1.2.2.1.5</oid>
+                </ifSpeed>
+                <ifHwAddr>
+                        <name>Hardware Address</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>input</direction>
+                        <oid>.1.3.6.1.2.1.2.2.1.6</oid>
+                </ifHwAddr>
+                <ifInOctets>
+                        <name>Bytes In</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.2.1.2.2.1.10</oid>
+                </ifInOctets>
+                <ifOutOctets>
+                        <name>Bytes Out</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.2.1.2.2.1.16</oid>
+                </ifOutOctets>
+                <ifHCInOctets>
+                        <name>Bytes In - 64-bit Counters</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.2.1.31.1.1.1.6</oid>
+                </ifHCInOctets>
+                <ifHCOutOctets>
+                        <name>Bytes Out - 64-bit Counters</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.2.1.31.1.1.1.10</oid>
+                </ifHCOutOctets>
+                <ifCableTOTAL> 
+                        <name>Interface Total CMs</name>
+                        <method>walk</method>     
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>1.3.6.1.4.1.9.9.116.1.3.3.1.4</oid>
+                </ifCableTOTAL>
+                <ifCableACTIVE>
+                        <name>Interface Active CMs</name>
+                        <method>walk</method>      
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>1.3.6.1.4.1.9.9.116.1.3.3.1.5</oid>
+                </ifCableACTIVE>
+                <ifCableREG>   
+                        <name>Interface Registered CMs</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>1.3.6.1.4.1.9.9.116.1.3.3.1.6</oid>
+                </ifCableREG>
+                <ifUpTOTAL> 
+                        <name>Upstream Total Cms</name>
+                        <method>walk</method>     
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.4.1.9.9.116.1.4.1.1.3</oid>
+                </ifUpTOTAL>
+                <ifUpACTIVE>
+                        <name>Upstream Active Cms</name>
+                        <method>walk</method>      
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.4.1.9.9.116.1.4.1.1.5</oid>
+                </ifUpACTIVE>
+                <ifUpREG>   
+                        <name>Upstream Registered CMs</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.4.1.9.9.116.1.4.1.1.4</oid>
+                </ifUpREG>
+                <ifUpUtilization>
+                        <name>Upstream Utilization</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.4.1.9.9.116.1.4.1.1.7</oid>
+                </ifUpUtilization>
+                <ifUpInSNR>
+                        <name>Upstream SNR</name>
+                        <method>walk</method>
+                        <source>value</source>     
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.2.1.10.127.1.1.4.1.5</oid>
+                </ifUpInSNR>
+                <ifUpChannelFrequency>
+                        <name>UpFrequency</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.2.1.10.127.1.1.2.1.2</oid>
+                </ifUpChannelFrequency>
+                <ifUpChannelWidth>
+                        <name>UpChannelWidth</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.2.1.10.127.1.1.2.1.3</oid>
+                </ifUpChannelWidth>
+                <ifUpChannelModulationProfile>
+                        <name>UpModulationProf</name>
+                        <method>walk</method>  
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>1.3.6.1.2.1.10.127.1.1.2.1.4</oid>
+                </ifUpChannelModulationProfile>
+                <ifdocsIfUpChannelType>
+                        <name>UpChannelType</name>
+                        <method>walk</method>
+                        <source>value</source>     
+                        <direction>output</direction>
+                        <oid>1.3.6.1.2.1.10.127.1.1.2.1.15</oid>
+                </ifdocsIfUpChannelType> 
+		<ifUpChannelPower>
+                        <name>UpChannelPower</name>
+                        <method>walk</method>
+                        <source>value</source>     
+                        <direction>output</direction>
+                        <oid>1.3.6.1.4.1.9.9.116.1.4.1.1.6</oid>
+                </ifUpChannelPower> 
+                <ifUpChannelPowerCasa>
+                        <name>UpChannelPowerCasa</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.4.1.4491.2.1.20.1.25.1.2</oid>
+                </ifUpChannelPowerCasa>
+                <ifIP>
+                        <name>IP Address</name>
+                        <method>walk</method>
+                        <source>OID/REGEXP:.*\.([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})$</source>
+                        <direction>input</direction>
+                        <oid>.1.3.6.1.2.1.4.20.1.2</oid>
+                </ifIP>
+
+
+                <ifSigQUnerroreds>
+                        <name>Valid Packets</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.2.1.10.127.1.1.4.1.2</oid>
+                </ifSigQUnerroreds>
+                <ifSigQCorrecteds>
+                        <name>Corrected Packets</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.2.1.10.127.1.1.4.1.3</oid>
+                </ifSigQCorrecteds>
+                <ifSigQUncorrectables>
+                        <name>Uncorrected Packets</name>
+                        <method>walk</method>
+                        <source>value</source>
+                        <direction>output</direction>
+                        <oid>.1.3.6.1.2.1.10.127.1.1.4.1.4</oid>
+                </ifSigQUncorrectables>
+
+
+
+        </fields>
+</interface>
