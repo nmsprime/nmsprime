@@ -3,6 +3,9 @@
 namespace Modules\ProvVoipEnvia\Entities;
 
 use Modules\ProvBase\Entities\Contract;
+use Modules\ProvVoip\Entities\Phonenumber;
+use Modules\ProvVoip\Entities\Mta;
+use Modules\ProvBase\Entities\Modem;
 
 // Model not found? execute composer dump-autoload in lara root dir
 class ProvVoipEnvia extends \BaseModel {
@@ -29,17 +32,46 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Get all the data needed for this job
+	 * Get all the data needed for this job.
+	 * This will get the data for the current and all parent models (e.g. contract for phonenumber)
 	 *
 	 * @author Patrick Reichel
 	 */
 	protected function _get_model_data() {
 
+		$contract = null;
+		$modem = null;
+		$mta = null;
+		$phonenumber = null;
+		$phonenumbermanagement = null;
+
 		// entry point to database is contract
 		$contract_id = \Input::get('contract_id', null);
 		if (!is_null($contract_id)) {
-			$this->contract = Contract::findOrFail($contract_id);
+			$contract = Contract::findOrFail($contract_id);
 		}
+
+		// entry point to database is phonenumber
+		$phonenumber_id = \Input::get('phonenumber_id', null);
+		if (!is_null($phonenumber_id)) {
+			$phonenumber = Phonenumber::findOrFail($phonenumber_id);
+		}
+
+		// get related models
+		if (!is_null($phonenumber)) {
+			$mta = $phonenumber->mta;
+			$modem = $mta->modem;
+			$contract = $modem->contract;
+			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
+			crash!
+		}
+
+		// apply to class variables
+		$this->contract = $contract;
+		$this->mta = $mta;
+		$this->modem = $modem;
+		$this->phonenumber = $phonenumber;
+		$this->phonenumbermanagement = $phonenumbermanagement;
 
 	}
 
@@ -92,6 +124,39 @@ class ProvVoipEnvia extends \BaseModel {
 		// this is the basic xml object which will be extended by other methods
 		$this->xml = new \SimpleXMLElement($initial_xml);
 
+	}
+
+	/**
+	 * Set default values for each job
+	 * This should later become obsolete or be filled from the database. For
+	 * now we use hardcoded defaults
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @param $job job to do
+	 *
+	 * @return array with defaults for the current job
+	 */
+	protected function _get_defaults_by_topic($topic) {
+
+		// set defaults if used by job
+		$defaults = array(
+			'contract_data' => array(
+				'variation_id' => 'MISSING',
+				/* 'porting' => 'MISSING', */
+				'tariff' => 'MISSING',
+				'phonebookentry_fax' => 0,
+				'phonebookentry_reverse_search' => 1,
+			),
+		);
+
+		// return the defaults or empty array
+		if (!array_key_exists($topic, $defaults)) {
+			return array();
+		}
+		else {
+			return $defaults[$topic];
+		}
 	}
 
 	/**
@@ -151,7 +216,9 @@ class ProvVoipEnvia extends \BaseModel {
 				'customer_identifier',
 				'customer_data',
 				'contract_data',
-				'subscriber_data',
+				// in this first step we do not create phonenumbers within
+				// the contract
+				/* 'subscriber_data', */
 			),
 			'contract_get_reference' => array(
 				'reseller_identifier',
@@ -210,6 +277,9 @@ class ProvVoipEnvia extends \BaseModel {
 			),
 			'voip_account_create' => array(
 				'reseller_identifier',
+				'contract_identifier',
+				'account_data',
+				'subscriber_data',
 			),
 			'voip_account_terminate' => array(
 				'reseller_identifier',
@@ -262,7 +332,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// TODO: error handling
 		if (!is_numeric($localareacode)) {
-			throw \Exception("localareacode has to be numeric");
+			throw \InvalidArgumentException("localareacode has to be numeric");
 		}
 
 		// localareacode is valid: add filter
@@ -275,7 +345,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// TODO: error handling
 		if (!is_numeric($baseno)) {
-			throw \Exception("baseno has to be numeric");
+			throw \InvalidArgumentException("baseno has to be numeric");
 		}
 
 		// baseno is valid
@@ -314,14 +384,14 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$inner_xml = $this->xml->addChild('customer_data');
 
-		// mapping database to xml
+		// mapping xml to database
 		$fields = array(
 			'salutation' => 'salutation',
 			'firstname' => 'firstname',
 			'lastname' => 'lastname',
 			'street' => 'street',
-			'house_number' => 'houseno',
-			'zip' => 'zipcode',
+			'houseno' => 'house_number',
+			'zipcode' => 'zip',
 			'city' => 'city',
 			'birthday' => 'birthday',
 			'company' => 'company',
@@ -339,23 +409,13 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$inner_xml = $this->xml->addChild('contract_data');
 
-		// for this values there (still) exists no db data => fill hardcoded…
-		// TODO: this has to be changed!
-		$defaults = array(
-			'variation_id' => 'MISSING',
-			'porting' => 'MISSING',
-			'tariff' => 'MISSING',
-			'phonebookentry_fax' => 0,
-			'phonebookentry_reverse_search' => 1,
-		);
-
-		// mapping database to xml
+		// mapping xml to database
 		$fields_contract = array(
-			'contract_start' => 'orderdate',
-			'phonebook_entry' => 'phonebookentry_phone',
+			'orderdate' => 'contract_start',
+			'phonebookentry_phone' => 'phonebook_entry',
 		);
 
-		$this->_add_fields($inner_xml, $fields_contract, $this->contract, $defaults);
+		$this->_add_fields($inner_xml, $fields_contract, $this->contract);
 
 	}
 
@@ -371,16 +431,56 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Method to add account data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_account_data() {
+
+		$inner_xml = $this->xml->addChild('account_data');
+
+		// add callnumbers
+		$this->_add_callnumbers($inner_xml);
+
+	}
+
+
+	/**
 	 * Method to add  callnumbers
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _add_callnumbers() {
+	protected function _add_callnumbers($xml) {
 
-		$inner_xml = $this->xml->addChild('callnumbers');
+		$inner_xml = $xml->addChild('callnumbers');
 
 		// TODO: this contains callnumber_single_data, callnumber_range_data or callnumber_new_data objects – format unknown…
 
+
+		// we just add single numbers (and call this as often as needed)…
+		$fields = array(
+			'callnumber' => array('prefix_number', 'number', ''),
+		);
+
+		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
+	}
+
+
+	/**
+	 * Method to add contract identifier
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_contract_identifier() {
+
+		$inner_xml = $this->xml->addChild('contract_identifier');
+
+		// mapping xml to database
+		$fields_contract_identifier = array(
+			'contractreference' => 'contract_external_id',
+		);
+
+		$this->_add_fields($inner_xml, $fields_contract_identifier, $this->contract);
 	}
 
 
@@ -388,8 +488,12 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add fields to xml node
 	 *
 	 * @author Patrick Reichel
+	 *
+	 * @param $xml SimpleXML to add fields to
+	 * @param $fields mapping xml node to database field(s) (key is xml node, value is database field as string or array containing all database fields to use plus concatenator as last entry)
+	 * @param &$model reference to model to use
 	 */
-	protected function _add_fields($xml, $fields, &$model, $defaults=array()) {
+	protected function _add_fields($xml, $fields, &$model) {
 
 		// lambda function to add the data to xml
 		$add = function($xml, $xml_field, $payload) {
@@ -399,13 +503,26 @@ class ProvVoipEnvia extends \BaseModel {
 			};
 		};
 
-
 		// process db data
-		foreach ($fields as $db_field => $xml_field) {
-
-			$payload = $model->$db_field;
+		foreach ($fields as $xml_field => $db_field) {
+			// single database field
+			if (is_string($db_field)) {
+				$payload = $model->$db_field;
+			}
+			// concated fields; last element is the string used to concat fields
+			elseif (is_array($db_field)) {
+				$concatenator = array_pop($db_field);
+				$tmp = array();
+				foreach ($db_field as $tmp_field) {
+					array_push($tmp, $model->$tmp_field);
+				}
+				$payload = implode($concatenator, $tmp);
+			}
 			$add($xml, $xml_field, $payload);
 		}
+
+		// get the default values for the current node
+		$defaults = $this->_get_defaults_by_topic($xml->getName());
 
 		// process defaults (for fields not filled yet)
 		foreach ($defaults as $xml_field => $payload) {

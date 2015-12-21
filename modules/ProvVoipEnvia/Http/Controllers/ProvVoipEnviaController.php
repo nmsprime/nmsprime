@@ -31,6 +31,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'misc_get_free_numbers',
 			'misc_get_free_numbers?localareacode=03725',
 			'misc_get_free_numbers?localareacode=03725&amp;baseno=110',
+			'voip_account_create?phonenumber_id=300001',
 			'',
 			'blacklist_create_entry',
 			'blacklist_delete_entry',
@@ -60,7 +61,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'phonebookentry_create',
 			'phonebookentry_delete',
 			'phonebookentry_get',
-			'voip_account_create',
 			'voip_account_terminate',
 			'voip_account_update',
 		);
