@@ -1,10 +1,12 @@
 <?php
 
+namespace Modules\provmon\Console;
+
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-use Models\Modem;
+use Modules\ProvBase\Entities\Modem;
 
 class cactiCommand extends Command {
 

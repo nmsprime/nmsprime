@@ -52,6 +52,9 @@ class ProvMonController extends \BaseModuleController {
 			$realtime['forecast'] = 'TODO';
 		}
 
+		// Monitoring
+		$monitoring = $this->monitoring($modem);
+
 		// TODO: Dash / Forecast
 
 
@@ -60,7 +63,7 @@ class ProvMonController extends \BaseModuleController {
 						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]]];
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring')));
 	}
 
 
@@ -251,6 +254,153 @@ if (0)
 	}
 
 
+	/*
+	 * Local Helper: Convert String Time Diff to Unix Timestamp
+	 * Example: '-3d' => to now() - 3 days => unix time 1450350686
+	 *          '-3h' => to now() - 3 hours => unix time 1450350686
+	 *
+	 * Usage: (-) followd by integer AND
+	 *        d .. day, h .. hour, M .. month, y .. year, m .. minute
+	 *
+	 * TODO: - Move to own extensions Carbon Helper API
+	 *       - use regular expression for validation matching
+	 *
+	 * @param d: string encoded time difference to now
+	 * @return: unix timestamp, returns NOW on input failures, see TODO
+	 *
+	 * @author: Torsten Schmidt
+	 */
+	private function _date($d)
+	{
+		$d = str_replace('-', '', $d);
+		$v = substr($d, 0, -1);
+
+		if(substr($d, -1) == 'y')
+			return \Carbon\Carbon::now()->subYear($v)->timestamp;
+		if(substr($d, -1) == 'M')
+			return \Carbon\Carbon::now()->subMonth($v)->timestamp;
+		if(substr($d, -1) == 'd')
+			return \Carbon\Carbon::now()->subDay($v)->timestamp;
+		if(substr($d, -1) == 'h')
+			return \Carbon\Carbon::now()->subHour($v)->timestamp;
+		if(substr($d, -1) == 'm')
+			return \Carbon\Carbon::now()->subMinute($v)->timestamp;
+
+		return \Carbon\Carbon::now()->timestamp;
+	}
+
+
+	/*
+	 * Get the corresponing graph id's for $modem. These id's could
+	 * be used in graph_image.php as HTML GET Request with local_graph_id variable
+	 * like https://../cacti/graph_image.php?local_graph_id=<ID>
+	 *
+	 * NOTE: This function requires a valid 'mysql-cacti' array
+	 *       in config/database.php
+	 *
+	 * @param modem: The modem to look for Cacti Graphs
+	 * @return: array of related cacti graph id's, false if no entries are found
+	 *
+	 * @author: Torsten Schmidt
+	 */
+	private function monitoring_get_graph_ids($modem)
+	{
+		// Connect to Cacti DB
+		$cacti = \DB::connection('mysql-cacti');
+
+		// Get Cacti Host ID to $modem
+		$host  = $cacti->table('host')->where('description', '=', 'cm-'.$modem->id)->get();
+		if (!isset($host[0]))
+			return false;
+
+		$host_id = $host[0]->id;
+
+		// Get all Graph IDs to Modem
+		$graph_ids = [];
+		foreach ($cacti->table('graph_local')->where('host_id', '=', $host_id)->get() as $host_graph)
+			array_push($graph_ids, $host_graph->id);
+
+		return $graph_ids;
+	}
+
+
+	/*
+	 * The Main Monitoring Function
+	 * Returns the prepared monitoring array required for monitoring view
+	 * This Array contains: Timing and the pre-loaded Images and looks like:
+	 *
+	 * array:5 [▼
+	 *  "from" => "3h"
+	 *  "to" => "0"
+	 *  "from_t" => 1450680378
+	 *  "to_t" => 1450691178
+	 *  "graphs" => array:4 [▼
+	 *  	119 => "data:application/octet-stream;base64,iVBORw0K .."
+	 *      120 => ..
+	 *   ]
+	 * ]
+	 *
+	 * @param modem: The modem to look for Cacti Graphs
+	 * @return: the prepared monitoring array for view.
+	 *          No other adaptions required. See example in comment above
+	 *
+	 * @author: Torsten Schmidt
+	 */
+	public function monitoring ($modem)
+	{
+		/*
+		 * Time Calculation
+		 */
+		$from = \Input::get('from');
+		$to   = \Input::get('to');
+
+		if(!$from) $from = '-3d';
+		if(!$to)   $to   = '0';
+
+		$ret['from']   = $from;
+		$ret['to']     = $to;
+
+		// Convert Time
+		$from_t = $this->_date ($from);
+		$to_t   = $this->_date ($to);
+
+		$ret['from_t'] = $from_t;
+		$ret['to_t']   = $to_t;
+
+
+		/*
+		 * Images
+		 */
+		// Base URL: Should be always available (?)
+		$url_base = "https://localhost/cacti/graph_image.php";
+
+		// SSL Array for disabling SSL verification
+		$ssl=array(
+		    "ssl"=>array(
+		        "verify_peer"=>false,
+		        "verify_peer_name"=>false,
+		    ),
+		);
+
+		// TODO: should be auto adapted to screen resolution. Note that we still use width=100% setting
+		// in the image view. This could lead to diffuse (unscharf) fonts.
+		$graph_width = '700';
+
+		// Fetch Cacti DB for images of $modem and request the Image from Cacti
+		foreach ($this->monitoring_get_graph_ids($modem) as $id)
+		{
+			$url = "$url_base?local_graph_id=$id&rra_id=0&graph_width=$graph_width&graph_start=$from_t&graph_end=$to_t";
+
+			// Load the image
+			$img = base64_encode(file_get_contents($url, false, stream_context_create($ssl)));
+
+			if ($img)	// if valid image
+				$ret['graphs'][$id] = 'data:application/octet-stream;base64,'.$img;
+		}
+
+		return $ret;
+	}
+
 
 	/*
 	 * Functions for Feature single Windows Stuff
@@ -263,7 +413,7 @@ if (0)
 	 *
 	 * @return Response
 	 */
-	public function monitoring($id)
+	public function _monitoring_deprecated($id)
 	{
 		$modem = Modem::find($id);
 

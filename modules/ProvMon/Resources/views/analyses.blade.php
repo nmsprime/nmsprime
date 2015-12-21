@@ -11,9 +11,19 @@
 
 @section('content_cacti')
 
-	<iframe frameborder="0" scrolling="no" width=100% height=700px
-		src="../../../cacti/graph_view.php?action=preview&filter={{$modem->hostname}}" name="imgbox" id="imgbox">
-	</iframe>
+	@if ($monitoring)
+		<form action="" method="GET">
+			From:<input type="text" name="from" value={{$monitoring['from']}}>
+			To:<input type="text" name="to" value={{$monitoring['to']}}>
+			<input type="submit" value="Submit">
+		</form>
+		<br>
+
+		@foreach ($monitoring['graphs'] as $id => $graph)
+			<img width=100% src={{$graph}}></img>
+			<br><br>
+		@endforeach
+	@endif
 
 @stop
 
