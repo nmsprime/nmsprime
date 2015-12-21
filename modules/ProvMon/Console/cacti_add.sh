@@ -24,7 +24,7 @@ php -q $cacti/add_graphs.php --host-id=$host_id --graph-type=cg --graph-template
 php -q $cacti/add_graphs.php --host-id=$host_id --graph-type=cg --graph-template-id=36
 php -q $cacti/add_graphs.php --host-id=$host_id --graph-type=cg --graph-template-id=37
 php -q $cacti/add_graphs.php --host-id=$host_id --graph-type=cg --graph-template-id=38
-
+php -q $cacti/add_graphs.php --host-id=$host_id --graph-type=cg --graph-template-id=39
 
 #
 # Add Host to Tree Page

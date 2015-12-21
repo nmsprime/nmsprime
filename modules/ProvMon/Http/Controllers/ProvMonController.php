@@ -303,7 +303,7 @@ if (0)
 	 *
 	 * @author: Torsten Schmidt
 	 */
-	private function monitoring_get_graph_ids($modem)
+	public static function monitoring_get_graph_ids($modem)
 	{
 		// Connect to Cacti DB
 		$cacti = \DB::connection('mysql-cacti');
@@ -387,7 +387,7 @@ if (0)
 		$graph_width = '700';
 
 		// Fetch Cacti DB for images of $modem and request the Image from Cacti
-		foreach ($this->monitoring_get_graph_ids($modem) as $id)
+		foreach (ProvMonController::monitoring_get_graph_ids($modem) as $id)
 		{
 			$url = "$url_base?local_graph_id=$id&rra_id=0&graph_width=$graph_width&graph_start=$from_t&graph_end=$to_t";
 
