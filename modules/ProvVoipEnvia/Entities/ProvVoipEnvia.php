@@ -63,7 +63,8 @@ class ProvVoipEnvia extends \BaseModel {
 			$modem = $mta->modem;
 			$contract = $modem->contract;
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
-			crash!
+			check why phonenumbermanagement is not seeded with faked values
+
 		}
 
 		// apply to class variables
