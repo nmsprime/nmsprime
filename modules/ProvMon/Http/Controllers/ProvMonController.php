@@ -10,7 +10,7 @@ use Modules\ProvBase\Entities\Modem;
 use Modules\ProvBase\Entities\Endpoint;
 use Modules\ProvBase\Entities\Configfile;
 use Modules\ProvBase\Entities\Qos;
-
+use Modules\ProvBase\Entities\ProvBase;
 
 /*
  * This is the Basic Stuff for Modem Analyses Page
@@ -21,6 +21,12 @@ use Modules\ProvBase\Entities\Qos;
  */
 class ProvMonController extends \BaseModuleController {
 
+	protected $domain_name = "";
+
+	public function __construct()
+	{
+		$this->domain_name = ProvBase::first()->domain_name;
+	}
 
 	/**
 	 * Main Analyses Function
@@ -30,25 +36,28 @@ class ProvMonController extends \BaseModuleController {
 	public function analyses($id)
 	{
 		$modem = Modem::find($id);
+		$view_var = $modem; // for top header
 
-		// TODO: use DNS name from a global config
-		$hostname = $modem->hostname.'.test2.erznet.tv';
+		$hostname = $modem->hostname.'.'.$this->domain_name;
 
 		$ping = $lease = $log = $dash = $realtime = null;
 		
 		// Ping
 		exec ('ping -c5 -i0.2 '.$hostname, $ping);
+		if (count(array_keys($ping)) <= 9)
+			$ping = null;
 
 		// Lease
 		$lease = $this->search_lease('hardware ethernet '.$modem->mac);
 
 		// Log
-		exec ('cat /var/log/messages | egrep "('.$modem->mac.'|'.$hostname.')" | tail -n 20  | sort -r', $log);
+		exec ('egrep "('.$modem->mac.'|'.$hostname.')" /var/log/messages | grep -v CPE | tail -n 20  | sort -r', $log);
+
 
 		// Realtime Measure
 		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
 		{
-			$realtime['measure']  = $this->realtime($hostname, $modem->community_ro);
+			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community);
 			$realtime['forecast'] = 'TODO';
 		}
 
@@ -60,10 +69,64 @@ class ProvMonController extends \BaseModuleController {
 
 		// Prepare Output
 		$panel_right = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]], 
-						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]]];
+						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
+						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]]];
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var')));
+	}
+
+
+
+	public function cpe_analysis($id)
+	{
+		$logfile = "/var/log/messages";
+		$modem = Modem::find($id);
+		$view_var = $modem; // for top header
+		$ping = $lease = $log = $dash = $realtime = null;
+
+		// get MAC of CPE first
+		exec ('grep '.$modem->mac." $logfile| grep CPE | tail -n 1  | sort -r", $str);
+		if (isset($str[0]))
+			preg_match_all('/(?:[0-9a-fA-F]{2}[:]?){6}/', $str[0], $cpe_mac);
+
+		// Log
+		if (isset($cpe_mac[0][0]))
+			exec ('grep '.$cpe_mac[0][0]." $logfile | tail -n 20  | sort -r", $log);
+
+		// Lease
+		// TODO: This is just for a fast first commit. This requires more work ..
+		// TODO: we should consider using the same function for lease preparation and checking in Modem,CPE,MTA ..
+		$lease['text'] = $this->search_lease('billing subclass', $modem->mac);
+
+		if ($lease['text'])
+		{
+			// calculate endtime
+			preg_match ('/ends [1-7] (.*?);/', $lease['text'][0], $endtime);
+			$et = explode (',', str_replace ([':', '/', ' '], ',', $endtime[1]));
+			$endtime = \Carbon\Carbon::create($et[0], $et[1], $et[2], $et[3], $et[4], $et[5], 'UTC');
+
+			// lease calculation
+			$lease['state']    = 'green';
+			$lease['forecast'] = 'CPE has a valid lease.';
+			if ($endtime < \Carbon\Carbon::now())
+			{
+				$lease['state'] = 'red';
+				$lease['forecast'] = 'Lease is out of date';
+			}
+		}
+		else
+		{
+			$lease['state']    = 'red';
+			$lease['forecast'] = 'No valid lease found';
+		}
+
+		// Prepare Output
+		$panel_right = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]], 
+						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
+						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]]];
+
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
 	}
 
 
@@ -198,16 +261,19 @@ class ProvMonController extends \BaseModuleController {
 
 
 	/**
-	 * Search String in dhcpd.lease file and
-	 * return the matching host
+	 * Returns the lease entry that contains 1 or 2 strings specified in the function arguments
 	 *
 	 * TODO: make a seperate class for dhcpd
 	 * lease stuff (search, replace, ..)
 	 *
 	 * @return Response
 	 */
-	public function search_lease ($search)
+	public function search_lease ()
 	{
+		$search = func_get_arg(0);
+		if (func_num_args() == 2)
+			$search2 = func_get_arg(1);
+
 		// parse dhcpd.lease file
 		$file   = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
 		$string = preg_replace( "/\r|\n/", "", $file );
@@ -219,8 +285,13 @@ class ProvMonController extends \BaseModuleController {
 		// fetch all lines matching hw mac
 		foreach (array_reverse(array_unique($section[0])) as $s)
 		{
-		    if(strpos($s, $search)) 
+		    if(strpos($s, $search))
 		    {
+		    	if (isset($search2))
+		    	{
+		    		if (!strpos($s, $search2))
+		    			continue;
+		    	}
 		    	/*
 		    	if ($i == 0)
 		    		array_push($ret, "<b>Last Lease:</b>");
@@ -252,6 +323,7 @@ if (0)
 
 		return $ret;
 	}
+
 
 
 	/*
@@ -348,6 +420,9 @@ if (0)
 	 */
 	public function monitoring ($modem)
 	{
+		if (!ProvMonController::monitoring_get_graph_ids($modem))
+			return false;
+
 		/*
 		 * Time Calculation
 		 */
@@ -392,6 +467,11 @@ if (0)
 			$url = "$url_base?local_graph_id=$id&rra_id=0&graph_width=$graph_width&graph_start=$from_t&graph_end=$to_t";
 
 			// Load the image
+			//
+			// TODO: error handling (for example: no valid login)
+			//
+			// Consider that we use guest login in Cacti.
+			// See: https://numpanglewat.wordpress.com/2009/07/27/how-to-view-cacti-graphics-without-login/
 			$img = base64_encode(file_get_contents($url, false, stream_context_create($ssl)));
 
 			if ($img)	// if valid image

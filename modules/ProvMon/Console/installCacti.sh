@@ -93,4 +93,4 @@ grep -q "$LINE" "$FILE" || echo "$LINE" >> "$FILE"
 systemctl restart httpd
 
 echo "Please Visit: https://your-host/cacti";
-echo "Default User/Psw: admin/admin";
+echo "Default User/Psw: admin/OhThai0r";
