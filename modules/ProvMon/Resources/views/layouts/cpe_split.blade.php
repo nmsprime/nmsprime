@@ -1,5 +1,11 @@
 @extends ('Layout.default')
 
+@section('content_top')
+
+	@include ('provmon::layouts.top', ['type' => 'CPE'])
+
+@stop
+
 @section ('content')
 
 <div class="row col-md-12">

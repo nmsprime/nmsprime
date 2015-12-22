@@ -36,6 +36,7 @@ class ProvMonController extends \BaseModuleController {
 	public function analyses($id)
 	{
 		$modem = Modem::find($id);
+		$view_var = $modem; // for top header
 
 		$hostname = $modem->hostname.'.'.$this->domain_name;
 
@@ -72,7 +73,7 @@ class ProvMonController extends \BaseModuleController {
 						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]]];
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var')));
 	}
 
 
@@ -81,6 +82,7 @@ class ProvMonController extends \BaseModuleController {
 	{
 		$logfile = "/var/log/messages";
 		$modem = Modem::find($id);
+		$view_var = $modem; // for top header
 		$ping = $lease = $log = $dash = $realtime = null;
 
 		// get MAC of CPE first
@@ -124,7 +126,7 @@ class ProvMonController extends \BaseModuleController {
 						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
 						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]]];
 
-		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime')));
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
 	}
 
 
@@ -418,6 +420,9 @@ if (0)
 	 */
 	public function monitoring ($modem)
 	{
+		if (!ProvMonController::monitoring_get_graph_ids($modem))
+			return false;
+
 		/*
 		 * Time Calculation
 		 */
@@ -462,6 +467,11 @@ if (0)
 			$url = "$url_base?local_graph_id=$id&rra_id=0&graph_width=$graph_width&graph_start=$from_t&graph_end=$to_t";
 
 			// Load the image
+			//
+			// TODO: error handling (for example: no valid login)
+			//
+			// Consider that we use guest login in Cacti.
+			// See: https://numpanglewat.wordpress.com/2009/07/27/how-to-view-cacti-graphics-without-login/
 			$img = base64_encode(file_get_contents($url, false, stream_context_create($ssl)));
 
 			if ($img)	// if valid image
