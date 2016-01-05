@@ -63,7 +63,6 @@ class ProvVoipEnvia extends \BaseModel {
 			$modem = $mta->modem;
 			$contract = $modem->contract;
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
-			check why phonenumbermanagement is not seeded with faked values
 
 		}
 
@@ -110,6 +109,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 	/**
 	 * Create a xml object containing only the top level element
+	 * This is the skeleton for the final XML
 	 *
 	 * @param $job job to create xml for
 	 */
@@ -219,6 +219,7 @@ class ProvVoipEnvia extends \BaseModel {
 				'contract_data',
 				// in this first step we do not create phonenumbers within
 				// the contract
+				// instead: create each phonenumber in separate step (voipaccount_create)
 				/* 'subscriber_data', */
 			),
 			'contract_get_reference' => array(
@@ -428,6 +429,21 @@ class ProvVoipEnvia extends \BaseModel {
 	protected function _add_subscriber_data() {
 		// TODO
 		$inner_xml = $this->xml->addChild('subscriber_data');
+
+		// mapping xml to database
+		$fields_subscriber = array(
+			'company' => 'subscriber_company',
+			'department' => 'subscriber_department',
+			'salutation' => 'subscriber_salutation',
+			'firstname' => 'subscriber_firstname',
+			'lastname' => 'subscriber_lastname',
+			'street' => 'subscriber_street',
+			'zipcode' => 'subscriber_zip',
+			'city' => 'subscriber_city',
+		);
+
+		$this->_add_fields($inner_xml, $fields_subscriber, $this->phonenumbermanagement);
+
 	}
 
 
@@ -497,7 +513,7 @@ class ProvVoipEnvia extends \BaseModel {
 	protected function _add_fields($xml, $fields, &$model) {
 
 		// lambda function to add the data to xml
-		$add = function($xml, $xml_field, $payload) {
+		$add_func = function($xml, $xml_field, $payload) {
 			$cur_node = $xml->addChild($xml_field, $payload);
 			if ((is_null($payload)) || ($payload === "")) {
 				$cur_node->addAttribute('nil', 'true');
@@ -519,7 +535,7 @@ class ProvVoipEnvia extends \BaseModel {
 				}
 				$payload = implode($concatenator, $tmp);
 			}
-			$add($xml, $xml_field, $payload);
+			$add_func($xml, $xml_field, $payload);
 		}
 
 		// get the default values for the current node
@@ -528,7 +544,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// process defaults (for fields not filled yet)
 		foreach ($defaults as $xml_field => $payload) {
 			if (array_search($xml_field, $fields) === False) {
-				$add($xml, $xml_field, $payload);
+				$add_func($xml, $xml_field, $payload);
 			}
 		}
 	}

@@ -21,6 +21,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 	/**
 	 * Overwrite index.
+	 * temporary starter for xml generation
 	 */
 	public function index() {
 		$base = "/lara/provvoipenvia/request";
