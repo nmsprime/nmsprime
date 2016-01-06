@@ -176,42 +176,55 @@ class ProvVoipEnvia extends \BaseModel {
 		// e.g. in reseller_identifier man will put username and password for
 		// authentication against the API
 		$second_level_nodes = array(
-			'blacklist_create_entry' => array(
-				'reseller_identifier',
-			),
-			'blacklist_delete_entry' => array(
-				'reseller_identifier',
-			),
-			'blacklist_get' => array(
-				'reseller_identifier',
-			),
-			'calllog_delete' => array(
-				'reseller_identifier',
-			),
-			'calllog_delete_entry' => array(
-				'reseller_identifier',
-			),
-			'calllog_get' => array(
-				'reseller_identifier',
-			),
-			'configuration_get' => array(
-				'reseller_identifier',
-			),
-			'configuration_update' => array(
-				'reseller_identifier',
-			),
-			'contract_change_method' => array(
-				'reseller_identifier',
-			),
-			'contract_change_sla' => array(
-				'reseller_identifier',
-			),
-			'contract_change_tariff' => array(
-				'reseller_identifier',
-			),
-			'contract_change_variation' => array(
-				'reseller_identifier',
-			),
+
+			/* 'blacklist_create_entry' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'blacklist_delete_entry' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'blacklist_get' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'calllog_delete' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'calllog_delete_entry' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'calllog_get' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'configuration_get' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'configuration_update' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'contract_change_method' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'contract_change_sla' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'contract_change_tariff' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'contract_change_variation' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
 			'contract_create' => array(
 				'reseller_identifier',
 				'customer_identifier',
@@ -222,73 +235,99 @@ class ProvVoipEnvia extends \BaseModel {
 				// instead: create each phonenumber in separate step (voipaccount_create)
 				/* 'subscriber_data', */
 			),
-			'contract_get_reference' => array(
-				'reseller_identifier',
-			),
-			'contract_get_voice_data' => array(
-				'reseller_identifier',
-			),
-			'contract_lock' => array(
-				'reseller_identifier',
-			),
-			'contract_terminate' => array(
-				'reseller_identifier',
-			),
-			'contract_unlock' => array(
-				'reseller_identifier',
-			),
-			'customer_get_reference' => array(
-				'reseller_identifier',
-			),
-			'customer_update' => array(
-				'reseller_identifier',
-			),
+
+			/* 'contract_get_reference' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'contract_get_voice_data' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'contract_lock' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			// not needed atm ⇒ if the last phonenumber is terminated the contract will automatically be deleted
+			/* 'contract_terminate' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'contract_unlock' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'customer_get_reference' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'customer_update' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
 			'misc_get_free_numbers' => array(
 				'reseller_identifier',
 				'filter_data',
 			),
+
 			'misc_get_orders_csv' => array(
 				'reseller_identifier',
 			),
+
 			'misc_get_usage_csv' => array(
 				'reseller_identifier',
 			),
+
 			'misc_ping' => array(
 				'reseller_identifier',
 			),
-			'order_add_mgcp_details' => array(
-				'reseller_identifier',
-			),
-			'order_cancel' => array(
-				'reseller_identifier',
-			),
-			'order_create_attachment' => array(
-				'reseller_identifier',
-			),
-			'order_get_status' => array(
-				'reseller_identifier',
-			),
-			'phonebookentry_create' => array(
-				'reseller_identifier',
-			),
-			'phonebookentry_delete' => array(
-				'reseller_identifier',
-			),
-			'phonebookentry_get' => array(
-				'reseller_identifier',
-			),
+
+			/* 'order_add_mgcp_details' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'order_cancel' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'order_create_attachment' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'order_get_status' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'phonebookentry_create' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'phonebookentry_delete' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
+			/* 'phonebookentry_get' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
 			'voip_account_create' => array(
 				'reseller_identifier',
 				'contract_identifier',
 				'account_data',
 				'subscriber_data',
 			),
+
 			'voip_account_terminate' => array(
 				'reseller_identifier',
+				'contract_identifier',
+				'callnumber_identifier',
+				'accounttermination_data',
 			),
-			'voip_account_update' => array(
-				'reseller_identifier',
-			),
+
+			/* 'voip_account_update' => array( */
+			/* 	'reseller_identifier', */
+			/* ), */
+
 		);
 
 		// now call the specific method for each second level element
@@ -427,7 +466,13 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @author Patrick Reichel
 	 */
 	protected function _add_subscriber_data() {
-		// TODO
+
+		// subscriber data contains the current “owner” of the number ⇒ this tag is only needed if a phonenumber shall be ported
+		$porting = boolval($this->phonenumbermanagement->porting_in);
+		if (!$porting) {
+			return;
+		}
+
 		$inner_xml = $this->xml->addChild('subscriber_data');
 
 		// mapping xml to database
@@ -456,6 +501,12 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$inner_xml = $this->xml->addChild('account_data');
 
+		$fields_account = array(
+			'porting' => 'porting_in',
+			'orderdate' => 'activation_date',
+		);
+
+		$this->_add_fields($inner_xml, $fields_account, $this->phonenumbermanagement);
 		// add callnumbers
 		$this->_add_callnumbers($inner_xml);
 
@@ -477,6 +528,42 @@ class ProvVoipEnvia extends \BaseModel {
 		// we just add single numbers (and call this as often as needed)…
 		$fields = array(
 			'callnumber' => array('prefix_number', 'number', ''),
+		);
+
+		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
+	}
+
+
+	/**
+	 * Method to add  callnumber identifier
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_callnumber_identifier() {
+
+		$inner_xml = $this->xml->addChild('callnumber_identifier');
+
+		$fields = array(
+			'localareacode' => 'prefix_number',
+			'baseno' => 'number',
+		);
+
+		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
+	}
+
+
+	/**
+	 * Method to add account termination data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_accounttermination_data() {
+
+		$inner_xml = $this->xml->addChild('accounttermination_data');
+
+		$fields = array(
+			'orderdate' => 'deactivation_date',
+			'carriercode' => 'carrier_out',
 		);
 
 		$this->_add_fields($inner_xml, $fields, $this->phonenumber);

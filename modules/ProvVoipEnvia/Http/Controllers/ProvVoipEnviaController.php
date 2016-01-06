@@ -32,7 +32,10 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'misc_get_free_numbers',
 			'misc_get_free_numbers?localareacode=03725',
 			'misc_get_free_numbers?localareacode=03725&amp;baseno=110',
+			'misc_get_orders_csv',
+			'misc_get_usage_csv',
 			'voip_account_create?phonenumber_id=300001',
+			'voip_account_terminate?phonenumber_id=300001',
 			'',
 			'blacklist_create_entry',
 			'blacklist_delete_entry',
@@ -53,8 +56,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'contract_unlock',
 			'customer_get_reference',
 			'customer_update',
-			'misc_get_orders_csv',
-			'misc_get_usage_csv',
 			'order_add_mgcp_details',
 			'order_cancel',
 			'order_create_attachment',
@@ -62,11 +63,14 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'phonebookentry_create',
 			'phonebookentry_delete',
 			'phonebookentry_get',
-			'voip_account_terminate',
 			'voip_account_update',
 		);
 
 		foreach ($jobs as $job) {
+			if (!boolval($job)) {
+				echo "<hr>";
+				continue;
+			}
 			echo '<a href="'.$base.'/'.$job.'" target="_self">'.$job.'</a><br>';
 		}
 	}
@@ -259,8 +263,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'customer_update' => $base_url.'____TODO____',
 
 			'misc_get_free_numbers' => $base_url.'misc/get_free_numbers',
-			'misc_get_orders_csv' => $base_url.'____TODO____',
-			'misc_get_usage_csv' => $base_url.'____TODO____',
+			'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
+			'misc_get_usage_csv' => $base_url.'misc/get_usage_csv',
 			'misc_ping' => $base_url.'misc/ping',
 
 			'order_add_mgcp_details' => $base_url.'____TODO____',
@@ -272,7 +276,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'phonebookentry_delete' => $base_url.'____TODO____',
 			'phonebookentry_get' => $base_url.'____TODO____',
 
-			'voip_account_create' => $base_url.'____TODO____',
+			'voip_account_create' => $base_url.'voipaccount/create',
 			'voip_account_terminate' => $base_url.'____TODO____',
 			'voip_account_update' => $base_url.'____TODO____',
 		);
