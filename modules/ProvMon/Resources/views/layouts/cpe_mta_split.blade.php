@@ -2,7 +2,7 @@
 
 @section('content_top')
 
-	@include ('provmon::layouts.top', ['type' => 'CPE'])
+	@include ('provmon::layouts.top', ['type' => $type])
 
 @stop
 

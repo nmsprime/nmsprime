@@ -28,6 +28,17 @@ class ProvMonController extends \BaseModuleController {
 		$this->domain_name = ProvBase::first()->domain_name;
 	}
 
+	/*
+	 * Prepares Sidebar in View
+	 */
+	public function prep_sidebar($id)
+	{
+		return [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]], 
+						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
+						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]],
+						['name' => 'MTA-Analysis', 'route' => 'Provmon.mta', 'link' => [$id]]];
+	}
+
 	/**
 	 * Main Analyses Function
 	 *
@@ -40,7 +51,7 @@ class ProvMonController extends \BaseModuleController {
 
 		$hostname = $modem->hostname.'.'.$this->domain_name;
 
-		$ping = $lease = $log = $dash = $realtime = null;
+		$ping = $lease = $log = $dash = $realtime = $type = null;
 		
 		// Ping
 		exec ('ping -c5 -i0.2 '.$hostname, $ping);
@@ -66,11 +77,7 @@ class ProvMonController extends \BaseModuleController {
 
 		// TODO: Dash / Forecast
 
-
-		// Prepare Output
-		$panel_right = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]], 
-						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
-						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]]];
+		$panel_right = $this->prep_sidebar($id);
 
 		// View
 		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var')));
@@ -84,6 +91,7 @@ class ProvMonController extends \BaseModuleController {
 		$modem = Modem::find($id);
 		$view_var = $modem; // for top header
 		$ping = $lease = $log = $dash = $realtime = null;
+		$type = 'CPE';
 
 		// get MAC of CPE first
 		exec ('grep '.$modem->mac." $logfile| grep CPE | tail -n 1  | sort -r", $str);
@@ -121,13 +129,24 @@ class ProvMonController extends \BaseModuleController {
 			$lease['forecast'] = 'No valid lease found';
 		}
 
-		// Prepare Output
-		$panel_right = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]], 
-						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
-						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]]];
+		$panel_right = $this->prep_sidebar($id);
 
-		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
 	}
+
+
+	public function mta_analysis($id)
+	{
+		$ping = $lease = $log = $dash = $realtime = null;
+		$modem = Modem::find($id);
+		$view_var = $modem; // for top header
+		$type = 'MTA';
+
+		$panel_right = $this->prep_sidebar($id);
+
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
+	}
+
 
 
 	/* 
