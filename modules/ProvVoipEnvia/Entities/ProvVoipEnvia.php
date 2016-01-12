@@ -113,6 +113,14 @@ class ProvVoipEnvia extends \BaseModel {
 			array_push($ret, array('linktext' => 'Terminate VoIP account', 'url' => $base.'voip_account_terminate?phonenumber_id='.$phonenumber_id));
 		};
 
+		////////////////////////////////////////
+		// configuration related stuff
+		array_push($ret, array('class' => 'Configuration'));
+
+		if ($voipaccount_available) {
+			array_push($ret, array('linktext' => 'Get Configuration', 'url' => $base.'selfcare/configuration/get?phonenumber_id='.$phonenumber_id));
+		}
+
 		return $ret;
 	}
 
@@ -308,9 +316,11 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			/* 'configuration_get' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+			'configuration_get' => array(
+				'reseller_identifier',
+				'customer_identifier',
+				'callnumber_identifier',
+			),
 
 			/* 'configuration_update' => array( */
 			/* 	'reseller_identifier', */

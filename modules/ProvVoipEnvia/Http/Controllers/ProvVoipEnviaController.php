@@ -27,6 +27,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$base = "/lara/provvoipenvia/request";
 
 		$jobs = array(
+			'configuration_get?phonenumber_id=300001',
 			'contract_create?contract_id=500000',
 			'misc_ping',
 			'misc_get_free_numbers',
@@ -43,7 +44,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'calllog_delete',
 			'calllog_delete_entry',
 			'calllog_get',
-			'configuration_get',
 			'configuration_update',
 			'contract_change_method',
 			'contract_change_sla',
@@ -245,7 +245,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'calllog_delete_entry' => $base_url.'____TODO____',
 			'calllog_get' => $base_url.'____TODO____',
 
-			'configuration_get' => $base_url.'____TODO____',
+			'configuration_get' => $base_url.'selfcare/configuration/get',
 			'configuration_update' => $base_url.'____TODO____',
 
 			'contract_change_method' => $base_url.'____TODO____',
