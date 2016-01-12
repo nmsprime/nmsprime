@@ -4,11 +4,118 @@ namespace Modules\ProvVoipEnvia\Entities;
 
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvVoip\Entities\Phonenumber;
+use Modules\ProvVoip\Entities\PhonenumberManagement;
 use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvBase\Entities\Modem;
 
 // Model not found? execute composer dump-autoload in lara root dir
 class ProvVoipEnvia extends \BaseModel {
+
+
+	/**
+	 * Get array with all jobs for given phonenumbermanagement
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @return array containing data for view
+	 */
+	public function get_jobs_for_view($phonenumbermanagement) {
+
+		// check if a phonenumbermanagement object exists
+		if (is_null($phonenumbermanagement)) {
+			return array();
+		}
+
+		// related models
+		$phonenumber = $phonenumbermanagement->phonenumber;
+		$phonenumber_id = $phonenumbermanagement->phonenumber_id;
+		$contract = $phonenumber->mta->modem->contract;
+		$contract_id = $contract->id;
+
+		// helpers
+		$base = "/lara/provvoipenvia/request/";
+
+		// flags for later if statements
+		if (is_null($contract->contract_ext_creation_date)) {
+			$contract_created = False;
+		}
+		else {
+			$contract_created = True;
+		}
+
+		if (is_null($contract->contract_ext_termination_date)) {
+			$contract_terminated = False;
+		}
+		else {
+			$contract_terminated = True;
+		}
+
+		if ($contract_created and !$contract_terminated) {
+			$contract_available = True;
+		}
+		else {
+			$contract_available = False;
+		}
+
+		if (is_null($phonenumbermanagement->voipaccount_ext_creation_date)) {
+			$voipaccount_created = False;
+		}
+		else {
+			$voipaccount_created = True;
+		}
+
+		if (is_null($phonenumbermanagement->voipaccount_ext_termination_date)) {
+			$voipaccount_terminated = False;
+		}
+		else {
+			$voipaccount_terminated = True;
+		}
+
+		if ($voipaccount_created and !$voipaccount_terminated) {
+			$voipaccount_available = True;
+		}
+		else {
+			$voipaccount_available = False;
+		}
+
+		////////////////////////////////////////
+		// misc jobs
+		$ret = array(
+			array('class' => 'Misc'),
+			array('linktext' => 'Ping Envia API', 'url' => $base.'misc_ping'),
+			array('linktext' => 'Get free numbers', 'url' => $base.'misc_get_free_numbers'),
+		);
+
+		////////////////////////////////////////
+		// contract related jobs
+		array_push($ret, array('class' => 'Contract'));
+
+		// contract can be created if not yet created
+		if (!$contract_created) {
+			array_push($ret, array('linktext' => 'Create contract', 'url' => $base.'contract_create?contract_id='.$contract_id));
+		}
+
+		// contract can be terminated if is created and not yet terminated
+		if ($contract_available) {
+			array_push($ret, array('linktext' => 'Terminate contract', 'url' => $base.'contract_terminate?contract_id='.$contract_id));
+		}
+
+		////////////////////////////////////////
+		// voip account related jobs
+		array_push($ret, array('class' => 'VoIP account'));
+
+		// voip account needs a contract
+		if (!$voipaccount_created and $contract_available) {
+			array_push($ret, array('linktext' => 'Create VoIP account', 'url' => $base.'voip_account_create?phonenumber_id='.$phonenumber_id,));
+		}
+
+		if ($voipaccount_available) {
+			array_push($ret, array('linktext' => 'Terminate VoIP account', 'url' => $base.'voip_account_terminate?phonenumber_id='.$phonenumber_id));
+		};
+
+		return $ret;
+	}
+
 
 	/**
 	 * Generate the XML used for communication against Envia API
