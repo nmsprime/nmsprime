@@ -12,12 +12,49 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 *
 	 * @author Patrick Reichel
 	 */
-	public function __construct() {
+	public function __construct($phonenumbermanagement = null) {
 
 		$this->model = new ProvVoipEnvia();
+		$this->phonenumbermanagement = $phonenumbermanagement;
 
 	}
 
+
+	/**
+	 * Get array with all jobs for given phonenumbermanagement
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @return array containing data for view
+	 */
+	public function get_jobs_for_view() {
+
+		// check if a phonenumbermanagement object exists
+		if (is_null($this->phonenumbermanagement)) {
+			return array();
+		}
+
+		$base = "/lara/provvoipenvia/request/";
+
+		// misc jobs
+		$ret = array(
+			array('class' => 'Misc'),
+			array('linktext' => 'Functest', 'url' => $base.'misc_ping'),
+			array('linktext' => 'Get free numbers', 'url' => $base.'misc_get_free_numbers'),
+		);
+
+		// contract related jobs
+		array_push($ret, array('class' => 'Contract'));
+
+		array_push($ret, array('linktext' => 'Create contract', 'url' => $base.'contract_create?contract_id='.$this->phonenumbermanagement->phonenumber->mta->modem->contract->id));
+
+		// voip account
+		array_push($ret, array('class' => 'VoIP account'));
+		array_push($ret, array('linktext' => 'Create VoIP account'));
+		array_push($ret, array('linktext' => 'Terminate VoIP account', 'url' => $base.'voip_account_terminate?phonenumber_id='.$this->phonenumbermanagement->phonenumber_id));
+
+		return $ret;
+	}
 
 	/**
 	 * Overwrite index.
