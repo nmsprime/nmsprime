@@ -17,20 +17,40 @@ class ProvVoipEnvia extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 *
+	 * @param $phonenumbermanagement phonenumberManagement object
+	 * @param $view_level depending on the view (contract, phonenumbermanagement) the result can be different
+	 *
 	 * @return array containing data for view
 	 */
-	public function get_jobs_for_view($phonenumbermanagement) {
+	public function get_jobs_for_view($model, $view_level) {
 
 		// check if a phonenumbermanagement object exists
-		if (is_null($phonenumbermanagement)) {
+		if (is_null($model)) {
 			return array();
 		}
 
-		// related models
-		$phonenumber = $phonenumbermanagement->phonenumber;
-		$phonenumber_id = $phonenumbermanagement->phonenumber_id;
-		$contract = $phonenumber->mta->modem->contract;
-		$contract_id = $contract->id;
+		// check for valid view_level and define get models to use
+		if ($view_level == 'phonenumbermanagement') {
+
+			// given model is a phonenumbermanagement object
+			$phonenumbermanagement = $model;
+			$phonenumber = $phonenumbermanagement->phonenumber;
+			$phonenumber_id = $phonenumbermanagement->phonenumber_id;
+			$contract = $phonenumber->mta->modem->contract;
+			$contract_id = $contract->id;
+		}
+		elseif ($view_level == 'contract') {
+
+			// given model is a contract object
+			$phonenumbermanagement = new PhonenumberManagement();
+			$phonenumber = new Phonenumber();
+			$phonenumber_id = null;
+			$contract = $model;
+			$contract_id = $contract->id;
+		}
+		else {
+			throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumbermanagement]');
+		}
 
 		// helpers
 		$base = "/lara/provvoipenvia/request/";
@@ -50,7 +70,7 @@ class ProvVoipEnvia extends \BaseModel {
 			$contract_terminated = True;
 		}
 
-		if ($contract_created and !$contract_terminated) {
+		if ($contract_created && !$contract_terminated) {
 			$contract_available = True;
 		}
 		else {
@@ -71,55 +91,88 @@ class ProvVoipEnvia extends \BaseModel {
 			$voipaccount_terminated = True;
 		}
 
-		if ($voipaccount_created and !$voipaccount_terminated) {
+		if ($voipaccount_created && !$voipaccount_terminated) {
 			$voipaccount_available = True;
 		}
 		else {
 			$voipaccount_available = False;
 		}
 
+
 		////////////////////////////////////////
 		// misc jobs
-		$ret = array(
-			array('class' => 'Misc'),
-			array('linktext' => 'Ping Envia API', 'url' => $base.'misc_ping'),
-			array('linktext' => 'Get free numbers', 'url' => $base.'misc_get_free_numbers'),
-		);
+		if (in_array($view_level, ['contract', 'phonenumbermanagement'])) {
+			$ret = array(
+				array('class' => 'Misc'),
+				array('linktext' => 'Ping Envia API', 'url' => $base.'misc_ping'),
+				array('linktext' => 'Get free numbers', 'url' => $base.'misc_get_free_numbers'),
+			);
+		}
+
 
 		////////////////////////////////////////
 		// contract related jobs
-		array_push($ret, array('class' => 'Contract'));
+		if (in_array($view_level, ['contract', 'phonenumbermanagement'])) {
+			array_push($ret, array('class' => 'Contract'));
 
-		// contract can be created if not yet created
-		if (!$contract_created) {
-			array_push($ret, array('linktext' => 'Create contract', 'url' => $base.'contract_create?contract_id='.$contract_id));
+			// contract can be created if not yet created
+			if (!$contract_created) {
+				array_push($ret, array('linktext' => 'Create contract', 'url' => $base.'contract_create?contract_id='.$contract_id));
+			}
+
+			// contract can be terminated if is created and not yet terminated
+			if ($contract_available) {
+				array_push($ret, array('linktext' => 'Terminate contract', 'url' => $base.'contract_terminate?contract_id='.$contract_id));
+			}
 		}
 
-		// contract can be terminated if is created and not yet terminated
-		if ($contract_available) {
-			array_push($ret, array('linktext' => 'Terminate contract', 'url' => $base.'contract_terminate?contract_id='.$contract_id));
-		}
 
 		////////////////////////////////////////
 		// voip account related jobs
-		array_push($ret, array('class' => 'VoIP account'));
+		if (in_array($view_level, ['phonenumbermanagement'])) {
+			array_push($ret, array('class' => 'VoIP account'));
 
-		// voip account needs a contract
-		if (!$voipaccount_created and $contract_available) {
-			array_push($ret, array('linktext' => 'Create VoIP account', 'url' => $base.'voip_account_create?phonenumber_id='.$phonenumber_id,));
+			// voip account needs a contract
+			if (!$voipaccount_created && $contract_available) {
+				array_push($ret, array('linktext' => 'Create VoIP account', 'url' => $base.'voip_account_create?phonenumber_id='.$phonenumber_id,));
+			}
+
+			if ($voipaccount_available) {
+				array_push($ret, array('linktext' => 'Terminate VoIP account', 'url' => $base.'voip_account_terminate?phonenumber_id='.$phonenumber_id));
+			};
 		}
 
-		if ($voipaccount_available) {
-			array_push($ret, array('linktext' => 'Terminate VoIP account', 'url' => $base.'voip_account_terminate?phonenumber_id='.$phonenumber_id));
-		};
 
 		////////////////////////////////////////
 		// configuration related stuff
-		array_push($ret, array('class' => 'Configuration'));
+		if (in_array($view_level, ['phonenumbermanagement'])) {
+			array_push($ret, array('class' => 'Configuration'));
 
-		if ($voipaccount_available) {
-			array_push($ret, array('linktext' => 'Get Configuration', 'url' => $base.'selfcare/configuration/get?phonenumber_id='.$phonenumber_id));
+			if ($voipaccount_available) {
+				array_push($ret, array('linktext' => 'Get Configuration', 'url' => $base.'selfcare/configuration/get?phonenumber_id='.$phonenumber_id));
+			}
+
+			////////////////////////////////////////
+			// calllog related stuff
+			array_push($ret, array('class' => 'Calllog'));
+
+			if ($voipaccount_available) {
+				array_push($ret, array('linktext' => 'Get calllog status', 'url' => $base.'selfcare/calllog/get_status?contract_id='.$contract_id));
+			}
 		}
+
+
+		////////////////////////////////////////
+		// blacklist related stuff
+		if (in_array($view_level, ['phonenumbermanagement'])) {
+			array_push($ret, array('class' => 'Blacklist'));
+
+			if ($voipaccount_available) {
+				array_push($ret, array('linktext' => 'Get blacklist in', 'url' => $base.'selfcare/blacklist/get?phonenumber_id='.$phonenumber_id.'&amp;envia_blacklist_get_direction=in'));
+				array_push($ret, array('linktext' => 'Get blacklist out', 'url' => $base.'selfcare/blacklist/get?phonenumber_id='.$phonenumber_id.'&amp;envia_blacklist_get_direction=out'));
+			}
+		}
+
 
 		return $ret;
 	}
@@ -300,9 +353,11 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			/* 'blacklist_get' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+			'blacklist_get' => array(
+				'reseller_identifier',
+				'callnumber_identifier',
+				'blacklist_data',
+			),
 
 			/* 'calllog_delete' => array( */
 			/* 	'reseller_identifier', */
@@ -315,6 +370,11 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 'calllog_get' => array( */
 			/* 	'reseller_identifier', */
 			/* ), */
+
+			'calllog_get_status' => array(
+				'reseller_identifier',
+				'customer_identifier',
+			),
 
 			'configuration_get' => array(
 				'reseller_identifier',
@@ -684,6 +744,28 @@ class ProvVoipEnvia extends \BaseModel {
 		);
 
 		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
+	}
+
+
+	/**
+	 * Method to add blacklist data
+	 * This is a special case as the direction for the request is not coming from database but from GET!
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @throws UnexpectedValueException if GET param envia_blacklist_get_direction is not in [in|out]
+	 */
+	protected function _add_blacklist_data() {
+
+		$direction = strtolower(\Input::get('envia_blacklist_get_direction'));
+		$valid_directions = ['in', 'out'];
+
+		if (!in_array($direction, $valid_directions)) {
+			throw new \UnexpectedValueException('envia_blacklist_get_direction has to be in ['.implode('|', $valid_directions).']');
+		}
+
+		$inner_xml = $this->xml->addChild('blacklist_data');
+		$inner_xml->addChild('direction', $direction);
 	}
 
 

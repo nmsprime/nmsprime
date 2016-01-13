@@ -27,6 +27,9 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$base = "/lara/provvoipenvia/request";
 
 		$jobs = array(
+			'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=in',
+			'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=out',
+			'calllog_get_status?contract_id=500000',
 			'configuration_get?phonenumber_id=300001',
 			'contract_create?contract_id=500000',
 			'misc_ping',
@@ -40,7 +43,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'',
 			'blacklist_create_entry',
 			'blacklist_delete_entry',
-			'blacklist_get',
 			'calllog_delete',
 			'calllog_delete_entry',
 			'calllog_get',
@@ -239,11 +241,12 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$urls = array(
 			'blacklist_create_entry' => $base_url.'____TODO____',
 			'blacklist_delete_entry' => $base_url.'____TODO____',
-			'blacklist_get' => $base_url.'____TODO____',
+			'blacklist_get' => $base_url.'selfcare/blacklist/get',
 
 			'calllog_delete' => $base_url.'____TODO____',
 			'calllog_delete_entry' => $base_url.'____TODO____',
 			'calllog_get' => $base_url.'____TODO____',
+			'calllog_get_status' => $base_url.'selfcare/calllog/get_status',
 
 			'configuration_get' => $base_url.'selfcare/configuration/get',
 			'configuration_update' => $base_url.'____TODO____',
