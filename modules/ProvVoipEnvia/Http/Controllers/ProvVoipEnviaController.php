@@ -7,6 +7,10 @@ use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
 
 class ProvVoipEnviaController extends \BaseModuleController {
 
+	// to show generated/received XML set to true
+	const DEBUG = false;
+
+
 	/**
 	 * Constructor.
 	 *
@@ -295,10 +299,12 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		// the requests payload (=XML)
 		$payload = $this->model->get_xml($job);
 
-		$this->__debug_xml($payload);
+		if ($this::DEBUG) {
+			$this->__debug_xml($payload);
+		}
 
-		echo "We are not sending data to Envia yet! Will now exit";
-		exit();
+		/* echo "We are not sending data to Envia yet! Will now exit"; */
+		/* exit(); */
 		// perform the request and receive the result (meta and content)
 		$data = $this->_ask_envia($url, $payload);
 
@@ -336,24 +342,37 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 */
 	protected function _handle_curl_success($job, $data) {
 
-		// success!!
-		if (($data['status'] >= 200) && ($data < 300)) {
-			$this->_handle_request_success($job, $data);
+		// in the following if statement we decide the method to call by HTTP status codes in API respond
+		// first we handle all specific errors, then success and finally process all not specific errors
+
+		// bad request
+		if ($data['status'] == 400) {
+			$this->_handle_request_failed_400($job, $data);
 		}
-		// unauthorized => handle separately
+		// unauthorized
 		elseif ($data['status'] == 401) {
 			$this->_handle_request_failed_401($job, $data);
+		}
+		// forbidden
+		elseif ($data['status'] == 403) {
+			$this->_handle_request_failed_403($job, $data);
+		}
+		// success!!
+		elseif (($data['status'] >= 200) && ($data['status'] < 300)) {
+			$this->_handle_request_success($job, $data);
 		}
 		// other => something went wrong
 		else {
 			$this->_handle_request_failed($job, $data);
 		}
 
-		echo "<hr>";
-		echo "Return data:<br>";
-		echo "<pre>";
-		echo htmlentities($data['xml']);
-		echo "</pre>";
+		if ($this::DEBUG) {
+			echo "<hr>";
+			echo "Return data:<br>";
+			echo "<pre>";
+			$this->__debug_xml($data['xml']);
+			echo "</pre>";
+		}
 	}
 
 	/**
