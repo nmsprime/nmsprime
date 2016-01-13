@@ -124,6 +124,7 @@ class ProvVoipEnvia extends \BaseModel {
 			if ($contract_available) {
 				array_push($ret, array('linktext' => 'Terminate contract', 'url' => $base.'contract_terminate?contract_id='.$contract_id));
 			}
+
 		}
 
 
@@ -151,9 +152,12 @@ class ProvVoipEnvia extends \BaseModel {
 			if ($voipaccount_available) {
 				array_push($ret, array('linktext' => 'Get Configuration', 'url' => $base.'selfcare/configuration/get?phonenumber_id='.$phonenumber_id));
 			}
+		}
 
-			////////////////////////////////////////
-			// calllog related stuff
+
+		////////////////////////////////////////
+		// calllog related stuff
+		if (in_array($view_level, ['phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Calllog'));
 
 			if ($voipaccount_available) {
