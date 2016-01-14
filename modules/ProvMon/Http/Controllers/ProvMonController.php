@@ -28,6 +28,17 @@ class ProvMonController extends \BaseModuleController {
 		$this->domain_name = ProvBase::first()->domain_name;
 	}
 
+	/*
+	 * Prepares Sidebar in View
+	 */
+	public function prep_sidebar($id)
+	{
+		return [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]], 
+						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
+						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]],
+						['name' => 'MTA-Analysis', 'route' => 'Provmon.mta', 'link' => [$id]]];
+	}
+
 	/**
 	 * Main Analyses Function
 	 *
@@ -36,11 +47,9 @@ class ProvMonController extends \BaseModuleController {
 	public function analyses($id)
 	{
 		$modem = Modem::find($id);
+		$ping = $lease = $log = $dash = $realtime = $type = null;
 		$view_var = $modem; // for top header
-
 		$hostname = $modem->hostname.'.'.$this->domain_name;
-
-		$ping = $lease = $log = $dash = $realtime = null;
 		
 		// Ping
 		exec ('ping -c5 -i0.2 '.$hostname, $ping);
@@ -66,39 +75,99 @@ class ProvMonController extends \BaseModuleController {
 
 		// TODO: Dash / Forecast
 
-
-		// Prepare Output
-		$panel_right = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]], 
-						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
-						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]]];
+		$panel_right = $this->prep_sidebar($id);
 
 		// View
 		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var')));
 	}
 
-
-
+	/**
+	 * Returns view of cpe analysis page
+	 */
 	public function cpe_analysis($id)
 	{
-		$logfile = "/var/log/messages";
+		$ping = $lease = $log = $dash = $realtime = null;
 		$modem = Modem::find($id);
 		$view_var = $modem; // for top header
-		$ping = $lease = $log = $dash = $realtime = null;
+		$type = 'CPE';
 
 		// get MAC of CPE first
-		exec ('grep '.$modem->mac." $logfile| grep CPE | tail -n 1  | sort -r", $str);
+		exec ('grep '.$modem->mac." /var/log/messages | grep CPE | tail -n 1  | sort -r", $str);
 		if (isset($str[0]))
 			preg_match_all('/(?:[0-9a-fA-F]{2}[:]?){6}/', $str[0], $cpe_mac);
 
 		// Log
 		if (isset($cpe_mac[0][0]))
-			exec ('grep '.$cpe_mac[0][0]." $logfile | tail -n 20  | sort -r", $log);
+			exec ('grep '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | sort -r', $log);
 
 		// Lease
-		// TODO: This is just for a fast first commit. This requires more work ..
-		// TODO: we should consider using the same function for lease preparation and checking in Modem,CPE,MTA ..
 		$lease['text'] = $this->search_lease('billing subclass', $modem->mac);
+		$lease = $this->validate_lease($lease, $type);
 
+		// Ping
+		if (isset($lease['text'][0]))
+		{
+			// get ip first
+			preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $lease['text'][0], $ip);
+			if (isset($ip[0][0]))
+			{
+				$ip = $ip[0][0];
+				exec ('ping -c3 -i0.2 '.$ip, $ping);
+			}
+		}
+		if (is_array($ping) && count(array_keys($ping)) <= 7)
+		{
+			$ping = null;
+			if ($lease['state'] == 'green')
+				$ping[0] = 'but not reachable from WAN-side due to manufacturing reasons (it can be possible to enable ICMP response via modem configfile)';
+		}
+
+		$panel_right = $this->prep_sidebar($id);
+
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
+	}
+
+	/**
+	 * Returns view of mta analysis page
+	 */
+	public function mta_analysis($id)
+	{
+		$ping = $lease = $log = $dash = $realtime = null;
+		$modem = Modem::find($id);
+		$view_var = $modem; // for top header
+		$type = 'MTA';
+
+		$mtas = $modem->mtas;		// Note: we should use one-to-one relationship here
+		if (isset($mtas[0]))
+			$mta = $mtas[0];
+		else
+			goto end;
+
+		// Ping
+		exec ('ping -c3 -i0.2 '.$mta->hostname, $ping);
+		if (count(array_keys($ping)) <= 7)
+			$ping = null;
+
+		// lease
+		$lease['text'] = $this->search_lease("mta-".$mta->id);
+		$lease = $this->validate_lease($lease, $type);
+
+		// log
+		exec ('grep "'.$mta->mac.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | sort -r', $log);
+
+
+end:
+		$panel_right = $this->prep_sidebar($id);
+		
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
+	}
+
+
+	/**
+	 * Proves if the last found lease is actually valid or has already expired
+	 */
+	private function validate_lease($lease, $type)
+	{
 		if ($lease['text'])
 		{
 			// calculate endtime
@@ -107,8 +176,9 @@ class ProvMonController extends \BaseModuleController {
 			$endtime = \Carbon\Carbon::create($et[0], $et[1], $et[2], $et[3], $et[4], $et[5], 'UTC');
 
 			// lease calculation
+			// take care changing the state - it's used under cpe analysis
 			$lease['state']    = 'green';
-			$lease['forecast'] = 'CPE has a valid lease.';
+			$lease['forecast'] = "$type has a valid lease.";
 			if ($endtime < \Carbon\Carbon::now())
 			{
 				$lease['state'] = 'red';
@@ -121,12 +191,7 @@ class ProvMonController extends \BaseModuleController {
 			$lease['forecast'] = 'No valid lease found';
 		}
 
-		// Prepare Output
-		$panel_right = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]], 
-						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
-						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]]];
-
-		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
+		return $lease;
 	}
 
 
@@ -292,13 +357,13 @@ class ProvMonController extends \BaseModuleController {
 		    		if (!strpos($s, $search2))
 		    			continue;
 		    	}
-		    	/*
-		    	if ($i == 0)
-		    		array_push($ret, "<b>Last Lease:</b>");
+		    	
+		    	// if ($i == 0)
+		    	// 	array_push($ret, "<b>Last Lease:</b>");
 
-		    	if ($i == 1)
-		    		array_push($ret, "<br><br><b>Old Leases:</b>");
-				*/
+		    	// if ($i == 1)
+		    	// 	array_push($ret, "<br><br><b>Old Leases:</b>");
+				
 
 		    	// push matching results 
 		        array_push($ret, str_replace('{', '{<br>', str_replace(';', ';<br>', $s)));
@@ -310,12 +375,12 @@ class ProvMonController extends \BaseModuleController {
 if (0)
 {
 		        // TODO: convert string to array and convert return
-		        $a = explode(';', str_replace ('{', ';', $s));
+				$a = explode(';', str_replace ('{', ';', $s));
 
-		     	if (!isset($ret[$a[0]]))
-		     		$ret[$a[0]] = array();   
+				if (!isset($ret[$a[0]]))
+				$ret[$a[0]] = array();   
 
-		        array_push($ret[$a[0]], $a);
+				array_push($ret[$a[0]], $a);
 }
 
 		    }

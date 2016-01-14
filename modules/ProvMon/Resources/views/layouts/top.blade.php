@@ -24,7 +24,9 @@
 		if (!isset($type))
 			$s .= HTML::linkRoute('Provmon.index', 'Analyses', $view_var->id);
 		elseif ($type == 'CPE')
-			$s .= HTML::linkRoute('Provmon.cpe', 'CPE Analyses', $view_var->id);
+			$s .= HTML::linkRoute('Provmon.cpe', 'CPE Analysis', $view_var->id);
+		elseif ($type == 'MTA')
+			$s .= HTML::linkRoute('Provmon.mta', 'MTA Analysis', $view_var->id);
 
 		echo HTML::linkRoute('Modem.index', 'Modems').': '.$s;
 	?>

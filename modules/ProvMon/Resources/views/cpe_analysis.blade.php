@@ -1,4 +1,4 @@
-@extends ('provmon::layouts.cpe_split')
+@extends ('provmon::layouts.cpe_mta_split')
 
 
 @section('content_dash')
@@ -30,7 +30,7 @@
 
 @section('content_log')
 	@if ($log)
-		<font color="green"><b>Modem Logfile</b></font><br>
+		<font color="green"><b>{{$type}} Logfile</b></font><br>
 		@foreach ($log as $line)
 				<table>
 				<tr>
@@ -41,6 +41,27 @@
 				</table>
 		@endforeach
 	@else
-		<font color="red">Modem was not registering on Server - No log entry found</font>
+		<font color="red">{{$type}} was not registering on Server - No log entry found</font>
 	@endif
+@stop
+
+
+@section('content_ping')
+
+	@if ($ping)
+		<font color="green"><b>{{$type}} is Online</b></font><br>
+		@foreach ($ping as $line)
+				<table>
+				<tr>
+					<td> 
+						 <font color="grey">{{$line}}</font>
+					</td>
+				</tr>
+				</table>
+		@endforeach
+	@else
+		<font color="red">{{$type}} is Offline</font> <br>
+		<font color="grey">{{$ping[5]}}</font>
+	@endif
+
 @stop

@@ -25,9 +25,9 @@
 		@endforeach
 	@else
 		<font color="red">No Diagrams available</font><br>
-		This could be because the Modem was not online until now. Please note that Diagrams only available
-		from the point that a modem was online. If all diagrams did not show propeply then it should be a
-		stronger problem and there should be a cacti misconfiguration. For stronger problems please consider the administrator.
+		This could be because the Modem was not online until now. Please note that Diagrams are only available
+		from the point that a modem was online. If all diagrams did not show properly then it should be a
+		bigger problem and there should be a cacti misconfiguration. Please consider the administrator on bigger problems.
 	@endif
 
 @stop
