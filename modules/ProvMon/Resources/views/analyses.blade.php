@@ -51,6 +51,39 @@
 
 @stop
 
+
+@section('content_flood_ping')
+
+	<?php $route = \Route::getCurrentRoute()->getUri(); ?>
+
+	<form route="$route" method="POST">Type:
+		<input type="hidden" name="_token" value={{ csrf_token() }}>
+		<select name="flood_ping">
+			<option value="1">lowest load: 100 packets of 56 Byte</option>
+			<option value="2">big load: 300 packets of 300 Byte</option>
+			<option value="3">huge load: 500 packets of 1472 Byte</option>
+			<option value="4">highest load: 1.000 packets of 56 Byte</option>
+		</select>
+		<input type="submit" value="Send Ping">
+	</form>
+
+	<!-- {{ Form::open(['route' => ['Provmon.flood_ping', $view_var->id]]) }} -->
+
+	@if (isset($flood_ping))
+		@foreach ($flood_ping as $line)
+				<table>
+				<tr>
+					<td> 
+						 <font color="grey">{{$line}}</font>
+					</td>
+				</tr>
+				</table>
+		@endforeach
+	@endif
+
+@stop
+
+
 @section('content_lease')
 
 	@if ($lease)

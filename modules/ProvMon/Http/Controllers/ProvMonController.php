@@ -47,7 +47,7 @@ class ProvMonController extends \BaseModuleController {
 	public function analyses($id)
 	{
 		$modem = Modem::find($id);
-		$ping = $lease = $log = $dash = $realtime = $type = null;
+		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = null;
 		$view_var = $modem; // for top header
 		$hostname = $modem->hostname.'.'.$this->domain_name;
 		
@@ -55,6 +55,26 @@ class ProvMonController extends \BaseModuleController {
 		exec ('ping -c5 -i0.2 '.$hostname, $ping);
 		if (count(array_keys($ping)) <= 9)
 			$ping = null;
+
+		// Flood ping - doesnt work
+		if (array_key_exists('flood_ping', \Input::all()))
+		{
+			switch (\Input::all()['flood_ping'])
+			{
+				case "1":
+					exec("sudo ping -c100 -f $hostname", $flood_ping, $ret);
+					break;
+				case "2":
+					exec("sudo ping -c3 -s300 -f $hostname", $flood_ping, $ret);
+					break;
+				case "3":
+					exec("sudo ping -c500 -s1472 -f $hostname", $flood_ping, $ret);
+					break;
+				case "4":
+					exec("sudo ping -c1000 -f $hostname", $flood_ping, $ret);
+					break;
+			}
+		}
 
 		// Lease
 		$lease = $this->search_lease('hardware ethernet '.$modem->mac);
@@ -78,7 +98,7 @@ class ProvMonController extends \BaseModuleController {
 		$panel_right = $this->prep_sidebar($id);
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var', 'flood_ping')));
 	}
 
 	/**
