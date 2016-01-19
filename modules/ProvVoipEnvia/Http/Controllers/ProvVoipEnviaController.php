@@ -8,7 +8,7 @@ use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
 class ProvVoipEnviaController extends \BaseModuleController {
 
 	// to show generated/received XML set to true
-	const DEBUG = false;
+	const DEBUG = true;
 
 
 	/**
@@ -36,6 +36,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'calllog_get_status?contract_id=500000',
 			'configuration_get?phonenumber_id=300001',
 			'contract_create?contract_id=500000',
+			'contract_get_voice_data?contract_id=500000',
 			'misc_ping',
 			'misc_get_free_numbers',
 			'misc_get_free_numbers?localareacode=03725',
@@ -56,7 +57,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'contract_change_tariff',
 			'contract_change_variation',
 			'contract_get_reference',
-			'contract_get_voice_data',
 			'contract_lock',
 			'contract_terminate',
 			'contract_unlock',
@@ -187,6 +187,22 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	}
 
 	/**
+	 * Get confirmation to continue with chosen action.
+	 * Used for every job that changes data at Envia.
+	 *
+	 * @author Patrick Reichel
+	 * @param $payload generated XML
+	 */
+	protected function _show_confirmation_request($payload) {
+
+		echo "<h3>You are going to change data at Envia! Proceed?</h3>";
+
+		echo '<a href="javascript:history.back()">NO!</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+		echo '<a href="'.$_SERVER['REQUEST_URI'].'&amp;really=True" target="_self">Yes</a>';
+	}
+
+
+	/**
 	 * Helper to show the generated XML (in original and pretty shape)
 	 * Use this for debugging the XML output and input
 	 *
@@ -261,7 +277,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'contract_change_variation' => $base_url.'____TODO____',
 			'contract_create' => $base_url.'contract/create',
 			'contract_get_reference' => $base_url.'____TODO____',
-			'contract_get_voice_data' => $base_url.'____TODO____',
+			'contract_get_voice_data' => $base_url.'contract/get_voice_data',
 			'contract_lock' => $base_url.'____TODO____',
 			'contract_terminate' => $base_url.'____TODO____',
 			'contract_unlock' => $base_url.'____TODO____',
@@ -299,24 +315,30 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		// the requests payload (=XML)
 		$payload = $this->model->get_xml($job);
 
-		if ($this::DEBUG) {
-			$this->__debug_xml($payload);
+		if (!\Input::get('really', False)) {
+			$this->_show_confirmation_request($payload);
 		}
-
-		/* echo "We are not sending data to Envia yet! Will now exit"; */
-		/* exit(); */
-		// perform the request and receive the result (meta and content)
-		$data = $this->_ask_envia($url, $payload);
-
-		// major problem!!
-		if ($data['error']) {
-			$this->_handle_curl_error($job, $data);
-		}
-		// got an answer
 		else {
-			$this->_handle_curl_success($job, $data);
-		}
 
+			if ($this::DEBUG) {
+				$this->__debug_xml($payload);
+			}
+
+			echo "<h3>We are not sending data to Envia yet! Will now exit…</h3>";
+			exit();
+
+			// perform the request and receive the result (meta and content)
+			$data = $this->_ask_envia($url, $payload);
+
+			// major problem!!
+			if ($data['error']) {
+				$this->_handle_curl_error($job, $data);
+			}
+			// got an answer
+			else {
+				$this->_handle_curl_success($job, $data);
+			}
+		}
 	}
 
 	/**
