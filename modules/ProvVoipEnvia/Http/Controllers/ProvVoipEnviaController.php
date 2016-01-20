@@ -232,8 +232,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		$ret['plain_html'] .= "<h4>You are going to change data at Envia! Proceed?</h4>";
 
-		$ret['plain_html'] .= '<h5><a href="'.urldecode($origin).'">NO! Bring me back…</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-		$ret['plain_html'] .= '<a href="'.\Request::getRequestUri().'&amp;really=True" target="_self">Yes, send data now!</a></h5>';
+		$ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">NOOO! Please bring me back…</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+		$ret['plain_html'] .= '<a href="'.\Request::getRequestUri().'&amp;really=True" target="_self">Yes, send data now!</a></b></h5>';
 
 		return $ret;
 	}
@@ -322,6 +322,15 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 */
 	public function request($job) {
 
+		// check for permissions
+		// TODO: if there are more levels of grants: don't forget to add this here
+		try {
+			$this->_check_permissions("ext_provider_actions");
+		}
+		catch (PermissionDeniedError $ex) {
+			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
+		}
+
 		$domain = 'https://www.enviatel.de';
 		$sub_url = '/portal/api/rest/v1/';
 		$base_url = $domain.$sub_url;
@@ -403,7 +412,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 			// add link to original page
 			$origin_link = '<hr>';
-			$origin_link .= '<h5><a href="'.urldecode($origin).'" target="_self">Back to form</a></h5>';
+			$origin_link .= '<h5><b><a href="'.urldecode($origin).'" target="_self">Back to form</a></b></h5>';
 			$view_var['plain_html'] .= $origin_link;
 		}
 
