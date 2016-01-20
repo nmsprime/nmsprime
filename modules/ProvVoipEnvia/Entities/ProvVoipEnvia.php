@@ -13,7 +13,8 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Get array with all jobs for given phonenumbermanagement
+	 * Get array with all jobs for given view.
+	 * Currently in use in contract and phonenumbermanagement
 	 *
 	 * @author Patrick Reichel
 	 *
@@ -198,7 +199,6 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @author Patrick Reichel
 	 *
 	 * @param $job job to do
-	 * @data $data for which model, e.g. the xml should be build?
 	 *
 	 * @return XML
 	 */
@@ -215,7 +215,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 	/**
 	 * Get all the data needed for this job.
-	 * This will get the data for the current and all parent models (e.g. contract for phonenumber)
+	 * This will get the data for the current and all parent models (e.g. contract for phonenumber) and store as class variables
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -263,6 +263,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @author Patrick Reichel
 	 *
 	 * @param $xml XML to extract error information from
+	 * @return error codes and messages in array
 	 */
 	public function get_error_messages($xml) {
 

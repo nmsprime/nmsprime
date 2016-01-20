@@ -18,6 +18,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 */
 	public function __construct() {
 
+		// we need to create the model manually
 		$this->model = new ProvVoipEnvia();
 
 	}
@@ -191,6 +192,11 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 * Send data to Envia and process result.
 	 *
 	 * @author Patrick Reichel
+	 *
+	 * @param $url URL for webservice
+	 * @param $payload data to transmit (XML)
+	 * @param $job job to do
+	 * @return data for view (currently plain HTML)
 	 */
 	protected function _perform_request($url, $payload, $job) {
 
@@ -298,6 +304,9 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 * Use this for debugging the XML output and input
 	 *
 	 * @author Patrick Reichel
+	 * 
+	 * @param $xml xml for debug output
+	 * @return data for view (currently plain HTML)
 	 */
 	private function __debug_xml($xml) {
 
@@ -311,6 +320,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$ret .= "<h5>Original:</h5>";
 		$ret .= htmlentities($xml);
 		$ret .= "</pre>";
+
+		return $ret;
 	}
 
 	/**
@@ -319,6 +330,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 * @author Patrick Reichel
 	 *
 	 * @param $job comes from the route ([…]/provvoipenvia/request/{job})
+	 * @return view for showing the data
 	 */
 	public function request($job) {
 
@@ -426,6 +438,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 *
 	 * @param $job job which should have been done
 	 * @param $data collected data from request try
+	 * @return data for view (currently plain HTML)
 	 */
 	protected function _handle_curl_error($job, $data) {
 
@@ -443,6 +456,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 *
 	 * @param $job job which should have been done
 	 * @param $data collected data from request try
+	 * @return data for view (currently plain HTML)
 	 */
 	protected function _handle_curl_success($job, $data) {
 
@@ -487,6 +501,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 *
 	 * @param $job job which should have been done
 	 * @param $data collected data from request try
+	 * @return data for view (currently plain HTML)
 	 */
 	protected function _handle_request_failed_401($job, $data) {
 
@@ -520,6 +535,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 *
 	 * @param $job job which should have been done
 	 * @param $data collected data from request try
+	 * @return data for view (currently plain HTML)
 	 */
 	protected function _handle_request_failed($job, $data) {
 
@@ -533,6 +549,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 *
 	 * @param $job job which should have been done
 	 * @param $data collected data from request try
+	 * @return data for view (currently plain HTML)
 	 */
 	protected function _handle_request_success($job, $data) {
 
