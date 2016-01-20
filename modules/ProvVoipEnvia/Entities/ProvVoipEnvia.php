@@ -99,15 +99,18 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		// add this to all actions that can be performed without extra confirmation
-		$really = 'really=True';
+		$really = '&amp;really=True';
+
+		// keep original URL
+		$origin = '?origin='.urlencode(\Request::getUri());
 
 		////////////////////////////////////////
 		// misc jobs
 		if (in_array($view_level, ['contract', 'phonenumbermanagement'])) {
 			$ret = array(
 				array('class' => 'Misc'),
-				array('linktext' => 'Ping Envia API', 'url' => $base.'misc_ping?'.$really),
-				array('linktext' => 'Get free numbers', 'url' => $base.'misc_get_free_numbers?'.$really),
+				array('linktext' => 'Ping Envia API', 'url' => $base.'misc_ping'.$origin.$really),
+				array('linktext' => 'Get free numbers', 'url' => $base.'misc_get_free_numbers'.$origin.$really),
 			);
 		}
 
@@ -119,17 +122,17 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// contract can be created if not yet created
 			if (!$contract_created) {
-				array_push($ret, array('linktext' => 'Create contract', 'url' => $base.'contract_create?contract_id='.$contract_id));
+				array_push($ret, array('linktext' => 'Create contract', 'url' => $base.'contract_create'.$origin.'&amp;contract_id='.$contract_id));
 			}
 
 			// contract can be terminated if is created and not yet terminated
 			if ($contract_available) {
-				array_push($ret, array('linktext' => 'Terminate contract', 'url' => $base.'contract_terminate?contract_id='.$contract_id));
+				array_push($ret, array('linktext' => 'Terminate contract', 'url' => $base.'contract_terminate'.$origin.'&amp;contract_id='.$contract_id));
 			}
 
 			// can get contract related information if contract is available
 			if ($contract_available) {
-				array_push($ret, array('linktext' => 'Get voice data', 'url' => $base.'contract_get_voice_data?contract_id='.$contract_id.'&amp;'.$really));
+				array_push($ret, array('linktext' => 'Get voice data', 'url' => $base.'contract_get_voice_data'.$origin.'&amp;contract_id='.$contract_id.'&amp;'.$really));
 			}
 
 		}
@@ -142,11 +145,11 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// voip account needs a contract
 			if (!$voipaccount_created && $contract_available) {
-				array_push($ret, array('linktext' => 'Create VoIP account', 'url' => $base.'voip_account_create?phonenumber_id='.$phonenumber_id,));
+				array_push($ret, array('linktext' => 'Create VoIP account', 'url' => $base.'voip_account_create'.$origin.'&amp;phonenumber_id='.$phonenumber_id,));
 			}
 
 			if ($voipaccount_available) {
-				array_push($ret, array('linktext' => 'Terminate VoIP account', 'url' => $base.'voip_account_terminate?phonenumber_id='.$phonenumber_id));
+				array_push($ret, array('linktext' => 'Terminate VoIP account', 'url' => $base.'voip_account_terminate'.$origin.'&amp;phonenumber_id='.$phonenumber_id));
 			};
 		}
 
@@ -157,7 +160,7 @@ class ProvVoipEnvia extends \BaseModel {
 			array_push($ret, array('class' => 'Configuration'));
 
 			if ($voipaccount_available) {
-				array_push($ret, array('linktext' => 'Get Configuration', 'url' => $base.'selfcare/configuration/get?phonenumber_id='.$phonenumber_id.'&amp;'.$really));
+				array_push($ret, array('linktext' => 'Get Configuration', 'url' => $base.'selfcare/configuration/get'.$origin.'&amp;phonenumber_id='.$phonenumber_id.'&amp;'.$really));
 			}
 		}
 
@@ -168,7 +171,7 @@ class ProvVoipEnvia extends \BaseModel {
 			array_push($ret, array('class' => 'Calllog'));
 
 			if ($voipaccount_available) {
-				array_push($ret, array('linktext' => 'Get calllog status', 'url' => $base.'selfcare/calllog/get_status?contract_id='.$contract_id.'&amp;'.$really));
+				array_push($ret, array('linktext' => 'Get calllog status', 'url' => $base.'selfcare/calllog/get_status'.$origin.'&amp;contract_id='.$contract_id.'&amp;'.$really));
 			}
 		}
 
@@ -179,8 +182,8 @@ class ProvVoipEnvia extends \BaseModel {
 			array_push($ret, array('class' => 'Blacklist'));
 
 			if ($voipaccount_available) {
-				array_push($ret, array('linktext' => 'Get blacklist in', 'url' => $base.'selfcare/blacklist/get?phonenumber_id='.$phonenumber_id.'&amp;envia_blacklist_get_direction=in&amp;'.$really));
-				array_push($ret, array('linktext' => 'Get blacklist out', 'url' => $base.'selfcare/blacklist/get?phonenumber_id='.$phonenumber_id.'&amp;envia_blacklist_get_direction=out&amp;'.$really));
+				array_push($ret, array('linktext' => 'Get blacklist in', 'url' => $base.'selfcare/blacklist/get'.$origin.'&amp;phonenumber_id='.$phonenumber_id.'&amp;envia_blacklist_get_direction=in&amp;'.$really));
+				array_push($ret, array('linktext' => 'Get blacklist out', 'url' => $base.'selfcare/blacklist/get'.$origin.'&amp;phonenumber_id='.$phonenumber_id.'&amp;envia_blacklist_get_direction=out&amp;'.$really));
 			}
 		}
 

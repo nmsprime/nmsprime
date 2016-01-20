@@ -186,6 +186,33 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 	}
 
+
+	/**
+	 * Send data to Envia and process result.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _perform_request($url, $payload, $job) {
+
+		/* echo "<h3>We are not sending data to Envia yet! Will now exit…</h3>"; */
+		/* exit(); */
+
+		// perform the request and receive the result (meta and content)
+		$data = $this->_ask_envia($url, $payload);
+
+		// major problem!!
+		if ($data['error']) {
+			$view_var = $this->_handle_curl_error($job, $data);
+		}
+		// got an answer
+		else {
+			$view_var = $this->_handle_curl_success($job, $data);
+		}
+
+		return $view_var;
+	}
+
+
 	/**
 	 * Get confirmation to continue with chosen action.
 	 * Used for every job that changes data at Envia.
@@ -193,25 +220,43 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 * @author Patrick Reichel
 	 * @param $payload generated XML
 	 */
-	protected function _show_confirmation_request($payload) {
+	protected function _show_confirmation_request($payload, $origin) {
 
-		echo "<h3>You are going to change data at Envia! Proceed?</h3>";
+		$ret = array();
 
-		echo '<a href="javascript:history.back()">NO!</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-		echo '<a href="'.$_SERVER['REQUEST_URI'].'&amp;really=True" target="_self">Yes</a>';
+		$ret['plain_html'] = '';
+		$ret['plain_html'] = "<h4>Data to be sent to Envia</h4>";
+		$ret['plain_html'] .= "<pre>";
+		$ret['plain_html'] .= $this->_prettify_xml($payload, True);
+		$ret['plain_html'] .= "</pre>";
+
+		$ret['plain_html'] .= "<h4>You are going to change data at Envia! Proceed?</h4>";
+
+		$ret['plain_html'] .= '<h5><a href="'.urldecode($origin).'">NO! Bring me back…</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+		$ret['plain_html'] .= '<a href="'.\Request::getRequestUri().'&amp;really=True" target="_self">Yes, send data now!</a></h5>';
+
+		return $ret;
 	}
 
 
 	/**
-	 * Helper to show the generated XML (in original and pretty shape)
-	 * Use this for debugging the XML output and input
+	 * Prettify xml for output on screen.
+	 * Use e.g. for debugging.
 	 *
 	 * @author Patrick Reichel
+	 *
+	 * @param $xml string containing xml data
+	 * @param $hide_credentials don't show username/password if set to True
+	 * @return string containing prettified xml
 	 */
-	private function __debug_xml($xml) {
+	protected function _prettify_xml($xml, $hide_credentials=True) {
 
-		echo "<pre style=\"border: solid 1px #444; padding: 10px\">";
-		echo "<h5>Pretty:</h5>";
+		// replace username and password by some hash signs
+		if ($hide_credentials) {
+			$xml = preg_replace('/<username>.*<\/username>/', "<username>################</username>", $xml);
+			$xml = preg_replace('/<password>.*<\/password>/', "<password>################</password>", $xml);
+		}
+
 		$dom = new \DOMDocument('1.0');
 		$dom->preserveWhiteSpace = false;
 		$dom->formatOutput = true;
@@ -219,9 +264,12 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$pretty = htmlentities($dom->saveXML());
 		$lines = explode("\n", $pretty);
 
+		// extract declaration line
 		$declaration = array_shift($lines);
 		$declaration = '<span style="color: #0000ff; font-weight: normal">'.$declaration.'</span>';
 		$output = array();
+
+		// colorize output
 		foreach ($lines as $line) {
 			$pretty = $line;
 			$pretty = str_replace('/', 'dummy_slash', $pretty);
@@ -236,12 +284,33 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			array_push($output, $pretty);
 		}
 
+		// reinsert declaration line
 		array_unshift($output, $declaration);
-		echo implode("\n", $output);
-		echo "<br><hr>";
-		echo "<h5>Original:</h5>";
-		echo htmlentities($xml);
-		echo "</pre>";
+
+		$pretty_xml = implode("\n", $output);
+
+		return $pretty_xml;
+
+	}
+
+	/**
+	 * Helper to show the generated XML (in original and pretty shape)
+	 * Use this for debugging the XML output and input
+	 *
+	 * @author Patrick Reichel
+	 */
+	private function __debug_xml($xml) {
+
+		$ret = '';
+		$ret .= "<pre style=\"border: solid 1px #444; padding: 10px\">";
+		$ret .= "<h5>Pretty:</h5>";
+
+		$ret .= $this->_prettify_xml($xml, False);
+
+		$ret .= "<br><hr>";
+		$ret .= "<h5>Original:</h5>";
+		$ret .= htmlentities($xml);
+		$ret .= "</pre>";
 	}
 
 	/**
@@ -315,30 +384,30 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		// the requests payload (=XML)
 		$payload = $this->model->get_xml($job);
 
+		// extract origin
+		$origin = \Input::get('origin', \URL::to('/'));
+
+		$obj = $this->get_model_obj();
+		$view_header = 'Request Envia';
+
+		$view_path = 'ProvVoipEnvia.request';
+		$view_path = $this->get_view_name().'.request';
+
+
 		if (!\Input::get('really', False)) {
-			$this->_show_confirmation_request($payload);
+			$view_var = $this->_show_confirmation_request($payload, $origin);
 		}
 		else {
 
-			if ($this::DEBUG) {
-				$this->__debug_xml($payload);
-			}
+			$view_var = $this->_perform_request($url, $payload, $job);
 
-			echo "<h3>We are not sending data to Envia yet! Will now exit…</h3>";
-			exit();
-
-			// perform the request and receive the result (meta and content)
-			$data = $this->_ask_envia($url, $payload);
-
-			// major problem!!
-			if ($data['error']) {
-				$this->_handle_curl_error($job, $data);
-			}
-			// got an answer
-			else {
-				$this->_handle_curl_success($job, $data);
-			}
+			// add link to original page
+			$origin_link = '<hr>';
+			$origin_link .= '<h5><a href="'.urldecode($origin).'" target="_self">Back to form</a></h5>';
+			$view_var['plain_html'] .= $origin_link;
 		}
+
+		return View::make($view_path, $this->compact_prep_view(compact('model_name', 'view_header', 'view_var')));
 	}
 
 	/**
@@ -350,7 +419,11 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 * @param $data collected data from request try
 	 */
 	protected function _handle_curl_error($job, $data) {
-		echo "ERROR! We got an ".$data['error_type'].": ".$data['error_msg']." executing job ".$job;
+
+		$ret = array();
+		$ret['plain_html'] = "ERROR! We got an ".$data['error_type'].": ".$data['error_msg']." executing job ".$job;
+
+		return $ret;
 	}
 
 	/**
@@ -369,32 +442,33 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		// bad request
 		if ($data['status'] == 400) {
-			$this->_handle_request_failed_400($job, $data);
+			$view_var = $this->_handle_request_failed_400($job, $data);
 		}
 		// unauthorized
 		elseif ($data['status'] == 401) {
-			$this->_handle_request_failed_401($job, $data);
+			$view_var = $this->_handle_request_failed_401($job, $data);
 		}
 		// forbidden
 		elseif ($data['status'] == 403) {
-			$this->_handle_request_failed_403($job, $data);
+			$view_var = $this->_handle_request_failed_403($job, $data);
 		}
 		// success!!
 		elseif (($data['status'] >= 200) && ($data['status'] < 300)) {
-			$this->_handle_request_success($job, $data);
+			$view_var = $this->_handle_request_success($job, $data);
 		}
 		// other => something went wrong
 		else {
-			$this->_handle_request_failed($job, $data);
+			$view_var = $this->_handle_request_failed($job, $data);
 		}
 
 		if ($this::DEBUG) {
-			echo "<hr>";
-			echo "Return data:<br>";
-			echo "<pre>";
-			$this->__debug_xml($data['xml']);
-			echo "</pre>";
+			$view_var['plain_html'] .= "<hr>";
+			$view_var['plain_html'] .= "return data:<br>";
+			$view_var['plain_html'] .= "<pre>";
+			$view_var['plain_html'] .= $this->_prettify_xml($data['xml']);
+			$view_var['plain_html'] .= "</pre>";
 		}
+		return $view_var;
 	}
 
 	/**
@@ -409,20 +483,25 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		$errors = $this->model->get_error_messages($data['xml']);
 
-		// TODO: Error output shall be handled via views
-		echo "The following errors occured:<br>";
-		echo "<table style=\"background-color: #faa\">";
+		$ret = '';
+
+		$ret .= "<h4>The following errors occured:</h4>";
+		$ret .= "<table style=\"background-color: #faa\">";
 		foreach ($errors as $error) {
-			echo "<tr>";
-			echo "<td>";
-				echo $error['status'];
-			echo "</td>";
-			echo "<td>";
-				echo $error['message'];
-			echo "</td>";
-			echo "</tr>";
+			if (boolval($error['status']) || boolval($error['message'])) {
+				$ret .= "<tr>";
+				$ret .= "<td>";
+					$ret .= $error['status'].': ';
+				$ret .= "</td>";
+				$ret .= "<td>";
+					$ret .= $error['message'];
+				$ret .= "</td>";
+				$ret .= "</tr>";
+			}
 		}
-		echo "</table>";
+		$ret .= "</table>";
+
+		return array('plain_html' => $ret);
 	}
 
 	/**
@@ -435,7 +514,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 */
 	protected function _handle_request_failed($job, $data) {
 
-		echo "Problem: status code is ".$data['status']."<br>";
+		return array('plain_html' => "Problem: status code is ".$data['status']."<br>");
 	}
 
 	/**
@@ -447,6 +526,12 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 * @param $data collected data from request try
 	 */
 	protected function _handle_request_success($job, $data) {
+
+		// TODO: Perform database actions
+
+		$ret = '<h4>Action against Envia API successful</h4>';
+
+		return array('plain_html' => $ret);
 	}
 
 }
