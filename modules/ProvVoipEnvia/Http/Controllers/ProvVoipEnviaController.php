@@ -304,7 +304,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 * Use this for debugging the XML output and input
 	 *
 	 * @author Patrick Reichel
-	 * 
+	 *
 	 * @param $xml xml for debug output
 	 * @return data for view (currently plain HTML)
 	 */
@@ -424,7 +424,10 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 			// add link to original page
 			$origin_link = '<hr>';
-			$origin_link .= '<h5><b><a href="'.urldecode($origin).'" target="_self">Back to form</a></b></h5>';
+			$origin_name = urldecode($origin);
+			$origin_name = explode($_SERVER['CONTEXT_PREFIX'], $origin_name);
+			$origin_name = array_pop($origin_name);
+			$origin_link .= '<h5><b><a href="'.urldecode($origin).'" target="_self">Back to '.$origin_name.'</a></b></h5>';
 			$view_var['plain_html'] .= $origin_link;
 		}
 
