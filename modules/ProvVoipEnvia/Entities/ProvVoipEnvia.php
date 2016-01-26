@@ -131,6 +131,11 @@ class ProvVoipEnvia extends \BaseModel {
 				array_push($ret, array('linktext' => 'Terminate contract', 'url' => $base.'contract_terminate'.$origin.'&amp;contract_id='.$contract_id));
 			}
 
+			// customer data change possible if there is a contract
+			if ($contract_available) {
+				array_push($ret, array('linktext' => 'Update customer', 'url' => $base.'custome_update'.$origin.'&amp;contract_id='.$contract_id));
+			}
+
 			// can get contract related information if contract is available
 			if ($contract_available) {
 				array_push($ret, array('linktext' => 'Get voice data', 'url' => $base.'contract_get_voice_data'.$origin.'&amp;contract_id='.$contract_id.'&amp;'.$really));
@@ -442,9 +447,11 @@ class ProvVoipEnvia extends \BaseModel {
 			/* ), */
 
 			// not needed atm ⇒ if the last phonenumber is terminated the contract will automatically be deleted
-			/* 'contract_terminate' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+			'contract_terminate' => array(
+				'reseller_identifier',
+				'contract_identifier',
+				'contract_termination_data',
+			),
 
 			/* 'contract_unlock' => array( */
 			/* 	'reseller_identifier', */
@@ -454,9 +461,11 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			/* 'customer_update' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+			'customer_update' => array(
+				'reseller_identifier',
+				'customer_identifier',
+				'customer_data',
+			),
 
 			'misc_get_free_numbers' => array(
 				'reseller_identifier',
@@ -654,6 +663,27 @@ class ProvVoipEnvia extends \BaseModel {
 	}
 
 	/**
+	 * Method to add contract termination
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_contract_termination_data() {
+
+		$inner_xml = $this->xml->addChild('contract_termination_data');
+
+		// mapping xml to database
+		$fields_contract = array(
+			'orderdate' => 'contract_end',
+			// TODO: this has to be taken from phonenumbermanagenent
+			'carriercode' => null,
+		);
+
+		$this->_add_fields($inner_xml, $fields_contract, $this->contract);
+
+	}
+
+
+	/**
 	 * Method to add subscriber data
 	 *
 	 * @author Patrick Reichel
@@ -836,6 +866,9 @@ class ProvVoipEnvia extends \BaseModel {
 					array_push($tmp, $model->$tmp_field);
 				}
 				$payload = implode($concatenator, $tmp);
+			}
+			else {
+				throw new \UnexpectedValueException('$db_field needs to be string or array, '.gettype($db_field).' given');
 			}
 			$add_func($xml, $xml_field, $payload);
 		}

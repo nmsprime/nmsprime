@@ -1,4 +1,6 @@
-<?php namespace Modules\Provvoipenvia\Http\Controllers;
+<?php
+
+namespace Modules\Provvoipenvia\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\View;
@@ -38,6 +40,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'configuration_get?phonenumber_id=300001',
 			'contract_create?contract_id=500000',
 			'contract_get_voice_data?contract_id=500000',
+			'contract_terminate?contract_id=500000',
+			'customer_update?contract_id=500000',
 			'misc_ping',
 			'misc_get_free_numbers',
 			'misc_get_free_numbers?localareacode=03725',
@@ -59,10 +63,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'contract_change_variation',
 			'contract_get_reference',
 			'contract_lock',
-			'contract_terminate',
 			'contract_unlock',
 			'customer_get_reference',
-			'customer_update',
 			'order_add_mgcp_details',
 			'order_cancel',
 			'order_create_attachment',
@@ -239,7 +241,15 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$ret['plain_html'] .= "<h4>You are going to change data at Envia! Proceed?</h4>";
 
 		$ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">NOOO! Please bring me back…</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-		$ret['plain_html'] .= '<a href="'.\Request::getRequestUri().'&amp;really=True" target="_self">Yes, send data now!</a></b></h5>';
+
+		// prefix for GET param: ? if the only one, &amp; else
+		if (strpos(\Request::getRequestUri(), '?') === False) {
+			$attach_prefix = '?';
+		}
+		else {
+			$attach_prefix = '&amp;';
+		}
+		$ret['plain_html'] .= '<a href="'.\Request::getRequestUri().$attach_prefix.'really=True" target="_self">Yes, send data now!</a></b></h5>';
 
 		return $ret;
 	}
@@ -343,8 +353,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
 		}
 
-		$domain = 'https://www.enviatel.de';
-		$sub_url = '/portal/api/rest/v1/';
+		$domain = $_ENV['PROVVOIPENVIA__REST_API_URL'];
+		$sub_url = '/api/rest/v1/';
 		$base_url = $domain.$sub_url;
 
 		// the URLs to use for the jobs to do
@@ -369,11 +379,11 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'contract_get_reference' => $base_url.'____TODO____',
 			'contract_get_voice_data' => $base_url.'contract/get_voice_data',
 			'contract_lock' => $base_url.'____TODO____',
-			'contract_terminate' => $base_url.'____TODO____',
+			'contract_terminate' => $base_url.'contract/terminate',
 			'contract_unlock' => $base_url.'____TODO____',
 
 			'customer_get_reference' => $base_url.'____TODO____',
-			'customer_update' => $base_url.'____TODO____',
+			'customer_update' => $base_url.'/customer/update',
 
 			'misc_get_free_numbers' => $base_url.'misc/get_free_numbers',
 			'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
@@ -411,7 +421,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$obj = $this->get_model_obj();
 		$view_header = 'Request Envia';
 
-		$view_path = 'ProvVoipEnvia.request';
 		$view_path = $this->get_view_name().'.request';
 
 
@@ -498,6 +507,40 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	}
 
 	/**
+	 * Process rest answers with http error status 400 (Bad request)
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @param $job job which should have been done
+	 * @param $data collected data from request try
+	 * @return data for view (currently plain HTML)
+	 */
+	protected function _handle_request_failed_400($job, $data) {
+
+		$errors = $this->model->get_error_messages($data['xml']);
+
+		$ret = '';
+
+		$ret .= "<h4>The following errors occured:</h4>";
+		$ret .= "<table style=\"background-color: #faa\">";
+		foreach ($errors as $error) {
+			if (boolval($error['status']) || boolval($error['message'])) {
+				$ret .= "<tr>";
+				$ret .= "<td>";
+					$ret .= $error['status'].': ';
+				$ret .= "</td>";
+				$ret .= "<td>";
+					$ret .= $error['message'];
+				$ret .= "</td>";
+				$ret .= "</tr>";
+			}
+		}
+		$ret .= "</table>";
+
+		return array('plain_html' => $ret);
+	}
+
+	/**
 	 * Process rest answers with http error status 401 (Access denied)
 	 *
 	 * @author Patrick Reichel
@@ -532,7 +575,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	}
 
 	/**
-	 * Process rest answers with http error status (400, 401, e.g.)
+	 * Process rest answers with http other error status
 	 *
 	 * @author Patrick Reichel
 	 *
