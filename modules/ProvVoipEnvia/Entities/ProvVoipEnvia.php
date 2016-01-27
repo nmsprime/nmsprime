@@ -250,7 +250,6 @@ class ProvVoipEnvia extends \BaseModel {
 			$modem = $mta->modem;
 			$contract = $modem->contract;
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
-
 		}
 
 		// apply to class variables
@@ -331,9 +330,9 @@ class ProvVoipEnvia extends \BaseModel {
 		// set defaults if used by job
 		$defaults = array(
 			'contract_data' => array(
-				'variation_id' => 'MISSING',
+				'variation_id' => '123',
 				/* 'porting' => 'MISSING', */
-				'tariff' => 'MISSING',
+				'tariff' => 'VOIP1007',
 				'phonebookentry_fax' => 0,
 				'phonebookentry_reverse_search' => 1,
 			),
@@ -542,7 +541,7 @@ class ProvVoipEnvia extends \BaseModel {
 	/**
 	 * Adds the login data of the reseller to the xml
 	 *
-	 * @author Patrick Reichecl
+	 * @author Patrick Reichel
 	 */
 	protected function _add_reseller_identifier() {
 
@@ -559,6 +558,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 	/**
 	 * Method to add filter data.
+	 * This doesn't use method _add_fields – data comes only from $_GET
 	 *
 	 * @author Patrick Reichel
 	 *
@@ -568,24 +568,28 @@ class ProvVoipEnvia extends \BaseModel {
 		$localareacode = \Input::get('localareacode', null);
 		$baseno = \Input::get('baseno', null);
 
-		// no filters: do nothing
+		$inner_xml = $this->xml->addChild('filter_data');
+
+		// no filters: add empty <localareacode /> – if not added there will be an error response from REST-API…
 		if (is_null($localareacode)) {
+			$inner_xml->addChild('localareacode');
 			return;
 		}
 
+		// if given: localareacode has to be numeric
 		// TODO: error handling
 		if (!is_numeric($localareacode)) {
 			throw \InvalidArgumentException("localareacode has to be numeric");
 		}
 
 		// localareacode is valid: add filter
-		$inner_xml = $this->xml->addChild('filter_data');
 		$inner_xml->addChild('localareacode', $localareacode);
 
 		if (is_null($baseno)) {
 			return;
 		}
 
+		// if given: baseno has to be numeric
 		// TODO: error handling
 		if (!is_numeric($baseno)) {
 			throw \InvalidArgumentException("baseno has to be numeric");
@@ -606,6 +610,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// needed: our customer number
 		$customerno = $this->contract->customer_number;
+		dd($this->contract);
 
 		$inner_xml = $this->xml->addChild('customer_identifier');
 		$inner_xml->addChild('customerno', $customerno);
@@ -882,6 +887,78 @@ class ProvVoipEnvia extends \BaseModel {
 				$add_func($xml, $xml_field, $payload);
 			}
 		}
+	}
+
+
+	/**
+	 * This handles xml data returned by successfully performed API requests.
+	 * Action to do depends on the chosen job
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function process_envia_data($job, $data) {
+
+		$out = '<h4>Success (HTTP status is '.$data['status'].')</h4>';
+
+		$raw_xml = $data['xml'];
+		$xml = new \SimpleXMLElement($raw_xml);
+
+		$method = '_process_'.$job.'_response';
+		$out = $this->${"method"}($xml, $out);
+
+		return $out;
+	}
+
+
+	/**
+	 * Ping successful message.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_ping_response($xml, $out) {
+
+		if ($xml->pong == "pong") {
+			$out .= "<h5>All works fine</h5>";
+		}
+		else {
+			$out .= "Something went wrong'";
+		}
+
+		return $out;
+
+	}
+
+
+	/**
+	 * Extract free numbers and show them
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_free_numbers_response($xml, $out) {
+
+		$out .= "<h5>Free numbers";
+
+		// localareacode filter set?
+		if ($local_filter = \Input::get('localareacode', False)) {
+			$out .= " using filter ".$local_filter."/";
+
+			// show basenumber filter if set
+			$baseno_filter = \Input::get('baseno', "");
+			$out .= $baseno_filter."*";
+		}
+
+
+		$out .= "</h5>";
+
+		$free_numbers = array();
+		foreach ($xml->numbers->number as $number) {
+			array_push($free_numbers, $number->localareacode.'/'.$number->baseno);
+		}
+		sort($free_numbers, SORT_NATURAL);
+
+		$out .= implode('<br>', $free_numbers);
+
+		return $out;
 	}
 
 }

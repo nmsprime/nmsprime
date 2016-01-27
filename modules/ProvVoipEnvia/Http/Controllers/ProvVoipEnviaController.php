@@ -9,9 +9,6 @@ use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
 
 class ProvVoipEnviaController extends \BaseModuleController {
 
-	// to show generated/received XML set to true
-	const DEBUG = true;
-
 
 	/**
 	 * Constructor.
@@ -25,6 +22,17 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 	}
 
+
+	/**
+	 * Entry method for cron jobs.
+	 * Here we can use a different level of authentication – a cron job typically acts not as a logged in user :-)
+	 * Instead we could use
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function cron() {
+		echo "foo";
+	}
 
 	/**
 	 * Overwrite index.
@@ -44,8 +52,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'customer_update?contract_id=500000',
 			'misc_ping',
 			'misc_get_free_numbers',
-			'misc_get_free_numbers?localareacode=03725',
-			'misc_get_free_numbers?localareacode=03725&amp;baseno=110',
+			'misc_get_free_numbers?localareacode=03735',
+			'misc_get_free_numbers?localareacode=03735&amp;baseno=7696',
 			'misc_get_orders_csv',
 			'misc_get_usage_csv',
 			'voip_account_create?phonenumber_id=300001',
@@ -496,8 +504,9 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			$view_var = $this->_handle_request_failed($job, $data);
 		}
 
-		if ($this::DEBUG) {
+		if (\Config::get('app.debug')) {
 			$view_var['plain_html'] .= "<hr>";
+			$view_var['plain_html'] .= "<h4>DEBUG mode enabled in .env</h4>";
 			$view_var['plain_html'] .= "return data:<br>";
 			$view_var['plain_html'] .= "<pre>";
 			$view_var['plain_html'] .= $this->_prettify_xml($data['xml']);
@@ -599,9 +608,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 */
 	protected function _handle_request_success($job, $data) {
 
-		// TODO: Perform database actions
-
-		$ret = '<h4>Action against Envia API successful</h4>';
+		$ret = $this->model->process_envia_data($job, $data);
 
 		return array('plain_html' => $ret);
 	}
