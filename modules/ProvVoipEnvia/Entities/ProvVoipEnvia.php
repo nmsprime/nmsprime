@@ -269,11 +269,11 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @param $xml XML to extract error information from
 	 * @return error codes and messages in array
 	 */
-	public function get_error_messages($xml) {
+	public function get_error_messages($raw_xml) {
 
 		$data = array();
 
-		$xml = new \SimpleXMLElement($xml);
+		$xml = new \SimpleXMLElement($raw_xml);
 
 		foreach ($xml->response_error as $response_error) {
 			$error = array(
@@ -288,6 +288,15 @@ class ProvVoipEnvia extends \BaseModel {
 				);
 				array_push($data, $error);
 			}
+		}
+
+		// Workaround for malformed error xml (<hash><[status|error]></hash
+		if (strpos($raw_xml, '<hash') !== False) {
+			$error = array(
+				'status' => $xml->status,
+				'message' => $xml->error,
+			);
+			array_push($data, $error);
 		}
 
 		return $data;
@@ -330,9 +339,9 @@ class ProvVoipEnvia extends \BaseModel {
 		// set defaults if used by job
 		$defaults = array(
 			'contract_data' => array(
-				'variation_id' => '123',
+				'variation_id' => '1490',
 				/* 'porting' => 'MISSING', */
-				'tariff' => 'VOIP1007',
+				'tariff' => 'VOIP0413_ERZ_flat',
 				'phonebookentry_fax' => 0,
 				'phonebookentry_reverse_search' => 1,
 			),
@@ -495,9 +504,10 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			/* 'order_get_status' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+			'order_get_status' => array(
+				'reseller_identifier',
+				'order_identifier',
+			),
 
 			/* 'phonebookentry_create' => array( */
 			/* 	'reseller_identifier', */
@@ -557,6 +567,23 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Adds an order ID to xml
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_order_identifier() {
+
+		$order_id = \Input::get('order_id', null);
+		if (!is_numeric($order_id)) {
+			throw \InvalidArgumentException("order_id has to be numeric");
+		}
+
+		$inner_xml = $this->xml->addChild('order_identifier');
+		$inner_xml = $inner_xml->addChild('orderid', $order_id);
+
+	}
+
+	/**
 	 * Method to add filter data.
 	 * This doesn't use method _add_fields – data comes only from $_GET
 	 *
@@ -610,7 +637,6 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// needed: our customer number
 		$customerno = $this->contract->customer_number;
-		dd($this->contract);
 
 		$inner_xml = $this->xml->addChild('customer_identifier');
 		$inner_xml->addChild('customerno', $customerno);
@@ -904,7 +930,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$xml = new \SimpleXMLElement($raw_xml);
 
 		$method = '_process_'.$job.'_response';
-		$out = $this->${"method"}($xml, $out);
+		$out = $this->${"method"}($xml, $data, $out);
 
 		return $out;
 	}
@@ -915,7 +941,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _process_misc_ping_response($xml, $out) {
+	protected function _process_misc_ping_response($xml, $data, $out) {
 
 		if ($xml->pong == "pong") {
 			$out .= "<h5>All works fine</h5>";
@@ -934,7 +960,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _process_misc_get_free_numbers_response($xml, $out) {
+	protected function _process_misc_get_free_numbers_response($xml, $data, $out) {
 
 		$out .= "<h5>Free numbers";
 
@@ -957,6 +983,46 @@ class ProvVoipEnvia extends \BaseModel {
 		sort($free_numbers, SORT_NATURAL);
 
 		$out .= implode('<br>', $free_numbers);
+
+		return $out;
+	}
+
+
+	/**
+	 * Process data after successful contract creation
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_contract_create_response($xml, $data, $out) {
+
+
+		$order_id = $xml->orderid;
+		$out .= "<h5>Contract created (order ID: ".$order_id.")</h5>";
+
+		return $out;
+	}
+
+
+	/**
+	 * Extract and process order csv
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response($xml, $data, $out) {
+
+		$b64 = $xml->data;
+		$csv = base64_decode($b64);
+
+		// ToDo: update database
+
+
+		// build output
+		if ($data['entry_method'] == 'cron') {
+			$out = "Database updated.";
+		}
+		else {
+			$out .= "<pre>".$csv."</pre>";
+		}
 
 		return $out;
 	}

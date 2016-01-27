@@ -20,18 +20,48 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		// we need to create the model manually
 		$this->model = new ProvVoipEnvia();
 
+		// build base URL of the envia API
+		$domain = $_ENV['PROVVOIPENVIA__REST_API_URL'];
+		$sub_url = '/api/rest/v1/';
+		$this->base_url = $domain.$sub_url;
+
+		parent::__construct();
 	}
 
 
 	/**
 	 * Entry method for cron jobs.
 	 * Here we can use a different level of authentication – a cron job typically acts not as a logged in user :-)
-	 * Instead we could use
+	 * So with this in mind we have to restrict the possible actions that can be performed from here.
+	 * There will be no return value – all output will be directly printed using echo (and can be collected by curl, wget or what else)
 	 *
 	 * @author Patrick Reichel
+	 *
+	 * @param $job comes from the route ([…]/provvoipenvia/request/{job})
 	 */
-	public function cron() {
-		echo "foo";
+	public function cron($job) {
+
+		$base_url = $this->base_url;
+
+		// as this method is not protected by normal auth mechanism we will allow only a small number of jobs
+		$allowed_cron_jobs = array(
+			'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
+		);
+
+		// if something else is requested: die with error message
+		if (!array_key_exists($job, $allowed_cron_jobs)) {
+			echo "ERROR: Job ".$job." not allowed in method cron. Try request instead.";
+			exit(1);
+		}
+
+		// the API URL to use for the request
+		$url = $allowed_cron_jobs[$job];
+
+		// the requests payload (=XML)
+		$payload = $this->model->get_xml($job);
+
+		$view_var = $this->_perform_request($url, $payload, $job);
+		echo $view_var;
 	}
 
 	/**
@@ -39,6 +69,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 * temporary starter for xml generation
 	 */
 	public function index() {
+
 		$base = "/lara/provvoipenvia/request";
 
 		$jobs = array(
@@ -56,6 +87,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'misc_get_free_numbers?localareacode=03735&amp;baseno=7696',
 			'misc_get_orders_csv',
 			'misc_get_usage_csv',
+			'order_get_status?order_id=72950',
 			'voip_account_create?phonenumber_id=300001',
 			'voip_account_terminate?phonenumber_id=300001',
 			'',
@@ -215,6 +247,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		// perform the request and receive the result (meta and content)
 		$data = $this->_ask_envia($url, $payload);
+		$data['entry_method'] = $this->entry_method;
 
 		// major problem!!
 		if ($data['error']) {
@@ -361,9 +394,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
 		}
 
-		$domain = $_ENV['PROVVOIPENVIA__REST_API_URL'];
-		$sub_url = '/api/rest/v1/';
-		$base_url = $domain.$sub_url;
+		$base_url = $this->base_url;
 
 		// the URLs to use for the jobs to do
 		$urls = array(
@@ -431,7 +462,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		$view_path = $this->get_view_name().'.request';
 
-
 		if (!\Input::get('really', False)) {
 			$view_var = $this->_show_confirmation_request($payload, $origin);
 		}
@@ -483,105 +513,111 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		// in the following if statement we decide the method to call by HTTP status codes in API respond
 		// first we handle all specific errors, then success and finally process all not specific errors
 
-		// bad request
-		if ($data['status'] == 400) {
-			$view_var = $this->_handle_request_failed_400($job, $data);
-		}
-		// unauthorized
-		elseif ($data['status'] == 401) {
-			$view_var = $this->_handle_request_failed_401($job, $data);
-		}
-		// forbidden
-		elseif ($data['status'] == 403) {
-			$view_var = $this->_handle_request_failed_403($job, $data);
-		}
 		// success!!
-		elseif (($data['status'] >= 200) && ($data['status'] < 300)) {
+		if (($data['status'] >= 200) && ($data['status'] < 300)) {
 			$view_var = $this->_handle_request_success($job, $data);
 		}
+		/* // bad request */
+		/* elseif ($data['status'] == 400) { */
+		/* 	$view_var = $this->_handle_request_failed_400($job, $data); */
+		/* } */
+		/* // unauthorized */
+		/* elseif ($data['status'] == 401) { */
+		/* 	$view_var = $this->_handle_request_failed_401($job, $data); */
+		/* } */
+		/* // forbidden */
+		/* elseif ($data['status'] == 403) { */
+		/* 	$view_var = $this->_handle_request_failed_403($job, $data); */
+		/* } */
+		/* // not found */
+		/* elseif ($data['status'] == 404) { */
+		/* 	$view_var = $this->_handle_request_failed_404($job, $data); */
+		/* } */
 		// other => something went wrong
 		else {
 			$view_var = $this->_handle_request_failed($job, $data);
 		}
 
-		if (\Config::get('app.debug')) {
-			$view_var['plain_html'] .= "<hr>";
-			$view_var['plain_html'] .= "<h4>DEBUG mode enabled in .env</h4>";
-			$view_var['plain_html'] .= "return data:<br>";
-			$view_var['plain_html'] .= "<pre>";
-			$view_var['plain_html'] .= $this->_prettify_xml($data['xml']);
-			$view_var['plain_html'] .= "</pre>";
+		if ($this->entry_method != 'cron') {
+			if (\Config::get('app.debug')) {
+				$view_var['plain_html'] .= "<hr>";
+				$view_var['plain_html'] .= "<h4>DEBUG mode enabled in .env</h4>";
+				$view_var['plain_html'] .= "return data:<br>";
+				$view_var['plain_html'] .= "<pre>";
+				$view_var['plain_html'] .= $this->_prettify_xml($data['xml']);
+				$view_var['plain_html'] .= "</pre>";
+			}
 		}
 		return $view_var;
 	}
 
-	/**
-	 * Process rest answers with http error status 400 (Bad request)
-	 *
-	 * @author Patrick Reichel
-	 *
-	 * @param $job job which should have been done
-	 * @param $data collected data from request try
-	 * @return data for view (currently plain HTML)
-	 */
-	protected function _handle_request_failed_400($job, $data) {
+	/* /** */
+	/*  * Process rest answers with http error status 400 (Bad request) */
+	/*  * */
+	/*  * @author Patrick Reichel */
+	/*  * */
+	/*  * @param $job job which should have been done */
+	/*  * @param $data collected data from request try */
+	/*  * @return data for view (currently plain HTML) */
+	/*  *1/ */
+	/* protected function _handle_request_failed_400($job, $data) { */
 
-		$errors = $this->model->get_error_messages($data['xml']);
+	/* 	$errors = $this->model->get_error_messages($data['xml']); */
 
-		$ret = '';
+	/* 	$ret = ''; */
 
-		$ret .= "<h4>The following errors occured:</h4>";
-		$ret .= "<table style=\"background-color: #faa\">";
-		foreach ($errors as $error) {
-			if (boolval($error['status']) || boolval($error['message'])) {
-				$ret .= "<tr>";
-				$ret .= "<td>";
-					$ret .= $error['status'].': ';
-				$ret .= "</td>";
-				$ret .= "<td>";
-					$ret .= $error['message'];
-				$ret .= "</td>";
-				$ret .= "</tr>";
-			}
-		}
-		$ret .= "</table>";
+	/* 	$ret .= "<h4>The following errors occured:</h4>"; */
+	/* 	$ret .= "<table style=\"background-color: #faa\">"; */
+	/* 	foreach ($errors as $error) { */
+	/* 		if (boolval($error['status']) || boolval($error['message'])) { */
+	/* 			$ret .= "<tr>"; */
+	/* 			$ret .= "<td>"; */
+	/* 				$ret .= $error['status'].': '; */
+	/* 			$ret .= "</td>"; */
+	/* 			$ret .= "<td>"; */
+	/* 				$ret .= $error['message']; */
+	/* 			$ret .= "</td>"; */
+	/* 			$ret .= "</tr>"; */
+	/* 		} */
+	/* 	} */
+	/* 	$ret .= "</table>"; */
 
-		return array('plain_html' => $ret);
-	}
+	/* 	return array('plain_html' => $ret); */
+	/* } */
 
-	/**
-	 * Process rest answers with http error status 401 (Access denied)
-	 *
-	 * @author Patrick Reichel
-	 *
-	 * @param $job job which should have been done
-	 * @param $data collected data from request try
-	 * @return data for view (currently plain HTML)
-	 */
-	protected function _handle_request_failed_401($job, $data) {
+	/* /** */
+	/*  * Process rest answers with http error status 401 (Access denied) */
+	/*  * */
+	/*  * @author Patrick Reichel */
+	/*  * */
+	/*  * @param $job job which should have been done */
+	/*  * @param $data collected data from request try */
+	/*  * @return data for view (currently plain HTML) */
+	/*  *1/ */
+	/* protected function _handle_request_failed_401($job, $data) { */
 
-		$errors = $this->model->get_error_messages($data['xml']);
+	/* 	$errors = $this->model->get_error_messages($data['xml']); */
 
-		$ret = '';
+	/* 	$ret = ''; */
 
-		$ret .= "<h4>The following errors occured:</h4>";
-		$ret .= "<table style=\"background-color: #faa\">";
-		foreach ($errors as $error) {
-			if (boolval($error['status']) || boolval($error['message'])) {
-				$ret .= "<tr>";
-				$ret .= "<td>";
-					$ret .= $error['status'].': ';
-				$ret .= "</td>";
-				$ret .= "<td>";
-					$ret .= $error['message'];
-				$ret .= "</td>";
-				$ret .= "</tr>";
-			}
-		}
-		$ret .= "</table>";
+	/* 	$ret .= "<h4>Error (HTTP status code ".$data['status'].")</h4>"; */
+	/* 	$ret .= "<table style=\"background-color: #faa\">"; */
+	/* 	foreach ($errors as $error) { */
+	/* 		if (boolval($error['status']) || boolval($error['message'])) { */
+	/* 			$ret .= "<tr>"; */
+	/* 			$ret .= "<td>"; */
+	/* 				$ret .= $error['status'].': '; */
+	/* 			$ret .= "</td>"; */
+	/* 			$ret .= '<td style="padding-left: 10px;">'; */
+	/* 				$ret .= $error['message']; */
+	/* 			$ret .= "</td>"; */
+	/* 			$ret .= "</tr>"; */
+	/* 		} */
+	/* 	} */
+	/* 	$ret .= "</table>"; */
 
-		return array('plain_html' => $ret);
-	}
+	/* 	return array('plain_html' => $ret); */
+	/* } */
 
 	/**
 	 * Process rest answers with http other error status
@@ -594,7 +630,34 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 */
 	protected function _handle_request_failed($job, $data) {
 
-		return array('plain_html' => "Problem: status code is ".$data['status']."<br>");
+		$errors = $this->model->get_error_messages($data['xml']);
+
+		if ($this->entry_method == 'cron') {
+			echo "ERROR(S) occured:";
+			echo "Exiting…";
+			exit(1);
+		}
+		else {
+			$ret = '';
+
+			$ret .= "<h4>The following errors occured:</h4>";
+			$ret .= "<table style=\"background-color: #faa;\">";
+			foreach ($errors as $error) {
+				if (boolval($error['status']) || boolval($error['message'])) {
+					$ret .= "<tr>";
+					$ret .= "<td style=\"padding: 2px\">";
+						$ret .= $error['status'].': ';
+					$ret .= "</td>";
+					$ret .= '<td style="padding: 2px; padding-left: 10px;">';
+						$ret .= $error['message'];
+					$ret .= "</td>";
+					$ret .= "</tr>";
+				}
+			}
+			$ret .= "</table>";
+
+			return array('plain_html' => $ret);
+		}
 	}
 
 	/**
@@ -610,7 +673,12 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		$ret = $this->model->process_envia_data($job, $data);
 
-		return array('plain_html' => $ret);
+		if ($this->entry_method == 'cron') {
+			return $ret;
+		}
+		else {
+			return array('plain_html' => $ret);
+		}
 	}
 
 }
