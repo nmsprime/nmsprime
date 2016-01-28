@@ -1,0 +1,17 @@
+{
+    "name": "HfcCustomer",
+    "alias": "hfccustomer",
+    "description": "",
+    "keywords": [
+
+    ],
+    "active": 1,
+    "order": 11,
+    "priority": 0,
+    "providers": [
+
+    ],
+    "files": [
+        "start.php"
+    ]
+}
