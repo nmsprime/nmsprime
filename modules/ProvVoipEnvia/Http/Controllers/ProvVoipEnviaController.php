@@ -20,6 +20,11 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		// we need to create the model manually
 		$this->model = new ProvVoipEnvia();
 
+		// store the called entry method => later needed for different output (echo vs. view)
+		$url = \Request::url();
+		$tmp = explode('provvoipenvia/', $url)[1];
+		$this->entry_method = explode('/', $tmp)[0];
+
 		// build base URL of the envia API
 		$domain = $_ENV['PROVVOIPENVIA__REST_API_URL'];
 		$sub_url = '/api/rest/v1/';
