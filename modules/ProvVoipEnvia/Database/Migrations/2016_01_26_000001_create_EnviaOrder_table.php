@@ -6,7 +6,7 @@ use Illuminate\Database\Schema\Blueprint;
 class CreateEnviaOrdersTable extends BaseMigration {
 
 	// name of the table to create
-	protected $tablename = "enviaorders";
+	protected $tablename = "enviaorder";
 
 
 	/**
@@ -20,17 +20,17 @@ class CreateEnviaOrdersTable extends BaseMigration {
 		{
 			$this->up_table_generic($table);
 
-			$table->integer('orderid')->unsigned();
+			$table->integer('orderid')->unsigned()->unique();
 			$table->integer('ordertype_id')->unsigned();
 			$table->string('ordertype');
 			$table->integer('orderstatus_id')->unsigned();
 			$table->string('orderstatus');
-			$table->date('orderdate');
-			$table->string('ordercomment');
+			$table->dateTime('orderdate');
+			$table->string('ordercomment')->nullable();
 			$table->string('customerreference', 60);
 			$table->string('contractreference', 60);
-			$table->string('localareacode');
-			$table->string('baseno');
+			$table->integer('contract_id')->nullable();
+			$table->integer('phonenumber_id')->nullable();
 		});
 
 		return parent::up();

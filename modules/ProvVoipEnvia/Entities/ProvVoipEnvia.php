@@ -7,6 +7,7 @@ use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
 use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvBase\Entities\Modem;
+use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 
 // Model not found? execute composer dump-autoload in lara root dir
 class ProvVoipEnvia extends \BaseModel {
@@ -138,7 +139,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// can get contract related information if contract is available
 			if ($contract_available) {
-				array_push($ret, array('linktext' => 'Get voice data', 'url' => $base.'contract_get_voice_data'.$origin.'&amp;contract_id='.$contract_id.'&amp;'.$really));
+				array_push($ret, array('linktext' => 'Get voice data', 'url' => $base.'contract_get_voice_data'.$origin.'&amp;contract_id='.$contract_id.$really));
 			}
 
 		}
@@ -685,7 +686,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// mapping xml to database
 		$fields_contract = array(
-			'orderdate' => 'contract_start',
+			'orderdate' => 'voip_contract_start',
 			'phonebookentry_phone' => 'phonebook_entry',
 		);
 
@@ -704,7 +705,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// mapping xml to database
 		$fields_contract = array(
-			'orderdate' => 'contract_end',
+			'orderdate' => 'voip_contract_end',
 			// TODO: this has to be taken from phonenumbermanagenent
 			'carriercode' => null,
 		);
@@ -995,8 +996,22 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_contract_create_response($xml, $data, $out) {
 
+		$contract_data = array();
+		$order_data = array();
 
-		$order_id = $xml->orderid;
+		$order_data['order_id'] = $xml->orderid;
+		$order_data['customerreference'] = $xml->customerreference;
+		$order_data['contractreference'] = $xml->contractreference;
+
+		// update contract
+		$this->contract->customer_external_id = $xml->customerreference;
+		$this->contract->contract_external_id = $xml->contractreference;
+		$this->contract->save();
+
+
+		hier weiter: create new enviaorder from xml result
+		later: check before creation if is created!
+		$enviaOrder = newEnviaOrder::where('orderid', $order_id);
 		$out .= "<h5>Contract created (order ID: ".$order_id.")</h5>";
 
 		return $out;
