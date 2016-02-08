@@ -427,7 +427,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'contract_unlock' => $base_url.'____TODO____',
 
 			'customer_get_reference' => $base_url.'____TODO____',
-			'customer_update' => $base_url.'/customer/update',
+			'customer_update' => $base_url.'customer/update',
 
 			'misc_get_free_numbers' => $base_url.'misc/get_free_numbers',
 			'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
@@ -437,7 +437,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'order_add_mgcp_details' => $base_url.'____TODO____',
 			'order_cancel' => $base_url.'____TODO____',
 			'order_create_attachment' => $base_url.'____TODO____',
-			'order_get_status' => $base_url.'____TODO____',
+			'order_get_status' => $base_url.'order/get_status',
 
 			'phonebookentry_create' => $base_url.'____TODO____',
 			'phonebookentry_delete' => $base_url.'____TODO____',
@@ -455,6 +455,11 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		// the API URL to use for the request
 		$url = $urls[$job];
+
+		// for devel phase: die if URL is not set
+		if (\Str::contains($url, "TODO")) {
+			throw new \Exception("Missing url: ".$url);
+		}
 
 		// the requests payload (=XML)
 		$payload = $this->model->get_xml($job);
