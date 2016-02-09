@@ -14,19 +14,12 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Get array with all jobs for given view.
-	 * Currently in use in contract and phonenumbermanagement
+	 * Get some environmental data and set to global vars
 	 *
 	 * @author Patrick Reichel
-	 *
-	 * @param $phonenumbermanagement phonenumberManagement object
-	 * @param $view_level depending on the view (contract, phonenumbermanagement) the result can be different
-	 *
-	 * @return array containing data for view
 	 */
-	public function get_jobs_for_view($model, $view_level) {
-
-		// check if a phonenumbermanagement object exists
+	public function extract_environment($model, $view_level) {
+		// check if a model is given
 		if (is_null($model)) {
 			return array();
 		}
@@ -54,50 +47,77 @@ class ProvVoipEnvia extends \BaseModel {
 			throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumbermanagement]');
 		}
 
-		// helpers
-		$base = "/lara/provvoipenvia/request/";
-
-		// flags for later if statements
+		// set the variables
 		if (is_null($contract->contract_ext_creation_date)) {
-			$contract_created = False;
+			$this->contract_created = False;
 		}
 		else {
-			$contract_created = True;
+			$this->contract_created = True;
 		}
 
 		if (is_null($contract->contract_ext_termination_date)) {
-			$contract_terminated = False;
+			$this->contract_terminated = False;
 		}
 		else {
-			$contract_terminated = True;
+			$this->contract_terminated = True;
 		}
 
-		if ($contract_created && !$contract_terminated) {
-			$contract_available = True;
+		if ($this->contract_created && !$this->contract_terminated) {
+			$this->contract_available = True;
 		}
 		else {
-			$contract_available = False;
+			$this->contract_available = False;
 		}
 
 		if (is_null($phonenumbermanagement->voipaccount_ext_creation_date)) {
-			$voipaccount_created = False;
+			$this->voipaccount_created = False;
 		}
 		else {
-			$voipaccount_created = True;
+			$this->voipaccount_created = True;
 		}
 
 		if (is_null($phonenumbermanagement->voipaccount_ext_termination_date)) {
-			$voipaccount_terminated = False;
+			$this->voipaccount_terminated = False;
 		}
 		else {
-			$voipaccount_terminated = True;
+			$this->voipaccount_terminated = True;
 		}
 
-		if ($voipaccount_created && !$voipaccount_terminated) {
-			$voipaccount_available = True;
+		if ($this->voipaccount_created && !$this->voipaccount_terminated) {
+			$this->voipaccount_available = True;
 		}
 		else {
-			$voipaccount_available = False;
+			$this->voipaccount_available = False;
+		}
+
+	}
+
+
+	/**
+	 * Get array with all jobs for given view.
+	 * Currently in use in contract and phonenumbermanagement
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @param $phonenumbermanagement phonenumberManagement object
+	 * @param $view_level depending on the view (contract, phonenumbermanagement) the result can be different
+	 *
+	 * @return array containing data for view
+	 */
+	public function get_jobs_for_view($model, $view_level) {
+
+		$this->extract_environment($model, $view_level);
+
+		// helpers
+		$base = "/lara/provvoipenvia/request/";
+		if ($view_level == 'phonenumbermanagement') {
+			$contract_id = $model->phonenumber->mta->modem->contract->id;
+		}
+		elseif ($view_level == 'contract') {
+			$contract_id = $model->id;
+		}
+		else {
+			throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumbermanagement]');
 		}
 
 		// add this to all actions that can be performed without extra confirmation
@@ -123,23 +143,33 @@ class ProvVoipEnvia extends \BaseModel {
 			array_push($ret, array('class' => 'Contract'));
 
 			// contract can be created if not yet created
-			if (!$contract_created) {
+			if (!$this->contract_created) {
 				array_push($ret, array('linktext' => 'Create contract', 'url' => $base.'contract_create'.$origin.'&amp;contract_id='.$contract_id));
 			}
 
 			// contract can be terminated if is created and not yet terminated
-			if ($contract_available) {
+			if ($this->contract_available) {
 				array_push($ret, array('linktext' => 'Terminate contract', 'url' => $base.'contract_terminate'.$origin.'&amp;contract_id='.$contract_id));
 			}
 
 			// customer data change possible if there is a contract
-			if ($contract_available) {
+			if ($this->contract_available) {
 				array_push($ret, array('linktext' => 'Update customer', 'url' => $base.'custome_update'.$origin.'&amp;contract_id='.$contract_id));
 			}
 
 			// can get contract related information if contract is available
-			if ($contract_available) {
+			if ($this->contract_available) {
 				array_push($ret, array('linktext' => 'Get voice data', 'url' => $base.'contract_get_voice_data'.$origin.'&amp;contract_id='.$contract_id.$really));
+			}
+
+			// order(s) exist if contract has been created
+			if ($this->contract_created) {
+				$orders = array();
+				foreach (EnviaOrder::where('contract_id', '=', $contract_id)->get() as $order) {
+					$order_id = $order->orderid;
+					$order_type = $order->order_type;
+					array_push($ret, array('linktext' => 'Order '.$order_type, 'url' => $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really));
+				}
 			}
 
 		}
@@ -151,11 +181,11 @@ class ProvVoipEnvia extends \BaseModel {
 			array_push($ret, array('class' => 'VoIP account'));
 
 			// voip account needs a contract
-			if (!$voipaccount_created && $contract_available) {
+			if (!$this->voipaccount_created && $this->contract_available) {
 				array_push($ret, array('linktext' => 'Create VoIP account', 'url' => $base.'voip_account_create'.$origin.'&amp;phonenumber_id='.$phonenumber_id,));
 			}
 
-			if ($voipaccount_available) {
+			if ($this->voipaccount_available) {
 				array_push($ret, array('linktext' => 'Terminate VoIP account', 'url' => $base.'voip_account_terminate'.$origin.'&amp;phonenumber_id='.$phonenumber_id));
 			};
 		}
@@ -166,7 +196,7 @@ class ProvVoipEnvia extends \BaseModel {
 		if (in_array($view_level, ['phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Configuration'));
 
-			if ($voipaccount_available) {
+			if ($this->voipaccount_available) {
 				array_push($ret, array('linktext' => 'Get Configuration', 'url' => $base.'selfcare/configuration/get'.$origin.'&amp;phonenumber_id='.$phonenumber_id.'&amp;'.$really));
 			}
 		}
@@ -177,7 +207,7 @@ class ProvVoipEnvia extends \BaseModel {
 		if (in_array($view_level, ['phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Calllog'));
 
-			if ($voipaccount_available) {
+			if ($this->voipaccount_available) {
 				array_push($ret, array('linktext' => 'Get calllog status', 'url' => $base.'selfcare/calllog/get_status'.$origin.'&amp;contract_id='.$contract_id.'&amp;'.$really));
 			}
 		}
@@ -188,7 +218,7 @@ class ProvVoipEnvia extends \BaseModel {
 		if (in_array($view_level, ['phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Blacklist'));
 
-			if ($voipaccount_available) {
+			if ($this->voipaccount_available) {
 				array_push($ret, array('linktext' => 'Get blacklist in', 'url' => $base.'selfcare/blacklist/get'.$origin.'&amp;phonenumber_id='.$phonenumber_id.'&amp;envia_blacklist_get_direction=in&amp;'.$really));
 				array_push($ret, array('linktext' => 'Get blacklist out', 'url' => $base.'selfcare/blacklist/get'.$origin.'&amp;phonenumber_id='.$phonenumber_id.'&amp;envia_blacklist_get_direction=out&amp;'.$really));
 			}
@@ -996,23 +1026,25 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_contract_create_response($xml, $data, $out) {
 
-		$contract_data = array();
-		$order_data = array();
-
-		$order_data['order_id'] = $xml->orderid;
-		$order_data['customerreference'] = $xml->customerreference;
-		$order_data['contractreference'] = $xml->contractreference;
-
 		// update contract
 		$this->contract->customer_external_id = $xml->customerreference;
 		$this->contract->contract_external_id = $xml->contractreference;
+		$this->contract->contract_ext_creation_date = date('Y-m-d H:i:s');
 		$this->contract->save();
 
 
-		hier weiter: create new enviaorder from xml result
-		later: check before creation if is created!
-		$enviaOrder = newEnviaOrder::where('orderid', $order_id);
-		$out .= "<h5>Contract created (order ID: ".$order_id.")</h5>";
+		// create enviaorder
+		$order_data = array();
+
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['customerreference'] = $xml->customerreference;
+		$order_data['contractreference'] = $xml->contractreference;
+		$order_data['contract_id'] = $this->contract->id;
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// view data
+		$out .= "<h5>Contract created (order ID: ".$xml->orderid.")</h5>";
 
 		return $out;
 	}
@@ -1034,6 +1066,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// build output
 		if ($data['entry_method'] == 'cron') {
 			$out = "Database updated.";
+			$out = "<h3>Warning: Database update not yet implemented</h3>";
 		}
 		else {
 			$out .= "<pre>".$csv."</pre>";
@@ -1042,4 +1075,49 @@ class ProvVoipEnvia extends \BaseModel {
 		return $out;
 	}
 
+	/**
+	 * Process data for a single order
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_get_status_response($xml, $data, $out) {
+
+		$order_id = \Input::get('order_id');
+		$order = EnviaOrder::where('orderid', '=', $order_id)->first();
+
+		$out = "<h5>Status for order ".$order_id.":</h5>";
+
+		$out .= "<table>";
+		if (boolval($xml->ordertype_id)) {
+			$order->ordertype_id = $xml->ordertype_id;
+			$out .= "<tr><td>Ordertype ID: </td><td>".$xml->ordertype_id."</td></tr>";
+		}
+		if (boolval($xml->ordertype)) {
+			$order->ordertype = $xml->ordertype;
+			$out .= "<tr><td>Ordertype: </td><td>".$xml->ordertype."</td></tr>";
+		}
+		if (boolval($xml->orderstatus_id)) {
+			$order->orderstatus_id = $xml->orderstatus_id;
+			$out .= "<tr><td>Orderstatus ID: </td><td>".$xml->orderstatus_id."</td></tr>";
+		}
+		if (boolval($xml->orderstatus)) {
+			$order->orderstatus = $xml->orderstatus;
+			$out .= "<tr><td>Orderstatus: </td><td>".$xml->orderstatus."</td></tr>";
+		}
+		if (boolval($xml->ordercomment)) {
+			$order->ordercomment = $xml->ordercomment;
+			$out .= "<tr><td>Ordercomment: </td><td>".$xml->ordercomment."</td></tr>";
+		}
+		if (boolval($xml->orderdate)) {
+			$order->orderdate = $xml->orderdate;
+			// TODO: do we need to store the orderdate in other tables (contract, phonnumber??)
+			$out .= "<tr><td>Orderdate: </td><td>".$xml->orderdate."</td></tr>";
+		}
+		$out .= "</table><br>";
+
+		$order->save();
+
+		$out .= "<b>Database updated</b>";
+		return $out;
+	}
 }

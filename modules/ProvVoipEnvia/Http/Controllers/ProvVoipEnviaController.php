@@ -268,18 +268,71 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 
 	/**
+	 * Checks if a job is allowed to be done.
+	 * Use this before sending data to envia to prevent e.g. double creation of contracts (if user presses <F5> in success screen)
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @param $job job to do
+	 *
+	 * @return true if job is allowed, false else
+	 */
+	protected function _job_allowed($job) {
+
+		// get the models environment
+		if (\Str::startswith($job, 'contract_')) {
+			$this->model->extract_environment($this->model->contract, 'contract');
+		}
+		elseif (\Str::startswith($job, 'voipaccount_')) {
+			$this->model->extract_environment($this->model->voipaccount, 'voipaccount_');
+		}
+
+		// run the checks
+		if ($job == "contract_create") {
+			// contract creation is only allowed once (you cannot re-create a contract)
+			if (!isset($this->model->contract_created)) {
+				dd($this);
+			}
+			if ($this->model->contract_created) {
+				return false;
+			}
+		}
+
+		// no restrictions (default)
+		return true;
+	}
+
+
+	/**
+	 * Generates the view content if a job is not allowed to do.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _show_job_not_allowed_info($job, $origin) {
+
+		$ret = array();
+		$ret['plain_html'] = '';
+		$ret['plain_html'] .= '<h4>Error</h4>';
+		$ret['plain_html'] .= 'Job '.$job.' is currently not allowed';
+		$ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">Bring me back </h5>';
+		return $ret;
+	}
+
+
+	/**
 	 * Get confirmation to continue with chosen action.
 	 * Used for every job that changes data at Envia.
 	 *
 	 * @author Patrick Reichel
 	 * @param $payload generated XML
 	 */
-	protected function _show_confirmation_request($payload, $origin) {
+	protected function _show_confirmation_request($payload, $url, $origin) {
 
 		$ret = array();
 
 		$ret['plain_html'] = '';
 		$ret['plain_html'] = "<h4>Data to be sent to Envia</h4>";
+		$ret['plain_html'] .= "URL: ".$url."<br><br>";
 		$ret['plain_html'] .= "<pre>";
 		$ret['plain_html'] .= $this->_prettify_xml($payload, True);
 		$ret['plain_html'] .= "</pre>";
@@ -472,8 +525,14 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		$view_path = $this->get_view_name().'.request';
 
-		if (!\Input::get('really', False)) {
-			$view_var = $this->_show_confirmation_request($payload, $origin);
+		// check if job to do is allowed
+		// e.g. to prevent double contract creation on pressing <F5>
+		if (!$this->_job_allowed($job)) {
+			$view_var = $this->_show_job_not_allowed_info($job, $origin);
+		}
+		// on jobs changing data at Envia: Ask if job shall be performed
+		elseif (!\Input::get('really', False)) {
+			$view_var = $this->_show_confirmation_request($payload, $url, $origin);
 		}
 		else {
 
