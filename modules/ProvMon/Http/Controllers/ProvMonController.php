@@ -275,6 +275,18 @@ end:
 		// Copy from SnmpController
 		$this->snmp_def_mode();
 
+        try
+        {
+			snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0');
+        }
+        catch (\Exception $e)
+        {
+            if (((strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false) || (strpos($e->getMessage(), "No response from") !== false)))
+            {
+            	return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
+            }
+        }
+
         // First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
 		$docsis = snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
 
