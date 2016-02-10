@@ -1072,7 +1072,9 @@ class ProvVoipEnvia extends \BaseModel {
 	}
 
 	/**
-	 * Extract and process order csv
+	 * Extract and process order csv.
+	 *
+	 * According to Envia's Wienecke this method is only for debugging – the answer will only contain voipaccount related orders. Until a paradigm change we should avoid to implement the database related stuff.
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -1097,7 +1099,9 @@ class ProvVoipEnvia extends \BaseModel {
 	}
 
 	/**
-	 * Process data for a single order
+	 * Process data for a single order.
+	 *
+	 * This means showing the returned data on screen and updating the database.
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -1109,39 +1113,72 @@ class ProvVoipEnvia extends \BaseModel {
 		$out = "<h5>Status for order ".$order_id.":</h5>";
 
 		$out .= "<table>";
-		if (boolval($xml->ordertype_id)) {
+
+		if (boolval(sprintf($xml->ordertype_id))) {
 			$order->ordertype_id = $xml->ordertype_id;
 			$out .= "<tr><td>Ordertype ID: </td><td>".$xml->ordertype_id."</td></tr>";
 		}
-		if (boolval($xml->ordertype)) {
+		else {
+			$order->ordertype_id = null;
+		}
+
+		if (boolval(sprintf($xml->ordertype))) {
 			$order->ordertype = $xml->ordertype;
 			$out .= "<tr><td>Ordertype: </td><td>".$xml->ordertype."</td></tr>";
 		}
-		if (boolval($xml->orderstatus_id)) {
+		else {
+			$order->ordertype = null;
+		}
+
+		if (boolval(sprintf($xml->orderstatus_id))) {
 			$order->orderstatus_id = $xml->orderstatus_id;
 			$out .= "<tr><td>Orderstatus ID: </td><td>".$xml->orderstatus_id."</td></tr>";
 		}
-		if (boolval($xml->orderstatus)) {
+		else {
+			$order->orderstatus_id = null;
+		}
+
+		if (boolval(sprintf($xml->orderstatus))) {
 			$order->orderstatus = $xml->orderstatus;
 			$out .= "<tr><td>Orderstatus: </td><td>".$xml->orderstatus."</td></tr>";
 		}
-		if (boolval($xml->ordercomment)) {
+		else {
+			$order->orderstatus = null;
+		}
+
+		if (boolval(sprintf($xml->ordercomment))) {
 			$order->ordercomment = $xml->ordercomment;
 			$out .= "<tr><td>Ordercomment: </td><td>".$xml->ordercomment."</td></tr>";
 		}
-		if (boolval($xml->customerreference)) {
+		else {
+			$order->ordercomment = null;
+		}
+
+		if (boolval(sprintf($xml->customerreference))) {
 			$order->customerreference = $xml->customerreference;
 			$out .= "<tr><td>Customerreference: </td><td>".$xml->customerreference."</td></tr>";
 		}
-		if (boolval($xml->contractreference)) {
+		else {
+			$order->customerreference = null;
+		}
+
+		if (boolval(sprintf($xml->contractreference))) {
 			$order->contractreference = $xml->contractreference;
 			$out .= "<tr><td>Contractreference: </td><td>".$xml->contractreference."</td></tr>";
 		}
-		if (boolval($xml->orderdate)) {
+		else {
+			$order->contractreference = null;
+		}
+
+		if (boolval(sprintf($xml->orderdate))) {
 			$order->orderdate = $xml->orderdate;
 			// TODO: do we need to store the orderdate in other tables (contract, phonnumber??)
-			$out .= "<tr><td>Orderdate: </td><td>".$xml->orderdate."</td></tr>";
+			$out .= "<tr><td>Orderdate: </td><td>".\Str::limit($xml->orderdate, 10,  '')."</td></tr>";
 		}
+		else {
+			$order->orderdate = null;
+		}
+
 		$out .= "</table><br>";
 
 		$order->save();

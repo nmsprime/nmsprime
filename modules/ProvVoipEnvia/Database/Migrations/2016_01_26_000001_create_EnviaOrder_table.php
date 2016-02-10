@@ -21,16 +21,16 @@ class CreateEnviaOrdersTable extends BaseMigration {
 			$this->up_table_generic($table);
 
 			$table->integer('orderid')->unsigned()->unique();
-			$table->integer('ordertype_id')->unsigned();
-			$table->string('ordertype');
-			$table->integer('orderstatus_id')->unsigned();
-			$table->string('orderstatus');
-			$table->dateTime('orderdate');
-			$table->string('ordercomment')->nullable();
-			$table->string('customerreference', 60);
-			$table->string('contractreference', 60);
-			$table->integer('contract_id')->nullable();
-			$table->integer('phonenumber_id')->nullable();
+			$table->integer('ordertype_id')->unsigned()->nullable()->default(NULL);
+			$table->string('ordertype')->nullable()->default(NULL);
+			$table->integer('orderstatus_id')->unsigned()->nullable()->default(NULL);
+			$table->string('orderstatus')->nullable()->default(NULL);
+			$table->date('orderdate')->nullable()->default(NULL);
+			$table->string('ordercomment')->nullable()->default(NULL);
+			$table->string('customerreference', 60)->nullable()->default(NULL);
+			$table->string('contractreference', 60)->nullable()->default(NULL);
+			$table->integer('contract_id')->nullable()->default(NULL);
+			$table->integer('phonenumber_id')->nullable()->default(NULL);
 		});
 
 		return parent::up();
