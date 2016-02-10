@@ -154,7 +154,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// customer data change possible if there is a contract
 			if ($this->contract_available) {
-				array_push($ret, array('linktext' => 'Update customer', 'url' => $base.'custome_update'.$origin.'&amp;contract_id='.$contract_id));
+				array_push($ret, array('linktext' => 'Update customer', 'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id));
 			}
 
 			// can get contract related information if contract is available
@@ -165,10 +165,10 @@ class ProvVoipEnvia extends \BaseModel {
 			// order(s) exist if contract has been created
 			if ($this->contract_created) {
 				$orders = array();
-				foreach (EnviaOrder::where('contract_id', '=', $contract_id)->get() as $order) {
+				foreach (EnviaOrder::where('contract_id', '=', $contract_id)->orderBy("orderid")->get() as $order) {
 					$order_id = $order->orderid;
-					$order_type = $order->order_type;
-					array_push($ret, array('linktext' => 'Order '.$order_type, 'url' => $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really));
+					$order_type = $order->ordertype;
+					array_push($ret, array('linktext' => 'Order '.$order_id.' ('.$order_type.')', 'url' => $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really));
 				}
 			}
 
@@ -1051,6 +1051,27 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Process data after successful customer update
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_customer_update_response($xml, $data, $out) {
+
+		// create enviaorder
+		$order_data = array();
+
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['contract_id'] = $this->contract->id;
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// view data
+		$out .= "<h5>Customer updated (order ID: ".$xml->orderid.")</h5>";
+
+		return $out;
+	}
+
+	/**
 	 * Extract and process order csv
 	 *
 	 * @author Patrick Reichel
@@ -1107,6 +1128,14 @@ class ProvVoipEnvia extends \BaseModel {
 		if (boolval($xml->ordercomment)) {
 			$order->ordercomment = $xml->ordercomment;
 			$out .= "<tr><td>Ordercomment: </td><td>".$xml->ordercomment."</td></tr>";
+		}
+		if (boolval($xml->customerreference)) {
+			$order->customerreference = $xml->customerreference;
+			$out .= "<tr><td>Customerreference: </td><td>".$xml->customerreference."</td></tr>";
+		}
+		if (boolval($xml->contractreference)) {
+			$order->contractreference = $xml->contractreference;
+			$out .= "<tr><td>Contractreference: </td><td>".$xml->contractreference."</td></tr>";
 		}
 		if (boolval($xml->orderdate)) {
 			$order->orderdate = $xml->orderdate;
