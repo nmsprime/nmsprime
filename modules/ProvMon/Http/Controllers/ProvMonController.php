@@ -296,18 +296,14 @@ end:
 
         try
         {
-			snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0');
+        	// First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
+			$docsis = snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
         }
         catch (\Exception $e)
         {
             if (((strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false) || (strpos($e->getMessage(), "No response from") !== false)))
-            {
-            	return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
-            }
+			return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
         }
-
-        // First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
-		$docsis = snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
 
 		// System 
 		$sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')]; 
@@ -323,7 +319,7 @@ end:
 		$ds['Power dBmV']      = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));	
 		$ds['MER dB']        = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
 		$ds['Microreflection'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6.3');
-	
+
 		// Upstream
 		$us['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
 		foreach($us['Frequency MHz'] as $i => $freq)
@@ -333,7 +329,28 @@ end:
 		$us['Width MHz']      = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'); 
 		foreach($us['Width MHz'] as $i => $freq)
 			$us['Width MHz'][$i] /= 1000000;
-		$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.4'), 'us');
+		$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.5'), 'us');
+
+
+		// remove all inactive channels (no range success)
+		foreach ($ds['Frequency MHz'] as $key => $freq)
+		{
+			if ($ds['Modulation'][$key] == '' && $ds['MER dB'][$key] == 0)
+			{
+				foreach ($ds as $entry => $arr)
+					unset($ds[$entry][$key]);
+			}
+		}
+
+		$us_ranging_status = snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9');
+		foreach ($us_ranging_status as $key => $value)
+		{
+			if ($value != 4)
+			{
+				foreach($us as $entry => $arr)
+					unset($us[$entry][$key]);
+			}
+		}
 
 		// Put Sections together
 		$ret['System']      = $sys;
