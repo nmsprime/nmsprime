@@ -25,7 +25,6 @@
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_lease', 'view_header' => 'DHCP Log', 'md' => 4))	
 	</div>
 
-
 </div>
 
 @stop

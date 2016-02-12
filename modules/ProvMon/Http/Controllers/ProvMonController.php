@@ -241,23 +241,42 @@ end:
 
 
 	/*
-	 * convert docsis ds modulation from int to human readable string
+	 * convert docsis modulation from int to human readable string
 	 */
-	private function _docsis_ds_modulation ($a)
+	private function _docsis_modulation ($a, $direction)
 	{
 		$r = [];
 		foreach ($a as $m) 
 		{
-			switch ($m) 
+			if ($direction == 'ds' || $direction == 'DS')
 			{
-				case 3: $b = 'QAM64'; break;
-				case 4: $b = 'QAM256'; break;
-				default: $b = null; break;
+				switch ($m) 
+				{
+					case 3: $b = 'QAM64'; break;
+					case 4: $b = 'QAM256'; break;
+					default: $b = null; break;
+				}
 			}
-			array_push ($r, $b);
+			else
+			{
+				switch ($m) 
+				{
+					case 0: $b = '0'; break; 		//no docsIfCmtsModulationTable entry
+					case 1: $b = 'QPSK'; break;
+					case 2: $b = '16QAM'; break;
+					case 3: $b = '8QAM'; break;
+					case 4: $b = '32QAM'; break;
+					case 5: $b = '64QAM'; break;
+					case 6: $b = '128QAM'; break;
+					default: $b = null; break;
+				}
+			}
+			array_push ($r, $b);				
 		}
 		return $r;
 	}
+
+
 
 
 	/*
@@ -297,18 +316,24 @@ end:
 		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
 
 		// Downstream
-		$ds['Frequency']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2');
-		$ds['Modulation'] = $this->_docsis_ds_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'));
-		$ds['Power']      = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));	
-		$ds['MER']        = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
+		$ds['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2');
+		foreach($ds['Frequency MHz'] as $i => $freq)
+			$ds['Frequency MHz'][$i] /= 1000000;
+		$ds['Modulation'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
+		$ds['Power dBmV']      = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));	
+		$ds['MER dB']        = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
 		$ds['Microreflection'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6.3');
 	
 		// Upstream
-		$us['Frequency']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
-		if ($docsis >= 4) $us['Power'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
-		else              $us['Power'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
-		$us['Width']      = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'); 
-		$us['Modulation Profile'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.4'); 
+		$us['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
+		foreach($us['Frequency MHz'] as $i => $freq)
+			$us['Frequency MHz'][$i] /= 1000000;
+		if ($docsis >= 4) $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
+		else              $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
+		$us['Width MHz']      = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'); 
+		foreach($us['Width MHz'] as $i => $freq)
+			$us['Width MHz'][$i] /= 1000000;
+		$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.4'), 'us');
 
 		// Put Sections together
 		$ret['System']      = $sys;
