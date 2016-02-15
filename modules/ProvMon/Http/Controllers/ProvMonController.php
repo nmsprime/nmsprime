@@ -11,6 +11,8 @@ use Modules\ProvBase\Entities\Endpoint;
 use Modules\ProvBase\Entities\Configfile;
 use Modules\ProvBase\Entities\Qos;
 use Modules\ProvBase\Entities\ProvBase;
+use Modules\ProvBase\Entities\IpPool;
+use Modules\ProvBase\Entities\Cmts;
 
 /*
  * This is the Basic Stuff for Modem Analyses Page
@@ -66,7 +68,9 @@ class ProvMonController extends \BaseModuleController {
 		// Realtime Measure
 		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
 		{
-			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community);
+			// ip is needed for upstream values of modem
+			preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
+			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip[0][0]);
 			$realtime['forecast'] = 'TODO';
 		}
 
@@ -287,9 +291,10 @@ end:
 	 *
 	 * @param host: The Modem hostname like cm-xyz.abc.de
 	 * @param com:  SNMP RO community
+	 * @param ip: 	ip address of modem
 	 * @return: array[section][Fieldname][Values]
 	 */
-	public function realtime($host, $com)
+	public function realtime($host, $com, $ip)
 	{
 		// Copy from SnmpController
 		$this->snmp_def_mode();
@@ -312,13 +317,13 @@ end:
 		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
 
 		// Downstream
-		$ds['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2');
+		$ds['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2');		// DOCS-IF-MIB
 		foreach($ds['Frequency MHz'] as $i => $freq)
 			$ds['Frequency MHz'][$i] /= 1000000;
 		$ds['Modulation'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
 		$ds['Power dBmV']      = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));	
 		$ds['MER dB']        = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
-		$ds['Microreflection'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6.3');
+		$ds['Microreflection -dBc'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6');
 
 		// Upstream
 		$us['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
@@ -329,7 +334,11 @@ end:
 		$us['Width MHz']      = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'); 
 		foreach($us['Width MHz'] as $i => $freq)
 			$us['Width MHz'][$i] /= 1000000;
-		$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.5'), 'us');
+		if ($docsis >= 4)
+			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.5'), 'us');
+		else
+			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.4'), 'us');
+		$us['SNR dB'] = $this->get_us_snr($ip, $com);
 
 
 		// remove all inactive channels (no range success)
@@ -342,13 +351,16 @@ end:
 			}
 		}
 
-		$us_ranging_status = snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9');
-		foreach ($us_ranging_status as $key => $value)
+		if ($docsis >= 4)
 		{
-			if ($value != 4)
+			$us_ranging_status = snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9');
+			foreach ($us_ranging_status as $key => $value)
 			{
-				foreach($us as $entry => $arr)
-					unset($us[$entry][$key]);
+				if ($value != 4)
+				{
+					foreach($us as $entry => $arr)
+						unset($us[$entry][$key]);
+				}
 			}
 		}
 
@@ -359,6 +371,57 @@ end:
 
 		// Return
 		return $ret;
+	}
+
+
+	/**
+	 * Get US SNR for a CM
+	 *
+	 * @param ip:	ip address of cm
+	 * @param com:	community string
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public function get_us_snr($ip, $com)
+	{
+		// get cmts for us snr query
+		$validator = new \Acme\Validators\ExtendedValidator;
+		foreach(IpPool::all() as $pool)
+		{
+			$net[0] = $pool->net;
+			$net[1] = $pool->netmask;
+			if ($validator->validateIpInRange(0, $ip, $net))
+			{
+				$cmts_id = $pool->cmts_id;
+				break;
+			}
+		}
+		if (isset($cmts_id))
+		{
+			// find oid of corresponding modem on cmts and get the snr
+			$cmts_ip = Cmts::find($cmts_id)->ip;
+			$conf = snmp_get_valueretrieval();
+
+			// we need to change the value retrievel for snmprealwalk()
+			snmp_set_valueretrieval(SNMP_VALUE_OBJECT);
+			try
+			{
+				$modem_ips = snmprealwalk($cmts_ip, $com, '1.3.6.1.4.1.4491.2.1.20.1.3.1.5');	
+			}
+			catch(\Exception $e)
+			{
+				snmp_set_valueretrieval($conf);
+				return ['No response of CMTS'];
+			}
+			snmp_set_valueretrieval($conf);
+			foreach ($modem_ips as $oid => $value)
+			{
+				$cmts_cm_ip = long2ip('0x'.str_replace(["\"", " "], '', $value->value));
+				if ($cmts_cm_ip == $ip)
+					return ArrayHelper::ArrayDiv(snmpwalk($cmts_ip, $com, str_replace('.1.3.6.1.4.1.4491.2.1.20.1.3.1.5', '1.3.6.1.4.1.4491.2.1.20.1.4.1.4', $oid)));
+			}
+		}
+		return ['Could not find CMTS'];
 	}
 	
 
