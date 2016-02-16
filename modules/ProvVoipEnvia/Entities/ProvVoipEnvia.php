@@ -24,38 +24,37 @@ class ProvVoipEnvia extends \BaseModel {
 			return array();
 		}
 
-		// check for valid view_level and define get models to use
-		if ($view_level == 'phonenumbermanagement') {
+		$this->_get_model_data($view_level, $model);
 
-			// given model is a phonenumbermanagement object
-			$phonenumbermanagement = $model;
-			$phonenumber = $phonenumbermanagement->phonenumber;
-			$phonenumber_id = $phonenumbermanagement->phonenumber_id;
-			$contract = $phonenumber->mta->modem->contract;
-			$contract_id = $contract->id;
-		}
-		elseif ($view_level == 'contract') {
+		$phonenumber_id = $this->phonenumbermanagement->phonenumber_id;
+		$contract_id = $this->contract->id;
 
-			// given model is a contract object
-			$phonenumbermanagement = new PhonenumberManagement();
-			$phonenumber = new Phonenumber();
-			$phonenumber_id = null;
-			$contract = $model;
-			$contract_id = $contract->id;
-		}
-		else {
-			throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumbermanagement]');
-		}
+		/* // check for valid view_level and define get models to use */
+		/* if ($view_level == 'phonenumbermanagement') { */
+
+		/* 	// given model is a phonenumbermanagement object */
+		/* 	$phonenumber_id = $phonenumbermanagement->phonenumber_id; */
+		/* 	$contract_id = $contract->id; */
+		/* } */
+		/* elseif ($view_level == 'contract') { */
+
+		/* 	// given model is a contract object */
+		/* 	$phonenumber_id = null; */
+		/* 	$contract_id = $contract->id; */
+		/* } */
+		/* else { */
+		/* 	throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumbermanagement]'); */
+		/* } */
 
 		// set the variables
-		if (is_null($contract->contract_ext_creation_date)) {
+		if (is_null($this->contract->contract_ext_creation_date)) {
 			$this->contract_created = False;
 		}
 		else {
 			$this->contract_created = True;
 		}
 
-		if (is_null($contract->contract_ext_termination_date)) {
+		if (is_null($this->contract->contract_ext_termination_date)) {
 			$this->contract_terminated = False;
 		}
 		else {
@@ -69,14 +68,14 @@ class ProvVoipEnvia extends \BaseModel {
 			$this->contract_available = False;
 		}
 
-		if (is_null($phonenumbermanagement->voipaccount_ext_creation_date)) {
+		if (is_null($this->phonenumbermanagement->voipaccount_ext_creation_date)) {
 			$this->voipaccount_created = False;
 		}
 		else {
 			$this->voipaccount_created = True;
 		}
 
-		if (is_null($phonenumbermanagement->voipaccount_ext_termination_date)) {
+		if (is_null($this->phonenumbermanagement->voipaccount_ext_termination_date)) {
 			$this->voipaccount_terminated = False;
 		}
 		else {
@@ -112,9 +111,11 @@ class ProvVoipEnvia extends \BaseModel {
 		$base = "/lara/provvoipenvia/request/";
 		if ($view_level == 'phonenumbermanagement') {
 			$contract_id = $model->phonenumber->mta->modem->contract->id;
+			$phonenumber_id = $model->id;
 		}
 		elseif ($view_level == 'contract') {
 			$contract_id = $model->id;
+			$phonenumber_id = null;
 		}
 		else {
 			throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumbermanagement]');
@@ -240,7 +241,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	public function get_xml($job) {
 
-		$this->_get_model_data($job);
+		$this->_get_model_data();
 
 		$this->_create_base_xml_by_topic($job);
 		$this->_create_final_xml_by_topic($job);
@@ -252,44 +253,71 @@ class ProvVoipEnvia extends \BaseModel {
 	/**
 	 * Get all the data needed for this job.
 	 * This will get the data for the current and all parent models (e.g. contract for phonenumber) and store as class variables
+	 * To do so we have to differentiate in the job to do
 	 *
 	 * @author Patrick Reichel
+	 *
+	 * @param $level current level to work from
+	 * @param $model the model to get related models from ($model is of type $level)
 	 */
-	protected function _get_model_data() {
+	protected function _get_model_data($level='', $model=null) {
 
-		$contract = null;
-		$modem = null;
-		$mta = null;
-		$phonenumber = null;
-		$phonenumbermanagement = null;
+		// defaults
+		$this->contract = null;
+		$this->modem = null;
+		$this->mta = null;
+		$this->phonenumber = null;
+		$this->phonenumbermanagement = null;
 
-		// entry point to database is contract
-		$contract_id = \Input::get('contract_id', null);
-		if (!is_null($contract_id)) {
-			$contract = Contract::findOrFail($contract_id);
+		// level is irrelevant (e.g. for creating XML for a given contract_id
+		// this means: the initial model comes from a database search
+		if ($level == '') {
+			// entry point to database is contract
+			$contract_id = \Input::get('contract_id', null);
+			if (!is_null($contract_id)) {
+				$this->contract = Contract::findOrFail($contract_id);
+			}
+
+			// entry point to database is phonenumber
+			$phonenumber_id = \Input::get('phonenumber_id', null);
+			if (!is_null($phonenumber_id)) {
+				$this->phonenumber = Phonenumber::findOrFail($phonenumber_id);
+			}
+
+			// get related models (when if phonenumber model exists)
+			// in other cases: there ar no clear relations
+			if (!is_null($this->phonenumber)) {
+				$this->mta = $this->phonenumber->mta;
+				$this->modem = $this->mta->modem;
+				$this->contract = $this->modem->contract;
+				$this->phonenumbermanagement = $this->phonenumber->phonenumbermanagement;
+			}
 		}
-
-		// entry point to database is phonenumber
-		$phonenumber_id = \Input::get('phonenumber_id', null);
-		if (!is_null($phonenumber_id)) {
-			$phonenumber = Phonenumber::findOrFail($phonenumber_id);
+		// build relations starting with model contract
+		elseif (($level == 'contract') && (!is_null($model))) {
+			$this->contract = $model;
+			$this->mta = new Mta();
+			$this->modem = new Modem();
+			$this->phonenumbermanagement = new PhonenumberManagement();
+			$this->phonenumber = new Phonenumber();
 		}
-
-		// get related models
-		if (!is_null($phonenumber)) {
-			$mta = $phonenumber->mta;
-			$modem = $mta->modem;
-			$contract = $modem->contract;
-			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
+		// build relations starting with model phonenumbermanagement
+		elseif (($level == 'phonenumbermanagement') && !is_null($model)) {
+			$this->phonenumbermanagement = $model;
+			$this->phonenumber = $this->phonenumbermanagement->phonenumber;
+			$this->mta = $this->phonenumber->mta;
+			$this->modem = $this->mta->modem;
+			$this->contract = $this->modem->contract;
 		}
-
-		// apply to class variables
-		$this->contract = $contract;
-		$this->mta = $mta;
-		$this->modem = $modem;
-		$this->phonenumber = $phonenumber;
-		$this->phonenumbermanagement = $phonenumbermanagement;
-
+		// invalid params: this will cause a crash
+		else {
+			if (is_null($model)) {
+				throw new \UnexpectedValueException('No model given');
+			}
+			else {
+				throw new \UnexpectedValueException('Value '.$level.' not allowed for param $level');
+			}
+		}
 	}
 
 	/**
