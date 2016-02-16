@@ -338,8 +338,11 @@ end:
 			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.5'), 'us');
 		else
 			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.4'), 'us');
-		$us['SNR dB'] = $this->get_us_snr($ip, $com);
+		$cmts = $this->get_cmts($ip);
+		$us['SNR dB'] = $cmts->get_us_snr($ip);
 
+		// CMTS
+		$c['Hostname'] = [$cmts->hostname];
 
 		// remove all inactive channels (no range success)
 		foreach ($ds['Frequency MHz'] as $key => $freq)
@@ -368,6 +371,7 @@ end:
 		$ret['System']      = $sys;
 		$ret['Downstream']  = $ds;
 		$ret['Upstream']    = $us;
+		$ret['CMTS']		= $c;
 
 		// Return
 		return $ret;
@@ -375,16 +379,14 @@ end:
 
 
 	/**
-	 * Get US SNR for a CM
+	 * Get CMTS for a registered CM
 	 *
 	 * @param ip:	ip address of cm
-	 * @param com:	community string
 	 *
 	 * @author Nino Ryschawy
 	 */
-	public function get_us_snr($ip, $com)
+	public function get_cmts($ip)
 	{
-		// get cmts for us snr query
 		$validator = new \Acme\Validators\ExtendedValidator;
 		foreach(IpPool::all() as $pool)
 		{
@@ -397,31 +399,8 @@ end:
 			}
 		}
 		if (isset($cmts_id))
-		{
-			// find oid of corresponding modem on cmts and get the snr
-			$cmts_ip = Cmts::find($cmts_id)->ip;
-			$conf = snmp_get_valueretrieval();
-
-			// we need to change the value retrievel for snmprealwalk()
-			snmp_set_valueretrieval(SNMP_VALUE_OBJECT);
-			try
-			{
-				$modem_ips = snmprealwalk($cmts_ip, $com, '1.3.6.1.4.1.4491.2.1.20.1.3.1.5');	
-			}
-			catch(\Exception $e)
-			{
-				snmp_set_valueretrieval($conf);
-				return ['No response of CMTS'];
-			}
-			snmp_set_valueretrieval($conf);
-			foreach ($modem_ips as $oid => $value)
-			{
-				$cmts_cm_ip = long2ip('0x'.str_replace(["\"", " "], '', $value->value));
-				if ($cmts_cm_ip == $ip)
-					return ArrayHelper::ArrayDiv(snmpwalk($cmts_ip, $com, str_replace('.1.3.6.1.4.1.4491.2.1.20.1.3.1.5', '1.3.6.1.4.1.4491.2.1.20.1.4.1.4', $oid)));
-			}
-		}
-		return ['Could not find CMTS'];
+			return Cmts::find($cmts_id);
+		return null;
 	}
 	
 
