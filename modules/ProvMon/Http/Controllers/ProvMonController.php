@@ -62,7 +62,7 @@ class ProvMonController extends \BaseModuleController {
 		$lease = $this->search_lease('hardware ethernet '.$modem->mac);
 
 		// Log
-		exec ('egrep "('.$modem->mac.'|'.$hostname.')" /var/log/messages | grep -v CPE | tail -n 20  | sort -r', $log);
+		exec ('egrep "('.$modem->mac.'|'.$hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
 
 
 		// Realtime Measure
@@ -96,13 +96,13 @@ class ProvMonController extends \BaseModuleController {
 		$type = 'CPE';
 
 		// get MAC of CPE first
-		exec ('grep '.$modem->mac." /var/log/messages | grep CPE | tail -n 1  | sort -r", $str);
+		exec ('grep '.$modem->mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
 		if (isset($str[0]))
 			preg_match_all('/(?:[0-9a-fA-F]{2}[:]?){6}/', $str[0], $cpe_mac);
 
 		// Log
 		if (isset($cpe_mac[0][0]))
-			exec ('grep '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | sort -r', $log);
+			exec ('grep '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
 
 		// Lease
 		$lease['text'] = $this->search_lease('billing subclass', $modem->mac);
@@ -157,7 +157,7 @@ class ProvMonController extends \BaseModuleController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// log
-		exec ('grep "'.$mta->mac.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | sort -r', $log);
+		exec ('grep "'.$mta->mac.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
 
 end:
@@ -692,7 +692,7 @@ if (0)
 		$hostname = $modem->hostname;
 		$mac      = $modem->mac;
 		
-		if (!exec ('cat /var/log/messages | egrep "('.$mac.'|'.$hostname.')" | tail -n 100  | sort -r', $ret))
+		if (!exec ('cat /var/log/messages | egrep "('.$mac.'|'.$hostname.')" | tail -n 100  | tac', $ret))
 			$out = array ('no logging');
 
 		return View::make('provbase::Modem.log', compact('modem', 'out'));
