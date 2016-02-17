@@ -95,21 +95,21 @@
 
 		@foreach ($realtime['measure'] as $tablename => $table)
 			<h5>{{$tablename}}</h5>
+			<table width="100%">
 				@foreach ($table as $rowname => $row)
-					<table>
 					<tr>
 						<th width="120px">
 							{{$rowname}}
 						</th>
 
 						@foreach ($row as $linename => $line)
-							<td> 
+							<td>
 								 <font color="grey">{{htmlspecialchars($line)}}</font>
 							</td>
 						@endforeach
 					</tr>
-					</table>
 				@endforeach
+			</table>
 		@endforeach
 
 	@else

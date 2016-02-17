@@ -11,6 +11,8 @@ use Modules\ProvBase\Entities\Endpoint;
 use Modules\ProvBase\Entities\Configfile;
 use Modules\ProvBase\Entities\Qos;
 use Modules\ProvBase\Entities\ProvBase;
+use Modules\ProvBase\Entities\IpPool;
+use Modules\ProvBase\Entities\Cmts;
 
 /*
  * This is the Basic Stuff for Modem Analyses Page
@@ -60,13 +62,15 @@ class ProvMonController extends \BaseModuleController {
 		$lease = $this->search_lease('hardware ethernet '.$modem->mac);
 
 		// Log
-		exec ('egrep "('.$modem->mac.'|'.$hostname.')" /var/log/messages | grep -v CPE | tail -n 20  | sort -r', $log);
+		exec ('egrep "('.$modem->mac.'|'.$hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
 
 
 		// Realtime Measure
 		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
 		{
-			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community);
+			// ip is needed for upstream values of modem
+			preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
+			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip[0][0]);
 			$realtime['forecast'] = 'TODO';
 		}
 
@@ -92,13 +96,13 @@ class ProvMonController extends \BaseModuleController {
 		$type = 'CPE';
 
 		// get MAC of CPE first
-		exec ('grep '.$modem->mac." /var/log/messages | grep CPE | tail -n 1  | sort -r", $str);
+		exec ('grep '.$modem->mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
 		if (isset($str[0]))
 			preg_match_all('/(?:[0-9a-fA-F]{2}[:]?){6}/', $str[0], $cpe_mac);
 
 		// Log
 		if (isset($cpe_mac[0][0]))
-			exec ('grep '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | sort -r', $log);
+			exec ('grep '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
 
 		// Lease
 		$lease['text'] = $this->search_lease('billing subclass', $modem->mac);
@@ -153,7 +157,7 @@ class ProvMonController extends \BaseModuleController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// log
-		exec ('grep "'.$mta->mac.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | sort -r', $log);
+		exec ('grep "'.$mta->mac.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
 
 end:
@@ -241,23 +245,42 @@ end:
 
 
 	/*
-	 * convert docsis ds modulation from int to human readable string
+	 * convert docsis modulation from int to human readable string
 	 */
-	private function _docsis_ds_modulation ($a)
+	private function _docsis_modulation ($a, $direction)
 	{
 		$r = [];
 		foreach ($a as $m) 
 		{
-			switch ($m) 
+			if ($direction == 'ds' || $direction == 'DS')
 			{
-				case 3: $b = 'QAM64'; break;
-				case 4: $b = 'QAM256'; break;
-				default: $b = null; break;
+				switch ($m) 
+				{
+					case 3: $b = 'QAM64'; break;
+					case 4: $b = 'QAM256'; break;
+					default: $b = null; break;
+				}
 			}
-			array_push ($r, $b);
+			else
+			{
+				switch ($m) 
+				{
+					case 0: $b = '0'; break; 		//no docsIfCmtsModulationTable entry
+					case 1: $b = 'QPSK'; break;
+					case 2: $b = '16QAM'; break;
+					case 3: $b = '8QAM'; break;
+					case 4: $b = '32QAM'; break;
+					case 5: $b = '64QAM'; break;
+					case 6: $b = '128QAM'; break;
+					default: $b = null; break;
+				}
+			}
+			array_push ($r, $b);				
 		}
 		return $r;
 	}
+
+
 
 
 	/*
@@ -268,15 +291,24 @@ end:
 	 *
 	 * @param host: The Modem hostname like cm-xyz.abc.de
 	 * @param com:  SNMP RO community
+	 * @param ip: 	ip address of modem
 	 * @return: array[section][Fieldname][Values]
 	 */
-	public function realtime($host, $com)
+	public function realtime($host, $com, $ip)
 	{
 		// Copy from SnmpController
 		$this->snmp_def_mode();
 
-        // First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
-		$docsis = snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
+        try
+        {
+        	// First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
+			$docsis = snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
+        }
+        catch (\Exception $e)
+        {
+            if (((strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false) || (strpos($e->getMessage(), "No response from") !== false)))
+			return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
+        }
 
 		// System 
 		$sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')]; 
@@ -285,26 +317,90 @@ end:
 		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
 
 		// Downstream
-		$ds['Frequency']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2');
-		$ds['Modulation'] = $this->_docsis_ds_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'));
-		$ds['Power']      = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));	
-		$ds['MER']        = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
-		$ds['Microreflection'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6.3');
-	
+		$ds['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2');		// DOCS-IF-MIB
+		foreach($ds['Frequency MHz'] as $i => $freq)
+			$ds['Frequency MHz'][$i] /= 1000000;
+		$ds['Modulation'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
+		$ds['Power dBmV']      = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));	
+		$ds['MER dB']        = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
+		$ds['Microreflection -dBc'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6');
+
 		// Upstream
-		$us['Frequency']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
-		if ($docsis >= 4) $us['Power'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
-		else              $us['Power'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
-		$us['Width']      = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'); 
-		$us['Modulation Profile'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.4'); 
+		$us['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
+		foreach($us['Frequency MHz'] as $i => $freq)
+			$us['Frequency MHz'][$i] /= 1000000;
+		if ($docsis >= 4) $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
+		else              $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
+		$us['Width MHz']      = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'); 
+		foreach($us['Width MHz'] as $i => $freq)
+			$us['Width MHz'][$i] /= 1000000;
+		if ($docsis >= 4)
+			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.5'), 'us');
+		else
+			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.4'), 'us');
+		$cmts = $this->get_cmts($ip);
+		$us['SNR dB'] = $cmts->get_us_snr($ip);
+
+		// CMTS
+		$c['Hostname'] = [$cmts->hostname];
+
+		// remove all inactive channels (no range success)
+		foreach ($ds['Frequency MHz'] as $key => $freq)
+		{
+			if ($ds['Modulation'][$key] == '' && $ds['MER dB'][$key] == 0)
+			{
+				foreach ($ds as $entry => $arr)
+					unset($ds[$entry][$key]);
+			}
+		}
+
+		if ($docsis >= 4)
+		{
+			$us_ranging_status = snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9');
+			foreach ($us_ranging_status as $key => $value)
+			{
+				if ($value != 4)
+				{
+					foreach($us as $entry => $arr)
+						unset($us[$entry][$key]);
+				}
+			}
+		}
 
 		// Put Sections together
 		$ret['System']      = $sys;
 		$ret['Downstream']  = $ds;
 		$ret['Upstream']    = $us;
+		$ret['CMTS']		= $c;
 
 		// Return
 		return $ret;
+	}
+
+
+	/**
+	 * Get CMTS for a registered CM
+	 *
+	 * @param ip:	ip address of cm
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public function get_cmts($ip)
+	{
+		$validator = new \Acme\Validators\ExtendedValidator;
+		foreach(IpPool::all() as $pool)
+		{
+			$net[0] = $pool->net;
+			$net[1] = $pool->netmask;
+			if ($validator->validateIpInRange(0, $ip, $net))
+			{
+				$cmts_id = $pool->cmts_id;
+				break;
+			}
+		}
+		if (isset($cmts_id))
+			return Cmts::find($cmts_id);
+		return null;
 	}
 	
 
@@ -596,7 +692,7 @@ if (0)
 		$hostname = $modem->hostname;
 		$mac      = $modem->mac;
 		
-		if (!exec ('cat /var/log/messages | egrep "('.$mac.'|'.$hostname.')" | tail -n 100  | sort -r', $ret))
+		if (!exec ('cat /var/log/messages | egrep "('.$mac.'|'.$hostname.')" | tail -n 100  | tac', $ret))
 			$out = array ('no logging');
 
 		return View::make('provbase::Modem.log', compact('modem', 'out'));
