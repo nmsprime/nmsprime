@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 
-class CreateEnviaOrdersTable extends BaseMigration {
+class CreateEnviaOrderTable extends BaseMigration {
 
 	// name of the table to create
 	protected $tablename = "enviaorder";
