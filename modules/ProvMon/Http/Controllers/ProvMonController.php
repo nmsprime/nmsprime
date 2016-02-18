@@ -56,25 +56,8 @@ class ProvMonController extends \BaseModuleController {
 		if (count(array_keys($ping)) <= 9)
 			$ping = null;
 
-		// Flood ping - doesnt work
-		if (array_key_exists('flood_ping', \Input::all()))
-		{
-			switch (\Input::all()['flood_ping'])
-			{
-				case "1":
-					exec("sudo ping -c100 -f $hostname", $flood_ping, $ret);
-					break;
-				case "2":
-					exec("sudo ping -c3 -s300 -f $hostname", $flood_ping, $ret);
-					break;
-				case "3":
-					exec("sudo ping -c500 -s1472 -f $hostname", $flood_ping, $ret);
-					break;
-				case "4":
-					exec("sudo ping -c1000 -f $hostname", $flood_ping, $ret);
-					break;
-			}
-		}
+		// Flood Ping
+		$flood_ping = $this->flood_ping ($hostname);
 
 		// Lease
 		$lease = $this->search_lease('hardware ethernet '.$modem->mac);
@@ -100,6 +83,48 @@ class ProvMonController extends \BaseModuleController {
 		// View
 		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var', 'flood_ping')));
 	}
+
+
+	/*
+	 * Flood ping
+	 *
+	 * NOTE:
+	 * --- add /etc/sudoers.d/nms-lara ---
+	 * Defaults:apache        !requiretty
+	 * apache  ALL=(root) NOPASSWD: /usr/bin/ping
+	 * --- /etc/sudoers.d/nms-lara ---
+	 *
+	 * @param hostname  the host to send a flood ping
+	 * @return flood ping exec result
+	 */
+	public function flood_ping ($hostname)
+	{
+		if (array_key_exists('flood_ping', \Input::all()))
+		{
+			switch (\Input::all()['flood_ping'])
+			{
+				case "1":
+					exec("sudo ping -c100 -f $hostname 2>&1", $fp, $ret);
+					break;
+				case "2":
+					exec("sudo ping -c300 -s300 -f $hostname 2>&1", $fp, $ret);
+					break;
+				case "3":
+					exec("sudo ping -c500 -s1472 -f $hostname 2>&1", $fp, $ret);
+					break;
+				case "4":
+					exec("sudo ping -c1000 -f $hostname 2>&1", $fp, $ret);
+					break;
+			}
+
+			// remove the flood ping line "....." from result
+			if ($ret == 0)
+				unset ($fp[1]);
+		}
+
+		return $fp;
+	}
+
 
 	/**
 	 * Returns view of cpe analysis page
