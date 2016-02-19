@@ -24,10 +24,8 @@
 			<br><br>
 		@endforeach
 	@else
-		<font color="red">No Diagrams available</font><br>
-		This could be because the Modem was not online until now. Please note that Diagrams are only available
-		from the point that a modem was online. If all diagrams did not show properly then it should be a
-		bigger problem and there should be a cacti misconfiguration. Please consider the administrator on bigger problems.
+		<font color="red">{{trans('messages.modem_no_diag')}}</font><br>
+		{{ trans('messages.modem_monitoring_error') }}
 	@endif
 
 @stop
@@ -46,7 +44,7 @@
 				</table>
 		@endforeach
 	@else
-		<font color="red">Modem is Offline</font>
+		<font color="red">{{trans('messages.modem_offline')}}</font>
 	@endif
 
 @stop
@@ -98,7 +96,7 @@
 				</table>
 		@endforeach
 	@else
-		<font color="red">No valid Lease found</font>
+		<font color="red">{{trans('messages.modem_lease_error')}}</font>
 	@endif
 
 @stop
@@ -116,7 +114,7 @@
 				</table>
 		@endforeach
 	@else
-		<font color="red">Modem was not registering on Server - No log entry found</font>
+		<font color="red">{{ trans('messages.modem_log_error') }}</font>
 	@endif
 @stop
 
@@ -146,6 +144,6 @@
 		@endforeach
 
 	@else
-		<font color="red">Modem is Offline</font>
+		<font color="red">{{trans('messages.modem_offline')}}</font>
 	@endif
 @stop

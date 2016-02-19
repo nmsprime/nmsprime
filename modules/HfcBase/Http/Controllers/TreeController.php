@@ -26,8 +26,8 @@ class TreeController extends HfcBaseController {
 		return array(
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name', 'value' => ''),
 			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => 
-				array('NET' => 'NET', 'CMTS' => 'CMTS', 'DATA' => 'DATA', 'CLUSTER' => 'CLUSTER', 'NODE' => 'NODE', 'AMP' => 'AMP')),
-			array('form_type' => 'text', 'name' => 'ip', 'description' => 'IP Address', 'value' => ''),
+			array('NET' => 'NET', 'CMTS' => 'CMTS', 'DATA' => 'DATA', 'CLUSTER' => 'CLUSTER', 'NODE' => 'NODE', 'AMP' => 'AMP')),
+			array('form_type' => 'text', 'name' => 'ip', 'description' => 'IP address', 'value' => ''),
 			array('form_type' => 'text', 'name' => 'link', 'description' => 'HTML Link', 'value' => ''),
 			array('form_type' => 'text', 'name' => 'pos', 'description' => 'Geoposition', 'value' => ''),
 			array('form_type' => 'select', 'name' => 'parent', 'description' => 'Parent Object', 'value' => $parents),
