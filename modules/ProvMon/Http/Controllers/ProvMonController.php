@@ -142,8 +142,22 @@ class ProvMonController extends \BaseModuleController {
 
 		// get MAC of CPE first
 		exec ('grep '.$modem->mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+		if ($str == [])
+		{
+			$mac = $modem->mac;
+			$mac[0] = ' ';
+			$mac = trim($mac);
+			$mac_bug = true;
+			exec ('grep '.$mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+		}
+
 		if (isset($str[0]))
-			preg_match_all('/(?:[0-9a-fA-F]{2}[:]?){6}/', $str[0], $cpe_mac);
+		{
+			if (isset($mac_bug))
+				preg_match_all('/([0-9a-fA-F][:]){1}(?:[0-9a-fA-F]{2}[:]?){5}/', $str[0], $cpe_mac);
+			else
+				preg_match_all('/(?:[0-9a-fA-F]{2}[:]?){6}/', $str[0], $cpe_mac);
+		}
 
 		// Log
 		if (isset($cpe_mac[0][0]))
