@@ -30,7 +30,7 @@
 <body>
 
 	@section('content_top')
-		{{ HTML::linkRoute('TreeErd.show', $view_header) }}
+		{{ HTML::linkRoute('TreeErd.show', $view_header, [$field, $search]) }}
 	@stop
 
 	@include ('hfcbase::Tree.search')
