@@ -1,4 +1,4 @@
-<?php namespace Modules\hfccustomer\Database\Seeders;
+<?php namespace Modules\HfcCustomer\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +14,9 @@ class HfcCustomerTableSeeder extends Seeder {
 	{
 		Model::unguard();
 		
-		// $this->call("OthersTableSeeder");
+		$this->call("Modules\HfcCustomer\Database\Seeders\MprTableSeeder");
+		$this->call("Modules\HfcCustomer\Database\Seeders\MprGeoposTableSeeder");
 	}
 
 }
+
