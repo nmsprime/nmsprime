@@ -28,6 +28,7 @@ class ProvMonController extends \BaseModuleController {
 	public function __construct()
 	{
 		$this->domain_name = ProvBase::first()->domain_name;
+		parent::__construct();
 	}
 
 	/*
@@ -125,7 +126,8 @@ class ProvMonController extends \BaseModuleController {
 			if ($ret == 0)
 				unset ($fp[1]);
 		}
-
+		if (!isset($fp))
+			return null;
 		return $fp;
 	}
 
@@ -251,7 +253,7 @@ end:
 		else
 		{
 			$lease['state']    = 'red';
-			$lease['forecast'] = 'No valid lease found';
+			$lease['forecast'] = trans('messages.modem_lease_error');
 		}
 
 		return $lease;
