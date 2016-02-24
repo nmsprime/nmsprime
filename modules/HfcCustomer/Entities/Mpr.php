@@ -35,6 +35,12 @@ class Mpr extends \BaseModel {
 		return $this->belongsTo('Modules\HfcBase\Entities\Tree');
 	}
 
+	// Relation to Tree
+	// NOTE: HfcBase Module is required !
+	public function trees()
+	{
+		return \Modules\HfcBase\Entities\Tree::all();
+	}
 
 	// Relation to MPR Geopos
 	public function mprgeopos()
