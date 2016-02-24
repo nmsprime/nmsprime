@@ -2,6 +2,16 @@
    
 use Illuminate\Database\Eloquent\Model;
 
+
+/*
+ * Modem Positioning Rule Model
+ *
+ * This Model will hold all rules for Entity Relation and 
+ * Topograhpy Card Bubbles. See MprGeopos for more brief view.
+ *
+ * Relations: Tree <- Mpr <- MprGeopos
+ * Relations: Modem <- Tree
+ */
 class Mpr extends \BaseModel {
 
 	// The associated SQL table for this Model
