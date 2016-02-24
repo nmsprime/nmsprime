@@ -68,4 +68,60 @@ class Mpr extends \BaseModel {
 		);
 
 	}
+
+
+	/*
+	 * MPR: refresh all bubbles on Entity Relation Diagram and Topography Card
+	 * This will perform an updated on all matched Modems tree_id value, based
+	 * on the added rules in Modem Positioning System: Mpr, MprGeopos. This function
+	 * will be used by artisan command nms:mps
+	 *
+	 * NOTE: for priotity we will simply use mpr->prio field. So lower values in
+	 *       prio will run first
+
+	 * TODO: use a better (more complex) priority algorithm
+	 *
+	 * @author: Torsten Schmidt
+	 */
+	public static function refresh ()
+	{
+		// Foreach MPR
+		// lower priority integers first
+		foreach (Mpr::where('id', '>', '0')->orderBy('prio')->get() as $mpr)
+		{
+			// parse rectangles for MPR 
+			if (count($mpr->mprgeopos) == 2)
+			{
+				// get ordered MPR Positions
+				// Note: that MprGeopos is not ordered
+				if ($mpr->mprgeopos[0]->x < $mpr->mprgeopos[1]->x)
+				{
+					$x1 = $mpr->mprgeopos[0]->x;
+					$x2 = $mpr->mprgeopos[1]->x;
+				}
+				else
+				{
+					$x1 = $mpr->mprgeopos[1]->x;
+					$x2 = $mpr->mprgeopos[0]->x;
+				}
+
+				if ($mpr->mprgeopos[0]->y < $mpr->mprgeopos[1]->y)
+				{
+					$y1 = $mpr->mprgeopos[0]->y;
+					$y2 = $mpr->mprgeopos[1]->y;
+				}
+				else
+				{
+					$y1 = $mpr->mprgeopos[1]->y;
+					$y2 = $mpr->mprgeopos[0]->y;
+				}
+
+				$id = $mpr->tree_id;
+
+				$r = \Modules\ProvBase\Entities\Modem::whereRaw("(x > $x1) AND (x < $x2) AND (y > $y1) AND (y < $y2)")->update(['tree_id' => $id]);
+
+				echo 'UPDATE: '.$id.', '.$mpr->name.' -> num updated :'.$r."\n";
+			}
+		}
+	}
 }

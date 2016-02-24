@@ -8,8 +8,8 @@ Route::group(array('before' => 'auth'), function() {
 
 	Route::resource('Mpr', 'Modules\HfcCustomer\Http\Controllers\MprController');
 	Route::get('Mpr/fulltextSearch', array('as' => 'Mpr.fulltextSearch', 'uses' => 'Modules\HfcCustomer\Http\Controllers\MprController@fulltextSearch'));
+
 	Route::resource('MprGeopos', 'Modules\HfcCustomer\Http\Controllers\MprGeoposController');
 	Route::get('MprGeopos/fulltextSearch', array('as' => 'MprGeopos.fulltextSearch', 'uses' => 'Modules\HfcCustomer\Http\Controllers\MprGeoposController@fulltextSearch'));
-
 
 });
