@@ -58,44 +58,47 @@ function map_google_init ()
 function map_mps_init()
 {
 <?php
-if (0) 
-{
-	$cluster = def_kml;
-	include_once ('include.php');
-	__include('mysql.php');
-	_mysql_connect();
+
+	if (!isset($mpr))
+		goto finish;
 
 	echo "\t\t\t\tvar boxes  = new OpenLayers.Layer.Boxes( \"Modem Positioning Rules\", {projection: map.displayProjection} );";
 
 	$i = 0;
-	$extract = mysql_query("SELECT val,id FROM mps WHERE prio >= 0 AND kind='position' AND parent IN (SELECT id FROM tree WHERE cluster = $cluster) ORDER BY prio");
-	while ($row = mysql_fetch_assoc($extract))
+	$_mpr = $mpr;
+	foreach ($_mpr as $id => $mpr)
 	{
-		$i++;
+		if (count($mpr) == 2)
+		{
+			$i++;
 
-		$val = trim ($row['val']); # Entferne führende und abschliesende Leerzeichen
-		$arr = explode (' ', $val);
-		$x1  = $arr[2] / 10000000;
-		$x2  = str_replace (")", "", $arr[6]) / 10000000;
-		$y1  = $arr[10] / 10000000;
-		$y2  = str_replace (")", "", $arr[14]) / 10000000;
-		if ($x1 != '>')
+			$x1  = $mpr[0][0];
+			$x2  = $mpr[1][0];
+			$y1  = $mpr[0][1];
+			$y2  = $mpr[1][1];
+
 			$pos = "$x1, $y1, $x2, $y2";
 
-		echo "
-			var bounds = new OpenLayers.Bounds($pos);
-			box$i = new OpenLayers.Marker.Box(bounds.transform(new OpenLayers.Projection(\"EPSG:4326\"),map.getProjectionObject()));
-			box$i.events.register(\"click\", box$i, function (e) {
-				alert (\"Modem Positioning System\", 
-				       '<li><a target=".global_others_target." href=../customer/mps.php?mp_sys_operation=mp_op_Change&mp_sys_rec=".$row['id']."/>Show Rule</a></li>' + 
-				       '<li><a target=".global_others_target." href=../customer/mps.php?mp_sys_operation=mp_op_Delete&mp_sys_rec=".$row['id']."/>Delete Rule</a></li>',
-				       {width:150});
-			});
-			box$i.setBorder(\"brown\");
-			boxes.addMarker(box$i); ";
+			echo "
+				var bounds = new OpenLayers.Bounds($pos);
+				box$i = new OpenLayers.Marker.Box(bounds.transform(new OpenLayers.Projection(\"EPSG:4326\"),map.getProjectionObject()));
+				box$i.events.register(\"click\", box$i, function (e) {
+					alert (\"Modem Positioning System - MPR id: $id\", 
+					       '<li><a href=' + global_url + '/Mpr/$id/edit>Show Rule</a></li>',
+					       {width:150});
+				});
+				box$i.setBorder(\"brown\");
+				boxes.addMarker(box$i); ";
+		}
+		else
+		{
+			// TODO: Polygon
+		}
 	}
+
 	echo "\n\n\t\t\tmap.addLayers([boxes]);\n";
-}
+
+finish:
 ?>
 }
 
@@ -209,44 +212,44 @@ function clk_init_2()
 	 * Rectangle
 	 */
 		var control = new OpenLayers.Control();
-                OpenLayers.Util.extend(control, {
-                    draw: function () {
-                        // this Handler.Box will intercept the shift-mousedown
-                        // before Control.MouseDefault gets to see it
-                        this.box = new OpenLayers.Handler.Box( control,
-                            {"done": this.notice},
-                            {keyMask: OpenLayers.Handler.MOD_SHIFT});
-                        this.box.activate();
-                    },
+        OpenLayers.Util.extend(control, {
+            draw: function () {
+                // this Handler.Box will intercept the shift-mousedown
+                // before Control.MouseDefault gets to see it
+                this.box = new OpenLayers.Handler.Box( control,
+                    {"done": this.notice},
+                    {keyMask: OpenLayers.Handler.MOD_SHIFT});
+                this.box.activate();
+            },
 
-                    notice: function (bounds) {
-                        var ll = map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.left, bounds.bottom)); 
-                        var ur = map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.right, bounds.top)); 
-			ll.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
-			ur.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
-                        // var maxLat = ur.lat.toFixed(4);
+            notice: function (bounds) {
+                var ll = map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.left, bounds.bottom)); 
+                var ur = map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.right, bounds.top)); 
+				ll.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
+				ur.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
+                // var maxLat = ur.lat.toFixed(4);
 
-			var lat1 = ll.lat.toFixed(4);
-			var lat2 = ur.lat.toFixed(4);
-			var minLat = lat1<lat2?lat1:lat2;
-			var maxLat = lat1<lat2?lat2:lat1;
-			var lng1 = ll.lon.toFixed(4);
-			var lng2 = ur.lon.toFixed(4);
-			var minLng = lng1<lng2?lng1:lng2;
-			var maxLng = lng1<lng2?lng2:lng1;
-			var x1 = Math.round(minLng * 10000000); 
-			var x2 = Math.round(maxLng * 10000000); 
-			var y1 = Math.round(minLat * 10000000); 
-			var y2 = Math.round(maxLat * 10000000); 
+				var lat1 = ll.lat.toFixed(4);
+				var lat2 = ur.lat.toFixed(4);
+				var minLat = lat1<lat2?lat1:lat2;
+				var maxLat = lat1<lat2?lat2:lat1;
+				var lng1 = ll.lon.toFixed(4);
+				var lng2 = ur.lon.toFixed(4);
+				var minLng = lng1<lng2?lng1:lng2;
+				var maxLng = lng1<lng2?lng2:lng1;
+				var x1 = minLng; 
+				var x2 = maxLng; 
+				var y1 = minLat; 
+				var y2 = maxLat; 
 
-			alert('Modem Positioning System',
-			      'Lat: ' + minLat + ' to ' + maxLat+ '<br>Lng: ' + minLng + ' to ' + maxLng + '<br><br>' +  
-			      '<li><a target="_bank" href="'+ global_url + 'CustomerRect/' + minLng + '/' + maxLng + '/' + minLat + '/' + maxLat + '">Show Customer in Rectangle</a><br>' + 
-			      '</li><li><a target="_bank" href="../customer/mps.php?mp_sys_operation=mp_op_Add&rect=(x > ' + x1 + ' AND x < ' + x2 + ') AND (y > ' + y1 + ' AND y < ' +y2 + ')">Add Modem Positioning Rule</a>' +
-			      '</li><br>(x > ' + x1 + ' AND x <  ' + x2 + ') AND (y > ' + y1 + ' AND y < ' + y2 + ')', {width:500} );
+				alert('Modem Positioning System',
+				      'Lat: ' + minLat + ' to ' + maxLat+ '<br>Lng: ' + minLng + ' to ' + maxLng + '<br><br>' +  
+				      '<li><a target="_bank" href="'+ global_url + 'CustomerRect/' + minLng + '/' + maxLng + '/' + minLat + '/' + maxLat + '">Show Customer in Rectangle</a><br>' + 
+				      '</li><li><a href=' + global_url + '/Mpr/create?value=' + x1 + ';' + x2 + ';' + y1 + ';' +y2 + '">Add Modem Positioning Rule</a>' +
+				      '</li><br>(x > ' + x1 + ' AND x <  ' + x2 + ') AND (y > ' + y1 + ' AND y < ' + y2 + ')', {width:500} );
 
-                    }
-                });
+            }
+        });
 		map.addControl(control);
 
 }
