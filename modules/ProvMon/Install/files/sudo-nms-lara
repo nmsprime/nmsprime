@@ -1,0 +1,3 @@
+Defaults:apache        !requiretty
+
+apache  ALL=(root) NOPASSWD: /usr/bin/ping
