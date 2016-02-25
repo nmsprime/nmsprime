@@ -28,6 +28,7 @@ class ProvMonController extends \BaseModuleController {
 	public function __construct()
 	{
 		$this->domain_name = ProvBase::first()->domain_name;
+		parent::__construct();
 	}
 
 	/*
@@ -49,7 +50,7 @@ class ProvMonController extends \BaseModuleController {
 	public function analyses($id)
 	{
 		$modem = Modem::find($id);
-		$ping = $lease = $log = $dash = $realtime = $type = null;
+		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = null;
 		$view_var = $modem; // for top header
 		$hostname = $modem->hostname.'.'.$this->domain_name;
 		
@@ -57,6 +58,9 @@ class ProvMonController extends \BaseModuleController {
 		exec ('ping -c5 -i0.2 '.$hostname, $ping);
 		if (count(array_keys($ping)) <= 9)
 			$ping = null;
+
+		// Flood Ping
+		$flood_ping = $this->flood_ping ($hostname);
 
 		// Lease
 		$lease = $this->search_lease('hardware ethernet '.$modem->mac);
@@ -82,8 +86,51 @@ class ProvMonController extends \BaseModuleController {
 		$panel_right = $this->prep_sidebar($id);
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var', 'flood_ping')));
 	}
+
+
+	/*
+	 * Flood ping
+	 *
+	 * NOTE:
+	 * --- add /etc/sudoers.d/nms-lara ---
+	 * Defaults:apache        !requiretty
+	 * apache  ALL=(root) NOPASSWD: /usr/bin/ping
+	 * --- /etc/sudoers.d/nms-lara ---
+	 *
+	 * @param hostname  the host to send a flood ping
+	 * @return flood ping exec result
+	 */
+	public function flood_ping ($hostname)
+	{
+		if (array_key_exists('flood_ping', \Input::all()))
+		{
+			switch (\Input::all()['flood_ping'])
+			{
+				case "1":
+					exec("sudo ping -c100 -f $hostname 2>&1", $fp, $ret);
+					break;
+				case "2":
+					exec("sudo ping -c300 -s300 -f $hostname 2>&1", $fp, $ret);
+					break;
+				case "3":
+					exec("sudo ping -c500 -s1472 -f $hostname 2>&1", $fp, $ret);
+					break;
+				case "4":
+					exec("sudo ping -c1000 -f $hostname 2>&1", $fp, $ret);
+					break;
+			}
+
+			// remove the flood ping line "....." from result
+			if ($ret == 0)
+				unset ($fp[1]);
+		}
+		if (!isset($fp))
+			return null;
+		return $fp;
+	}
+
 
 	/**
 	 * Returns view of cpe analysis page
@@ -206,7 +253,7 @@ end:
 		else
 		{
 			$lease['state']    = 'red';
-			$lease['forecast'] = 'No valid lease found';
+			$lease['forecast'] = trans('messages.modem_lease_error');
 		}
 
 		return $lease;

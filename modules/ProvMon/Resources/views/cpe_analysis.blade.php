@@ -23,7 +23,7 @@
 				</table>
 		@endforeach
 	@else
-		<font color="red">No valid Lease found</font>
+		<font color="red">{{ trans('messages.modem_lease_error')}}</font>
 	@endif
 
 @stop
@@ -41,7 +41,7 @@
 				</table>
 		@endforeach
 	@else
-		<font color="red">{{$type}} was not registering on Server - No log entry found</font>
+		<font color="red">{{$type.' '.trans('messages.cpe_log_error')}}</font>
 	@endif
 @stop
 
