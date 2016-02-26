@@ -81,13 +81,12 @@ class TreeErdController extends HfcBaseController {
 		$gid    = $this->graph_id;
 		$target = $this->html_target;
 
-		$arrContextOptions=array(
-  			"ssl"=>array(
-		        	"verify_peer"=>false,
-			        "verify_peer_name"=>false,
-			),
-		);
-		$usemap = str_replace ('alt', 'onContextMenu="return getEl(this.id)" alt', file_get_contents(asset($file.'.map'), false, stream_context_create($arrContextOptions))); 
+		// Generate Usemap
+		// Usemap is required for ERD right/left click function
+		// NOTE: Do not load from url via asset() with file_get_contents().
+		//       file_get_contents() does not work with port forwarding or any kind of port option.
+		//       Also curl with port setting and ssl verify disabled does not work on port forwarding. Tested about 2 hours.
+		$usemap = str_replace ('alt', 'onContextMenu="return getEl(this.id)" alt', file_get_contents(public_path().'/modules/hfcbase/erd/'.$this->filename.'.map'));
 
 		$view_header = "Entity Relation Diagram";
 		$route_name  = 'Tree';
