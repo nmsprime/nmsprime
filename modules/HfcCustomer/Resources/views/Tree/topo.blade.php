@@ -1,4 +1,4 @@
-@extends ('Layout.single')
+@extends ('Layout.split84')
 
 <head>
 
@@ -15,7 +15,7 @@
 
 
 @section('content_top')
-	Topography - Modems
+	{{ HTML::linkRoute('TreeTopo.show', $view_header, [$field, $search]) }}
 @stop
 
 @section('content_left')
@@ -23,5 +23,14 @@
 	@include ('hfcbase::Tree.search')
 
 	<div class="col-md-12" id="map" style="height: 80%;"></div>
+
+
 @stop
 
+
+{{ $view_header_right = 'Diagrams' }}
+@section('content_right')
+
+	<h1>Diagrams</h1>
+
+@stop
