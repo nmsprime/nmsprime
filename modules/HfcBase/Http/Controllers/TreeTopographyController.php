@@ -66,7 +66,43 @@ class TreeTopographyController extends HfcBaseController {
 		$panel_right = [['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$field, $search]], 
 						['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]]];
 
-		return \View::make('hfcbase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'panel_right', 'body_onload', 'field', 'search')));
+		// MPS: get all Modem Positioning Rules
+		$mpr = $this->mpr(Tree::whereRaw($s));
+
+		return \View::make('hfcbase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'panel_right', 'body_onload', 'field', 'search', 'mpr')));
+	}
+
+
+	/*
+	 * MPS: Modem Positioning Rules
+	 * return multi array with MPS rules and Geopositions, like
+	 *   [ [mpr.id] => [0 => [0=>x,1=>y], 1 => [0=>x,1=>y], ..], .. ]
+	 * enable and see dd() for a more detailed view
+	 *
+	 * @param trees: The Tree Objects to be displayed, without ->get() call
+	 * @return array of MPS rules and geopos for all $tree objects
+	 *
+	 * @author: Torsten Schmidt
+	 */
+	public function mpr($trees)
+	{
+		$ret = [];
+
+		foreach ($trees->get() as $tree)
+		{
+			foreach ($tree->mprs as $mpr)
+			{
+				$rect = [];
+				foreach ($mpr->mprgeopos as $pos)
+					array_push ($rect, [$pos->x, $pos->y]);
+
+				if (isset($rect[0]))
+						$ret[$mpr->id] = $rect;
+			}
+		}
+
+		// dd($ret);
+		return $ret;
 	}
 
 

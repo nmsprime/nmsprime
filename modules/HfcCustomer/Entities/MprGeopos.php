@@ -2,6 +2,19 @@
    
 use Illuminate\Database\Eloquent\Model;
 
+
+/*
+ * Modem Positioning Rule Geo Position Model
+ *
+ * This Model will hold all geopos for Entity Relation and
+ * Topograhpy Card Bubbles. One Mpr (Modem Pos Rule) can hold
+ * multiple MprGeopos, which means one Rule can have Multiple
+ * Geopos. two Positions per Mpr rule means rectangle. More than
+ * two Pos is a polygon. This is not implemented yet and requires
+ * update to OpenLayers 3 first.
+ *
+ * Relations: Tree <- Mpr <- MprGeopos
+ */
 class MprGeopos extends \BaseModel {
 
 	// The associated SQL table for this Model
