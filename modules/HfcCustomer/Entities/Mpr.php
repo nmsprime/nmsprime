@@ -1,12 +1,12 @@
 <?php namespace Modules\Hfccustomer\Entities;
-   
+
 use Illuminate\Database\Eloquent\Model;
 
 
 /*
  * Modem Positioning Rule Model
  *
- * This Model will hold all rules for Entity Relation and 
+ * This Model will hold all rules for Entity Relation and
  * Topograhpy Card Bubbles. See MprGeopos for more brief view.
  *
  * Relations: Tree <- Mpr <- MprGeopos
@@ -36,7 +36,7 @@ class Mpr extends \BaseModel {
 	public function get_view_link_title()
 	{
 		return $this->id.' : '.$this->name;
-	}	
+	}
 
 	// Relation to Tree
 	// NOTE: HfcBase Module is required !
@@ -57,7 +57,7 @@ class Mpr extends \BaseModel {
 	{
 		return $this->hasMany('Modules\Hfccustomer\Entities\MprGeopos');
 	}
-	
+
 
 	/*
 	 * Relation Views
@@ -91,15 +91,37 @@ class Mpr extends \BaseModel {
 
 	 * TODO: use a better (more complex) priority algorithm
 	 *
+	 * @param modem: could be a modem->id or a set of pre-selected modem models filtered with Modem::where() or false for all modems
+	 * @return: if param modem is a id the function returns the id of the matched mpr tree_id, in all other cases 0
 	 * @author: Torsten Schmidt
 	 */
-	public static function refresh ()
+	public static function refresh ($modem = null)
 	{
+		// prep vars
+		$single_modem = false;
+		$return = $r = 0;
+
+		// if no modem is set in parameters -> means: select all modems
+		if ($modem == null)
+			$modem = \Modules\ProvBase\Entities\Modem::where('id','>', '0');
+
+		// if param modem is integer select modem with this integer value (modem->id)
+		if (is_int($modem))
+		{
+			$single_modem = true;
+			$modem = \Modules\ProvBase\Entities\Modem::where('id','=', $modem);
+			\Log::info('mps: perform mps rule matching for a single modem');
+		}
+
+		// Log
+		if (!$single_modem)
+			\Log::info('mps: perform mps rule matching');
+
 		// Foreach MPR
 		// lower priority integers first
 		foreach (Mpr::where('id', '>', '0')->orderBy('prio')->get() as $mpr)
 		{
-			// parse rectangles for MPR 
+			// parse rectangles for MPR
 			if (count($mpr->mprgeopos) == 2)
 			{
 				// get ordered MPR Positions
@@ -126,12 +148,30 @@ class Mpr extends \BaseModel {
 					$y2 = $mpr->mprgeopos[0]->y;
 				}
 
+				// the tree_id for the actual rule
 				$id = $mpr->tree_id;
 
-				$r = \Modules\ProvBase\Entities\Modem::whereRaw("(x > $x1) AND (x < $x2) AND (y > $y1) AND (y < $y2)")->update(['tree_id' => $id]);
+				// the selected modems to use for update
+				$select = $modem->whereRaw("(x > $x1) AND (x < $x2) AND (y > $y1) AND (y < $y2)");
 
-				echo 'UPDATE: '.$id.', '.$mpr->name.' -> num updated :'.$r."\n";
+				// for a single modem do not perform a update() either return the tree_id
+				// Note: This is required because we can not call save() from observer context.
+				//       this will re-call all oberservs and could lead to a potential hazard
+				if ($single_modem)
+				{
+					$r = $select->count();
+					$return = $id;
+				}
+				else
+					$r = $select->update(['tree_id' => $id]);
+
+				// Log
+				$log = 'mps: UPDATE: '.$id.', '.$mpr->name.' - updated modems: '.$r;
+				\Log::info ($log);
+				echo $log."\n";
 			}
 		}
+
+		return $return;
 	}
 }
