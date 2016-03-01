@@ -78,54 +78,57 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$base = "/lara/provvoipenvia/request";
 
 		$jobs = array(
-			'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=in',
-			'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=out',
-			'calllog_get_status?contract_id=500000',
-			'configuration_get?phonenumber_id=300001',
-			'contract_create?contract_id=500000',
-			'contract_get_voice_data?contract_id=500000',
-			'contract_terminate?contract_id=500000',
-			'customer_update?contract_id=500000',
-			'misc_ping',
-			'misc_get_free_numbers',
-			'misc_get_free_numbers?localareacode=03735',
-			'misc_get_free_numbers?localareacode=03735&amp;baseno=7696',
-			'misc_get_orders_csv',
-			'misc_get_usage_csv',
-			'order_get_status?order_id=72950',
-			'voip_account_create?phonenumber_id=300001',
-			'voip_account_terminate?phonenumber_id=300001',
-			'',
-			'blacklist_create_entry',
-			'blacklist_delete_entry',
-			'calllog_delete',
-			'calllog_delete_entry',
-			'calllog_get',
-			'configuration_update',
-			'contract_change_method',
-			'contract_change_sla',
-			'contract_change_tariff',
-			'contract_change_variation',
-			'contract_get_reference',
-			'contract_lock',
-			'contract_unlock',
-			'customer_get_reference',
-			'order_add_mgcp_details',
-			'order_cancel',
-			'order_create_attachment',
-			'order_get_status',
-			'phonebookentry_create',
-			'phonebookentry_delete',
-			'phonebookentry_get',
-			'voip_account_update',
+			['api' => 'selfcare', 'link' => 'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=in'],
+			['api' => 'selfcare', 'link' => 'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=out'],
+			['api' => 'selfcare', 'link' => 'calllog_get_status?contract_id=500000'],
+			['api' => 'selfcare', 'link' => 'configuration_get?phonenumber_id=300001'],
+			['api' => 'order', 'link' => 'contract_create?contract_id=500000'],
+			['api' => 'order', 'link' => 'contract_get_voice_data?contract_id=500000'],
+			['api' => 'order', 'link' => 'contract_terminate?contract_id=500000'],
+			['api' => 'order', 'link' => 'customer_update?contract_id=500000'],
+			['api' => 'order', 'link' => 'misc_ping'],
+			['api' => 'order', 'link' => 'misc_get_free_numbers'],
+			['api' => 'order', 'link' => 'misc_get_free_numbers?localareacode=03735'],
+			['api' => 'order', 'link' => 'misc_get_free_numbers?localareacode=03735&amp;baseno=7696'],
+			['api' => 'order', 'link' => 'misc_get_orders_csv'],
+			['api' => 'order', 'link' => 'misc_get_usage_csv'],
+			['api' => 'order', 'link' => 'order_get_status?order_id=72950'],
+			['api' => 'order', 'link' => 'voip_account_create?phonenumber_id=300001'],
+			['api' => 'order', 'link' => 'voip_account_terminate?phonenumber_id=300001'],
+			['api' => '', 'link' => ''],
+			['api' => 'selfcare', 'link' => 'blacklist_create_entry'],
+			['api' => 'selfcare', 'link' => 'blacklist_delete_entry'],
+			['api' => 'selfcare', 'link' => 'calllog_delete'],
+			['api' => 'selfcare', 'link' => 'calllog_delete_entry'],
+			['api' => 'selfcare', 'link' => 'calllog_get'],
+			['api' => 'selfcare', 'link' => 'configuration_update'],
+			['api' => 'order', 'link' => 'contract_change_method'],
+			['api' => 'order', 'link' => 'contract_change_sla'],
+			['api' => 'order', 'link' => 'contract_change_tariff'],
+			['api' => 'order', 'link' => 'contract_change_variation'],
+			['api' => 'order', 'link' => 'contract_get_reference'],
+			['api' => 'order', 'link' => 'contract_lock'],
+			['api' => 'order', 'link' => 'contract_unlock'],
+			['api' => 'selfcare', 'link' => 'customer_get_reference'],
+			['api' => 'order', 'link' => 'order_add_mgcp_details'],
+			['api' => 'order', 'link' => 'order_cancel'],
+			['api' => 'order', 'link' => 'order_create_attachment'],
+			['api' => 'order', 'link' => 'order_get_status'],
+			['api' => 'order', 'link' => 'phonebookentry_create'],
+			['api' => 'order', 'link' => 'phonebookentry_delete'],
+			['api' => 'order', 'link' => 'phonebookentry_get'],
+			['api' => 'order', 'link' => 'voip_account_update'],
 		);
 
+		echo '<h3>Selfcare-API is not active ⇒ links will not be shown</h3>';
 		foreach ($jobs as $job) {
-			if (!boolval($job)) {
+			if (!boolval($job['link'])) {
 				echo "<hr>";
 				continue;
 			}
-			echo '<a href="'.$base.'/'.$job.'" target="_self">'.$job.'</a><br>';
+			if ($job['api'] != "selfcare") {
+				echo '<a href="'.$base.'/'.$job['link'].'" target="_self">'.$job['api'].': '.$job['link'].'</a><br>';
+			}
 		}
 	}
 
