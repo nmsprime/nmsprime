@@ -620,15 +620,12 @@ if (0)
 					foreach ($graph_template as $_tmpl)
 							$sql_graph_template .= ' OR graph_template_id = '.$_tmpl;
 			}
-			\Log::info($sql_graph_template);
-
 
 			// Get all Graph IDs to Modem
 			$graph_ids = [];
 			foreach ($cacti->table('graph_local')->whereRaw("host_id = $host_id AND ($sql_graph_template)")->orderBy('graph_template_id')->get() as $host_graph)
 					array_push($graph_ids, $host_graph->id);
 
-			\Log::info(implode(', ', $graph_ids));
 
 			return $graph_ids;
 	}
@@ -659,11 +656,20 @@ if (0)
 	 */
 	public function monitoring ($modem, $graph_template = null)
 	{
-		if (!ProvMonController::monitoring_get_graph_ids($modem, $graph_template))
+		// Check if Cacti Host RRD files exist
+		// This is a speed-up. A cacti HTTP request takes more time.
+		if (!glob('/usr/share/cacti/rra/'.$modem->hostname.'*'))
+			return false;
+
+		// parse diagram id's from cacti database
+		$ids = ProvMonController::monitoring_get_graph_ids($modem, $graph_template);
+
+		// no id's return
+		if (!$ids)
 			return false;
 
 		/*
-		 * Time Calculation
+		 * Time Span Calculation
 		 */
 		$from = \Input::get('from');
 		$to   = \Input::get('to');
@@ -701,9 +707,13 @@ if (0)
 		$graph_width = '700';
 
 		// Fetch Cacti DB for images of $modem and request the Image from Cacti
-		foreach (ProvMonController::monitoring_get_graph_ids($modem, $graph_template) as $id)
+		foreach ($ids as $id)
 		{
+			// The final URL to parse from
 			$url = "$url_base?local_graph_id=$id&rra_id=0&graph_width=$graph_width&graph_start=$from_t&graph_end=$to_t";
+
+			// Log: Prepare Load Time Measurement
+			$before = microtime(true);
 
 			// Load the image
 			//
@@ -713,13 +723,21 @@ if (0)
 			// See: https://numpanglewat.wordpress.com/2009/07/27/how-to-view-cacti-graphics-without-login/
 			$img = base64_encode(file_get_contents($url, false, stream_context_create($ssl)));
 
-			if ($img)	// if valid image
+			// Log: Time Measurement
+			$after = microtime(true);
+			\Log::info ('cacti: laod '.$url);
+			\Log::info ('cacti: load takes '.($after-$before).' s - result: '.($img ? 'true' : 'false'));
+
+			// if valid image
+			if ($img)
 				$ret['graphs'][$id] = 'data:application/octet-stream;base64,'.$img;
 		}
 
+		// No result checking
 		if (!isset($ret['graphs']))
 			return false;
 
+		// default return
 		return $ret;
 	}
 

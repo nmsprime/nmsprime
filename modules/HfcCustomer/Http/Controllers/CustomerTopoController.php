@@ -174,8 +174,7 @@ class CustomerTopoController extends TreeController {
 	/*
 	* Show Modems Diagrams
 	*
-	* TODO: - module check ProvMon !
-	*       - add cacti graph template id's to ENV
+	* TODO: - add cacti graph template id's to ENV
 	*
 	* @param modems the preselected Modem model, like Modem::where()
 	* @return view with modem diagrams
@@ -184,24 +183,42 @@ class CustomerTopoController extends TreeController {
 	*/
 	public function show_diagrams ($modems)
 	{
+		// check if ProvMon is installed
+		if (!\BaseModel::__module_is_active('ProvMon'))
+			return \View::make('errors.generic')->with('message', 'Module Provisioning Monitoring (ProvMon) not installed');
+
+		// load a new ProvMon object
 		$provmon = new \Modules\ProvMon\Http\Controllers\ProvMonController;
 
+		// Log: prepare time measurement
+		$before = microtime(true);
+
+		// foreach modem
 		foreach ($modems->orderBy('city', 'street')->get() as $modem)
 		{
+			// load per modem diagrams
 			$dia = $provmon->monitoring($modem, [37,38]);
 
+			// valid diagram's ?
 			if ($dia != false)
 			{
 				// Description Line per Modem
 				$dia['descr'] = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' - '.$modem->mac;
 
-				// Add Dias to Array
+				// Add diagrams to monitoring array (goes directly to view)
 				$monitoring[$modem->id] = $dia;
 			}
 		}
 
+		// prepare/load panel right
 		$panel_right = $this->make_right_panel_links($modems);
 
+		// Log: time measurement
+		$after = microtime(true);
+		\Log::info ('DIA: load of entire set takes '.($after-$before).' s');
+
+
+		// show view
 		return \View::make('hfccustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'panel_right')));
 	}
 
