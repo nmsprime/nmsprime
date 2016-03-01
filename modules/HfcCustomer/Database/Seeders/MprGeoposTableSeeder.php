@@ -21,14 +21,23 @@ class MprGeoposTableSeeder extends \BaseSeeder {
 
 		foreach(range(1, $this->max_seed) as $index)
 		{
+			$mpr = Mpr::all()->random(1)->id;
+
 			$x = 13 + $faker->longitude() / 10;
 			$y = 50 + $faker->latitude() / 10;
 
 			MprGeopos::create([
 				'name' => $faker->colorName(),
-				'mpr_id' => Mpr::all()->random(1)->id,
+				'mpr_id' => $mpr,
 				'x' => $x,
 				'y' => $y,
+			]);
+
+			MprGeopos::create([
+				'name' => $faker->colorName(),
+				'mpr_id' => $mpr,
+				'x' => $x + rand(-10000, 10000) / rand (100, 1000),
+				'y' => $y + rand(-10000, 10000) / rand (100, 1000),
 			]);
 		}
 	}
