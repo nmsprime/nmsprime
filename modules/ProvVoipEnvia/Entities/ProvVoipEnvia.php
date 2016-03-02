@@ -886,6 +886,26 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 		}
 
+		$this->_add_sip_data($inner_xml->addChild('method'));
+	}
+
+
+	/**
+	 * Method to add sip data.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_sip_data($xml) {
+
+		$inner_xml = $xml->addChild('sip_data');
+
+		$fields = array(
+			'username' => 'username',
+			'password' => 'password',
+			'sipdomain' => 'sipdomain',
+		);
+
+		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
 	}
 
 
