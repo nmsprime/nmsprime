@@ -18,4 +18,21 @@ class TRCClass extends \BaseModel {
 	public function phonenumbermanagements() {
 		return $this->hasMany('Modules\ProvVoip\Entities\Phonenumber');
 	}
+
+	public static function trcclass_list_for_form_select() {
+
+		$result = array();
+
+		foreach (TRCClass::orderBy('trc_id')->get() as $trc) {
+
+			$id = $trc->id;
+			$short = $trc->trc_short;
+			$desc = $trc->trc_description;
+
+			$result[$id] = $short.': '.$desc;
+		}
+
+		return $result;
+	}
+
 }

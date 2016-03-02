@@ -871,7 +871,11 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
 
-		// special handling for incoming porting needed
+		// special handling of trc class needed (comes from external table)
+		$trc_class = TRCClass::find($this->phonenumbermanagement->trcclass)->trc_id;
+		$inner_xml->addChild('trc_class', $trc_class);
+
+		// special handling for incoming porting needed (comes from external table)
 		if (boolval($this->phonenumbermanagement->porting_in)) {
 			$carrier_in = CarrierCode::find($this->phonenumbermanagement->carrier_in)->carrier_code;
 			if (CarrierCode::is_valid($carrier_in)) {
