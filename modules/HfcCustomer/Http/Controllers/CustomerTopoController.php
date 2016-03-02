@@ -203,7 +203,8 @@ class CustomerTopoController extends TreeController {
 			if ($dia != false)
 			{
 				// Description Line per Modem
-				$dia['descr'] = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' - '.$modem->mac;
+				$descr = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' - '.$modem->mac;
+				$dia['descr']  = \HTML::linkRoute('Modem.edit', $descr, $modem->id);
 
 				// Add diagrams to monitoring array (goes directly to view)
 				$monitoring[$modem->id] = $dia;
