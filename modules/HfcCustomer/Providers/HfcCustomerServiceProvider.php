@@ -17,6 +17,7 @@ class HfcCustomerServiceProvider extends ServiceProvider {
 	 */
 	protected $commands = [
 		'Modules\HfcCustomer\Console\MpsCommand',
+		'Modules\HfcCustomer\Console\ModemRefreshCommand',
 	];
 
 	/**
