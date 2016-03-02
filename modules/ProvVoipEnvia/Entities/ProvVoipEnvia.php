@@ -5,6 +5,7 @@ namespace Modules\ProvVoipEnvia\Entities;
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
+use Modules\ProvVoip\Entities\CarrierCode;
 use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
@@ -847,15 +848,40 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$inner_xml = $xml->addChild('callnumbers');
 
-		// TODO: this contains callnumber_single_data, callnumber_range_data or callnumber_new_data objects – format unknown…
+		// TODO: this contains callnumber_single_data, callnumber_range_data or callnumber_new_data objects
+		// in this first step we only implement callnumber_single_data
+		$this->_add_callnumber_single_data($inner_xml);
+
+	}
 
 
-		// we just add single numbers (and call this as often as needed)…
+	/**
+	 * Method to add data for a single callnumber
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_callnumber_single_data($xml) {
+
+		$inner_xml = $xml->addChild('callnumber_single_data');
+
 		$fields = array(
-			'callnumber' => array('prefix_number', 'number', ''),
+			'localareacode' => 'prefix_number',
+			'baseno' => 'number',
 		);
 
 		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
+
+		// special handling for incoming porting needed
+		if (boolval($this->phonenumbermanagement->porting_in)) {
+			$carrier_in = CarrierCode::find($this->phonenumbermanagement->carrier_in)->carrier_code;
+			if (CarrierCode::is_valid($carrier_in)) {
+				$inner_xml->addChild('carriercode', $carrier_in);
+			}
+			else {
+				throw new \Exception('ERROR: '.$carrier_code.' is not a valid carrier_code');
+			}
+		}
+
 	}
 
 
