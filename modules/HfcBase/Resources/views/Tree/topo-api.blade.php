@@ -12,7 +12,7 @@ var global_url = "<?php echo Request::root(); ?>/";
 
 
 /*
- * Google Cards ? 
+ * Google Cards ?
  */
 function map_google_init ()
 {
@@ -83,7 +83,7 @@ function map_mps_init()
 				var bounds = new OpenLayers.Bounds($pos);
 				box$i = new OpenLayers.Marker.Box(bounds.transform(new OpenLayers.Projection(\"EPSG:4326\"),map.getProjectionObject()));
 				box$i.events.register(\"click\", box$i, function (e) {
-					alert (\"Modem Positioning System - MPR id: $id\", 
+					alert (\"Modem Positioning System - MPR id: $id\",
 					       '<li><a href=' + global_url + '/Mpr/$id/edit>Show Rule</a></li>',
 					       {width:150});
 				});
@@ -116,7 +116,7 @@ function clk_init_1()
                 "featureselected": onFeatureSelect
         });
         map.addControl(select);
-        select.activate();   
+        select.activate();
 
 	function onFeatureSelect(event) {
 		var feature = event.feature;
@@ -140,11 +140,11 @@ function clk_init_1()
 		{
 			var lines = descr.split("<br>").length;
 			var height = 0;
-		
+
 			if (lines > 15)
 				height = 400;
 
-			alert ("Modem Positioning System", descr, {width:300});
+			alert ("Modem Positioning System", descr, {left:400, top:300, width:document.width-50, height:height>0?height:document.height-50});
 		}
 		select.unselectAll(); // Skip UnSelect option, allows multiple clicks to one element
 	}
@@ -166,7 +166,7 @@ function clk_init_2()
 	/*
 	 * Control class for capturing card click events...
 	 */
-	OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {                
+	OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
 		defaultHandlerOptions: {
 			'single': true,
 			'double': true,
@@ -177,7 +177,7 @@ function clk_init_2()
 		handleRightClicks:true,
 		initialize: function(options) {
 			this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
-			OpenLayers.Control.prototype.initialize.apply(this, arguments); 
+			OpenLayers.Control.prototype.initialize.apply(this, arguments);
 			this.handler = new OpenLayers.Handler.Click(this, this.eventMethods, this.handlerOptions );
 		},
 		CLASS_NAME: "OpenLayers.Control.Click"
@@ -186,7 +186,7 @@ function clk_init_2()
 	// Add an instance of the Click control that listens to various click events:
 	var oClick = new OpenLayers.Control.Click({eventMethods:{
 		'rightclick': function(e) {
-			var ll = map.getLonLatFromPixel(e.xy); 
+			var ll = map.getLonLatFromPixel(e.xy);
 			ll.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
 			var lon = ll.lon.toFixed(6);
 			var lat = ll.lat.toFixed(6);
@@ -196,8 +196,8 @@ function clk_init_2()
 			// populate yor box/field with lat, lng
 			alert('Add Network Element',
 			  'Geoposition: ' + pos +
-			  '<br><br><a href="' + tree + '?pos=' + pos + '&kml=' + kml + '">Add Device</a>' + 
-			  '<br><a href="tree.fastadd.php?pos=' + pos + '&kml=' + kml + '">Add Device (fast method)</a>' 
+			  '<br><br><a href="' + tree + '?pos=' + pos + '&kml=' + kml + '">Add Device</a>' +
+			  '<br><a href="tree.fastadd.php?pos=' + pos + '&kml=' + kml + '">Add Device (fast method)</a>'
 			);
 		},
 		'click': function(e) {},
@@ -223,8 +223,8 @@ function clk_init_2()
             },
 
             notice: function (bounds) {
-                var ll = map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.left, bounds.bottom)); 
-                var ur = map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.right, bounds.top)); 
+                var ll = map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.left, bounds.bottom));
+                var ur = map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.right, bounds.top));
 				ll.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
 				ur.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
                 // var maxLat = ur.lat.toFixed(4);
@@ -237,14 +237,14 @@ function clk_init_2()
 				var lng2 = ur.lon.toFixed(4);
 				var minLng = lng1<lng2?lng1:lng2;
 				var maxLng = lng1<lng2?lng2:lng1;
-				var x1 = minLng; 
-				var x2 = maxLng; 
-				var y1 = minLat; 
-				var y2 = maxLat; 
+				var x1 = minLng;
+				var x2 = maxLng;
+				var y1 = minLat;
+				var y2 = maxLat;
 
 				alert('Modem Positioning System',
-				      'Lat: ' + minLat + ' to ' + maxLat+ '<br>Lng: ' + minLng + ' to ' + maxLng + '<br><br>' +  
-				      '<li><a target="_bank" href="'+ global_url + 'CustomerRect/' + minLng + '/' + maxLng + '/' + minLat + '/' + maxLat + '">Show Customer in Rectangle</a><br>' + 
+				      'Lat: ' + minLat + ' to ' + maxLat+ '<br>Lng: ' + minLng + ' to ' + maxLng + '<br><br>' +
+				      '<li><a target="_bank" href="'+ global_url + 'CustomerRect/' + minLng + '/' + maxLng + '/' + minLat + '/' + maxLat + '">Show Customer in Rectangle</a><br>' +
 				      '</li><li><a href=' + global_url + '/Mpr/create?value=' + x1 + ';' + x2 + ';' + y1 + ';' +y2 + '">Add Modem Positioning Rule</a>' +
 				      '</li><br>(x > ' + x1 + ' AND x <  ' + x2 + ') AND (y > ' + y1 + ' AND y < ' + y2 + ')', {width:500} );
 
@@ -355,7 +355,7 @@ function map_kml_customer_load ()
 /*
  * MAP API Init
  */
-function map_init() 
+function map_init()
 {
 	// MAP
 	map = new OpenLayers.Map('map',
@@ -371,7 +371,7 @@ function map_init()
 	osm = new OpenLayers.Layer.OSM("Open Street Map");
 	map_google_init();
 
-	// Center / Zoom: 
+	// Center / Zoom:
 	// TODO: use global define for default pos
 	map.setCenter(
 		new OpenLayers.LonLat(
@@ -383,7 +383,7 @@ function map_init()
 	);
 
 
-	var bounds = new OpenLayers.Bounds(); 
+	var bounds = new OpenLayers.Bounds();
 
 <?php
 
@@ -399,12 +399,12 @@ function map_init()
 
 		if ($pos)
 		{
-			echo "    
+			echo "
 				var markers = new OpenLayers.Layer.Markers( \"Markers\" );
 	    			map.addLayer(markers);
 				markers.addMarker(new OpenLayers.Marker(map.getCenter()));";
 		}
-	 
+
 
 		if ($zoom)
 		{

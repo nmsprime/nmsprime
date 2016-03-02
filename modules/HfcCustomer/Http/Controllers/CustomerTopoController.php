@@ -203,7 +203,8 @@ class CustomerTopoController extends TreeController {
 			if ($dia != false)
 			{
 				// Description Line per Modem
-				$dia['descr'] = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' - '.$modem->mac;
+				$descr = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' - '.$modem->mac;
+				$dia['descr']  = \HTML::linkRoute('Modem.edit', $descr, $modem->id);
 
 				// Add diagrams to monitoring array (goes directly to view)
 				$monitoring[$modem->id] = $dia;
@@ -344,34 +345,23 @@ class CustomerTopoController extends TreeController {
 				$hf = 'critical';
 
 			#
-			# TODO: Contract
+			# Contract
 			#
-if (0)
-{
-			# contract
 			$contract   = $modem->contract;
-			$vertragsnr = $contract->vertragsnummer;
-			$nachname   = utf8_encode($contract->nachname);
+			$contractid = $contract->id;
+			$lastname   = $contract->lastname;
 
 			# Headline: Address from DB
-			if ($str != $modem->strasse || $ort != $modem->ort || $plz != $modem->plz)
+			if ($str != $modem->street || $city != $modem->city || $zip != $modem->zip)
 			{
-				$str = utf8_encode($modem->strasse);
-				$ort = utf8_encode($modem->ort);
-				$plz = $modem->plz;
-				$descr .= "<b>$plz, $ort, $str</b><br>";
+				$str = $modem->street;
+				$city = $modem->city;
+				$zip = $modem->zip;
+				$descr .= "<b>$zip, $city, $str</b><br>";
 			}
 
-}
-else
-{
-			$descr .= "<b>Postcode, Place, Street</b><br>";
-			$vertragsnr = 'contract-nr';
-			$nachname   = "Lastname";
-}
-
 			# add descr line
-			$descr .= "<a target=\"".$this->html_target."\" href='".\Request::root()."/Modem/$mid/edit'>$mac</a>, $vertragsnr, $nachname, $hf<br>";
+			$descr .= "<a target=\"".$this->html_target."\" href='".\Request::root()."/Modem/$mid/edit'>$mac</a>, $contractid, $lastname, $hf<br>";
 			$num += 1;
 		}
 
