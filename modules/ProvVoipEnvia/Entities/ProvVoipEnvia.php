@@ -117,8 +117,12 @@ class ProvVoipEnvia extends \BaseModel {
 			$contract_id = $model->id;
 			$phonenumber_id = null;
 		}
+		elseif ($view_level == 'phonenumber') {
+			$contract_id = $model->mta->modem->contract->id;
+			$phonenumber_id = $model->id;
+		}
 		else {
-			throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumbermanagement]');
+			throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumber|phonenumbermanagement]');
 		}
 
 		// add this to all actions that can be performed without extra confirmation
@@ -129,7 +133,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		////////////////////////////////////////
 		// misc jobs
-		if (in_array($view_level, ['contract', 'phonenumbermanagement'])) {
+		if (in_array($view_level, ['contract', 'phonenumber', 'phonenumbermanagement'])) {
 			$ret = array(
 				array('class' => 'Misc'),
 				array('linktext' => 'Ping Envia API', 'url' => $base.'misc_ping'.$origin.$really),
@@ -284,8 +288,8 @@ class ProvVoipEnvia extends \BaseModel {
 				$this->phonenumber = Phonenumber::findOrFail($phonenumber_id);
 			}
 
-			// get related models (when if phonenumber model exists)
-			// in other cases: there ar no clear relations
+			// get related models (if phonenumber model exists)
+			// in other cases: there are no clear relations
 			if (!is_null($this->phonenumber)) {
 				$this->mta = $this->phonenumber->mta;
 				$this->modem = $this->mta->modem;
@@ -305,6 +309,14 @@ class ProvVoipEnvia extends \BaseModel {
 		elseif (($level == 'phonenumbermanagement') && !is_null($model)) {
 			$this->phonenumbermanagement = $model;
 			$this->phonenumber = $this->phonenumbermanagement->phonenumber;
+			$this->mta = $this->phonenumber->mta;
+			$this->modem = $this->mta->modem;
+			$this->contract = $this->modem->contract;
+		}
+		// build relations starting with model phonenumber
+		elseif (($level == 'phonenumber') && !is_null($model)) {
+			$this->phonenumbermanagement = new PhonenumberManagement();
+			$this->phonenumber = $model;
 			$this->mta = $this->phonenumber->mta;
 			$this->modem = $this->mta->modem;
 			$this->contract = $this->modem->contract;
@@ -1137,6 +1149,11 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$order_id = \Input::get('order_id');
 		$order = EnviaOrder::where('orderid', '=', $order_id)->first();
+
+		// something went wrong! There is no database entry for the given orderID
+		if ($order == null) {
+			throw new \Exception('ERROR: There is no order with order_id '.$order_id.' in table enviaorders');
+		}
 
 		$out = "<h5>Status for order ".$order_id.":</h5>";
 

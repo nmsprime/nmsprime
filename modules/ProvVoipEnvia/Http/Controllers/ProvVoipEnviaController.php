@@ -459,17 +459,17 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		// the URLs to use for the jobs to do
 		$urls = array(
-			'blacklist_create_entry' => $base_url.'____TODO____',
-			'blacklist_delete_entry' => $base_url.'____TODO____',
-			'blacklist_get' => $base_url.'selfcare/blacklist/get',
+			/* 'blacklist_create_entry' => $base_url.'____TODO____', */
+			/* 'blacklist_delete_entry' => $base_url.'____TODO____', */
+			/* 'blacklist_get' => $base_url.'selfcare/blacklist/get', */
 
-			'calllog_delete' => $base_url.'____TODO____',
-			'calllog_delete_entry' => $base_url.'____TODO____',
-			'calllog_get' => $base_url.'____TODO____',
-			'calllog_get_status' => $base_url.'selfcare/calllog/get_status',
+			/* 'calllog_delete' => $base_url.'____TODO____', */
+			/* 'calllog_delete_entry' => $base_url.'____TODO____', */
+			/* 'calllog_get' => $base_url.'____TODO____', */
+			/* 'calllog_get_status' => $base_url.'selfcare/calllog/get_status', */
 
-			'configuration_get' => $base_url.'selfcare/configuration/get',
-			'configuration_update' => $base_url.'____TODO____',
+			/* 'configuration_get' => $base_url.'selfcare/configuration/get', */
+			/* 'configuration_update' => $base_url.'____TODO____', */
 
 			'contract_change_method' => $base_url.'____TODO____',
 			'contract_change_sla' => $base_url.'____TODO____',
@@ -504,7 +504,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'voip_account_update' => $base_url.'____TODO____',
 		);
 
-		// TODO: improve error handling
+		// TODO: improve error handling: Throwing an exception is a bit hard :-)
 		if (!array_key_exists($job, $urls)) {
 			throw new \Exception("Job ".$job." not implemented yet");
 		}
