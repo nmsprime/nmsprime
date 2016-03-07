@@ -9,16 +9,16 @@ class Price extends \BaseModel {
 
 	// Add your validation rules here
 	public static function rules($id = null)
-    {
-        return array(
+	{
+		return array(
 			// 'hostname' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
-        );
-    }
+		);
+	}
 
 
-    /**
-     * View related stuff
-     */
+	/**
+	 * View related stuff
+	 */
 
 	// Name of View
 	public static function get_view_header()
@@ -40,12 +40,12 @@ class Price extends \BaseModel {
 
 
 	/**
-     * Relationships:
-     */
+	 * Relationships:
+	 */
 
-    public function quality ()
-    {
-        return $this->belongsTo('Modules\ProvBase\Entities\Qos', 'qos_id');
-    }
+	public function quality ()
+	{
+		return $this->belongsTo('Modules\ProvBase\Entities\Qos', 'qos_id');
+	}
 
 }
