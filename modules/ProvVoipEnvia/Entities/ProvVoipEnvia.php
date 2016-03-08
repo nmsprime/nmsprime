@@ -195,7 +195,7 @@ class ProvVoipEnvia extends \BaseModel {
 			if ($this->contract_created) {
 				foreach (EnviaOrder::where('contract_id', '=', $contract_id)->orderBy("orderid")->get() as $order) {
 
-					// if in view phonenumbermanagement: show only orders related to this phonenumber
+					// if in view phonenumber*: show only orders related to this phonenumber
 					if (in_array($view_level, ['phonenumber', 'phonenumbermanagement'])) {
 						if (boolval($order->phonenumber_id) && $order->phonenumber_id != $phonenumber_id) {
 							continue;
