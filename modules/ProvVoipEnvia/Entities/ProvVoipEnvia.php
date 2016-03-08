@@ -1130,6 +1130,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['customerreference'] = $xml->customerreference;
 		$order_data['contractreference'] = $xml->contractreference;
 		$order_data['contract_id'] = $this->contract->id;
+		$order_data['ordertype'] = 'contract/create';
 
 		$enviaOrder = EnviaOrder::create($order_data);
 
@@ -1152,6 +1153,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$order_data['orderid'] = $xml->orderid;
 		$order_data['contract_id'] = $this->contract->id;
+		$order_data['ordertype'] = 'customer/update';
 
 		$enviaOrder = EnviaOrder::create($order_data);
 
@@ -1281,4 +1283,33 @@ class ProvVoipEnvia extends \BaseModel {
 		$out .= "<b>Database updated</b>";
 		return $out;
 	}
+
+	/**
+	 * Process data after successful voipaccount creation
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_voip_account_create_response($xml, $data, $out) {
+
+		// update phonenumbermanagement
+		$this->phonenumbermanagement->voipaccount_ext_creation_date = date('Y-m-d H:i:s');
+		$this->phonenumbermanagement->save();
+
+		// create enviaorder
+		$order_data = array();
+
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['contract_id'] = $this->contract->id;
+		$order_data['phonenumber_id'] = $this->phonenumber->id;
+		$order_data['ordertype'] = 'voip_account/create';
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// view data
+		$out .= "<h5>VoIP account created (order ID: ".$xml->orderid.")</h5>";
+
+		return $out;
+
+	}
+
 }

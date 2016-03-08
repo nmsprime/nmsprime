@@ -499,7 +499,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'phonebookentry_delete' => $base_url.'____TODO____',
 			'phonebookentry_get' => $base_url.'____TODO____',
 
-			'voip_account_create' => $base_url.'voipaccount/create',
+			'voip_account_create' => $base_url.'voip_account/create',
 			'voip_account_terminate' => $base_url.'____TODO____',
 			'voip_account_update' => $base_url.'____TODO____',
 		);
