@@ -168,16 +168,6 @@ class ProvVoipEnvia extends \BaseModel {
 				array_push($ret, array('linktext' => 'Get voice data', 'url' => $base.'contract_get_voice_data'.$origin.'&amp;contract_id='.$contract_id.$really));
 			}
 
-			// order(s) exist if contract has been created
-			if ($this->contract_created) {
-				$orders = array();
-				foreach (EnviaOrder::where('contract_id', '=', $contract_id)->orderBy("orderid")->get() as $order) {
-					$order_id = $order->orderid;
-					$order_type = $order->ordertype;
-					array_push($ret, array('linktext' => 'Order '.$order_id.' ('.$order_type.')', 'url' => $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really));
-				}
-			}
-
 		}
 
 
@@ -198,37 +188,62 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 		////////////////////////////////////////
-		// configuration related stuff
-		if (in_array($view_level, ['phonenumbermanagement'])) {
-			array_push($ret, array('class' => 'Configuration'));
+		// order related jobs
+		if (in_array($view_level, ['contract', 'phonenumber', 'phonenumbermanagement'])) {
+			array_push($ret, array('class' => 'Orders'));
+			// order(s) exist if contract has been created
+			if ($this->contract_created) {
+				foreach (EnviaOrder::where('contract_id', '=', $contract_id)->orderBy("orderid")->get() as $order) {
 
-			if ($this->voipaccount_available) {
-				array_push($ret, array('linktext' => 'Get Configuration', 'url' => $base.'selfcare/configuration/get'.$origin.'&amp;phonenumber_id='.$phonenumber_id.'&amp;'.$really));
+					// if in view phonenumbermanagement: show only orders related to this phonenumber
+					if (in_array($view_level, ['phonenumber', 'phonenumbermanagement'])) {
+						if (boolval($order->phonenumber_id) && $order->phonenumber_id != $phonenumber_id) {
+							continue;
+						}
+					}
+
+					// process data
+					$order_id = $order->orderid;
+					$order_type = $order->ordertype;
+					$order_status = $order->orderstatus;
+					array_push($ret, array('linktext' => $order_type.': <i>'.$order_status.'</i>', 'url' => $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really));
+				}
 			}
 		}
+
+
+		////////////////////////////////////////
+		// configuration related stuff
+		/* if (in_array($view_level, ['phonenumbermanagement'])) { */
+		/* 	array_push($ret, array('class' => 'Configuration')); */
+
+		/* 	if ($this->voipaccount_available) { */
+		/* 		array_push($ret, array('linktext' => 'Get Configuration', 'url' => $base.'selfcare/configuration/get'.$origin.'&amp;phonenumber_id='.$phonenumber_id.'&amp;'.$really)); */
+		/* 	} */
+		/* } */
 
 
 		////////////////////////////////////////
 		// calllog related stuff
-		if (in_array($view_level, ['phonenumbermanagement'])) {
-			array_push($ret, array('class' => 'Calllog'));
+		/* if (in_array($view_level, ['phonenumbermanagement'])) { */
+		/* 	array_push($ret, array('class' => 'Calllog')); */
 
-			if ($this->voipaccount_available) {
-				array_push($ret, array('linktext' => 'Get calllog status', 'url' => $base.'selfcare/calllog/get_status'.$origin.'&amp;contract_id='.$contract_id.'&amp;'.$really));
-			}
-		}
+		/* 	if ($this->voipaccount_available) { */
+		/* 		array_push($ret, array('linktext' => 'Get calllog status', 'url' => $base.'selfcare/calllog/get_status'.$origin.'&amp;contract_id='.$contract_id.'&amp;'.$really)); */
+		/* 	} */
+		/* } */
 
 
 		////////////////////////////////////////
 		// blacklist related stuff
-		if (in_array($view_level, ['phonenumbermanagement'])) {
-			array_push($ret, array('class' => 'Blacklist'));
+		/* if (in_array($view_level, ['phonenumbermanagement'])) { */
+		/* 	array_push($ret, array('class' => 'Blacklist')); */
 
-			if ($this->voipaccount_available) {
-				array_push($ret, array('linktext' => 'Get blacklist in', 'url' => $base.'selfcare/blacklist/get'.$origin.'&amp;phonenumber_id='.$phonenumber_id.'&amp;envia_blacklist_get_direction=in&amp;'.$really));
-				array_push($ret, array('linktext' => 'Get blacklist out', 'url' => $base.'selfcare/blacklist/get'.$origin.'&amp;phonenumber_id='.$phonenumber_id.'&amp;envia_blacklist_get_direction=out&amp;'.$really));
-			}
-		}
+		/* 	if ($this->voipaccount_available) { */
+		/* 		array_push($ret, array('linktext' => 'Get blacklist in', 'url' => $base.'selfcare/blacklist/get'.$origin.'&amp;phonenumber_id='.$phonenumber_id.'&amp;envia_blacklist_get_direction=in&amp;'.$really)); */
+		/* 		array_push($ret, array('linktext' => 'Get blacklist out', 'url' => $base.'selfcare/blacklist/get'.$origin.'&amp;phonenumber_id='.$phonenumber_id.'&amp;envia_blacklist_get_direction=out&amp;'.$really)); */
+		/* 	} */
+		/* } */
 
 
 		return $ret;
@@ -1131,6 +1146,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['contractreference'] = $xml->contractreference;
 		$order_data['contract_id'] = $this->contract->id;
 		$order_data['ordertype'] = 'contract/create';
+		$order_data['orderstatus'] = 'initializing';
 
 		$enviaOrder = EnviaOrder::create($order_data);
 
@@ -1154,6 +1170,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['orderid'] = $xml->orderid;
 		$order_data['contract_id'] = $this->contract->id;
 		$order_data['ordertype'] = 'customer/update';
+		$order_data['orderstatus'] = 'initializing';
 
 		$enviaOrder = EnviaOrder::create($order_data);
 
@@ -1302,6 +1319,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['contract_id'] = $this->contract->id;
 		$order_data['phonenumber_id'] = $this->phonenumber->id;
 		$order_data['ordertype'] = 'voip_account/create';
+		$order_data['orderstatus'] = 'initializing';
 
 		$enviaOrder = EnviaOrder::create($order_data);
 
