@@ -3,10 +3,10 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateItemTable extends BaseMigration {
+class CreateAccountingTable extends BaseMigration {
 
 	// name of the table to create
-	protected $tablename = "item";
+	protected $tablename = "accounting";
 
 	/**
 	 * Run the migrations.
@@ -19,11 +19,9 @@ class CreateItemTable extends BaseMigration {
 		{
 			$this->up_table_generic($table);
 
-			$table->integer('contract_id')->unsigned();
-			$table->integer('price_id')->unsigned();
-			$table->date('payment_from');
-			$table->date('payment_to');
-			$table->integer('credit_amount');
+			$table->string('contract_id');
+			$table->string('name');
+			$table->integer('price');
 		});
 
 		return parent::up();

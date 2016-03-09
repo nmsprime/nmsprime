@@ -16,6 +16,7 @@ class BillingBaseServiceProvider extends ServiceProvider {
 	 */
 	protected $commands = [
 		'Modules\BillingBase\Console\generateDirectDebitXmlCommand',
+		'Modules\BillingBase\Console\accountingCommand',
 	];
 
 	/**
