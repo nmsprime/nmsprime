@@ -50,7 +50,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		// as this method is not protected by normal auth mechanism we will allow only a small number of jobs
 		$allowed_cron_jobs = array(
-			'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
+			/* 'misc_get_orders_csv' => $base_url.'misc/get_orders_csv', */
 			'order_get_status' => $base_url.'order/get_status',
 		);
 
@@ -60,13 +60,21 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			exit(1);
 		}
 
-		// the API URL to use for the request
-		$url = $allowed_cron_jobs[$job];
+		// execute only if job is currently allowed
+		if (!$this->_job_allowed($job)) {
+			$view_var = $this->_show_job_not_allowed_info($job, $origin);
+		}
+		else {
 
-		// the requests payload (=XML)
-		$payload = $this->model->get_xml($job);
+			// the API URL to use for the request
+			$url = $allowed_cron_jobs[$job];
 
-		$view_var = $this->_perform_request($url, $payload, $job);
+			// the requests payload (=XML)
+			$payload = $this->model->get_xml($job);
+
+			$view_var = $this->_perform_request($url, $payload, $job);
+		}
+
 		echo $view_var;
 	}
 
@@ -283,27 +291,62 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 */
 	protected function _job_allowed($job) {
 
-		// get the models environment
-		if (\Str::startswith($job, 'contract_')) {
-			$this->model->extract_environment($this->model->contract, 'contract');
-		}
-		elseif (\Str::startswith($job, 'voipaccount_')) {
-			$this->model->extract_environment($this->model->voipaccount, 'voipaccount_');
+		// these jobs are allowed in every case
+		$unrestricted_jobs = array(
+			'misc_ping',
+			'misc_get_free_numbers',
+			'misc_get_orders_csv',
+			'misc_get_usage_csv',
+			'order_get_status',
+		);
+		if (in_array($job, $unrestricted_jobs)) {
+			return true;
 		}
 
-		// run the checks
+		// perform checks for the rest of the jobs
 		if ($job == "contract_create") {
+			$this->model->extract_environment($this->model->contract, 'contract');
+
 			// contract creation is only allowed once (you cannot re-create a contract)
-			if (!isset($this->model->contract_created)) {
-				dd($this);
-			}
 			if ($this->model->contract_created) {
 				return false;
 			}
+
+			return true;
 		}
 
-		// no restrictions (default)
-		return true;
+		if ($job == "contract_get_voice_data") {
+			$this->model->extract_environment($this->model->contract, 'contract');
+
+			// only can get data for a contract that exists (or existed)
+			if (!$this->model->contract_created) {
+				return false;
+			}
+
+			return true;
+		}
+
+
+		if ($job == "customer_update") {
+			$this->model->extract_environment($this->model->contract, 'contract');
+
+			// Customer can only be updated if active contract exists
+			if (!$this->model->contract_available) {
+				return false;
+			}
+
+			return true;
+		}
+
+
+		/* elseif (\Str::startswith($job, 'voipaccount_')) { */
+		/* 	$this->model->extract_environment($this->model->voipaccount, 'voipaccount_'); */
+		/* } */
+
+
+		// forbid every other action by default
+		// using a whitelist prevents you from forgetting something
+		return false;
 	}
 
 

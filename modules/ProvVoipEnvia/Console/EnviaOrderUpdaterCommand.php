@@ -33,6 +33,9 @@ class EnviaOrderUpdaterCommand extends Command {
 	 */
 	public function __construct()
 	{
+		// this comes from config/app.php (key 'url')
+		$this->base_url = \Config::get('app.url');
+
 		parent::__construct();
 	}
 
@@ -45,24 +48,117 @@ class EnviaOrderUpdaterCommand extends Command {
 	public function fire()
 	{
 
+		echo "\n";
 		$this->_get_orders();
 
+		echo "\n";
 		$this->_update_orders();
+
+		echo "\n";
 
 	}
 
+	/**
+	 * Get all the Envia orders to be updated.
+	 * Currently this is an simple select – later we could add some more checks: E.g. don't get updates for orders in final state.
+	 *
+	 * @author Patrick Reichel
+	 */
 	protected function _get_orders() {
 
 		$this->orders = EnviaOrder::all();
 
 	}
 
+	/**
+	 * Update the relevant orders.
+	 *
+	 * @author Patrick Reichel
+	 */
 	protected function _update_orders() {
 
-		$c = new ProvVoipEnviaController();
-		/* foreach ($this->orders as $order) { */
-		/* 	 $order_id = $order->orderid; */
-		/* } */
+		foreach ($this->orders as $order) {
+
+			$order_id = $order->orderid;
+			Log::debug('Updating order '.$order_id);
+
+			// get the relative URL to execute the cron job for updating the current order_id
+			$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'order_get_status', 'order_id' => $order_id, 'really' => 'True'), false);
+
+			$url = $this->base_url.$url_suffix;
+
+			$this->_perform_curl_request($url);
+
+			if (!$this->_updated($order_id)) {
+				Log::error("Order id ".$order_id." has not been updated");
+			}
+
+		}
+
+	}
+
+	/**
+	 * Update an order (using a curl request against the given URL.
+	 * Since updating uses the same functionality as updating via frontend we accessing the cron method in ProvVoipEnviaController using cURL.
+	 *
+	 * This may be not the best way – but the one without bigger refactoring of the sources…
+	 * TODO: Evaluate other solutions…
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @param $url URL to be accessed by cURL
+	 */
+	protected function _perform_curl_request($url) {
+
+		$ch = curl_init();
+
+		$opts = array(
+			CURLOPT_URL => $url,
+			CURLOPT_HEADER => false,
+			CURLOPT_SSL_VERIFYPEER => false,	// no valid cert for “localhost” – so we don't check
+			CURLOPT_RETURNTRANSFER => TRUE,		// return result instead of instantly printing to screen
+		);
+
+		curl_setopt_array($ch, $opts);
+
+		$res = curl_exec($ch);
+		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+		if ($http_code != 200) {
+			Log::error("HTTP error ".$http_code." occured in scheduled updating of envia orders");
+		}
+
+		curl_close($ch);
+	}
+
+	/**
+	 * Check if the given order id has been updated.
+	 * This simply compares database “updated_at” against the system clock.
+	 * If updated_at is to old we assume that somenthing went wrong – and make a log entry.
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @param $order_id ID of the order to be checked
+	 */
+	protected function _updated($order_id) {
+
+		// not older than 30sec
+		$compare_time = date('Y-m-d H:i:s', time() - 30);
+
+		$order = EnviaOrder::withTrashed()->where('orderid', '=', $order_id)->first();
+
+		// if order is deleted it has been updated
+		if (boolval($order->deleted_at)) {
+			return true;
+		}
+
+		// else: compare times
+		if ($order->updated_at >= $compare_time) {
+			return true;
+		}
+
+		return false;
+
 	}
 
 }
