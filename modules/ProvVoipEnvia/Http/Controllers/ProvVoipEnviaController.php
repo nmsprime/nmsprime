@@ -358,6 +358,30 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			return true;
 		}
 
+		if ($job == "voip_account_create") {
+			$this->model->extract_environment($this->model->phonenumbermanagement, 'phonenumbermanagement');
+
+			// can only be created if not yet created
+			if ($this->model->voipaccount_created) {
+				return false;
+			}
+
+			return true;
+		}
+
+		if ($job == "voip_account_terminate") {
+			$this->model->extract_environment($this->model->phonenumbermanagement, 'phonenumbermanagement');
+
+			// can only be terminated if available
+			if (!$this->model->voipaccount_available) {
+				return false;
+			}
+
+			return true;
+		}
+
+
+
 
 		/* elseif (\Str::startswith($job, 'voipaccount_')) { */
 		/* 	$this->model->extract_environment($this->model->voipaccount, 'voipaccount_'); */
@@ -510,7 +534,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'phonebookentry_get' => $base_url.'____TODO____',
 
 			'voip_account_create' => $base_url.'voip_account/create',
-			'voip_account_terminate' => $base_url.'____TODO____',
+			'voip_account_terminate' => $base_url.'voip_account/terminate',
 			'voip_account_update' => $base_url.'____TODO____',
 		);
 

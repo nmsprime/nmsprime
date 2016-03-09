@@ -15,7 +15,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Prettify xml for output on screen.
+	 * Helper to prettify xml for output on screen.
 	 * Use e.g. for debugging.
 	 *
 	 * @author Patrick Reichel
@@ -208,9 +208,10 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 
 			// contract can be terminated if is created and not yet terminated
-			if ($this->contract_available) {
-				array_push($ret, array('linktext' => 'Terminate contract', 'url' => $base.'contract_terminate'.$origin.'&amp;contract_id='.$contract_id));
-			}
+			// not yet implemented ⇒ a contract will terminated automatically by termination of the last number
+			/* if ($this->contract_available) { */
+			/* 	array_push($ret, array('linktext' => 'Terminate contract', 'url' => $base.'contract_terminate'.$origin.'&amp;contract_id='.$contract_id)); */
+			/* } */
 
 			// customer data change possible if there is a contract
 			if ($this->contract_available) {
@@ -1007,6 +1008,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$fields = array(
 			'orderdate' => 'deactivation_date',
+			todo: hier weiter: warum wird datum nicht in xml übernommen??
 			'carriercode' => 'carrier_out',
 		);
 
@@ -1225,7 +1227,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$out .= $this->prettify_xml($data['xml']);
 		$out .= "</pre>";
 
-		$out .= "<br><hr>";
+		// TODO
 		$out .= "<b>TODO:</b> What to do with this data? Show? Update database?";
 
 		return $out;
