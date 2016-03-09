@@ -47,6 +47,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	public function cron($job) {
 
 		$base_url = $this->base_url;
+		$client_ip = \Request::getClientIp();
+
 
 		// as this method is not protected by normal auth mechanism we will allow only a small number of jobs
 		$allowed_cron_jobs = array(
@@ -54,9 +56,23 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'order_get_status' => $base_url.'order/get_status',
 		);
 
+		// allowed client IPs – currently restricted to localhost
+		$allowed_client_ips = array();
+		$raw = explode(',', $_ENV['PROVVOIPENVIA__IPS_ALLOWED_FOR_CRON']);
+		foreach ($raw as $ip) {
+			array_push($allowed_client_ips, trim($ip));
+		};
+
 		// if something else is requested: die with error message
 		if (!array_key_exists($job, $allowed_cron_jobs)) {
-			echo "ERROR: Job ".$job." not allowed in method cron. Try request instead.";
+			echo "ERROR: Job ".$job." not allowed in method cron. Try request instead.)";
+			\Log::error("ERROR: Job ".$job." not allowed in ProvVoipEnviaController.cron");
+			exit(1);
+		}
+
+		if (!in_array($client_ip, $allowed_client_ips)) {
+			echo "ERROR: Client IP ".$client_ip." not allowed in method cron. Try request instead.)";
+			\Log::error("ERROR: Client IP ".$client_ip." not allowed in method cron.");
 			exit(1);
 		}
 
@@ -283,6 +299,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 * Checks if a job is allowed to be done.
 	 * Use this before sending data to envia to prevent e.g. double creation of contracts (if user presses <F5> in success screen)
 	 *
+	 * This defaults to false – so you have to whitelist all the methods you are going to use.
+	 *
 	 * @author Patrick Reichel
 	 *
 	 * @param $job job to do
@@ -325,7 +343,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 			return true;
 		}
-
 
 		if ($job == "customer_update") {
 			$this->model->extract_environment($this->model->contract, 'contract');
