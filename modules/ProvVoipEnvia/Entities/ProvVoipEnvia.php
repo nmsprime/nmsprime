@@ -15,6 +15,60 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Prettify xml for output on screen.
+	 * Use e.g. for debugging.
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @param $xml string containing xml data
+	 * @param $hide_credentials don't show username/password if set to True
+	 * @return string containing prettified xml
+	 */
+	public static function prettify_xml($xml, $hide_credentials=True) {
+
+		// replace username and password by some hash signs
+		if ($hide_credentials) {
+			$xml = preg_replace('/<username>.*<\/username>/', "<username>################</username>", $xml);
+			$xml = preg_replace('/<password>.*<\/password>/', "<password>################</password>", $xml);
+		}
+
+		$dom = new \DOMDocument('1.0');
+		$dom->preserveWhiteSpace = false;
+		$dom->formatOutput = true;
+		$dom->loadXML($xml);
+		$pretty = htmlentities($dom->saveXML());
+		$lines = explode("\n", $pretty);
+
+		// extract declaration line
+		$declaration = array_shift($lines);
+		$declaration = '<span style="color: #0000ff; font-weight: normal">'.$declaration.'</span>';
+		$output = array();
+
+		// colorize output
+		foreach ($lines as $line) {
+			$pretty = $line;
+			$pretty = str_replace('/', 'dummy_slash', $pretty);
+			$pretty = str_replace('&quot; ', '</span>&quot; ', $pretty);
+			$pretty = str_replace('&quot;/', '</span>&quot;/', $pretty);
+			$pretty = str_replace('=&quot;', '=&quot;<span style="color: black; font-weight: bold">', $pretty);
+			$pretty = str_replace('&lt;', '</span>&lt;<span style="color: #660000; font-weight: normal">', $pretty);
+			$pretty = str_replace('&gt;', '</span>&gt;<span style="color: black; font-weight: bold">', $pretty);
+			$pretty = str_replace('&lt;', '<span style="color: #0000ff; font-weight: normal">&lt;</span>', $pretty);
+			$pretty = str_replace('&gt;', '<span style="color: #0000ff; font-weight: normal">&gt;</span>', $pretty);
+			$pretty = str_replace('dummy_slash', '<span style="color: #0000ff; font-weight: normal">/</span>', $pretty);
+			array_push($output, $pretty);
+		}
+
+		// reinsert declaration line
+		array_unshift($output, $declaration);
+
+		$pretty_xml = implode("\n", $output);
+
+		return $pretty_xml;
+
+	}
+
+	/**
 	 * Get some environmental data and set to global vars
 	 *
 	 * @author Patrick Reichel
@@ -1156,6 +1210,26 @@ class ProvVoipEnvia extends \BaseModel {
 		return $out;
 	}
 
+
+	/**
+	 * Process voice data for by contract
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_contract_get_voice_data_response($xml, $data, $out) {
+
+		$out = "<h5>Voice data for contract</h5>";
+
+		$out .= "Contained callnumber informations:<br>";
+		$out .= "<pre>";
+		$out .= $this->prettify_xml($data['xml']);
+		$out .= "</pre>";
+
+		$out .= "<br><hr>";
+		$out .= "<b>TODO:</b> What to do with this data? Show? Update database?";
+
+		return $out;
+	}
 
 	/**
 	 * Process data after successful customer update

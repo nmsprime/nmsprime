@@ -48,6 +48,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		$base_url = $this->base_url;
 		$client_ip = \Request::getClientIp();
+		$request_uri = \Request::getUri();
 
 
 		// as this method is not protected by normal auth mechanism we will allow only a small number of jobs
@@ -63,16 +64,18 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			array_push($allowed_client_ips, trim($ip));
 		};
 
+		$alternate_uri = str_replace("/cron/", "/request/", $request_uri);
+
 		// if something else is requested: die with error message
 		if (!array_key_exists($job, $allowed_cron_jobs)) {
-			echo "ERROR: Job ".$job." not allowed in method cron. Try request instead.)";
-			\Log::error("ERROR: Job ".$job." not allowed in ProvVoipEnviaController.cron");
+			echo "ERROR: Job ".$job." not allowed in method cron.<br>Try <a href=\"".$alternate_uri."\" target=\"_self\">".$alternate_uri."</a> instead.";
+			\Log::error("ERROR: Job ".$job." not allowed in ProvVoipEnviaController.cron (Request URI was ".$request_uri.")");
 			exit(1);
 		}
 
 		if (!in_array($client_ip, $allowed_client_ips)) {
-			echo "ERROR: Client IP ".$client_ip." not allowed in method cron. Try request instead.)";
-			\Log::error("ERROR: Client IP ".$client_ip." not allowed in method cron.");
+			echo "ERROR: Client IP ".$client_ip." not allowed in method cron.<br>Try <a href=\"".$alternate_uri."\" target=\"_self\">".$alternate_uri."</a> instead.";
+			\Log::error("ERROR: Client IP ".$client_ip." not allowed in method cron (Request URI was ".$request_uri.").");
 			exit(1);
 		}
 
@@ -398,7 +401,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$ret['plain_html'] = "<h4>Data to be sent to Envia</h4>";
 		$ret['plain_html'] .= "URL: ".$url."<br><br>";
 		$ret['plain_html'] .= "<pre>";
-		$ret['plain_html'] .= $this->_prettify_xml($payload, True);
+		$ret['plain_html'] .= ProvVoipEnvia::prettify_xml($payload, True);
 		$ret['plain_html'] .= "</pre>";
 
 		$ret['plain_html'] .= "<h4>You are going to change data at Envia! Proceed?</h4>";
@@ -419,60 +422,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 
 	/**
-	 * Prettify xml for output on screen.
-	 * Use e.g. for debugging.
-	 *
-	 * @author Patrick Reichel
-	 *
-	 * @param $xml string containing xml data
-	 * @param $hide_credentials don't show username/password if set to True
-	 * @return string containing prettified xml
-	 */
-	protected function _prettify_xml($xml, $hide_credentials=True) {
-
-		// replace username and password by some hash signs
-		if ($hide_credentials) {
-			$xml = preg_replace('/<username>.*<\/username>/', "<username>################</username>", $xml);
-			$xml = preg_replace('/<password>.*<\/password>/', "<password>################</password>", $xml);
-		}
-
-		$dom = new \DOMDocument('1.0');
-		$dom->preserveWhiteSpace = false;
-		$dom->formatOutput = true;
-		$dom->loadXML($xml);
-		$pretty = htmlentities($dom->saveXML());
-		$lines = explode("\n", $pretty);
-
-		// extract declaration line
-		$declaration = array_shift($lines);
-		$declaration = '<span style="color: #0000ff; font-weight: normal">'.$declaration.'</span>';
-		$output = array();
-
-		// colorize output
-		foreach ($lines as $line) {
-			$pretty = $line;
-			$pretty = str_replace('/', 'dummy_slash', $pretty);
-			$pretty = str_replace('&quot; ', '</span>&quot; ', $pretty);
-			$pretty = str_replace('&quot;/', '</span>&quot;/', $pretty);
-			$pretty = str_replace('=&quot;', '=&quot;<span style="color: black; font-weight: bold">', $pretty);
-			$pretty = str_replace('&lt;', '</span>&lt;<span style="color: #660000; font-weight: normal">', $pretty);
-			$pretty = str_replace('&gt;', '</span>&gt;<span style="color: black; font-weight: bold">', $pretty);
-			$pretty = str_replace('&lt;', '<span style="color: #0000ff; font-weight: normal">&lt;</span>', $pretty);
-			$pretty = str_replace('&gt;', '<span style="color: #0000ff; font-weight: normal">&gt;</span>', $pretty);
-			$pretty = str_replace('dummy_slash', '<span style="color: #0000ff; font-weight: normal">/</span>', $pretty);
-			array_push($output, $pretty);
-		}
-
-		// reinsert declaration line
-		array_unshift($output, $declaration);
-
-		$pretty_xml = implode("\n", $output);
-
-		return $pretty_xml;
-
-	}
-
-	/**
 	 * Helper to show the generated XML (in original and pretty shape)
 	 * Use this for debugging the XML output and input
 	 *
@@ -487,7 +436,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$ret .= "<pre style=\"border: solid 1px #444; padding: 10px\">";
 		$ret .= "<h5>Pretty:</h5>";
 
-		$ret .= $this->_prettify_xml($xml, False);
+		$ret .= ProvVoipEnvia::prettify_xml($xml, False);
 
 		$ret .= "<br><hr>";
 		$ret .= "<h5>Original:</h5>";
@@ -567,7 +516,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		// TODO: improve error handling: Throwing an exception is a bit hard :-)
 		if (!array_key_exists($job, $urls)) {
-			throw new \Exception("Job ".$job." not implemented yet");
+			/* throw new \Exception("Job ".$job." not implemented yet"); */
+			abort(404);
 		}
 
 		// the API URL to use for the request
@@ -677,7 +627,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 				$view_var['plain_html'] .= "<h4>DEBUG mode enabled in .env</h4>";
 				$view_var['plain_html'] .= "return data:<br>";
 				$view_var['plain_html'] .= "<pre>";
-				$view_var['plain_html'] .= $this->_prettify_xml($data['xml']);
+				$view_var['plain_html'] .= ProvVoipEnvia::prettify_xml($data['xml']);
 				$view_var['plain_html'] .= "</pre>";
 			}
 		}
