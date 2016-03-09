@@ -59,7 +59,7 @@ class accountingCommand extends Command {
 		 */
 
 		$logger = new Logger('billing_logger');
-		$logger->pushHandler(new StreamHandler(storage_path().'/logs/billing.log'), Logger::DEBUG, false);
+		$logger->pushHandler(new StreamHandler(storage_path().'/logs/billing-'.date('Y-m').'log'), Logger::DEBUG, false);
 		$logger->addInfo(' #####	Creating Accounting Record table 	#####');
 
 
@@ -98,6 +98,7 @@ class accountingCommand extends Command {
 			 * Contracts
 			 	* proof if mandate exists and is already/still valid (-> no mandate log)
 			 	* proof if contract expires
+			 		* data & voip costs proportional to month
 
 			 * add monthly item costs for following items:
 			 	* monthly (and no payment_to date ??)

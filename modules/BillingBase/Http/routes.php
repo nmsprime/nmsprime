@@ -8,7 +8,9 @@
 Route::group(array('before' => 'auth'), function() {
 	Route::resource('Price', 'Modules\BillingBase\Http\Controllers\PriceController');
 	Route::resource('Item', 'Modules\BillingBase\Http\Controllers\ItemController');
+	Route::resource('SepaMandate', 'Modules\BillingBase\Http\Controllers\SepaMandateController');
 	Route::get('Price/fulltextSearch', array('as' => 'Price.fulltextSearch', 'uses' => 'Modules\ProvBase\Http\Controllers\PriceController@fulltextSearch'));
 	Route::get('Item/fulltextSearch', array('as' => 'Item.fulltextSearch', 'uses' => 'Modules\ProvBase\Http\Controllers\ItemController@fulltextSearch'));
+	Route::get('SepaMandate/fulltextSearch', array('as' => 'SepaMandate.fulltextSearch', 'uses' => 'Modules\ProvBase\Http\Controllers\SepaMandateController@fulltextSearch'));
 
 });
