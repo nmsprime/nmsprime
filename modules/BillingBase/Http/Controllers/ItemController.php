@@ -16,12 +16,12 @@ class ItemController extends \BaseModuleController {
 			$model = new Item;
 
 		$items = Price::where('type', '=', 'device')->orWhere('type', '=', 'other')->get();
-		$b[0] = date('Y-m-01', time());
+		$b[0] = null;
+		$b[date('Y-m-01')] = date('Y-m');
 		for ($i=0; $i < 24; $i++)
 		{ 
 			$b[date('Y-m-01', strtotime('+1 months', strtotime(end($b))))] = date('Y-m', strtotime('+1 months', strtotime(end($b))));
 		}
-		$b[0] = null;
 
 		// label has to be the same like column in sql table
 		return array(
@@ -29,7 +29,8 @@ class ItemController extends \BaseModuleController {
 			array('form_type' => 'select', 'name' => 'price_id', 'description' => 'Item', 'value' => $model->html_list($items, 'name'), 'hidden' => '0'), 
 			array('form_type' => 'select', 'name' => 'payment_from', 'description' => 'Payment from', 'value' => $b),
 			array('form_type' => 'select', 'name' => 'payment_to', 'description' => 'Payment to (Only for One Time Payments', 'value' => $b),
-			array('form_type' => 'text', 'name' => 'credit_amount', 'description' => 'Credit Amount (Additional - only for Credits)')
+			array('form_type' => 'text', 'name' => 'credit_amount', 'description' => 'Credit Amount (Additional - only for Credits)'),
+			array('form_type' => 'text', 'name' => 'accounting_text', 'description' => 'Accounting Text (optional)')
 		);
 	}	
 

@@ -15,8 +15,8 @@ class Item extends \BaseModel {
 		return array(
 			// 'hostname' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
 			// 'payment_to' => 'date' //'dateFormat:yyyy-mm-dd'
-			// 'payment_to' => 'required_with:payment_from', //'dateFormat:yyyy-mm-dd'
 			// 'payment_from' => 'required_with:payment_to', //'dateFormat:yyyy-mm-dd'
+			'credit_amount' => 'min:0'
 		);
 	}
 
@@ -49,7 +49,7 @@ class Item extends \BaseModel {
 
 	public function price ()
 	{
-		return $this->hasOne('Modules\BillingBase\Entities\Price', 'price_id');
+		return $this->belongsTo('Modules\BillingBase\Entities\Price');
 	}
 
 	public function contract ()

@@ -78,10 +78,9 @@ class SepaMandate extends \BaseModel {
  */
 class SepaMandateObserver
 {
-	public function created($mandate)
+	public function creating($mandate)
 	{
 		$mandate->reference = '002-'.Contract::find($mandate->contract_id)->id.'-001';
-		$mandate->save();     // forces to call the updated method of the observer
 	}
 
 	public function updating($mandate)

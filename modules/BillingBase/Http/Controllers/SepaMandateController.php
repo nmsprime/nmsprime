@@ -3,6 +3,7 @@ namespace Modules\Billingbase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
 use Modules\ProvBase\Entities\Contract;
+use Modules\BillingBase\Entities\SepaMandate;
 
 class SepaMandateController extends \BaseModuleController {
 	
@@ -26,7 +27,7 @@ class SepaMandateController extends \BaseModuleController {
 			array('form_type' => 'text', 'name' => 'sepa_institute', 'description' => 'Bank Institute'),
 			array('form_type' => 'text', 'name' => 'sepa_valid_from', 'description' => 'Valid from', 'options' => ['placeholder' => 'YYYY-MM-DD']),
 			array('form_type' => 'text', 'name' => 'sepa_valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD']),
-			array('form_type' => 'checkbox', 'name' => 'type', 'description' => 'Recurring Debit?', 'value' => 'first'),		
+			array('form_type' => 'checkbox', 'name' => 'recurring', 'description' => 'Already a Recurring Debit?', 'value' => '1'),
 		);
 	}
 

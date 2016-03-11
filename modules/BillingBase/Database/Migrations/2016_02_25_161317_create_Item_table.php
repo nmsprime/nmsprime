@@ -23,7 +23,8 @@ class CreateItemTable extends BaseMigration {
 			$table->integer('price_id')->unsigned();
 			$table->date('payment_from');
 			$table->date('payment_to');
-			$table->integer('credit_amount');
+			$table->float('credit_amount');
+			$table->text('accounting_text');
 		});
 
 		return parent::up();

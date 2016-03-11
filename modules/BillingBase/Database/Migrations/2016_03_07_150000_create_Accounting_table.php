@@ -21,7 +21,8 @@ class CreateAccountingTable extends BaseMigration {
 
 			$table->string('contract_id');
 			$table->string('name');
-			$table->integer('price');
+			$table->float('price');
+			$table->integer('invoice_nr');
 		});
 
 		return parent::up();

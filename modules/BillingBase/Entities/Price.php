@@ -42,10 +42,14 @@ class Price extends \BaseModel {
 	/**
 	 * Relationships:
 	 */
-
 	public function quality ()
 	{
 		return $this->belongsTo('Modules\ProvBase\Entities\Qos', 'qos_id');
+	}
+
+	public function item ()
+	{
+		return $this->belongsTo('Modules\BillingBase\Entities\Item');
 	}
 
 }

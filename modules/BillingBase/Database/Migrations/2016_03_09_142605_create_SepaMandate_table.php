@@ -29,7 +29,7 @@ class CreateSepaMandateTable extends \BaseMigration {
 			$table->string('sepa_institute');
 			$table->date('sepa_valid_from');
 			$table->date('sepa_valid_to');
-			$table->enum('type', ['first', 'recurring']);
+			$table->boolean('recurring');
 		});
 	}
 
