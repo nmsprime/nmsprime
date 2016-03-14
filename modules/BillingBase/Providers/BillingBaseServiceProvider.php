@@ -15,7 +15,6 @@ class BillingBaseServiceProvider extends ServiceProvider {
 	 * The artisan commands provided by this module
 	 */
 	protected $commands = [
-		'Modules\BillingBase\Console\generateAccountingRecordFilesCommand',
 		'Modules\BillingBase\Console\accountingCommand',
 	];
 
