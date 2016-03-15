@@ -42,11 +42,17 @@ class EnviaOrderUpdaterCommand extends Command {
 
 	/**
 	 * Execute the console command.
+	 * Basically this does two jobs:
+	 *   - first get csv containing all (phonenumber related) orders from envia and update database using ProvVoipEnvia model ⇒ this will get possible orders that has been manually created
+	 *   - second get status for each single order ⇒ this will update contract/customer related orders as well
 	 *
 	 * @return null
 	 */
 	public function fire()
 	{
+
+		echo "\n";
+		$this->_get_all_orders_csv();
 
 		echo "\n";
 		$this->_get_orders();
@@ -57,6 +63,25 @@ class EnviaOrderUpdaterCommand extends Command {
 		echo "\n";
 
 	}
+
+	/**
+	 * Gets CSV for all phonenumber related orders from envia and updates database via model ProvVoipEnvia
+	 *
+	 * @author Patrick Reichel
+	 */
+
+	protected function _get_all_orders_csv() {
+
+		// create URL suffix
+		$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'misc_get_orders_csv', 'really' => 'True'), false);
+
+		// build complete URL
+		$url = $this->base_url.$url_suffix;
+
+		// execute using cURL
+		$this->_perform_curl_request($url);
+	}
+
 
 	/**
 	 * Get all the Envia orders to be updated.

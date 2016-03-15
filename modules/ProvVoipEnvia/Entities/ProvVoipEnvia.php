@@ -246,6 +246,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// order related jobs
 		if (in_array($view_level, ['contract', 'phonenumber', 'phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Orders'));
+			array_push($ret, array('linktext' => 'Get all phonenumber related orders', 'url' => $base.'misc_get_orders_csv'.$origin.$really));
 			// order(s) exist if contract has been created
 			if ($this->contract_created) {
 				foreach (EnviaOrder::where('contract_id', '=', $contract_id)->orderBy("orderid")->get() as $order) {
@@ -1008,7 +1009,6 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$fields = array(
 			'orderdate' => 'deactivation_date',
-			todo: hier weiter: warum wird datum nicht in xml übernommen??
 			'carriercode' => 'carrier_out',
 		);
 
@@ -1259,28 +1259,73 @@ class ProvVoipEnvia extends \BaseModel {
 	/**
 	 * Extract and process order csv.
 	 *
-	 * According to Envia's Wienecke this method is only for debugging – the answer will only contain voipaccount related orders. Until a paradigm change we should avoid to implement the database related stuff.
+	 * According to Envia's Wienecke this method is only for debugging – the answer will only contain voipaccount related orders. Nevertheless we should use this – e.g. for nightly cron checks to detect manually created orders (at least according to a phonenumber).
 	 *
 	 * @author Patrick Reichel
 	 */
 	protected function _process_misc_get_orders_csv_response($xml, $data, $out) {
 
+		// result is base64 encoded csv
 		$b64 = $xml->data;
 		$csv = base64_decode($b64);
 
-		// ToDo: update database
+		// csv fieldnames are the first line
+		$lines = explode("\n", $csv);
+		$csv_headers = str_getcsv(array_shift($lines));
+
+		// array for converted data
+		$results = array();
+
+		// process Envia CSV line by line; attach orders to $result array
+		foreach ($lines as $result_csv) {
+			// check if current line contains data => empty lines will crash at array_combine
+			if (boolval($result_csv)) {
+				$result = str_getcsv($result_csv);
+				$entry = array_combine($csv_headers, $result);
+				array_push($results, $entry);
+			}
+		}
+
+		$out = "";
+
+		foreach ($results as $result) {
+
+			$order_id = $result['orderid'];
+			$order = EnviaOrder::where('orderid', $order_id)->first();
+
+			// if order already exists: do nothing (will be updated by order_get_status
+			if (!is_null($order)) {
+				$out .= '<br>Order '.$order_id.' already exists in database. Skipping.';
+				continue;
+			}
+
+			// get phonenumber_id and contract_id, add to model instance
+			$phonenumber = Phonenumber::whereRaw('prefix_number = '.$result['localareacode'].' AND number = '.$result['baseno'])->first();
+			if (is_null($phonenumber)) {
+				$tmp = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
+				\Log::warning($tmp);
+				$out .= '<br>'.$tmp;
+				continue;
+			}
+			$result['phonenumber_id'] = $phonenumber->id;
+			$result['contract_id'] = $phonenumber->mta->modem->contract->id;
+
+			// create a new Order, add given data to model instance
+			$order = EnviaOrder::create($result);
+
+			$out .= '<br>Order '.$order_id.' created.';
+		}
 
 
-		// build output
+		// return different output on cron jobs.
 		if ($data['entry_method'] == 'cron') {
-			$out = "Database updated.";
-			$out = "<h3>Warning: Database update not yet implemented</h3>";
+			return 'Database updated.';
 		}
 		else {
-			$out .= "<pre>".$csv."</pre>";
-		}
 
-		return $out;
+			$out .= "<br><br><pre>".$csv."</pre>";
+			return $out;
+		}
 	}
 
 	/**
@@ -1296,7 +1341,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order = EnviaOrder::where('orderid', '=', $order_id)->first();
 
 		// something went wrong! There is no database entry for the given orderID
-		if ($order == null) {
+		if (is_null($order)) {
 			throw new \Exception('ERROR: There is no order with order_id '.$order_id.' in table enviaorders');
 		}
 
