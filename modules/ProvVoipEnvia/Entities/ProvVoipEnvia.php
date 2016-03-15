@@ -262,7 +262,7 @@ class ProvVoipEnvia extends \BaseModel {
 					$order_id = $order->orderid;
 					$order_type = $order->ordertype;
 					$order_status = $order->orderstatus;
-					array_push($ret, array('linktext' => $order_type.': <i>'.$order_status.'</i>', 'url' => $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really));
+					array_push($ret, array('linktext' => $order_id.' – '.$order_type.': <i>'.$order_status.'</i>', 'url' => $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really));
 				}
 			}
 		}
@@ -1322,7 +1322,6 @@ class ProvVoipEnvia extends \BaseModel {
 			return 'Database updated.';
 		}
 		else {
-
 			$out .= "<br><br><pre>".$csv."</pre>";
 			return $out;
 		}
