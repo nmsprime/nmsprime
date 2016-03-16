@@ -12,6 +12,10 @@ class Price extends \BaseModel {
 	{
 		return array(
 			// 'hostname' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
+			'name' => 'required',
+			'type' => 'required|not_null',
+			'voip_tariff' => 'required_if:type,Voip',
+			'qos_id' => 'required_if:type,Internet',
 		);
 	}
 

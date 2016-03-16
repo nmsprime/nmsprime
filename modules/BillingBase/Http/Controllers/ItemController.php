@@ -7,9 +7,9 @@ use Config;
 
 class ItemController extends \BaseModuleController {
 	
-    /**
-     * defines the formular fields for the edit and create view
-     */
+	/**
+	 * defines the formular fields for the edit and create view
+	 */
 	public function get_form_fields($model = null)
 	{
 		if (!$model)
@@ -37,9 +37,9 @@ class ItemController extends \BaseModuleController {
 	}	
 
 
-    /**
-     * @author Nino Ryschawy
-     */
+	/**
+	 * @author Nino Ryschawy
+	 */
 	public function prep_rules($rules, $data)
 	{
 		if ($data['payment_from'])

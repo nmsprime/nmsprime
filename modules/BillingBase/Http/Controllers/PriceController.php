@@ -26,9 +26,10 @@ class PriceController extends \BaseModuleController {
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name'),
 			array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'Qos (Data Rate)', 'value' => $qos_val),
 			array('form_type' => 'select', 'name' => 'voip_tariff', 'description' => 'Phone Tariff', 'value' => Price::getPossibleEnumValues('voip_tariff')),
-			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => Price::getPossibleEnumValues('type')),
+			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => Price::getPossibleEnumValues('type', true)),
 			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Price::getPossibleEnumValues('billing_cycle')),
 			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price'),
 		);
-	}	
+	}
+
 }
