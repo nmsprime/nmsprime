@@ -25,6 +25,41 @@ class accountingCommand extends Command {
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
 
+	// Array declaration for easy reordering of entries
+	protected $invoice_records_array = [
+			'Contractnr' => '',
+			'Invoicenr' => '',
+			'Target Month' => '',
+			'Date' => '',
+			'Cost Center' => '',
+			'Count' => '',
+			'Description' => '',
+			'Price' => '',
+			'Firstname' => '',
+			'Lastname' => '',
+			'Street' => '',
+			'Zip' => '',
+			'City' => '',
+		];
+	protected $booking_records_array = [
+			'Contractnr' => '',
+			'Invoicenr' => '',
+			'Date' => '',
+			'RCD' => '',	// Requested Collection Date (Zahlungsziel)
+			'Cost Center' => '',
+			'Description' => '',
+			'Net' => '',
+			'Tax' => '',
+			'Gross' => '',
+			'Currency' => '',
+			'Firstname' => '',
+			'Lastname' => '',
+			'Street' => '',
+			'City' => '',
+		];
+	protected $booking_records_sepa_array = []; 	// see constructor
+
+
 	/**
 	 * Create a new command instance.
 	 *
@@ -32,30 +67,28 @@ class accountingCommand extends Command {
 	 */
 	public function __construct()
 	{
+		$this->booking_records_sepa_array = array_merge($this->booking_records_array, [
+			'Account Holder' => '',
+			'IBAN' => '',
+			'BIC' => '',
+			'MandateID' => '',
+			'MandateDate' => ''
+		]);
+
 		parent::__construct();
 	}
 
 	/**
 	 * Execute the console command
-	 * Create Buchungssatz.txt -> total cost per month per contract
-	 	* Date , Company, Firstname, Lastname, Adress, Payment_target, Netto, Mwst, Brutto, Currency, BILLINGNR, Sepa-Data-Creditor (ISP), 
-	 *		Clientnr/Reference, Bookingnr, Traffic?, ContractID, Kostenstelle, Sepa-Data-Debitor (IBAN,BIC,MandateID,MandateDate)
-	 * Create Rechnungssatz.txt -> accounting records
-	 	* (for Month), Date, Billingnr, Itemname, Cost, Clientnr, Clientadr
-	 * Create Sepa-XML
-	 *
-	 * @return mixed
+	 * Create invoice-, booking records and sepa xml file
+	 * TODO: add to app/Console/Kernel.php -> run monthly()->when(function(){ date('Y-m-d') == date('Y-m-10')}) for tenth day in month
 	 */
 	public function fire()
 	{
-		/*
-		 * TODO: add to app/Console/Kernel.php -> run monthly()->when(function(){ date('Y-m-d') == date('Y-m-10')}) for tenth day in month
-		 * add every new accounting record to the table for every contract once in a month
-		 */
-
+		// instantiate logger for billing
 		$logger = new Logger('Billing');
 		$logger->pushHandler(new StreamHandler(storage_path().'/logs/billing-'.date('Y-m').'.log'), Logger::DEBUG, false);
-		$logger->addInfo(' #####	Creating Accounting Record table 	#####');
+		$logger->addInfo(' #####	Starting Accounting Command	#####');
 
 
 		// (offen needed) variables
@@ -65,20 +98,20 @@ class accountingCommand extends Command {
 		$this_month = date('Y-m-01');
 		$next_month = date('Y-m-01', strtotime('now +1 months'));
 		$m_in_sec = 60*60*24*30;	// month in seconds
-		$booking_records_file 	= storage_path('billing/booking_records.txt');
-		$invoice_records_file	= storage_path('billing/invoice_records.txt');
-		$sepa_xml_file 			= storage_path('billing/sepa.xml');
-		$booking_records = '';
+		$invoice_records_file		= storage_path('billing/invoice_records.txt');
+		$booking_records_file 		= storage_path('billing/booking_records.txt');
+		$booking_records_sepa_file 	= storage_path('billing/booking_records_sepa.txt');
 		$invoice_records = '';
+		$booking_records = '';
+		$booking_records_sepa = '';
 
 
 		// create Files
 		if (!is_dir(storage_path('billing')))
 			mkdir(storage_path('billing'));
-		// hash always zero when price is 0,00 !?!? , RCD = Requested Collection Date (Zahlungsziel), Net=netto, gross=brutto
-		// TODO: differentiate between net and gross (before tax) prices
-		File::put($invoice_records_file, "for Month\tDate\tInvoice Nr\tDescription\tPrice\tContractnr\tFirstname\tLastname\tStreet\tCity\tCost Center\tHash\n");
-		File::put($booking_records_file, "Date\tCompany\tFirstname\tLastname\tStreet\tPostal Code\tCity\tStreet\tCity\tRCD\tNet\tSales tax (VAT)\tGross\tCurrency\tInvoicenr\tInstitute\tAccount Holder\tContractnr\tCost Center\tHash\tIBAN\tBIC\tMandateId\tMandateDate\n");
+		File::put($invoice_records_file, implode("\t", array_keys($this->invoice_records_array))."\n");
+		File::put($booking_records_file, implode("\t", array_keys($this->booking_records_array))."\n");
+		File::put($booking_records_sepa_file, implode("\t", array_keys($this->booking_records_sepa_array))."\n");
 
 
 		// remove all entries of this month (if entries were already created) and create them new
@@ -98,6 +131,7 @@ class accountingCommand extends Command {
 		}
 		else
 		{
+			// first run for this system
 			$last_run = date('1970-01-01');
 			$invoice_nr = 999999;
 		}
@@ -117,13 +151,13 @@ class accountingCommand extends Command {
 				continue;
 			}
 
-
 			// variable resets or incrementations
 			$invoice_nr += 1;
-			$charge = 0;				// total costs for this month for current contract
-			$ratio = null;
-			$expires = false;
-			$started_lastm = false;
+			$charge 	= 0;				// total costs for this month for current contract
+			$ratio 		= 0;					// for costs proportional to valid days of contract in this month
+			$expires 	= false;
+			$started_lastm = false;		// if contract startet last month - used for contracts created after last run
+
 
 			// contract starts this month
 			if (date('Y-m', strtotime($c->contract_start)) == $month)
@@ -150,7 +184,10 @@ class accountingCommand extends Command {
 			}
 
 
-			// add internet and voip tariffs, TODO?: choose voip tariff dependent on its name?
+			/*
+			 * Add internet and voip tariffs - TODO?: choose voip tariff dependent on its name?
+			 * TODO: add Television tariff
+			 */
 			$tariff = null;
 			$tariff['inet'] = Price::find($c->price_id);
 			if ($c->voip_tariff != '')
@@ -161,16 +198,18 @@ class accountingCommand extends Command {
 				if ($t)
 				{
 					$price = $t->price;
-					if (isset($ratio))
-						$price = round($t->price * $ratio, 2);
+					if ($ratio)
+						$price = round($price * $ratio, 2);
 					if ($started_lastm)
 						$price = round((1 + $ratio)*$t->price, 2);
 
-					// var_dump("INSERT INTO ".$this->tablename." (contract_id, name, price, created_at, invoice_nr) VALUES(".$c->id.', "'.$t->name.'", '.$price.", NOW(), '.$invoice_nr.')');
-					// accounting table
+					// if ($c->id == 500309)
+					// 	dd($c->id, $price, $started_lastm, $ratio);
+
+					// add accounting table entry
 					DB::update("INSERT INTO ".$this->tablename." (contract_id, name, price, created_at, invoice_nr) VALUES(".$c->id.', "'.$t->name.'", '.$price.', NOW(), '.$invoice_nr.')');
-					// invoice records, TODO: add hash
-					$invoice_records .= date('m')."\t$now\t$invoice_nr\t".$t->name."\t$price\t".$c->id."\t".$c->firstname."\t".$c->lastname."\t".$c->street."\t".$c->city."\t".$c->cost_center."\n";
+					// add invoice record
+					$invoice_records .= $this->get_invoice_record($c, $t, $invoice_nr, $price);
 
 					$charge += $price;
 				}
@@ -239,14 +278,16 @@ class accountingCommand extends Command {
 					if ($entry_cost > 0)
 						$entry_cost *= -1;
 				}
+				$count = 1;
+				if ($item->count)
+					$count = $item->count;
 
-				// var_dump("INSERT INTO ".$this->tablename." (contract_id, name, price, created_at, invoice_nr) VALUES(".$c->id.', "'.$price_entry->name.$text.'", '.$entry_cost.', NOW(), '.$invoice_nr.')');
-				// accounting table
-				DB::update("INSERT INTO ".$this->tablename." (contract_id, name, price, created_at, invoice_nr) VALUES(".$c->id.', "'.$price_entry->name.$text.'", '.$entry_cost.', NOW(), '.$invoice_nr.')');
-				// invoice records, TODO: add hash
-				$invoice_records .= date('m')."\t$now\t$invoice_nr\t".$t->name."\t$price\t".$c->id."\t".$c->firstname."\t".$c->lastname."\t".$c->street."\t".$c->city."\t".$c->cost_center."\n";
+				// add accounting table entry
+				DB::update("INSERT INTO ".$this->tablename." (contract_id, name, price, count, created_at, invoice_nr) VALUES(".$c->id.', "'.$price_entry->name.$text.'", '.$count.', '.$entry_cost.', NOW(), '.$invoice_nr.')');
+				// add invoice record
+				$invoice_records .= $this->get_invoice_record($c, $price_entry, $invoice_nr, $entry_cost, $text);
 
-				$charge += $entry_cost;
+				$charge += $entry_cost * $count;
 			}
 
 
@@ -270,9 +311,11 @@ cont:
 			if (!$mandate)
 			{
 				$logger->addNotice('Contract '.$c->id.' has no valid sepa mandate');
-				goto end_of_loop;
+				$booking_records .= $this->get_booking_record($c, null, $invoice_nr, $now, $started_lastm, $charge);
+				continue;
 			}
 
+			$booking_records_sepa .= $this->get_booking_record($c, $mandate, $invoice_nr, $started_lastm, $charge);
 
 			// Create ordered structure for sepa file creation
 			$t = PaymentInformation::S_RECURRING;
@@ -283,35 +326,95 @@ cont:
 
 			$sepa_tx[$t][] = ['mandate' => $mandate, 'charge' => $charge, 'invoice_nr' => $invoice_nr, 'started_lastm' => $started_lastm];
 
-end_of_loop:
+		} // end of loop over contracts
 
-			// File::put($booking_records_file, "Date\tCompany\tFirstname\tLastname\tStreet\tPostal Code\tCity\tStreet\tCity\RCD\tNet\tsalex tax (VAT)\tGross\tCurrency\tInvoicenr\tInstitute\tAccount Holder\tContractnr\tCost Center\tHash\tIBAN\tBIC\tMandateId\tMandateDate");
-			// TODO: use requested collection date (Zahlungsziel), currency from global config, calculate tax
-			$rcd = date('Y-m-d', strtotime('now +6 days'));
-			$tax = 0;
-			$currency = 'EUR';
-			$institute = $account_holder = $iban = $bic = $sepa_date = $sepa_id = '';
-			if ($mandate)
-			{
-				$institute 		= $mandate->sepa_institute;
-				$account_holder = $mandate->sepa_holder;
-				$iban 			= $mandate->sepa_iban;
-				$bic 			= $mandate->sepa_bic;
-				$sepa_date 		= $mandate->signature_date;
-				$sepa_id 		= $mandate->reference;
-			}
-			$hash = null;
-			$booking_records .= "$now\t".$c->company."\t".$c->firstname."\t".$c->lastname."\t".$c->street."\t".$c->zip."\t".$c->city."\t$rcd\t$charge\t$tax\t$currency\t$invoice_nr\t$institute\t$account_holder\t".$c->id."\t".$c->cost_center."\t".$hash."\t$iban\t$bic\t$sepa_id\t$sepa_date\n";
-
-		}
-
-		// write billing files - TODO: chown?
-		File::append($booking_records_file, $booking_records);		
-		File::append($invoice_records_file, $invoice_records);
 
 		/*
-		 * Create SEPA File
+		 * Store SEPA & Billing Files
 		 */
+		$this->create_sepa_xml($sepa_tx);
+		File::append($invoice_records_file, $invoice_records);
+		echo "stored invoice records in $invoice_records_file\n";
+		File::append($booking_records_file, $booking_records);		
+		echo "stored booking records in $booking_records_file\n";
+		File::append($booking_records_sepa_file, $booking_records_sepa);
+		echo "stored booking records with sepa mandates in $booking_records_sepa_file\n";
+
+	}
+
+
+
+	protected function get_invoice_record($contract, $item, $invoice_nr, $price, $text = '')
+	{
+		$arr = $this->invoice_records_array;
+
+		$arr['Contractnr'] 	= $contract->id;
+		$arr['Invoicenr'] 	= $invoice_nr;
+		$arr['Target Month'] = date('m');
+		$arr['Date'] 		= date('Y-m-d');
+		$arr['Cost Center'] = $contract->cost_center;
+		$arr['Count'] 		= '1';
+		$arr['Description'] = $item->name.$text;
+		$arr['Price'] 		= $price;
+		$arr['Firstname'] 	= $contract->firstname;
+		$arr['Lastname'] 	= $contract->lastname;
+		$arr['Street'] 		= $contract->street;
+		$arr['Zip'] 		= $contract->zip;
+		$arr['City'] 		= $contract->city;
+
+		return implode("\t", $arr)."\n";
+	}
+
+	protected function get_booking_record($contract, $mandate, $invoice_nr, $started_lastm, $charge)
+	{
+		$arr = $this->booking_records_array;
+		if ($mandate)
+			$arr = $this->booking_records_sepa_array;
+
+		// TODO: use requested collection date (Zahlungsziel), currency & tax from global config
+		$rcd = date('Y-m-d', strtotime('now +6 days'));
+		$cur = 'EUR';
+		$tax = 0.19;
+		$txt = '';
+		if ($started_lastm)
+			$txt = date('m', strtotime('now -1 Months')).'+';
+
+		$arr['Contractnr'] 	= $contract->id;
+		$arr['Invoicenr'] 	= $invoice_nr;
+		$arr['Date'] 		= date('Y-m-d');
+		$arr['RCD'] 		= $rcd;
+		$arr['Cost Center'] = $contract->cost_center;
+		$arr['Description'] = 'Month '.$txt.date('m/Y');
+		$arr['Net'] 		= round($charge * (1-$tax), 2);
+		$arr['Tax'] 		= round($charge * $tax, 2);
+		$arr['Gross'] 		= $charge;
+		$arr['Currency'] 	= $cur;
+		$arr['Firstname'] 	= $contract->firstname;
+		$arr['Lastname'] 	= $contract->lastname;
+		$arr['Street'] 		= $contract->street;
+		$arr['Zip'] 		= $contract->zip;
+		$arr['City'] 		= $contract->city;
+
+		if ($mandate)
+		{
+			$arr['Account Holder'] 	= $mandate->sepa_holder;
+			$arr['IBAN']			= $mandate->sepa_iban;
+			$arr['BIC'] 			= $mandate->sepa_bic;
+			$arr['MandateID'] 		= $mandate->reference;
+			$arr['MandateDate']		= $mandate->signature_date;
+		}
+
+		return implode("\t", $arr)."\n";
+	}
+
+	/**
+	 * Create SEPA XML
+	 * @param $sepa_tx - sepa transfer information array
+	 * @author Nino Ryschawy
+	 */
+	protected function create_sepa_xml($sepa_tx)
+	{
+		$sepa_xml_file 	= storage_path('billing/sepa.xml');
 		$msg_id = date('YmdHis');		// km3 uses actual time
 		$creditor['name'] = 'ERZNET AG';
 		$creditor['iban'] = 'DE64870540000440011094';
@@ -337,9 +440,9 @@ end_of_loop:
 			foreach($records as $r)
 			{
 				$payment_id = 'RG '.$r['invoice_nr'];
-				$info 		= "Month $month";
+				$info 		= 'Month '.date('m');
 				if ($r['started_lastm'])
-					$info 	.= ' + '.date('Y-m', strtotime($last_month));
+					$info 	.= ' + '.date('Y-m', strtotime('now -1 months'));
 				
 				// Add a Single Transaction to the named payment
 				$directDebit->addTransfer($msg_id, array(
@@ -357,8 +460,9 @@ end_of_loop:
 
 		// Retrieve the resulting XML
 		File::put($sepa_xml_file, $directDebit->asXML());
-
+		echo "stored sepa xml in $sepa_xml_file\n";
 	}
+
 
 
 	/**
