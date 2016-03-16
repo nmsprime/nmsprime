@@ -50,4 +50,9 @@ class ItemController extends \BaseModuleController {
 
 		return $rules;
 	}
+
+	public function index()
+	{
+		return \View::make('errors.generic');
+	}
 }

@@ -1,12 +1,11 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
-class CreateProvVoipTable extends \BaseMigration {
+class CreateCostCenterTable extends BaseMigration {
 
-	// name of the table to create
-	protected $tablename = 'provvoip';
+	protected $tablename = 'costcenter';
 
 	/**
 	 * Run the migrations.
@@ -18,18 +17,12 @@ class CreateProvVoipTable extends \BaseMigration {
 		Schema::create($this->tablename, function(Blueprint $table)
 		{
 			$this->up_table_generic($table);
-
-			$table->integer('startid_mta')->unsigned();
-
+			
+			$table->string('name');
+			$table->string('sepa_account_id');
+			$table->string('description');
 		});
-
-		DB::update("INSERT INTO ".$this->tablename." (startid_mta) VALUES(300000);");
-
-		return parent::up();
 	}
-
-
-
 
 	/**
 	 * Reverse the migrations.

@@ -6,6 +6,8 @@ use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\SepaMandate;
 
 class SepaMandateController extends \BaseModuleController {
+
+	protected $index_create_allowed = false;
 	
     /**
      * defines the formular fields for the edit and create view

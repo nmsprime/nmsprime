@@ -9,8 +9,15 @@ Route::group(array('before' => 'auth'), function() {
 	Route::resource('Price', 'Modules\BillingBase\Http\Controllers\PriceController');
 	Route::resource('Item', 'Modules\BillingBase\Http\Controllers\ItemController');
 	Route::resource('SepaMandate', 'Modules\BillingBase\Http\Controllers\SepaMandateController');
-	Route::get('Price/fulltextSearch', array('as' => 'Price.fulltextSearch', 'uses' => 'Modules\ProvBase\Http\Controllers\PriceController@fulltextSearch'));
-	Route::get('Item/fulltextSearch', array('as' => 'Item.fulltextSearch', 'uses' => 'Modules\ProvBase\Http\Controllers\ItemController@fulltextSearch'));
-	Route::get('SepaMandate/fulltextSearch', array('as' => 'SepaMandate.fulltextSearch', 'uses' => 'Modules\ProvBase\Http\Controllers\SepaMandateController@fulltextSearch'));
+	Route::resource('SepaAccount', 'Modules\BillingBase\Http\Controllers\SepaAccountController');
+	Route::resource('CostCenter', 'Modules\BillingBase\Http\Controllers\CostCenterController');
+	Route::get('Price/fulltextSearch', array('as' => 'Price.fulltextSearch', 'uses' => 'Modules\BillingBase\Http\Controllers\PriceController@fulltextSearch'));
+	Route::get('Item/fulltextSearch', array('as' => 'Item.fulltextSearch', 'uses' => 'Modules\BillingBase\Http\Controllers\ItemController@fulltextSearch'));
+	Route::get('SepaMandate/fulltextSearch', array('as' => 'SepaMandate.fulltextSearch', 'uses' => 'Modules\BillingBase\Http\Controllers\SepaMandateController@fulltextSearch'));
+	Route::get('SepaAccount/fulltextSearch', array('as' => 'SepaAccount.fulltextSearch', 'uses' => 'Modules\BillingBase\Http\Controllers\SepaAccountController@fulltextSearch'));
+	Route::get('CostCenter/fulltextSearch', array('as' => 'CostCenter.fulltextSearch', 'uses' => 'Modules\BillingBase\Http\Controllers\CostCenterController@fulltextSearch'));
+
+	// Route::get('BillingBase', array('as' => 'BillingBase.edit', 'uses' => 'Modules\BillingBase\Http\Controllers\BillingBaseController@edit'));
+	Route::resource('BillingBase', 'Modules\BillingBase\Http\Controllers\BillingBaseController');
 
 });
