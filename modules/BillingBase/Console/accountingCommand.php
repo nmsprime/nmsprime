@@ -25,8 +25,17 @@ class accountingCommand extends Command {
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
 
-	// Array declaration for easy reordering of entries
-	protected $invoice_records_array = [
+	// Array declaration for easy reordering of entries - see constructor!
+	protected $records_arr;
+
+	/**
+	 * Create a new command instance.
+	 *
+	 * @return void
+	 */
+	public function __construct()
+	{
+		$this->records_arr['invoice_tariff'] = $this->records_arr['invoice_item'] = [
 			'Contractnr' => '',
 			'Invoicenr' => '',
 			'Target Month' => '',
@@ -41,7 +50,8 @@ class accountingCommand extends Command {
 			'Zip' => '',
 			'City' => '',
 		];
-	protected $booking_records_array = [
+
+		$this->records_arr['booking'] = [
 			'Contractnr' => '',
 			'Invoicenr' => '',
 			'Date' => '',
@@ -57,17 +67,8 @@ class accountingCommand extends Command {
 			'Street' => '',
 			'City' => '',
 		];
-	protected $booking_records_sepa_array = []; 	// see constructor
 
-
-	/**
-	 * Create a new command instance.
-	 *
-	 * @return void
-	 */
-	public function __construct()
-	{
-		$this->booking_records_sepa_array = array_merge($this->booking_records_array, [
+		$this->records_arr['booking_sepa'] = array_merge($this->records_arr['booking'], [
 			'Account Holder' => '',
 			'IBAN' => '',
 			'BIC' => '',
@@ -97,25 +98,23 @@ class accountingCommand extends Command {
 		$last_month = date('Y-m-01', strtotime('now -1 months'));
 		$this_month = date('Y-m-01');
 		$next_month = date('Y-m-01', strtotime('now +1 months'));
+
 		$m_in_sec = 60*60*24*30;	// month in seconds
-		$invoice_tariff_records_file = storage_path('billing/invoice_tariff_records.txt');
-		$invoice_item_records_file  = storage_path('billing/invoice_item_records.txt');
-		$booking_records_file 		= storage_path('billing/booking_records.txt');
-		$booking_records_sepa_file 	= storage_path('billing/booking_records_sepa.txt');
-		$invoice_tariff_records = '';
-		$invoice_item_records = '';
-		$booking_records = '';
-		$booking_records_sepa = '';
 		$sepa_dc = $sepa_dd = null;
 
 
-		// create Files
 		if (!is_dir(storage_path('billing')))
 			mkdir(storage_path('billing'));
-		File::put($invoice_tariff_records_file, implode("\t", array_keys($this->invoice_records_array))."\n");
-		File::put($invoice_item_records_file, implode("\t", array_keys($this->invoice_records_array))."\n");
-		File::put($booking_records_file, implode("\t", array_keys($this->booking_records_array))."\n");
-		File::put($booking_records_sepa_file, implode("\t", array_keys($this->booking_records_sepa_array))."\n");
+
+		$record_files = ['invoice_tariff' => '', 'invoice_item' => '', 'booking' => '', 'booking_sepa' => ''];
+		foreach ($record_files as $key => $f)
+		{
+			$record_files[$key] = storage_path("billing/$key"."_records.txt");
+			// initialise record files with Column names as first line
+			File::put($record_files[$key], implode("\t", array_keys($this->records_arr[$key]))."\n");
+			// initialise record strings
+			$records[$key] = '';
+		}
 
 
 		// remove all entries of this month (if entries were already created) and create them new
@@ -204,16 +203,16 @@ class accountingCommand extends Command {
 					$price = $t->price;
 					if ($ratio)
 						$price = round($price * $ratio, 2);
-					if ($started_lastm)
+					if ($started_lastm && $ratio != 0)
 						$price = round((1 + $ratio)*$t->price, 2);
 
 					// if ($c->id == 500309)
-					// 	dd($c->id, $price, $started_lastm, $ratio);
+						// dd($c->id, $price, $started_lastm, $ratio);
 
 					// add accounting table entry
 					DB::update("INSERT INTO ".$this->tablename." (contract_id, name, price, created_at, invoice_nr) VALUES(".$c->id.', "'.$t->name.'", '.$price.', NOW(), '.$invoice_nr.')');
 					// add invoice record
-					$invoice_tariff_records .= $this->get_invoice_record($c, $t, $invoice_nr, $price);
+					$records['invoice_tariff'] .= $this->get_invoice_record($c, $t, $invoice_nr, $price);
 
 					$charge += $price;
 				}
@@ -287,9 +286,9 @@ class accountingCommand extends Command {
 					$count = $item->count;
 
 				// add accounting table entry
-				DB::update("INSERT INTO ".$this->tablename." (contract_id, name, price, count, created_at, invoice_nr) VALUES(".$c->id.', "'.$price_entry->name.$text.'", '.$count.', '.$entry_cost.', NOW(), '.$invoice_nr.')');
+				DB::update("INSERT INTO ".$this->tablename." (contract_id, name, price, count, created_at, invoice_nr) VALUES(".$c->id.', "'.$price_entry->name.$text.'", '.$entry_cost.', '.$count.', NOW(), '.$invoice_nr.')');
 				// add invoice record
-				$invoice_item_records .= $this->get_invoice_record($c, $price_entry, $invoice_nr, $entry_cost, $text);
+				$records['invoice_item'] .= $this->get_invoice_record($c, $price_entry, $invoice_nr, $entry_cost, $text);
 
 				$charge += $entry_cost * $count;
 			}
@@ -315,11 +314,11 @@ cont:
 			if (!$mandate)
 			{
 				$logger->addNotice('Contract '.$c->id.' has no valid sepa mandate');
-				$booking_records .= $this->get_booking_record($c, null, $invoice_nr, $now, $started_lastm, $charge);
+				$records['booking'] .= $this->get_booking_record($c, null, $invoice_nr, $now, $started_lastm, $charge);
 				continue;
 			}
 
-			$booking_records_sepa .= $this->get_booking_record($c, $mandate, $invoice_nr, $started_lastm, $charge);
+			$records['booking_sepa'] .= $this->get_booking_record($c, $mandate, $invoice_nr, $started_lastm, $charge);
 
 			// Create ordered structure for sepa file creation - TODO?: exclude charge == 0
 			// if ($charge == 0)
@@ -344,14 +343,11 @@ cont:
 		 */
 		$this->create_sepa_xml($sepa_dd, $sepa_dc);
 
-		File::append($invoice_tariff_records_file, $invoice_tariff_records);
-		echo "stored invoice records in $invoice_tariff_records_file\n";
-		File::append($invoice_item_records_file, $invoice_item_records);
-		echo "stored invoice records in $invoice_item_records_file\n";
-		File::append($booking_records_file, $booking_records);		
-		echo "stored booking records in $booking_records_file\n";
-		File::append($booking_records_sepa_file, $booking_records_sepa);
-		echo "stored booking records with sepa mandates in $booking_records_sepa_file\n";
+		foreach ($record_files as $key => $f)
+		{
+			File::append($f, $records[$key]);
+			echo "stored $key records in $f\n";
+		}
 
 	}
 
@@ -359,7 +355,7 @@ cont:
 
 	protected function get_invoice_record($contract, $item, $invoice_nr, $price, $text = '')
 	{
-		$arr = $this->invoice_records_array;
+		$arr = $this->records_arr['invoice_tariff'];
 
 		$arr['Contractnr'] 	= $contract->id;
 		$arr['Invoicenr'] 	= $invoice_nr;
@@ -380,9 +376,9 @@ cont:
 
 	protected function get_booking_record($contract, $mandate, $invoice_nr, $started_lastm, $charge)
 	{
-		$arr = $this->booking_records_array;
+		$arr = $this->records_arr['booking'];
 		if ($mandate)
-			$arr = $this->booking_records_sepa_array;
+			$arr = $this->records_arr['booking_sepa'];
 
 		// TODO: use requested collection date (Zahlungsziel), currency & tax from global config
 		$rcd = date('Y-m-d', strtotime('now +6 days'));
