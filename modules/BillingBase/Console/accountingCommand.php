@@ -98,18 +98,22 @@ class accountingCommand extends Command {
 		$this_month = date('Y-m-01');
 		$next_month = date('Y-m-01', strtotime('now +1 months'));
 		$m_in_sec = 60*60*24*30;	// month in seconds
-		$invoice_records_file		= storage_path('billing/invoice_records.txt');
+		$invoice_tariff_records_file = storage_path('billing/invoice_tariff_records.txt');
+		$invoice_item_records_file  = storage_path('billing/invoice_item_records.txt');
 		$booking_records_file 		= storage_path('billing/booking_records.txt');
 		$booking_records_sepa_file 	= storage_path('billing/booking_records_sepa.txt');
-		$invoice_records = '';
+		$invoice_tariff_records = '';
+		$invoice_item_records = '';
 		$booking_records = '';
 		$booking_records_sepa = '';
+		$sepa_dc = $sepa_dd = null;
 
 
 		// create Files
 		if (!is_dir(storage_path('billing')))
 			mkdir(storage_path('billing'));
-		File::put($invoice_records_file, implode("\t", array_keys($this->invoice_records_array))."\n");
+		File::put($invoice_tariff_records_file, implode("\t", array_keys($this->invoice_records_array))."\n");
+		File::put($invoice_item_records_file, implode("\t", array_keys($this->invoice_records_array))."\n");
 		File::put($booking_records_file, implode("\t", array_keys($this->booking_records_array))."\n");
 		File::put($booking_records_sepa_file, implode("\t", array_keys($this->booking_records_sepa_array))."\n");
 
@@ -209,7 +213,7 @@ class accountingCommand extends Command {
 					// add accounting table entry
 					DB::update("INSERT INTO ".$this->tablename." (contract_id, name, price, created_at, invoice_nr) VALUES(".$c->id.', "'.$t->name.'", '.$price.', NOW(), '.$invoice_nr.')');
 					// add invoice record
-					$invoice_records .= $this->get_invoice_record($c, $t, $invoice_nr, $price);
+					$invoice_tariff_records .= $this->get_invoice_record($c, $t, $invoice_nr, $price);
 
 					$charge += $price;
 				}
@@ -217,9 +221,9 @@ class accountingCommand extends Command {
 
 			/*
 			 * add monthly item costs for following items:
-			 	* monthly
-			 	* once: created within last billing period | actual run is within payment_from and payment_to date
-			 	* yearly
+				* monthly
+				* once: created within last billing period | actual run is within payment_from and payment_to date
+				* yearly
 			 * calculate total sum of items considering contract starting & expiration date
 			 */
 			$items = $c->items;
@@ -285,7 +289,7 @@ class accountingCommand extends Command {
 				// add accounting table entry
 				DB::update("INSERT INTO ".$this->tablename." (contract_id, name, price, count, created_at, invoice_nr) VALUES(".$c->id.', "'.$price_entry->name.$text.'", '.$count.', '.$entry_cost.', NOW(), '.$invoice_nr.')');
 				// add invoice record
-				$invoice_records .= $this->get_invoice_record($c, $price_entry, $invoice_nr, $entry_cost, $text);
+				$invoice_item_records .= $this->get_invoice_record($c, $price_entry, $invoice_nr, $entry_cost, $text);
 
 				$charge += $entry_cost * $count;
 			}
@@ -293,7 +297,7 @@ class accountingCommand extends Command {
 
 			/*
 			 * Check if valid mandate exists, add sepa data to ordered structure, log all out of date contracts
-		 	 */
+			 */
 			$mandate = null;
 			$mandates = $c->sepamandates->all();
 			if (!isset($mandates[0]))
@@ -317,24 +321,33 @@ cont:
 
 			$booking_records_sepa .= $this->get_booking_record($c, $mandate, $invoice_nr, $started_lastm, $charge);
 
-			// Create ordered structure for sepa file creation
+			// Create ordered structure for sepa file creation - TODO?: exclude charge == 0
+			// if ($charge == 0)
+			// 	continue;
 			$t = PaymentInformation::S_RECURRING;
 			if (date('Y-m', strtotime($c->contract_start)) == $month && !$mandate->recurring)
 				$t = PaymentInformation::S_FIRST;
 			else if (date('Y-m', strtotime($c->contract_end)) == $month)
 				$t = PaymentInformation::S_FINAL;
 
-			$sepa_tx[$t][] = ['mandate' => $mandate, 'charge' => $charge, 'invoice_nr' => $invoice_nr, 'started_lastm' => $started_lastm];
-
+			$xml_entry = ['mandate' => $mandate, 'charge' => $charge, 'invoice_nr' => $invoice_nr, 'started_lastm' => $started_lastm];
+			
+			if ($charge < 0)
+				$sepa_dc[] = $xml_entry;
+			else
+				$sepa_dd[$t][] = $xml_entry;
 		} // end of loop over contracts
 
 
 		/*
 		 * Store SEPA & Billing Files
 		 */
-		$this->create_sepa_xml($sepa_tx);
-		File::append($invoice_records_file, $invoice_records);
-		echo "stored invoice records in $invoice_records_file\n";
+		$this->create_sepa_xml($sepa_dd, $sepa_dc);
+
+		File::append($invoice_tariff_records_file, $invoice_tariff_records);
+		echo "stored invoice records in $invoice_tariff_records_file\n";
+		File::append($invoice_item_records_file, $invoice_item_records);
+		echo "stored invoice records in $invoice_item_records_file\n";
 		File::append($booking_records_file, $booking_records);		
 		echo "stored booking records in $booking_records_file\n";
 		File::append($booking_records_sepa_file, $booking_records_sepa);
@@ -409,58 +422,95 @@ cont:
 
 	/**
 	 * Create SEPA XML
-	 * @param $sepa_tx - sepa transfer information array
+	 * @param $sepa_dd - sepa transfer information array for direct debits
+	 * @param $sepa_dc - sepa transfer information array for direct credits
 	 * @author Nino Ryschawy
 	 */
-	protected function create_sepa_xml($sepa_tx)
+	protected function create_sepa_xml($sepa_dd, $sepa_dc = null)
 	{
-		$sepa_xml_file 	= storage_path('billing/sepa.xml');
+		$sepa_dd_xml_file 	= storage_path('billing/sepa_dd.xml');
+		$sepa_dc_xml_file 	= storage_path('billing/sepa_dc.xml');
 		$msg_id = date('YmdHis');		// km3 uses actual time
 		$creditor['name'] = 'ERZNET AG';
 		$creditor['iban'] = 'DE64870540000440011094';
 		$creditor['bic']  = 'WELADED1STB';
 		$creditor['id']   = 'DE95ZZZ00000425253';
 
-		// Set the initial information
+
+		// Set the initial information for direct debits
 		$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id, $creditor['name']);
 
-		foreach ($sepa_tx as $type => $records)
+		foreach ($sepa_dd as $type => $records)
 		{
 			// create a payment
 			$directDebit->addPaymentInfo($msg_id, array(
-			    'id'                    => $msg_id,
-			    'creditorName'          => $creditor['name'],
-			    'creditorAccountIBAN'   => $creditor['iban'],
-			    'creditorAgentBIC'      => $creditor['bic'],
-			    'seqType'               => $type,
-			    'creditorId'            => $creditor['id']
-			    // 'dueDate'				=> // requested collection date (Fälligkeits-/Ausführungsdatum) - from global config
+				'id'                    => $msg_id,
+				'creditorName'          => $creditor['name'],
+				'creditorAccountIBAN'   => $creditor['iban'],
+				'creditorAgentBIC'      => $creditor['bic'],
+				'seqType'               => $type,
+				'creditorId'            => $creditor['id']
+				// 'dueDate'				=> // requested collection date (Fälligkeits-/Ausführungsdatum) - from global config
 			));
 
 			foreach($records as $r)
 			{
 				$payment_id = 'RG '.$r['invoice_nr'];
-				$info 		= 'Month '.date('m');
+				$info 		= 'Month '.date('m/Y');
 				if ($r['started_lastm'])
-					$info 	.= ' + '.date('Y-m', strtotime('now -1 months'));
+					$info .= ' + '.date('m/Y', strtotime('now -1 months'));
 				
 				// Add a Single Transaction to the named payment
 				$directDebit->addTransfer($msg_id, array(
 					'endToEndId'			=> $payment_id,
-				    'amount'                => $r['charge'],
-				    'debtorIban'            => $r['mandate']->sepa_iban,
-				    'debtorBic'             => $r['mandate']->sepa_bic,
-				    'debtorName'            => $r['mandate']->sepa_holder,
-				    'debtorMandate'         => $r['mandate']->reference,
-				    'debtorMandateSignDate' => $r['mandate']->signature_date,
-				    'remittanceInformation' => $info,
+					'amount'                => $r['charge'],
+					'debtorIban'            => $r['mandate']->sepa_iban,
+					'debtorBic'             => $r['mandate']->sepa_bic,
+					'debtorName'            => $r['mandate']->sepa_holder,
+					'debtorMandate'         => $r['mandate']->reference,
+					'debtorMandateSignDate' => $r['mandate']->signature_date,
+					'remittanceInformation' => $info,
 				));
 			}
 		}
 
 		// Retrieve the resulting XML
-		File::put($sepa_xml_file, $directDebit->asXML());
-		echo "stored sepa xml in $sepa_xml_file\n";
+		File::put($sepa_dd_xml_file, $directDebit->asXML());
+		echo "stored sepa direct debit xml in $sepa_dd_xml_file\n";
+
+
+		// Set the initial information for direct credits
+		if (!$sepa_dc)
+			return;
+		$customerCredit = TransferFileFacadeFactory::createCustomerCredit($msg_id.'C', $creditor['name']);
+
+		$customerCredit->addPaymentInfo($msg_id.'C', array(
+			'id'                      => $msg_id.'C',
+			'debtorName'              => $creditor['name'],
+			'debtorAccountIBAN'       => $creditor['iban'],
+			'debtorAgentBIC'          => $creditor['bic'],
+		));
+
+		foreach($sepa_dc as $r)
+		{
+			$info = 'Month '.date('m/Y');
+			if ($r['started_lastm'])
+				$info .= ' + '.date('m/Y', strtotime('now -1 months'));
+			
+			// Add a Single Transaction to the named payment
+			$customerCredit->addTransfer($msg_id.'C', array(
+				'amount'                  => $r['charge']*(-1),
+				'creditorIban'            => $r['mandate']->sepa_iban,
+				'creditorBic'             => $r['mandate']->sepa_bic,
+				'creditorName'            => $r['mandate']->sepa_holder,
+				'remittanceInformation'   => $info
+			));
+		}
+
+		// Retrieve the resulting XML
+		File::put($sepa_dc_xml_file, $customerCredit->asXML());
+		echo "stored sepa direct credit xml in $sepa_dc_xml_file\n";
+
 	}
 
 
