@@ -30,8 +30,8 @@ class ItemController extends \BaseModuleController {
 			array('form_type' => 'select', 'name' => 'price_id', 'description' => 'Item', 'value' => $model->html_list($items, 'name'), 'hidden' => '0'), 
 			array('form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt),
 			array('form_type' => 'select', 'name' => 'payment_from', 'description' => 'Payment from', 'value' => $b),
-			array('form_type' => 'select', 'name' => 'payment_to', 'description' => 'Payment to (Only for One Time Payments', 'value' => $b),
-			array('form_type' => 'text', 'name' => 'credit_amount', 'description' => 'Credit Amount (Additional - only for Credits)'),
+			array('form_type' => 'select', 'name' => 'payment_to', 'description' => 'Payment to (Only for One Time Payments)', 'value' => $b),
+			array('form_type' => 'text', 'name' => 'credit_amount', 'description' => 'Credit Amount (Only for Credits!)'),
 			array('form_type' => 'text', 'name' => 'accounting_text', 'description' => 'Accounting Text (optional)')
 		);
 	}	
@@ -42,6 +42,11 @@ class ItemController extends \BaseModuleController {
 	 */
 	public function prep_rules($rules, $data)
 	{
+		$credit_id = Price::where('name', '=', 'Credit')->orWhere('name', '=', 'credit')->get()->all(); //->orWhere('name', '=', 'credit')
+		$credit_id = $credit_id[0]->id;
+
+		if ($data['price_id'] == $credit_id)
+			$rules['credit_amount'] = 'not_null';
 		if ($data['payment_from'])
 			$rules['payment_to'] = 'required|date';
 		if ($data['payment_to'])

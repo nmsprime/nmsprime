@@ -12,12 +12,7 @@ class CostCenter extends \BaseModel {
 	public static function rules($id = null)
 	{
 		return array(
-			// 'signature_date' 	=> 'required|date',
-			// 'sepa_iban' 		=> 'required|iban',
-			// 'sepa_bic' 			=> 'required|bic',
-			// 'sepa_institute' 	=> ,
-			// 'sepa_valid_from' 	=> 'required|date',
-			// 'sepa_valid_to'		=> 'dateornull'
+			'name' 	=> 'required',
 		);
 	}
 
@@ -35,7 +30,7 @@ class CostCenter extends \BaseModel {
 	// link title in index view
 	public function get_view_link_title()
 	{
-		// return $this->sepa_valid_from.' - '.$this->sepa_valid_to;
+		return $this->name;
 	}
 
 	// Return a pre-formated index list
@@ -44,47 +39,27 @@ class CostCenter extends \BaseModel {
 		return $this->orderBy('id')->get();
 	}
 
-	public function view_belongs_to ()
+	// View Relation.
+	public function view_has_many()
 	{
-		return $this->contract;
+		return array(
+			'Price' => $this->price_entries(),
+			);
 	}
 
 
 	/**
 	 * Relationships:
 	 */
-	public function contract ()
+	public function sepa_account ()
 	{
-		return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
+		return $this->belongsTo('Modules\ProvBase\Entities\SepaAccount', 'sepa_account_id');
 	}
 
-	/*
-	 * Init Observers
-	 */
-	public static function boot()
+	public function price_entries()
 	{
-		// CostCenter::observe(new SepaAccountObserver);
-		parent::boot();
+		return Price::where('costcenter_id', '=', $this->id)->get();
 	}
 
-}
-
-
-/**
- * Observer Class
- *
- * can handle   'creating', 'created', 'updating', 'updated',
- *              'deleting', 'deleted', 'saving', 'saved',
- *              'restoring', 'restored',
- */
-class CostCenterObserver
-{
-	public function creating($mandate)
-	{
-	}
-
-	public function updating($mandate)
-	{
-	}
 
 }

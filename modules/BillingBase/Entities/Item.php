@@ -13,10 +13,8 @@ class Item extends \BaseModel {
 	public static function rules($id = null)
 	{
 		return array(
-			// 'hostname' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
-			// 'payment_to' => 'date' //'dateFormat:yyyy-mm-dd'
-			// 'payment_from' => 'required_with:payment_to', //'dateFormat:yyyy-mm-dd'
-			'credit_amount' => 'min:0'
+			// 'name' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
+			// 'credit_amount' => "min:0.01|required_if:price_id,$credit_id",
 		);
 	}
 

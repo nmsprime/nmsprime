@@ -11,9 +11,9 @@ class Price extends \BaseModel {
 	public static function rules($id = null)
 	{
 		return array(
-			// 'hostname' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
-			'name' => 'required',
-			'type' => 'required|not_null',
+			'name' => 'required|unique:price,name,'.$id.',id,deleted_at,NULL',
+			'type' => "required|not_null",
+			// 'type' => "required|not_null|unique:price,type,$id,id,type,Credit,deleted_at,NULL",	// if credit shall exist only once
 			'voip_tariff' => 'required_if:type,Voip',
 			'qos_id' => 'required_if:type,Internet',
 		);

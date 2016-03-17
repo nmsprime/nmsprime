@@ -12,12 +12,10 @@ class SepaAccount extends \BaseModel {
 	public static function rules($id = null)
 	{
 		return array(
-			// 'signature_date' 	=> 'required|date',
-			// 'sepa_iban' 		=> 'required|iban',
-			// 'sepa_bic' 			=> 'required|bic',
-			// 'sepa_institute' 	=> ,
-			// 'sepa_valid_from' 	=> 'required|date',
-			// 'sepa_valid_to'		=> 'dateornull'
+			'name' 		=> 'required',
+			'holder' 	=> 'required',
+			'iban' 		=> 'required|iban',
+			'bic' 		=> 'required|bic',
 		);
 	}
 
@@ -29,13 +27,13 @@ class SepaAccount extends \BaseModel {
 	// Name of View
 	public static function get_view_header()
 	{
-		return 'SEPA Accounts';
+		return 'SEPA Account';
 	}
 
 	// link title in index view
 	public function get_view_link_title()
 	{
-		// return $this->sepa_valid_from.' - '.$this->sepa_valid_to;
+		return $this->name;
 	}
 
 	// Return a pre-formated index list
@@ -44,47 +42,21 @@ class SepaAccount extends \BaseModel {
 		return $this->orderBy('id')->get();
 	}
 
-	public function view_belongs_to ()
+	// View Relation.
+	public function view_has_many()
 	{
-		return $this->contract;
+		return array(
+			'CostCenter' => $this->costcenter,
+			);
 	}
 
 
 	/**
 	 * Relationships:
 	 */
-	public function contract ()
+	public function costcenter ()
 	{
-		return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
-	}
-
-	/*
-	 * Init Observers
-	 */
-	public static function boot()
-	{
-		// SepaAccount::observe(new SepaAccountObserver);
-		parent::boot();
-	}
-
-}
-
-
-/**
- * Observer Class
- *
- * can handle   'creating', 'created', 'updating', 'updated',
- *              'deleting', 'deleted', 'saving', 'saved',
- *              'restoring', 'restored',
- */
-class SepaAccountObserver
-{
-	public function creating($mandate)
-	{
-	}
-
-	public function updating($mandate)
-	{
+		return $this->hasMany('Modules\BillingBase\Entities\CostCenter');
 	}
 
 }

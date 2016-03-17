@@ -12,11 +12,16 @@ class SepaAccountController extends \BaseModuleController {
 	public function get_form_fields($model = null)
 	{
 		if (!$model)
-			$model = new SepaMandate;
+			$model = new SepaAccount;
 
 		// label has to be the same like column in sql table
 		return array(
-			// array('form_type' => 'text', 'name' => 'signature_date', 'description' => 'Date of Signature', 'options' => ['placeholder' => 'YYYY-MM-DD']),
+			array('form_type' => 'text', 'name' => 'name', 'description' => 'Account Name'),
+			array('form_type' => 'text', 'name' => 'holder', 'description' => 'Account Holder'),
+			array('form_type' => 'text', 'name' => 'iban', 'description' => 'IBAN'),
+			array('form_type' => 'text', 'name' => 'bic', 'description' => 'BIC'),
+			array('form_type' => 'text', 'name' => 'institute', 'description' => 'Institute'),
+			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
 		);
 	}
 
