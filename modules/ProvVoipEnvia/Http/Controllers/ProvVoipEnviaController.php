@@ -140,7 +140,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			['api' => 'selfcare', 'link' => 'customer_get_reference'],
 			['api' => 'order', 'link' => 'order_add_mgcp_details'],
 			['api' => 'order', 'link' => 'order_cancel'],
-			['api' => 'order', 'link' => 'order_create_attachment'],
+			['api' => 'order', 'link' => 'order_create_attachment?order_id=73013&amp;enviaorderdocument_id=7'],
 			['api' => 'order', 'link' => 'order_get_status'],
 			['api' => 'order', 'link' => 'phonebookentry_create'],
 			['api' => 'order', 'link' => 'phonebookentry_delete'],
@@ -319,6 +319,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'misc_get_orders_csv',
 			'misc_get_usage_csv',
 			'order_get_status',
+			'order_create_attachment',
 		);
 		if (in_array($job, $unrestricted_jobs)) {
 			return true;
@@ -526,7 +527,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 			'order_add_mgcp_details' => $base_url.'____TODO____',
 			'order_cancel' => $base_url.'____TODO____',
-			'order_create_attachment' => $base_url.'____TODO____',
+			'order_create_attachment' => $base_url.'order/create_attachment',
 			'order_get_status' => $base_url.'order/get_status',
 
 			'phonebookentry_create' => $base_url.'____TODO____',

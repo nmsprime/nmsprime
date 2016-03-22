@@ -8,6 +8,9 @@ class EnviaOrderDocument extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'enviaorderdocument';
 
+	// where to save the uploaded documents (relative to /storage/app)
+	public static $document_base_path = "modules/ProvVoipEnvia/EnviaOrderDocuments";
+
 	public static $allowed_mimetypes = array(
 		'application/msword',
 		'application/pdf',
@@ -29,6 +32,7 @@ class EnviaOrderDocument extends \BaseModel {
 		return array(
 			'document_type' => 'required',
 			'document_upload' => 'required|mimes:'.$mimestring,
+			'enviaorder_id' => 'required|exists:enviaorder,id',
 		);
 	}
 
@@ -36,6 +40,7 @@ class EnviaOrderDocument extends \BaseModel {
 	protected $fillable = [
 		'document_type',
 		'filename',
+		'enviaorder_id',
 	];
 
 	// Name of View

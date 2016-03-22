@@ -9,6 +9,7 @@ use Modules\ProvVoip\Entities\CarrierCode;
 use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
+use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
 
 // Model not found? execute composer dump-autoload in lara root dir
 class ProvVoipEnvia extends \BaseModel {
@@ -643,9 +644,11 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			/* 'order_create_attachment' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+			'order_create_attachment' => array(
+				'reseller_identifier',
+				'order_identifier',
+				'attachment_data',
+			),
 
 			'order_get_status' => array(
 				'reseller_identifier',
@@ -714,7 +717,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _add_order_identifier() {
+	protected function _dd_order_identifier() {
 
 		$order_id = \Input::get('order_id', null);
 		if (!is_numeric($order_id)) {
@@ -1053,6 +1056,38 @@ class ProvVoipEnvia extends \BaseModel {
 		);
 
 		$this->_add_fields($inner_xml, $fields_contract_identifier, $this->contract);
+	}
+
+
+	/**
+	 * Method to add attachment
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_attachment_data() {
+
+		$enviaorderdocument_id = \Input::get('enviaorderdocument_id');
+		$enviaorder_id = \Input::get('order_id');
+
+		$enviaorderdocument = EnviaOrderDocument::findOrFail($enviaorderdocument_id);
+
+		if ($enviaorderdocument->enviaorder->orderid != $enviaorder_id) {
+			throw \InvalidArgumentException('Given order_id ('.$enviaorder_id.') not correct for given enviaorderdocument');
+		}
+
+		$filename = $enviaorderdocument->filename;
+		$basepath = EnviaOrderDocument::$document_base_path;
+		$contract_id = $enviaorderdocument->enviaorder->contract_id;
+
+		$filepath = $basepath.'/'.$contract_id.'/'.$filename;
+		hier weiter: get mimetype and file content for base64
+		dd($filepath);
+
+		$inner_xml = $this->xml->addChild('attachment_data');
+
+		$inner_xml->addChild('documenttype', $enviaorderdocument-> document_type);
+		$inner_xml->addChild('contenttype', $enviaorderdocument->contenttype);
+
 	}
 
 

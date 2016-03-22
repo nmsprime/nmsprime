@@ -14,8 +14,23 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 
 	protected $index_create_allowed = false;
 
-	// where to save the uploaded documents (relative to /storage/app)
-	protected $document_base_path = "modules/ProvVoipEnvia/EnviaOrderDocuments";
+	/**
+	 * Constructor.
+	 * Used to set some helper variables.
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @param $attributes pass through to Eloquent contstructor.
+	 */
+	public function __construct($attributes = array()) {
+
+		// call Eloquent constructor
+		// $attributes are needed! (or e.g. seeding and creating will not work)
+		parent::__construct($attributes);
+
+		$this->document_base_path = EnviaOrderDocument::$document_base_path;
+	}
+
 
 	/**
 	 * defines the formular fields for the edit and create view
@@ -63,6 +78,11 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 
 		// build path to store document in – this is the base path with subdir contract ID
 		$enviaorder_id = \Input::get('enviaorder_id', -1);
+		if ($enviaorder_id < 0) {
+			throw new ValueError('No enviaorder_id given');
+		}
+		\Input::merge(array('enviaorder_id' => $enviaorder_id));
+
 		$contract_id = EnviaOrder::findOrFail($enviaorder_id)->contract->id;
 		$document_path = $this->document_base_path.'/'.$contract_id;
 
@@ -79,10 +99,10 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 			$suffix = '';
 		}
 
-		echo "Generating filename";
 		$new_filename = date('Y-m-d\tH-i-s').'__'.$contract_id.'__'.$document_type.$suffix;
 		$new_filename = \Str::lower($new_filename);
 		\Input::merge(array('filename' => $new_filename));
+		$new_filename_complete = $document_path.'/'.$new_filename;
 
 
 		// get MIME type and store for use in model
@@ -95,38 +115,52 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 			return;
 		};
 
+		// move uploaded file to document_path (after making directories)
+		\Storage::makeDirectory($document_path);
+		\Storage::put($new_filename_complete, \File::get(\Input::file('document_upload')));
 
+		// TODO: should we chmod the file to readonly??
 
-
-		// move uploaded file to document_path
-		echo "Move uploaded file";
-
-
-		// chmod to readonly => prevent later overwriting by accident
-		echo "chmod file to readonly";
-
-
-		/* dd($document_path); */
 	}
+
+	/**
+	 * Register observer
+	 */
+	public static function boot()
+	{
+		parent::boot();
+
+		EnviaOrderDocument::observe(new EnviaOrderDocumentObserver);
+	}
+
 }
 
 
-/* protected function handle_file_upload($base_field, $dst_path) { */
+/**
+ * EnviaOrderDocument Observer Class
+ * Handles changes on EnviaOrderDocument
+ *
+ * can handle   'creating', 'created', 'updating', 'updated',
+ *              'deleting', 'deleted', 'saving', 'saved',
+ *              'restoring', 'restored',
+ *
+ * @author Patrick Reichel
+ */
+class EnviaOrderDocumentObserver
+{
+	/**
+	 * After creation: send document to EnviaTEL
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function created($envia_order_document)
+	{
+		$order_id = $envia_order_document->enviaorder->orderid;
+		dd($order_id);
+		// call Envia API and send file
 
-/* 	$upload_field = $base_field."_upload"; */
+	}
 
-/* 	if (Input::hasFile($upload_field)) { */
-
-/* 		// get filename */
-/* 		$filename = Input::file($upload_field)->getClientOriginalName(); */
-
-/* 		// move file */
-/* 		Input::file($upload_field)->move($dst_path, $filename); */
-
-/* 		// place filename as chosen value in Input field */
-/* 		Input::merge(array($base_field => $filename)); */
-/* 	} */
-
-/* } */
+}
 
 
