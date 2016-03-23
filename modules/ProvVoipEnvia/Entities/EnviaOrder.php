@@ -14,7 +14,8 @@ class EnviaOrder extends \BaseModel {
 		return array(
 			// Prevent users from creating orders (table enviaorder is only changable through Envia API!)
 			// TODO: later remove create/delete/save buttons
-			'orderid' => 'required|min:1'
+			'orderid' => 'required|min:1',
+			'related_order_id' => 'exists:enviaorder,id',
 		);
 
 	}
@@ -28,6 +29,7 @@ class EnviaOrder extends \BaseModel {
 		'orderstatus',
 		'orderdate',
 		'ordercomment',
+		'related_order_id',
 		'customerreference',
 		'contractreference',
 		'contract_id',

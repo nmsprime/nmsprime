@@ -717,7 +717,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _dd_order_identifier() {
+	protected function _add_order_identifier() {
 
 		$order_id = \Input::get('order_id', null);
 		if (!is_numeric($order_id)) {
@@ -752,7 +752,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// if given: localareacode has to be numeric
 		// TODO: error handling
 		if (!is_numeric($localareacode)) {
-			throw \InvalidArgumentException("localareacode has to be numeric");
+			throw new \InvalidArgumentException("localareacode has to be numeric");
 		}
 
 		// localareacode is valid: add filter
@@ -765,7 +765,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// if given: baseno has to be numeric
 		// TODO: error handling
 		if (!is_numeric($baseno)) {
-			throw \InvalidArgumentException("baseno has to be numeric");
+			throw new \InvalidArgumentException("baseno has to be numeric");
 		}
 
 		// baseno is valid
@@ -956,7 +956,7 @@ class ProvVoipEnvia extends \BaseModel {
 				$inner_xml->addChild('carriercode', $carrier_in);
 			}
 			else {
-				throw new \Exception('ERROR: '.$carrier_code.' is not a valid carrier_code');
+				throw new \InvalidArgumentException('ERROR: '.$carrier_code.' is not a valid carrier_code');
 			}
 		}
 
@@ -1072,7 +1072,10 @@ class ProvVoipEnvia extends \BaseModel {
 		$enviaorderdocument = EnviaOrderDocument::findOrFail($enviaorderdocument_id);
 
 		if ($enviaorderdocument->enviaorder->orderid != $enviaorder_id) {
-			throw \InvalidArgumentException('Given order_id ('.$enviaorder_id.') not correct for given enviaorderdocument');
+			throw new \InvalidArgumentException('Given order_id ('.$enviaorder_id.') not correct for given enviaorderdocument');
+		}
+		if (boolval($enviaorderdocument->upload_order_id)) {
+			throw new \InvalidArgumentException('Given document has aleady been uploaded');
 		}
 
 		$filename = $enviaorderdocument->filename;
@@ -1080,13 +1083,20 @@ class ProvVoipEnvia extends \BaseModel {
 		$contract_id = $enviaorderdocument->enviaorder->contract_id;
 
 		$filepath = $basepath.'/'.$contract_id.'/'.$filename;
-		hier weiter: get mimetype and file content for base64
-		dd($filepath);
+
+		$file_content_raw = \Storage::get($filepath);
+
+		$file_content_base64 = base64_encode($file_content_raw);
+
+		// get MIME type
+		$mime_type = $enviaorderdocument->mime_type;
+
 
 		$inner_xml = $this->xml->addChild('attachment_data');
 
-		$inner_xml->addChild('documenttype', $enviaorderdocument-> document_type);
-		$inner_xml->addChild('contenttype', $enviaorderdocument->contenttype);
+		$inner_xml->addChild('contenttype', $mime_type);
+		$inner_xml->addChild('documenttype', $enviaorderdocument->document_type);
+		$inner_xml->addChild('content', $file_content_base64);
 
 	}
 
@@ -1480,6 +1490,48 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// view data
 		$out .= "<h5>VoIP account created (order ID: ".$xml->orderid.")</h5>";
+
+		return $out;
+
+	}
+
+
+	/**
+	 * Process data after successful upload of a file to envia
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_create_attachment_response($xml, $data, $out) {
+
+		$enviaorder_id = \Input::get('order_id');
+		$related_enviaorder = EnviaOrder::where('orderid', '=', $enviaorder_id)->firstOrFail();
+		$related_order_id = $related_enviaorder->id;
+
+		// create new enviaorder
+		// the result of sending an attachement related to an order is – right – a new order…
+		$order_data = array();
+
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['contract_id'] = $related_enviaorder->contract_id;
+		$order_data['phonenumber_id'] = $related_enviaorder->phonenumber_id;
+		$order_data['ordertype'] = 'order/create_attachment';
+		$order_data['orderstatus'] = 'successful';
+		$order_data['related_order_id'] = $related_order_id;
+		$order_data['customerreference'] = $related_enviaorder->customerreference;
+		$order_data['contractreference'] = $related_enviaorder->contractreference;
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// and instantly (soft)delete this order – trying to get order/get_status results in a 404…
+		// I love this API!!
+		EnviaOrder::where('orderid', '=', $xml->orderid)->delete();
+
+		// update enviaordertables => store id of order id of upload
+		$enviaorderdocument = EnviaOrderDocument::findOrFail(\Input::get('enviaorderdocument_id', null));
+		$enviaorderdocument['upload_order_id'] = $xml->orderid;
+		$enviaorderdocument->save();
+
+		$out .= "<h5>File uploaded successfully.</h5>";
 
 		return $out;
 

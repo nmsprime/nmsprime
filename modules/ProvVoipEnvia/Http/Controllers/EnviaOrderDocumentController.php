@@ -64,9 +64,59 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 		return parent::store();
 	}
 
+
+	/**
+	 * Get document related to this instance.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function show($id) {
+
+		$enviaorderdocument = EnviaOrderDocument::findOrFail($id);
+		$contract_id = $enviaorderdocument->enviaorder->contract_id;
+		$filename = $enviaorderdocument->filename;
+
+		$filepath = $this->document_base_path.'/'.$contract_id.'/'.$filename;
+
+		$file = \Storage::get($filepath);
+
+		/* return (new \Response($file, 200)) */
+		/* 	->header('Content-Type', $enviaorderdocument->mime_type); */
+
+		$response = \Response::make($file, 200);
+		$response->header('Content-Type', $enviaorderdocument->mime_type);
+		$response->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
+
+		return $response;
+	}
+
+
 	public function edit($id) {
 
-		echo "TODO: write redirect to trigger envia action and later to uploaded file";
+		$document = EnviaOrderDocument::findOrFail($id);
+
+		// if still not uploaded to Envia => send to API
+		if (!boolval($document->upload_order_id)) {
+
+			// we realize this using redirect
+			$params = array(
+				'job' => 'order_create_attachment',
+				'order_id' => $document->enviaorder->orderid,
+				'enviaorderdocument_id' => $id,
+				'origin' => urlencode(\Request::getUri()),
+			);
+			return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request', $params);
+		}
+		// if already uploaded: show document
+		else {
+
+			// redirect back to order
+			/* $params = array( */
+			/* 	$ */
+			/* ); */
+			/* return \Redirect::action('Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderController', $params); */
+			return \Redirect::route('EnviaOrder.edit', [$document->enviaorder->id]);
+		}
 	}
 
 	/**
@@ -107,7 +157,7 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 
 		// get MIME type and store for use in model
 		$mime_type = \Input::file('document_upload')->getMimeType();
-		\Input::merge(array('mime_type', $mime_type));
+		\Input::merge(array('mime_type' => $mime_type));
 
 		// if MIME type is forbidden: return instantly (don't move uploaded file to destination)
 		$allowed_mimetypes = EnviaOrderDocument::$allowed_mimetypes;

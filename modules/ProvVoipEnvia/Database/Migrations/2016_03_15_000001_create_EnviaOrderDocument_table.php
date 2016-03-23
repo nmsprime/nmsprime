@@ -31,8 +31,10 @@ class CreateEnviaOrderDocumentTable extends BaseMigration {
 				'Vertragsbeend',
 				'Vollmacht',
 			]);
+			$table->string('mime_type');
 			$table->string('filename');
 			$table->integer('enviaorder_id');
+			$table->integer('upload_order_id')->nullable()->default(NULL);
 		});
 
 		return parent::up();

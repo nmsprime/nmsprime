@@ -27,6 +27,7 @@ class CreateEnviaOrderTable extends BaseMigration {
 			$table->string('orderstatus')->nullable()->default(NULL);
 			$table->date('orderdate')->nullable()->default(NULL);
 			$table->string('ordercomment')->nullable()->default(NULL);
+			$table->integer('related_order_id')->unsigned()->nullable()->default(NULL);
 			$table->string('customerreference', 60)->nullable()->default(NULL);
 			$table->string('contractreference', 60)->nullable()->default(NULL);
 			$table->integer('contract_id')->nullable()->default(NULL);

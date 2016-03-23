@@ -21,9 +21,20 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$this->model = new ProvVoipEnvia();
 
 		// store the called entry method => later needed for different output (echo vs. view)
+		// don't try to extract via explode from Request::url => e.g. „php artisan route:list“ crashes with index out of bound…
 		$url = \Request::url();
-		$tmp = explode('provvoipenvia/', $url)[1];
-		$this->entry_method = explode('/', $tmp)[0];
+		if (\Str::contains($url, '/request/')) {
+			$this->entry_method = 'request';
+		}
+		elseif (\Str::contains($url, '/cron/')) {
+			$this->entry_method = 'cron';
+		}
+		elseif (\Str::contains($url, '/index/')) {
+			$this->entry_method = 'index';
+		}
+		else {
+			$this->entry_method = '';
+		}
 
 		// build base URL of the envia API
 		$domain = $_ENV['PROVVOIPENVIA__REST_API_URL'];

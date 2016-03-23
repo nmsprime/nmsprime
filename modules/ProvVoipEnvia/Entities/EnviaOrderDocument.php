@@ -33,13 +33,16 @@ class EnviaOrderDocument extends \BaseModel {
 			'document_type' => 'required',
 			'document_upload' => 'required|mimes:'.$mimestring,
 			'enviaorder_id' => 'required|exists:enviaorder,id',
+			'mime_type' => 'required',
 		);
 	}
 
 	// Don't forget to fill this array
 	protected $fillable = [
 		'document_type',
+		'mime_type',
 		'filename',
+		'uploaded_order_id',
 		'enviaorder_id',
 	];
 
@@ -52,7 +55,7 @@ class EnviaOrderDocument extends \BaseModel {
 	// link title in index view
 	public function get_view_link_title()
 	{
-		return $this->id;
+		return $this->created_at.': '.$this->document_type;
 	}
 
 	// belongs to a modem - see BaseModel for explanation
