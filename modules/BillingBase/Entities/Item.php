@@ -35,7 +35,7 @@ class Item extends \BaseModel {
 
 		return array(
 			// 'name' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
-			'valid_from'  => 'required_if:product_id,'.$tariff_ids,
+			// 'valid_from'  => 'required_if:product_id,'.$tariff_ids,
 			'credit_amount' => 'required_if:product_id,'.$credit_ids,
 			'count'			=> 'null_if:product_id,'.$tariff_ids.','.$credit_ids,
 		);
@@ -75,6 +75,46 @@ class Item extends \BaseModel {
 	public function contract ()
 	{
 		return $this->belongsTo('Modules\ProvBase\Entities\Contract');
+	}
+
+
+	/*
+	 * Init Observers
+	 */
+	public static function boot()
+	{
+		Item::observe(new ItemObserver);
+		parent::boot();
+	}
+
+}
+
+
+
+/**
+ * Observer Class
+ *
+ * can handle   'creating', 'created', 'updating', 'updated',
+ *              'deleting', 'deleted', 'saving', 'saved',
+ *              'restoring', 'restored',
+ */
+class ItemObserver
+{
+	public function creating($item)
+	{
+		switch ($item->product->type)
+		{
+			case 'Internet':
+			case 'Voip':
+			case 'TV':
+				if (!$item->valid_from)
+					$item->valid_from = date('Y-m-d');
+				break;
+		}
+	}
+
+	public function updating($item)
+	{
 	}
 
 }

@@ -12,11 +12,11 @@ class SepaMandate extends \BaseModel {
 	public static function rules($id = null)
 	{
 		return array(
-			'signature_date' 	=> 'required|date',
+			'signature_date' 	=> 'date',
 			'sepa_iban' 		=> 'required|iban',
 			'sepa_bic' 			=> 'required|bic',
 			// 'sepa_institute' 	=> ,
-			'sepa_valid_from' 	=> 'required|date',
+			'sepa_valid_from' 	=> 'date',
 			'sepa_valid_to'		=> 'dateornull'
 		);
 	}
@@ -82,13 +82,19 @@ class SepaMandateObserver
 {
 	public function creating($mandate)
 	{
-		$mandate->reference = '002-'.Contract::find($mandate->contract_id)->id.'-001';
+		$mandate->reference = '002-'.$mandate->contract->id.'-001';
+		if (!$mandate->signature_date)
+			$mandate->signature_date = date('Y-m-d');
+		if (!$mandate->sepa_valid_from)
+			$mandate->sepa_valid_from = date('Y-m-d');
 	}
 
 	public function updating($mandate)
 	{
 		if ($mandate->reference == '')
-			$mandate->reference = '002-'.Contract::find($mandate->contract_id)->id.'-001';
+			$mandate->reference = '002-'.$mandate->contract->id.'-001';
+		if (!$mandate->signature_date || $mandate->signature_date == '0000-00-00')
+			$mandate->signature_date = date('Y-m-d');
 	}
 
 }

@@ -63,5 +63,6 @@ class Product extends \BaseModel {
 		return $this->belongsTo('Modules\BillingBase\Entities\CostCenter', 'costcenter_id');
 	}
 
-
 }
+
+
