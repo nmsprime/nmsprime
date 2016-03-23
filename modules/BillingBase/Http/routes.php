@@ -6,12 +6,12 @@
 // });
 
 Route::group(array('before' => 'auth'), function() {
-	Route::resource('Price', 'Modules\BillingBase\Http\Controllers\PriceController');
+	Route::resource('Product', 'Modules\BillingBase\Http\Controllers\ProductController');
 	Route::resource('Item', 'Modules\BillingBase\Http\Controllers\ItemController');
 	Route::resource('SepaMandate', 'Modules\BillingBase\Http\Controllers\SepaMandateController');
 	Route::resource('SepaAccount', 'Modules\BillingBase\Http\Controllers\SepaAccountController');
 	Route::resource('CostCenter', 'Modules\BillingBase\Http\Controllers\CostCenterController');
-	Route::get('Price/fulltextSearch', array('as' => 'Price.fulltextSearch', 'uses' => 'Modules\BillingBase\Http\Controllers\PriceController@fulltextSearch'));
+	Route::get('Product/fulltextSearch', array('as' => 'Product.fulltextSearch', 'uses' => 'Modules\BillingBase\Http\Controllers\ProductController@fulltextSearch'));
 	Route::get('Item/fulltextSearch', array('as' => 'Item.fulltextSearch', 'uses' => 'Modules\BillingBase\Http\Controllers\ItemController@fulltextSearch'));
 	Route::get('SepaMandate/fulltextSearch', array('as' => 'SepaMandate.fulltextSearch', 'uses' => 'Modules\BillingBase\Http\Controllers\SepaMandateController@fulltextSearch'));
 	Route::get('SepaAccount/fulltextSearch', array('as' => 'SepaAccount.fulltextSearch', 'uses' => 'Modules\BillingBase\Http\Controllers\SepaAccountController@fulltextSearch'));

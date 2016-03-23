@@ -3,10 +3,10 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreatePriceTable extends BaseMigration {
+class CreateProductTable extends BaseMigration {
 
 	// name of the table to create
-	protected $tablename = "price";
+	protected $tablename = 'product';
 
 	/**
 	 * Run the migrations.

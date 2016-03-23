@@ -39,13 +39,13 @@ class CostCenter extends \BaseModel {
 		return $this->orderBy('id')->get();
 	}
 
-	// View Relation.
 	public function view_has_many()
 	{
 		return array(
-			'Price' => $this->price_entries(),
+			'Product' => $this->products(),
 			);
 	}
+
 
 
 	/**
@@ -53,12 +53,12 @@ class CostCenter extends \BaseModel {
 	 */
 	public function sepa_account ()
 	{
-		return $this->belongsTo('Modules\ProvBase\Entities\SepaAccount', 'sepa_account_id');
+		return $this->belongsTo('Modules\BillingBase\Entities\SepaAccount', 'sepa_account_id');
 	}
 
-	public function price_entries()
+	public function products()
 	{
-		return Price::where('costcenter_id', '=', $this->id)->get();
+		return Product::where('costcenter_id', '=', $this->id)->get();
 	}
 
 

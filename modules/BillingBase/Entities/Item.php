@@ -2,7 +2,7 @@
 
 namespace Modules\BillingBase\Entities;
 
-use Modules\BillingBase\Entities\Price;
+use Modules\BillingBase\Entities\Product;
 
 class Item extends \BaseModel {
 
@@ -12,9 +12,32 @@ class Item extends \BaseModel {
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
+		$tariff_prods_o = Product::where('type', '=', 'internet')->orWhere('type', '=', 'tv')->orWhere('type', '=', 'voip')->get();		
+		if ($tariff_prods_o->all())
+		{
+			foreach ($tariff_prods_o as $p)
+				$tariff_prods_a[] = $p->id;
+			$tariff_ids = implode(',', $tariff_prods_a);
+		}
+		else 
+			$tariff_ids = '';
+		
+		$credit_prods_o = Product::where('type', '=', 'credit')->get();
+		if ($credit_prods_o->all())
+		{
+			foreach ($credit_prods_o as $p)
+				$credit_prods_a[] = $p->id;
+			$credit_ids = implode(',', $credit_prods_a);
+		}
+		else
+			$credit_ids = '';
+
+
 		return array(
 			// 'name' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
-			// 'credit_amount' => "min:0.01|required_if:price_id,$credit_id",
+			'valid_from'  => 'required_if:product_id,'.$tariff_ids,
+			'credit_amount' => 'required_if:product_id,'.$credit_ids,
+			'count'			=> 'null_if:product_id,'.$tariff_ids.','.$credit_ids,
 		);
 	}
 
@@ -32,8 +55,7 @@ class Item extends \BaseModel {
 	// link title in index view
 	public function get_view_link_title()
 	{
-		return Price::find($this->price_id)->name;
-		return Price::find($this->price_id)->name.' | '.$this->payment_from.' - '.$this->payment_to;
+		return $this->product->name;
 	}
 
 	public function view_belongs_to ()
@@ -45,9 +67,9 @@ class Item extends \BaseModel {
 	 * Relationships:
 	 */
 
-	public function price ()
+	public function product ()
 	{
-		return $this->belongsTo('Modules\BillingBase\Entities\Price');
+		return $this->belongsTo('Modules\BillingBase\Entities\Product', 'product_id');
 	}
 
 	public function contract ()

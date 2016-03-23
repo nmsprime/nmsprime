@@ -36,7 +36,7 @@ class BillingBaseServiceProvider extends ServiceProvider {
 	 * @return void
 	 */
 	public function register()
-	{		
+	{
 		$this->commands($this->commands);
 	}
 

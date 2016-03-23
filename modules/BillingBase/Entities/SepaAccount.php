@@ -14,6 +14,7 @@ class SepaAccount extends \BaseModel {
 		return array(
 			'name' 		=> 'required',
 			'holder' 	=> 'required',
+			'creditorid' => 'required|max:18',
 			'iban' 		=> 'required|iban',
 			'bic' 		=> 'required|bic',
 		);
@@ -46,7 +47,7 @@ class SepaAccount extends \BaseModel {
 	public function view_has_many()
 	{
 		return array(
-			'CostCenter' => $this->costcenter,
+			'CostCenter' => $this->costcenters,
 			);
 	}
 
@@ -54,9 +55,9 @@ class SepaAccount extends \BaseModel {
 	/**
 	 * Relationships:
 	 */
-	public function costcenter ()
+	public function costcenters ()
 	{
 		return $this->hasMany('Modules\BillingBase\Entities\CostCenter');
 	}
-
+	
 }

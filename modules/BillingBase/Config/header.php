@@ -1,6 +1,6 @@
 <?php
 
-return 	[['Price List' => 'Price.index'],
+return 	[['Product List' => 'Product.index'],
 		['SEPA Accounts' => 'SepaAccount.index', 
 		'Cost Center' => 'CostCenter.index']
 	];

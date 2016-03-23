@@ -18,6 +18,7 @@ class SepaAccountController extends \BaseModuleController {
 		return array(
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Account Name'),
 			array('form_type' => 'text', 'name' => 'holder', 'description' => 'Account Holder'),
+			array('form_type' => 'text', 'name' => 'creditorid', 'description' => 'Creditor ID'),
 			array('form_type' => 'text', 'name' => 'iban', 'description' => 'IBAN'),
 			array('form_type' => 'text', 'name' => 'bic', 'description' => 'BIC'),
 			array('form_type' => 'text', 'name' => 'institute', 'description' => 'Institute'),

@@ -20,10 +20,10 @@ class CreateItemTable extends BaseMigration {
 			$this->up_table_generic($table);
 
 			$table->integer('contract_id')->unsigned();
-			$table->integer('price_id')->unsigned();
+			$table->integer('product_id')->unsigned();
 			$table->integer('count')->unsigned()->default(1);
-			$table->date('payment_from');
-			$table->date('payment_to');
+			$table->date('valid_from');
+			$table->date('valid_to');
 			$table->float('credit_amount')->nullable();
 			$table->text('accounting_text');
 		});

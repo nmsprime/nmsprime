@@ -12,7 +12,8 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use File;
 use DB;
-use Modules\BillingBase\Entities\Price;
+use Modules\BillingBase\Entities\Product;
+use Modules\BillingBase\Entities\SepaAccount;
 
 class accountingCommand extends Command {
 
@@ -25,17 +26,15 @@ class accountingCommand extends Command {
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
 
-	// Array declaration for easy reordering of entries - see constructor!
-	protected $records_arr;
+	protected $contract_validity = [
+		'started_lastm' => false,		// for costs proportional to valid days of contract in this month
+		'ratio'			=> 0,
+		'expires'		=> false,		// if contract startet last month - used for contracts created after last run
+	];
 
-	/**
-	 * Create a new command instance.
-	 *
-	 * @return void
-	 */
-	public function __construct()
-	{
-		$this->records_arr['invoice_tariff'] = $this->records_arr['invoice_item'] = [
+	// Array declaration for easy reordering of entries - see constructor!
+	protected $records_arr = [
+		'invoice_tariff' => [
 			'Contractnr' => '',
 			'Invoicenr' => '',
 			'Target Month' => '',
@@ -43,15 +42,15 @@ class accountingCommand extends Command {
 			'Cost Center' => '',
 			'Count' => '',
 			'Description' => '',
-			'Price' => '',
+			'Product' => '',
 			'Firstname' => '',
 			'Lastname' => '',
 			'Street' => '',
 			'Zip' => '',
 			'City' => '',
-		];
-
-		$this->records_arr['booking'] = [
+	], 'invoice_item' => [
+		// == invoice tariff -> see constructor
+	], 'booking' => [
 			'Contractnr' => '',
 			'Invoicenr' => '',
 			'Date' => '',
@@ -66,8 +65,18 @@ class accountingCommand extends Command {
 			'Lastname' => '',
 			'Street' => '',
 			'City' => '',
-		];
+	], 'booking_sepa' => [
+		// see constructor
+		]];
 
+	/**
+	 * Create a new command instance.
+	 *
+	 * @return void
+	 */
+	public function __construct()
+	{
+		$this->records_arr['invoice_item'] = $this->records_arr['invoice_tariff'];
 		$this->records_arr['booking_sepa'] = array_merge($this->records_arr['booking'], [
 			'Account Holder' => '',
 			'IBAN' => '',
@@ -98,26 +107,14 @@ class accountingCommand extends Command {
 		$last_month = date('Y-m-01', strtotime('now -1 months'));
 		$this_month = date('Y-m-01');
 		$next_month = date('Y-m-01', strtotime('now +1 months'));
-
 		$m_in_sec = 60*60*24*30;	// month in seconds
 		$sepa_dc = $sepa_dd = null;
 
+		$records[0] = ['invoice_tariff' => '', 'invoice_item' => '', 'booking' => '', 'booking_sepa' => ''];
 
-		if (!is_dir(storage_path('billing')))
-			mkdir(storage_path('billing'));
+		dd($this->records_arr);
 
-		$record_files = ['invoice_tariff' => '', 'invoice_item' => '', 'booking' => '', 'booking_sepa' => ''];
-		foreach ($record_files as $key => $f)
-		{
-			$record_files[$key] = storage_path("billing/$key"."_records.txt");
-			// initialise record files with Column names as first line
-			File::put($record_files[$key], implode("\t", array_keys($this->records_arr[$key]))."\n");
-			// initialise record strings
-			$records[$key] = '';
-		}
-
-
-		// remove all entries of this month (if entries were already created) and create them new
+		// remove all entries of this month from accounting table if entries were already created (and create them new)
 		$actually_created = DB::table($this->tablename)->where('created_at', '>=', $this_month)->where('created_at', '<=', $next_month)->first();
 		if (is_object($actually_created))
 		{
@@ -145,58 +142,32 @@ class accountingCommand extends Command {
 		 * Loop over all Contracts - Log all out of date contracts - consider starting & expiration dates for cost adaption
 		 */
 		$cs = Contract::all();
+		$prices = Product::all();
+		$sepa_accounts = SepaAccount::all();
+
 		foreach ($cs as $c)
 		{
-			// contract is out of date
-			if ($c->contract_start >= $now || ($c->contract_end != '0000-00-00' && $c->contract_end < $now))
+			// check validity of contract and get important flags
+			if ($this->contract_validity = $c->get_contract_validity_arr($lust_run) == null)
 			{
 				$logger->addNotice('Contract '.$c->id.' is out of date');
-				continue;
+				continue;				
 			}
 
 			// variable resets or incrementations
 			$invoice_nr += 1;
-			$charge 	= 0;				// total costs for this month for current contract
-			$ratio 		= 0;					// for costs proportional to valid days of contract in this month
-			$expires 	= false;
-			$started_lastm = false;		// if contract startet last month - used for contracts created after last run
-
-
-			// contract starts this month
-			if (date('Y-m', strtotime($c->contract_start)) == $month)
-			{
-				$days_remaining = date('t') - date('d', strtotime($c->contract_start));
-				$logger->addDebug('Contract '.$c->id." starts this month - billing for $days_remaining days");
-				$ratio = $days_remaining/date('t');
-			}
-			// contract was created last month after last_run
-			if (date('Y-m-01', strtotime($c->contract_start)) == $last_month && strtotime($c->contract_start) > strtotime($last_run))
-			{
-				$days_remaining = date('t', strtotime($last_month)) - date('d', strtotime($c->contract_start));
-				$logger->addDebug('Contract '.$c->id." was starting last month - billing for additional $days_remaining days");
-				$ratio = $days_remaining/date('t', strtotime($last_month));
-				$started_lastm = true;
-			}
-			// contract expires this month - contract ends always on end of month - shall be dynamic???
-			if (date('Y-m', strtotime($c->contract_end)) == $month)
-			{
-				$days_remaining = date('d', strtotime($c->contract_end)) - date('d', strtotime($this_month));
-				// $ratio = $days_remaining/date('t');
-				$logger->addDebug('Contract '.$c->id." expires this month - billing for $days_remaining days");
-				$expires = true;
-			}
+			$charge = []; 						// total costs for this month for current contract
 
 
 			/*
-			 * Add internet and voip tariffs - TODO?: choose voip tariff dependent on its name?
-			 * TODO: add Television tariff
+			 * Add internet, voip and tv tariffs
 			 */
-			$tariff = null;
-			$tariff['inet'] = Price::find($c->price_id);
-			if ($c->voip_tariff != '')
-				$tariff['voip'] = Price::where('voip_tariff', '=', $c->voip_tariff)->get()->all()[0];
+			$tariffs = null;
+			$tariffs['inet'] = $prices->find($c->price_id);
+			$tariffs['voip'] = $prices->find($c->voip_price_id);
+			$tariffs['tv'] 	 = $prices->find($c->tv_price_id);
 
-			foreach ($tariff as $t)
+			foreach ($tariffs as $t)
 			{
 				if ($t)
 				{
@@ -205,32 +176,43 @@ class accountingCommand extends Command {
 						$price = round($price * $ratio, 2);
 					if ($started_lastm && $ratio != 0)
 						$price = round((1 + $ratio)*$t->price, 2);
+					
+					// TODO: consider starting point - directly or after 1 year after contract begin
+					if ($t->billing_cycle == 'Yearly')
+					{
+						$price = 0;
+						if (date('m') == date('m', strtotime($c->created_at)))
+							$price = $t->price;
+					} 
 
-					// if ($c->id == 500309)
-						// dd($c->id, $price, $started_lastm, $ratio);
+					// choose different costcenter if it is assigned to the tariff
+					$acc_id = $c->costcenter->sepa_account->id;
+					if ($t->costcenter_id)
+						$acc_id = $t->costcenter->id;
 
-					// add accounting table entry
+					// write to accounting table
 					DB::update("INSERT INTO ".$this->tablename." (contract_id, name, price, created_at, invoice_nr) VALUES(".$c->id.', "'.$t->name.'", '.$price.', NOW(), '.$invoice_nr.')');
-					// add invoice record
-					$records['invoice_tariff'] .= $this->get_invoice_record($c, $t, $invoice_nr, $price);
 
-					$charge += $price;
+					// add invoice record
+					$records[$acc_id]['invoice_tariff'][] = $this->get_invoice_record($c, $t, $invoice_nr, $price, null);
+					$charge[$acc_id] = $price;
 				}
 			}
 
 			/*
 			 * add monthly item costs for following items:
 				* monthly
-				* once: created within last billing period | actual run is within payment_from and payment_to date
+				* once: created within last billing period | actual run is within valid_from and valid_to date
 				* yearly
 			 * calculate total sum of items considering contract starting & expiration date
 			 */
 			$items = $c->items;
 			foreach ($items as $item)
 			{
-				$price_entry = Price::find($item->price_id);
+				$price_entry = $item->price;
 				$entry_cost = 0;
-				$text = '';
+				$text 		= '';
+
 				switch($price_entry->billing_cycle)
 				{
 					case 'Monthly':
@@ -241,38 +223,39 @@ class accountingCommand extends Command {
 							$entry_cost = round((1 + $ratio)*$price_entry->price, 2);						
 						break;
 					case 'Once':
-						if ($item->created_at > $last_run && $item->payment_to == '0000-00-00')
+						if ($item->created_at > $last_run && $item->valid_to == '0000-00-00')
 							$entry_cost = $price_entry->price;
-						if ($item->payment_to != '0000-00-00')
+						if ($item->valid_to != '0000-00-00')
 						{
-							if ($item->payment_to >= $now && $item->payment_from <= $now)
+							if ($item->valid_to >= $now && $item->valid_from <= $now)
 							{
 								// calculate total range - note: consider last-run here
-								$total_months = round((strtotime($item->payment_to) - strtotime($item->payment_from)) / $m_in_sec) + 1;
+								$total_months = round((strtotime($item->valid_to) - strtotime($item->valid_from)) / $m_in_sec) + 1;
 								if (($create_d = date('Y-m-01', strtotime($item->created_at))) == $last_month && $last_run < $create_d)
 									$total_months -= 1;
 								$entry_cost = $price_entry->price / $total_months;
 								// $part = totm - (to - this)
-								$part = round((($total_months)*$m_in_sec + strtotime($this_month) - strtotime($item->payment_to))/$m_in_sec);
+								$part = round((($total_months)*$m_in_sec + strtotime($this_month) - strtotime($item->valid_to))/$m_in_sec);
 								$text = " | part $part/$total_months";
 
-								// items with payment_to in future, but contract expires
+								// items with valid_to in future, but contract expires
 								if ($expires)
 								{
 									$entry_cost = ($total_months - $part + 1) * $price_entry->price;
 									$text = " | last $part parts of $total_months";
 								}
-
-								// dd($total_months, $item);
 							}
 						}
 
 						break;
 					case 'Yearly':
-						if (date('Y-m', strtotime("+1 year", strtotime($item->created_at))) == $month)
+						// TODO: consider starting point - directly or after 1 year after creating
+						if (date('m', strtotime($item->created_at)) == date('m'))
 							$entry_cost = $price_entry->price;
+							// strtotime("+1 year", strtotime($item->created_at))) == $month)
 						break;
 				}
+				
 				// use credit amount only on credits
 				if (strtolower($item->price->name) == 'credit')
 				{
@@ -285,14 +268,17 @@ class accountingCommand extends Command {
 				if ($item->count)
 					$count = $item->count;
 
+				$acc_id = $c->costcenter->sepa_account->id;
+				if ($price_entry->costcenter_id)
+						$acc_id = $price_entry->costcenter->id;
+
 				// add accounting table entry
 				DB::update("INSERT INTO ".$this->tablename." (contract_id, name, price, count, created_at, invoice_nr) VALUES(".$c->id.', "'.$price_entry->name.$text.'", '.$entry_cost.', '.$count.', NOW(), '.$invoice_nr.')');
 				// add invoice record
-				$records['invoice_item'] .= $this->get_invoice_record($c, $price_entry, $invoice_nr, $entry_cost, $text);
+				$records[$acc_id]['invoice_item'] [] = $this->get_invoice_record($c, $price_entry, $invoice_nr, $entry_cost, $text);
+				$charge[$acc_id] = isset($charge[$acc_id]) ? $charge[$acc_id] + $entry_cost * $count : $entry_cost * $count;
 
-				$charge += $entry_cost * $count;
-			}
-
+			} // end foreach
 
 			/*
 			 * Check if valid mandate exists, add sepa data to ordered structure, log all out of date contracts
@@ -314,40 +300,65 @@ cont:
 			if (!$mandate)
 			{
 				$logger->addNotice('Contract '.$c->id.' has no valid sepa mandate');
-				$records['booking'] .= $this->get_booking_record($c, null, $invoice_nr, $now, $started_lastm, $charge);
+
+				foreach ($charge as $acc_id => $value)
+					$records[$acc_id]['booking'][] = $this->get_booking_record($c, null, $invoice_nr, $now, $started_lastm, $value);
+
 				continue;
 			}
 
-			$records['booking_sepa'] .= $this->get_booking_record($c, $mandate, $invoice_nr, $started_lastm, $charge);
+			foreach ($charge as $acc_id => $value) 
+				$records[$acc_id]['booking_sepa'][] = $this->get_booking_record($c, $mandate, $invoice_nr, $started_lastm, $value);
 
-			// Create ordered structure for sepa file creation - TODO?: exclude charge == 0
-			// if ($charge == 0)
-			// 	continue;
+			/*
+			 * Create ordered structure for sepa file creation - Note: Charge == 0 is automatically excluded
+			 */
 			$t = PaymentInformation::S_RECURRING;
 			if (date('Y-m', strtotime($c->contract_start)) == $month && !$mandate->recurring)
 				$t = PaymentInformation::S_FIRST;
 			else if (date('Y-m', strtotime($c->contract_end)) == $month)
 				$t = PaymentInformation::S_FINAL;
 
-			$xml_entry = ['mandate' => $mandate, 'charge' => $charge, 'invoice_nr' => $invoice_nr, 'started_lastm' => $started_lastm];
 			
-			if ($charge < 0)
-				$sepa_dc[] = $xml_entry;
-			else
-				$sepa_dd[$t][] = $xml_entry;
+			foreach ($charge as $acc_id => $value)
+			{
+				$xml_entry = ['mandate' => $mandate, 'charge' => $value, 'invoice_nr' => $invoice_nr, 'started_lastm' => $started_lastm];
+				
+				if ($value < 0)
+					$sepa_dc[$acc_id][] = $xml_entry;
+				else
+					$sepa_dd[$acc_id][$t][] = $xml_entry;					
+			}
+
+
 		} // end of loop over contracts
 
-
 		/*
-		 * Store SEPA & Billing Files
+		 * Store SEPA & Billing Files (foreach type and foreach account)
 		 */
-		$this->create_sepa_xml($sepa_dd, $sepa_dc);
+		if (!is_dir(storage_path('billing')))
+			mkdir(storage_path('billing'));
 
-		foreach ($record_files as $key => $f)
+		foreach ($records as $acc_id => $acc_records)
 		{
-			File::append($f, $records[$key]);
-			echo "stored $key records in $f\n";
+			if ($acc_id == 0)
+				continue;
+
+			dd($sepa_dd, $sepa_accounts->find(1), $sepa_accounts->find(2));
+
+			$this->create_sepa_xml($sepa_dd[$acc_id], $sepa_dc[$acc_id], $sepa_accounts->find($acc_id));
+
+			foreach ($acc_records as $type => $entries)
+			{
+				$file = storage_path("billing/$type"."_records_".$sepa_accounts->find($acc_id)->name.".txt");
+				// initialise record files with Column names as first line
+				File::put($file, implode("\t", array_keys($this->records_arr[$type]))."\n");
+				File::append($file, implode($entries));
+				echo "stored $type records in $file\n";
+			}
+		
 		}
+
 
 	}
 
@@ -361,10 +372,10 @@ cont:
 		$arr['Invoicenr'] 	= $invoice_nr;
 		$arr['Target Month'] = date('m');
 		$arr['Date'] 		= date('Y-m-d');
-		$arr['Cost Center'] = $contract->cost_center;
+		$arr['Cost Center'] = isset($contract->costcenter->name) ? $contract->costcenter->name : '';
 		$arr['Count'] 		= '1';
 		$arr['Description'] = $item->name.$text;
-		$arr['Price'] 		= $price;
+		$arr['Product'] 		= $price;
 		$arr['Firstname'] 	= $contract->firstname;
 		$arr['Lastname'] 	= $contract->lastname;
 		$arr['Street'] 		= $contract->street;
@@ -376,6 +387,7 @@ cont:
 
 	protected function get_booking_record($contract, $mandate, $invoice_nr, $started_lastm, $charge)
 	{
+
 		$arr = $this->records_arr['booking'];
 		if ($mandate)
 			$arr = $this->records_arr['booking_sepa'];
@@ -392,7 +404,7 @@ cont:
 		$arr['Invoicenr'] 	= $invoice_nr;
 		$arr['Date'] 		= date('Y-m-d');
 		$arr['RCD'] 		= $rcd;
-		$arr['Cost Center'] = $contract->cost_center;
+		$arr['Cost Center'] = isset($contract->costcenter->name) ? $contract->costcenter->name : '';
 		$arr['Description'] = 'Month '.$txt.date('m/Y');
 		$arr['Net'] 		= round($charge * (1-$tax), 2);
 		$arr['Tax'] 		= round($charge * $tax, 2);
@@ -403,7 +415,6 @@ cont:
 		$arr['Street'] 		= $contract->street;
 		$arr['Zip'] 		= $contract->zip;
 		$arr['City'] 		= $contract->city;
-
 		if ($mandate)
 		{
 			$arr['Account Holder'] 	= $mandate->sepa_holder;
@@ -422,16 +433,17 @@ cont:
 	 * @param $sepa_dc - sepa transfer information array for direct credits
 	 * @author Nino Ryschawy
 	 */
-	protected function create_sepa_xml($sepa_dd, $sepa_dc = null)
+	protected function create_sepa_xml($sepa_dd, $sepa_dc = null, $acc)
 	{
 		$sepa_dd_xml_file 	= storage_path('billing/sepa_dd.xml');
 		$sepa_dc_xml_file 	= storage_path('billing/sepa_dc.xml');
-		$msg_id = date('YmdHis');		// km3 uses actual time
-		$creditor['name'] = 'ERZNET AG';
-		$creditor['iban'] = 'DE64870540000440011094';
-		$creditor['bic']  = 'WELADED1STB';
-		$creditor['id']   = 'DE95ZZZ00000425253';
+		$msg_id = date('YmdHis').$acc->id;		// km3 uses actual time
+		$creditor['name'] = $acc->name;
+		$creditor['iban'] = $acc->iban;
+		$creditor['bic']  = $acc->bic;
+		$creditor['id']   = $acc->creditorid;
 
+var_dump($msg_id);
 
 		// Set the initial information for direct debits
 		$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id, $creditor['name']);
