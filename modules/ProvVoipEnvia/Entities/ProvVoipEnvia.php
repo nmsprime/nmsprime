@@ -329,7 +329,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 	/**
 	 * Get all the data needed for this job.
-	 * This will get the data for the current and all parent models (e.g. contract for phonenumber) and store as class variables
+	 * This will get the data for the current and all parent models (e.g. contract for phonenumber) and store as cls variables
 	 * To do so we have to differentiate in the job to do
 	 *
 	 * @author Patrick Reichel
@@ -945,7 +945,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
 
-		// special handling of trc class needed (comes from external table)
+		// special handling of trc_class needed (comes from external table)
 		$trc_class = TRCClass::find($this->phonenumbermanagement->trcclass)->trc_id;
 		$inner_xml->addChild('trc_class', $trc_class);
 
@@ -1012,10 +1012,23 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$fields = array(
 			'orderdate' => 'deactivation_date',
-			'carriercode' => 'carrier_out',
 		);
 
-		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
+		$this->_add_fields($inner_xml, $fields, $this->phonenumbermanagement);
+
+		// handle outgoing porting
+		if (boolval($this->phonenumbermanagement->porting_out)) {
+			$carrier_out = CarrierCode::find($this->phonenumbermanagement->carrier_out)->carrier_code;
+			if (CarrierCode::is_valid($carrier_out)) {
+				$inner_xml->addChild('carriercode', $carrier_out);
+			}
+			else {
+				throw new \InvalidArgumentException('ERROR: '.$carrier_code.' is not a valid carrier_code');
+			}
+		}
+		else {
+			$inner_xml->addChild('carriercode');
+		}
 	}
 
 
@@ -1112,7 +1125,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _add_fields($xml, $fields, &$model) {
 
-		// lambda function to add the data to xml
+		// lambda func to add the data to xml
 		$add_func = function($xml, $xml_field, $payload) {
 			$cur_node = $xml->addChild($xml_field, $payload);
 			if ((is_null($payload)) || ($payload === "")) {
