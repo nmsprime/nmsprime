@@ -55,7 +55,7 @@ class EnviaOrderDocument extends \BaseModel {
 	// link title in index view
 	public function get_view_link_title()
 	{
-		return $this->created_at.': '.$this->document_type;
+		return $this->created_at.': '.$this->document_type.' ('.$this->upload_order_id.')';
 	}
 
 	// belongs to a modem - see BaseModel for explanation

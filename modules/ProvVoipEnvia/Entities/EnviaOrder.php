@@ -76,6 +76,6 @@ class EnviaOrder extends \BaseModel {
 	}
 
 	public function enviaorderdocument() {
-		return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrderDocument', 'enviaorder_id');
+		return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrderDocument', 'enviaorder_id')->orderBy('created_at');
 	}
 }

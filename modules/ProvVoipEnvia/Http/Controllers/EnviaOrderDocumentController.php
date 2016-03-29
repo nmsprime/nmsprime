@@ -93,6 +93,14 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 
 	public function edit($id) {
 
+		try {
+			// this needs view rights; edit rights are checked in store/update methods!
+			$this->_check_permissions("view");
+		}
+		catch (PermissionDeniedError $ex) {
+			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
+		}
+
 		$document = EnviaOrderDocument::findOrFail($id);
 
 		// if still not uploaded to Envia => send to API
