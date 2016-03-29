@@ -20,6 +20,7 @@ class CreateCostCenterTable extends BaseMigration {
 			
 			$table->string('name');
 			$table->string('sepa_account_id');
+			$table->integer('billing_month');
 			$table->string('description');
 		});
 	}

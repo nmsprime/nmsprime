@@ -11,6 +11,7 @@ class Product extends \BaseModel {
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
+		// Pay attention to the prep_rules()-function in Controller
 		return array(
 			'name' 	=> 'required|unique:product,name,'.$id.',id,deleted_at,NULL',
 			'type' 	=> "required|not_null",

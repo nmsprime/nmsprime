@@ -16,11 +16,14 @@ class CostCenterController extends \BaseModuleController {
 			$model = new CostCenter;
 
 		$list = array_merge([''], $model->html_list(SepaAccount::all(), 'name'));
+		for($i=1; $i<13;$i++)
+			$months[$i] = $i;
 
 		// label has to be the same like column in sql table
 		return array(
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name'),
 			array('form_type' => 'select', 'name' => 'sepa_account_id', 'description' => 'Associated SEPA Account', 'value' => $list),
+			array('form_type' => 'select', 'name' => 'billing_month', 'description' => 'Month to create Bill', 'value' => $months),
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
 		);
 	}
