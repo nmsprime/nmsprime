@@ -21,7 +21,7 @@ class CreateAccountingTable extends BaseMigration {
 
 			$table->string('contract_id');
 			$table->string('name');
-			$table->float('product_id');
+			$table->integer('product_id');
 			$table->float('ratio', 6, 4);
 			$table->integer('count');
 			$table->integer('invoice_nr');

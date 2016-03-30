@@ -42,6 +42,7 @@ class ProductController extends \BaseModuleController {
 		switch ($data['type']) 
 		{
 			case 'Credit':
+				$rules['billing_cycle'] = 'In:Once,Monthly';
 				$rules['qos_id'] = 'In:0';
 				$rules['voip_tariff'] = 'In:""';
 				$rules['price'] = 'In:"",0';

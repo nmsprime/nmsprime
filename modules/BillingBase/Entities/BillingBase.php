@@ -13,7 +13,7 @@ class BillingBase extends \BaseModel {
 	{
 		return array(
 			'rcd' 	=> 'numeric|between:1,31',
-			'tax' 	=> 'numeric|max:100'
+			'tax' 	=> 'numeric|between:0:100'
 		);
 	}
 
