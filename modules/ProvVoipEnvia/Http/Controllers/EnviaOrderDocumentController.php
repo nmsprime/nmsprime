@@ -103,7 +103,7 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 
 		$document = EnviaOrderDocument::findOrFail($id);
 
-		// if still not uploaded to Envia => send to API
+		// if still not uploaded to Envia (that means there is no order id for this upload) => send to API
 		if (!boolval($document->upload_order_id)) {
 
 			// we realize this using redirect
@@ -181,44 +181,4 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 
 	}
 
-	/**
-	 * Register observer
-	 */
-	public static function boot()
-	{
-		parent::boot();
-
-		EnviaOrderDocument::observe(new EnviaOrderDocumentObserver);
-	}
-
 }
-
-
-/**
- * EnviaOrderDocument Observer Class
- * Handles changes on EnviaOrderDocument
- *
- * can handle   'creating', 'created', 'updating', 'updated',
- *              'deleting', 'deleted', 'saving', 'saved',
- *              'restoring', 'restored',
- *
- * @author Patrick Reichel
- */
-class EnviaOrderDocumentObserver
-{
-	/**
-	 * After creation: send document to EnviaTEL
-	 *
-	 * @author Patrick Reichel
-	 */
-	public function created($envia_order_document)
-	{
-		$order_id = $envia_order_document->enviaorder->orderid;
-		dd($order_id);
-		// call Envia API and send file
-
-	}
-
-}
-
-

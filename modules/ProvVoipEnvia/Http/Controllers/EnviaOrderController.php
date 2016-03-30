@@ -5,7 +5,7 @@ namespace Modules\ProvVoipEnvia\Http\Controllers;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\View;
 
-/* use Modules\ProvVoipEnvia\Entities\EnviaOrders; */
+use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 
 class EnviaOrderController extends \BaseModuleController {
 
@@ -42,4 +42,51 @@ class EnviaOrderController extends \BaseModuleController {
 
 		return $ret;
 	}
+
+	/**
+	 * Overwrite delete function => we have to cancel an order also against the envia API
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function destroy($id) {
+
+		try {
+			// this needs view rights; edit rights are checked in store/update methods!
+			$this->_check_permissions("view");
+		}
+		catch (PermissionDeniedError $ex) {
+			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
+		}
+
+		// get all orders to be canceled
+		$orders = array();
+		if ($id == 0)
+		{
+			// bulk deletion is not supported (yet?)
+			$ids = \Input::all()['ids'];
+			if (count($ids) > 1) {
+				// TODO: make a nicer output
+				echo "<h3>Error: Cannot cancel more than one order per time</h3>";
+				echo '<a href="javascript:history.back()" target="_self">Back to previous page</a>';
+				return;
+			}
+			// delete (attention: database ids are the keys of the input array)
+			$ids = array_keys($ids);
+			$id = array_pop($ids);
+			$order = $this->get_model_obj()->findOrFail($id);
+		}
+		else {
+			$order = $this->get_model_obj()->findOrFail($id);
+		}
+
+		$params = array(
+			'job' => 'order_cancel',
+			'order_id' => $order->orderid,
+			/* 'origin' => urlencode(\Request::getUri()), */
+			'origin' => urlencode(\URL::previous()),
+		);
+
+		return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request', $params);
+	}
+
 }

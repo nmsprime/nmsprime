@@ -250,7 +250,7 @@ class ProvVoipEnvia extends \BaseModel {
 			array_push($ret, array('linktext' => 'Get all phonenumber related orders', 'url' => $base.'misc_get_orders_csv'.$origin.$really));
 			// order(s) exist if contract has been created
 			if ($this->contract_created) {
-				foreach (EnviaOrder::where('contract_id', '=', $contract_id)->orderBy("orderid")->get() as $order) {
+				foreach (EnviaOrder::withTrashed()->where('contract_id', '=', $contract_id)->orderBy("created_at")->get() as $order) {
 
 					// if in view phonenumber*: show only orders related to this phonenumber
 					if (in_array($view_level, ['phonenumber', 'phonenumbermanagement'])) {
@@ -263,7 +263,15 @@ class ProvVoipEnvia extends \BaseModel {
 					$order_id = $order->orderid;
 					$order_type = $order->ordertype;
 					$order_status = $order->orderstatus;
-					array_push($ret, array('linktext' => $order_id.' – '.$order_type.': <i>'.$order_status.'</i>', 'url' => $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really));
+					$linktext = $order_id.' – '.$order_type.': <i>'.$order_status.'</i>';
+					// stroke soft deleted entries
+					if (boolval($order->deleted_at)) {
+						$linktext = '<s>'.$linktext.'</s>';
+					}
+					// add order (exept create_attachements)
+					if ($order_type != 'order/create_attachment') {
+						array_push($ret, array('linktext' => $linktext, 'url' => $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really));
+					}
 				}
 			}
 		}
@@ -640,9 +648,10 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			/* 'order_cancel' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+			'order_cancel' => array(
+				'reseller_identifier',
+				'order_identifier',
+			),
 
 			'order_create_attachment' => array(
 				'reseller_identifier',
@@ -721,7 +730,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$order_id = \Input::get('order_id', null);
 		if (!is_numeric($order_id)) {
-			throw \InvalidArgumentException("order_id has to be numeric");
+			throw new \InvalidArgumentException("order_id has to be numeric");
 		}
 
 		$inner_xml = $this->xml->addChild('order_identifier');
@@ -1395,7 +1404,7 @@ class ProvVoipEnvia extends \BaseModel {
 	protected function _process_order_get_status_response($xml, $data, $out) {
 
 		$order_id = \Input::get('order_id');
-		$order = EnviaOrder::where('orderid', '=', $order_id)->first();
+		$order = EnviaOrder::withTrashed()->where('orderid', '=', $order_id)->first();
 
 		// something went wrong! There is no database entry for the given orderID
 		if (is_null($order)) {
@@ -1510,6 +1519,38 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Process data after successful order cancel.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_cancel_response($xml, $data, $out) {
+
+		$canceled_enviaorder_id = \Input::get('order_id');
+
+		// get canceled order
+		$canceled_enviaorder = EnviaOrder::where('orderid', '=', $canceled_enviaorder_id)->firstOrFail();
+
+		// store cancel order id in database
+		$order_data = array();
+
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['contract_id'] = $canceled_enviaorder->contract_id;
+		$order_data['phonenumber_id'] = $canceled_enviaorder->phonenumber_id;
+		$order_data['ordertype'] = 'Stornierung eines Auftrags';
+		$order_data['orderstatus'] = 'in Bearbeitung';
+		$order_data['related_order_id'] = $canceled_enviaorder_id;
+		$order_data['customerreference'] = $canceled_enviaorder->customerreference;
+		$order_data['contractreference'] = $canceled_enviaorder->contractreference;
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// delete canceled order
+		EnviaOrder::where('orderid', '=', $canceled_enviaorder_id)->delete();
+
+	}
+
+
+	/**
 	 * Process data after successful upload of a file to envia
 	 *
 	 * @author Patrick Reichel
@@ -1535,7 +1576,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$enviaOrder = EnviaOrder::create($order_data);
 
-		// and instantly (soft)delete this order – trying to get order/get_status results in a 404…
+		// and instantly (soft)delete this order – trying to get order/get_status for the current order results in a 404…
 		// I love this API!!
 		EnviaOrder::where('orderid', '=', $xml->orderid)->delete();
 

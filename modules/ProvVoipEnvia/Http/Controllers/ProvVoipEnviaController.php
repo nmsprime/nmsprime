@@ -131,6 +131,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			['api' => 'order', 'link' => 'misc_get_free_numbers?localareacode=03735&amp;baseno=7696'],
 			['api' => 'order', 'link' => 'misc_get_orders_csv'],
 			['api' => 'order', 'link' => 'misc_get_usage_csv'],
+			['api' => 'order', 'link' => 'order_cancel?order_id='],
 			['api' => 'order', 'link' => 'order_get_status?order_id=72950'],
 			['api' => 'order', 'link' => 'voip_account_create?phonenumber_id=300001'],
 			['api' => 'order', 'link' => 'voip_account_terminate?phonenumber_id=300001'],
@@ -150,7 +151,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			['api' => 'order', 'link' => 'contract_unlock'],
 			['api' => 'selfcare', 'link' => 'customer_get_reference'],
 			['api' => 'order', 'link' => 'order_add_mgcp_details'],
-			['api' => 'order', 'link' => 'order_cancel'],
 			['api' => 'order', 'link' => 'order_create_attachment?order_id=73013&amp;enviaorderdocument_id=7'],
 			['api' => 'order', 'link' => 'order_get_status'],
 			['api' => 'order', 'link' => 'phonebookentry_create'],
@@ -329,6 +329,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'misc_get_free_numbers',
 			'misc_get_orders_csv',
 			'misc_get_usage_csv',
+			'order_cancel',
 			'order_get_status',
 			'order_create_attachment',
 		);
@@ -537,7 +538,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'misc_ping' => $base_url.'misc/ping',
 
 			'order_add_mgcp_details' => $base_url.'____TODO____',
-			'order_cancel' => $base_url.'____TODO____',
+			'order_cancel' => $base_url.'order/cancel',
 			'order_create_attachment' => $base_url.'order/create_attachment',
 			'order_get_status' => $base_url.'order/get_status',
 

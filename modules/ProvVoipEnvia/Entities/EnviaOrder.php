@@ -45,7 +45,9 @@ class EnviaOrder extends \BaseModel {
 	// link title in index view
 	public function get_view_link_title()
 	{
-		return $this->orderid.' – '.$this->ordertype;
+		$ret = $this->orderid.' – '.$this->ordertype;
+
+		return $ret;
 	}
 
 	// belongs to a modem - see BaseModel for explanation
