@@ -213,7 +213,14 @@ class accountingCommand extends Command {
 				$acc_id = $costcenter->sepa_account_id;
 
 				// increase charge for account += $price
-				$charge[$acc_id] = isset($charge[$acc_id]) ? $charge[$acc_id] + $price : $price;
+				if (isset($charge[$acc_id]))
+				{
+					//$charge[$acc_id] = isset($charge[$acc_id]) ? $charge[$acc_id] + $price : $price,
+					$charge[$acc_id]['gross'] += $price;
+					$charge[$acc_id]['tax'] += $item->product->tax ? $price * $conf->tax/100 : 0;
+				}
+				else
+					$charge[$acc_id] = ['gross' => $price, 'tax' => $item->product->tax ? $price * $conf->tax/100 : 0];
 
 				// write to accounting records of account
 				switch ($item->product->type)
@@ -256,7 +263,7 @@ cont:
 
 			// write to booking records of account with total charge
 			foreach ($charge as $acc_id => $value) 
-				$records[$acc_id][$rec_arr][] = $this->get_booking_record($c, $mandate, $invoice_nr, $value, $conf);
+				$records[$acc_id][$rec_arr][] = $this->get_booking_record($c, $mandate, $invoice_nr, $value['gross'], $value['tax'], $conf);
 
 			if (!$mandate)
 				continue;
@@ -267,13 +274,14 @@ cont:
 				$t = PaymentInformation::S_FIRST;
 			else if (date('Y-m', strtotime($c->contract_end)) == $this->dates['m'])
 				$t = PaymentInformation::S_FINAL;
+
 			
 			foreach ($charge as $acc_id => $value)
 			{
 				// $xml_entry = ['mandate' => $mandate, 'charge' => $value, 'invoice_nr' => $invoice_nr, 'started_lastm' => $started_lastm];
-				$xml_entry = ['mandate' => $mandate, 'charge' => $value, 'invoice_nr' => $invoice_nr];
+				$xml_entry = ['mandate' => $mandate, 'charge' => $value['gross'], 'invoice_nr' => $invoice_nr];
 				
-				if ($value < 0)
+				if ($value['gross'] < 0)
 					$sepa_dc[$acc_id][] = $xml_entry;
 				else
 					$sepa_dd[$acc_id][$t][] = $xml_entry;					
@@ -345,7 +353,7 @@ cont:
 		return implode("\t", $arr)."\n";
 	}
 
-	protected function get_booking_record($contract, $mandate, $invoice_nr, /* $started_lastm,*/ $charge, $conf)
+	protected function get_booking_record($contract, $mandate, $invoice_nr, /* $started_lastm,*/ $charge, $tax, $conf)
 	{
 
 		$arr = $this->records_arr['booking'];
@@ -355,7 +363,7 @@ cont:
 		// use requested collection date (Zahlungsziel), currency & tax from global config
 		$rcd = $conf->rcd ? $conf->rcd : date('Y-m-d', strtotime('+6 days'));
 		$cur = $conf->currency ? $conf->currency : 'EUR';
-		$tax = $conf->tax ? $conf->tax / 100 : 0.19;
+		// $tax = $conf->tax ? $conf->tax / 100 : 0.19;
 		// $txt = '';
 		// if ($started_lastm)
 		// 	$txt = date('m', strtotime('-1 month')).'+';
@@ -366,8 +374,11 @@ cont:
 		$arr['RCD'] 		= $rcd;
 		$arr['Cost Center'] = isset($contract->costcenter->name) ? $contract->costcenter->name : '';
 		$arr['Description'] = 'Month '.date('m/Y');
-		$arr['Net'] 		= round($charge * (1-$tax), 2);
-		$arr['Tax'] 		= round($charge * $tax, 2);
+		// $arr['Net'] 		= round($charge * (1-$tax), 2);
+		// $arr['Tax'] 		= round($charge * $tax, 2);
+		// $arr['Gross'] 		= round($charge, 2);
+		$arr['Net'] 		= round($charge - $tax, 2);
+		$arr['Tax'] 		= round($tax, 2);
 		$arr['Gross'] 		= round($charge, 2);
 		$arr['Currency'] 	= $cur;
 		$arr['Firstname'] 	= $contract->firstname;

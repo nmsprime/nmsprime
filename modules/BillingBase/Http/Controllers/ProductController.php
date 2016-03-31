@@ -22,6 +22,10 @@ class ProductController extends \BaseModuleController {
 
 		$list = array_merge([''], $model->html_list(CostCenter::all(), 'name'));
 
+		$tax = array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?');
+		if ($model->tax === null)
+			$tax = array_merge($tax, ['checked' => true, 'value' => 1]);
+
 		// label has to be the same like column in sql table
 		return array(
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name'),
@@ -31,6 +35,7 @@ class ProductController extends \BaseModuleController {
 			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle')),
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional assignment)', 'value' => $list),
 			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price'),
+			$tax,
 		);
 	}
 

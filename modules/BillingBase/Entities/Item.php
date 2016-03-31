@@ -211,8 +211,6 @@ class Item extends \BaseModel {
 				if ($end && date('Y', strtotime($end)) == $dates['Y'])
 				{
 					$end_month = date('m', strtotime($end));
-// if ($this->contract->id == 500008 && $this->product->type == 'TV')
-// 	dd($ratio, $starting, $billing_month, $end_month);
 					$ratio = $ratio ? $end_month/12 - 1 + $ratio : $end_month/12;
 					$text  = substr($text, 0, strpos($text, '-') + 2).date("$end_month/Y");
 				}
@@ -260,6 +258,8 @@ class Item extends \BaseModel {
 				if (date('Y-m', strtotime($start)) == $dates['this_m'] || $started_lastm)		// $started_lastm is start after last run
 					$price = $this->product->price;
 
+// if ($this->contract->id == 500008 && $this->product->type == 'TV')
+// 	dd($ratio, $starting, $billing_month, $end_month);
 				if (strtotime($start) <= strtotime($dates['today']) && $valid_to && strtotime($valid_to) >= strtotime($dates['today']))
 				{
 					// split payment into pieces
