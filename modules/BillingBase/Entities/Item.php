@@ -96,6 +96,20 @@ class Item extends \BaseModel {
 
 
 	/**
+	 * Cross checks start and end dates against actual day - used in accounting Cmd
+	 */
+	public function check_validity($dates)
+	{
+		$start = ($this->valid_from && ($this->valid_from != $dates['null'])) ? $this->valid_from : $this->created_at;
+		if (is_object($start))
+			$start = $start->toDateString();
+		$end = $this->valid_to == $dates['null'] ? null : $this->valid_to;
+
+		return ($start <= $dates['today'] && (!$end || $end >= $dates['today'])) ? true : false;
+	}
+
+
+	/**
 	 * Calculate Price for actual month of an item with valid dates
 	 *
 	 * @param 	array of billing dates, costcenter (for billing_cycle)
@@ -108,12 +122,13 @@ class Item extends \BaseModel {
 		$ratio = 0;
 		$text  = '';
 		
-		$billing_cycle  = $this->billing_cycle ? $this->billing_cycle : $this->product->billing_cycle;
+		$billing_cycle = $this->billing_cycle ? $this->billing_cycle : $this->product->billing_cycle;
 		$start = ($this->valid_from && ($this->valid_from != $dates['null'])) ? $this->valid_from : $this->created_at;
 		if (is_object($start))
 			$start = $start->toDateString();
 
-		$end   = ($this->valid_to && ($this->valid_to != $dates['null'])) ? $this->valid_to : null;
+		$end = $this->valid_to == $dates['null'] ? null : $this->valid_to;
+		// contract ends before item ends - contract has higher priority
 		if ($this->contract->contract_end && $this->contract->contract_end != $dates['null'])
 		{
 			if (!$end || strtotime($this->contract->contract_end) < strtotime($end))
@@ -252,14 +267,16 @@ class Item extends \BaseModel {
 
 			case 'Once':
 				$price = 0;
-				$valid_to = ($this->valid_to && $this->valid_to != $dates['null']) ? $this->valid_to : null;
+				$valid_to = $this->valid_to == $dates['null'] ? null : $this->valid_to;
 
-
-				if (date('Y-m', strtotime($start)) == $dates['this_m'] || $started_lastm)		// $started_lastm is start after last run
+				// if created or valid from this month or last month after last run
+				if (date('Y-m', strtotime($start)) == $dates['this_m'] || $started_lastm)
+				{
 					$price = $this->product->price;
+					if ($this->product->type == 'Credit')
+						$price = (-1) * $this->credit_amount;
+				}
 
-// if ($this->contract->id == 500008 && $this->product->type == 'TV')
-// 	dd($ratio, $starting, $billing_month, $end_month);
 				if (strtotime($start) <= strtotime($dates['today']) && $valid_to && strtotime($valid_to) >= strtotime($dates['today']))
 				{
 					// split payment into pieces
@@ -279,6 +296,9 @@ class Item extends \BaseModel {
 						$price = ($tot_months - $part + 1) * $price;
 						$text = " | last ".$tot_months-$part." parts of $tot_months";
 					}
+	
+					if ($this->product->type == 'Credit')
+						$price = (-1) * $this->credit_amount;
 				}
 
 				$text = $this->product->name.$text;
@@ -289,11 +309,10 @@ class Item extends \BaseModel {
 					$text = $this->count.'x '.$text;
 				}
 
-				if ($this->product->type == 'Credit')
-					$price = (-1) * $this->credit_amount;
 
-// if ($this->contract->id == 500010)
-// 	dd($this->product->name, $valid_to, $price, $text);
+// if ($this->contract->id == 500008 && $this->product->type == 'TV')
+// 	dd($ratio, $starting, $billing_month, $end_month);
+
 				break;
 
 		}

@@ -85,7 +85,7 @@ class accountingCommand extends Command {
 			'MandateDate' 	=> ''
 		]);
 
-		// instantiate this->logger for billing
+		// instantiate logger for billing
 		$this->logger = new Logger('Billing');
 		$this->logger->pushHandler(new StreamHandler(storage_path().'/logs/billing-'.date('Y-m').'.log'), Logger::DEBUG, false);
 
@@ -122,15 +122,19 @@ class accountingCommand extends Command {
 	{
 		$this->logger->addInfo(' #####    Starting Accounting Command    #####');
 
-		// remove all entries of this month from accounting table if entries were already created (and create them new), but not for walk with argument=2
-		if ($this->argument('cycle') != 2)
+		switch ($this->argument('cycle'))
 		{
-			$actually_created = DB::table($this->tablename)->where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->first();
-			if (is_object($actually_created))
-			{
-				$this->logger->addNotice('Table was already created this month - will be recreated now!');
-				DB::update('DELETE FROM '.$this->tablename.' WHERE created_at>='.$this->dates['thism_01']);
-			}
+			case 2: $this->logger->addInfo('Cycle only for TV items/products'); break;
+			case 1: $this->logger->addInfo('Cycle without TV items/products');
+			default:
+				// remove all entries of this month from accounting table if entries were already created (and create them new)
+				$actually_created = DB::table($this->tablename)->where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->first();
+				if (is_object($actually_created))
+				{
+					$this->logger->addNotice('Table was already created this month - will be recreated now!');
+					DB::update('DELETE FROM '.$this->tablename.' WHERE created_at>='.$this->dates['thism_01']);
+				}
+				break;
 		}
 
 		// check date of last run and get last invoice nr - all item entries after this date have to be included to the current billing cycle
@@ -157,7 +161,7 @@ class accountingCommand extends Command {
 		foreach (Contract::all() as $c)
 		{
 			// check validity of contract
-			if (!$this->check_validity($c->contract_start, $c->contract_end))
+			if (!$c->check_validity($this->dates))
 			{
 				$this->logger->addNotice('Contract '.$c->id.' is out of date');
 				continue;				
@@ -182,11 +186,7 @@ class accountingCommand extends Command {
 			foreach ($c->items as $item)
 			{
 				// check validity
-				$start = ($item->valid_from == null || $item->valid_from == $this->dates['null']) ? $item->created_at : $item->valid_from;
-				if (is_object($start))
-					$start = $start->toDateString();
-
-				if (!$this->check_validity($start, $item->valid_to))
+				if (!$item->check_validity($this->dates))
 					continue;
 
 				// only TV items for this walk (when argument=2)
@@ -212,7 +212,7 @@ class accountingCommand extends Command {
 				// get account via costcenter
 				$acc_id = $costcenter->sepa_account_id;
 
-				// increase charge for account += $price
+				// increase charge for account by price
 				if (isset($charge[$acc_id]))
 				{
 					//$charge[$acc_id] = isset($charge[$acc_id]) ? $charge[$acc_id] + $price : $price,
@@ -232,7 +232,6 @@ class accountingCommand extends Command {
 					default:
 						$rec_arr = 'invoice_item'; break;
 				}
-
 
 				$records[$acc_id][$rec_arr][] = $this->get_invoice_record($item, $price, $invoice_nr, $text);
 
@@ -319,16 +318,12 @@ cont:
 		
 		}
 
+		// Create Bill for every contract - consider cycles!
+
 
 	}
 
-	/**
-	 * Cross checks start and end dates against actual day
-	 */
-	protected function check_validity($start, $end)
-	{
-		return ($start > $this->dates['today'] || ($end != $this->dates['null'] && $end < $this->dates['today'])) ? false : true;
-	}
+
 
 
 
@@ -342,7 +337,7 @@ cont:
 		$arr['Date'] 		= date('Y-m-d');
 		$arr['Cost Center'] = isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '';
 		$arr['Count'] 		= $item->count ? $item_count : '1';
-		$arr['Description'] = $item->name.$text;
+		$arr['Description'] = $text;
 		$arr['Price'] 		= $price;
 		$arr['Firstname'] 	= $item->contract->firstname;
 		$arr['Lastname'] 	= $item->contract->lastname;
@@ -355,7 +350,6 @@ cont:
 
 	protected function get_booking_record($contract, $mandate, $invoice_nr, /* $started_lastm,*/ $charge, $tax, $conf)
 	{
-
 		$arr = $this->records_arr['booking'];
 		if ($mandate)
 			$arr = $this->records_arr['booking_sepa'];
@@ -370,10 +364,10 @@ cont:
 
 		$arr['Contractnr'] 	= $contract->id;
 		$arr['Invoicenr'] 	= $invoice_nr;
-		$arr['Date'] 		= date('Y-m-d');
+		$arr['Date'] 		= $this->dates('today');
 		$arr['RCD'] 		= $rcd;
 		$arr['Cost Center'] = isset($contract->costcenter->name) ? $contract->costcenter->name : '';
-		$arr['Description'] = 'Month '.date('m/Y');
+		$arr['Description'] = 'Month '.$this->dates('this_m_bill');
 		// $arr['Net'] 		= round($charge * (1-$tax), 2);
 		// $arr['Tax'] 		= round($charge * $tax, 2);
 		// $arr['Gross'] 		= round($charge, 2);
