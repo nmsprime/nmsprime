@@ -37,7 +37,7 @@
 		@foreach ($ping as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>
@@ -71,7 +71,7 @@
 		@foreach ($flood_ping as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>
@@ -85,18 +85,18 @@
 @section('content_lease')
 
 	@if ($lease)
-		<font color="green"><b>Modem has a valid lease</b></font><br>
-		@foreach ($lease as $line)
+		<font color="{{$lease['state']}}"><b>{{$lease['forecast']}}</b></font><br>
+		@foreach ($lease['text'] as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>
 				</table>
 		@endforeach
 	@else
-		<font color="red">{{trans('messages.modem_lease_error')}}</font>
+		<font color="red">{{ trans('messages.modem_lease_error')}}</font>
 	@endif
 
 @stop
@@ -107,7 +107,7 @@
 		@foreach ($log as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>

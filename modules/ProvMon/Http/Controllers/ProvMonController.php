@@ -63,7 +63,8 @@ class ProvMonController extends \BaseModuleController {
 		$flood_ping = $this->flood_ping ($hostname);
 
 		// Lease
-		$lease = $this->search_lease('hardware ethernet '.$modem->mac);
+		$lease['text'] = $this->search_lease('hardware ethernet '.$modem->mac);
+		$lease = $this->validate_lease($lease, $type);
 
 		// Log
 		exec ('egrep "('.$modem->mac.'|'.$hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
