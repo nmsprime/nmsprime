@@ -25,6 +25,7 @@ class CreateSepaAccountTable extends BaseMigration {
 			$table->string('bic', 11);
 			$table->string('institute');
 			$table->string('description');
+			$table->integer('company_id');
 		});
 	}
 
