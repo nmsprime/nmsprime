@@ -1519,6 +1519,24 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Process data after successful voipaccount termination
+	 *
+	 * @author Patrick Reichel
+	 * @todo: This has to be testet – there are no accounts we could terminate
+	 */
+	protected function _process_voip_account_termination_response($xml, $data, $out) {
+
+		// set deletion date (voipaccount_ext_termination_date)
+
+		// check if last account at this contract => if so, set end voip_contract_end
+
+		$out .= "<h5>Attention: Noting happened! Feature still not implemented</h5>";
+
+		return $out;
+	}
+
+
+	/**
 	 * Process data after successful order cancel.
 	 *
 	 * @author Patrick Reichel

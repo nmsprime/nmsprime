@@ -17,9 +17,19 @@ class EnviaOrderController extends \BaseModuleController {
 	public function get_form_fields($model = null)
 	{
 
+		// make order_id fillable on create => so man can add an order created at the web GUI to keep data consistent
+		if (!$model->exists) {
+			$order_id = array('form_type' => 'text', 'name' => 'orderid', 'description' => 'Order ID');
+		}
+		else {
+			$order_id = array('form_type' => 'text', 'name' => 'orderid', 'description' => 'Order ID', 'options' => ['readonly']);
+		}
+
+
+
 		// label has to be the same like column in sql table
 		$ret = array(
-			array('form_type' => 'text', 'name' => 'orderid', 'description' => 'Order ID', 'options' => ['readonly']),
+			$order_id,
 			/* array('form_type' => 'text', 'name' => 'ordertype_id', 'description' => 'Ordertype', 'options' => ['readonly']), */
 			array('form_type' => 'text', 'name' => 'ordertype', 'description' => 'Order type', 'options' => ['readonly']),
 			/* array('form_type' => 'text', 'name' => 'orderstatus_id', 'description' => 'Orderstatus ID', 'options' => ['readonly']), */
@@ -29,7 +39,7 @@ class EnviaOrderController extends \BaseModuleController {
 			array('form_type' => 'text', 'name' => 'customerreference', 'description' => 'Envia customer reference', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'Envia contract reference', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'options' => ['readonly'], 'hidden' => '0'),
-			array('form_type' => 'text', 'name' => 'contract', 'description' => 'Contract', 'value' => $model->contract->number, 'options' => ['readonly']),
+			/* array('form_type' => 'text', 'name' => 'contract', 'description' => 'Contract', 'value' => $model->contract->number, 'options' => ['readonly']), */
 			array('form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber', 'options' => ['readonly']),
 		);
 
@@ -42,6 +52,24 @@ class EnviaOrderController extends \BaseModuleController {
 
 		return $ret;
 	}
+
+
+	/**
+	 * Overwrite base function => before creation in database we have to check if order exists at envia!
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function create() {
+
+		try {
+			// this needs view rights; edit rights are checked in store/update methods!
+			$this->_check_permissions("create");
+		}
+		catch (PermissionDeniedError $ex) {
+			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
+		}
+	}
+
 
 	/**
 	 * Overwrite delete function => we have to cancel an order also against the envia API
