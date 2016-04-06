@@ -647,7 +647,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			$view_var = $this->_handle_request_success($job, $data);
 		}
 		// a 404 on order_get_status is meaningful ⇒ we have to delete this order
-		if (($job == "order_get_status") && ($data['status'] == 404)) {
+		elseif (($job == "order_get_status") && ($data['status'] == 404)) {
 			$view_var = $this->_handle_request_success($job, $data);
 		}
 		/* // bad request */
