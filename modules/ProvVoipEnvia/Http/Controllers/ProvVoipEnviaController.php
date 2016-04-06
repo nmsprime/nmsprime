@@ -117,7 +117,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		// check for permissions
 		// TODO: if there are more levels of grants: don't forget to add this here
 		try {
-			$this->_check_permissions("ext_provider_actions");
+			$this->_check_permissions("view", "Modules\ProvVoipEnvia\Entities\ProvVoipEnvia");
 		}
 		catch (PermissionDeniedError $ex) {
 			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
@@ -505,7 +505,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		// check for permissions
 		// TODO: if there are more levels of grants: don't forget to add this here
 		try {
-			$this->_check_permissions("ext_provider_actions");
+			$this->_check_permissions("view", "Modules\ProvVoipEnvia\Entities\ProvVoipEnvia");
 		}
 		catch (PermissionDeniedError $ex) {
 			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));

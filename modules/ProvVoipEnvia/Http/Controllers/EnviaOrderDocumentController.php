@@ -72,6 +72,16 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 	 */
 	public function show($id) {
 
+		// TODO: outsource to own controller/method?
+		try {
+			// this needs view rights; edit rights are checked in store/update methods!
+			$this->_check_permissions("view");
+			$this->_check_permissions("view", "Modules\ProvVoipEnvia\Entities\ProvVoipEnvia");
+		}
+		catch (PermissionDeniedError $ex) {
+			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
+		}
+
 		$enviaorderdocument = EnviaOrderDocument::findOrFail($id);
 		$contract_id = $enviaorderdocument->enviaorder->contract_id;
 		$filename = $enviaorderdocument->filename;
@@ -93,9 +103,11 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 
 	public function edit($id) {
 
+		// TODO: outsource to own controller/method?
 		try {
 			// this needs view rights; edit rights are checked in store/update methods!
 			$this->_check_permissions("view");
+			$this->_check_permissions("view", "Modules\ProvVoipEnvia\Entities\ProvVoipEnvia");
 		}
 		catch (PermissionDeniedError $ex) {
 			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
@@ -115,15 +127,9 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 			);
 			return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request', $params);
 		}
-		// if already uploaded: show document
+		// if already uploaded: show EnviaOrder
 		else {
-
-			// redirect back to order
-			/* $params = array( */
-			/* 	$ */
-			/* ); */
-			/* return \Redirect::action('Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderController', $params); */
-			return \Redirect::route('EnviaOrder.edit', [$document->enviaorder->id]);
+			return \Redirect::route('EnviaOrder.edit', ['enviaorder_id' => $document->enviaorder->id]);
 		}
 	}
 
