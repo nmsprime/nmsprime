@@ -6,6 +6,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\View;
 
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
+use Modules\ProvVoip\Entities\PhonenumberManagement;
 
 class EnviaOrderController extends \BaseModuleController {
 
@@ -54,20 +55,61 @@ class EnviaOrderController extends \BaseModuleController {
 	}
 
 
+	public function create() {
+
+		$phonenumbermanagement_id = \Input::get('phonenumbermanagement_id', null);
+		$phonenumber_id = \Input::get('phonenumber_id', null);
+		$contract_id = \Input::get('contract_id', null);
+
+		// if order_id is given: all is fine => call parent
+		// in this case we take for sure that the caller is is either contract=>create_envia_order or a redirected phonenumbermanagement=>create_envia_order
+		if (!is_null($contract_id)) {
+			return parent::create();
+		}
+
+		// else: calculate contract_id and (if possible) phonenumber_id
+		if (is_null($phonenumbermanagement_id)) {
+			throw new \RuntimeException("Order has to be related to contract or to phonenumbermanagement");
+		}
+
+		$phonenumbermanagement = PhonenumberManagement::findOrFail($phonenumbermanagement_id);
+
+		// build new parameter set (this is: attach contract_id and phonenumber_id
+		$params = \Input::all();
+		$params['phonenumber_id'] = $phonenumbermanagement->phonenumber->id;
+		$params['contract_id'] = $phonenumbermanagement->phonenumber->mta->modem->contract->id;
+		$params['contractreference'] = $phonenumbermanagement->phonenumber->mta->modem->contract->contract_external_id;
+		$params['customerreference'] = $phonenumbermanagement->phonenumber->mta->modem->contract->customer_external_id;
+
+		// call create again with extended parameters
+		return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderController@create', $params);
+	}
+
 	/**
 	 * Overwrite base function => before creation in database we have to check if order exists at envia!
 	 *
 	 * @author Patrick Reichel
 	 */
-	public function create() {
+	public function store() {
 
-		try {
-			// this needs view rights; edit rights are checked in store/update methods!
-			$this->_check_permissions("create");
+		// call parent and store return
+		$parent_return = parent::store();
+
+		// if previous action is not create: passthrough parent return
+		if (!\Str::contains(\URL::previous(), 'EnviaOrder/create?')) {
+			return $parent_return;
 		}
-		catch (PermissionDeniedError $ex) {
-			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
-		}
+
+		// else redirect to check newly created order against Envia API
+		$order_id = \Input::get('orderid');
+		$params = array(
+			'job' => 'order_get_status',
+			'order_id' => $order_id,
+			'really' => 'true',
+			'origin' => urlencode(\URL::previous()),
+		);
+
+		return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request', $params);
 	}
 
 

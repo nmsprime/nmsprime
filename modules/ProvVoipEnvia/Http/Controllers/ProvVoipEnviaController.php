@@ -113,6 +113,15 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 * temporary starter for xml generation
 	 */
 	public function index() {
+		//
+		// check for permissions
+		// TODO: if there are more levels of grants: don't forget to add this here
+		try {
+			$this->_check_permissions("ext_provider_actions");
+		}
+		catch (PermissionDeniedError $ex) {
+			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
+		}
 
 		$base = "/lara/provvoipenvia/request";
 
@@ -635,6 +644,10 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		// success!!
 		if (($data['status'] >= 200) && ($data['status'] < 300)) {
+			$view_var = $this->_handle_request_success($job, $data);
+		}
+		// a 404 on order_get_status is meaningful ⇒ we have to delete this order
+		if (($job == "order_get_status") && ($data['status'] == 404)) {
 			$view_var = $this->_handle_request_success($job, $data);
 		}
 		/* // bad request */

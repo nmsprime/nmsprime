@@ -1183,7 +1183,13 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	public function process_envia_data($job, $data) {
 
-		$out = '<h4>Success (HTTP status is '.$data['status'].')</h4>';
+		// special header for order_get_status 404 response
+		if (($job == 'order_get_status') && ($data['status'] == 404)) {
+			$out = '<h4>Error (HTTP status is '.$data['status'].')</h4>';
+		}
+		else {
+			$out = '<h4>Success (HTTP status is '.$data['status'].')</h4>';
+		}
 
 		$raw_xml = $data['xml'];
 		$xml = new \SimpleXMLElement($raw_xml);
@@ -1411,6 +1417,25 @@ class ProvVoipEnvia extends \BaseModel {
 			throw new \Exception('ERROR: There is no order with order_id '.$order_id.' in table enviaorders');
 		}
 
+		// check status: if 404 then the order doesn't exist at envia ⇒ delete from database
+		if ($data['status'] == 404) {
+
+			// check if current order has been manually created
+			// if so: hard delete (this order has never been existant)
+			if (!boolval($order->ordertype)) {
+				$order->forceDelete();
+			}
+			// else do soft delete (to keep history of orders)
+			else {
+				$order->delete();
+			}
+
+			$out .= "<h5>Order ".$order_id." does not exist:</h5>";
+			$out .= "Order has been deleted in database";
+
+			return $out;
+		}
+
 		$out = "<h5>Status for order ".$order_id.":</h5>";
 
 		$out .= "<table>";
@@ -1522,7 +1547,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Process data after successful voipaccount termination
 	 *
 	 * @author Patrick Reichel
-	 * @todo: This has to be testet – there are no accounts we could terminate
+	 * @todo: This has to be testet – currently there are no accounts we could terminate
 	 */
 	protected function _process_voip_account_termination_response($xml, $data, $out) {
 
