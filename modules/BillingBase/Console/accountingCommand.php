@@ -15,6 +15,7 @@ use DB;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Entities\BillingBase;
+use Modules\BillingBase\Entities\Bill;
 
 class accountingCommand extends Command {
 
@@ -124,37 +125,49 @@ class accountingCommand extends Command {
 
 		switch ($this->argument('cycle'))
 		{
-			case 2: $this->logger->addInfo('Cycle only for TV items/products'); break;
-			case 1: $this->logger->addInfo('Cycle without TV items/products');
+			case 2: 
+				$this->logger->addInfo('Cycle only for TV items/products'); 
+				break;
+			case 1: 
+				$this->logger->addInfo('Cycle without TV items/products');
 			default:
 				// remove all entries of this month from accounting table if entries were already created (and create them new)
 				$actually_created = DB::table($this->tablename)->where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->first();
 				if (is_object($actually_created))
 				{
-					$this->logger->addNotice('Table was already created this month - will be recreated now!');
+					$this->logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 					DB::update('DELETE FROM '.$this->tablename.' WHERE created_at>='.$this->dates['thism_01']);
 				}
 				break;
 		}
 
+		$conf = BillingBase::first();
+		$sepa_accounts = SepaAccount::all();
+		$sepa_dd = $sepa_dc = [];
+		$bills = [];
+
 		// check date of last run and get last invoice nr - all item entries after this date have to be included to the current billing cycle
-		$last_run = DB::table($this->tablename)->orderBy('created_at', 'desc')->select('created_at', 'invoice_nr')->first();
+		$last_run = DB::table($this->tablename)->orderBy('created_at', 'desc')->select('created_at')->first();
 		if (is_object($last_run))
 		{
 			$this->dates['last_run'] = $last_run->created_at;
-			$invoice_nr = $last_run->invoice_nr;
+			// Separate invoice_nrs for every SepaAccount
+			foreach ($sepa_accounts as $acc)
+			{
+				$invoice_nr[$acc->id] = DB::table($this->tablename)->where('sepa_account_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
+				$invoice_nr[$acc->id] = $invoice_nr[$acc->id]->invoice_nr;
+			}
 		}
 		else
 		{
 			// first run for this system
 			$this->dates['last_run'] = $this->dates['null'];
-			$invoice_nr = 999999;
+			foreach ($sepa_accounts as $acc)
+				$invoice_nr[$acc->id] = 1000000;
 		}
+
 		$this->logger->addDebug('Last run was on '.$this->dates['last_run']);
-		
-		$conf = BillingBase::first();
-		$sepa_dd = $sepa_dc = [];
-		
+
 		/*
 		 * Loop over all Contracts
 		 */
@@ -171,17 +184,17 @@ class accountingCommand extends Command {
 				continue;
 
 			// variable resets or incrementations
-			$invoice_nr += 1;
 			$charge 	= []; 					// total costs for this month for current contract
 			$expires	= false;
 
 			if (date('Y-m', strtotime($c->contract_end)) == $this->dates['this_m'])
 				$expires = true;
 
+			var_dump($c->id);
 
 			/*
 			 * Add internet, voip and tv tariffs and all other items and calculate price for this month considering 
-			 * contract starting & expiration date, calculate total sum of items for booking records
+			 * contract start & expiration date, calculate total sum of items for booking records
 			 */
 			foreach ($c->items as $item)
 			{
@@ -205,22 +218,24 @@ class accountingCommand extends Command {
 					continue;
 				$text  = $ret['text'];
 
-				// write to accounting table
-				$count = $item->count ? $item->count : 1;
-				DB::update('INSERT INTO '.$this->tablename.' (created_at, contract_id, name, product_id, ratio, count, invoice_nr) VALUES(NOW(),'.$c->id.',"'.$item->name.'",'.$item->product->id.','.$ret['ratio'].','.$count.','.$invoice_nr.')');
-
 				// get account via costcenter
 				$acc_id = $costcenter->sepa_account_id;
 
-				// increase charge for account by price
+				// increase invoice nr of account, increase charge for account by price, calculate tax
 				if (isset($charge[$acc_id]))
 				{
-					//$charge[$acc_id] = isset($charge[$acc_id]) ? $charge[$acc_id] + $price : $price,
 					$charge[$acc_id]['gross'] += $price;
-					$charge[$acc_id]['tax'] += $item->product->tax ? $price * $conf->tax/100 : 0;
+					$charge[$acc_id]['tax'] += $item->product->tax ? round($price * $conf->tax/100, 2) : 0;
 				}
 				else
-					$charge[$acc_id] = ['gross' => $price, 'tax' => $item->product->tax ? $price * $conf->tax/100 : 0];
+				{
+					$charge[$acc_id] = ['gross' => $price, 'tax' => $item->product->tax ? round($price * $conf->tax/100, 2) : 0];
+					$invoice_nr[$acc_id] += 1;
+				}
+
+				// save to accounting table as backup for future checking
+				$count = $item->count ? $item->count : 1;
+				DB::update('INSERT INTO '.$this->tablename.' (created_at, contract_id, name, product_id, ratio, count, invoice_nr, sepa_account_id) VALUES(NOW(),'.$c->id.',"'.$item->name.'",'.$item->product->id.','.$ret['ratio'].','.$count.','.$invoice_nr[$acc_id].','.$acc_id.')');
 
 				// write to accounting records of account
 				switch ($item->product->type)
@@ -233,7 +248,20 @@ class accountingCommand extends Command {
 						$rec_arr = 'invoice_item'; break;
 				}
 
-				$records[$acc_id][$rec_arr][] = $this->get_invoice_record($item, $price, $invoice_nr, $text);
+				$records[$acc_id][$rec_arr][] = $this->get_invoice_record($item, $price, $acc_id.'/'.$invoice_nr[$acc_id], $text);
+
+
+				// create bill for account and contract and add items
+				if (isset($bills[$acc_id][$c->id]))
+				{
+					$bills[$acc_id][$c->id]->add_item($count, $price, $text);
+				}
+				else
+				{
+					$bill = new Bill($c, $conf, $invoice_nr[$acc->id]);
+					$bill->add_item($count, $price, $text);
+					$bills[$acc_id][$c->id]	= $bill;
+				}
 
 			} // end of item loop
 
@@ -260,9 +288,19 @@ cont:
 			else
 				$rec_arr = 'booking_sepa';
 
-			// write to booking records of account with total charge
-			foreach ($charge as $acc_id => $value) 
-				$records[$acc_id][$rec_arr][] = $this->get_booking_record($c, $mandate, $invoice_nr, $value['gross'], $value['tax'], $conf);
+			// write to booking records of account with total charge, add bill data (company, mandate, account, summary)
+			foreach ($charge as $acc_id => $value)
+			{
+				$records[$acc_id][$rec_arr][] = $this->get_booking_record($c, $mandate, $acc_id.'/'.$invoice_nr[$acc_id], $value['gross'], $value['tax'], $conf);
+				
+				$bills[$acc_id][$c->id]->set_mandate($mandate);
+				$bills[$acc_id][$c->id]->set_summary($value['gross'], $value['tax']);
+// if ($c->id == 500007)
+// 	dd($mandates, $acc_id);
+				$acc = $sepa_accounts->find($acc_id);
+				if (!$bills[$acc_id][$c->id]->set_company_data($acc))
+					$this->logger->addError('No Company assigned to Account '.$acc->name);
+			}
 
 			if (!$mandate)
 				continue;
@@ -273,12 +311,10 @@ cont:
 				$t = PaymentInformation::S_FIRST;
 			else if (date('Y-m', strtotime($c->contract_end)) == $this->dates['m'])
 				$t = PaymentInformation::S_FINAL;
-
 			
 			foreach ($charge as $acc_id => $value)
 			{
-				// $xml_entry = ['mandate' => $mandate, 'charge' => $value, 'invoice_nr' => $invoice_nr, 'started_lastm' => $started_lastm];
-				$xml_entry = ['mandate' => $mandate, 'charge' => $value['gross'], 'invoice_nr' => $invoice_nr];
+				$xml_entry = ['mandate' => $mandate, 'charge' => $value['gross'], 'invoice_nr' => $acc_id.'/'.$invoice_nr[$acc_id]];
 				
 				if ($value['gross'] < 0)
 					$sepa_dc[$acc_id][] = $xml_entry;
@@ -286,16 +322,37 @@ cont:
 					$sepa_dd[$acc_id][$t][] = $xml_entry;					
 			}
 
-
 		} // end of loop over contracts
 
-		/*
-		 * Store SEPA & Billing Files (foreach type and foreach account)
-		 */
+
+		// store all billing files
+		$this->store_billing_files($records, $sepa_dd, $sepa_dc, $sepa_accounts);
+
+		foreach ($bills as $acc_id => $contract_bills)
+		{
+			foreach ($contract_bills as $id => $bill)
+			{
+				if ($ret = $bill->make_bill())
+				{
+					switch ($ret)
+					{
+						case -1: $msg = 'Template or Logo of Company of $acc_id not set'; break;
+						case -2: $msg = "Bill for Contract $id could not be created"; break;
+					}
+					$this->logger->addError($msg);
+				}
+			}
+		}
+	}
+
+
+	/*
+	 * Store SEPA, Booking & Invoice Records in according Files (foreach type and foreach account)
+	 */
+	protected function store_billing_files($records, $sepa_dd, $sepa_dc, $sepa_accounts)
+	{
 		if (!is_dir(storage_path('billing')))
 			mkdir(storage_path('billing'));
-
-		$sepa_accounts = SepaAccount::all();
 
 		foreach ($records as $acc_id => $acc_records)
 		{
@@ -314,17 +371,9 @@ cont:
 				File::put($file, implode("\t", array_keys($this->records_arr[$type]))."\n");
 				File::append($file, implode($entries));
 				echo "stored $type records in $file\n";
-			}
-		
+			}		
 		}
-
-		// Create Bill for every contract - consider cycles!
-
-
 	}
-
-
-
 
 
 	protected function get_invoice_record($item, $price, $invoice_nr, $text = '')
@@ -364,10 +413,10 @@ cont:
 
 		$arr['Contractnr'] 	= $contract->id;
 		$arr['Invoicenr'] 	= $invoice_nr;
-		$arr['Date'] 		= $this->dates('today');
+		$arr['Date'] 		= $this->dates['today'];
 		$arr['RCD'] 		= $rcd;
 		$arr['Cost Center'] = isset($contract->costcenter->name) ? $contract->costcenter->name : '';
-		$arr['Description'] = 'Month '.$this->dates('this_m_bill');
+		$arr['Description'] = 'Month '.$this->dates['this_m_bill'];
 		// $arr['Net'] 		= round($charge * (1-$tax), 2);
 		// $arr['Tax'] 		= round($charge * $tax, 2);
 		// $arr['Gross'] 		= round($charge, 2);

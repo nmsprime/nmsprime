@@ -50,7 +50,7 @@ class CompanyController extends \BaseModuleController {
 	}
 
 	/**
-	 * Overwrites the base method to handle file uploads
+	 * Overwrites the base methods to handle file uploads
 	 */
 	protected function store()
 	{

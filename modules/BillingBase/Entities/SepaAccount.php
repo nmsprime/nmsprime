@@ -59,5 +59,9 @@ class SepaAccount extends \BaseModel {
 	{
 		return $this->hasMany('Modules\BillingBase\Entities\CostCenter');
 	}
-	
+
+	public function company ()
+	{
+		return $this->belongsTo('Modules\BillingBase\Entities\Company');
+	}
 }

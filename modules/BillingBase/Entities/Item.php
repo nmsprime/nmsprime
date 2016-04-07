@@ -154,7 +154,7 @@ class Item extends \BaseModel {
 					$text  = 'Month '.$dates['last_m'].'+'.$dates['this_m_bill'];
 				}
 
-				$price = $ratio ? round($ratio * $this->product->price, 2) : $this->product->price;
+				$price = $ratio ? $ratio * $this->product->price : $this->product->price;
 				$text  = $this->product->name.' - '.$text;
 
 				if ($this->product->type == 'Credit')
@@ -319,7 +319,7 @@ class Item extends \BaseModel {
 
 		$ratio = $ratio ? $ratio : 1;
 
-		return ['price' => $price, 'text' => $text, 'ratio' => $ratio];
+		return ['price' => round($price, 2), 'text' => $text, 'ratio' => $ratio];
 	}
 
 
