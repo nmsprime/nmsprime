@@ -51,6 +51,7 @@ class SepaMandate extends \BaseModel {
 	}
 
 
+
 	/**
 	 * Relationships:
 	 */
@@ -58,6 +59,8 @@ class SepaMandate extends \BaseModel {
 	{
 		return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
 	}
+
+
 
 	/*
 	 * Init Observers
@@ -67,6 +70,23 @@ class SepaMandate extends \BaseModel {
 		SepaMandate::observe(new SepaMandateObserver);
 		parent::boot();
 	}
+
+
+	/*
+	 * Other Functions
+	 */
+
+	// Check if Mandate is valid
+	public function check_validity($dates)
+	{
+		$start = !$this->sepa_valid_from ? $dates['null'] : $this->sepa_valid_from;
+		$end = $this->sepa_valid_to == $dates['null'] ? null : $this->sepa_valid_to;
+
+		return (strtotime($start) < strtotime($dates['today'])) && (!$end || strtotime($end) > strtotime($dates['today']));
+		// if ($m->sepa_valid_from <= $this->dates['today'] && ($m->sepa_valid_to == '0000-00-00' || $m->sepa_valid_to > $this->dates['today']))
+	}
+
+
 
 }
 

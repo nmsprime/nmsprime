@@ -47,6 +47,9 @@ class Bill {
 		'date'				=> '',
 		'invoice_nr' 		=> '',
 		'rcd' 				=> '',			// Fälligkeitsdatum
+		'tariffs'			=> '',			// TODO: implement!
+		'start'				=> '',			// Leistungszeitraum start , TODO: implement!
+		'end'				=> '',			// Leistungszeitraum ende , TODO: implement!
 
 		'item_table_positions' => '',
 		'table_summary' 	=> '',
@@ -73,7 +76,7 @@ class Bill {
 
 	public function add_item($count, $price, $text)
 	{
-		$this->data['item_table_positions'] .= $count.' & '.$text.' & '.round($price/$count, 2).' & '.$price.$this->currency.'\\\\';
+		$this->data['item_table_positions'] .= $count.' & '.$text.' & '.round($price/$count, 2).$this->currency.' & '.$price.$this->currency.'\\\\';
 	}
 
 	public function set_mandate($mandate)
@@ -82,7 +85,7 @@ class Bill {
 			return;
 
 		$this->data['contract_mandate_iban'] = $mandate->sepa_iban;
-		$this->data['contract_mandate_ref'] = $mandate->reference;
+		$this->data['contract_mandate_ref']  = $mandate->reference;
 	}
 
 	public function set_summary($gross, $tax)
@@ -183,13 +186,13 @@ class Bill {
 
 		// create pdf
 		chdir($this->dir);
-		system("pdflatex $file");
+		system("pdflatex $file &>/dev/null");
 
 		// add hash for security - files are not easily downloadable by name through script
 		rename("$file.pdf", $file.'_'.hash('crc32b', $this->data['contract_id']).'.pdf');
 
 		// remove temporary files
-		// unlink($file);
+		unlink($file);
 		unlink($file.'.aux');
 		unlink($file.'.log');
 
