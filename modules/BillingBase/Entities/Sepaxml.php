@@ -44,13 +44,14 @@ class Sepaxml {
 	{
 		$this->creditor = array(
 			'name' => $sepa_account->name,
-			'iban' => $acc->iban;
-			'bic'  => $acc->bic;
-			'id'   => $acc->creditorid;			);
+			'iban' => $sepa_account->iban,
+			'bic'  => $sepa_account->bic,
+			'id'   => $sepa_account->creditorid,
+			);
 		
-		$this->msg_id = date('YmdHis').$sepa_account->id;		// km3 uses actual time
-		$dd_file 	= storage_path('billing/sepa_dd_').$sepa_account->name.'.xml';
-		$dc_file 	= storage_path('billing/sepa_dc_').$sepa_account->name.'.xml';
+		$this->msg_id  = date('YmdHis').$sepa_account->id;		// km3 uses actual time
+		$this->dd_file = storage_path('billing/sepa_dd_').$sepa_account->name.'.xml';
+		$this->dc_file = storage_path('billing/sepa_dc_').$sepa_account->name.'.xml';
 	}
 
 	
@@ -58,6 +59,7 @@ class Sepaxml {
 	public function add_entry($mandate, $value, $dates, $invoice_nr)
 	{
 		$info = 'Month '.date('m/Y');
+
 
 		if ($value < 0)
 		{
@@ -74,20 +76,20 @@ class Sepaxml {
 			// determine transaction type: first/recurring/final
 			$type = PaymentInformation::S_RECURRING;
 			// started this month or last month after last run of accounting command
-			if (!$mandate->recurring && date('Y-m', strtotime($mandate->c->contract_start)) == $dates['m'] || (date('Y-m', strtotime($mandate->c->contract_start)) == $dates['last_m_Y'] && strtotime($mandate->c->contract_start) > strtotime($dates['last_run'])))
+			if (!$mandate->recurring && date('Y-m', strtotime($mandate->contract->contract_start)) == $dates['m'] || (date('Y-m', strtotime($mandate->contract->contract_start)) == $dates['last_m_Y'] && strtotime($mandate->contract->contract_start) > strtotime($dates['last_run'])))
 				$type = PaymentInformation::S_FIRST;
-			// else if (date('Y-m', strtotime($mandate->c->contract_end)) == $this->dates['m'])
-			else if ($mandate->c->expires)
+			// else if (date('Y-m', strtotime($mandate->contract->contract_end)) == $this->dates['m'])
+			else if ($mandate->contract->expires)
 				$type = PaymentInformation::S_FINAL;
 
-			$this->debit_data['endToEndId']			   => 'RG '.$invoice_nr;
-			$this->debit_data['amount']                => $value;
-			$this->debit_data['debtorIban']            => $mandate->sepa_iban;
-			$this->debit_data['debtorBic']             => $mandate->sepa_bic;
-			$this->debit_data['debtorName']            => $mandate->sepa_holder;
-			$this->debit_data['debtorMandate']         => $mandate->reference;
-			$this->debit_data['debtorMandateSignDate'] => $mandate->signature_date;
-			$this->debit_data['remittanceInformation'] => $info;
+			$this->debit_data['endToEndId']			   = 'RG '.$invoice_nr;
+			$this->debit_data['amount']                = $value;
+			$this->debit_data['debtorIban']            = $mandate->sepa_iban;
+			$this->debit_data['debtorBic']             = $mandate->sepa_bic;
+			$this->debit_data['debtorName']            = $mandate->sepa_holder;
+			$this->debit_data['debtorMandate']         = $mandate->reference;
+			$this->debit_data['debtorMandateSignDate'] = $mandate->signature_date;
+			$this->debit_data['remittanceInformation'] = $info;
 			
 			$this->debits[$type][] = $this->debit_data;
 		}
@@ -97,7 +99,7 @@ class Sepaxml {
 	/**
 	 * Create SEPA XML
 	 */
-	protected function make_sepa_xml()
+	public function make_sepa_xml()
 	{
 		$this->make_credit_file();
 		$this->make_debit_file();
@@ -112,10 +114,11 @@ class Sepaxml {
 		// Set the initial information for direct debits
 		$directDebit = TransferFileFacadeFactory::createDirectDebit($this->msg_id, $this->creditor['name']);
 
+
 		foreach ($this->debits as $type => $records)
 		{
 			// create a payment
-			$directDebit->addPaymentInfo($this->msg_id, array(
+			$directDebit->addPaymentInfo($this->msg_id.$type, array(
 				'id'                    => $this->msg_id,
 				'creditorName'          => $this->creditor['name'],
 				'creditorAccountIBAN'   => $this->creditor['iban'],
@@ -127,7 +130,7 @@ class Sepaxml {
 
 			// Add Transactions to the named payment
 			foreach($records as $r)
-				$directDebit->addTransfer($this->msg_id, $r);
+				$directDebit->addTransfer($this->msg_id.$type, $r);
 
 		}
 
@@ -154,7 +157,6 @@ class Sepaxml {
 		// Add Transactions to the named payment
 		foreach($this->credits as $r)
 			$customerCredit->addTransfer($this->msg_id.'C', $r);
-
 
 		// Retrieve the resulting XML
 		File::put($this->dc_file, $customerCredit->asXML());

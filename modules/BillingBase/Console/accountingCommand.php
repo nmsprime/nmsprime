@@ -16,6 +16,7 @@ use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\Bill;
 use Modules\BillingBase\Entities\AccountingRecords;
 use Modules\BillingBase\Entities\BookingRecords;
+use Modules\BillingBase\Entities\Sepaxml;
 
 class accountingCommand extends Command {
 
@@ -99,6 +100,8 @@ class accountingCommand extends Command {
 		$sepa_accs  = SepaAccount::all();
 		$bills 		= [];
 		$acc_recs 	= [];
+		$book_recs 	= [];
+		$sepa_xmls  = [];
 
 		// check date of last run and get last invoice nr - all item entries after this date have to be included to the current billing cycle
 		$last_run = DB::table($this->tablename)->orderBy('created_at', 'desc')->select('created_at')->first();
@@ -117,7 +120,7 @@ class accountingCommand extends Command {
 			// first run for this system
 			$this->dates['last_run'] = $this->dates['null'];
 			foreach ($sepa_accs as $acc)
-				$invoice_nr[$acc->id] = 1000000;
+				$invoice_nr[$acc->id] = 100000;
 		}
 
 		$this->logger->addDebug('Last run was on '.$this->dates['last_run']);
@@ -136,7 +139,10 @@ class accountingCommand extends Command {
 			}
 
 			if (!$c->create_invoice)
+			{
+				$this->logger->addInfo('Contract '.$c->id.' is out of date');
 				continue;
+			}
 
 			// variable resets or incrementations
 			$charge 	= []; 					// total costs for this month for current contract
@@ -166,7 +172,7 @@ class accountingCommand extends Command {
 				$ret = $item->calculate_price_and_span($this->dates, $costcenter, $c->expires);
 				
 				$price = $ret['price'];
-				// skip adding item to accounting records and bill
+				// skip adding item to accounting records and bill if price == 0
 				if (!$price)
 					continue;
 
@@ -192,7 +198,7 @@ class accountingCommand extends Command {
 
 				// write to accounting records of account
 				if (!isset($acc_recs[$acc_id]))
-					$acc_recs[$acc_id] = new AccountingRecords;
+					$acc_recs[$acc_id] = new AccountingRecords($sepa_accs->find($acc_id)->name);
 				$acc_recs[$acc_id]->add_item($item, $price, $text, $acc_id.'/'.$invoice_nr[$acc_id]);
 
 				// $records[$acc_id][$rec_arr][] = $this->get_invoice_record($item, $price, $acc_id.'/'.$invoice_nr[$acc_id], $text);
@@ -205,46 +211,33 @@ class accountingCommand extends Command {
 
 			} // end of item loop
 
-			
-			// Check if valid mandate exists, add sepa data to ordered structure, log all out of date contracts
-			$mandate = null;
 
-			foreach ($c->sepamandates as $m)
-			{
-				if (!is_object($m))
-					break;
 
-				if ($m->check_validity($this->dates))
-				{
-					$mandate = $m;
-					break;
-				}
-			}
+			// get actual valid sepa mandate
+			$mandate = $c->get_valid_mandate();
 
 			if (!$mandate)
 				$this->logger->addNotice('Contract '.$c->id.' has no valid sepa mandate');
 
 
 			// Add billing file entries
-			$book_recs 	= [];
-			$sepa_xmls  = [];
-
 			foreach ($charge as $acc_id => $value)
 			{
+				$acc = $sepa_accs->find($acc_id);
+
 				// booking record
 				if (!isset($book_recs[$acc_id]))
-					$book_recs[$acc_id] = new BookingRecords;
-				$book_recs[$acc_id] = add_record($c, $mandate, $acc_id.'/'.$invoice_nr[$acc_id], $value['gross'], $value['tax'], $conf);
+					$book_recs[$acc_id] = new BookingRecords($acc->name);
+				$book_recs[$acc_id]->add_record($c, $mandate, $acc_id.'/'.$invoice_nr[$acc_id], $value['gross'], $value['tax'], $conf);
 				
 				// bill data
 				$bills[$acc_id][$c->id]->set_mandate($mandate);
 				$bills[$acc_id][$c->id]->set_summary($value['gross'], $value['tax']);
-				$acc = $sepa_accs->find($acc_id);
 				if (!$bills[$acc_id][$c->id]->set_company_data($acc))
 					$this->logger->addError('No Company assigned to Account '.$acc->name);
 
 				// make bill already
-				if ($ret = $bill->make_bill())
+				if ($ret = $bills[$acc_id][$c->id]->make_bill())
 				{
 					switch ($ret)
 					{
@@ -259,20 +252,18 @@ class accountingCommand extends Command {
 
 				// sepa record
 				if (!isset($sepa_xmls[$acc_id]))
-					$sepa_xmls[$acc_id] = new Sepaxml;
-				$sepa_xmls[$acc_id]->add_record($mandate, $charge['gross'], $acc_id.'/'.$invoice_nr[$acc_id]);
+					$sepa_xmls[$acc_id] = new Sepaxml($acc);
+				$sepa_xmls[$acc_id]->add_entry($mandate, $charge[$acc_id]['gross'], $this->dates, $acc_id.'/'.$invoice_nr[$acc_id]);
 			}
 
 
 // if ($c->id == 500007)
 // 	dd($mandates, $acc_id);
 
-
 		} // end of loop over contracts
 
-
 		// store all billing files
-		$this->store_billing_files($book_recs, $acc_recs, $sepa_xmls, $sepa_accs);
+		$this->store_billing_files($book_recs, $acc_recs, $sepa_xmls);
 
 	}
 
@@ -280,16 +271,20 @@ class accountingCommand extends Command {
 	/*
 	 * Store SEPA, Booking & Invoice Records in according Files (foreach type and foreach account)
 	 */
-	protected function store_billing_files($book_recs, $acc_recs, $sepa_xmls, $sepa_accs)
+	protected function store_billing_files($book_recs, $acc_recs, $sepa_xmls)
 	{
 		if (!is_dir(storage_path('billing')))
 			mkdir(storage_path('billing'));
 
+		// dd($book_recs, '---------', $acc_recs, '---------', $sepa_xmls);
 		foreach ($book_recs as $acc_id => $r)
-		{	
-			$acc_recs[$acc_id]->make_accounting_record_file();
-			$book_recs[$acc_id]->make_booking_record_file();
-			$sepa_xmls[$acc_id]->make_sepa_xml();
+		{
+			if (isset($acc_recs[$acc_id]))
+				$acc_recs[$acc_id]->make_accounting_record_files();
+			if (isset($book_recs[$acc_id]))
+				$book_recs[$acc_id]->make_booking_record_files();
+			if (isset($sepa_xmls[$acc_id]))
+				$sepa_xmls[$acc_id]->make_sepa_xml();
 		}
 	}
 

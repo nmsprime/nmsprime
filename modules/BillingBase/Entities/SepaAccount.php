@@ -64,4 +64,6 @@ class SepaAccount extends \BaseModel {
 	{
 		return $this->belongsTo('Modules\BillingBase\Entities\Company');
 	}
+
+
 }

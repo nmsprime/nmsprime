@@ -164,10 +164,11 @@ class Bill {
 		 	* logo/template not set
 		 */
 
+		// if ($this->data['contract_id'] == 500009)
+		// 	var_dump('x');
+
 		if (!is_file($this->template) || !is_file($this->data['company_logo']))
 			return -1;
-
-		// dd($this->template, $this->data['company_logo']);
 
 		if (!$template = file_get_contents($this->template))
 			return -2;
@@ -189,6 +190,7 @@ class Bill {
 		system("pdflatex $file &>/dev/null");
 
 		// add hash for security - files are not easily downloadable by name through script
+		// TODO: consider cycle (TV / tariff + items) in filename
 		rename("$file.pdf", $file.'_'.hash('crc32b', $this->data['contract_id']).'.pdf');
 
 		// remove temporary files

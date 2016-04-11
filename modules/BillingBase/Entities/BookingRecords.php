@@ -9,6 +9,9 @@ class BookingRecords {
 	private $records_sepa 	 = [];
 	private $records_no_sepa = [];
 
+	private $file_sepa;
+	private $file_no_sepa;
+
 	public $data = array(
 
 		'Contractnr'	=> '',
@@ -36,13 +39,17 @@ class BookingRecords {
 	);
 
 
-	public function __construct()
+	public function __construct($acc_name)
 	{
 		$this->dates = array(
 			'this_m_bill' 	=> date('m/Y'), 
 			'today' 		=> date('Y-m-d'),
 			'auto_rcd' 		=> date('Y-m-d', strtotime('+6 days')),
 			);
+
+		$this->file_sepa 	= storage_path("billing/booking_records_sepa_".$acc_name.".txt");
+		$this->file_no_sepa = storage_path("billing/booking_records_no_sepa_".$acc_name.".txt");
+
 	}
 
 
@@ -79,7 +86,7 @@ class BookingRecords {
 			$this->data['MandateID'] 		= $mandate->reference;
 			$this->data['MandateDate']		= $mandate->signature_date;
 			
-			$records_sepa[] = $this->data;
+			$this->records_sepa[] = implode("\t", $this->data)."\n";
 		}
 		else
 		{
@@ -89,20 +96,28 @@ class BookingRecords {
 			$this->data['MandateID'] 		= '';
 			$this->data['MandateDate']		= '';
 
-			$records_no_sepa[] = $this->data;
+			$this->records_no_sepa[] = implode("\t", $this->data)."\n";
 		}
 
 	}
 
 
-	public function make_booking_record_file($acc)
+	public function make_booking_record_files()
 	{
-		// return implode("\t", $arr)."\n";
-				// $file = storage_path("billing/$type"."_records_".$sepa_accs->find($acc_id)->name.".txt");
-				// // initialise record files with Column names as first line
-				// File::put($file, implode("\t", array_keys($this->records_arr[$type]))."\n");
-				// File::append($file, implode($entries));
-				// echo "stored $type records in $file\n";
+		if ($this->records_sepa)
+		{
+			// initialise record files with Column names as first line
+			File::put($this->file_sepa, implode("\t", array_keys($this->data))."\n");
+			File::append($this->file_sepa, implode($this->records_sepa));
+			echo "stored booking sepa records in ".$this->file_sepa."\n";
+		}
+
+		if ($this->records_no_sepa)
+		{
+			File::put($this->file_no_sepa, implode("\t", array_keys($this->data))."\n");
+			File::append($this->file_no_sepa, implode($this->records_no_sepa));
+			echo "stored booking no sepa records in ".$this->file_no_sepa."\n";		
+		}
 	}
 
 }

@@ -77,12 +77,14 @@ class SepaMandate extends \BaseModel {
 	 */
 
 	// Check if Mandate is valid
-	public function check_validity($dates)
+	public function check_validity()
 	{
-		$start = !$this->sepa_valid_from ? $dates['null'] : $this->sepa_valid_from;
-		$end = $this->sepa_valid_to == $dates['null'] ? null : $this->sepa_valid_to;
+		$start = !$this->sepa_valid_from ? '0000-00-00' : $this->sepa_valid_from;
+		$end = $this->sepa_valid_to == '0000-00-00' ? null : $this->sepa_valid_to;
 
-		return (strtotime($start) < strtotime($dates['today'])) && (!$end || strtotime($end) > strtotime($dates['today']));
+		$today = date('Y-m-d');
+
+		return (strtotime($start) < strtotime($today)) && (!$end || strtotime($end) > strtotime($today));
 		// if ($m->sepa_valid_from <= $this->dates['today'] && ($m->sepa_valid_to == '0000-00-00' || $m->sepa_valid_to > $this->dates['today']))
 	}
 

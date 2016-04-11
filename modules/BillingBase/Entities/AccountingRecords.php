@@ -8,6 +8,9 @@ class AccountingRecords {
 	private $item_records = [];
 	private $tariff_records = [];
 
+	private $file_items;
+	private $file_tariffs;
+
 	public $data = array(
 
 		'Contractnr' 	=> '',
@@ -26,9 +29,16 @@ class AccountingRecords {
 
 	);
 
+
+	public function __construct($acc_name)
+	{
+		$this->file_items 	= storage_path("billing/accounting_item_records_".$acc_name.".txt");
+		$this->file_tariffs = storage_path("billing/accounting_tariff_records_".$acc_name.".txt");
+	}
+
+
 	public function add_item($item, $price, $text, $invoice_nr)
 	{
-
 		$this->data['Contractnr'] 	= $item->contract->id;
 		$this->data['Invoicenr'] 	= $invoice_nr;
 		$this->data['Target Month'] = date('m');
@@ -43,28 +53,40 @@ class AccountingRecords {
 		$this->data['Zip'] 			= $item->contract->zip;
 		$this->data['City'] 		= $item->contract->city;
 
+		$data = implode("\t", $this->data)."\n";
+
 		switch ($item->product->type)
 		{
 			case 'Internet':
 			case 'TV':
 			case 'Voip':
-				$this->tariff_records[] = $this->data;
+				$this->tariff_records[] = $data;
 				break;
 			default:
-				$this->item_records[] = $this->data;
+				$this->item_records[] = $data;
 				break;
 		}
 
 	}
 
 
-	public function make_accounting_record_files($acc)
+	public function make_accounting_record_files()
 	{
-				// 		$file = storage_path("billing/$type"."_records_".$sepa_accs->find($acc_id)->name.".txt");
-				// // initialise record files with Column names as first line
-				// File::put($file, implode("\t", array_keys($this->records_arr[$type]))."\n");
-				// File::append($file, implode($entries));
-				// echo "stored $type records in $file\n";
+		if ($this->item_records)
+		{
+			// initialise record files with Column names as first line
+			File::put($this->file_items, implode("\t", array_keys($this->data))."\n");
+			File::append($this->file_items, implode($this->item_records));
+			echo "stored accounting item records in ".$this->file_items."\n";			
+		}
+
+		if ($this->tariff_records)
+		{
+			File::put($this->file_tariffs, implode("\t", array_keys($this->data))."\n");
+			File::append($this->file_tariffs, implode($this->tariff_records));
+			echo "stored accounting tariff records in ".$this->file_tariffs."\n";
+		}
+
 	}
 
 }
