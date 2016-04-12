@@ -791,7 +791,7 @@ class ProvVoipEnvia extends \BaseModel {
 	protected function _add_customer_identifier() {
 
 		// needed: our customer number
-		$customerno = $this->contract->customer_number;
+		$customerno = $this->contract->customer_number();
 
 		$inner_xml = $this->xml->addChild('customer_identifier');
 		$inner_xml->addChild('customerno', $customerno);
