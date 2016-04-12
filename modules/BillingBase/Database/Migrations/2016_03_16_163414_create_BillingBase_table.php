@@ -21,6 +21,7 @@ class CreateBillingBaseTable extends BaseMigration {
 			$table->integer('rcd');   // requested collection date (Zahlungsziel)
 			$table->enum('currency', ['EUR', 'USD']);
 			$table->float('tax');
+			$table->string('mandate_ref_template');
 		});
 
 		DB::update("INSERT INTO ".$this->tablename.' (currency) VALUES("EUR");');

@@ -2,6 +2,7 @@
 
 namespace Modules\BillingBase\Entities;
 use Modules\ProvBase\Entities\Contract;
+use DB;
 
 class SepaMandate extends \BaseModel {
 
@@ -102,9 +103,11 @@ class SepaMandate extends \BaseModel {
  */
 class SepaMandateObserver
 {
+
 	public function creating($mandate)
 	{
-		$mandate->reference = '002-'.$mandate->contract->id.'-001';
+		$mandate->reference = $this->build_mandate_ref($mandate);
+		
 		if (!$mandate->signature_date)
 			$mandate->signature_date = date('Y-m-d');
 		if (!$mandate->sepa_valid_from)
@@ -113,10 +116,30 @@ class SepaMandateObserver
 
 	public function updating($mandate)
 	{
-		if ($mandate->reference == '')
-			$mandate->reference = '002-'.$mandate->contract->id.'-001';
+		if (!$mandate->reference)
+			$mandate->reference = $this->build_mandate_ref($mandate);
+
+		if (!$mandate->reference)
+			$mandate->reference = $this->build_mandate_ref($mandate);
 		if (!$mandate->signature_date || $mandate->signature_date == '0000-00-00')
 			$mandate->signature_date = date('Y-m-d');
+	}
+
+
+	private function build_mandate_ref($mandate)
+	{
+		$template = BillingBase::first()->mandate_ref_template;
+
+		if (!$template || (strpos($template, '{') === false))
+			return $mandate->contract->number;
+
+		foreach ($mandate->contract['attributes'] as $key => $value)
+			$ref = str_replace($key, $value, $template);
+
+		foreach ($mandate['attributes'] as $key => $value)
+			$ref = str_replace($key, $value, $template);
+
+		return $ref;
 	}
 
 }
