@@ -54,8 +54,8 @@ class ProvMonController extends \BaseModuleController {
 		$view_var = $modem; // for top header
 		$hostname = $modem->hostname.'.'.$this->domain_name;
 
-		// Ping
-		exec ('ping -c5 -i0.2 '.$hostname, $ping);
+		// Ping: Send 5 request's at once with max timeout of 1 second
+		exec ('sudo ping -c5 -i0 -w1 '.$hostname, $ping);
 		if (count(array_keys($ping)) <= 9)
 			$ping = null;
 
@@ -178,7 +178,7 @@ class ProvMonController extends \BaseModuleController {
 			if (isset($ip[0][0]))
 			{
 				$ip = $ip[0][0];
-				exec ('ping -c3 -i0.2 '.$ip, $ping);
+				exec ('sudo ping -c3 -i0 -w1 '.$ip, $ping);
 			}
 		}
 		if (is_array($ping) && count(array_keys($ping)) <= 7)
@@ -210,7 +210,7 @@ class ProvMonController extends \BaseModuleController {
 			goto end;
 
 		// Ping
-		exec ('ping -c3 -i0.2 '.$mta->hostname, $ping);
+		exec ('sudo ping -c3 -i0 -w1 '.$mta->hostname, $ping);
 		if (count(array_keys($ping)) <= 7)
 			$ping = null;
 
@@ -349,7 +349,9 @@ end:
 	 * The Modem Realtime Measurement Function
 	 * Fetches all realtime values from Modem with SNMP
 	 *
-	 * TODO: add units like (dBmV, MHz, ..)
+	 * TODO:
+	 * - add units like (dBmV, MHz, ..)
+	 * - speed-up: use SNMP::get with multiple gets in one request. Test if this speeds up stuff (?)
 	 *
 	 * @param host: The Modem hostname like cm-xyz.abc.de
 	 * @param com:  SNMP RO community
