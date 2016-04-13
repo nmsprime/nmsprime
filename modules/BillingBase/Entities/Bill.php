@@ -207,6 +207,8 @@ class Bill {
 		unlink($file);
 		unlink($file.'.aux');
 		unlink($file.'.log');
+		// if ($this->data['invoice_nr'] == '2/100002')
+		// 	dd($this->data);
 
 		return 0;
 	}

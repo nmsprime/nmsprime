@@ -137,6 +137,7 @@ class Item extends \BaseModel {
 
 		$started_lastm = date('Y-m-01', strtotime($start)) == $dates['lastm_01'] && strtotime($start) > strtotime($dates['last_run']) ? true : false;
 		
+
 		switch($billing_cycle)
 		{
 			case 'Monthly':
@@ -194,9 +195,11 @@ class Item extends \BaseModel {
 				// }
 
 				$starting = date('m', strtotime($start));
+// if ($this->contract->id == 500007)
+// 	dd($this['attributes'], $started_lastm, $starting, $ratio, $billing);
 
 				// started after billing_month - pay to end of year - only first month (starting or last month when after last run)
-				if (date("Y-$starting") >= date("Y-$billing_month") && ($starting == $dates['m'] || $started_lastm))
+				if (date("Y-$starting") > date("Y-$billing_month") && ($starting == $dates['m'] || $started_lastm))
 				{
 					$ratio = 1 - ($starting-1)/12;
 					$text  = $started_lastm ? $dates['last_m_bill'] : $dates['this_m_bill'];
@@ -204,7 +207,7 @@ class Item extends \BaseModel {
 				}
 
 				// started before billing_month - calculate only for billing month
-				else if ($dates['m'] == $billing_month && $starting < $billing_month)
+				else if ($dates['m'] == $billing_month && $starting <= $billing_month)
 				{
 					// started before this yr
 					if (date('Y', strtotime($start)) < $dates['Y'])
@@ -226,7 +229,7 @@ class Item extends \BaseModel {
 				if ($end && date('Y', strtotime($end)) == $dates['Y'])
 				{
 					$end_month = date('m', strtotime($end));
-					$ratio = $ratio ? $end_month/12 - 1 + $ratio : $end_month/12;
+					$ratio = $ratio ? $end_month/12 - 1 + $ratio : 0; //$end_month/12;
 					$text  = substr($text, 0, strpos($text, '-') + 2).date("$end_month/Y");
 				}
 
@@ -294,7 +297,7 @@ class Item extends \BaseModel {
 					if (date('Y-m', strtotime($end)) == $dates['this_m'])
 					{
 						$price = ($tot_months - $part + 1) * $price;
-						$text = " | last ".$tot_months-$part." parts of $tot_months";
+						$text = " | last ".($tot_months-$part+1)." part(s) of $tot_months";
 					}
 	
 					if ($this->product->type == 'Credit')
@@ -306,12 +309,8 @@ class Item extends \BaseModel {
 				if ($this->count)
 				{
 					$price *= $this->count;
-					$text = $this->count.'x '.$text;
+					$text  = $this->count.'x '.$text;
 				}
-
-
-// if ($this->contract->id == 500008 && $this->product->type == 'TV')
-// 	dd($ratio, $starting, $billing_month, $end_month);
 
 				break;
 

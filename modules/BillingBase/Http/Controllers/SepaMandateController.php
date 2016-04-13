@@ -20,7 +20,7 @@ class SepaMandateController extends \BaseModuleController {
 		// label has to be the same like column in sql table
 		return array(
 			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'hidden' => '1'),
-			array('form_type' => 'text', 'name' => 'reference', 'description' => 'Reference Number', 'options' => ['readonly'], 'create' => '1'),
+			array('form_type' => 'text', 'name' => 'reference', 'description' => 'Reference Number', 'create' => '1'),
 			array('form_type' => 'text', 'name' => 'signature_date', 'description' => 'Date of Signature', 'options' => ['placeholder' => 'YYYY-MM-DD']),
 			// $table->enum('state', ['active', 'expired', 'cancelled', 'replaced']);
 			array('form_type' => 'text', 'name' => 'sepa_holder', 'description' => 'Bank Account Holder'),
