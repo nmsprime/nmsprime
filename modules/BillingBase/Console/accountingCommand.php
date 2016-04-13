@@ -106,25 +106,29 @@ class accountingCommand extends Command {
 		foreach ($sepa_accs as $key => $acc)
 			$sepa_accs[$key]->logger = $this->logger;
 
-		// check date of last run and get last invoice nr - all item entries after this date have to be included to the current billing cycle
+
+		// check date of last run and get last invoice nr for each account
 		$last_run = DB::table($this->tablename)->orderBy('created_at', 'desc')->select('created_at')->first();
 		if (is_object($last_run))
 		{
+			// all item entries after this date have to be included to the current billing cycle
 			$this->dates['last_run'] = $last_run->created_at;
+
 			// Separate invoice_nrs for every SepaAccount
 			foreach ($sepa_accs as $acc)
 			{
+				// start invoice nr counter every year new
+				if ($this->dates['m'] == '01')
+					continue;
+
 				$invoice_nr = DB::table($this->tablename)->where('sepa_account_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
 				$acc->invoice_nr = $invoice_nr->invoice_nr;
 			}
 		}
+		// first run for this system
 		else
-		{
-			// first run for this system
 			$this->dates['last_run'] = $this->dates['null'];
-			foreach ($sepa_accs as $acc)
-				$acc->invoice_nr = 100000;
-		}
+
 
 		$this->logger->addDebug('Last run was on '.$this->dates['last_run']);
 
