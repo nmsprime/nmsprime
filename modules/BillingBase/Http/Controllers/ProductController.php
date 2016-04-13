@@ -34,7 +34,7 @@ class ProductController extends \BaseModuleController {
 			array('form_type' => 'select', 'name' => 'voip_tariff', 'description' => 'Phone Tariff', 'value' => Product::getPossibleEnumValues('voip_tariff')),
 			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle')),
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional assignment)', 'value' => $list),
-			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price'),
+			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)'),
 			$tax,
 		);
 	}

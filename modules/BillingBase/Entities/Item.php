@@ -318,7 +318,7 @@ class Item extends \BaseModel {
 
 		$ratio = $ratio ? $ratio : 1;
 
-		return ['price' => round($price, 2), 'text' => $text, 'ratio' => $ratio];
+		return ['price' => $price, 'text' => $text, 'ratio' => $ratio];
 	}
 
 

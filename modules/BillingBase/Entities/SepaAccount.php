@@ -66,6 +66,12 @@ class SepaAccount extends \BaseModel {
 	}
 
 
+
+	public function __construct()
+	{
+		$this->invoice_nr_template = 'RG '.date('Y').'/';
+	}
+
 	/**
 	 * BILLING STUFF
 	 *
@@ -74,7 +80,8 @@ class SepaAccount extends \BaseModel {
 	 */
 
 	// protected $logger;					// logging instance of billing module
-	public $invoice_nr = 100000; 		// invoice number counter
+	public $invoice_nr = 100000; 			// invoice number counter
+	private $invoice_nr_template;			// see constructor
 
 	// separate Accounting Records Object - resulting in 2 files for items and tv
 	protected $acc_recs;
@@ -95,7 +102,7 @@ class SepaAccount extends \BaseModel {
 		if (!isset($this->acc_recs))
 			$this->acc_recs = new AccountingRecords($this->name);
 
-		$invoice_nr = $this->id.'/'.$this->invoice_nr;
+		$invoice_nr = $this->invoice_nr_template.$this->id.'/'.$this->invoice_nr;
 
 		$this->acc_recs->add_item($item, $price, $text, $invoice_nr);
 	}
@@ -106,16 +113,16 @@ class SepaAccount extends \BaseModel {
 		if (!isset($this->book_recs))
 			$this->book_recs = new BookingRecords($this->name);
 
-		$invoice_nr = $this->id.'/'.$this->invoice_nr;
+		$invoice_nr = $this->invoice_nr_template.$this->id.'/'.$this->invoice_nr;
 
-		$this->book_recs->add_record($c, $mandate, $invoice_nr, $value['gross'], $value['tax'], $conf);
+		$this->book_recs->add_record($c, $mandate, $invoice_nr, $value['net'], $value['tax'], $conf);
 	}
 
 
 	public function add_bill_item($c, $conf, $count, $price, $text)
 	{
 		if (!isset($this->bills[$c->id]))
-			$this->bills[$c->id] = new Bill($c, $conf, $this->id.'/'.$this->invoice_nr, $this->logger);
+			$this->bills[$c->id] = new Bill($c, $conf, $this->invoice_nr_template.$this->id.'/'.$this->invoice_nr);
 		$this->bills[$c->id]->add_item($count, $price, $text);
 	}
 
@@ -123,7 +130,7 @@ class SepaAccount extends \BaseModel {
 	public function add_bill_data($c, $mandate, $value, $logger)
 	{
 		$this->bills[$c->id]->set_mandate($mandate);
-		$this->bills[$c->id]->set_summary($value['gross'], $value['tax']);
+		$this->bills[$c->id]->set_summary($value['net'], $value['tax']);
 		$this->bills[$c->id]->set_company_data($this);
 	}
 
@@ -133,7 +140,7 @@ class SepaAccount extends \BaseModel {
 		if (!isset($this->sepa_xml))
 			$this->sepa_xml = new Sepaxml($this);
 
-		$invoice_nr = $this->id.'/'.$this->invoice_nr;
+		$invoice_nr = $this->invoice_nr_template.$this->id.'/'.$this->invoice_nr;
 
 		$this->sepa_xml->add_entry($mandate, $value, $dates, $invoice_nr);
 	}

@@ -96,22 +96,19 @@ class Bill {
 		$this->data['contract_mandate_ref']  = $mandate->reference;
 	}
 
-	public function set_summary($gross, $tax)
+	public function set_summary($net, $tax)
 	{
 		$tax_percent = $tax ? $this->tax : 0;
 		$tax_percent .= '\%';
 
 		// TODO: Translate!
-		$this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.($gross-$tax).$this->currency.'\\\\';
+		$this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.$net.$this->currency.'\\\\';
 		$this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$tax.$this->currency.'\\\\';
-		$this->data['table_summary'] .= '~ & Rechnungsbetrag: & ~ & '.$gross.$this->currency.'\\\\';
-		// dd($gross, $tax, $this->data['table_summary']);
+		$this->data['table_summary'] .= '~ & Rechnungsbetrag: & ~ & '.($net + $tax).$this->currency.'\\\\';
 	}
 
 	public function set_company_data($account)
 	{
-		// if ($this->data['contract_id'] == 500007)
-		// 	dd($account);
 		$this->data['company_account_institute'] = $account->institute;
 		$this->data['company_account_iban'] = $account->iban;
 		$this->data['company_account_bic']  = $account->bic;
@@ -136,7 +133,6 @@ class Bill {
 		$this->data['company_registration_court'] .= $account->company->registration_court_2 ? $account->company->registration_court_2.'\\\\' : '';
 		$this->data['company_registration_court'] .= $account->company->registration_court_3 ? $account->company->registration_court_3.'\\\\' : '';
 
-		// $management = str_replace(',', '\\\\', $account->company->management);
 		if ($account->company->management)
 		{
 			$management = explode(',', $account->company->management);
@@ -187,18 +183,17 @@ class Bill {
 			return -2;
 		}
 
+
 		$template = str_replace('\\_', '_', $template);
 
 		foreach ($this->data as $key => $value)
 			$template = str_replace('{'.$key.'}', $value, $template);
-			// $template = str_replace($key, $value, $template);
 
 		if (!is_dir($this->dir))
 			mkdir($this->dir, '0744', true);
 
 
-
-		$file = $this->dir.'/'.date('Y_m').'_'.str_replace('/', '_', $this->data['invoice_nr']);
+		$file = $this->dir.'/'.date('Y_m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
 		File::put($file, $template);
 
 		// create pdf
@@ -206,7 +201,6 @@ class Bill {
 		system("pdflatex $file &>/dev/null");
 
 		// add hash for security - files are not easily downloadable by name through script
-		// TODO: consider cycle (TV / tariff + items) in filename
 		rename("$file.pdf", $file.'_'.hash('crc32b', $this->data['contract_id']).'.pdf');
 
 		// remove temporary files

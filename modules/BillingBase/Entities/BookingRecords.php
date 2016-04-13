@@ -69,9 +69,9 @@ class BookingRecords {
 		$this->data['RCD'] 			= $rcd;
 		$this->data['Cost Center']  = isset($contract->costcenter->name) ? $contract->costcenter->name : '';
 		$this->data['Description']  = 'Month '.$this->dates['this_m_bill'];
-		$this->data['Net'] 			= $charge - $tax;
+		$this->data['Net'] 			= $charge;
 		$this->data['Tax'] 			= $tax;
-		$this->data['Gross'] 		= $charge;
+		$this->data['Gross'] 		= $charge + $tax;
 		$this->data['Currency'] 	= $cur;
 		$this->data['Firstname'] 	= $contract->firstname;
 		$this->data['Lastname'] 	= $contract->lastname;

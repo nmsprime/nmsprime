@@ -9,13 +9,8 @@ use File;
 use DB;
 
 use Modules\ProvBase\Entities\Contract;
-use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Entities\BillingBase;
-use Modules\BillingBase\Entities\Bill;
-use Modules\BillingBase\Entities\AccountingRecords;
-use Modules\BillingBase\Entities\BookingRecords;
-use Modules\BillingBase\Entities\Sepaxml;
 use Modules\BillingBase\Entities\BillingLogger;
 
 class accountingCommand extends Command {
@@ -186,16 +181,17 @@ class accountingCommand extends Command {
 				$acc 	= $sepa_accs->find($acc_id);
 				$text   = $ret['text'];
 
+
 				// increase invoice nr of account, increase charge for account by price, calculate tax
 				if (isset($charge[$acc_id]))
 				{
-					$charge[$acc_id]['gross'] 	+= $price;
-					$charge[$acc_id]['tax'] 	+= $item->product->tax ? round($price * $conf->tax/100, 2) : 0;
+					$charge[$acc_id]['net'] 	+= $price;
+					$charge[$acc_id]['tax'] 	+= $item->product->tax ? $price * $conf->tax/100 : 0;
 				}
 				else
 				{
-					$charge[$acc_id]['gross'] 	= $price;
-					$charge[$acc_id]['tax'] 	= $item->product->tax ? round($price * $conf->tax/100, 2) : 0;
+					$charge[$acc_id]['net'] 	= $price;
+					$charge[$acc_id]['tax'] 	= $item->product->tax ? $price * $conf->tax/100 : 0;
 					$acc->invoice_nr += 1;
 				}
 
@@ -204,13 +200,12 @@ class accountingCommand extends Command {
 				DB::update('INSERT INTO '.$this->tablename.' (created_at, contract_id, name, product_id, ratio, count, invoice_nr, sepa_account_id) VALUES(NOW(),'.$c->id.',"'.$item->name.'",'.$item->product->id.','.$ret['ratio'].','.$count.','.$acc->invoice_nr.','.$acc_id.')');
 
 				// add item to accounting records of account
-				$acc->add_accounting_record($item, $price, $text);
+				$acc->add_accounting_record($item, round($price, 2), $text);
 
 				// create bill for account and contract and add item
-				$acc->add_bill_item($c, $conf, $count, $price, $text);
+				$acc->add_bill_item($c, $conf, $count, round($price, 2), $text);
 
 			} // end of item loop
-
 
 			// get actual valid sepa mandate
 			$mandate = $c->get_valid_mandate();
@@ -222,6 +217,9 @@ class accountingCommand extends Command {
 			// Add billing file entries
 			foreach ($charge as $acc_id => $value)
 			{
+				$value['net'] = round($value['net'], 2);
+				$value['tax'] = round($value['tax'], 2);
+
 				$acc = $sepa_accs->find($acc_id);
 				$acc->add_booking_record($c, $mandate, $value, $conf);
 				$acc->add_bill_data($c, $mandate, $value, $this->logger);
@@ -229,10 +227,11 @@ class accountingCommand extends Command {
 				// make bill already
 				$acc['bills'][$c->id]->make_bill();
 
+				// skip sepa part if contract has no valid mandate
 				if (!$mandate)
 					continue;
 
-				$acc->add_sepa_transfer($mandate, $value['gross'], $this->dates);
+				$acc->add_sepa_transfer($mandate, $value['net'] + $value['tax'], $this->dates);
 			}
 // if ($c->id == 500008)
 // 	dd($sepa_accs[1]);

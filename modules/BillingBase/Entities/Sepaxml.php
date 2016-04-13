@@ -133,7 +133,7 @@ class Sepaxml {
 
 		// Retrieve the resulting XML
 		File::put($this->dd_file, $directDebit->asXML());
-		echo "stored sepa direct debit xml in".$this->dd_file."\n";
+		echo "stored sepa direct debit xml in ".$this->dd_file."\n";
 	}
 
 	private function make_credit_file()
