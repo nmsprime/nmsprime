@@ -10,6 +10,9 @@ class Bill {
 	private $tax;
 	private $template = '/tftpboot/bill/';
 
+	// logger instance for Billing Module
+	private $logger;
+
 	public $data = array(
 
 		'company_name'		=> '',
@@ -57,7 +60,7 @@ class Bill {
 	);
 
 
-	public function __construct($contract, $config, $invoice_nr)
+	public function __construct($contract, $config, $invoice_nr, $logger = null)
 	{
 		$this->data['contract_id'] 			= $contract->id;
 		$this->data['contract_firstname'] 	= $contract->firstname;
@@ -72,6 +75,8 @@ class Bill {
 		$this->currency	= strtolower($config->currency) == 'eur' ? '€' : $config->currency;
 		$this->tax		= $config->tax;
 		$this->dir 		.= $contract->id;
+
+		$this->logger = $logger;
 	}
 
 	public function add_item($count, $price, $text)
@@ -164,14 +169,17 @@ class Bill {
 		 	* logo/template not set
 		 */
 
-		// if ($this->data['contract_id'] == 500009)
-		// 	var_dump('x');
-
 		if (!is_file($this->template) || !is_file($this->data['company_logo']))
+		{
+			$this->logger->addError("Failed to Create Bill: Template or Logo of Company ".$this->data['company_name']." not set!", [$this->data['contract_id']]);
 			return -1;
+		}
 
 		if (!$template = file_get_contents($this->template))
+		{
+			$this->logger->addError("Failed to Create Bill: Could not read template ".$this->template, [$this->data['contract_id']]);
 			return -2;
+		}
 
 		$template = str_replace('\\_', '_', $template);
 
@@ -182,7 +190,9 @@ class Bill {
 		if (!is_dir($this->dir))
 			mkdir($this->dir, '0744', true);
 
-		$file = $this->dir.'/'.date('Y_m');
+
+
+		$file = $this->dir.'/'.date('Y_m').'_'.str_replace('/', '_', $this->data['invoice_nr']);
 		File::put($file, $template);
 
 		// create pdf

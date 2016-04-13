@@ -9,8 +9,6 @@ use File;
 
 class Sepaxml {
 
-	// 1 Sepaxml for every account -> 2 files for every Sepaxml (debit, credit)
-
 	private $debits  = [];
 	private $credits = [];
 
@@ -113,7 +111,6 @@ class Sepaxml {
 
 		// Set the initial information for direct debits
 		$directDebit = TransferFileFacadeFactory::createDirectDebit($this->msg_id, $this->creditor['name']);
-
 
 		foreach ($this->debits as $type => $records)
 		{
