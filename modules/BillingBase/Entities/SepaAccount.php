@@ -73,8 +73,8 @@ class SepaAccount extends \BaseModel {
 	 * Following functions target at adding single entries for the files and create the files finally
 	 */
 
-	public $logger;					// logging instance of billing module
-	public $invoice_nr = 100000; 	// invoice number counter
+	// protected $logger;					// logging instance of billing module
+	public $invoice_nr = 100000; 		// invoice number counter
 
 	// separate Accounting Records Object - resulting in 2 files for items and tv
 	protected $acc_recs;

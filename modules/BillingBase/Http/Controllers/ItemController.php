@@ -29,7 +29,7 @@ class ItemController extends \BaseModuleController {
 		// label has to be the same like column in sql table
 		return array(
 			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'value' => $model->contract(), 'hidden' => '1'),
-			array('form_type' => 'select', 'name' => 'product_id', 'description' => 'Product', 'value' => $model->html_list($items, 'name'), 'hidden' => '0'), 
+			array('form_type' => 'select', 'name' => 'product_id', 'description' => 'Product', 'value' => $model->html_list($items, 'name')), 
 			array('form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt),
 			// array('form_type' => 'select', 'name' => 'valid_from', 'description' => 'Payment from', 'value' => $b),
 			// array('form_type' => 'select', 'name' => 'valid_to', 'description' => 'Payment to (Only for One Time Payments)', 'value' => $b),
