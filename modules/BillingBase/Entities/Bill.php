@@ -1,7 +1,10 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
 use File;
+use Modules\BillingBase\Entities\BillingLogger;
+
 
 class Bill {
 
@@ -60,7 +63,7 @@ class Bill {
 	);
 
 
-	public function __construct($contract, $config, $invoice_nr, $logger = null)
+	public function __construct($contract, $config, $invoice_nr)
 	{
 		$this->data['contract_id'] 			= $contract->id;
 		$this->data['contract_firstname'] 	= $contract->firstname;
@@ -76,7 +79,7 @@ class Bill {
 		$this->tax		= $config->tax;
 		$this->dir 		.= $contract->id;
 
-		$this->logger = $logger;
+		$this->logger = new BillingLogger;
 	}
 
 	public function add_item($count, $price, $text)
@@ -115,7 +118,10 @@ class Bill {
 		$this->data['company_creditor_id']  = $account->creditorid;
 
 		if (!$account->company)
+		{
+			$this->logger->addError('No Company assigned to Account '.$account->name);
 			return false;
+		}
 
 		$this->data['company_name']		= $account->company->name;
 		$this->data['company_street']	= $account->company->street;

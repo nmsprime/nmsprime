@@ -124,8 +124,7 @@ class SepaAccount extends \BaseModel {
 	{
 		$this->bills[$c->id]->set_mandate($mandate);
 		$this->bills[$c->id]->set_summary($value['gross'], $value['tax']);
-		if (!$this->bills[$c->id]->set_company_data($this))
-			$logger->addError('No Company assigned to Account '.$this->name);
+		$this->bills[$c->id]->set_company_data($this);
 	}
 
 

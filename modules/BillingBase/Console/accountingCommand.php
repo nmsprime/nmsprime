@@ -5,11 +5,10 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-use Modules\ProvBase\Entities\Contract;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
 use File;
 use DB;
+
+use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Entities\BillingBase;
@@ -17,6 +16,7 @@ use Modules\BillingBase\Entities\Bill;
 use Modules\BillingBase\Entities\AccountingRecords;
 use Modules\BillingBase\Entities\BookingRecords;
 use Modules\BillingBase\Entities\Sepaxml;
+use Modules\BillingBase\Entities\BillingLogger;
 
 class accountingCommand extends Command {
 
@@ -41,8 +41,9 @@ class accountingCommand extends Command {
 	public function __construct()
 	{
 		// instantiate logger for billing
-		$this->logger = new Logger('Billing');
-		$this->logger->pushHandler(new StreamHandler(storage_path().'/logs/billing-'.date('Y-m').'.log'), Logger::DEBUG, false);
+		$this->logger = new BillingLogger;
+		// $this->logger = new Logger('Billing');
+		// $this->logger->pushHandler(new StreamHandler(storage_path().'/logs/billing-'.date('Y-m').'.log'), Logger::DEBUG, false);
 
 		$this->dates = array(
 			'today' 		=> date('Y-m-d'),
@@ -98,13 +99,9 @@ class accountingCommand extends Command {
 		// 		break;
 		// }
 
+
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
-
-
-		// initialise logger
-		foreach ($sepa_accs as $key => $acc)
-			$sepa_accs[$key]->logger = $this->logger;
 
 
 		// check date of last run and get last invoice nr for each account
@@ -138,6 +135,9 @@ class accountingCommand extends Command {
 		 */
 		foreach (Contract::all() as $c)
 		{
+			// debugging output
+			var_dump($c->id);
+
 			// check validity of contract
 			if (!$c->check_validity($this->dates))
 			{
@@ -147,7 +147,7 @@ class accountingCommand extends Command {
 
 			if (!$c->create_invoice)
 			{
-				$this->logger->addInfo('Contract '.$c->id.' is out of date');
+				$this->logger->addInfo('Create invoice for Contract '.$c->id.' is off');
 				continue;
 			}
 
@@ -155,8 +155,6 @@ class accountingCommand extends Command {
 			$charge 	= []; 					// total costs for this month for current contract
 			$c->expires = (date('Y-m', strtotime($c->contract_end)) == $this->dates['this_m']);
 
-			// debugging output
-			var_dump($c->id);
 
 			/*
 			 * Add internet, voip and tv tariffs and all other items and calculate price for this month considering 
