@@ -16,6 +16,17 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Helper function to fake XML returns.
+	 * This will return a SimpleXML instance which can be used instead a real Envia answer.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_xml_fake($xml_string) {
+
+		return new \SimpleXMLElement($xml_string);
+	}
+
+	/**
 	 * Helper to prettify xml for output on screen.
 	 * Use e.g. for debugging.
 	 *
@@ -29,8 +40,16 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// replace username and password by some hash signs
 		if ($hide_credentials) {
-			$xml = preg_replace('/<username>.*<\/username>/', "<username>################</username>", $xml);
-			$xml = preg_replace('/<password>.*<\/password>/', "<password>################</password>", $xml);
+
+			// attention: there can also be <username> and <password> in <sip_data>
+			// so we have to include reseller_identifier into the regex (to extract the correct tag for replacing)
+			$regex = '/(<reseller_identifier>.*)(<username>.*<\/username>)(.*<\/reseller_identifier>)/';
+			$replacement = '${1}<username>################</username>${3}';
+			$xml = preg_replace($regex, $replacement, $xml);
+
+			$regex = '/(<reseller_identifier>.*)(<password>.*<\/password>)(.*<\/reseller_identifier>)/';
+			$replacement = '${1}<password>################</password>${3}';
+			$xml = preg_replace($regex, $replacement, $xml);
 		}
 
 		$dom = new \DOMDocument('1.0');
@@ -167,7 +186,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$base = "/lara/provvoipenvia/request/";
 		if ($view_level == 'phonenumbermanagement') {
 			$contract_id = $model->phonenumber->mta->modem->contract->id;
-			$phonenumber_id = $model->id;
+			$phonenumber_id = $model->phonenumber_id;
 		}
 		elseif ($view_level == 'contract') {
 			$contract_id = $model->id;
@@ -840,11 +859,13 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// mapping xml to database
 		$fields_contract = array(
-			'orderdate' => 'voip_contract_start',
 			'phonebookentry_phone' => 'phonebook_entry',
 		);
 
 		$this->_add_fields($inner_xml, $fields_contract, $this->contract);
+
+		// add startdate for contract (default: today – there are no costs without phone numbers)
+		$inner_xml->addChild('orderdate', date('Y-m-d'));
 
 	}
 
@@ -1287,9 +1308,12 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Process voice data for by contract
+	 * Process voice data for contract
 	 *
 	 * @author Patrick Reichel
+	 *
+	 * @todo: this method will be used to update phonenumber related data (as sip username and password)
+	 * @todo: this will be used
 	 */
 	protected function _process_contract_get_voice_data_response($xml, $data, $out) {
 
@@ -1300,8 +1324,45 @@ class ProvVoipEnvia extends \BaseModel {
 		$out .= $this->prettify_xml($data['xml']);
 		$out .= "</pre>";
 
-		// TODO
-		$out .= "<b>TODO:</b> What to do with this data? Show? Update database?";
+		// extract data
+		$callnumbers = $xml->callnumbers;
+
+		foreach ($callnumbers->children() as $type=>$entry) {
+
+			// process single number
+			if ($type == 'callnumber_single_data') {
+
+				// find phonenumber object for given phonenumber
+				$where_stmt = "prefix_number=".$entry->localareacode." AND number=".$entry->baseno;
+				$phonenumber = Phonenumber::whereRaw($where_stmt)->first();
+
+				$method = $entry->method;
+
+				// process SIP data
+				if (boolval($method->sip_data)) {
+					$sip_data = $method->sip_data;
+
+					// update database
+					$phonenumber['username'] = $sip_data->username;
+					$phonenumber['password'] = $sip_data->password;
+					$phonenumber['sipdomain'] = $sip_data->sipdomain;
+					$phonenumber->save();
+				}
+				// process packet cable data
+				elseif (boolval($method->mgcp_data)) {
+
+					// TODO: process data for packet cable
+					$out .= "<b>TODO: packet cable not yet implemented</b>";
+				}
+			}
+			elseif ($type == 'callnumber_range_data') {
+
+				// TODO: not yet implemented
+				$out .= "<b>TODO: handling of callnumber_range_data not yet implemented</b>";
+			}
+		}
+
+		$out .= "Done.";
 
 		return $out;
 	}

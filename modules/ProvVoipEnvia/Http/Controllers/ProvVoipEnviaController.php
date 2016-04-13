@@ -60,12 +60,14 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		$base_url = $this->base_url;
 		$client_ip = \Request::getClientIp();
 		$request_uri = \Request::getUri();
+		$origin = \URL::to('/');	// origin is not relevant in cron jobs; set only for compatibility reasons…
 
 
 		// as this method is not protected by normal auth mechanism we will allow only a small number of jobs
 		$allowed_cron_jobs = array(
 			'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
 			'order_get_status' => $base_url.'order/get_status',
+			'contract_get_voice_data' => $base_url.'contract/get_voice_data',
 		);
 
 		// allowed client IPs – currently restricted to localhost
@@ -90,6 +92,9 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			exit(1);
 		}
 
+		// the requests payload (=XML), also
+		$payload = $this->model->get_xml($job);
+
 		// execute only if job is currently allowed
 		if (!$this->_job_allowed($job)) {
 			$view_var = $this->_show_job_not_allowed_info($job, $origin);
@@ -104,8 +109,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 			$view_var = $this->_perform_request($url, $payload, $job);
 		}
-
-		echo $view_var;
+		print_r($view_var);
 	}
 
 	/**
@@ -339,9 +343,10 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'misc_get_orders_csv',
 			'misc_get_usage_csv',
 			'order_cancel',
-			'order_get_status',
 			'order_create_attachment',
+			'order_get_status',
 		);
+
 		if (in_array($job, $unrestricted_jobs)) {
 			return true;
 		}
@@ -580,7 +585,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		// extract origin
 		$origin = \Input::get('origin', \URL::to('/'));
 
-		$obj = $this->get_model_obj();
 		$view_header = 'Request Envia';
 
 		$view_path = $this->get_view_name().'.request';
