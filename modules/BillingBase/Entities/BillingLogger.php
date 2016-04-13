@@ -9,10 +9,8 @@ class BillingLogger extends Logger {
 
 	public function __construct()
 	{
-		$logger = new Logger('Billing');
-		$logger->pushHandler(new StreamHandler(storage_path().'/logs/billing-'.date('Y-m').'.log'), Logger::DEBUG, false);
-
-		return $logger;
+		parent::__construct('Billing');
+		$this->pushHandler(new StreamHandler(storage_path().'/logs/billing-'.date('Y-m').'.log'), Logger::DEBUG, false);
 	}
 
 }
