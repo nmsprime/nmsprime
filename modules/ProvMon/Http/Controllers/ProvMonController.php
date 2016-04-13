@@ -10,7 +10,9 @@ use Modules\ProvBase\Entities\Modem;
 use Modules\ProvBase\Entities\Endpoint;
 use Modules\ProvBase\Entities\Configfile;
 use Modules\ProvBase\Entities\Qos;
-
+use Modules\ProvBase\Entities\ProvBase;
+use Modules\ProvBase\Entities\IpPool;
+use Modules\ProvBase\Entities\Cmts;
 
 /*
  * This is the Basic Stuff for Modem Analyses Page
@@ -21,6 +23,24 @@ use Modules\ProvBase\Entities\Qos;
  */
 class ProvMonController extends \BaseModuleController {
 
+	protected $domain_name = "";
+
+	public function __construct()
+	{
+		$this->domain_name = ProvBase::first()->domain_name;
+		parent::__construct();
+	}
+
+	/*
+	 * Prepares Sidebar in View
+	 */
+	public function prep_sidebar($id)
+	{
+		return [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]],
+						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
+						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]],
+						['name' => 'MTA-Analysis', 'route' => 'Provmon.mta', 'link' => [$id]]];
+	}
 
 	/**
 	 * Main Analyses Function
@@ -30,41 +50,218 @@ class ProvMonController extends \BaseModuleController {
 	public function analyses($id)
 	{
 		$modem = Modem::find($id);
+		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = null;
+		$view_var = $modem; // for top header
+		$hostname = $modem->hostname.'.'.$this->domain_name;
 
-		// TODO: use DNS name from a global config
-		$hostname = $modem->hostname.'.test2.erznet.tv';
+		// Ping: Send 5 request's at once with max timeout of 1 second
+		exec ('sudo ping -c5 -i0 -w1 '.$hostname, $ping);
+		if (count(array_keys($ping)) <= 9)
+			$ping = null;
 
-		$ping = $lease = $log = $dash = $realtime = null;
-		
-		// Ping
-		exec ('ping -c5 -i0.2 '.$hostname, $ping);
+		// Flood Ping
+		$flood_ping = $this->flood_ping ($hostname);
 
 		// Lease
-		$lease = $this->search_lease('hardware ethernet '.$modem->mac);
+		$lease['text'] = $this->search_lease('hardware ethernet '.$modem->mac);
+		$lease = $this->validate_lease($lease, $type);
 
 		// Log
-		exec ('cat /var/log/messages | egrep "('.$modem->mac.'|'.$hostname.')" | tail -n 20  | sort -r', $log);
+		exec ('egrep "('.$modem->mac.'|'.$hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
+
 
 		// Realtime Measure
 		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
 		{
-			$realtime['measure']  = $this->realtime($hostname, $modem->community_ro);
+			// ip is needed for upstream values of modem
+			preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
+			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip[0][0]);
 			$realtime['forecast'] = 'TODO';
 		}
 
+		// Monitoring
+		$monitoring = $this->monitoring($modem);
+
 		// TODO: Dash / Forecast
 
-
-		// Prepare Output
-		$panel_right = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]], 
-						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]]];
+		$panel_right = $this->prep_sidebar($id);
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var', 'flood_ping')));
 	}
 
 
-	/* 
+	/*
+	 * Flood ping
+	 *
+	 * NOTE:
+	 * --- add /etc/sudoers.d/nms-lara ---
+	 * Defaults:apache        !requiretty
+	 * apache  ALL=(root) NOPASSWD: /usr/bin/ping
+	 * --- /etc/sudoers.d/nms-lara ---
+	 *
+	 * @param hostname  the host to send a flood ping
+	 * @return flood ping exec result
+	 */
+	public function flood_ping ($hostname)
+	{
+		if (array_key_exists('flood_ping', \Input::all()))
+		{
+			switch (\Input::all()['flood_ping'])
+			{
+				case "1":
+					exec("sudo ping -c100 -f $hostname 2>&1", $fp, $ret);
+					break;
+				case "2":
+					exec("sudo ping -c300 -s300 -f $hostname 2>&1", $fp, $ret);
+					break;
+				case "3":
+					exec("sudo ping -c500 -s1472 -f $hostname 2>&1", $fp, $ret);
+					break;
+				case "4":
+					exec("sudo ping -c1000 -f $hostname 2>&1", $fp, $ret);
+					break;
+			}
+
+			// remove the flood ping line "....." from result
+			if ($ret == 0)
+				unset ($fp[1]);
+		}
+		if (!isset($fp))
+			return null;
+		return $fp;
+	}
+
+
+	/**
+	 * Returns view of cpe analysis page
+	 */
+	public function cpe_analysis($id)
+	{
+		$ping = $lease = $log = $dash = $realtime = null;
+		$modem = Modem::find($id);
+		$view_var = $modem; // for top header
+		$type = 'CPE';
+
+		// get MAC of CPE first
+		exec ('grep '.$modem->mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+		if ($str == [])
+		{
+			$mac = $modem->mac;
+			$mac[0] = ' ';
+			$mac = trim($mac);
+			$mac_bug = true;
+			exec ('grep '.$mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+		}
+
+		if (isset($str[0]))
+		{
+			if (isset($mac_bug))
+				preg_match_all('/([0-9a-fA-F][:]){1}(?:[0-9a-fA-F]{2}[:]?){5}/', $str[0], $cpe_mac);
+			else
+				preg_match_all('/(?:[0-9a-fA-F]{2}[:]?){6}/', $str[0], $cpe_mac);
+		}
+
+		// Log
+		if (isset($cpe_mac[0][0]))
+			exec ('grep '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
+
+		// Lease
+		$lease['text'] = $this->search_lease('billing subclass', $modem->mac);
+		$lease = $this->validate_lease($lease, $type);
+
+		// Ping
+		if (isset($lease['text'][0]))
+		{
+			// get ip first
+			preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $lease['text'][0], $ip);
+			if (isset($ip[0][0]))
+			{
+				$ip = $ip[0][0];
+				exec ('sudo ping -c3 -i0 -w1 '.$ip, $ping);
+			}
+		}
+		if (is_array($ping) && count(array_keys($ping)) <= 7)
+		{
+			$ping = null;
+			if ($lease['state'] == 'green')
+				$ping[0] = 'but not reachable from WAN-side due to manufacturing reasons (it can be possible to enable ICMP response via modem configfile)';
+		}
+
+		$panel_right = $this->prep_sidebar($id);
+
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
+	}
+
+	/**
+	 * Returns view of mta analysis page
+	 */
+	public function mta_analysis($id)
+	{
+		$ping = $lease = $log = $dash = $realtime = null;
+		$modem = Modem::find($id);
+		$view_var = $modem; // for top header
+		$type = 'MTA';
+
+		$mtas = $modem->mtas;		// Note: we should use one-to-one relationship here
+		if (isset($mtas[0]))
+			$mta = $mtas[0];
+		else
+			goto end;
+
+		// Ping
+		exec ('sudo ping -c3 -i0 -w1 '.$mta->hostname, $ping);
+		if (count(array_keys($ping)) <= 7)
+			$ping = null;
+
+		// lease
+		$lease['text'] = $this->search_lease("mta-".$mta->id);
+		$lease = $this->validate_lease($lease, $type);
+
+		// log
+		exec ('grep "'.$mta->mac.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
+
+
+end:
+		$panel_right = $this->prep_sidebar($id);
+
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
+	}
+
+
+	/**
+	 * Proves if the last found lease is actually valid or has already expired
+	 */
+	private function validate_lease($lease, $type)
+	{
+		if ($lease['text'])
+		{
+			// calculate endtime
+			preg_match ('/ends [1-7] (.*?);/', $lease['text'][0], $endtime);
+			$et = explode (',', str_replace ([':', '/', ' '], ',', $endtime[1]));
+			$endtime = \Carbon\Carbon::create($et[0], $et[1], $et[2], $et[3], $et[4], $et[5], 'UTC');
+
+			// lease calculation
+			// take care changing the state - it's used under cpe analysis
+			$lease['state']    = 'green';
+			$lease['forecast'] = "$type has a valid lease.";
+			if ($endtime < \Carbon\Carbon::now())
+			{
+				$lease['state'] = 'red';
+				$lease['forecast'] = 'Lease is out of date';
+			}
+		}
+		else
+		{
+			$lease['state']    = 'red';
+			$lease['forecast'] = trans('messages.modem_lease_error');
+		}
+
+		return $lease;
+	}
+
+
+	/*
 	 * Local Helper to Convert the sysUpTime from Seconds to human readable format
 	 * See: http://stackoverflow.com/questions/8273804/convert-seconds-into-days-hours-minutes-and-seconds
 	 *
@@ -72,23 +269,23 @@ class ProvMonController extends \BaseModuleController {
 	 */
 	private function _d_h_m_s__array($seconds, $format = 'string')
 	{
-	    $ret = array();
+		$ret = array();
 
-	    $divs = array(86400, 3600, 60, 1);
+		$divs = array(86400, 3600, 60, 1);
 
-	    for ($d = 0; $d < 4; $d++)
-	    {
-	        $q = $seconds / $divs[$d];
-	        $r = $seconds % $divs[$d];
-	        $ret[substr('dhms', $d, 1)] = round($q);
+		for ($d = 0; $d < 4; $d++)
+		{
+			$q = $seconds / $divs[$d];
+			$r = $seconds % $divs[$d];
+			$ret[substr('dhms', $d, 1)] = round($q);
 
-	        $seconds = $r;
-	    }
+			$seconds = $r;
+		}
 
-	    if ($format == 'string')
-	    	return $ret['d'].' Days '.$ret['h'].' Hours '.$ret['m'].' Min '.$ret['s'].' Sec';
+		if ($format == 'string')
+			return $ret['d'].' Days '.$ret['h'].' Hours '.$ret['m'].' Min '.$ret['s'].' Sec';
 
-	    return $ret; // Array Format
+		return $ret; // Array Format
 	}
 
 
@@ -97,31 +294,48 @@ class ProvMonController extends \BaseModuleController {
 	 */
 	private function _docsis_mode ($i)
 	{
-		switch ($i) 
+		switch ($i)
 		{
 			case 1: return 'DOCSIS 1.0';
 			case 2: return 'DOCSIS 1.1';
 			case 3: return 'DOCSIS 2.0';
 			case 4: return 'DOCSIS 3.0';
-			
+
 			default: return null;
 		}
 	}
 
 
 	/*
-	 * convert docsis ds modulation from int to human readable string
+	 * convert docsis modulation from int to human readable string
 	 */
-	private function _docsis_ds_modulation ($a)
+	private function _docsis_modulation ($a, $direction)
 	{
 		$r = [];
-		foreach ($a as $m) 
+		foreach ($a as $m)
 		{
-			switch ($m) 
+			if ($direction == 'ds' || $direction == 'DS')
 			{
-				case 3: $b = 'QAM64'; break;
-				case 4: $b = 'QAM256'; break;
-				default: $b = null; break;
+				switch ($m)
+				{
+					case 3: $b = 'QAM64'; break;
+					case 4: $b = 'QAM256'; break;
+					default: $b = null; break;
+				}
+			}
+			else
+			{
+				switch ($m)
+				{
+					case 0: $b = '0'; break; 		//no docsIfCmtsModulationTable entry
+					case 1: $b = 'QPSK'; break;
+					case 2: $b = '16QAM'; break;
+					case 3: $b = '8QAM'; break;
+					case 4: $b = '32QAM'; break;
+					case 5: $b = '64QAM'; break;
+					case 6: $b = '128QAM'; break;
+					default: $b = null; break;
+				}
 			}
 			array_push ($r, $b);
 		}
@@ -129,53 +343,130 @@ class ProvMonController extends \BaseModuleController {
 	}
 
 
+
+
 	/*
 	 * The Modem Realtime Measurement Function
 	 * Fetches all realtime values from Modem with SNMP
 	 *
-	 * TODO: add units like (dBmV, MHz, ..)
+	 * TODO:
+	 * - add units like (dBmV, MHz, ..)
+	 * - speed-up: use SNMP::get with multiple gets in one request. Test if this speeds up stuff (?)
 	 *
 	 * @param host: The Modem hostname like cm-xyz.abc.de
 	 * @param com:  SNMP RO community
+	 * @param ip: 	ip address of modem
 	 * @return: array[section][Fieldname][Values]
 	 */
-	public function realtime($host, $com)
+	public function realtime($host, $com, $ip)
 	{
 		// Copy from SnmpController
 		$this->snmp_def_mode();
 
-        // First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
-		$docsis = snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
+		try
+		{
+			// First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
+			$docsis = snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
+		}
+		catch (\Exception $e)
+		{
+			if (((strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false) || (strpos($e->getMessage(), "No response from") !== false)))
+			return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
+		}
 
-		// System 
-		$sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')]; 
-		$sys['Firmware'] = [snmpget($host, $com, '.1.3.6.1.2.1.69.1.3.5.0')]; 	  
-		$sys['Uptime']   = [$this->_d_h_m_s__array(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0'))]; 
+		// System
+		$sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')];
+		$sys['Firmware'] = [snmpget($host, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
+		$sys['Uptime']   = [$this->_d_h_m_s__array(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0'))];
 		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
 
 		// Downstream
-		$ds['Frequency']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2');
-		$ds['Modulation'] = $this->_docsis_ds_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'));
-		$ds['Power']      = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));	
-		$ds['MER']        = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
-		$ds['Microreflection'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6.3');
-	
+		$ds['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2');		// DOCS-IF-MIB
+		foreach($ds['Frequency MHz'] as $i => $freq)
+			$ds['Frequency MHz'][$i] /= 1000000;
+		$ds['Modulation'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
+		$ds['Power dBmV']      = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));
+		$ds['MER dB']        = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
+		$ds['Microreflection -dBc'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6');
+
 		// Upstream
-		$us['Frequency']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
-		if ($docsis >= 4) $us['Power'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
-		else              $us['Power'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
-		$us['Width']      = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'); 
-		$us['Modulation Profile'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.4'); 
+		$us['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
+		foreach($us['Frequency MHz'] as $i => $freq)
+			$us['Frequency MHz'][$i] /= 1000000;
+		if ($docsis >= 4) $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
+		else              $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
+		$us['Width MHz']      = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3');
+		foreach($us['Width MHz'] as $i => $freq)
+			$us['Width MHz'][$i] /= 1000000;
+		if ($docsis >= 4)
+			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.5'), 'us');
+		else
+			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.4'), 'us');
+		$cmts = $this->get_cmts($ip);
+		$us['SNR dB'] = $cmts->get_us_snr($ip);
+
+		// CMTS
+		$c['Hostname'] = [$cmts->hostname];
+
+		// remove all inactive channels (no range success)
+		foreach ($ds['Frequency MHz'] as $key => $freq)
+		{
+			if ($ds['Modulation'][$key] == '' && $ds['MER dB'][$key] == 0)
+			{
+				foreach ($ds as $entry => $arr)
+					unset($ds[$entry][$key]);
+			}
+		}
+
+		if ($docsis >= 4)
+		{
+			$us_ranging_status = snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9');
+			foreach ($us_ranging_status as $key => $value)
+			{
+				if ($value != 4)
+				{
+					foreach($us as $entry => $arr)
+						unset($us[$entry][$key]);
+				}
+			}
+		}
 
 		// Put Sections together
 		$ret['System']      = $sys;
 		$ret['Downstream']  = $ds;
 		$ret['Upstream']    = $us;
+		$ret['CMTS']		= $c;
 
 		// Return
 		return $ret;
 	}
-	
+
+
+	/**
+	 * Get CMTS for a registered CM
+	 *
+	 * @param ip:	ip address of cm
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public function get_cmts($ip)
+	{
+		$validator = new \Acme\Validators\ExtendedValidator;
+		foreach(IpPool::all() as $pool)
+		{
+			$net[0] = $pool->net;
+			$net[1] = $pool->netmask;
+			if ($validator->validateIpInRange(0, $ip, $net))
+			{
+				$cmts_id = $pool->cmts_id;
+				break;
+			}
+		}
+		if (isset($cmts_id))
+			return Cmts::find($cmts_id);
+		return null;
+	}
+
 
 	/**
 	 * Set PHP SNMP Default Values
@@ -187,24 +478,27 @@ class ProvMonController extends \BaseModuleController {
 	 */
 	private function snmp_def_mode()
 	{
-        snmp_set_quick_print(TRUE);
-        snmp_set_oid_numeric_print(TRUE);
-        snmp_set_valueretrieval(SNMP_VALUE_PLAIN);
-        snmp_set_oid_output_format (SNMP_OID_OUTPUT_NUMERIC);
+		snmp_set_quick_print(TRUE);
+		snmp_set_oid_numeric_print(TRUE);
+		snmp_set_valueretrieval(SNMP_VALUE_PLAIN);
+		snmp_set_oid_output_format (SNMP_OID_OUTPUT_NUMERIC);
 	}
 
 
 	/**
-	 * Search String in dhcpd.lease file and
-	 * return the matching host
+	 * Returns the lease entry that contains 1 or 2 strings specified in the function arguments
 	 *
 	 * TODO: make a seperate class for dhcpd
 	 * lease stuff (search, replace, ..)
 	 *
 	 * @return Response
 	 */
-	public function search_lease ($search)
+	public function search_lease ()
 	{
+		$search = func_get_arg(0);
+		if (func_num_args() == 2)
+			$search2 = func_get_arg(1);
+
 		// parse dhcpd.lease file
 		$file   = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
 		$string = preg_replace( "/\r|\n/", "", $file );
@@ -216,40 +510,239 @@ class ProvMonController extends \BaseModuleController {
 		// fetch all lines matching hw mac
 		foreach (array_reverse(array_unique($section[0])) as $s)
 		{
-		    if(strpos($s, $search)) 
-		    {
-		    	/*
-		    	if ($i == 0)
-		    		array_push($ret, "<b>Last Lease:</b>");
+			if(strpos($s, $search))
+			{
+				if (isset($search2))
+				{
+					if (!strpos($s, $search2))
+						continue;
+				}
 
-		    	if ($i == 1)
-		    		array_push($ret, "<br><br><b>Old Leases:</b>");
-				*/
+				// if ($i == 0)
+				// 	array_push($ret, "<b>Last Lease:</b>");
 
-		    	// push matching results 
-		        array_push($ret, str_replace('{', '{<br>', str_replace(';', ';<br>', $s)));
+				// if ($i == 1)
+				// 	array_push($ret, "<br><br><b>Old Leases:</b>");
 
-		        // return only the last entry
-		        // delete this if we want to see all stuff
-		        return $ret;
+
+				// push matching results
+				array_push($ret, str_replace('{', '{<br>', str_replace(';', ';<br>', $s)));
+
+				// return only the last entry
+				// delete this if we want to see all stuff
+				return $ret;
 
 if (0)
 {
-		        // TODO: convert string to array and convert return
-		        $a = explode(';', str_replace ('{', ';', $s));
+				// TODO: convert string to array and convert return
+				$a = explode(';', str_replace ('{', ';', $s));
 
-		     	if (!isset($ret[$a[0]]))
-		     		$ret[$a[0]] = array();   
+				if (!isset($ret[$a[0]]))
+				$ret[$a[0]] = array();
 
-		        array_push($ret[$a[0]], $a);
+				array_push($ret[$a[0]], $a);
 }
 
-		    }
+			}
 		}
 
 		return $ret;
 	}
 
+
+
+	/*
+	 * Local Helper: Convert String Time Diff to Unix Timestamp
+	 * Example: '-3d' => to now() - 3 days => unix time 1450350686
+	 *          '-3h' => to now() - 3 hours => unix time 1450350686
+	 *
+	 * Usage: (-) followd by integer AND
+	 *        d .. day, h .. hour, M .. month, y .. year, m .. minute
+	 *
+	 * TODO: - Move to own extensions Carbon Helper API
+	 *       - use regular expression for validation matching
+	 *
+	 * @param d: string encoded time difference to now
+	 * @return: unix timestamp, returns NOW on input failures, see TODO
+	 *
+	 * @author: Torsten Schmidt
+	 */
+	private function _date($d)
+	{
+		$d = str_replace('-', '', $d);
+		$v = substr($d, 0, -1);
+
+		if(substr($d, -1) == 'y')
+			return \Carbon\Carbon::now()->subYear($v)->timestamp;
+		if(substr($d, -1) == 'M')
+			return \Carbon\Carbon::now()->subMonth($v)->timestamp;
+		if(substr($d, -1) == 'd')
+			return \Carbon\Carbon::now()->subDay($v)->timestamp;
+		if(substr($d, -1) == 'h')
+			return \Carbon\Carbon::now()->subHour($v)->timestamp;
+		if(substr($d, -1) == 'm')
+			return \Carbon\Carbon::now()->subMinute($v)->timestamp;
+
+		return \Carbon\Carbon::now()->timestamp;
+	}
+
+
+	/*
+	 * Get the corresponing graph id's for $modem. These id's could
+	 * be used in graph_image.php as HTML GET Request with local_graph_id variable
+	 * like https://../cacti/graph_image.php?local_graph_id=<ID>
+	 *
+	 * NOTE: This function requires a valid 'mysql-cacti' array
+	 *       in config/database.php
+	 *
+	 * @param modem: The modem to look for Cacti Graphs
+	 * @param graph_template: only show array[] of cacti graph template ids in result
+	 * @return: array of related cacti graph id's, false if no entries are found
+	 *
+	 * @author: Torsten Schmidt
+	 */
+	public static function monitoring_get_graph_ids($modem, $graph_template = null)
+	{
+			// Connect to Cacti DB
+			$cacti = \DB::connection('mysql-cacti');
+
+			// Get Cacti Host ID to $modem
+			$host  = $cacti->table('host')->where('description', '=', 'cm-'.$modem->id)->get();
+			if (!isset($host[0]))
+					return false;
+
+			$host_id = $host[0]->id;
+
+			// Graph Template
+			$sql_graph_template = '';
+			if ($graph_template == null)
+					$sql_graph_template = 'graph_template_id > 0';
+			else
+			{
+					$sql_graph_template = 'graph_template_id = 0 ';
+					foreach ($graph_template as $_tmpl)
+							$sql_graph_template .= ' OR graph_template_id = '.$_tmpl;
+			}
+
+			// Get all Graph IDs to Modem
+			$graph_ids = [];
+			foreach ($cacti->table('graph_local')->whereRaw("host_id = $host_id AND ($sql_graph_template)")->orderBy('graph_template_id')->get() as $host_graph)
+					array_push($graph_ids, $host_graph->id);
+
+
+			return $graph_ids;
+	}
+
+
+	/*
+	 * The Main Monitoring Function
+	 * Returns the prepared monitoring array required for monitoring view
+	 * This Array contains: Timing and the pre-loaded Images and looks like:
+	 *
+	 * array:5 [▼
+	 *  "from" => "3h"
+	 *  "to" => "0"
+	 *  "from_t" => 1450680378
+	 *  "to_t" => 1450691178
+	 *  "graphs" => array:4 [▼
+	 *  	119 => "data:application/octet-stream;base64,iVBORw0K .."
+	 *      120 => ..
+	 *   ]
+	 * ]
+	 *
+	 * @param modem: The modem to look for Cacti Graphs
+	 * @param graph_template: only show array[] of cacti graph template ids in result
+	 * @return: the prepared monitoring array for view. Returns false if no diagram exists.
+	 *          No other adaptions required. See example in comment above
+	 *
+	 * @author: Torsten Schmidt
+	 */
+	public function monitoring ($modem, $graph_template = null)
+	{
+		// Check if Cacti Host RRD files exist
+		// This is a speed-up. A cacti HTTP request takes more time.
+		if (!glob('/usr/share/cacti/rra/'.$modem->hostname.'*'))
+			return false;
+
+		// parse diagram id's from cacti database
+		$ids = ProvMonController::monitoring_get_graph_ids($modem, $graph_template);
+
+		// no id's return
+		if (!$ids)
+			return false;
+
+		/*
+		 * Time Span Calculation
+		 */
+		$from = \Input::get('from');
+		$to   = \Input::get('to');
+
+		if(!$from) $from = '-3d';
+		if(!$to)   $to   = '0';
+
+		$ret['from']   = $from;
+		$ret['to']     = $to;
+
+		// Convert Time
+		$from_t = $this->_date ($from);
+		$to_t   = $this->_date ($to);
+
+		$ret['from_t'] = $from_t;
+		$ret['to_t']   = $to_t;
+
+
+		/*
+		 * Images
+		 */
+		// Base URL: Should be always available (?)
+		$url_base = "https://localhost/cacti/graph_image.php";
+
+		// SSL Array for disabling SSL verification
+		$ssl=array(
+			"ssl"=>array(
+				"verify_peer"=>false,
+				"verify_peer_name"=>false,
+			),
+		);
+
+		// TODO: should be auto adapted to screen resolution. Note that we still use width=100% setting
+		// in the image view. This could lead to diffuse (unscharf) fonts.
+		$graph_width = '700';
+
+		// Fetch Cacti DB for images of $modem and request the Image from Cacti
+		foreach ($ids as $id)
+		{
+			// The final URL to parse from
+			$url = "$url_base?local_graph_id=$id&rra_id=0&graph_width=$graph_width&graph_start=$from_t&graph_end=$to_t";
+
+			// Log: Prepare Load Time Measurement
+			$before = microtime(true);
+
+			// Load the image
+			//
+			// TODO: error handling (for example: no valid login)
+			//
+			// Consider that we use guest login in Cacti.
+			// See: https://numpanglewat.wordpress.com/2009/07/27/how-to-view-cacti-graphics-without-login/
+			$img = base64_encode(file_get_contents($url, false, stream_context_create($ssl)));
+
+			// Log: Time Measurement
+			$after = microtime(true);
+			\Log::info ('cacti: laod '.$url);
+			\Log::info ('cacti: load takes '.($after-$before).' s - result: '.($img ? 'true' : 'false'));
+
+			// if valid image
+			if ($img)
+				$ret['graphs'][$id] = 'data:application/octet-stream;base64,'.$img;
+		}
+
+		// No result checking
+		if (!isset($ret['graphs']))
+			return false;
+
+		// default return
+		return $ret;
+	}
 
 
 	/*
@@ -263,7 +756,7 @@ if (0)
 	 *
 	 * @return Response
 	 */
-	public function monitoring($id)
+	public function _monitoring_deprecated($id)
 	{
 		$modem = Modem::find($id);
 
@@ -280,7 +773,7 @@ if (0)
 	{
 		$modem = Modem::find($id);
 		$mac  = $modem->mac;
-		
+
 
 		// view
 		return View::make('provbase::Modem.lease', compact('modem'))->with('out', $ret);
@@ -297,8 +790,8 @@ if (0)
 		$modem = Modem::find($id);
 		$hostname = $modem->hostname;
 		$mac      = $modem->mac;
-		
-		if (!exec ('cat /var/log/messages | egrep "('.$mac.'|'.$hostname.')" | tail -n 100  | sort -r', $ret))
+
+		if (!exec ('cat /var/log/messages | egrep "('.$mac.'|'.$hostname.')" | tail -n 100  | tac', $ret))
 			$out = array ('no logging');
 
 		return View::make('provbase::Modem.log', compact('modem', 'out'));

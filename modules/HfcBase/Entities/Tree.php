@@ -5,10 +5,7 @@ namespace Modules\HfcBase\Entities;
 class Tree extends \BaseModel {
 
 	// The associated SQL table for this Model
-	protected $table = 'tree';
-
-	// Don't forget to fill this array
-	protected $fillable = ['name', 'type', 'ip', 'pos', 'link', 'state', 'options', 'descr', 'parent', 'access', 'net', 'cluster', 'layer', 'kml_file'];
+	public $table = 'tree';
 
 
 	public $kml_path = '/var/www/lara/app/storage/hfc/kml/static/';
@@ -44,6 +41,28 @@ class Tree extends \BaseModel {
         return null;
     }
 
+   	// Relation to MPRs Modem Positioning Rules
+	public function mprs()
+	{
+		if ($this->module_is_active('HfcCustomer'))
+			return $this->hasMany('Modules\HfcCustomer\Entities\Mpr');
+
+		return null;
+	}
+
+
+	/*
+	 * Relation Views
+	 */
+	public function view_has_many()
+	{
+		if ($this->module_is_active('HfcCustomer'))
+			return array(
+					'Mpr' => $this->mprs
+				);
+
+		return array();
+	}
 
 	/**
 	 * TODO: make one function

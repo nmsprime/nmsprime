@@ -90,11 +90,11 @@ class EnviaOrderController extends \BaseModuleController {
 	 *
 	 * @author Patrick Reichel
 	 */
-	public function store() {
+	public function store($redirect=true) {
 
 		// call parent and store return
 		// so authentication is done!
-		$parent_return = parent::store();
+		$parent_return = parent::store($redirect);
 
 		// if previous action is not create: passthrough parent return
 		if (!\Str::contains(\URL::previous(), 'EnviaOrder/create?')) {

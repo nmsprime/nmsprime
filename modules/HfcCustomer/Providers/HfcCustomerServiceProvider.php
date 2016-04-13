@@ -11,6 +11,15 @@ class HfcCustomerServiceProvider extends ServiceProvider {
 	 */
 	protected $defer = false;
 
+
+	/**
+	 * The artisan commands provided by this module
+	 */
+	protected $commands = [
+		'Modules\HfcCustomer\Console\MpsCommand',
+		'Modules\HfcCustomer\Console\ModemRefreshCommand',
+	];
+
 	/**
 	 * Register the service provider.
 	 *
@@ -19,6 +28,8 @@ class HfcCustomerServiceProvider extends ServiceProvider {
 	public function register()
 	{
 		\View::addNamespace('hfccustomer', __DIR__.'/../Resources/views');
+
+		$this->commands($this->commands);
 	}
 
 	/**

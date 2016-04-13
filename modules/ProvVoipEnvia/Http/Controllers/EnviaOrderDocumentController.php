@@ -52,7 +52,7 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 	 * Overwrites the base method => we need to handle file uploads
 	 * @author Patrick Reichel
 	 */
-	protected function store() {
+	protected function store($redirect=true) {
 
 		// check and handle uploaded documents
 		// perform only if file is uploaded, otherwise let the model decide what to do
@@ -61,7 +61,7 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 		}
 
 		// finally: call base method
-		return parent::store();
+		return parent::store($redirect);
 	}
 
 

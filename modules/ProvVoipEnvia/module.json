@@ -4,6 +4,7 @@
     "description": "",
     "keywords": [],
     "active": 1,
+    "order": 22,
     "priority": 0,
     "providers": [],
     "files": [

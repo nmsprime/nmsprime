@@ -81,13 +81,12 @@ class TreeErdController extends HfcBaseController {
 		$gid    = $this->graph_id;
 		$target = $this->html_target;
 
-		$arrContextOptions=array(
-  			"ssl"=>array(
-		        	"verify_peer"=>false,
-			        "verify_peer_name"=>false,
-			),
-		);
-		$usemap = str_replace ('alt', 'onContextMenu="return getEl(this.id)" alt', file_get_contents(asset($file.'.map'), false, stream_context_create($arrContextOptions))); 
+		// Generate Usemap
+		// Usemap is required for ERD right/left click function
+		// NOTE: Do not load from url via asset() with file_get_contents().
+		//       file_get_contents() does not work with port forwarding or any kind of port option.
+		//       Also curl with port setting and ssl verify disabled does not work on port forwarding. Tested about 2 hours.
+		$usemap = str_replace ('alt', 'onContextMenu="return getEl(this.id)" alt', file_get_contents(public_path().'/modules/hfcbase/erd/'.$this->filename.'.map'));
 
 		$view_header = "Entity Relation Diagram";
 		$route_name  = 'Tree';
@@ -98,7 +97,7 @@ class TreeErdController extends HfcBaseController {
 		$preselect_field = $field;
 		$preselect_value = $search;
 
-		return \View::make('hfcbase::Tree.erd', $this->compact_prep_view(compact('route_name', 'file', 'target', 'is_pos', 'gid', 'usemap', 'preselect_field', 'view_header', 'panel_right', 'view_var', 'preselect_value')));
+		return \View::make('hfcbase::Tree.erd', $this->compact_prep_view(compact('route_name', 'file', 'target', 'is_pos', 'gid', 'usemap', 'preselect_field', 'view_header', 'panel_right', 'view_var', 'preselect_value', 'field', 'search')));
 	}
 
 

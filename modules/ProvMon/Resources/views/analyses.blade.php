@@ -11,9 +11,22 @@
 
 @section('content_cacti')
 
-	<iframe frameborder="0" scrolling="no" width=100% height=700px
-		src="../../../cacti/graph_view.php?action=preview&filter={{$modem->hostname}}" name="imgbox" id="imgbox">
-	</iframe>
+	@if ($monitoring)
+		<form action="" method="GET">
+			From:<input type="text" name="from" value={{$monitoring['from']}}>
+			To:<input type="text" name="to" value={{$monitoring['to']}}>
+			<input type="submit" value="Submit">
+		</form>
+		<br>
+
+		@foreach ($monitoring['graphs'] as $id => $graph)
+			<img width=100% src={{$graph}}></img>
+			<br><br>
+		@endforeach
+	@else
+		<font color="red">{{trans('messages.modem_no_diag')}}</font><br>
+		{{ trans('messages.modem_monitoring_error') }}
+	@endif
 
 @stop
 
@@ -24,33 +37,66 @@
 		@foreach ($ping as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>
 				</table>
 		@endforeach
 	@else
-		<font color="red"> Modem is Offline</font>
+		<font color="red">{{trans('messages.modem_offline')}}</font>
 	@endif
 
 @stop
 
+
+@section('content_flood_ping')
+
+	<?php $route = \Route::getCurrentRoute()->getUri(); ?>
+
+	<form route="$route" method="POST">Type:
+		<input type="hidden" name="_token" value={{ csrf_token() }}>
+		<select name="flood_ping">
+			<option value="1">lowest load: 100 packets of 56 Byte</option>
+			<option value="2">big load: 300 packets of 300 Byte</option>
+			<option value="3">huge load: 500 packets of 1472 Byte</option>
+			<option value="4">highest load: 1.000 packets of 56 Byte</option>
+		</select>
+		<input type="submit" value="Send Ping">
+	</form>
+
+	<!-- {{ Form::open(['route' => ['Provmon.flood_ping', $view_var->id]]) }} -->
+
+	@if (isset($flood_ping))
+		@foreach ($flood_ping as $line)
+				<table>
+				<tr>
+					<td>
+						 <font color="grey">{{$line}}</font>
+					</td>
+				</tr>
+				</table>
+		@endforeach
+	@endif
+
+@stop
+
+
 @section('content_lease')
 
 	@if ($lease)
-		<font color="green"><b>Modem has a valid lease</b></font><br>
-		@foreach ($lease as $line)
+		<font color="{{$lease['state']}}"><b>{{$lease['forecast']}}</b></font><br>
+		@foreach ($lease['text'] as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>
 				</table>
 		@endforeach
 	@else
-		<font color="red">No valid Lease found</font>
+		<font color="red">{{ trans('messages.modem_lease_error')}}</font>
 	@endif
 
 @stop
@@ -61,14 +107,14 @@
 		@foreach ($log as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>
 				</table>
 		@endforeach
 	@else
-		<font color="red">Modem was not registering on Server - No log entry found</font>
+		<font color="red">{{ trans('messages.modem_log_error') }}</font>
 	@endif
 @stop
 
@@ -80,24 +126,24 @@
 
 		@foreach ($realtime['measure'] as $tablename => $table)
 			<h5>{{$tablename}}</h5>
+			<table width="100%">
 				@foreach ($table as $rowname => $row)
-					<table>
 					<tr>
 						<th width="120px">
 							{{$rowname}}
 						</th>
 
 						@foreach ($row as $linename => $line)
-							<td> 
+							<td>
 								 <font color="grey">{{htmlspecialchars($line)}}</font>
 							</td>
 						@endforeach
 					</tr>
-					</table>
 				@endforeach
+			</table>
 		@endforeach
 
 	@else
-		<font color="red">Modem is Offline</font>
+		<font color="red">{{trans('messages.modem_offline')}}</font>
 	@endif
 @stop
