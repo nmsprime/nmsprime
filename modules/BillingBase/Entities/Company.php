@@ -7,7 +7,7 @@ class Company extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'company';
 
-    public $guarded = ['logo_upload'];
+    public $guarded = ['upload'];
 
 
 	// Add your validation rules here

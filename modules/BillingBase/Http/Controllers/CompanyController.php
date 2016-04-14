@@ -3,6 +3,7 @@ namespace Modules\Billingbase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
 use Modules\Billingbase\Entities\Company;
+use Input;
 
 class CompanyController extends \BaseModuleController {
 	
@@ -30,7 +31,7 @@ class CompanyController extends \BaseModuleController {
 			array('form_type' => 'text', 'name' => 'phone', 'description' => 'Phone'),
 			array('form_type' => 'text', 'name' => 'fax', 'description' => 'Fax'),
 			array('form_type' => 'text', 'name' => 'web', 'description' => 'Web address'),
-			array('form_type' => 'text', 'name' => 'mail', 'description' => 'Mail address'),
+			array('form_type' => 'text', 'name' => 'mail', 'description' => 'Mail address', 'space' => '1'),
 
 			array('form_type' => 'text', 'name' => 'registration_court_1', 'description' => 'Registration Court 1'),
 			array('form_type' => 'text', 'name' => 'registration_court_2', 'description' => 'Registration Court 2'),
@@ -40,11 +41,16 @@ class CompanyController extends \BaseModuleController {
 			array('form_type' => 'text', 'name' => 'directorate', 'description' => 'Directorate (Comma separated)', 'options' => ['placeholder' => 'Max Mustermann, Luise Musterfrau']),
 
 			array('form_type' => 'text', 'name' => 'tax_id_nr', 'description' => 'Sales Tax Id Nr'),
-			array('form_type' => 'text', 'name' => 'tax_nr', 'description' => 'Tax Nr'),
+			array('form_type' => 'text', 'name' => 'tax_nr', 'description' => 'Tax Nr', 'space' => '1'),
+
+			array('form_type' => 'text', 'name' => 'invoice_text_sepa_positiv', 'description' => 'Invoice Text for positiv Amount with Sepa Mandate', 'help' => $help),
+			array('form_type' => 'text', 'name' => 'invoice_text_sepa_negativ', 'description' => 'Invoice Text for negativ Amount with Sepa Mandate'),
+			array('form_type' => 'text', 'name' => 'invoice_text_positiv', 'description' => 'Invoice Text for positiv Amount without Sepa Mandate'),
+			array('form_type' => 'text', 'name' => 'invoice_text_negativ', 'description' => 'Invoice Text for negativ Amount without Sepa Mandate', 'space' => '1'),
 
 			array('form_type' => 'select', 'name' => 'logo', 'description' => 'Choose logo', 'value' => $logos),
-			array('form_type' => 'select', 'name' => 'template', 'description' => 'Choose template file for bill', 'value' => $templates),
-			array('form_type' => 'file', 'name' => 'logo_upload', 'description' => 'Upload logo or template'),
+			array('form_type' => 'select', 'name' => 'template', 'description' => 'Choose template file for invoice', 'value' => $templates),
+			array('form_type' => 'file', 'name' => 'upload', 'description' => 'Upload logo or template'),
 
 		);
 	}
@@ -55,7 +61,7 @@ class CompanyController extends \BaseModuleController {
 	protected function store()
 	{
 		// check and handle uploaded firmware files
-		$this->handle_file_upload('logo', '/tftpboot/bill/');
+		$this->handle_file_upload('upload', '/tftpboot/bill/');
 
 		// finally: call base method
 		return parent::store();
@@ -63,9 +69,22 @@ class CompanyController extends \BaseModuleController {
 
 	public function update($id)
 	{
-		$this->handle_file_upload('logo', '/tftpboot/bill/');
+		$this->handle_file_upload('upload', '/tftpboot/bill/');
 
 		return parent::update($id);
+	}
+
+	// Also overwritten because we don't want a field to be updated, just upload a file
+	protected function handle_file_upload($field, $dst_path)
+	{
+		if (Input::hasFile($field))
+		{
+			// get filename
+			$filename = Input::file($field)->getClientOriginalName();
+
+			// move file
+			Input::file($field)->move($dst_path, $filename);
+		}
 	}
 
 }
