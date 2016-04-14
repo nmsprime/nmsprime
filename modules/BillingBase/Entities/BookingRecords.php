@@ -58,12 +58,8 @@ class BookingRecords {
 		$rcd = $conf->rcd ? $conf->rcd : $this->dates['auto_rcd'];
 		$cur = $conf->currency ? $conf->currency : 'EUR';
 
-		// $tax = $conf->tax ? $conf->tax / 100 : 0.19;
-		// $txt = '';
-		// if ($started_lastm)
-		// 	$txt = date('m', strtotime('-1 month')).'+';
-
-		$this->data['Contractnr'] 	= $contract->id;
+		// $this->data['Contractnr'] 	= $contract->id;
+		$this->data['Contractnr'] 	= $contract->number;
 		$this->data['Invoicenr'] 	= $invoice_nr;
 		$this->data['Date'] 		= $this->dates['today'];
 		$this->data['RCD'] 			= $rcd;

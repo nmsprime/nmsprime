@@ -136,13 +136,13 @@ class accountingCommand extends Command {
 			// check validity of contract
 			if (!$c->check_validity($this->dates))
 			{
-				$this->logger->addNotice('Contract '.$c->id.' is out of date');
+				$this->logger->addNotice('Contract '.$c->number.' is out of date', [$c->id]);
 				continue;				
 			}
 
 			if (!$c->create_invoice)
 			{
-				$this->logger->addInfo('Create invoice for Contract '.$c->id.' is off');
+				$this->logger->addInfo('Create invoice for Contract '.$c->number.' is off', [$c->id]);
 				continue;
 			}
 
@@ -211,7 +211,7 @@ class accountingCommand extends Command {
 			$mandate = $c->get_valid_mandate();
 
 			if (!$mandate)
-				$this->logger->addNotice('Contract '.$c->id.' has no valid sepa mandate');
+				$this->logger->addNotice('Contract '.$c->number.' has no valid sepa mandate', [$c->id]);
 
 
 			// Add billing file entries

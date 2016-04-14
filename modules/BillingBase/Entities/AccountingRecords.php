@@ -39,7 +39,8 @@ class AccountingRecords {
 
 	public function add_item($item, $price, $text, $invoice_nr)
 	{
-		$this->data['Contractnr'] 	= $item->contract->id;
+		// $this->data['Contractnr'] 	= $item->contract->id;
+		$this->data['Contractnr'] 	= $item->contract->number;
 		$this->data['Invoicenr'] 	= $invoice_nr;
 		$this->data['Target Month'] = date('m');
 		$this->data['Date'] 		= date('Y-m-d');

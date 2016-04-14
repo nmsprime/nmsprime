@@ -41,6 +41,7 @@ class Bill {
 		'company_logo'		=> '',
 
 		'contract_id' 		=> '',
+		'contract_nr' 		=> '',
 		'contract_firstname' => '',
 		'contract_lastname' => '',
 		'contract_street' 	=> '',
@@ -66,6 +67,7 @@ class Bill {
 	public function __construct($contract, $config, $invoice_nr)
 	{
 		$this->data['contract_id'] 			= $contract->id;
+		$this->data['contract_nr'] 			= $contract->number;
 		$this->data['contract_firstname'] 	= $contract->firstname;
 		$this->data['contract_lastname'] 	= $contract->lastname;
 		$this->data['contract_street'] 		= $contract->street;
@@ -198,9 +200,9 @@ class Bill {
 
 		// create pdf
 		chdir($this->dir);
-		system("pdflatex $file &>/dev/null");
+		system("pdflatex $file &>/dev/null");		// returns 0 on success - $ret as second argument
 
-		// add hash for security - files are not easily downloadable by name through script
+		// add hash over contract id for security  (files are not easily downloadable through script)
 		rename("$file.pdf", $file.'_'.hash('crc32b', $this->data['contract_id']).'.pdf');
 
 		// remove temporary files
