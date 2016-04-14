@@ -69,33 +69,34 @@ class SepaAccount extends \BaseModel {
 
 	public function __construct()
 	{
-		$this->invoice_nr_template = 'RG '.date('Y').'/';
+		$this->invoice_nr_template = date('Y').'/';
 	}
 
 	/**
 	 * BILLING STUFF
 	 *
-	 * Every Account has following Objects assigned
-	 * Following functions target at adding single entries for the files and create the files finally
+	 * Every Account has the following Objects assigned
 	 */
 
-	// protected $logger;					// logging instance of billing module
 	public $invoice_nr = 100000; 			// invoice number counter
 	private $invoice_nr_template;			// see constructor
 
-	// separate Accounting Records Object - resulting in 2 files for items and tv
+	// Accounting Records Object - resulting in 2 files for items and tariffs
 	protected $acc_recs;
 
 	// Booking Records Object - resulting in 2 files for records with sepa mandate or without
 	protected $book_recs;
 
-	// several Bills for every Contract that contain only the products/items that are related through the costcenter
+	// several Bills for every Contract that contain only the products/items that have to be paid to this account - related through costcenter!
 	protected $bills = [];
 
 	// Sepa XML Object - resulting in 2 possible files for direct debits or credits
 	protected $sepa_xml;
 
 
+	/*
+	 * The following functions target at adding single entries for the files and create the files finally (names are self-explaining)
+	 */
 	public function add_accounting_record($item, $price, $text)
 	{
 		// write to accounting records of account
@@ -145,7 +146,7 @@ class SepaAccount extends \BaseModel {
 		$this->sepa_xml->add_entry($mandate, $value, $dates, $invoice_nr);
 	}
 
-
+	// creates all the billing files for the assigned objects
 	public function make_billing_files()
 	{
 		if (isset($this->acc_recs))

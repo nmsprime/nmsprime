@@ -13,8 +13,7 @@ class Bill {
 	private $tax;
 	private $template = '/tftpboot/bill/';
 
-	// logger instance for Billing Module
-	private $logger;
+	private $logger;						// logger instance for Billing Module
 
 	public $data = array(
 
@@ -201,6 +200,8 @@ class Bill {
 		// create pdf
 		chdir($this->dir);
 		system("pdflatex $file &>/dev/null");		// returns 0 on success - $ret as second argument
+
+		$this->logger->addDebug('Successfully created Bill for Contract '.$this->data['contract_nr'], [$this->data['contract_id']]);
 
 		// add hash over contract id for security  (files are not easily downloadable through script)
 		rename("$file.pdf", $file.'_'.hash('crc32b', $this->data['contract_id']).'.pdf');

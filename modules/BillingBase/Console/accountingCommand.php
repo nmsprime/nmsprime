@@ -63,17 +63,20 @@ class accountingCommand extends Command {
 
 
 	/**
-	 * Create invoice-, booking records and sepa xml file
-	 * Execute the console command - Pay Attention to arguments
-	 	* 1 - executed without TV items
-	 	* 2 - only TV items
-	 	* everything else - both are calculated for bills
+	 * Execute the console command: Create Invoices, Sepa xml file(s), Accounting and Booking record file(s)
+	 *
 	 * TODO: add to app/Console/Kernel.php -> run monthly()->when(function(){ date('Y-m-d') == date('Y-m-10')}) for tenth day in month
 	 */
 	public function fire()
 	{
 		$this->logger->addInfo(' #####    Start Accounting Command    #####');
 
+		/*
+		 * Old: Pay Attention to arguments
+	 	 * 1 - executed without TV items
+	 	 * 2 - only TV items
+	 	 * everything else - both are calculated for bills
+	 	 */
 		// switch ($this->argument('cycle'))
 		// {
 		// 	case 2:
@@ -99,7 +102,9 @@ class accountingCommand extends Command {
 		$sepa_accs  = SepaAccount::all();
 
 
-		// check date of last run and get last invoice nr for each account
+		/*
+		 * Initialise date of last run and actual invoice nr counters
+		 */
 		$last_run = DB::table($this->tablename)->orderBy('created_at', 'desc')->select('created_at')->first();
 		if (is_object($last_run))
 		{
@@ -109,18 +114,29 @@ class accountingCommand extends Command {
 			// Separate invoice_nrs for every SepaAccount
 			foreach ($sepa_accs as $acc)
 			{
-				// start invoice nr counter every year new
+				// restart invoice nr counter every year
 				if ($this->dates['m'] == '01')
+				{
+					if ($conf->invoice_nr_start)
+						$acc->invoice_nr = $conf->invoice_nr_start;
 					continue;
+				}
 
-				$invoice_nr = DB::table($this->tablename)->where('sepa_account_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
-				$acc->invoice_nr = $invoice_nr->invoice_nr;
+				$tmp = DB::table($this->tablename)->where('sepa_account_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
+				$acc->invoice_nr = $tmp->invoice_nr;
 			}
 		}
 		// first run for this system
 		else
+		{
 			$this->dates['last_run'] = $this->dates['null'];
 
+			foreach ($sepa_accs as $acc)
+			{
+				if ($conf->invoice_nr_start)
+					$acc->invoice_nr = $conf->invoice_nr_start;
+			}
+		}
 
 		$this->logger->addDebug('Last run was on '.$this->dates['last_run']);
 
@@ -152,8 +168,8 @@ class accountingCommand extends Command {
 
 
 			/*
-			 * Add internet, voip and tv tariffs and all other items and calculate price for this month considering 
-			 * contract start & expiration date, calculate total sum of items for booking records
+			 * Add internet, voip and tv tariffs and all other items and calculate price for current month considering 
+			 * contract start & expiration date, calculate total sum/charge of items for booking records
 			 */
 			foreach ($c->items as $item)
 			{
@@ -195,7 +211,7 @@ class accountingCommand extends Command {
 					$acc->invoice_nr += 1;
 				}
 
-				// save to accounting table as backup for future checking
+				// save to accounting table as backup for future checking - NOTE: invoice nr counters are set from that table
 				$count = $item->count ? $item->count : 1;
 				DB::update('INSERT INTO '.$this->tablename.' (created_at, contract_id, name, product_id, ratio, count, invoice_nr, sepa_account_id) VALUES(NOW(),'.$c->id.',"'.$item->name.'",'.$item->product->id.','.$ret['ratio'].','.$count.','.$acc->invoice_nr.','.$acc_id.')');
 
@@ -257,7 +273,7 @@ class accountingCommand extends Command {
 	protected function getArguments()
 	{
 		return [
-			['cycle', InputArgument::OPTIONAL, '1 - without TV, 2 - only TV'],
+			// ['cycle', InputArgument::OPTIONAL, '1 - without TV, 2 - only TV'],
 		];
 	}
 

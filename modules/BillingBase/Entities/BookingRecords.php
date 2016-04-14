@@ -5,6 +5,12 @@ use File;
 
 class BookingRecords {
 
+	/**
+	 * This class stores all Booking Records in one File for one ISP Sepa Account
+	 * @author Nino Ryschawy
+	 */
+
+
 	private $dates;					// offen used dates - created only once (constructor) for better performance
 	private $records_sepa 	 = [];
 	private $records_no_sepa = [];

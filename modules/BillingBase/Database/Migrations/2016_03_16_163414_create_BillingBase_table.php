@@ -22,6 +22,7 @@ class CreateBillingBaseTable extends BaseMigration {
 			$table->enum('currency', ['EUR', 'USD']);
 			$table->float('tax');
 			$table->string('mandate_ref_template');
+			$table->integer('invoice_nr_start');
 		});
 
 		DB::update("INSERT INTO ".$this->tablename.' (currency) VALUES("EUR");');

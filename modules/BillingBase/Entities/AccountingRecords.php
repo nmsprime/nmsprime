@@ -5,6 +5,11 @@ use File;
 
 class AccountingRecords {
 
+	/**
+	 * This class stores all Accounting Records in one File for one ISP Sepa Account
+	 * @author Nino Ryschawy
+	 */
+
 	private $item_records = [];
 	private $tariff_records = [];
 

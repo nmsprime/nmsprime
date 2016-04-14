@@ -17,6 +17,7 @@ class BillingBaseController extends \BaseModuleController {
 			array('form_type' => 'select', 'name' => 'currency', 'description' => 'Currency', 'value' => BillingBase::getPossibleEnumValues('currency')),
 			array('form_type' => 'text', 'name' => 'tax', 'description' => 'Tax in %'),
 			array('form_type' => 'text', 'name' => 'mandate_ref_template', 'description' => 'Mandate Reference Template', 'options' => ['placeholder' => 'e.g.: String - {contract_id}']),
+			array('form_type' => 'text', 'name' => 'invoice_nr_start', 'description' => 'Start Invoice Number every Year from'),
 		];
 	}
 	
