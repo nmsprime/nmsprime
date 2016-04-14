@@ -134,12 +134,12 @@ class SepaMandateObserver
 			return $mandate->contract->number;
 
 		foreach ($mandate->contract['attributes'] as $key => $value)
-			$ref = str_replace('{'.$key.'}', $value, $template);
+			$template = str_replace('{'.$key.'}', $value, $template);
 
 		foreach ($mandate['attributes'] as $key => $value)
-			$ref = str_replace('{'.$key.'}', $value, $template);
+			$template = str_replace('{'.$key.'}', $value, $template);
 
-		return $ref;
+		return $template;
 	}
 
 }
