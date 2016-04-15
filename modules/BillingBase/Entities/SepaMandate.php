@@ -133,11 +133,22 @@ class SepaMandateObserver
 		if (!$template || (strpos($template, '{') === false))
 			return $mandate->contract->number;
 
-		foreach ($mandate->contract['attributes'] as $key => $value)
-			$template = str_replace('{'.$key.'}', $value, $template);
+		// replace placeholder with values
+		preg_match_all('/(?<={)[^}]*(?=})/', $template, $matches);
 
-		foreach ($mandate['attributes'] as $key => $value)
-			$template = str_replace('{'.$key.'}', $value, $template);
+		foreach ($matches[0] as $key)
+		{
+			if (array_key_exists($key, $mandate->contract['attributes']))
+				$template = str_replace('{'.$key.'}', $mandate->contract['attributes'][$key], $template);
+			else if (array_key_exists($key, $mandate['attributes']))
+				$template = str_replace('{'.$key.'}', $mandate['attributes'][$key], $template);
+		}
+
+		// foreach ($mandate->contract['attributes'] as $key => $value)
+		// 	$template = str_replace('{'.$key.'}', $value, $template);
+
+		// foreach ($mandate['attributes'] as $key => $value)
+		// 	$template = str_replace('{'.$key.'}', $value, $template);
 
 		return $template;
 	}
