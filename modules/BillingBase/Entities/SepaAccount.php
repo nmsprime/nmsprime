@@ -72,15 +72,16 @@ class SepaAccount extends \BaseModel {
 		$this->invoice_nr_template = date('Y').'/';
 	}
 
+
 	/**
 	 * BILLING STUFF
-	 *
-	 * Every Account has the following Objects assigned
 	 */
-
-	public $invoice_nr = 100000; 			// invoice number counter
+	public $invoice_nr = 100000; 			// invoice number counter - default start nr is replaced by global config field
 	private $invoice_nr_template;			// see constructor
 
+	/*
+	 * Every Account has the following Objects assigned
+	 */
 	// Accounting Records Object - resulting in 2 files for items and tariffs
 	protected $acc_recs;
 

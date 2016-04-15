@@ -37,8 +37,6 @@ class accountingCommand extends Command {
 	{
 		// instantiate logger for billing
 		$this->logger = new BillingLogger;
-		// $this->logger = new Logger('Billing');
-		// $this->logger->pushHandler(new StreamHandler(storage_path().'/logs/billing-'.date('Y-m').'.log'), Logger::DEBUG, false);
 
 		$this->dates = array(
 			'today' 		=> date('Y-m-d'),
@@ -47,13 +45,13 @@ class accountingCommand extends Command {
 			'this_m'	 	=> date('Y-m'),
 			'this_m_bill'	=> date('m/Y'),
 			'last_m'		=> date('m', strtotime("first day of last month")),			// written this way because of known bug
-			'last_m_Y'		=> date('Y-m', strtotime("first day of last month")),			// written this way because of known bug
+			'last_m_Y'		=> date('Y-m', strtotime("first day of last month")),
 			'last_m_bill'	=> date('m/Y', strtotime("first day of last month")),
 			'null' 			=> '0000-00-00',
 			'lastm_01' 		=> date('Y-m-01', strtotime("first day of last month")),
 			'thism_01'		=> date('Y-m-01'),
 			'nextm_01' 		=> date('Y-m-01', strtotime("+1 month")),
-			'last_run' 		=> '',
+			'last_run' 		=> '',					// important for price calculation!!
 			'm_in_sec' 		=> 60*60*24*30,			// month in seconds
 		);
 
@@ -71,21 +69,6 @@ class accountingCommand extends Command {
 	{
 		$this->logger->addInfo(' #####    Start Accounting Command    #####');
 
-		/*
-		 * Old: Pay Attention to arguments
-	 	 * 1 - executed without TV items
-	 	 * 2 - only TV items
-	 	 * everything else - both are calculated for bills
-	 	 */
-		// switch ($this->argument('cycle'))
-		// {
-		// 	case 2:
-		// 		$this->logger->addInfo('Cycle only for TV items/products');
-		// 		break;
-		// 	case 1:
-		// 		$this->logger->addInfo('Cycle without TV items/products');
-		// 	default:
-
 		// remove all entries of this month from accounting table if entries were already created (and create them new)
 		$actually_created = DB::table($this->tablename)->where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->first();
 		if (is_object($actually_created))
@@ -93,10 +76,6 @@ class accountingCommand extends Command {
 			$this->logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 			DB::update('DELETE FROM '.$this->tablename.' WHERE created_at>='.$this->dates['thism_01']);
 		}
-
-		// 		break;
-		// }
-
 
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
@@ -162,9 +141,8 @@ class accountingCommand extends Command {
 				continue;
 			}
 
-			// variable resets or incrementations
 			$charge 	= []; 					// total costs for this month for current contract
-			$c->expires = (date('Y-m', strtotime($c->contract_end)) == $this->dates['this_m']);
+			$c->expires = date('Y-m', strtotime($c->contract_end)) == $this->dates['this_m'];
 
 
 			/*
@@ -176,13 +154,6 @@ class accountingCommand extends Command {
 				// check validity
 				if (!$item->check_validity($this->dates))
 					continue;
-
-				// only TV items for this walk (when argument=2)
-				// if ($this->argument('cycle') == 2 && $item->product->type != 'TV')
-				// 	continue;
-				// if ($this->argument('cycle') == 1 && $item->product->type == 'TV')
-				// 	continue;
-
 
 				$costcenter = $item->product->costcenter ? $item->product->costcenter : $c->costcenter;
 				$ret = $item->calculate_price_and_span($this->dates, $costcenter, $c->expires);
@@ -241,7 +212,7 @@ class accountingCommand extends Command {
 				$acc->add_bill_data($c, $mandate, $value, $this->logger);
 
 				// make bill already
-				$acc['invoices'][$c->id]->make_bill();
+				$acc['invoices'][$c->id]->make_invoice();
 
 				// skip sepa part if contract has no valid mandate
 				if (!$mandate)
@@ -249,9 +220,6 @@ class accountingCommand extends Command {
 
 				$acc->add_sepa_transfer($mandate, $value['net'] + $value['tax'], $this->dates);
 			}
-// if ($c->id == 500008)
-// 	dd($sepa_accs[1]);
-
 
 		} // end of loop over contracts
 
@@ -285,3 +253,17 @@ class accountingCommand extends Command {
 	}
 
 }
+
+
+
+/*
+ * Programming Notes
+ */
+
+// $this->logger = new Logger('Billing');
+// $this->logger->pushHandler(new StreamHandler(storage_path().'/logs/billing-'.date('Y-m').'.log'), Logger::DEBUG, false);
+
+// switch ($this->argument('cycle'))
+// {
+// 	case 1:
+// $this->logger->addInfo('Cycle without TV items/products');

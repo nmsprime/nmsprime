@@ -100,12 +100,12 @@ class Item extends \BaseModel {
 	 */
 	public function check_validity($dates)
 	{
-		$start = ($this->valid_from && ($this->valid_from != $dates['null'])) ? $this->valid_from : $this->created_at;
+		$start = ($this->valid_from && ($this->valid_from != $dates['null']) && strtotime($this->valid_from) > strtotime($this->created_at)) ? $this->valid_from : $this->created_at;
 		if (is_object($start))
 			$start = $start->toDateString();
 		$end = $this->valid_to == $dates['null'] ? null : $this->valid_to;
 
-		return ($start <= $dates['today'] && (!$end || $end >= $dates['today'])) ? true : false;
+		return ($start <= $dates['today'] && (!$end || $end >= $dates['today']));
 	}
 
 
@@ -123,19 +123,19 @@ class Item extends \BaseModel {
 		$text  = '';
 		
 		$billing_cycle = $this->billing_cycle ? $this->billing_cycle : $this->product->billing_cycle;
-		$start = ($this->valid_from && ($this->valid_from != $dates['null'])) ? $this->valid_from : $this->created_at;
+		$start = ($this->valid_from && $this->valid_from != $dates['null'] && strtotime($this->valid_from) > strtotime($this->created_at)) ? $this->valid_from : $this->created_at;
 		if (is_object($start))
 			$start = $start->toDateString();
 
 		$end = $this->valid_to == $dates['null'] ? null : $this->valid_to;
 		// contract ends before item ends - contract has higher priority
-		if ($this->contract->contract_end && $this->contract->contract_end != $dates['null'])
+		if ($this->contract->expires)
 		{
 			if (!$end || strtotime($this->contract->contract_end) < strtotime($end))
 				$end = $this->contract->contract_end;
 		}
 
-		$started_lastm = date('Y-m-01', strtotime($start)) == $dates['lastm_01'] && strtotime($start) > strtotime($dates['last_run']) ? true : false;
+		$started_lastm = (date('Y-m-01', strtotime($start)) == $dates['lastm_01']) && (strtotime($start) > strtotime($dates['last_run']));
 		
 
 		switch($billing_cycle)
@@ -198,16 +198,17 @@ class Item extends \BaseModel {
 // if ($this->contract->id == 500007)
 // 	dd($this['attributes'], $started_lastm, $starting, $ratio, $billing);
 
-				// started after billing_month - pay to end of year - only first month (starting or last month when after last run)
-				if (date("Y-$starting") > date("Y-$billing_month") && ($starting == $dates['m'] || $started_lastm))
+				// started after last run in billing_month - pay only once!
+				if ($starting >= $billing_month && strtotime($start) > strtotime($dates['last_run']) && ($starting == $dates['m'] || $started_lastm))
 				{
+					// pay to end of year
 					$ratio = 1 - ($starting-1)/12;
 					$text  = $started_lastm ? $dates['last_m_bill'] : $dates['this_m_bill'];
 					$text .= ' - '.date('12/Y');
 				}
 
-				// started before billing_month - calculate only for billing month
-				else if ($dates['m'] == $billing_month && $starting <= $billing_month)
+				// started before last run in billing_month - calculate only for billing month
+				else if ($dates['m'] == $billing_month && $start <= $dates['today'])
 				{
 					// started before this yr
 					if (date('Y', strtotime($start)) < $dates['Y'])
@@ -273,14 +274,15 @@ class Item extends \BaseModel {
 				$valid_to = $this->valid_to == $dates['null'] ? null : $this->valid_to;
 
 				// if created or valid from this month or last month after last run
-				if (date('Y-m', strtotime($start)) == $dates['this_m'] || $started_lastm)
+				if ($start >= $dates['thism_01'] || $started_lastm)
 				{
 					$price = $this->product->price;
 					if ($this->product->type == 'Credit')
 						$price = (-1) * $this->credit_amount;
 				}
 
-				if (strtotime($start) <= strtotime($dates['today']) && $valid_to && strtotime($valid_to) >= strtotime($dates['today']))
+				// valid from - to
+				if ($valid_to)
 				{
 					// split payment into pieces
 					$tot_months = round((strtotime(date('Y-m', strtotime($valid_to))) - strtotime(date('Y-m', strtotime($start)))) / $dates['m_in_sec']) + 1;
@@ -294,7 +296,7 @@ class Item extends \BaseModel {
 					$text = " | part $part/$tot_months";
 
 					// items with valid_to in future, but contract expires
-					if (date('Y-m', strtotime($end)) == $dates['this_m'])
+					if ($this->contract->expires)
 					{
 						$price = ($tot_months - $part + 1) * $price;
 						$text = " | last ".($tot_months-$part+1)." part(s) of $tot_months";

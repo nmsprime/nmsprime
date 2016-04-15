@@ -50,13 +50,13 @@ class Invoice {
 		'contract_mandate_iban'	=> '',
 		'contract_mandate_ref'	=> '',
 
-		'date'				=> '',
+		// 'date'				=> '',
 		'invoice_nr' 		=> '',
 		'invoice_text'		=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate
 		'rcd' 				=> '',			// Fälligkeitsdatum
-		'tariffs'			=> '',			// (TODO: implement!)
-		'start'				=> '',			// Leistungszeitraum start , TODO: implement!
-		'end'				=> '',			// Leistungszeitraum ende , TODO: implement!
+		// 'tariffs'			=> '',			// (TODO: implement!)
+		// 'start'				=> '',			// Leistungszeitraum start , TODO: implement!
+		// 'end'				=> '',			// Leistungszeitraum ende , TODO: implement!
 
 		'item_table_positions' => '',
 		'table_summary' 	=> '',
@@ -214,7 +214,7 @@ class Invoice {
 	/*
 	 * Read .tex or .odt file replace every \_ and all fields of data array that are set
 	 */
-	public function make_bill()
+	public function make_invoice()
 	{
 		/*
 		 * TODO: consider template type - .tex or .odt
@@ -254,7 +254,7 @@ class Invoice {
 		$this->logger->addDebug('Successfully created Invoice for Contract '.$this->data['contract_nr'], [$this->data['contract_id']]);
 
 		// add hash for security  (files are not downloadable through script that easy)
-		rename("$file.pdf", $file.'_'.hash('crc32b', /*$this->data['contract_id'].*/time()).'.pdf');
+		rename("$file.pdf", $file.'_'.hash('crc32b', $this->data['contract_id'].time()).'.pdf');
 
 		// remove temporary files
 		unlink($file);
