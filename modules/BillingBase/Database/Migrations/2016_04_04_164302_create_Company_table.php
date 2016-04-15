@@ -39,11 +39,16 @@ class CreateCompanyTable extends BaseMigration {
 			$table->string('registration_court_3');
 			
 			$table->string('management');		// Vorstand
-			
 			$table->string('directorate');		// Aufsichtsrat, Geschäftsleitung
 
 			$table->string('tax_id_nr');
 			$table->string('tax_nr');
+
+			$table->string('invoice_text_positiv');
+			$table->string('invoice_text_negativ');
+			$table->string('invoice_text_sepa_positiv');
+			$table->string('invoice_text_sepa_negativ');
+			$table->string('transfer_reason');
 
 			$table->string('logo');
 			$table->string('template');

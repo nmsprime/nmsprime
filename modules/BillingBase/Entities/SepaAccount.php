@@ -130,9 +130,10 @@ class SepaAccount extends \BaseModel {
 
 	public function add_bill_data($c, $mandate, $value, $logger)
 	{
+		// Attention! the chronical order of these functions has to be kept until now because of dependencies for extracting the invoice text
 		$this->bills[$c->id]->set_mandate($mandate);
-		$this->bills[$c->id]->set_summary($value['net'], $value['tax']);
 		$this->bills[$c->id]->set_company_data($this);
+		$this->bills[$c->id]->set_summary($value['net'], $value['tax'], $this->company);
 	}
 
 
