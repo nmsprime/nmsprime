@@ -88,7 +88,7 @@ class SepaAccount extends \BaseModel {
 	protected $book_recs;
 
 	// several Bills for every Contract that contain only the products/items that have to be paid to this account - related through costcenter!
-	protected $bills = [];
+	protected $invoices = [];
 
 	// Sepa XML Object - resulting in 2 possible files for direct debits or credits
 	protected $sepa_xml;
@@ -120,20 +120,20 @@ class SepaAccount extends \BaseModel {
 	}
 
 
-	public function add_bill_item($c, $conf, $count, $price, $text)
+	public function add_invoice_item($c, $conf, $count, $price, $text)
 	{
-		if (!isset($this->bills[$c->id]))
-			$this->bills[$c->id] = new Bill($c, $conf, $this->invoice_nr_template.$this->id.'/'.$this->invoice_nr);
-		$this->bills[$c->id]->add_item($count, $price, $text);
+		if (!isset($this->invoices[$c->id]))
+			$this->invoices[$c->id] = new Invoice($c, $conf, $this->invoice_nr_template.$this->id.'/'.$this->invoice_nr);
+		$this->invoices[$c->id]->add_item($count, $price, $text);
 	}
 
 
 	public function add_bill_data($c, $mandate, $value, $logger)
 	{
 		// Attention! the chronical order of these functions has to be kept until now because of dependencies for extracting the invoice text
-		$this->bills[$c->id]->set_mandate($mandate);
-		$this->bills[$c->id]->set_company_data($this);
-		$this->bills[$c->id]->set_summary($value['net'], $value['tax'], $this->company);
+		$this->invoices[$c->id]->set_mandate($mandate);
+		$this->invoices[$c->id]->set_company_data($this);
+		$this->invoices[$c->id]->set_summary($value['net'], $value['tax'], $this->company);
 	}
 
 

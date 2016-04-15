@@ -6,14 +6,14 @@ use File;
 use Modules\BillingBase\Entities\BillingLogger;
 
 
-class Bill {
+class Invoice {
 
-	private $dir = '/var/www/data/invoice/';
+	private $dir = '/var/www/data/invoice/';	// changed in constructor
 	private $currency;
 	private $tax;
 	private $template = '/tftpboot/bill/';
 
-	private $logger;						// logger instance for Billing Module
+	private $logger;							// logger instance for Billing Module
 
 	public $data = array(
 
@@ -77,9 +77,10 @@ class Bill {
 		$this->data['rcd'] 			= $config->rcd ? $config->rcd : date('d.m.Y', strtotime('+6 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr;
 
+		// NOTE: Add other currencies here
 		$this->currency	= strtolower($config->currency) == 'eur' ? '€' : $config->currency;
 		$this->tax		= $config->tax;
-		$this->dir 		.= $contract->id;
+		$this->dir 		.= $contract->number;
 
 		$this->logger = new BillingLogger;
 	}
@@ -223,13 +224,13 @@ class Bill {
 
 		if (!is_file($this->template) || !is_file($this->data['company_logo']))
 		{
-			$this->logger->addError("Failed to Create Bill: Template or Logo of Company ".$this->data['company_name']." not set!", [$this->data['contract_id']]);
+			$this->logger->addError("Failed to Create Invoice: Template or Logo of Company ".$this->data['company_name']." not set!", [$this->data['contract_id']]);
 			return -1;
 		}
 
 		if (!$template = file_get_contents($this->template))
 		{
-			$this->logger->addError("Failed to Create Bill: Could not read template ".$this->template, [$this->data['contract_id']]);
+			$this->logger->addError("Failed to Create Invoice: Could not read template ".$this->template, [$this->data['contract_id']]);
 			return -2;
 		}
 
@@ -250,7 +251,7 @@ class Bill {
 		chdir($this->dir);
 		system("pdflatex $file &>/dev/null");		// returns 0 on success - $ret as second argument
 
-		$this->logger->addDebug('Successfully created Bill for Contract '.$this->data['contract_nr'], [$this->data['contract_id']]);
+		$this->logger->addDebug('Successfully created Invoice for Contract '.$this->data['contract_nr'], [$this->data['contract_id']]);
 
 		// add hash for security  (files are not downloadable through script that easy)
 		rename("$file.pdf", $file.'_'.hash('crc32b', /*$this->data['contract_id'].*/time()).'.pdf');

@@ -219,7 +219,7 @@ class accountingCommand extends Command {
 				$acc->add_accounting_record($item, round($price, 2), $text);
 
 				// create bill for account and contract and add item
-				$acc->add_bill_item($c, $conf, $count, round($price, 2), $text);
+				$acc->add_invoice_item($c, $conf, $count, round($price, 2), $text);
 
 			} // end of item loop
 
@@ -241,7 +241,7 @@ class accountingCommand extends Command {
 				$acc->add_bill_data($c, $mandate, $value, $this->logger);
 
 				// make bill already
-				$acc['bills'][$c->id]->make_bill();
+				$acc['invoices'][$c->id]->make_bill();
 
 				// skip sepa part if contract has no valid mandate
 				if (!$mandate)
