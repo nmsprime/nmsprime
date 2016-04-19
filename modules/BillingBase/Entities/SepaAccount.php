@@ -14,7 +14,7 @@ class SepaAccount extends \BaseModel {
 		return array(
 			'name' 		=> 'required',
 			'holder' 	=> 'required',
-			'creditorid' => 'required|max:18',
+			'creditorid' => 'required|max:35|creditor_id',
 			'iban' 		=> 'required|iban',
 			'bic' 		=> 'required|bic',
 		);

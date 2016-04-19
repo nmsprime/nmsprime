@@ -20,7 +20,7 @@ class CreateSepaAccountTable extends BaseMigration {
 			
 			$table->string('name');
 			$table->string('holder');
-			$table->string('creditorid', 18);
+			$table->string('creditorid', 35);
 			$table->string('iban', 34);
 			$table->string('bic', 11);
 			$table->string('institute');
