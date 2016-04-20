@@ -1,6 +1,8 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
+use File;
 use Modules\ProvBase\Entities\Contract;
 
 class Salesman extends \BaseModel {
@@ -14,7 +16,7 @@ class Salesman extends \BaseModel {
 		return array(
 			'firstname' 	=> 'required',
 			'lastname' 		=> 'required',
-			'provision'		=> 'required|numeric|between:0,100',
+			'commission'	=> 'required|numeric|between:0,100',
 			'products' 		=> 'product',
 		);
 	}
@@ -51,7 +53,6 @@ class Salesman extends \BaseModel {
 	}
 
 
-
 	/**
 	 * Relationships:
 	 */
@@ -60,30 +61,88 @@ class Salesman extends \BaseModel {
 		return $this->hasMany('Modules\ProvBase\Entities\Contract');
 	}
 
-	public function view_belongs_to()
-	{
-		// return $this->belongsTo('Modules\ProvBase\Entities\Contract');
-	}
 
 
 	/**
 	 * BILLING STUFF
 	 */
+	protected $all_prod_types = [];				// array (list) of all possible types of products - 
+	protected $total_commission = 0;			// total commission amount during actual billing cycle
+	protected $item_names = [];					// all names of items he gets commission for (in actual billing cycle)
 
-	/*
-	 * The following functions target at adding single entries for the files and create the files finally (names are self-explaining)
-	 */
-	public function add_accounting_record($item, $price, $text)
+
+	// example - $item->product->name == 'Credit Device'
+	public function add_item($item, $price)
 	{
-		// write to accounting records of account
-		if (!isset($this->acc_recs))
-			$this->acc_recs = new AccountingRecords($this->name);
+		$types = explode(',', $this->products);
+		foreach ($types as $key => $value)
+			$types[$key] = trim($value);
 
-		$invoice_nr = $this->invoice_nr_template.$this->id.'/'.$this->invoice_nr;
 
-		$this->acc_recs->add_item($item, $price, $text, $invoice_nr);
+		if ($item->product->type == 'Credit')
+		{
+			// get credit type from product name
+			$credit_type = '';
+			foreach ($this->all_types as $type)
+			{
+				if (strpos($item->product->name, $type) !== false)
+					$credit_type = $type;
+			}
+
+			// if type is assigned - only add amount if type is in salesmans product list
+			if ($credit_type)
+			{
+				if (in_array($credit_type, $types))
+					goto add;
+				return;
+			}
+add:
+			// add all other credits - default
+			$this->total_commission -= $price;
+			array_push($this->item_names, $item->product->name);
+			return;
+		}
+
+		// all other types that the salesman gets commission for
+		if (in_array($item->product->type, $types))
+		{
+			$this->total_commission += $price;
+			array_push($this->item_names, $item->product->name);
+		}
+
+		return;
 	}
 
 
+	// id, name, commission %, commission amount, all added items as string
+	public function print_commission($file)
+	{
+		File::append($file, $this->id."\t".$this->firstname.' '.$this->lastname."\t".$this->commission."\t".round($this->total_commission * $this->commission / 100, 2)."\t".implode(', ', $this->item_names));
+		echo "stored salesmen commissions in $file\n";
+	}
+
+
+
+}
+
+
+/**
+ * Observer Class
+ *
+ * can handle   'creating', 'created', 'updating', 'updated',
+ *              'deleting', 'deleted', 'saving', 'saved',
+ *              'restoring', 'restored',
+ */
+class ContractObserver
+{
+	public function creating($salesman)
+	{
+		$salesman->products = str_replace(['/', '|', ';'], ',', $salesman->products);
+	}
+
+	public function updating($salesman)
+	{
+		$salesman->products = str_replace(['/', '|', ';'], ',', $salesman->products);		
+	}
 
 }

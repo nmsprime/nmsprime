@@ -12,6 +12,8 @@ use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\BillingLogger;
+use Modules\BillingBase\Entities\Product;
+use Modules\BillingBase\Entities\Salesman;
 
 class accountingCommand extends Command {
 
@@ -78,8 +80,17 @@ class accountingCommand extends Command {
 			DB::update('DELETE FROM '.$this->tablename.' WHERE created_at>='.$this->dates['thism_01']);
 		}
 
+
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
+		$salesmen 	= Salesman::all();
+
+		// init salesmen here because of performance (only 1 DB query)
+		$prod_types = Product::getPossibleEnumValues('type');
+		unset($prod_types['Credit']);
+
+		foreach ($salesmen as $sm)
+			$sm->all_prod_types = $prod_types;
 
 
 		/*
@@ -192,6 +203,10 @@ class accountingCommand extends Command {
 
 				// create bill for account and contract and add item
 				$acc->add_invoice_item($c, $conf, $count, round($price, 2), $text);
+
+				// add
+				if ($c->salesman)
+					$salesmen->find($c->salesman->id)->add_item($item, $price);
 
 			} // end of item loop
 

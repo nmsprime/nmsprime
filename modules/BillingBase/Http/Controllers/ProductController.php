@@ -28,7 +28,7 @@ class ProductController extends \BaseModuleController {
 
 		// label has to be the same like column in sql table
 		return array(
-			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name', 'help' => 'For Credits it is possible to assign a Type by adding the type name to the Name of the Product - e.g.: "Credit Device"'),
+			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name', 'help' => 'For Credits it is possible to assign a Type by adding the type name to the Name of the Credit - e.g.: "Credit Device"'),
 			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => Product::getPossibleEnumValues('type', true)),
 			array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'Qos (Data Rate)', 'value' => $qos_val),
 			array('form_type' => 'select', 'name' => 'voip_tariff', 'description' => 'Phone Tariff', 'value' => Product::getPossibleEnumValues('voip_tariff')),
