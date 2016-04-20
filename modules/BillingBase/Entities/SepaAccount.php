@@ -102,7 +102,7 @@ class SepaAccount extends \BaseModel {
 	{
 		// write to accounting records of account
 		if (!isset($this->acc_recs))
-			$this->acc_recs = new AccountingRecords($this->name);
+			$this->acc_recs = new AccountingRecords;
 
 		$invoice_nr = $this->invoice_nr_template.$this->id.'/'.$this->invoice_nr;
 
@@ -149,14 +149,14 @@ class SepaAccount extends \BaseModel {
 	}
 
 	// creates all the billing files for the assigned objects
-	public function make_billing_files()
+	public function make_billing_files($dir)
 	{
 		if (isset($this->acc_recs))
-			$this->acc_recs->make_accounting_record_files();
+			$this->acc_recs->make_accounting_record_files($dir, $this->name);
 		if (isset($this->book_recs))
-			$this->book_recs->make_booking_record_files();
+			$this->book_recs->make_booking_record_files($dir, $this->name);
 		if (isset($this->sepa_xml))
-			$this->sepa_xml->make_sepa_xml();
+			$this->sepa_xml->make_sepa_xml($dir, $this->name);
 	}
 
 

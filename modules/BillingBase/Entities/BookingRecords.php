@@ -1,7 +1,9 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
 use File;
+use Modules\BillingBase\Entities\BillingLogger;
 
 class BookingRecords {
 
@@ -53,9 +55,7 @@ class BookingRecords {
 			'auto_rcd' 		=> date('Y-m-d', strtotime('+6 days')),
 			);
 
-		$this->file_sepa 	= storage_path("billing/booking_records_sepa_".$acc_name.".txt");
-		$this->file_no_sepa = storage_path("billing/booking_records_no_sepa_".$acc_name.".txt");
-
+		$this->logger = new BillingLogger;
 	}
 
 
@@ -104,21 +104,25 @@ class BookingRecords {
 	}
 
 
-	public function make_booking_record_files()
+	public function make_booking_record_files($dir, $acc_name)
 	{
 		if ($this->records_sepa)
 		{
+			$file = $dir.'booking_records_sepa_'.$acc_name.'.txt';
 			// initialise record files with Column names as first line
-			File::put($this->file_sepa, implode("\t", array_keys($this->data))."\n");
-			File::append($this->file_sepa, implode($this->records_sepa));
-			echo "stored booking sepa records in ".$this->file_sepa."\n";
+			File::put($file, implode("\t", array_keys($this->data))."\n");
+			File::append($file, implode($this->records_sepa));
+			echo "stored booking sepa records in ".$file."\n";
+			$this->logger->addInfo("Successfully stored booking sepa records in $file \n");
 		}
 
 		if ($this->records_no_sepa)
 		{
-			File::put($this->file_no_sepa, implode("\t", array_keys($this->data))."\n");
-			File::append($this->file_no_sepa, implode($this->records_no_sepa));
-			echo "stored booking no sepa records in ".$this->file_no_sepa."\n";		
+			$file = $dir.'booking_records_no_sepa_'.$acc_name.'.txt';
+			File::put($file, implode("\t", array_keys($this->data))."\n");
+			File::append($file, implode($this->records_no_sepa));
+			echo "stored booking no sepa records in ".$file."\n";
+			$this->logger->addInfo("Successfully stored booking no sepa records in $file \n");
 		}
 	}
 

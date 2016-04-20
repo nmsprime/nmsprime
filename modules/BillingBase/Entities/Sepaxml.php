@@ -6,6 +6,8 @@ use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
 use Digitick\Sepa\PaymentInformation;
 
 use File;
+use Modules\BillingBase\Entities\BillingLogger;
+
 
 class Sepaxml {
 
@@ -14,8 +16,8 @@ class Sepaxml {
 
 	private $creditor;
 	private $msg_id;
-	private $dd_file;
-	private $dc_file;
+
+	protected $logger;
 
 	private $debit_data = array(
 
@@ -48,8 +50,8 @@ class Sepaxml {
 			);
 		
 		$this->msg_id  = date('YmdHis').$sepa_account->id;		// km3 uses actual time
-		$this->dd_file = storage_path('billing/sepa_dd_').$sepa_account->name.'.xml';
-		$this->dc_file = storage_path('billing/sepa_dc_').$sepa_account->name.'.xml';
+
+		$this->logger = new BillingLogger;
 	}
 
 	
@@ -97,14 +99,14 @@ class Sepaxml {
 	/**
 	 * Create SEPA XML
 	 */
-	public function make_sepa_xml()
+	public function make_sepa_xml($dir, $acc_name)
 	{
-		$this->make_credit_file();
-		$this->make_debit_file();
+		$this->make_credit_file($dir, $acc_name);
+		$this->make_debit_file($dir, $acc_name);
 	}
 
 
-	private function make_debit_file()
+	private function make_debit_file($dir, $acc_name)
 	{
 		if (!$this->debits)
 			return;
@@ -132,15 +134,17 @@ class Sepaxml {
 		}
 
 		// Retrieve the resulting XML
-		File::put($this->dd_file, $directDebit->asXML());
-		echo "stored sepa direct debit xml in ".$this->dd_file."\n";
+		$file = $dir.'dd_'.$acc_name.'.xml';
+		File::put($file, $directDebit->asXML());
+		echo "stored sepa direct debit xml in $file \n";
+		$this->logger->addInfo("Successfully stored sepa direct debit xml in $file \n");
 	}
 
-	private function make_credit_file()
+	private function make_credit_file($dir, $acc_name)
 	{
 		if (!$this->credits)
 			return;
-		
+
 		// Set the initial information for direct credits
 		$customerCredit = TransferFileFacadeFactory::createCustomerCredit($this->msg_id.'C', $this->creditor['name']);
 
@@ -156,8 +160,10 @@ class Sepaxml {
 			$customerCredit->addTransfer($this->msg_id.'C', $r);
 
 		// Retrieve the resulting XML
-		File::put($this->dc_file, $customerCredit->asXML());
-		echo "stored sepa direct credit xml in ".$this->dc_file."\n";
+		$file = $dir.'dc_'.$acc_name.'.xml';
+		File::put($file, $customerCredit->asXML());
+		echo "stored sepa direct credit xml in $file\n";
+		$this->logger->addInfo("Successfully stored sepa direct credit xml in $file \n");
 
 	}
 

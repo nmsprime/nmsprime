@@ -23,6 +23,7 @@ class accountingCommand extends Command {
 	protected $name 		= 'nms:accounting';
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
+	protected $dir 			= '/var/www/data/billing/';
 	
 	protected $logger;					// billing logger instance
 	protected $dates;					// offen needed time strings for faster access - see constructor
@@ -224,11 +225,19 @@ class accountingCommand extends Command {
 		} // end of loop over contracts
 
 		// store all billing files besides invoices
-		if (!is_dir(storage_path('billing')))
-			mkdir(storage_path('billing'));
+		$dir = $this->dir.date('Y_m').'/';
+		if (!is_dir($dir))
+			mkdir($dir);
 
 		foreach ($sepa_accs as $acc)
-			$acc->make_billing_files();
+			$acc->make_billing_files($dir);
+
+		$file = $dir.'salesmen_commission.txt';
+		File::put($file, "ID\tName\tCommission in %\tCommission Amount\tItems\n");
+
+		foreach ($salesmen as $sm)
+			$sm->print_commission($file);
+
 	}
 
 

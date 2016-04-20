@@ -1,7 +1,9 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
 use File;
+use Modules\BillingBase\Entities\BillingLogger;
 
 class AccountingRecords {
 
@@ -15,6 +17,8 @@ class AccountingRecords {
 
 	private $file_items;
 	private $file_tariffs;
+
+	protected $logger;
 
 	public $data = array(
 
@@ -34,11 +38,9 @@ class AccountingRecords {
 
 	);
 
-
-	public function __construct($acc_name)
+	public function __construct()
 	{
-		$this->file_items 	= storage_path("billing/accounting_item_records_".$acc_name.".txt");
-		$this->file_tariffs = storage_path("billing/accounting_tariff_records_".$acc_name.".txt");
+		$this->logger = new BillingLogger;
 	}
 
 
@@ -76,23 +78,32 @@ class AccountingRecords {
 	}
 
 
-	public function make_accounting_record_files()
+	public function make_accounting_record_files($dir, $acc_name)
 	{
 		if ($this->item_records)
 		{
+			$file = $dir.'accounting_item_records_'.$acc_name.'.txt';
+
 			// initialise record files with Column names as first line
-			File::put($this->file_items, implode("\t", array_keys($this->data))."\n");
-			File::append($this->file_items, implode($this->item_records));
-			echo "stored accounting item records in ".$this->file_items."\n";			
+			File::put($file, implode("\t", array_keys($this->data))."\n");
+			File::append($file, implode($this->item_records));
+
+			echo "stored accounting item records in ".$file."\n";
+			$this->logger->addInfo("Successfully stored accounting item records in $file \n");
 		}
+
 
 		if ($this->tariff_records)
 		{
-			File::put($this->file_tariffs, implode("\t", array_keys($this->data))."\n");
-			File::append($this->file_tariffs, implode($this->tariff_records));
-			echo "stored accounting tariff records in ".$this->file_tariffs."\n";
-		}
+			$file = $dir.'accounting_item_records_'.$acc_name.'.txt';
 
+			File::put($file, implode("\t", array_keys($this->data))."\n");
+			File::append($file, implode($this->tariff_records));
+
+			echo "stored accounting tariff records in ".$file."\n";
+			$this->logger->addInfo("Successfully stored accounting tariff records in $file \n");
+		}
 	}
+
 
 }
