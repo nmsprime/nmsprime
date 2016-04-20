@@ -27,6 +27,9 @@ class CreateSepaAccountTable extends BaseMigration {
 			$table->string('description');
 			$table->integer('company_id');
 		});
+
+		$this->set_fim_fields(['name', 'holder', 'iban', 'bic', 'institute', 'description']);
+
 	}
 
 	/**

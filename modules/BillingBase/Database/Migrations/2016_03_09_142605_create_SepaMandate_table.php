@@ -22,7 +22,6 @@ class CreateSepaMandateTable extends \BaseMigration {
 			$table->integer('contract_id');
 			$table->string('reference');
 			$table->date('signature_date');
-			// $table->enum('state', ['active', 'expired', 'cancelled', 'replaced']);
 			$table->string('sepa_holder');
 			$table->string('sepa_iban', 34);
 			$table->string('sepa_bic', 11);
@@ -31,6 +30,9 @@ class CreateSepaMandateTable extends \BaseMigration {
 			$table->date('sepa_valid_to');
 			$table->boolean('recurring');
 		});
+
+		$this->set_fim_fields(['reference', 'sepa_holder', 'sepa_institute', 'sepa_iban', 'sepa_bic']);
+
 	}
 
 	/**

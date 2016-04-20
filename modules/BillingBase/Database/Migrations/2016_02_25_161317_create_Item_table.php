@@ -28,6 +28,8 @@ class CreateItemTable extends BaseMigration {
 			$table->text('accounting_text');
 		});
 
+		$this->set_fim_fields(['accounting_text']);
+
 		return parent::up();
 	}
 

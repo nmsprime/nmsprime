@@ -24,6 +24,8 @@ class CreateCostCenterTable extends BaseMigration {
 			$table->string('description');
 		});
 
+		$this->set_fim_fields(['name', 'description']);
+
 		Schema::table('contract', function(Blueprint $table)
 		{
 			$table->integer('costcenter_id');

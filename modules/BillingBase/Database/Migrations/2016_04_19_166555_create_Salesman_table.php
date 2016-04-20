@@ -20,15 +20,18 @@ class CreateSalesmanTable extends BaseMigration {
 			
 			$table->string('firstname');
 			$table->string('lastname');
-			$table->float('provision');
+			$table->float('commission');
 			$table->string('products');
 			$table->string('description');
 		});
+
+		$this->set_fim_fields(['firstname', 'lastname', 'description']);
 
 		Schema::table('contract', function(Blueprint $table)
 		{
 			$table->integer('salesman_id');
 		});
+
 	}
 
 	/**

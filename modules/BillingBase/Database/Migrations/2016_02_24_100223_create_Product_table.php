@@ -29,6 +29,8 @@ class CreateProductTable extends BaseMigration {
 			$table->boolean('tax');
 		});
 
+		$this->set_fim_fields(['name']);
+
 		return parent::up();
 	}
 
