@@ -3,9 +3,9 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateCostCenterTable extends BaseMigration {
+class CreateSalesmanTable extends BaseMigration {
 
-	protected $tablename = 'costcenter';
+	protected $tablename = 'salesman';
 
 	/**
 	 * Run the migrations.
@@ -18,15 +18,16 @@ class CreateCostCenterTable extends BaseMigration {
 		{
 			$this->up_table_generic($table);
 			
-			$table->string('name');
-			$table->string('sepa_account_id');
-			$table->integer('billing_month');
+			$table->string('firstname');
+			$table->string('lastname');
+			$table->float('provision');
+			$table->string('products');
 			$table->string('description');
 		});
 
 		Schema::table('contract', function(Blueprint $table)
 		{
-			$table->integer('costcenter_id');
+			$table->integer('salesman_id');
 		});
 	}
 
@@ -41,7 +42,7 @@ class CreateCostCenterTable extends BaseMigration {
 
 		Schema::table('contract', function(Blueprint $table)
 		{
-			$table->dropColumn('costcenter_id');
+			$table->dropColumn('salesman_id');
 		});
 	}
 
