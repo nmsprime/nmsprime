@@ -84,6 +84,7 @@ class accountingCommand extends Command {
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
 		$salesmen 	= Salesman::all();
+		$contracts  = Contract::with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
 
 		// init salesmen here because of performance (only 1 DB query)
 		$prod_types = Product::getPossibleEnumValues('type');
@@ -240,9 +241,11 @@ class accountingCommand extends Command {
 		} // end of loop over contracts
 
 		// store all billing files besides invoices
+		if (!is_dir($this->dir))
+			mkdir($this->dir, '0700');		
 		$dir = $this->dir.date('Y_m').'/';
 		if (!is_dir($dir))
-			mkdir($dir);
+			mkdir($dir, '0744');
 
 		foreach ($sepa_accs as $acc)
 			$acc->make_billing_files($dir);

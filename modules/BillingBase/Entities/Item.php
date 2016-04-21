@@ -97,15 +97,15 @@ class Item extends \BaseModel {
 
 	/**
 	 * Cross checks start and end dates against actual day - used in accounting Cmd
+	 * Calculates start and end dates of this model for parent function of BaseModel
 	 */
-	public function check_validity($dates)
+	public function check_validity($start = null, $end = null)
 	{
-		$start = ($this->valid_from && ($this->valid_from != $dates['null']) && strtotime($this->valid_from) > strtotime($this->created_at)) ? $this->valid_from : $this->created_at;
-		if (is_object($start))
-			$start = $start->toDateString();
-		$end = $this->valid_to == $dates['null'] ? null : $this->valid_to;
+		$start = ($this->valid_from && ($this->valid_from != '0000-00-00') && (strtotime($this->valid_from) > strtotime($this->created_at))) ? $this->valid_from : $this->created_at->toDateString();
+		$start = strtotime($start);
+		$end = $this->valid_to == '0000-00-00' ? null : strtotime($this->valid_to);
 
-		return ($start <= $dates['today'] && (!$end || $end >= $dates['today']));
+		return parent::check_validity($start, $end);
 	}
 
 
