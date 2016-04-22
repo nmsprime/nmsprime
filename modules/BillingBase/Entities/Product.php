@@ -1,6 +1,8 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
+use DB;
 use Modules\BillingBase\Entities\SepaAccount;
 
 class Product extends \BaseModel {
@@ -62,6 +64,43 @@ class Product extends \BaseModel {
 	public function costcenter ()
 	{
 		return $this->belongsTo('Modules\BillingBase\Entities\CostCenter', 'costcenter_id');
+	}
+
+
+	/*
+	 * Other Functions
+	 */
+
+	/**
+	 * Returns an array with all ids of a specific product type
+	 * Note: until now only Internet & Voip is needed
+	 * @param product type
+	 * @return array of id's
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public static function get_product_ids($type)
+	{
+		switch ($type)
+		{
+			case 'Internet':
+				$column = 'qos_id';
+				break;
+			case 'Voip':
+				$column = 'voip_id';
+				break;
+			default:
+				return null;
+		}
+
+		$prod_ids = DB::table('product')->where('type', '=', $type)->where($column, '!=', '0')->select('id')->get();
+
+		$ids = array();
+
+		foreach ($prod_ids as $prod)
+			array_push($ids, $prod->id);
+
+		return $ids;
 	}
 
 }

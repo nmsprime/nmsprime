@@ -71,6 +71,7 @@ class accountingCommand extends Command {
 	public function fire()
 	{
 		$this->logger->addInfo(' #####    Start Accounting Command    #####');
+		$start = microtime(true);
 
 		// remove all entries of this month from accounting table if entries were already created (and create them new)
 		$actually_created = DB::table($this->tablename)->where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->first();
@@ -132,14 +133,13 @@ class accountingCommand extends Command {
 
 		$this->logger->addDebug('Last run was on '.$this->dates['last_run']);
 
-
 		/*
 		 * Loop over all Contracts
 		 */
-		foreach (Contract::all() as $c)
+		foreach ($contracts as $c)
 		{
 			// debugging output
-			var_dump($c->id);
+			var_dump($c->id, round(microtime(true) - $start, 4));
 
 			// check validity of contract
 			if (!$c->check_validity($this->dates))
@@ -255,6 +255,8 @@ class accountingCommand extends Command {
 
 		foreach ($salesmen as $sm)
 			$sm->print_commission($file);
+
+		var_dump(round(microtime(true) - $start, 4));
 
 	}
 

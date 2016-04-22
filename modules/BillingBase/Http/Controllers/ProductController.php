@@ -31,7 +31,7 @@ class ProductController extends \BaseModuleController {
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name', 'help' => 'For Credits it is possible to assign a Type by adding the type name to the Name of the Credit - e.g.: "Credit Device"'),
 			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => Product::getPossibleEnumValues('type', true)),
 			array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'Qos (Data Rate)', 'value' => $qos_val),
-			array('form_type' => 'select', 'name' => 'voip_tariff', 'description' => 'Phone Tariff', 'value' => Product::getPossibleEnumValues('voip_tariff')),
+			array('form_type' => 'select', 'name' => 'voip_tariff', 'description' => 'Phone Tariff', 'value' => [0 => '', 1 => 'Basic', 2 => 'Flat']),
 			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle')),
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional assignment)', 'value' => $list),
 			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)'),

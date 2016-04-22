@@ -324,6 +324,7 @@ class Item extends \BaseModel {
 	}
 
 
+
 }
 
 
@@ -350,8 +351,28 @@ class ItemObserver
 		}
 	}
 
-	public function updating($item)
+	public function created($item)
 	{
+		if ($item->product->type == 'Internet' || $item->product->type == 'Voip')
+		{
+			$item->contract->push_to_modems();
+			$item->contract->daily_conversion();
+		}
 	}
+
+	public function updated($item)
+	{
+		if ($item->product->type == 'Internet' || $item->product->type == 'Voip')
+		{
+			$item->contract->push_to_modems();
+			$item->contract->daily_conversion();
+		}
+	}
+
+	public function deleted($item)
+	{
+
+	}
+
 
 }
