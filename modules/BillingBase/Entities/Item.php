@@ -372,7 +372,11 @@ class ItemObserver
 
 	public function deleted($item)
 	{
-
+		if ($item->product->type == 'Internet' || $item->product->type == 'Voip')
+		{
+			$item->contract->daily_conversion();
+			$item->contract->push_to_modems();
+		}
 	}
 
 

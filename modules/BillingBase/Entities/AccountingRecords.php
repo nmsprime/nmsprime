@@ -95,7 +95,7 @@ class AccountingRecords {
 
 		if ($this->tariff_records)
 		{
-			$file = $dir.'accounting_item_records_'.$acc_name.'.txt';
+			$file = $dir.'accounting_tariff_records_'.$acc_name.'.txt';
 
 			File::put($file, implode("\t", array_keys($this->data))."\n");
 			File::append($file, implode($this->tariff_records));

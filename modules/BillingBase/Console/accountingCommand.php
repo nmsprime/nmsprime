@@ -71,7 +71,6 @@ class accountingCommand extends Command {
 	public function fire()
 	{
 		$this->logger->addInfo(' #####    Start Accounting Command    #####');
-		$start = microtime(true);
 
 		// remove all entries of this month from accounting table if entries were already created (and create them new)
 		$actually_created = DB::table($this->tablename)->where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->first();
@@ -139,7 +138,7 @@ class accountingCommand extends Command {
 		foreach ($contracts as $c)
 		{
 			// debugging output
-			var_dump($c->id, round(microtime(true) - $start, 4));
+			// var_dump($c->id, round(microtime(true) - $start, 4));
 
 			// check validity of contract
 			if (!$c->check_validity($this->dates))
@@ -167,6 +166,14 @@ class accountingCommand extends Command {
 				// check validity
 				if (!$item->check_validity($this->dates))
 					continue;
+
+				// only 1 internet & voip tariff !
+				if ($item->product->type == 'Internet' && $c->get_valid_tariff('Internet') && $item->product_id != $c->get_valid_tariff('Internet')->id)
+					continue;
+
+				if ($item->product->type == 'Voip' && $c->get_valid_tariff('Voip') && $item->product_id != $c->get_valid_tariff('Voip')->id)
+					continue;
+
 
 				$costcenter = $item->product->costcenter ? $item->product->costcenter : $c->costcenter;
 				$ret = $item->calculate_price_and_span($this->dates, $costcenter, $c->expires);
@@ -255,8 +262,6 @@ class accountingCommand extends Command {
 
 		foreach ($salesmen as $sm)
 			$sm->print_commission($file);
-
-		var_dump(round(microtime(true) - $start, 4));
 
 	}
 
