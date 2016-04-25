@@ -4,6 +4,7 @@ namespace Modules\BillingBase\Entities;
 
 use DB;
 use Modules\BillingBase\Entities\SepaAccount;
+use Modules\BillingBase\Entities\Product;
 
 class Product extends \BaseModel {
 
@@ -89,11 +90,16 @@ class Product extends \BaseModel {
 			case 'Voip':
 				$column = 'voip_id';
 				break;
+			case 'TV':
+				$prod_ids = DB::table('product')->where('type', '=', 'TV')->select('id')->get();
+				goto make_list;
 			default:
 				return null;
 		}
 
 		$prod_ids = DB::table('product')->where('type', '=', $type)->where($column, '!=', '0')->select('id')->get();
+
+make_list:
 
 		$ids = array();
 

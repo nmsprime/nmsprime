@@ -355,8 +355,9 @@ class ItemObserver
 	{
 		if ($item->product->type == 'Internet' || $item->product->type == 'Voip')
 		{
-			$item->contract->push_to_modems();
+			// NOTE: keep this order!
 			$item->contract->daily_conversion();
+			$item->contract->push_to_modems();
 		}
 	}
 
@@ -364,8 +365,8 @@ class ItemObserver
 	{
 		if ($item->product->type == 'Internet' || $item->product->type == 'Voip')
 		{
-			$item->contract->push_to_modems();
 			$item->contract->daily_conversion();
+			$item->contract->push_to_modems();
 		}
 	}
 
