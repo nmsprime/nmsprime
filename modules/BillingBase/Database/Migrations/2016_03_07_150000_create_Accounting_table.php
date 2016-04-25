@@ -19,11 +19,11 @@ class CreateAccountingTable extends BaseMigration {
 		{
 			$this->up_table_generic($table);
 
-			$table->string('contract_id');
+			$table->integer('contract_id');
 			$table->string('name');
 			$table->integer('product_id');
 			$table->float('ratio', 6, 4);
-			$table->integer('count');
+			$table->tinyInteger('count');
 			$table->integer('sepa_account_id');			// for creating individual invoice numbers
 			$table->integer('invoice_nr');
 		});

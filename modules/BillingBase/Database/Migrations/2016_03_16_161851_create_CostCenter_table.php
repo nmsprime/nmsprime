@@ -19,8 +19,8 @@ class CreateCostCenterTable extends BaseMigration {
 			$this->up_table_generic($table);
 			
 			$table->string('name');
-			$table->string('sepa_account_id');
-			$table->integer('billing_month');
+			$table->integer('sepa_account_id');
+			$table->tinyInteger('billing_month');
 			$table->string('description');
 		});
 

@@ -18,11 +18,11 @@ class CreateBillingBaseTable extends BaseMigration {
 		{
 			$this->up_table_generic($table);
 			
-			$table->integer('rcd');   // requested collection date (Zahlungsziel)
+			$table->tinyInteger('rcd');   // requested collection date (Zahlungsziel: 1 - 31)
 			$table->enum('currency', ['EUR', 'USD']);
 			$table->float('tax');
 			$table->string('mandate_ref_template');
-			$table->integer('invoice_nr_start');
+			$table->integer('invoice_nr_start')->unsigned();
 		});
 
 		DB::update("INSERT INTO ".$this->tablename.' (currency) VALUES("EUR");');
