@@ -7,6 +7,8 @@ use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
 
 class ProvVoipEnviaController extends \BaseModuleController {
 
+	public $name = 'VOIP';
+
 	/**
 	 * Constructor.
 	 *
