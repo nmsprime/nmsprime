@@ -3,6 +3,7 @@
 namespace Modules\BillingBase\Entities;
 
 use Modules\BillingBase\Entities\Product;
+use Carbon\Carbon;
 
 class Item extends \BaseModel {
 
@@ -98,6 +99,7 @@ class Item extends \BaseModel {
 	/**
 	 * Cross checks start and end dates against actual day - used in accounting Cmd
 	 * Calculates start and end dates of this model for parent function of BaseModel
+	 * NOTE: This is not accurate for Billing - item can end before billing cycle but has to be charged anyway!!!
 	 */
 	public function check_validity($start = null, $end = null)
 	{
@@ -109,11 +111,24 @@ class Item extends \BaseModel {
 	}
 
 
+	/*
+	 * Returns time in seconds after 1970 of start of item - valid_to field has higher priority than created_at
+	 */
+	public function get_start_time()
+	{
+		$date = $this->valid_from && $this->valid_from != '0000-00-00' ? $this->valid_from : $this->created_at->toDateString();
+		return strtotime($date);
+		
+		// return $this->valid_from && $this->valid_from != '0000-00-00' ? Carbon::createFromFormat('Y-m-d', $this->valid_from) : $this->created_at;
+		// $start = ($this->valid_from && $this->valid_from != $dates['null'] && strtotime($this->valid_from) > strtotime($this->created_at)) ? $this->valid_from : $this->created_at->toDateString();
+	}
+
+
 	/**
 	 * Calculate Price for actual month of an item with valid dates
 	 *
-	 * @param 	array of billing dates, costcenter (for billing_cycle)
-	 * @return 	price, text (name and range of payment)
+	 * @param 	array of billing dates (important is last run entry), costcenter (for billing_cycle)
+	 * @return 	$price, $text (name and range of payment), $ratio
 	 * @author 	Nino Ryschawy
 	 */
 	public function calculate_price_and_span($dates, $costcenter)
@@ -123,19 +138,57 @@ class Item extends \BaseModel {
 		$text  = '';
 		
 		$billing_cycle = $this->billing_cycle ? $this->billing_cycle : $this->product->billing_cycle;
-		$start = ($this->valid_from && $this->valid_from != $dates['null'] && strtotime($this->valid_from) > strtotime($this->created_at)) ? $this->valid_from : $this->created_at;
-		if (is_object($start))
-			$start = $start->toDateString();
+		$start = $this->get_start_time();
+		$end = $this->valid_to == $dates['null'] ? null : strtotime($this->valid_to);
+		// $end   = $this->valid_to == $dates['null'] ? null : Carbon::createFromFormat('Y-m-d', $this->valid_to);
 
-		$end = $this->valid_to == $dates['null'] ? null : $this->valid_to;
 		// contract ends before item ends - contract has higher priority
 		if ($this->contract->expires)
+			$end = !$end || strtotime($this->contract->contract_end) < $end ? strtotime($this->contract->contract_end) : $end;
+
+		
+		$overlapping = 0;
+		// only 1 internet & voip tariff ! or if they overlap - old tariff has to be charged until new tariff begins
+		if ($this->product->type == 'Internet')
 		{
-			if (!$end || strtotime($this->contract->contract_end) < strtotime($end))
-				$end = $this->contract->contract_end;
+			// get start of valid tariff
+			$valid_tariff = $this->contract->get_valid_tariff('Internet');
+
+			if (!$valid_tariff)
+				return null;
+
+			// set end date of overlapping tariff
+			if ($valid_tariff && $this->id != $valid_tariff->id)
+			{
+				$end = !$end || $end > $valid_tariff->get_start_time() ? $valid_tariff->get_start_time() : $end;
+				$overlapping = 1;
+			}
 		}
 
-		$started_lastm = (date('Y-m-01', strtotime($start)) == $dates['lastm_01']) && (strtotime($start) > strtotime($dates['last_run']));
+
+		// only 1 internet & voip tariff ! or if they overlap - old tariff has to be charged until new tariff begins
+		if ($this->product->type == 'Voip')
+		{
+			// get start of valid tariff
+			$valid_tariff = $this->contract->get_valid_tariff('Voip');
+
+			if (!$valid_tariff)
+				return null;
+
+			// set end date of overlapping tariff
+			if ($valid_tariff && $this->id != $valid_tariff->id)
+			{
+				$end = !$end || $end > $valid_tariff->get_start_time() ? $valid_tariff->get_start_time() : $end;
+				$overlapping = 1;
+			}
+		}
+
+
+		// skip all items that have no valid dates in this month
+		if ($start >= strtotime($dates['nextm_01']) || ($end && $end < strtotime($dates['thism_01'])))
+			goto end;
+
+		$started_lastm = (date('Y-m-01', $start) == $dates['lastm_01']) && ($start >= strtotime($dates['last_run']));
 		
 
 		switch($billing_cycle)
@@ -144,18 +197,28 @@ class Item extends \BaseModel {
 				
 				$text = 'Month '.$dates['this_m_bill'];
 
+				$ratio = 1;
+
 				// payment starts this month
-				if (date('Y-m', strtotime($start)) == $dates['this_m'])
-					$ratio = 1 - date('d', strtotime($start)) / date('t');
+				if (date('Y-m', $start) == $dates['this_m'])
+					$ratio = 1 - (date('d', $start) - 1) / date('t');
 
 				// payment starts last month after last_run
-				if (date('Y-m-01', strtotime($start)) == $dates['lastm_01'] && strtotime($start) > strtotime($dates['last_run']))
+				if (date('Y-m-01', $start) == $dates['lastm_01'] && $start >= strtotime($dates['last_run']))
 				{
-					$ratio = 2 - date('d', strtotime($start)) / date('t', strtotime($dates['lastm_01']));
+					$ratio = 2 - (date('d', $start) - 1) / date('t', strtotime($dates['lastm_01']));
 					$text  = 'Month '.$dates['last_m'].'+'.$dates['this_m_bill'];
 				}
 
-				$price = $ratio ? $ratio * $this->product->price : $this->product->price;
+				// payment ends this month
+				if ($end && $end < strtotime($dates['nextm_01']))
+					$ratio += (date('d', $end) - $overlapping)/date('t') - 1;
+
+// if ($this->contract->id == 500003 && $this->product->id == 4)
+// 	dd($this->product->name, date('Y-m-d', $start), $end, date('Y-m-d', $end), $start, $ratio);
+
+
+				$price = $ratio * $this->product->price;
 				$text  = $this->product->name.' - '.$text;
 
 				if ($this->product->type == 'Credit')
@@ -165,73 +228,46 @@ class Item extends \BaseModel {
 
 
 			case 'Yearly':
-				$price = 0;
-				$text  = '';
+				
 				$billing_month = $costcenter->billing_month ? $costcenter->billing_month : 6;		// June as default
 				if ($billing_month < 10)
 					$billing_month = '0'.$billing_month;
 
-				// all 12 months from that month it is valid
-				// if (!$billing_month)
-				// {
-				// 	$max_ending = strtotime('+1 year');
-
-				// 	if (date('m', strtotime($start)) == $dates['m'] || $started_lastm);
-				// 	{
-				// 		$price = $this->product->price;
-				// 		$text  = $dates['this_m_bill'].' - '.date('m/Y', strtotime('now', strtotime('-1 month +1 year')));
-				// 		if ($started_lastm)
-				// 			$text = $dates['last_m_bill'].' - '.date('m/Y', strtotime('now', strtotime('-2 month +1 year')));
-				// 	}
-
-				// 	// consider valid_to date	
-				// 	if ($end && (strtotime($end) < $max_ending))
-				// 	{
-				// 		$ratio = 1 + (date('m', $end) - $dates['m']) / 12;
-				// 		$price *= $ratio;
-				// 		$text  = substr($text, 0, strpos($text, '-') + 1).date("$end_month/Y");
-				// 		break;
-				// 	}
-				// }
-
-				$starting = date('m', strtotime($start));
-// if ($this->contract->id == 500007)
-// 	dd($this['attributes'], $started_lastm, $starting, $ratio, $billing);
-
-				// started after last run in billing_month - pay only once!
-				if ($starting >= $billing_month && strtotime($start) > strtotime($dates['last_run']) && ($starting == $dates['m'] || $started_lastm))
-				{
-					// pay to end of year
-					$ratio = 1 - ($starting-1)/12;
-					$text  = $started_lastm ? $dates['last_m_bill'] : $dates['this_m_bill'];
-					$text .= ' - '.date('12/Y');
-				}
-
-				// started before last run in billing_month - calculate only for billing month
-				else if ($dates['m'] == $billing_month && $start <= $dates['today'])
+				// calculate only for billing month
+				if ($dates['m'] == $billing_month)
 				{
 					// started before this yr
-					if (date('Y', strtotime($start)) < $dates['Y'])
+					if (date('Y', $start) < $dates['Y'])
 					{
 						$ratio = 1;
 						$text  = 'Year '.$dates['Y'];
 					}
 
 					// started this yr
-					if (date('Y', strtotime($start)) == $dates['Y'])
+					if (date('Y', $start) == $dates['Y'])
 					{
-						$ratio = 1 - ($starting-1)/12;
+						// $ratio = 1 - (date('m', $start)-1)/12;
+						$ratio = 1 - date('z', $start) / (date('z', strtotime(date('Y-12-31'))) + 1);		// date('z') + 1 is actual day of year!
 						$text  = $started_lastm ? $dates['last_m_bill'] : $dates['this_m_bill'];
 						$text .= ' - '.date('12/Y');
 					}					
 				}
 
-				// product validity ends this yr
-				if ($end && date('Y', strtotime($end)) == $dates['Y'])
+				// started after last run in billing_month - only one payment!
+				else if ($start >= strtotime(date("Y-$billing_month-".date('d', strtotime($dates['last_run'])) )) && (date('m', $start) == $dates['m'] || $started_lastm))
 				{
-					$end_month = date('m', strtotime($end));
-					$ratio = $ratio ? $end_month/12 - 1 + $ratio : 0; //$end_month/12;
-					$text  = substr($text, 0, strpos($text, '-') + 2).date("$end_month/Y");
+					// pay to end of year
+					$ratio = 1 - date('z', $start) / (date('z', strtotime(date('Y-12-31'))) + 1);
+					$text  = $started_lastm ? $dates['last_m_bill'] : $dates['this_m_bill'];
+					$text .= ' - '.date('12/Y');
+				}
+
+				// product validity ends this yr
+				if ($end && date('Y', $end) == $dates['Y'])
+				{
+					// $ratio = $ratio ? $end_month/12 - 1 + $ratio : 0; // $end_month/12;
+					$ratio = $ratio ? (date('z', $end) + 1)/(date('z', strtotime(date('Y-12-31'))) + 1) + $ratio - 1 : 0;
+					$text  = substr($text, 0, strpos($text, '-') + 2).date('m/Y', $end);
 				}
 
 				$price = $this->product->price * $ratio;
@@ -244,26 +280,39 @@ class Item extends \BaseModel {
 				$price = 0;
 				$text  = '';
 
-				// 1 -> 2,5,8,11 2->3,6,9,12 3->4,7,10,1
+				// always in second of three months (1 -> 2,5,8,11 2->3,6,9,12 3->4,7,10,1)
 				if (date('m', strtotime('+1 month', $start)) % 3 == $dates['m'] % 3)
 				{
-					$price = $this->product->price;
+					$ratio = 1;
 					$text  = date('m/Y', strtotime('-1 month')).' - '.date('m/Y', strtotime('+1 month'));
+
+					// if started this or last month
+					if ($start >= strtotime($dates['thism_01']) || $started_lastm)
+					{
+						$days = date('z', strtotime(date('Y-m-01', strtotime('+2 month')))) - date('z', $start) - 1;
+						$total_days = date('t', strtotime('last month')) + date('t') + date('t', strtotime('next month'));
+						$ratio = $days / $total_days;
+					}
 				}
 
-				// consider valid_to date
-				if (date('m', strtotime($end)) == $dates['m'])
-				{
-					$price = $price * 2/3;
-					$text  = date('m/Y', strtotime('-1 month')).' - '.date('m/Y');
-				}
+				$end_m = date('m', $end);
 
-				if (date('m', strtotime($end)) == date('m', strtotime('+2 month')))
+				// consider end date
+				if ($end_m == $dates['m'] || $end_m == date('m', strtotime('next month')))
 				{
-					$price = $price * 4/3;
+					// $price = $price * 2/3;
+					$total_days = date('t', strtotime('last month')) + date('t') + date('t', strtotime('next month'));
+					$ratio = (date('z', $end) - date('z', $start)) / $total_days;
+					$text  = date('m/Y', strtotime('-1 month')).' - '.date('m/Y', $end);
+				}
+				// ends the next but one - endet übernächsten monat
+				else if ($end_m == date('m', strtotime('+2 month')))
+				{
+					$ratio = 1 + (date('d', $end)/date('t', $end));
 					$text  = date('m/Y', strtotime('-1 month')).' - '.date('m/Y', strtotime('+2 month'));				
 				}
 
+				$price = $this->product->price * $ratio;
 				$text = $this->product->name.' '.$text;
 
 				break;
@@ -274,7 +323,7 @@ class Item extends \BaseModel {
 				$valid_to = $this->valid_to == $dates['null'] ? null : $this->valid_to;
 
 				// if created or valid from this month or last month after last run
-				if ($start >= $dates['thism_01'] || $started_lastm)
+				if ($start >= strtotime($dates['thism_01']) || $started_lastm)
 				{
 					$price = $this->product->price;
 					if ($this->product->type == 'Credit')
@@ -285,7 +334,7 @@ class Item extends \BaseModel {
 				if ($valid_to)
 				{
 					// split payment into pieces
-					$tot_months = round((strtotime(date('Y-m', strtotime($valid_to))) - strtotime(date('Y-m', strtotime($start)))) / $dates['m_in_sec']) + 1;
+					$tot_months = round((strtotime(date('Y-m', strtotime($valid_to))) - strtotime(date('Y-m', $start))) / $dates['m_in_sec']) + 1;
 					if ($started_lastm)
 						$tot_months -= 1;
 
@@ -317,8 +366,11 @@ class Item extends \BaseModel {
 				break;
 
 		}
+end:
 
 		$ratio = $ratio ? $ratio : 1;
+		if (!$price)
+			return null;
 
 		return ['price' => $price, 'text' => $text, 'ratio' => $ratio];
 	}
