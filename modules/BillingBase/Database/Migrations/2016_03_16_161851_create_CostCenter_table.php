@@ -28,10 +28,6 @@ class CreateCostCenterTable extends BaseMigration {
 
 		$this->set_fim_fields(['name', 'description']);
 
-		Schema::table('contract', function(Blueprint $table)
-		{
-			$table->integer('costcenter_id');
-		});
 	}
 
 	/**
@@ -42,11 +38,6 @@ class CreateCostCenterTable extends BaseMigration {
 	public function down()
 	{
 		Schema::drop($this->tablename);
-
-		Schema::table('contract', function(Blueprint $table)
-		{
-			$table->dropColumn('costcenter_id');
-		});
 	}
 
 }
