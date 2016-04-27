@@ -243,6 +243,16 @@ class ProvVoipEnvia extends \BaseModel {
 				array_push($ret, array('linktext' => 'Get voice data', 'url' => $base.'contract_get_voice_data'.$origin.'&amp;contract_id='.$contract_id.$really));
 			}
 
+			// tariff can only be changed if contract exists and a tariff change is wanted
+			// TODO: implement checks for current change state; otherwise we get an error from Envia (change into the same tariff is not possible)
+			if ($this->contract_available) {
+				if (boolval($this->contract->next_voip_id)) {
+					if ($this->contract->voip_id != $this->contract->next_voip_id) {
+						array_push($ret, array('linktext' => 'Change tariff', 'url' => $base.'contract_change_tariff'.$origin.'&amp;contract_id='.$contract_id));
+					}
+				}
+			}
+
 		}
 
 
@@ -511,7 +521,6 @@ class ProvVoipEnvia extends \BaseModel {
 		$defaults = array(
 			'contract_data' => array(
 				/* 'porting' => 'MISSING', */
-				'tariff' => 'VOIP0413_ERZ_flat',
 				'phonebookentry_fax' => 0,
 				'phonebookentry_reverse_search' => 1,
 			),
@@ -592,9 +601,11 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			/* 'contract_change_tariff' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+			'contract_change_tariff' => array(
+				'reseller_identifier',
+				'contract_identifier',
+				'tariff_data',
+			),
 
 			/* 'contract_change_variation' => array( */
 			/* 	'reseller_identifier', */
@@ -856,18 +867,30 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$inner_xml = $this->xml->addChild('contract_data');
 
-		// mapping xml to database
-		$fields_contract = array(
-			'phonebookentry_phone' => 'phonebook_entry',
-		);
-
-		$this->_add_fields($inner_xml, $fields_contract, $this->contract);
-
 		// add startdate for contract (default: today – there are no costs without phone numbers)
 		$inner_xml->addChild('orderdate', date('Y-m-d'));
-		$inner_xml->addChild('variation_id', $this->contract->phonetariff->external_identifier);
+		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase->external_identifier);
+		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale->external_identifier);
 
 	}
+
+	/**
+	 * Method to add tariff data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_tariff_data() {
+
+		$inner_xml = $this->xml->addChild('tariff_data');
+
+		// TODO: get dat from Contract->Item (after merging with Nino)
+		$inner_xml->addChild('orderdate', date('Y-m-d', strtotime('first day of next month')));
+
+		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale_next->external_identifier);
+
+
+	}
+
 
 	/**
 	 * Method to add contract termination
@@ -1363,6 +1386,29 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		$out .= "Done.";
+
+		return $out;
+	}
+
+	/**
+	 * Process data after successful tariff change
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_contract_tariff_change_response($xml, $data, $out) {
+
+		// create enviaorder
+		$order_data = array();
+
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['contract_id'] = $this->contract->id;
+		$order_data['ordertype'] = 'customer/update';
+		$order_data['orderstatus'] = 'initializing';
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// view data
+		$out .= "<h5>Tariff change successful (order ID: ".$xml->orderid.")</h5>";
 
 		return $out;
 	}

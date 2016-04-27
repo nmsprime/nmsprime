@@ -134,6 +134,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			['api' => 'selfcare', 'link' => 'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=out'],
 			['api' => 'selfcare', 'link' => 'calllog_get_status?contract_id=500000'],
 			['api' => 'selfcare', 'link' => 'configuration_get?phonenumber_id=300001'],
+			['api' => 'order', 'link' => 'contract_change_tariff?contract_id=500010'],
 			['api' => 'order', 'link' => 'contract_create?contract_id=500000'],
 			['api' => 'order', 'link' => 'contract_get_voice_data?contract_id=500000'],
 			['api' => 'order', 'link' => 'contract_terminate?contract_id=500000'],
@@ -157,7 +158,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			['api' => 'selfcare', 'link' => 'configuration_update'],
 			['api' => 'order', 'link' => 'contract_change_method'],
 			['api' => 'order', 'link' => 'contract_change_sla'],
-			['api' => 'order', 'link' => 'contract_change_tariff'],
 			['api' => 'order', 'link' => 'contract_change_variation'],
 			['api' => 'order', 'link' => 'contract_get_reference'],
 			['api' => 'order', 'link' => 'contract_lock'],
@@ -374,6 +374,26 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			return true;
 		}
 
+		if ($job == 'contract_change_tariff') {
+			$this->model->extract_environment($this->model->contract, 'contract');
+
+			// only can get data for a contract that exists
+			if (!$this->model->contract_available) {
+				return false;
+			}
+
+			if (!boolval($this->model->contract->next_voip_id)) {
+				return false;
+			}
+
+			if ($this->model->contract->voip_id == $this->model->contract->next_voip_id) {
+				return false;
+			}
+
+			return true;
+
+		}
+
 		if ($job == "customer_update") {
 			$this->model->extract_environment($this->model->contract, 'contract');
 
@@ -534,7 +554,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 			'contract_change_method' => $base_url.'____TODO____',
 			'contract_change_sla' => $base_url.'____TODO____',
-			'contract_change_tariff' => $base_url.'____TODO____',
+			'contract_change_tariff' => $base_url.'contract/change_tariff',
 			'contract_change_variation' => $base_url.'____TODO____',
 			'contract_create' => $base_url.'contract/create',
 			'contract_get_reference' => $base_url.'____TODO____',
