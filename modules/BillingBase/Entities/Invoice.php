@@ -249,6 +249,7 @@ class Invoice {
 
 		// create pdf
 		chdir($this->dir);
+		// TODO: move to end of process
 		system("pdflatex $file &>/dev/null");		// returns 0 on success - $ret as second argument
 
 		$this->logger->addDebug('Successfully created Invoice for Contract '.$this->data['contract_nr'], [$this->data['contract_id']]);

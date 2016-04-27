@@ -69,6 +69,7 @@ class Salesman extends \BaseModel {
 	protected $all_prod_types = [];				// array (list) of all possible types of products - 
 	protected $total_commission = 0;			// total commission amount during actual billing cycle
 	protected $item_names = [];					// all names of items he gets commission for (in actual billing cycle)
+	public $filename = 'salesmen_commission.txt';
 
 
 	// example - $item->product->name == 'Credit Device'
@@ -113,10 +114,17 @@ add:
 		return;
 	}
 
+	public function prepare_output_file($dir)
+	{
+		File::put($dir.$this->filename, "ID\tName\tCommission in %\tCommission Amount\tItems\n");
+	}
+
 
 	// id, name, commission %, commission amount, all added items as string
-	public function print_commission($file)
+	public function print_commission($dir)
 	{
+		$file = $dir.$this->filename;
+
 		File::append($file, $this->id."\t".$this->firstname.' '.$this->lastname."\t".$this->commission."\t".round($this->total_commission * $this->commission / 100, 2)."\t".implode(', ', $this->item_names));
 		echo "stored salesmen commissions in $file\n";
 	}

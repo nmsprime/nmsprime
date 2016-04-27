@@ -164,24 +164,16 @@ class accountingCommand extends Command {
 			foreach ($c->items as $item)
 			{
 				// check validity
-				if (!$item->check_validity($this->dates))
-					continue;
-
-				// only 1 internet & voip tariff !
-				if ($item->product->type == 'Internet' && $c->get_valid_tariff('Internet') && $item->product_id != $c->get_valid_tariff('Internet')->id)
-					continue;
-
-				if ($item->product->type == 'Voip' && $c->get_valid_tariff('Voip') && $item->product_id != $c->get_valid_tariff('Voip')->id)
-					continue;
-
+				// if (!$item->check_validity($this->dates))
+				// 	continue;
 
 				$costcenter = $item->product->costcenter ? $item->product->costcenter : $c->costcenter;
 				$ret = $item->calculate_price_and_span($this->dates, $costcenter, $c->expires);
 				
-				$price = $ret['price'];
 				// skip adding item to accounting records and bill if price == 0
-				if (!$price)
+				if (!$ret)
 					continue;
+				$price = $ret['price'];
 
 				// get account via costcenter
 				$acc_id = $costcenter->sepa_account_id;
@@ -233,7 +225,7 @@ class accountingCommand extends Command {
 
 				$acc = $sepa_accs->find($acc_id);
 				$acc->add_booking_record($c, $mandate, $value, $conf);
-				$acc->add_bill_data($c, $mandate, $value, $this->logger);
+				$acc->add_invoice_data($c, $mandate, $value, $this->logger);
 
 				// make bill already
 				$acc['invoices'][$c->id]->make_invoice();
@@ -247,21 +239,23 @@ class accountingCommand extends Command {
 
 		} // end of loop over contracts
 
-		// store all billing files besides invoices
+		/*
+		 * store all billing files besides invoices
+		 */
 		if (!is_dir($this->dir))
 			mkdir($this->dir, '0700');		
 		$dir = $this->dir.date('Y_m').'/';
 		if (!is_dir($dir))
 			mkdir($dir, '0744');
+		else
+			system("rm -rf $dir/*");
 
 		foreach ($sepa_accs as $acc)
 			$acc->make_billing_files($dir);
 
-		$file = $dir.'salesmen_commission.txt';
-		File::put($file, "ID\tName\tCommission in %\tCommission Amount\tItems\n");
-
+		$salesmen[0]->prepare_output_file($dir);
 		foreach ($salesmen as $sm)
-			$sm->print_commission($file);
+			$sm->print_commission($dir);
 
 	}
 
