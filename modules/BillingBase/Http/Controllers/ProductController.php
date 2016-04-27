@@ -31,7 +31,7 @@ class ProductController extends \BaseModuleController {
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name', 'help' => 'For Credits it is possible to assign a Type by adding the type name to the Name of the Credit - e.g.: "Credit Device"'),
 			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => Product::getPossibleEnumValues('type', true)),
 			array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'Qos (Data Rate)', 'value' => $qos_val),
-			array('form_type' => 'select', 'name' => 'voip_tariff', 'description' => 'Phone Tariff', 'value' => [0 => '', 1 => 'Basic', 2 => 'Flat']),
+			array('form_type' => 'select', 'name' => 'voip_id', 'description' => 'Phone Tariff', 'value' => [0 => '', 1 => 'Basic', 2 => 'Flat']),
 			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle')),
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional assignment)', 'value' => $list),
 			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)'),
@@ -44,33 +44,34 @@ class ProductController extends \BaseModuleController {
 	 */
 	public function prep_rules($rules, $data)
 	{
+		// dd($data, $rules);
 		switch ($data['type']) 
 		{
 			case 'Credit':
 				$rules['billing_cycle'] = 'In:Once,Monthly';
 				$rules['qos_id'] = 'In:0';
-				$rules['voip_tariff'] = 'In:""';
+				$rules['voip_id'] = 'In:0';
 				$rules['price'] = 'In:"",0';
 				break;
 
 			case 'Device':
-				$rules['billing_cycle'] = 'In:Once';
+				// $rules['billing_cycle'] = 'In:Once';
 				$rules['qos_id'] = 'In:0';
-				$rules['voip_tariff'] = 'In:""';
+				$rules['voip_id'] = 'In:0';
 				break;
 
 			case 'Internet':
-				$rules['voip_tariff'] = 'In:""';
+				$rules['voip_id'] = 'In:0';
 				break;
 			
 			case 'Other':
 				$rules['qos_id'] = 'In:0';
-				$rules['voip_tariff'] = 'In:""';
+				$rules['voip_id'] = 'In:0';
 				break;
 
 			case 'TV':
 				$rules['qos_id'] = 'In:0';
-				$rules['voip_tariff'] = 'In:""';
+				$rules['voip_id'] = 'In:0';
 				break;
 
 			case 'Voip':
