@@ -29,6 +29,7 @@ class CreateSepaMandateTable extends \BaseMigration {
 			$table->date('sepa_valid_from');
 			$table->date('sepa_valid_to');
 			$table->boolean('recurring');
+			$table->enum('state', ['', 'FIRST', 'RECUR', 'LAST']);		// type that was sent in last SepaXml
 		});
 
 		$this->set_fim_fields(['reference', 'sepa_holder', 'sepa_institute', 'sepa_iban', 'sepa_bic']);
