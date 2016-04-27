@@ -16,7 +16,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Helper function to fake XML returns.
+	 * Helper method to fake XML returns.
 	 * This will return a SimpleXML instance which can be used instead a real Envia answer.
 	 *
 	 * @author Patrick Reichel
@@ -279,7 +279,12 @@ class ProvVoipEnvia extends \BaseModel {
 			if ($this->voipaccount_available) {
 				array_push($ret, array('linktext' => 'Terminate VoIP account', 'url' => $base.'voip_account_terminate'.$origin.'&amp;phonenumber_id='.$phonenumber_id));
 			};
+
+			if ($this->voipaccount_available) {
+				array_push($ret, array('linktext' => 'Update VoIP account', 'url' => $base.'voip_account_update'.$origin.'&amp;phonenumber_id='.$phonenumber_id));
+			};
 		}
+
 
 
 		////////////////////////////////////////
@@ -731,9 +736,12 @@ class ProvVoipEnvia extends \BaseModel {
 				'accounttermination_data',
 			),
 
-			/* 'voip_account_update' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+			'voip_account_update' => array(
+				'reseller_identifier',
+				'contract_identifier',
+				'callnumber_identifier',
+				'callnumber_data',
+			),
 
 		);
 
@@ -1044,6 +1052,26 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->_add_sip_data($inner_xml->addChild('method'));
 	}
 
+
+	/**
+	* Method to add data for a callnumber.
+	* This is different from _add_callnumber_single_data – so we have to implement again…
+	*
+	* @author Patrick Reichel
+	*/
+	protected function _add_callnumber_data() {
+
+		$inner_xml = $this->xml->addChild('callnumber_data');
+
+		// TODO: change to date selection instead of performing changes today?
+		$inner_xml->addChild('orderdate', date("Y-m-d"));
+
+		// special handling of trc_class needed (comes from external table)
+		$trc_class = TRCClass::find($this->phonenumbermanagement->trcclass)->trc_id;
+		$inner_xml->addChild('trc_class', $trc_class);
+
+		$this->_add_sip_data($inner_xml->addChild('method'));
+	}
 
 	/**
 	 * Method to add sip data.
@@ -1364,7 +1392,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @author Patrick Reichel
 	 *
 	 * @todo: this method will be used to update phonenumber related data (as sip username and password)
-	 * @todo: this will be used
+	 * @todo: this will be used to update TRCClass – needs testing (not possible ATM because there are no active phonenumbers)
 	 */
 	protected function _process_contract_get_voice_data_response($xml, $data, $out) {
 
@@ -1386,6 +1414,16 @@ class ProvVoipEnvia extends \BaseModel {
 				// find phonenumber object for given phonenumber
 				$where_stmt = "prefix_number=".$entry->localareacode." AND number=".$entry->baseno;
 				$phonenumber = Phonenumber::whereRaw($where_stmt)->first();
+
+				$phonenumbermanagement = $phonenumber->phonenumbermanagement;
+
+				// update TRCClass
+				if (is_numeric($entry)) {
+					// remember: trcclass.id != trclass.trc_id (first is local key, second is Envia Id!)
+					$trcclass = TRCClass::where('trc_id', $entry['trc_class'])->first();
+					$phonenumbermanagement['trcclass'] = $trcclass->id;
+					$phonenumbermanagement->save();
+				}
 
 				$method = $entry->method;
 
@@ -1430,7 +1468,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$order_data['orderid'] = $xml->orderid;
 		$order_data['contract_id'] = $this->contract->id;
-		$order_data['ordertype'] = 'customer/update';
+		$order_data['ordertype'] = 'contract/change_tariff';
 		$order_data['orderstatus'] = 'initializing';
 
 		$enviaOrder = EnviaOrder::create($order_data);
@@ -1453,7 +1491,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$order_data['orderid'] = $xml->orderid;
 		$order_data['contract_id'] = $this->contract->id;
-		$order_data['ordertype'] = 'customer/update';
+		$order_data['ordertype'] = 'contract/change_variation';
 		$order_data['orderstatus'] = 'initializing';
 
 		$enviaOrder = EnviaOrder::create($order_data);

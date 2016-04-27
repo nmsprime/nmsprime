@@ -150,6 +150,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			['api' => 'order', 'link' => 'order_get_status?order_id=72950'],
 			['api' => 'order', 'link' => 'voip_account_create?phonenumber_id=300001'],
 			['api' => 'order', 'link' => 'voip_account_terminate?phonenumber_id=300001'],
+			['api' => 'order', 'link' => 'voip_account_update?phonenumber_id=300001'],
 			['api' => '', 'link' => ''],
 			['api' => 'selfcare', 'link' => 'blacklist_create_entry'],
 			['api' => 'selfcare', 'link' => 'blacklist_delete_entry'],
@@ -169,7 +170,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			['api' => 'order', 'link' => 'phonebookentry_create'],
 			['api' => 'order', 'link' => 'phonebookentry_delete'],
 			['api' => 'order', 'link' => 'phonebookentry_get'],
-			['api' => 'order', 'link' => 'voip_account_update'],
 		);
 
 		echo '<h3>Selfcare-API is not active ⇒ links will not be shown</h3>';
@@ -447,6 +447,17 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			return true;
 		}
 
+		if ($job == "voip_account_update") {
+			$this->model->extract_environment($this->model->phonenumbermanagement, 'phonenumbermanagement');
+
+			// can only be terminated if available
+			if (!$this->model->voipaccount_available) {
+				return false;
+			}
+
+			return true;
+		}
+
 
 
 
@@ -602,7 +613,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 			'voip_account_create' => $base_url.'voip_account/create',
 			'voip_account_terminate' => $base_url.'voip_account/terminate',
-			'voip_account_update' => $base_url.'____TODO____',
+			'voip_account_update' => $base_url.'voip_account/update',
 		);
 
 		// TODO: improve error handling: Throwing an exception is a bit hard :-)
