@@ -510,7 +510,6 @@ class ProvVoipEnvia extends \BaseModel {
 		// set defaults if used by job
 		$defaults = array(
 			'contract_data' => array(
-				'variation_id' => '1490',
 				/* 'porting' => 'MISSING', */
 				'tariff' => 'VOIP0413_ERZ_flat',
 				'phonebookentry_fax' => 0,
@@ -866,6 +865,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// add startdate for contract (default: today – there are no costs without phone numbers)
 		$inner_xml->addChild('orderdate', date('Y-m-d'));
+		$inner_xml->addChild('variation_id', $this->contract->phonetariff->external_identifier);
 
 	}
 
