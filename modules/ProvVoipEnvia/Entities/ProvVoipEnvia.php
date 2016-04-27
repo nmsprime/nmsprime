@@ -253,6 +253,16 @@ class ProvVoipEnvia extends \BaseModel {
 				}
 			}
 
+			// variation can only be changed if contract exists and a variation change is wanted
+			// TODO: implement checks for current change state; otherwise we get an error from Envia (change into the same variation is not possible)
+			if ($this->contract_available) {
+				if (boolval($this->contract->next_voip_id)) {
+					if ($this->contract->voip_id != $this->contract->next_voip_id) {
+						array_push($ret, array('linktext' => 'Change variation', 'url' => $base.'contract_change_variation'.$origin.'&amp;contract_id='.$contract_id));
+					}
+				}
+			}
+
 		}
 
 
@@ -607,9 +617,11 @@ class ProvVoipEnvia extends \BaseModel {
 				'tariff_data',
 			),
 
-			/* 'contract_change_variation' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+			'contract_change_variation' => array(
+				'reseller_identifier',
+				'contract_identifier',
+				'variation_data',
+			),
 
 			'contract_create' => array(
 				'reseller_identifier',
@@ -874,6 +886,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 	}
 
+
 	/**
 	 * Method to add tariff data
 	 *
@@ -887,6 +900,21 @@ class ProvVoipEnvia extends \BaseModel {
 		$inner_xml->addChild('orderdate', date('Y-m-d', strtotime('first day of next month')));
 
 		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale_next->external_identifier);
+
+
+	}
+
+
+	/**
+	 * Method to add variation data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_variation_data() {
+
+		$inner_xml = $this->xml->addChild('variation_data');
+
+		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
 
 
 	}
@@ -1395,7 +1423,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _process_contract_tariff_change_response($xml, $data, $out) {
+	protected function _process_contract_change_tariff_response($xml, $data, $out) {
 
 		// create enviaorder
 		$order_data = array();
@@ -1409,6 +1437,29 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// view data
 		$out .= "<h5>Tariff change successful (order ID: ".$xml->orderid.")</h5>";
+
+		return $out;
+	}
+
+	/**
+	 * Process data after successful variation change
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_contract_change_variation_response($xml, $data, $out) {
+
+		// create enviaorder
+		$order_data = array();
+
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['contract_id'] = $this->contract->id;
+		$order_data['ordertype'] = 'customer/update';
+		$order_data['orderstatus'] = 'initializing';
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// view data
+		$out .= "<h5>Variation change successful (order ID: ".$xml->orderid.")</h5>";
 
 		return $out;
 	}
