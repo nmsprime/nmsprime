@@ -9,4 +9,6 @@
 |
 */
 
+App::register('Modules\ProvVoipEnvia\Providers\ProvVoipEnviaServiceProvider');
+
 require __DIR__ . '/Http/routes.php';

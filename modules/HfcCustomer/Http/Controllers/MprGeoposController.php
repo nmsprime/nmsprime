@@ -18,5 +18,5 @@ class MprGeoposController extends \BaseModuleController {
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description')
 		);
 	}
-	
+
 }

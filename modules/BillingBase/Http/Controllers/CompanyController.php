@@ -64,7 +64,7 @@ class CompanyController extends \BaseModuleController {
 	/**
 	 * Overwrites the base methods to handle file uploads
 	 */
-	protected function store()
+	protected function store($redirect = true)
 	{
 		// check and handle uploaded firmware files
 		$this->handle_file_upload('upload', '/tftpboot/bill/');
