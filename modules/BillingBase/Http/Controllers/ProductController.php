@@ -33,7 +33,7 @@ class ProductController extends \BaseModuleController {
 			array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'Qos (Data Rate)', 'value' => $qos_val),
 			array('form_type' => 'select', 'name' => 'voip_id', 'description' => 'Phone Tariff', 'value' => [0 => '', 1 => 'Basic', 2 => 'Flat']),
 			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle')),
-			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional assignment)', 'value' => $list),
+			array('form_type' => 'text', 'name' => 'cycle_count', 'description' => 'Number of Cycles'),
 			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)'),
 			$tax,
 		);
