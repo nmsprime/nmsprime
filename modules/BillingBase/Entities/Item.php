@@ -96,23 +96,15 @@ class Item extends \BaseModel {
 
 
 
-	/**
-	 * Cross checks start and end dates against actual day - used in accounting Cmd
-	 * Calculates start and end dates of this model for parent function of BaseModel
-	 * NOTE: This is not accurate for Billing - item can end before billing cycle but has to be charged anyway!!!
-	 */
-	public function check_validity($start = null, $end = null)
+	// Checks if item has valid dates in last month
+	public function check_validity($start = '', $end = '')
 	{
-		$start = ($this->valid_from && ($this->valid_from != '0000-00-00') && (strtotime($this->valid_from) > strtotime($this->created_at))) ? $this->valid_from : $this->created_at->toDateString();
-		$start = strtotime($start);
-		$end = $this->valid_to == '0000-00-00' ? null : strtotime($this->valid_to);
-
-		return parent::check_validity($start, $end);
+		return parent::check_validity('valid_from', 'valid_to');
 	}
 
 
 	/*
-	 * Returns time in seconds after 1970 of start of item - valid_to field has higher priority than created_at
+	 * Returns time in seconds after 1970 of start of item - valid_from field has higher priority than created_at
 	 */
 	public function get_start_time()
 	{

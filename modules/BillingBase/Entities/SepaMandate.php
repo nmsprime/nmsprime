@@ -76,17 +76,12 @@ class SepaMandate extends \BaseModel {
 	/*
 	 * Other Functions
 	 */
-	
-	// checks validity - Calculates start and end dates of this model for parent function of BaseModel
-	public function check_validity($start = null, $end = null)
+
+	// Checks if item has valid dates in last month
+	public function check_validity($start = '', $end = '')
 	{
-		$start = $this->sepa_valid_from ? $this->sepa_valid_from : '0000-00-00';
-		$start = strtotime($start);
-		$end   = $this->sepa_valid_to == '0000-00-00' ? null : strtotime($this->sepa_valid_to);
-
-		return parent::check_validity($start, $end);
+		return parent::check_validity('sepa_valid_from', 'sepa_valid_to');
 	}
-
 
 }
 
