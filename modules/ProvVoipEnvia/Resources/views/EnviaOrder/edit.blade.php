@@ -4,13 +4,13 @@
 @section('content_right')
 
 	<?php
-		if ($view_var->view_has_many())
+		if ($view_var->view_relations())
 			$view_header_0 = '';
 		$i = 0;
 		$view_header_0 = '';
 	?>
 
-	@foreach($view_var->view_has_many() as $view => $relation)
+	@foreach($view_var->view_relations() as $view => $relation)
 
 		<?php
 			$i++;

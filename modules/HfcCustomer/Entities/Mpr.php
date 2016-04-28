@@ -71,7 +71,7 @@ class Mpr extends \BaseModel {
 	/*
 	 * Relation Views
 	 */
-	public function view_has_many()
+	public function view_relations()
 	{
 		return array(
 			'MprGeopos' => $this->mprgeopos

@@ -39,7 +39,7 @@ class Company extends \BaseModel {
 		return $this->name;
 	}
 
-	public function view_has_many ()
+	public function view_relations ()
 	{
 		return ['SepaAccount' => $this->accounts];
 	}

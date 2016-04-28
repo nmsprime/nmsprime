@@ -64,7 +64,7 @@ class Tree extends \BaseModel {
 	/*
 	 * Relation Views
 	 */
-	public function view_has_many()
+	public function view_relations()
 	{
 		if ($this->module_is_active('HfcCustomer'))
 			return array(
