@@ -33,7 +33,7 @@ class Salesman extends \BaseModel {
 	}
 
 	// link title in index view
-	public function get_view_link_title()
+	public function view_index_label()
 	{
 		return $this->firstname.' '.$this->lastname;
 	}

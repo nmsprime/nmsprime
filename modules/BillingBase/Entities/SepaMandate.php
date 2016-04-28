@@ -34,7 +34,7 @@ class SepaMandate extends \BaseModel {
 	}
 
 	// link title in index view
-	public function get_view_link_title()
+	public function view_index_label()
 	{
 		return $this->sepa_valid_from.' - '.$this->sepa_valid_to;
 		// return $this->reference.' | '.$this->sepa_valid_from.' - '.$this->sepa_valid_to;
