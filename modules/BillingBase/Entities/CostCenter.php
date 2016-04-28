@@ -39,7 +39,7 @@ class CostCenter extends \BaseModel {
 		return $this->orderBy('id')->get();
 	}
 
-	public function view_relations()
+	public function view_has_many()
 	{
 		return array(
 			'Product' => $this->products(),

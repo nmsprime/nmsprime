@@ -62,7 +62,7 @@ class EnviaOrder extends \BaseModel {
 	}
 
 	// returns all objects that are related to a mta
-	public function view_relations()
+	public function view_has_many()
 	{
 		return array(
 			'EnviaOrderDocument' => $this->enviaorderdocument,
