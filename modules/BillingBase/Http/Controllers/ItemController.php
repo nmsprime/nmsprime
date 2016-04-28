@@ -45,7 +45,7 @@ class ItemController extends \BaseModuleController {
 	/**
 	 * @author Nino Ryschawy
 	 */
-	public function prep_rules($rules, $data)
+	public function prepare_rules($rules, $data)
 	{
 		// $tariff_prod_ids = explode(',', substr($rules['count'], strpos($rules['count'], ',')+1)); //tariffs and credits
 		// if ($data['valid_from'] && !in_array($data['product_id'], $tariff_prod_ids))

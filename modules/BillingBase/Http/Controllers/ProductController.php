@@ -42,7 +42,7 @@ class ProductController extends \BaseModuleController {
 	/**
 	 * @author Nino Ryschawy
 	 */
-	public function prep_rules($rules, $data)
+	public function prepare_rules($rules, $data)
 	{
 		// dd($data, $rules);
 		switch ($data['type'])
