@@ -9,6 +9,7 @@ use File;
 use DB;
 
 use Modules\ProvBase\Entities\Contract;
+use Modules\BillingBase\Entities\AccountingRecord;
 use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\BillingLogger;
@@ -27,7 +28,6 @@ class accountingCommand extends Command {
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
 	protected $dir 			= '/var/www/data/billing/';
 	
-	protected $logger;					// billing logger instance
 	protected $dates;					// offen needed time strings for faster access - see constructor
 
 
@@ -38,9 +38,6 @@ class accountingCommand extends Command {
 	 */
 	public function __construct()
 	{
-		// instantiate logger for billing
-		$this->logger = new BillingLogger;
-
 		$this->dates = array(
 			'today' 		=> date('Y-m-d'),
 			'm' 			=> date('m'),
@@ -48,7 +45,7 @@ class accountingCommand extends Command {
 			'this_m'	 	=> date('Y-m'),
 			'this_m_bill'	=> date('m/Y'),
 			'last_m'		=> date('m', strtotime("first day of last month")),			// written this way because of known bug
-			'last_m_Y'		=> date('Y-m', strtotime("first day of last month")),
+			'last_m_Y'		=> date('Y-m', strtotime("first day of last month")),		// strtotime(first day of last month) is integer with actual timestamp!
 			'last_m_bill'	=> date('m/Y', strtotime("first day of last month")),
 			'null' 			=> '0000-00-00',
 			'lastm_01' 		=> date('Y-m-01', strtotime("first day of last month")),
@@ -70,67 +67,26 @@ class accountingCommand extends Command {
 	 */
 	public function fire()
 	{
-		$this->logger->addInfo(' #####    Start Accounting Command    #####');
 
-		// remove all entries of this month from accounting table if entries were already created (and create them new)
-		$actually_created = DB::table($this->tablename)->where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->first();
-		if (is_object($actually_created))
-		{
-			$this->logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
-			DB::update('DELETE FROM '.$this->tablename.' WHERE created_at>='.$this->dates['thism_01']);
-		}
-
+		$logger = new BillingLogger;
+		$logger->addInfo(' #####    Start Accounting Command    #####');
 
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
-		$salesmen 	= Salesman::all();
 		$contracts  = Contract::with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
-
-		// init salesmen here because of performance (only 1 DB query)
-		$prod_types = Product::getPossibleEnumValues('type');
-		unset($prod_types['Credit']);
-
-		foreach ($salesmen as $sm)
-			$sm->all_prod_types = $prod_types;
+		$salesmen 	= Salesman::all();
 
 
-		/*
-		 * Initialise date of last run and actual invoice nr counters
-		 */
-		$last_run = DB::table($this->tablename)->orderBy('created_at', 'desc')->select('created_at')->first();
-		if (is_object($last_run))
-		{
-			// all item entries after this date have to be included to the current billing cycle
-			$this->dates['last_run'] = $last_run->created_at;
+		// init product types of salesmen and invoice nr counters for each sepa account
+		$this->_init($sepa_accs, $salesmen, $conf);
 
-			// Separate invoice_nrs for every SepaAccount
-			foreach ($sepa_accs as $acc)
-			{
-				// restart invoice nr counter every year
-				if ($this->dates['m'] == '01')
-				{
-					if ($conf->invoice_nr_start)
-						$acc->invoice_nr = $conf->invoice_nr_start;
-					continue;
-				}
 
-				$tmp = DB::table($this->tablename)->where('sepa_account_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
-				$acc->invoice_nr = $tmp->invoice_nr;
-			}
-		}
-		// first run for this system
-		else
-		{
-			$this->dates['last_run'] = $this->dates['null'];
+		// remove all entries of this month
+		$ret = AccountingRecord::where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->delete();
+		if ($ret)
+			$this->logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 
-			foreach ($sepa_accs as $acc)
-			{
-				if ($conf->invoice_nr_start)
-					$acc->invoice_nr = $conf->invoice_nr_start;
-			}
-		}
 
-		$this->logger->addDebug('Last run was on '.$this->dates['last_run']);
 
 		/*
 		 * Loop over all Contracts
@@ -138,12 +94,15 @@ class accountingCommand extends Command {
 		foreach ($contracts as $c)
 		{
 			// debugging output
-			// var_dump($c->id, round(microtime(true) - $start, 4));
+			var_dump($c->id); //, round(microtime(true) - $start, 4));
+			// dd(strtotime(date('2016-04-01')), strtotime(date('2016-03-31 23:59:59')));
+			// dd(strtotime('0000-00-00'), strtotime(null));
 
-			// check validity of contract
-			if (!$c->check_validity($this->dates))
+
+			// Skip not valid contracts
+			if (!$c->check_validity())
 			{
-				$this->logger->addNotice('Contract '.$c->number.' is out of date', [$c->id]);
+				$this->logger->addNotice('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
 				continue;				
 			}
 
@@ -158,19 +117,18 @@ class accountingCommand extends Command {
 
 
 			/*
-			 * Add internet, voip and tv tariffs and all other items and calculate price for current month considering 
-			 * contract start & expiration date, calculate total sum/charge of items for booking records
+			 * Collect data for all billing files
 			 */
 			foreach ($c->items as $item)
 			{
 				// check validity
-				// if (!$item->check_validity($this->dates))
-				// 	continue;
+				if (!$item->check_validity())
+					continue;
 
-				$costcenter = $item->product->costcenter ? $item->product->costcenter : $c->costcenter;
+				$costcenter = $item->costcenter ? $item->costcenter : $c->costcenter;
 				$ret = $item->calculate_price_and_span($this->dates, $costcenter, $c->expires);
 				
-				// skip adding item to accounting records and bill if price == 0
+				// skip adding data if price == 0
 				if (!$ret)
 					continue;
 				$price = $ret['price'];
@@ -257,6 +215,50 @@ class accountingCommand extends Command {
 		foreach ($salesmen as $sm)
 			$sm->print_commission($dir);
 
+	}
+
+
+
+	/*
+	 * Initialise models for this billing cycle
+	 */
+	private function _init($sepa_accs, $salesmen, $conf)
+	{
+		// init salesmen here because of performance (only 1 DB query)
+		$prod_types = Product::getPossibleEnumValues('type');
+		unset($prod_types['Credit']);
+
+		foreach ($salesmen as $key => $sm)
+			$sm->all_prod_types = $prod_types;
+
+
+		// actual invoice nr counters
+		$last_run = AccountingRecord::orderBy('created_at', 'desc')->select('created_at')->first();
+		if (is_object($last_run))
+		{
+			foreach ($sepa_accs as $acc)
+			{
+				// restart counter every year
+				if ($this->dates['m'] == '01')
+				{
+					if ($conf->invoice_nr_start)
+						$acc->invoice_nr = $conf->invoice_nr_start;
+					continue;
+				}
+
+				$nr = AccountingRecord::where('sepa_account_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
+				$acc->invoice_nr = $nr->invoice_nr;
+			}
+		}
+		// first run for this system
+		else
+		{
+			foreach ($sepa_accs as $acc)
+			{
+				if ($conf->invoice_nr_start)
+					$acc->invoice_nr = $conf->invoice_nr_start;
+			}
+		}
 	}
 
 

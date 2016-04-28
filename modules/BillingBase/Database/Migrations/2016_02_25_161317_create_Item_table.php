@@ -25,6 +25,7 @@ class CreateItemTable extends BaseMigration {
 			$table->date('valid_from');
 			$table->date('valid_to');
 			$table->float('credit_amount')->nullable();
+			$table->integer('costcenter_id')->unsigned();
 			$table->text('accounting_text');
 		});
 

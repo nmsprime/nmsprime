@@ -36,6 +36,7 @@ class ItemController extends \BaseModuleController {
 			array('form_type' => 'text', 'name' => 'valid_from', 'description' => 'Valid from (for One Time Payments the fields can be used to split payment)', 'options' => ['placeholder' => 'YYYY-MM-DD']),
 			array('form_type' => 'text', 'name' => 'valid_to', 'description' => 'Valid to (Only Y-M is considered then)', 'options' => ['placeholder' => 'YYYY-MM-DD']),
 			array('form_type' => 'text', 'name' => 'credit_amount', 'description' => 'Credit Amount (Only for Credits!)'),
+			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional assignment)', 'value' => $list),
 			array('form_type' => 'text', 'name' => 'accounting_text', 'description' => 'Accounting Text (optional)')
 		);
 	}	

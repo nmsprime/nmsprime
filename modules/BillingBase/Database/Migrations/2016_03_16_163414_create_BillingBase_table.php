@@ -18,11 +18,12 @@ class CreateBillingBaseTable extends BaseMigration {
 		{
 			$this->up_table_generic($table);
 			
-			$table->tinyInteger('rcd');   // requested collection date (Zahlungsziel: 1 - 31)
+			$table->tinyInteger('rcd'); 		// requested collection date (Zahlungsziel: 1 - 31)
 			$table->enum('currency', ['EUR', 'USD']);
 			$table->float('tax');
 			$table->string('mandate_ref_template');
 			$table->integer('invoice_nr_start')->unsigned();
+			$table->boolean('split'); 			// split sepa transfer types to different files
 		});
 
 		DB::update("INSERT INTO ".$this->tablename.' (currency) VALUES("EUR");');

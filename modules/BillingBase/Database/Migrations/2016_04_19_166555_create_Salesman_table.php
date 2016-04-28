@@ -27,11 +27,6 @@ class CreateSalesmanTable extends BaseMigration {
 
 		$this->set_fim_fields(['firstname', 'lastname', 'description']);
 
-		Schema::table('contract', function(Blueprint $table)
-		{
-			$table->integer('salesman_id');
-		});
-
 	}
 
 	/**
@@ -42,11 +37,6 @@ class CreateSalesmanTable extends BaseMigration {
 	public function down()
 	{
 		Schema::drop($this->tablename);
-
-		Schema::table('contract', function(Blueprint $table)
-		{
-			$table->dropColumn('salesman_id');
-		});
 	}
 
 }

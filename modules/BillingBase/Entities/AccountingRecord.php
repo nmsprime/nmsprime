@@ -5,7 +5,10 @@ namespace Modules\BillingBase\Entities;
 use File;
 use Modules\BillingBase\Entities\BillingLogger;
 
-class AccountingRecords {
+class AccountingRecord extends \BaseModel {
+
+	// The associated SQL table for this Model
+	public $table = 'accounting_record';
 
 	/**
 	 * This class stores all Accounting Records in one File for one ISP Sepa Account

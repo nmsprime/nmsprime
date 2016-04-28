@@ -66,7 +66,7 @@ class Salesman extends \BaseModel {
 	/**
 	 * BILLING STUFF
 	 */
-	protected $all_prod_types = [];				// array (list) of all possible types of products - 
+	public $all_prod_types = [];				// array (list) of all possible types of products - 
 	protected $total_commission = 0;			// total commission amount during actual billing cycle
 	protected $item_names = [];					// all names of items he gets commission for (in actual billing cycle)
 	public $filename = 'salesmen_commission.txt';
