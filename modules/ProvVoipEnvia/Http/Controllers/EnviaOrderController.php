@@ -15,7 +15,7 @@ class EnviaOrderController extends \BaseModuleController {
 	/**
 	 * defines the formular fields for the edit and create view
 	 */
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 
 		// make order_id fillable on create => so man can add an order created at the web GUI to keep data consistent

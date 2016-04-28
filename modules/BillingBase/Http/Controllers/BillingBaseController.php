@@ -6,13 +6,13 @@ use Modules\BillingBase\Entities\BillingBase;
 class BillingBaseController extends \BaseModuleController {
 
 	public $name = 'BillingBase';
-	
+
 	public function index()
 	{
 		return view('billingbase::index');
 	}
 
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 		return [
 			array('form_type' => 'text', 'name' => 'rcd', 'description' => 'Day of Requested Collection Date'),
@@ -23,5 +23,5 @@ class BillingBaseController extends \BaseModuleController {
 			array('form_type' => 'checkbox', 'name' => 'split', 'description' => 'Split Sepa Transfer-Types to different XML-Files'),
 		];
 	}
-	
+
 }

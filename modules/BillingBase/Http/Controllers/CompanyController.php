@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\Billingbase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
@@ -6,11 +6,11 @@ use Modules\Billingbase\Entities\Company;
 use Input;
 
 class CompanyController extends \BaseModuleController {
-	
+
 	/**
 	 * defines the formular fields for the edit and create view
 	 */
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 		if (!$model)
 			$model = new Company;
@@ -21,7 +21,7 @@ class CompanyController extends \BaseModuleController {
 		$templates = $files['template'];
 
 		// TODO: Translation
-		$help = 'The Text of the separate four "Invoice Text"-Fields is automatically chosen dependent of the total charge and SEPA 
+		$help = 'The Text of the separate four "Invoice Text"-Fields is automatically chosen dependent of the total charge and SEPA
 				Mandate and is set in the appropriate Invoice for the Customer.
 				It is possible to use all data field keys of the Bill Class as placeholder in the form of {fieldname} to build a kind of
 				template. These are replaced by the actual value of the Invoice.';
