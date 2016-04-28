@@ -9,6 +9,9 @@ use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
 
 class ProvVoipEnviaController extends \BaseModuleController {
 
+	// TODO: @Patrick Reichel: is this field required ?
+	public $name = 'VOIP';
+
 
 	/**
 	 * Constructor.
@@ -37,7 +40,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		}
 
 		// build base URL of the envia API
-		$domain = $_ENV['PROVVOIPENVIA__REST_API_URL'];
+		$domain = isset($_ENV['PROVVOIPENVIA__REST_API_URL']) ? $_ENV['PROVVOIPENVIA__REST_API_URL'] : '';
 		$sub_url = '/api/rest/v1/';
 		$this->base_url = $domain.$sub_url;
 

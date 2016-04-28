@@ -7,11 +7,12 @@ use Modules\ProvBase\Entities\Modem;
 class ModemHelper extends \BaseModel {
 
 	// TODO: use should be from a global config api
-	private static $single_critical_us = 55;
-	private static $avg_critical_percentage = 50;
-	private static $avg_warning_percentage = 70;
-	private static $avg_critical_us = 52;
-	private static $avg_warning_us = 45;
+	public static $single_critical_us = 55;
+	public static $single_warning_us = 50;
+	public static $avg_critical_percentage = 50;
+	public static $avg_warning_percentage = 70;
+	public static $avg_critical_us = 52;
+	public static $avg_warning_us = 45;
 
 
 	public static function ms_num ( $s )
