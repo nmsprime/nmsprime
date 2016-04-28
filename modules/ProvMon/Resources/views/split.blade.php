@@ -15,15 +15,15 @@
 
 	<div class="col-md-7 ui-sortable">
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_dash', 'view_header' => 'Dashboard / Forecast', 'md' => 8))
-		@include ('bootstrap.panel-no-div', array ('content' => 'content_realtime', 'view_header' => \App\Http\Controllers\BaseController::translate('Real Time Values'), 'md' => 8))
-		@include ('bootstrap.panel-no-div', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'md' => 8))	
+		@include ('bootstrap.panel-no-div', array ('content' => 'content_realtime', 'view_header' => \App\Http\Controllers\BaseViewController::translate('Real Time Values'), 'md' => 8))
+		@include ('bootstrap.panel-no-div', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'md' => 8))
 	</div>
 
 	<div class="col-md-5 ui-sortable">
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_ping', 'view_header' => 'Ping Test', 'md' => 4))
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_flood_ping', 'view_header' => 'Flood Ping', 'md' => 4))
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_log', 'view_header' => 'Logfile', 'md' => 8))
-		@include ('bootstrap.panel-no-div', array ('content' => 'content_lease', 'view_header' => 'DHCP Log', 'md' => 4))	
+		@include ('bootstrap.panel-no-div', array ('content' => 'content_lease', 'view_header' => 'DHCP Log', 'md' => 4))
 	</div>
 
 </div>

@@ -19,8 +19,8 @@
 			url    = '<?php echo \Request::root() ?>'
 	        kml    = 0;
 
-	        alert ("Element Number: "+id, "<li><a href="+url+"/Tree/"+id+"/edit>Change</a></li>" + 
-	                                      "<li><a href="+url+"/Tree/"+id+"/delete>Delete </a></li>" + 
+	        alert ("Element Number: "+id, "<li><a href="+url+"/Tree/"+id+"/edit>Change</a></li>" +
+	                                      "<li><a href="+url+"/Tree/"+id+"/delete>Delete </a></li>" +
 	                                      "<li><a href=details.php?id="+id+">Details</a>", {width:150});
 	        return false;
 	}
@@ -35,19 +35,19 @@
 
 	@include ('hfcbase::Tree.search')
 
-	{{ Form::openDivClass(12) }}
+	@DivOpen(12)
 		<img usemap="#tree{{$gid}}" src="{{asset("$file.svg")}}"></img>
 
-		<?php 
+		<?php
 			echo $usemap;
 
 			if ($is_pos)
-			{		
+			{
 				$url = \Request::root().'/Tree/create?pos='.$search;
 				echo "<h4><div align=\"center\"> <a href=$url>Add Device</a></div></h4>";
 			}
 		?>
-	{{ Form::closeDivClass() }}
+	@DivClose()
 
 
 </body>

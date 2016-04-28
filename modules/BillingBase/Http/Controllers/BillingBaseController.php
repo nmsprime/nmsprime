@@ -4,6 +4,8 @@ use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\BillingBase;
 
 class BillingBaseController extends \BaseModuleController {
+
+	public $name = 'BillingBase';
 	
 	public function index()
 	{
