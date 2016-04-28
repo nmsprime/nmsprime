@@ -13,16 +13,16 @@ class Item extends \BaseModel {
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
-		$tariff_prods_o = Product::where('type', '=', 'internet')->orWhere('type', '=', 'tv')->orWhere('type', '=', 'voip')->get();		
+		$tariff_prods_o = Product::where('type', '=', 'internet')->orWhere('type', '=', 'tv')->orWhere('type', '=', 'voip')->get();
 		if ($tariff_prods_o->all())
 		{
 			foreach ($tariff_prods_o as $p)
 				$tariff_prods_a[] = $p->id;
 			$tariff_ids = implode(',', $tariff_prods_a);
 		}
-		else 
+		else
 			$tariff_ids = '';
-		
+
 		$credit_prods_o = Product::where('type', '=', 'credit')->get();
 		if ($credit_prods_o->all())
 		{
@@ -49,7 +49,7 @@ class Item extends \BaseModel {
 	 */
 
 	// Name of View
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'Item';
 	}
@@ -110,7 +110,7 @@ class Item extends \BaseModel {
 	{
 		$date = $this->valid_from && $this->valid_from != '0000-00-00' ? $this->valid_from : $this->created_at->toDateString();
 		return strtotime($date);
-		
+
 		// return $this->valid_from && $this->valid_from != '0000-00-00' ? Carbon::createFromFormat('Y-m-d', $this->valid_from) : $this->created_at;
 		// $start = ($this->valid_from && $this->valid_from != $dates['null'] && strtotime($this->valid_from) > strtotime($this->created_at)) ? $this->valid_from : $this->created_at->toDateString();
 	}
@@ -128,7 +128,7 @@ class Item extends \BaseModel {
 		$price = 0;
 		$ratio = 0;
 		$text  = '';
-		
+
 		$billing_cycle = $this->billing_cycle ? $this->billing_cycle : $this->product->billing_cycle;
 		$start = $this->get_start_time();
 		$end = $this->valid_to == $dates['null'] ? null : strtotime($this->valid_to);
@@ -138,7 +138,7 @@ class Item extends \BaseModel {
 		if ($this->contract->expires)
 			$end = !$end || strtotime($this->contract->contract_end) < $end ? strtotime($this->contract->contract_end) : $end;
 
-		
+
 		$overlapping = 0;
 		// only 1 internet & voip tariff ! or if they overlap - old tariff has to be charged until new tariff begins
 		if ($this->product->type == 'Internet')
@@ -181,12 +181,12 @@ class Item extends \BaseModel {
 			goto end;
 
 		$started_lastm = (date('Y-m-01', $start) == $dates['lastm_01']) && ($start >= strtotime($dates['last_run']));
-		
+
 
 		switch($billing_cycle)
 		{
 			case 'Monthly':
-				
+
 				$text = 'Month '.$dates['this_m_bill'];
 
 				$ratio = 1;
@@ -215,12 +215,12 @@ class Item extends \BaseModel {
 
 				if ($this->product->type == 'Credit')
 					$price = (-1) * $this->credit_amount;
-				
+
 				break;
 
 
 			case 'Yearly':
-				
+
 				$billing_month = $costcenter->billing_month ? $costcenter->billing_month : 6;		// June as default
 				if ($billing_month < 10)
 					$billing_month = '0'.$billing_month;
@@ -242,7 +242,7 @@ class Item extends \BaseModel {
 						$ratio = 1 - date('z', $start) / (date('z', strtotime(date('Y-12-31'))) + 1);		// date('z') + 1 is actual day of year!
 						$text  = $started_lastm ? $dates['last_m_bill'] : $dates['this_m_bill'];
 						$text .= ' - '.date('12/Y');
-					}					
+					}
 				}
 
 				// started after last run in billing_month - only one payment!
@@ -301,7 +301,7 @@ class Item extends \BaseModel {
 				else if ($end_m == date('m', strtotime('+2 month')))
 				{
 					$ratio = 1 + (date('d', $end)/date('t', $end));
-					$text  = date('m/Y', strtotime('-1 month')).' - '.date('m/Y', strtotime('+2 month'));				
+					$text  = date('m/Y', strtotime('-1 month')).' - '.date('m/Y', strtotime('+2 month'));
 				}
 
 				$price = $this->product->price * $ratio;
@@ -342,7 +342,7 @@ class Item extends \BaseModel {
 						$price = ($tot_months - $part + 1) * $price;
 						$text = " | last ".($tot_months-$part+1)." part(s) of $tot_months";
 					}
-	
+
 					if ($this->product->type == 'Credit')
 						$price = (-1) * $this->credit_amount;
 				}

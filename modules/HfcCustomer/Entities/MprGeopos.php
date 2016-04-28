@@ -1,5 +1,5 @@
 <?php namespace Modules\Hfccustomer\Entities;
-   
+
 use Illuminate\Database\Eloquent\Model;
 
 
@@ -38,7 +38,7 @@ class MprGeopos extends \BaseModel {
 	}
 
 	// Name of View
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'Modem Positioning Rule Geoposition';
 	}
@@ -47,7 +47,7 @@ class MprGeopos extends \BaseModel {
 	public function get_view_link_title()
 	{
 		return 'GEOPOS'.$this->id.' : '.$this->x.', '.$this->y;
-	}	
+	}
 
 	// Relation to Tree
 	// NOTE: HfcBase Module is required !
@@ -55,7 +55,7 @@ class MprGeopos extends \BaseModel {
 	{
 		return $this->belongsTo('Modules\HfcCustomer\Entities\Mpr');
 	}
-	
+
 
 	/*
 	 * Relation Views

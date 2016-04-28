@@ -28,7 +28,7 @@ class SepaMandate extends \BaseModel {
 	 */
 
 	// Name of View
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'SEPA Mandate';
 	}
@@ -99,7 +99,7 @@ class SepaMandateObserver
 	public function creating($mandate)
 	{
 		$mandate->reference = $this->build_mandate_ref($mandate);
-		
+
 		if (!$mandate->signature_date)
 			$mandate->signature_date = date('Y-m-d');
 		if (!$mandate->sepa_valid_from)
