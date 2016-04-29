@@ -16,25 +16,28 @@ class ProductController extends \BaseModuleController {
 		if (!$model)
 			$model = new Product;
 
-		$qos_val = $model->html_list(Qos::all(), 'name');
-		$qos_val['0'] = null; //[0 => null];
-		ksort($qos_val);
+		$qos_val = array_merge([null], $model->html_list(Qos::all(), 'name'));
 
-		$list = array_merge([''], $model->html_list(CostCenter::all(), 'name'));
 
-		$tax = array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?');
+		$tax = array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV');
 		if ($model->tax === null)
 			$tax = array_merge($tax, ['checked' => true, 'value' => 1]);
 
+		// Internet, Voip, TV, Device, Credit, Other
+		$types = $type_selects = Product::getPossibleEnumValues('type', true);
+		unset($type_selects[0]);
+
 		// label has to be the same like column in sql table
 		return array(
-			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name', 'help' => 'For Credits it is possible to assign a Type by adding the type name to the Name of the Credit - e.g.: "Credit Device"'),
-			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => Product::getPossibleEnumValues('type', true)),
-			array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'Qos (Data Rate)', 'value' => $qos_val),
-			array('form_type' => 'select', 'name' => 'voip_id', 'description' => 'Phone Tariff', 'value' => [0 => '', 1 => 'Basic', 2 => 'Flat']),
+			// TODO: pre select field for product types -> smaller list of possible products to choose from
+			// array('form_type' => 'text', 'name' => 'type_pre_choice', 'description' => 'Price (Net)', 'select' => 'Internet Voip TV Device Other'),
+			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name', 'help' => 'For Credits it is possible to assign a Type by adding the type name to the Name of the Credit - e.g.: \'Credit Device\''),
+			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => $types, 'select' => $type_selects, 'help' => 'All fields besides Billing Cycle have to be cleared before a type change! Otherwise products can not be saved in most cases'),
+			array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'Qos (Data Rate)', 'value' => $qos_val, 'select' => 'Internet'),
+			array('form_type' => 'select', 'name' => 'voip_id', 'description' => 'Phone Tariff', 'value' => [0 => '', 1 => 'Basic', 2 => 'Flat'], 'select' => 'Voip'),
 			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle')),
-			array('form_type' => 'text', 'name' => 'cycle_count', 'description' => 'Number of Cycles'),
-			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)'),
+			array('form_type' => 'text', 'name' => 'cycle_count', 'description' => 'Number of Cycles', 'select' => 'Device Other'),
+			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)', 'select' => 'Internet Voip TV Device Other'),
 			$tax,
 		);
 	}
@@ -55,12 +58,12 @@ class ProductController extends \BaseModuleController {
 				break;
 
 			case 'Device':
-				// $rules['billing_cycle'] = 'In:Once';
 				$rules['qos_id'] = 'In:0';
 				$rules['voip_id'] = 'In:0';
 				break;
 
 			case 'Internet':
+				$rules['billing_cycle'] = 'In:Monthly,Quarterly,Yearly';
 				$rules['voip_id'] = 'In:0';
 				break;
 			
@@ -70,11 +73,13 @@ class ProductController extends \BaseModuleController {
 				break;
 
 			case 'TV':
+				$rules['billing_cycle'] = 'In:Monthly,Quarterly,Yearly';
 				$rules['qos_id'] = 'In:0';
 				$rules['voip_id'] = 'In:0';
 				break;
 
 			case 'Voip':
+				$rules['billing_cycle'] = 'In:Monthly,Quarterly,Yearly';
 				$rules['qos_id'] = 'In:0';
 				break;
 
