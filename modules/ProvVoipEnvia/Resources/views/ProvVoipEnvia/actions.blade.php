@@ -1,7 +1,4 @@
-@extends ('Generic.edit')
-
-@if (!is_null($extra_data))
-	@section ('content_extra')
+@if (isset($extra_data) && !is_null($extra_data))
 
 		@foreach($extra_data as $extra_content)
 
@@ -25,9 +22,4 @@
 
 		@endforeach
 
-	@stop
-
-	@section ('content_right_extra')
-		@include ('bootstrap.panel', array ('content' => "content_extra", 'view_header' => 'Available actions against Envia API', 'md' => 6))
-	@stop
 @endif
