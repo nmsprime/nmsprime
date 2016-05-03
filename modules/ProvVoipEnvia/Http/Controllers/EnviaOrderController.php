@@ -141,10 +141,10 @@ class EnviaOrderController extends \BaseModuleController {
 			// delete (attention: database ids are the keys of the input array)
 			$ids = array_keys($ids);
 			$id = array_pop($ids);
-			$order = $this->get_model_obj()->findOrFail($id);
+			$order = static::get_model_obj()->findOrFail($id);
 		}
 		else {
-			$order = $this->get_model_obj()->findOrFail($id);
+			$order = static::get_model_obj()->findOrFail($id);
 		}
 
 		$params = array(

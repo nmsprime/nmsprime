@@ -60,7 +60,7 @@ class MprController extends \BaseModuleController {
 			}
 		}
 
-		return \Redirect::route($this->get_route_name().'.edit', $mpr_id)->with('message', 'Created!');
+		return \Redirect::route(static::get_route_name().'.edit', $mpr_id)->with('message', 'Created!');
 	}
 
 }

@@ -578,7 +578,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		$view_header = 'Request Envia';
 
-		$view_path = $this->get_view_name().'.request';
+		$view_path = static::get_view_name().'.request';
 
 		// check if job to do is allowed
 		// e.g. to prevent double contract creation on pressing <F5>
