@@ -24,6 +24,7 @@ class CreateAccountingRecordTable extends BaseMigration {
 			$table->integer('product_id');
 			$table->float('ratio', 6, 4);
 			$table->tinyInteger('count');
+			$table->float('charge');
 			$table->integer('sepa_account_id');			// for creating individual invoice numbers
 			$table->integer('invoice_nr');
 		});

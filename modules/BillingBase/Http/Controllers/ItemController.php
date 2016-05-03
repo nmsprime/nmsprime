@@ -21,6 +21,7 @@ class ItemController extends \BaseModuleController {
 		$prods = $model->html_list($products, 'name');
 		$ccs = array_merge([''], $model->html_list(CostCenter::all(), 'name'));
 
+		// $types = Product::lists('type', 'id');
 		foreach ($products as $p)
 			$types[$p->id] = $p->type; 
 

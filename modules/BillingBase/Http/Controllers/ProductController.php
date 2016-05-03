@@ -17,7 +17,7 @@ class ProductController extends \BaseModuleController {
 			$model = new Product;
 
 		$qos_val = array_merge([null], $model->html_list(Qos::all(), 'name'));
-
+		$ccs = array_merge([''], $model->html_list(CostCenter::all(), 'name'));
 
 		$tax = array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV');
 		if ($model->tax === null)
@@ -37,6 +37,7 @@ class ProductController extends \BaseModuleController {
 			array('form_type' => 'select', 'name' => 'voip_id', 'description' => 'Phone Tariff', 'value' => [0 => '', 1 => 'Basic', 2 => 'Flat'], 'select' => 'Voip'),
 			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle')),
 			array('form_type' => 'text', 'name' => 'cycle_count', 'description' => 'Number of Cycles', 'select' => 'Device Other'),
+			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
 			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)', 'select' => 'Internet Voip TV Device Other'),
 			$tax,
 		);

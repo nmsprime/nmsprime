@@ -53,6 +53,7 @@ class Invoice {
 		// 'date'				=> '',
 		'invoice_nr' 		=> '',
 		'invoice_text'		=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate
+		'invoice_headline'	=> '',
 		'rcd' 				=> '',			// Fälligkeitsdatum
 		// 'tariffs'			=> '',			// (TODO: implement!)
 		// 'start'				=> '',			// Leistungszeitraum start , TODO: implement!
