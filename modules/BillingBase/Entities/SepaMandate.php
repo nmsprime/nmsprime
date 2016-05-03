@@ -77,11 +77,29 @@ class SepaMandate extends \BaseModel {
 	 * Other Functions
 	 */
 
-	// Checks if item has valid dates in last month
-	public function check_validity($start = '', $end = '')
+
+	/**
+	 * Returns time in seconds after 1970 of start of item - Note: sepa_valid_from field has higher priority than created_at
+	 *
+	 * @return integer
+	 */
+	public function get_start_time()
 	{
-		return parent::check_validity('sepa_valid_from', 'sepa_valid_to');
+		$date = $this->sepa_valid_from && $this->sepa_valid_from != '0000-00-00' ? $this->sepa_valid_from : $this->created_at->toDateString();
+		return strtotime($date);
 	}
+
+
+	/**
+	 * Returns time in seconds after 1970 of end of item - Note: sepa_valid_from field has higher priority than created_at
+	 *
+	 * @return integer
+	 */
+	public function get_end_time()
+	{
+		return $this->sepa_valid_to && $this->sepa_valid_to != '0000-00-00' ? strtotime($this->sepa_valid_to) : null;
+	}
+
 
 }
 
