@@ -237,7 +237,7 @@ end:
 		if ($lease['text'])
 		{
 			// calculate endtime
-			preg_match ('/ends [1-7] (.*?);/', $lease['text'][0], $endtime);
+			preg_match ('/ends [0-6] (.*?);/', $lease['text'][0], $endtime);
 			$et = explode (',', str_replace ([':', '/', ' '], ',', $endtime[1]));
 			$endtime = \Carbon\Carbon::create($et[0], $et[1], $et[2], $et[3], $et[4], $et[5], 'UTC');
 
@@ -518,32 +518,23 @@ end:
 						continue;
 				}
 
-				// if ($i == 0)
-				// 	array_push($ret, "<b>Last Lease:</b>");
-
-				// if ($i == 1)
-				// 	array_push($ret, "<br><br><b>Old Leases:</b>");
-
-
 				// push matching results
 				array_push($ret, str_replace('{', '{<br>', str_replace(';', ';<br>', $s)));
-
-				// return only the last entry
-				// delete this if we want to see all stuff
-				return $ret;
-
-if (0)
-{
-				// TODO: convert string to array and convert return
-				$a = explode(';', str_replace ('{', ';', $s));
-
-				if (!isset($ret[$a[0]]))
-				$ret[$a[0]] = array();
-
-				array_push($ret[$a[0]], $a);
-}
-
 			}
+		}
+
+		// handle multiple lease entries
+		// actual strategy: if possible grep active lease, otherwise return all entries
+		//                  in reverse ordered format from dhcpd.leases
+		if (sizeof($ret) > 1)
+		{
+			$key = preg_grep ('/(.*?)binding state active(.*?)/', $ret);
+
+			if ($key)
+				// this is just a simple key re-indexing, from 1=>.. to 0=>..
+				// NOTE: this assumes that there is only one active lease available(?).
+				// TODO: Testing required ..
+				return [0 => array_pop($key)];
 		}
 
 		return $ret;
