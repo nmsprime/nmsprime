@@ -2,6 +2,11 @@
 
 namespace Modules\BillingBase\Entities;
 use Modules\ProvBase\Entities\Contract;
+use Modules\BillingBase\Entities\BillingLogger;
+
+use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
+use Digitick\Sepa\PaymentInformation;
+use File;
 
 class SepaAccount extends \BaseModel {
 
@@ -69,94 +74,354 @@ class SepaAccount extends \BaseModel {
 
 	public function __construct()
 	{
-		$this->invoice_nr_template = date('Y').'/';
+		$this->invoice_nr_prefix = date('Y').'/';
+		$this->logger = new BillingLogger;
 	}
+
 
 
 	/**
 	 * BILLING STUFF
 	 */
 	public $invoice_nr = 100000; 			// invoice number counter - default start nr is replaced by global config field
-	private $invoice_nr_template;			// see constructor
+	private $invoice_nr_prefix;				// see constructor
+	public $dir;							// directory to store billing files
+	protected $logger;
+
 
 	/*
-	 * Every Account has the following Objects assigned
+	 * Accounting Records
+		* resulting in 2 files for items and tariffs
+	 	* Filestructure is defined in add_accounting_record()-function
+	 */ 
+	protected $acc_recs = array('tariff' => [], 'item' => []);
+
+
+	/*
+	 * Booking Records
+		* resulting in 2 files for records with sepa mandate or without
+	 	* Filestructure is defined in add_booking_record()-function		
 	 */
-	// Accounting Records Object - resulting in 2 files for items and tariffs
-	protected $acc_recs;
+	protected $book_recs = array('sepa' => [], 'no_sepa' => []);
 
-	// Booking Records Object - resulting in 2 files for records with sepa mandate or without
-	protected $book_recs;
 
-	// several Bills for every Contract that contain only the products/items that have to be paid to this account - related through costcenter!
+	/*
+	 * Invoices for every Contract that contain only the products/items that have to be paid to this account
+	 * (related through costcenter)
+	 * each entry results in one invoice pdf file
+	 */
 	protected $invoices = [];
 
-	// Sepa XML Object - resulting in 2 possible files for direct debits or credits
-	protected $sepa_xml;
-
 
 	/*
-	 * The following functions target at adding single entries for the files and create the files finally (names are self-explaining)
+	 * Sepa XML 
+	 * resulting in 2 possible files for direct debits or credits
 	 */
-	public function add_accounting_record($item, $price, $text)
+	protected $sepa_xml = array('debits' => [], 'credits' => []);
+
+
+
+
+	private function get_invoice_nr_formatted()
 	{
-		// write to accounting records of account
-		if (!isset($this->acc_recs))
-			$this->acc_recs = new AccountingRecords;
-
-		$invoice_nr = $this->invoice_nr_template.$this->id.'/'.$this->invoice_nr;
-
-		$this->acc_recs->add_item($item, $price, $text, $invoice_nr);
+		return $this->invoice_nr_prefix.$this->id.'/'.$this->invoice_nr;
 	}
 
 
-	public function add_booking_record($c, $mandate, $value, $conf)
+	public function add_accounting_record($item)
 	{
-		if (!isset($this->book_recs))
-			$this->book_recs = new BookingRecords($this->name);
+		$count = $item->count ? $item_count : '1';
 
-		$invoice_nr = $this->invoice_nr_template.$this->id.'/'.$this->invoice_nr;
+		$data = array(
+			
+			// 'Contractnr' => $item->contract->id,
+			'Contractnr' 	=> $item->contract->number,
+			'Invoicenr' 	=> $this->get_invoice_nr_formatted(),
+			'Target Month' 	=> date('m'),
+			'Date' 			=> date('Y-m-d'),
+			'Cost Center'  	=> isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
+			'Count'			=> $count,
+			'Description'  	=> $item->invoice_description,
+			'Price' 		=> $item->charge * $count,
+			'Firstname'		=> $item->contract->firstname,
+			'Lastname' 		=> $item->contract->lastname,
+			'Street' 		=> $item->contract->street,
+			'Zip' 			=> $item->contract->zip,
+			'City' 			=> $item->contract->city,
 
-		$this->book_recs->add_record($c, $mandate, $invoice_nr, $value['net'], $value['tax'], $conf);
+		);
+
+
+		switch ($item->product->type)
+		{
+			case 'Internet':
+			case 'TV':
+			case 'Voip':
+				$this->acc_recs['tariff'][] = $data;
+				break;
+			default:
+				$this->acc_recs['item'][] = $data;
+				break;
+		}
+
+		return;
 	}
 
 
-	public function add_invoice_item($c, $conf, $count, $price, $text)
+	public function add_booking_record($contract, $mandate, $charge, $conf)
 	{
-		if (!isset($this->invoices[$c->id]))
-			$this->invoices[$c->id] = new Invoice($c, $conf, $this->invoice_nr_template.$this->id.'/'.$this->invoice_nr);
-		$this->invoices[$c->id]->add_item($count, $price, $text);
+		$data = array(
+
+			'Contractnr' 	=> $contract->number,
+			'Invoicenr' 	=> $this->get_invoice_nr_formatted(),
+			'Date' 			=> date('Y-m-d'),
+			'RCD' 			=> $conf->rcd ? $conf->rcd : date('Y-m-d', strtotime('+6 days')),
+			'Cost Center'	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
+			'Description' 	=> '',
+			'Net' 			=> $charge['net'],
+			'Tax' 			=> $charge['tax'],
+			'Gross' 		=> $charge['net'] + $charge['tax'],
+			'Currency' 		=> $conf->currency ? $conf->currency : 'EUR',
+			'Firstname' 	=> $contract->firstname,
+			'Lastname' 		=> $contract->lastname,
+			'Street' 		=> $contract->street,
+			'Zip' 			=> $contract->zip,
+			'City' 			=> $contract->city,
+
+			);
+
+		if ($mandate)
+		{
+			$data2 = array(
+				'Account Holder' => $mandate->sepa_holder,
+				'IBAN'			=> $mandate->sepa_iban,
+				'BIC' 			=> $mandate->sepa_bic,
+				'MandateID' 	=> $mandate->reference,
+				'MandateDate'	=> $mandate->signature_date,
+			);
+
+			$data = array_merge($data, $data2);
+			
+			$this->book_recs['sepa'][] = $data;
+		}
+		else
+			$this->book_recs['no_sepa'][] = $data;
+
+		return;
 	}
 
 
-	public function add_invoice_data($c, $mandate, $value, $logger)
+	public function add_invoice_item($item, $conf)
+	{
+		if (!isset($this->invoices[$item->contract->id]))
+			$this->invoices[$item->contract->id] = new Invoice($item->contract, $conf, $this->get_invoice_nr_formatted());
+		$this->invoices[$item->contract->id]->add_item($item);
+	}
+
+
+	public function add_invoice_data($contract, $mandate, $value)
 	{
 		// Attention! the chronical order of these functions has to be kept until now because of dependencies for extracting the invoice text
-		$this->invoices[$c->id]->set_mandate($mandate);
-		$this->invoices[$c->id]->set_company_data($this);
-		$this->invoices[$c->id]->set_summary($value['net'], $value['tax'], $this->company);
+		$this->invoices[$contract->id]->set_mandate($mandate);
+		$this->invoices[$contract->id]->set_company_data($this);
+		$this->invoices[$contract->id]->set_summary($value['net'], $value['tax'], $this->company);
 	}
 
 
 	public function add_sepa_transfer($mandate, $value, $dates)
 	{
-		if (!isset($this->sepa_xml))
-			$this->sepa_xml = new Sepaxml($this);
+		$info = 'Month '.date('m/Y');
 
-		$invoice_nr = $this->invoice_nr_template.$this->id.'/'.$this->invoice_nr;
+		// Note: Charge == 0 is automatically excluded
+		if ($value < 0)
+		{
+			$data = array(
 
-		$this->sepa_xml->add_entry($mandate, $value, $dates, $invoice_nr);
+				'amount'                => $value * (-1),
+				'creditorIban'          => $mandate->sepa_iban,
+				'creditorBic'           => $mandate->sepa_bic,
+				'creditorName'          => $mandate->sepa_holder,
+				'remittanceInformation' => $info,
+			);
+
+			$this->sepa_xml['credits'][] = $data;
+		}
+		else
+		{
+			// determine transaction type: first/recurring/final
+			// TODO: use state field in mandate table
+			$type = PaymentInformation::S_RECURRING;
+			// started this month or last month after last run of accounting command
+			if (!$mandate->recurring && date('Y-m', strtotime($mandate->contract->contract_start)) == $dates['m'] || (date('Y-m', strtotime($mandate->contract->contract_start)) == $dates['lastm_Y'] && strtotime($mandate->contract->contract_start) > strtotime($dates['last_run'])))
+				$type = PaymentInformation::S_FIRST;
+			// else if (date('Y-m', strtotime($mandate->contract->contract_end)) == $this->dates['m'])
+			else if ($mandate->contract->expires)
+				$type = PaymentInformation::S_FINAL;
+
+			$data = array(
+				'endToEndId'			=> 'RG '.$this->get_invoice_nr_formatted(),
+				'amount'                => $value,
+				'debtorIban'            => $mandate->sepa_iban,
+				'debtorBic'             => $mandate->sepa_bic,
+				'debtorName'            => $mandate->sepa_holder,
+				'debtorMandate'         => $mandate->reference,
+				'debtorMandateSignDate' => $mandate->signature_date,
+				'remittanceInformation' => $info,
+			);
+			
+			$this->sepa_xml['debits'][$type][] = $data;
+		}
 	}
+
+
+
+	// TODO: Description, proper filenames, move param $dir to _init in accCmd
+	private function make_accounting_record_files()
+	{
+		foreach ($this->acc_recs as $key => $records)
+		{
+			$file = $this->dir.'accounting_'.$key.'_records_'.$this->name.'.txt';
+
+			// initialise record files with Column names as first line
+			File::put($file, implode("\t", array_keys($records[0]))."\n");
+
+			$data = [];
+			foreach ($records as $value)
+				array_push($data, implode("\t", $value)."\n");
+
+			File::append($file, implode($data));
+
+			echo "stored accounting ".$key." records in $file\n";
+			$this->logger->addInfo("Successfully stored accounting ".$key." records in $file \n");
+		}
+
+		return;
+	}
+
+
+	// TODO: Description, proper filenames, move $dir to _init in accCmd
+	private function make_booking_record_files()
+	{
+		dd($this->book_recs);
+		foreach ($this->book_recs as $key => $records)
+		{
+			$file = $this->dir.'booking_'.$key.'_records_'.$this->name.'.txt';
+
+			// initialise record files with Column names as first line
+			File::put($file, implode("\t", array_keys($records[0]))."\n");
+
+			$data = [];
+			foreach ($records as $value)
+				array_push($data, implode("\t", $value)."\n");
+
+			File::append($file, implode($data));
+
+			echo "stored booking ".$key." records in $file\n";
+			$this->logger->addInfo("Successfully stored booking ".$key." records in $file \n");
+		}
+
+		return;
+	}
+
+
+	/**
+	 * Create SEPA XML
+	 */
+	private function get_sepa_xml_msg_id()
+	{
+		return date('YmdHis').$this->id;		// km3 uses actual time
+	}
+
+
+	public function make_sepa_xml()
+	{
+		$this->make_credit_file();
+		$this->make_debit_file();
+	}
+
+
+	private function make_debit_file()
+	{
+		if (!$this->sepa_xml['debits'])
+			return;
+
+		$msg_id = $this->get_sepa_xml_msg_id();
+
+		// Set the initial information for direct debits
+		$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id, $this->name);
+
+		foreach ($this->sepa_xml['debits'] as $type => $records)
+		{
+			// create a payment
+			$directDebit->addPaymentInfo($msg_id.$type, array(
+				'id'                    => $this->msg_id,
+				'creditorName'          => $this->name,
+				'creditorAccountIBAN'   => $this->iban,
+				'creditorAgentBIC'      => $this->bic,
+				'seqType'               => $type,
+				'creditorId'            => $this->creditorid,
+				// 'dueDate'				=> // requested collection date (Fälligkeits-/Ausführungsdatum) - from global config
+			));
+
+			// Add Transactions to the named payment
+			foreach($records as $r)
+				$directDebit->addTransfer($msg_id.$type, $r);
+
+		}
+
+		// Retrieve the resulting XML
+		// TODO filename without special characters
+		$file = $this->dir.'dd_'.$this->name.'.xml';
+		File::put($file, $directDebit->asXML());
+		echo "stored sepa direct debit xml in $file \n";
+		$this->logger->addInfo("Successfully stored sepa direct debit xml in $file \n");
+	}
+
+
+	private function make_credit_file()
+	{
+		if (!$this->sepa_xml['credits'])
+			return;
+
+		$msg_id = $this->get_sepa_xml_msg_id();
+
+		// Set the initial information for direct credits
+		$customerCredit = TransferFileFacadeFactory::createCustomerCredit($msg_id.'C', $this->name);
+
+		$customerCredit->addPaymentInfo($msg_id.'C', array(
+			'id'                      => $msg_id.'C',
+			'debtorName'              => $this->name,
+			'debtorAccountIBAN'       => $this->iban,
+			'debtorAgentBIC'          => $this->bic,
+		));
+
+		// Add Transactions to the named payment
+		foreach($this->sepa_xml['credits'] as $r)
+			$customerCredit->addTransfer($msg_id.'C', $r);
+
+		// Retrieve the resulting XML
+		$file = $this->dir.'dc_'.$this->name.'.xml';
+		File::put($file, $customerCredit->asXML());
+		echo "stored sepa direct credit xml in $file\n";
+		$this->logger->addInfo("Successfully stored sepa direct credit xml in $file \n");
+
+	}
+
+
 
 	// creates all the billing files for the assigned objects
 	public function make_billing_files($dir)
 	{
-		if (isset($this->acc_recs))
-			$this->acc_recs->make_accounting_record_files($dir, $this->name);
-		if (isset($this->book_recs))
-			$this->book_recs->make_booking_record_files($dir, $this->name);
-		if (isset($this->sepa_xml))
-			$this->sepa_xml->make_sepa_xml($dir, $this->name);
+		$this->dir = $dir;
+
+		if ($this->acc_recs['tariff'] || $this->acc_recs['item'])
+			$this->make_accounting_record_files();
+
+		if ($this->book_recs['sepa'] || $this->book_recs['no_sepa'])
+			$this->make_booking_record_files();
+
+		if ($this->sepa_xml['debits'] || $this->sepa_xml['credits'])
+			$this->make_sepa_xml();
 	}
 
 

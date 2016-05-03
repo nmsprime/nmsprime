@@ -73,7 +73,7 @@ class Salesman extends \BaseModel {
 
 
 	// example - $item->product->name == 'Credit Device'
-	public function add_item($item, $price)
+	public function add_item($item)
 	{
 		$types = explode(',', $this->products);
 		foreach ($types as $key => $value)
@@ -99,7 +99,7 @@ class Salesman extends \BaseModel {
 			}
 add:
 			// add all other credits - default
-			$this->total_commission -= $price;
+			$this->total_commission -= $item->charge;
 			array_push($this->item_names, $item->product->name);
 			return;
 		}
@@ -107,8 +107,9 @@ add:
 		// all other types that the salesman gets commission for
 		if (in_array($item->product->type, $types))
 		{
-			$this->total_commission += $price;
-			array_push($this->item_names, $item->product->name);
+			$count = $item->count ? $item->count : 1;
+			$this->total_commission += $item->charge * $count;
+			array_push($this->item_names, $count.'x '.$item->product->name);
 		}
 
 		return;
@@ -116,16 +117,19 @@ add:
 
 	public function prepare_output_file($dir)
 	{
-		File::put($dir.$this->filename, "ID\tName\tCommission in %\tCommission Amount\tItems\n");
+		File::put($dir.$this->filename, "ID\tName\tCommission in %\tTotal Fee\tCommission Amount\tItems\n");
 	}
 
 
 	// id, name, commission %, commission amount, all added items as string
 	public function print_commission($dir)
 	{
+		if ($this->total_commission == 0)
+			return;
+
 		$file = $dir.$this->filename;
 
-		File::append($file, $this->id."\t".$this->firstname.' '.$this->lastname."\t".$this->commission."\t".round($this->total_commission * $this->commission / 100, 2)."\t".implode(', ', $this->item_names));
+		File::append($file, $this->id."\t".$this->firstname.' '.$this->lastname."\t".$this->commission."\t".$this->total_commission."\t".round($this->total_commission * $this->commission / 100, 2)."\t".implode(', ', $this->item_names));
 		echo "stored salesmen commissions in $file\n";
 	}
 

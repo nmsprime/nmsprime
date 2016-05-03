@@ -1,7 +1,6 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
-use Modules\ProvBase\Entities\Contract;
 
 class CostCenter extends \BaseModel {
 
@@ -39,12 +38,11 @@ class CostCenter extends \BaseModel {
 		return $this->orderBy('id')->get();
 	}
 
-	public function view_has_many()
-	{
-		return array(
-			'Product' => $this->products(),
-			);
-	}
+	// public function view_has_many()
+	// {
+	// 	return array(
+	// 		);
+	// }
 
 
 
@@ -56,9 +54,19 @@ class CostCenter extends \BaseModel {
 		return $this->belongsTo('Modules\BillingBase\Entities\SepaAccount', 'sepa_account_id');
 	}
 
-	public function products()
+	public function items()
 	{
-		return Product::where('costcenter_id', '=', $this->id)->get();
+		return $this->hasMany('Modules\BillingBase\Entities\Item');
+	}
+
+
+
+	/**
+	 * Returns billing month with leading zero - Note: if not set June is set as default
+	 */
+	public function get_billing_month()
+	{
+		return $this->billing_month ? ($this->billing_month > 9 ? $this->billing_month : '0'.$this->billing_month) : '06';
 	}
 
 

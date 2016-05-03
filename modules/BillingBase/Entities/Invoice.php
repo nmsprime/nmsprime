@@ -85,9 +85,10 @@ class Invoice {
 		$this->logger = new BillingLogger;
 	}
 
-	public function add_item($count, $price, $text)
+	public function add_item($item) 
 	{
-		$this->data['item_table_positions'] .= $count.' & '.$text.' & '.round($price/$count, 2).$this->currency.' & '.$price.$this->currency.'\\\\';
+		$count = $item->count ? $item->count : 1;
+		$this->data['item_table_positions'] .= $count.' & '.$item->invoice_description.' & '.$item->charge.$this->currency.' & '.($item->charge * $count).$this->currency.'\\\\';
 	}
 
 	public function set_mandate($mandate)

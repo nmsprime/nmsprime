@@ -3,7 +3,7 @@
 namespace Modules\BillingBase\Entities;
 
 use Modules\BillingBase\Entities\Product;
-use Carbon\Carbon;
+use DB;
 
 class Item extends \BaseModel {
 
@@ -76,13 +76,19 @@ class Item extends \BaseModel {
 
 	public function product ()
 	{
-		return $this->belongsTo('Modules\BillingBase\Entities\Product', 'product_id');
+		return $this->belongsTo('Modules\BillingBase\Entities\Product');
 	}
 
 	public function contract ()
 	{
 		return $this->belongsTo('Modules\ProvBase\Entities\Contract');
 	}
+
+	public function costcenter ()
+	{
+		return $this->belongsTo('Modules\BillingBase\Entities\Costcenter');
+	}
+
 
 
 	/*
