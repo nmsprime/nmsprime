@@ -102,43 +102,123 @@ class Item extends \BaseModel {
 
 
 
-	// Checks if item has valid dates in last month
-	public function check_validity($start = '', $end = '')
-	{
-		return parent::check_validity('valid_from', 'valid_to');
-	}
-
-
 	/*
-	 * Returns time in seconds after 1970 of start of item - valid_from field has higher priority than created_at
+	 * Billing Stuff with temporary variables used during billing cycle
+	 */
+
+
+	/**
+	 * The calculated charge for the customer that has purchased this item (last month is considered)
+	 *
+	 * @var float
+	 */ 
+	public $charge;
+
+
+	/**
+	 * The calculated ratio of the items product price (for the last month)
+	 *
+	 * @var float
+	 */ 
+	public $ratio;
+
+
+	/**
+	 * The product name and date range the customer is charged for this item
+	 *
+	 * @var string
+	 */ 
+	public $invoice_description;
+
+
+
+	// /**
+	//  * Checks if item has valid dates in last month/year for Billing (dependent on billing cycle)
+	//  *
+	//  * @return Bool
+	//  */
+	// public function check_validity($start = '', $end = '', $timespan = null)
+	// {
+	// 	return parent::check_validity('valid_from', 'valid_to', $this->get_billing_cycle() == 'Yearly' ? 'year' : 'month');
+	// }
+
+
+	// /**
+	//  * Checks if item is valid right now
+	//  *
+	//  * @return Bool 	false, when expired or not yet started - otherwise true
+	//  */
+	// public function actual_valid()
+	// {
+	// 	$start = $this->get_start_time();
+	// 	$end   = $this->get_end_time();
+	// 	$now   = time();
+
+	// 	return $start <= $now && (!$end || $end > $now);
+	// }
+
+
+	/**
+	 * Returns time in seconds after 1970 of start of item - Note: valid_from field has higher priority than created_at
+	 *
+	 * @return integer
 	 */
 	public function get_start_time()
 	{
 		$date = $this->valid_from && $this->valid_from != '0000-00-00' ? $this->valid_from : $this->created_at->toDateString();
 		return strtotime($date);
 		
-		// return $this->valid_from && $this->valid_from != '0000-00-00' ? Carbon::createFromFormat('Y-m-d', $this->valid_from) : $this->created_at;
-		// $start = ($this->valid_from && $this->valid_from != $dates['null'] && strtotime($this->valid_from) > strtotime($this->created_at)) ? $this->valid_from : $this->created_at->toDateString();
+		// return $this->valid_from && $this->valid_from != '0000-00-00' ? \Carbon\Carbon::createFromFormat('Y-m-d', $this->valid_from) : $this->created_at;
 	}
 
 
 	/**
-	 * Calculate Price for actual month of an item with valid dates
+	 * Returns time in seconds after 1970 of end of item - Note: valid_from field has higher priority than created_at
 	 *
-	 * @param 	array of billing dates (important is last run entry), costcenter (for billing_cycle)
-	 * @return 	$price, $text (name and range of payment), $ratio
+	 * @return integer
+	 */
+	public function get_end_time()
+	{
+		return $this->valid_to && $this->valid_to != '0000-00-00' ? strtotime($this->valid_to) : null;
+	}
+
+
+	/**
+	 * Returns billing cycle
+	 *
+	 * @return String/Enum 	('Monthly', 'Yearly', 'Quarterly', 'Once')
+	 */
+	public function get_billing_cycle()
+	{
+		return $this->billing_cycle ? $this->billing_cycle : $this->product->billing_cycle;
+	}
+
+	/**
+	 * Returns the assigned Costcenter (CC) by following descendend priorities (1. item CC -> 2. product CC -> 3. contract CC)
+	 *
+	 * @return object 	Costcenter
+	 */
+	public function get_costcenter()
+	{
+		return $this->costcenter ? $this->costcenter : ($this->product->costcenter ? $this->product->costcenter : $this->contract->costcenter);
+	}
+
+
+	/**
+	 * Calculate Price for actual month of an item with valid dates - writes it to temporary billing variables of this model
+	 *
+	 * @param 	array of often used billing dates
+	 * @return 	null if no costs incurred, 1 otherwise
 	 * @author 	Nino Ryschawy
 	 */
-	public function calculate_price_and_span($dates, $costcenter)
+	public function calculate_price_and_span($dates)
 	{
-		$price = 0;
 		$ratio = 0;
-		$text  = '';
+		$text  = '';			// only dates
 		
-		$billing_cycle = $this->billing_cycle ? $this->billing_cycle : $this->product->billing_cycle;
+		$billing_cycle = $this->get_billing_cycle();
 		$start = $this->get_start_time();
-		$end = $this->valid_to == $dates['null'] ? null : strtotime($this->valid_to);
-		// $end   = $this->valid_to == $dates['null'] ? null : Carbon::createFromFormat('Y-m-d', $this->valid_to);
+		$end   = $this->get_end_time();
 
 		// contract ends before item ends - contract has higher priority
 		if ($this->contract->expires)
@@ -147,7 +227,8 @@ class Item extends \BaseModel {
 		
 		$overlapping = 0;
 		// only 1 internet & voip tariff ! or if they overlap - old tariff has to be charged until new tariff begins
-		if ($this->product->type == 'Internet')
+		// TODO: remove && 0
+		if ($this->product->type == 'Internet' && 0)
 		{
 			// get start of valid tariff
 			$valid_tariff = $this->contract->get_valid_tariff('Internet');
@@ -165,7 +246,7 @@ class Item extends \BaseModel {
 
 
 		// only 1 internet & voip tariff ! or if they overlap - old tariff has to be charged until new tariff begins
-		if ($this->product->type == 'Voip')
+		if ($this->product->type == 'Voip' && 0)
 		{
 			// get start of valid tariff
 			$valid_tariff = $this->contract->get_valid_tariff('Voip');
@@ -180,197 +261,200 @@ class Item extends \BaseModel {
 				$overlapping = 1;
 			}
 		}
-
-
-		// skip all items that have no valid dates in this month
-		if ($start >= strtotime($dates['nextm_01']) || ($end && $end < strtotime($dates['thism_01'])))
-			goto end;
-
-		$started_lastm = (date('Y-m-01', $start) == $dates['lastm_01']) && ($start >= strtotime($dates['last_run']));
 		
 
 		switch($billing_cycle)
 		{
 			case 'Monthly':
-				
-				$text = 'Month '.$dates['this_m_bill'];
 
-				$ratio = 1;
-
-				// payment starts this month
-				if (date('Y-m', $start) == $dates['this_m'])
-					$ratio = 1 - (date('d', $start) - 1) / date('t');
-
-				// payment starts last month after last_run
-				if (date('Y-m-01', $start) == $dates['lastm_01'] && $start >= strtotime($dates['last_run']))
+				// started last month
+				if (date('Y-m', $start) == $dates['lastm_Y'])
 				{
-					$ratio = 2 - (date('d', $start) - 1) / date('t', strtotime($dates['lastm_01']));
-					$text  = 'Month '.$dates['last_m'].'+'.$dates['this_m_bill'];
+					$ratio = 1 - (date('d', $start) - 1) / date('t', $start);
+					$text  = date('Y-m-d', $start);
+				}
+				else
+				{
+					$ratio = 1;
+					$text = $dates['lastm_01'];
 				}
 
-				// payment ends this month
-				if ($end && $end < strtotime($dates['nextm_01']))
-					$ratio += (date('d', $end) - $overlapping)/date('t') - 1;
+				$text .= ' - ';
 
-// if ($this->contract->id == 500003 && $this->product->id == 4)
-// 	dd($this->product->name, date('Y-m-d', $start), $end, date('Y-m-d', $end), $start, $ratio);
+				// ended last month
+				if ($end && $end < strtotime($dates['thism_01']))
+				{
+					$ratio += (date('d', $end) - $overlapping)/date('t', $end) - 1;
+					$text  .= date('Y-m-d', $end);
+				}
+				else
+					$text  .= date('Y-m-31', strtotime('last month'));
 
-
-				$price = $ratio * $this->product->price;
-				$text  = $this->product->name.' - '.$text;
-
-				if ($this->product->type == 'Credit')
-					$price = (-1) * $this->credit_amount;
-				
 				break;
 
 
 			case 'Yearly':
-				
-				$billing_month = $costcenter->billing_month ? $costcenter->billing_month : 6;		// June as default
-				if ($billing_month < 10)
-					$billing_month = '0'.$billing_month;
+
+				if ($this->payed)
+					break;
 
 				// calculate only for billing month
-				if ($dates['m'] == $billing_month)
-				{
-					// started before this yr
-					if (date('Y', $start) < $dates['Y'])
-					{
-						$ratio = 1;
-						$text  = 'Year '.$dates['Y'];
-					}
+				$costcenter    = $this->get_costcenter();
+				$billing_month = $costcenter->get_billing_month();		// June is default
 
-					// started this yr
-					if (date('Y', $start) == $dates['Y'])
-					{
-						// $ratio = 1 - (date('m', $start)-1)/12;
-						$ratio = 1 - date('z', $start) / (date('z', strtotime(date('Y-12-31'))) + 1);		// date('z') + 1 is actual day of year!
-						$text  = $started_lastm ? $dates['last_m_bill'] : $dates['this_m_bill'];
-						$text .= ' - '.date('12/Y');
-					}					
+				if ($dates['m'] != $billing_month)
+					break;
+
+				// started last yr
+				if (date('Y', $start) == ($dates['Y'] - 1))
+				{
+					$ratio = 1 - date('z', $start) / (366 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1 
+					$text  = date('Y-m-d', $start);
+				}
+				else
+				{
+					$ratio = 1;
+					$text  = date('Y-01-01', strtotime('last year'));
 				}
 
-				// started after last run in billing_month - only one payment!
-				else if ($start >= strtotime(date("Y-$billing_month-".date('d', strtotime($dates['last_run'])) )) && (date('m', $start) == $dates['m'] || $started_lastm))
-				{
-					// pay to end of year
-					$ratio = 1 - date('z', $start) / (date('z', strtotime(date('Y-12-31'))) + 1);
-					$text  = $started_lastm ? $dates['last_m_bill'] : $dates['this_m_bill'];
-					$text .= ' - '.date('12/Y');
-				}
+				$text .= ' - ';
 
-				// product validity ends this yr
-				if ($end && date('Y', $end) == $dates['Y'])
+				// ended last yr
+				if ($end && (date('Y', $end) == ($dates['Y'] - 1)))
 				{
-					// $ratio = $ratio ? $end_month/12 - 1 + $ratio : 0; // $end_month/12;
-					$ratio = $ratio ? (date('z', $end) + 1)/(date('z', strtotime(date('Y-12-31'))) + 1) + $ratio - 1 : 0;
-					$text  = substr($text, 0, strpos($text, '-') + 2).date('m/Y', $end);
+					$ratio += $ratio ? (date('z', $end) + 1)/(366 + date('L')) - 1 : 0;
+					$text  .= date('Y-m-d', $end);
 				}
+				else
+					$text .= date('Y-12-31', strtotime('last year'));
 
-				$price = $this->product->price * $ratio;
-				$text = $this->product->name.' '.$text;
+				// set payed flag to avoid double payment in case of billing month is changed during year
+				$this->payed = true;		// is set to false every new year
+				$this->save();
 
 				break;
 
+// if ($this->contract->id == 500006 && $this->product->id == 10)
+// 	dd($this->product->name, date('Y-m-d', $start), $end, date('Y-m-d', $end), $ratio, $billing_cycle, $text);
 
 			case 'Quarterly':
-				$price = 0;
-				$text  = '';
 
-				// always in second of three months (1 -> 2,5,8,11 2->3,6,9,12 3->4,7,10,1)
-				if (date('m', strtotime('+1 month', $start)) % 3 == $dates['m'] % 3)
+				// always after 3 months
+				$billing_month = date('m', strtotime('+2 month', $start));
+
+				if ($dates['m'] % 3 != $billing_month % 3)
+					break;
+
+				$period_start = date('Y-m-01', strtotime('-2 month'));
+
+				// started in last 3 months
+				if ($start > strtotime($period_start))
+				{
+					$days = date('z', strtotime(date('Y-m-31'))) - date('z', $start);
+					$total_days = date('t') + date('t', strtotime('last month')) + date('t', $start);
+					$ratio = $days / $total_days;
+					$text = date('Y-m-d', $start);
+				}
+				else
 				{
 					$ratio = 1;
-					$text  = date('m/Y', strtotime('-1 month')).' - '.date('m/Y', strtotime('+1 month'));
-
-					// if started this or last month
-					if ($start >= strtotime($dates['thism_01']) || $started_lastm)
-					{
-						$days = date('z', strtotime(date('Y-m-01', strtotime('+2 month')))) - date('z', $start) - 1;
-						$total_days = date('t', strtotime('last month')) + date('t') + date('t', strtotime('next month'));
-						$ratio = $days / $total_days;
-					}
+					$text  = $period_start;
 				}
 
-				$end_m = date('m', $end);
-
-				// consider end date
-				if ($end_m == $dates['m'] || $end_m == date('m', strtotime('next month')))
+				// ended in last 3 months
+				if ($end && ($end > strtotime($period_start)) && ($end < strtotime(date('Y-m-01', strtotime('next month')))))
 				{
-					// $price = $price * 2/3;
-					$total_days = date('t', strtotime('last month')) + date('t') + date('t', strtotime('next month'));
-					$ratio = (date('z', $end) - date('z', $start)) / $total_days;
-					$text  = date('m/Y', strtotime('-1 month')).' - '.date('m/Y', $end);
+					$days = date('z', strtotime('first day of next month')) - date('z', $end) - 1;
+					$total_days = date('t') + date('t', strtotime('last month')) + date('t', $start);
+					$ratio -= $days / $total_days;
+					$text .= date('Y-m-d', $end);
 				}
-				// ends the next but one - endet übernächsten monat
-				else if ($end_m == date('m', strtotime('+2 month')))
-				{
-					$ratio = 1 + (date('d', $end)/date('t', $end));
-					$text  = date('m/Y', strtotime('-1 month')).' - '.date('m/Y', strtotime('+2 month'));				
-				}
+				else
+					$text .= date('Y-m-31');
 
-				$price = $this->product->price * $ratio;
-				$text = $this->product->name.' '.$text;
+
+				// always in second of three months (1 -> 2,5,8,11 2->3,6,9,12 3->4,7,10,1)
+				// if (date('m', strtotime('+1 month', $start)) % 3 != $dates['m'] % 3)
+				// 	break;
+
+				// $ratio = 1;
+				// $end_m = date('m', $end);
+				// $n = strtotime('last day of next month');
+				// $l = strtotime('first day of last month');
+
+				// // started last month
+				// if (date('Y-m', $start) == $dates['lastm_Y'])
+				// {
+				// 	$days  = date('z', $n) - date('z', $start) + 1;
+				// 	$total_days = date('t', $l) + date('t') + date('t', $n);
+				// 	$ratio = $days / $total_days;
+				// 	$text  = date('Y-m-d', $start);
+				// }
+				// // started before
+				// else
+				// 	$text = date('Y-m-01', $l);
+
+				// $text .= ' ';
+
+				// // consider end date - if is during this 3 months
+				// if ($end_m == $dates['m'] || $end_m == date('m', $n) || $end_m == date('m', $l))
+				// {
+				// 	$days  = date('z', $l) - date('z', $end) - 1;
+				// 	$total_days = date('t', $l) + date('t') + date('t', $n);
+				// 	$ratio -= $days / $total_days;
+				// 	$text  .= date('Y-m-d', $end);
+				// }
+				// else
+				// 	$text .= date('Y-m-d', $n);
 
 				break;
 
 
 			case 'Once':
-				$price = 0;
-				$valid_to = $this->valid_to == $dates['null'] ? null : $this->valid_to;
 
-				// if created or valid from this month or last month after last run
-				if ($start >= strtotime($dates['thism_01']) || $started_lastm)
-				{
-					$price = $this->product->price;
-					if ($this->product->type == 'Credit')
-						$price = (-1) * $this->credit_amount;
-				}
+				$ratio = 1;
+				$valid_to = $this->valid_to == $dates['null'] ? null : strtotime(date('Y-m', $this->valid_to));		// only month is considered
 
-				// valid from - to
+				// if payment is split
 				if ($valid_to)
 				{
-					// split payment into pieces
-					$tot_months = round((strtotime(date('Y-m', strtotime($valid_to))) - strtotime(date('Y-m', $start))) / $dates['m_in_sec']) + 1;
-					if ($started_lastm)
-						$tot_months -= 1;
-
-					$price = $this->product->price / $tot_months;
+					$tot_months = round(($valid_to - strtotime(date('Y-m', $start))) / $dates['m_in_sec'] + 1, 2);
+					$ratio /= $tot_months;
 
 					// $part = totm - (to - this)
-					$part = round((($tot_months)*$dates['m_in_sec'] + strtotime($dates['thism_01']) - strtotime($valid_to))/$dates['m_in_sec']) + 1;
+					$part = round((($tot_months)*$dates['m_in_sec'] + strtotime($dates['lastm_01']) - $valid_to)/$dates['m_in_sec']) + 1;
 					$text = " | part $part/$tot_months";
 
 					// items with valid_to in future, but contract expires
 					if ($this->contract->expires)
 					{
-						$price = ($tot_months - $part + 1) * $price;
-						$text = " | last ".($tot_months-$part+1)." part(s) of $tot_months";
+						$ratio *= $tot_months - $part + 1;
+						$text  = " | last ".($tot_months-$part+1)." part(s) of $tot_months";
 					}
 	
-					if ($this->product->type == 'Credit')
-						$price = (-1) * $this->credit_amount;
-				}
-
-				$text = $this->product->name.$text;
-
-				if ($this->count)
-				{
-					$price *= $this->count;
-					$text  = $this->count.'x '.$text;
 				}
 
 				break;
 
 		}
-end:
 
-		$ratio = $ratio ? $ratio : 1;
-		if (!$price)
+		if (!$ratio)
 			return null;
 
-		return ['price' => $price, 'text' => $text, 'ratio' => $ratio];
+		$this->charge = $this->product->type == 'Credit' ?  (-1) * $this->credit_amount : $this->product->price * $ratio;
+		$this->ratio  = $ratio ? $ratio : 1;
+		$this->invoice_description = $this->product->name.' '.$text;
+
+		return true;
+	}
+
+
+	/**
+	 * Resets the payed flag of all items - flag is necessary because the billing timestamp can be changed
+	 */
+	public function yearly_conversion()
+	{
+		DB::table($this->table)->update(['payed' => false]);
 	}
 
 
