@@ -474,16 +474,28 @@ class ItemObserver
 {
 	public function creating($item)
 	{
-		switch ($item->product->type)
+		// always positiv amount for credits
+		$item->credit_amount = abs($item->credit_amount);
+
+		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
-			case 'Internet':
-			case 'Voip':
-			case 'TV':
-				if (!$item->valid_from)
-					$item->valid_from = date('Y-m-d');
-				break;
+			// set default valid from date to today for this product types
+			if(!$item->valid_from)
+				$item->valid_from = date('Y-m-d');
+
+			// set end date of old tariff to starting date of new tariff
+			$tariff = $item->contract->get_valid_tariff($item->product->type);
+
+			if ($tariff)
+			{
+				$start = $item->valid_from && $item->valid_from != '0000-00-00' ? $item->valid_from : $item->created_at;
+				$tariff->valid_to = date('Y-m-d', strtotime($start));
+				$tariff->save();
+			}
 		}
+		
 	}
+
 
 	public function created($item)
 	{
@@ -493,6 +505,11 @@ class ItemObserver
 			$item->contract->daily_conversion();
 			$item->contract->push_to_modems();
 		}
+	}
+
+	public function updating($item)
+	{
+		$item->credit_amount = abs($item->credit_amount);
 	}
 
 	public function updated($item)
