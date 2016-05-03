@@ -1085,8 +1085,12 @@ class ProvVoipEnvia extends \BaseModel {
 		$fields = array(
 			'username' => 'username',
 			'password' => 'password',
-			'sipdomain' => 'sipdomain',
 		);
+
+		// Envia API throws error if <sipdomain nil="true" /> is given…
+		if (boolval($this->phonenumber->sipdomain)) {
+			$fields['sipdomain'] = 'sipdomain';
+		}
 
 		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
 	}
