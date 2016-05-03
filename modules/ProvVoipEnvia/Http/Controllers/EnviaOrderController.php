@@ -121,15 +121,10 @@ class EnviaOrderController extends \BaseModuleController {
 	 */
 	public function destroy($id) {
 
-		// TODO: outsource to own controller/method?
-		try {
-			// this needs view rights; edit rights are checked in store/update methods!
-			$this->_check_permissions("view");
-			$this->_check_permissions("view", "Modules\ProvVoipEnvia\Entities\ProvVoipEnvia");
-		}
-		catch (PermissionDeniedError $ex) {
-			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
-		}
+		// check if user has the right to perform actions against Envia API
+		\App\Http\Controllers\BaseAuthController::auth_check('view', $this->get_model_name());
+		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+
 
 		// get all orders to be canceled
 		$orders = array();

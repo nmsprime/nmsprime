@@ -120,15 +120,9 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 * temporary starter for xml generation
 	 */
 	public function index() {
-		//
-		// check for permissions
-		// TODO: if there are more levels of grants: don't forget to add this here
-		try {
-			$this->_check_permissions("view", "Modules\ProvVoipEnvia\Entities\ProvVoipEnvia");
-		}
-		catch (PermissionDeniedError $ex) {
-			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
-		}
+
+		// check if user has the right to perform actions against Envia API
+		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$base = "/lara/provvoipenvia/request";
 
@@ -510,14 +504,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 */
 	public function request($job) {
 
-		// check for permissions
-		// TODO: if there are more levels of grants: don't forget to add this here
-		try {
-			$this->_check_permissions("view", "Modules\ProvVoipEnvia\Entities\ProvVoipEnvia");
-		}
-		catch (PermissionDeniedError $ex) {
-			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
-		}
+		// check if user has the right to perform actions against Envia API
+		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$base_url = $this->base_url;
 
