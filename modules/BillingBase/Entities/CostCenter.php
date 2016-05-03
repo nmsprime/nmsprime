@@ -10,8 +10,12 @@ class CostCenter extends \BaseModel {
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
+		// this is to avoid missing customer payments when changing the billing month during the year
+		$m = date('m') % 12 + 1;
+
 		return array(
-			'name' 	=> 'required',
+			'name' 			=> 'required',
+			'billing_month' => 'Numeric|Min:'.$m,
 		);
 	}
 
