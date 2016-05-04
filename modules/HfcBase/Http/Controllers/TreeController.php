@@ -48,7 +48,7 @@ class TreeController extends HfcBaseController {
 	/**
 	 * Overwrites the base method
 	 */
-	protected function store($redirect = true)
+	public function store($redirect = true)
 	{
 		// check and handle uploaded KML files
 		$this->handle_file_upload('kml_file', static::get_model_obj()->kml_path);

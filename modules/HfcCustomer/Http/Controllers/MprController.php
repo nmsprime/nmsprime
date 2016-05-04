@@ -31,7 +31,7 @@ class MprController extends \BaseModuleController {
 	 *
 	 * NOTE: param/return: see BaseController@store
 	 */
-	protected function store ($redirect = true)
+	public function store ($redirect = true)
 	{
 		$mpr_id = parent::store(false);
 
