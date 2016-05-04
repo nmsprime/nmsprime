@@ -287,6 +287,7 @@ class SepaAccount extends \BaseModel {
 
 			// initialise record files with Column names as first line
 			File::put($file, implode("\t", array_keys($records[0]))."\n");
+			$file = SepaAccount::str_sanitize($file);
 
 			$data = [];
 			foreach ($records as $value)
@@ -302,6 +303,7 @@ class SepaAccount extends \BaseModel {
 	}
 
 
+
 	// TODO: Description, proper filenames, move $dir to _init in accCmd
 	private function make_booking_record_files()
 	{
@@ -311,6 +313,7 @@ class SepaAccount extends \BaseModel {
 				continue;
 
 			$file = $this->dir.'booking_'.$key.'_records_'.$this->name.'.txt';
+			$file = SepaAccount::str_sanitize($file);
 
 			// initialise record files with Column names as first line
 			File::put($file, implode("\t", array_keys($records[0]))."\n");
@@ -377,7 +380,10 @@ class SepaAccount extends \BaseModel {
 		// Retrieve the resulting XML
 		// TODO filename without special characters
 		$file = $this->dir.'dd_'.$this->name.'.xml';
+		$file = SepaAccount::str_sanitize($file);
+
 		File::put($file, $directDebit->asXML());
+
 		echo "stored sepa direct debit xml in $file \n";
 		$this->logger->addInfo("Successfully stored sepa direct debit xml in $file \n");
 	}
@@ -406,7 +412,10 @@ class SepaAccount extends \BaseModel {
 
 		// Retrieve the resulting XML
 		$file = $this->dir.'dc_'.$this->name.'.xml';
+		$file = SepaAccount::str_sanitize($file);
+
 		File::put($file, $customerCredit->asXML());
+
 		echo "stored sepa direct credit xml in $file\n";
 		$this->logger->addInfo("Successfully stored sepa direct credit xml in $file \n");
 
@@ -429,5 +438,15 @@ class SepaAccount extends \BaseModel {
 			$this->make_sepa_xml();
 	}
 
+
+	/**
+	 * Simplify string for Filenames
+	 * TODO: use as global helper function in other context
+	 */
+	public static function str_sanitize($string)
+	{
+		$string = str_replace(' ', '_', $string);
+		return preg_replace("/[^a-zA-Z0-9.\/_]/", "", $string);
+	}
 
 }

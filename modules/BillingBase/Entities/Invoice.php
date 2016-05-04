@@ -247,7 +247,7 @@ class Invoice {
 
 
 		// create tex file
-		$file = $this->dir.'/'.date('Y_m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
+		$file = $this->dir.'/'.date('m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
 		File::put($file, $template);
 
 		// create pdf
@@ -255,7 +255,7 @@ class Invoice {
 		// TODO: move to end of process
 		system("pdflatex $file &>/dev/null");		// returns 0 on success - $ret as second argument
 
-		$this->logger->addDebug('Successfully created Invoice for Contract '.$this->data['contract_nr'], [$this->data['contract_id'], [$file]]);
+		$this->logger->addDebug('Successfully created Invoice for Contract '.$this->data['contract_nr'], [$this->data['contract_id'], $file]);
 
 		// add hash for security  (files are not downloadable through script that easy)
 		// rename("$file.pdf", $file.'_'.hash('crc32b', $this->data['contract_id'].time()).'.pdf');
