@@ -39,7 +39,24 @@ class Product extends \BaseModel {
 	// link title in index view
 	public function get_view_link_title()
 	{
-		return $this->type.' - '.$this->name.' | '.$this->price.' €';
+		// return $this->type.' - '.$this->name.' | '.$this->price.' €';
+
+		switch ($this->type)
+		{
+			case 'Internet':	$bsclass = 'info'; break; // online
+			case 'TV': $bsclass = 'warning'; break; // warning
+			case 'Voip': $bsclass = 'success'; break; // critical
+			case 'Device': $bsclass = 'warning'; $status = 'offline'; break; // offline
+			case 'Credit': $bsclass = 'danger'; $status = 'offline'; break; // offline
+			case 'Other': $bsclass = 'info'; $status = 'offline'; break; // offline
+
+			default: $bsclass = 'danger'; break;
+		}
+
+		return ['index' => [$this->type, $this->name, $this->price],
+		        'index_header' => ['Type', 'Name', 'Price'],
+		        'bsclass' => $bsclass,
+		        'header' => $this->type.' - '.$this->name.' | '.$this->price.' €'];
 	}
 
 	// Return a pre-formated index list
