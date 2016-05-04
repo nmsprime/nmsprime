@@ -21,10 +21,7 @@ class CompanyController extends \BaseModuleController {
 		$templates = $files['template'];
 
 		// TODO: Translation
-		$help = 'The Text of the separate four "Invoice Text"-Fields is automatically chosen dependent of the total charge and SEPA 
-				Mandate and is set in the appropriate Invoice for the Customer.
-				It is possible to use all data field keys of the Bill Class as placeholder in the form of {fieldname} to build a kind of
-				template. These are replaced by the actual value of the Invoice.';
+		$help = 'The Text of the separate four \'Invoice Text\'-Fields is automatically chosen dependent on the total charge and SEPA Mandate and is set in the appropriate Invoice for the Customer. It is possible to use all data field keys of the Bill Class as placeholder in the form of {fieldname} to build a kind of template. These are replaced by the actual value of the Invoice.';
 
 		// label has to be the same like column in sql table
 		return array(

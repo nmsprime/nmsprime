@@ -13,25 +13,11 @@ class Item extends \BaseModel {
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
-		$tariff_prods_o = Product::where('type', '=', 'internet')->orWhere('type', '=', 'tv')->orWhere('type', '=', 'voip')->get();		
-		if ($tariff_prods_o->all())
-		{
-			foreach ($tariff_prods_o as $p)
-				$tariff_prods_a[] = $p->id;
-			$tariff_ids = implode(',', $tariff_prods_a);
-		}
-		else 
-			$tariff_ids = '';
+		$tariff_prods = Product::whereIn('type', ['internet', 'tv', 'voip'])->lists('id')->all();
+		$tariff_ids   = implode(',', $tariff_prods);
 		
-		$credit_prods_o = Product::where('type', '=', 'credit')->get();
-		if ($credit_prods_o->all())
-		{
-			foreach ($credit_prods_o as $p)
-				$credit_prods_a[] = $p->id;
-			$credit_ids = implode(',', $credit_prods_a);
-		}
-		else
-			$credit_ids = '';
+		$credit_prods = Product::where('type', '=', 'credit')->lists('id')->all();
+		$credit_ids   = implode(',', $credit_prods);
 
 
 		return array(
@@ -57,11 +43,9 @@ class Item extends \BaseModel {
 	// link title in index view
 	public function get_view_link_title()
 	{
-		$start = $end = '';
-		if ($this->valid_from != '0000-00-00')
-			$start = ' - '.$this->valid_from;
-		if ($this->valid_to != '0000-00-00')
-			$end = ' - '.$this->valid_to;
+		$start = $this->valid_from != '0000-00-00' ? ' - '.$this->valid_from : '';
+		$end   = $this->valid_to != '0000-00-00' ? ' - '.$this->valid_to : '';
+
 		return $this->product->name.$start.$end;
 	}
 
@@ -103,7 +87,7 @@ class Item extends \BaseModel {
 
 
 	/*
-	 * Billing Stuff with temporary variables used during billing cycle
+	 * Billing Stuff - Temporary Variables used during billing cycle
 	 */
 
 
@@ -307,7 +291,7 @@ class Item extends \BaseModel {
 
 				break;
 
-// if ($this->contract->id == 500006 && $this->product->id == 10)
+// if ($this->contract->id == 500007 && $this->product->type == 'TV')
 // 	dd($this->product->name, date('Y-m-d', $start), $end, date('Y-m-d', $end), $ratio, $billing_cycle, $text);
 
 			case 'Quarterly':
@@ -323,7 +307,7 @@ class Item extends \BaseModel {
 				// started in last 3 months
 				if ($start > strtotime($period_start))
 				{
-					$days = date('z', strtotime(date('Y-m-31'))) - date('z', $start);
+					$days = date('z', strtotime('last day of this month')) - date('z', $start) + 1;
 					$total_days = date('t') + date('t', strtotime('last month')) + date('t', $start);
 					$ratio = $days / $total_days;
 					$text = date('Y-m-d', $start);
@@ -337,7 +321,7 @@ class Item extends \BaseModel {
 				// ended in last 3 months
 				if ($end && ($end > strtotime($period_start)) && ($end < strtotime(date('Y-m-01', strtotime('next month')))))
 				{
-					$days = date('z', strtotime('first day of next month')) - date('z', $end) - 1;
+					$days = date('z', strtotime('last day of this month')) - date('z', $end);
 					$total_days = date('t') + date('t', strtotime('last month')) + date('t', $start);
 					$ratio -= $days / $total_days;
 					$text .= date('Y-m-d', $end);

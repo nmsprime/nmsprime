@@ -75,8 +75,8 @@ class Product extends \BaseModel {
 	/**
 	 * Returns an array with all ids of a specific product type
 	 * Note: until now only Internet & Voip is needed
-	 * @param product type
-	 * @return array of id's
+	 * @param String/Enum 	product type
+	 * @return Array 		of id's
 	 *
 	 * @author Nino Ryschawy
 	 */

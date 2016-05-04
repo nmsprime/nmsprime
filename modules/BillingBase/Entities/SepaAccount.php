@@ -280,6 +280,9 @@ class SepaAccount extends \BaseModel {
 	{
 		foreach ($this->acc_recs as $key => $records)
 		{
+			if (!$records)
+				continue;
+
 			$file = $this->dir.'accounting_'.$key.'_records_'.$this->name.'.txt';
 
 			// initialise record files with Column names as first line
@@ -302,9 +305,11 @@ class SepaAccount extends \BaseModel {
 	// TODO: Description, proper filenames, move $dir to _init in accCmd
 	private function make_booking_record_files()
 	{
-		dd($this->book_recs);
 		foreach ($this->book_recs as $key => $records)
 		{
+			if (!$records)
+				continue;
+
 			$file = $this->dir.'booking_'.$key.'_records_'.$this->name.'.txt';
 
 			// initialise record files with Column names as first line

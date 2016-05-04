@@ -5,7 +5,7 @@ use Illuminate\Database\Migrations\Migration;
 
 class CreateCompanyTable extends BaseMigration {
 
-	private $dir = '/tftpboot/bill';
+	private $dir = '/tftpboot/bill/';
 	protected $tablename = 'company';
 	
 	/**

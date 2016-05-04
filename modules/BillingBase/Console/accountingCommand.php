@@ -72,6 +72,8 @@ class accountingCommand extends Command {
 	 */
 	public function fire()
 	{
+		// only while testing!! - TODO: remove for production system
+		DB::table('item')->update(['payed' => false]);
 
 		$logger = new BillingLogger;
 		$logger->addInfo(' #####    Start Accounting Command    #####');
@@ -82,18 +84,16 @@ class accountingCommand extends Command {
 		$salesmen 	= Salesman::all();
 
 
-		// init product types of salesmen and invoice nr counters for each sepa account
-		$this->_init($sepa_accs, $salesmen, $conf);
-
-		// remove all entries of this month (if already created)
-		$ret = AccountingRecord::where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->delete();
+		// remove all entries of this month permanently (if already created)
+		$ret = AccountingRecord::where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->forceDelete();
 		if ($ret)
 			$logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 
-		
-		// only while testing!! - TODO: remove for production system
-		$contracts[0]->items[0]->yearly_conversion();
 
+		// init product types of salesmen and invoice nr counters for each sepa account
+		$this->_init($sepa_accs, $salesmen, $conf);
+
+		
 		/*
 		 * Loop over all Contracts
 		 */
@@ -101,6 +101,7 @@ class accountingCommand extends Command {
 		{
 			// debugging output
 			var_dump($c->id); //, round(microtime(true) - $start, 4));
+			// dd(date('Y-m-d', strtotime('next day')));
 			// dd(strtotime(date('2016-04-01')), strtotime(date('2016-03-31 23:59:59')));
 			// dd(strtotime('0000-00-00'), strtotime(null), date('Y-m-d', strtotime('last year')));
 			// dd(date('z', strtotime(date('Y-12-31'))), date('Y-m-d', strtotime('last month')), date('L'), date('Y-m-d', strtotime('first day of last month')));
@@ -129,17 +130,15 @@ class accountingCommand extends Command {
 			foreach ($c->items as $item)
 			{
 				// skip invalid items
-				if (!$item->check_validity())
+				if (!$item->check_validity($item->get_billing_cycle() == 'Yearly' ? 'year' : 'month'))
 					continue;
 
-				$costcenter = $item->get_costcenter();
-
-				$ret = $item->calculate_price_and_span($this->dates);
 				// skip if price is 0
-				if (!$ret)
+				if (!($ret = $item->calculate_price_and_span($this->dates)))
 					continue;
 
 				// get account via costcenter
+				$costcenter = $item->get_costcenter();
 				$acc = $sepa_accs->find($costcenter->sepa_account_id);
 
 				// increase invoice nr of sepa account, increase charge for account by price, calculate tax
@@ -263,8 +262,10 @@ class accountingCommand extends Command {
 		if (!is_dir($dir))
 			mkdir($dir, '0744');
 		else
+		{
+			// TODO: remove this!! - only during testing
 			system("rm -rf $dir/*");
-
+		}
 		foreach ($sepa_accs as $acc)
 			$acc->make_billing_files($dir);
 
