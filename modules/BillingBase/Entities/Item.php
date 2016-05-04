@@ -132,50 +132,23 @@ class Item extends \BaseModel {
 
 
 
-	// /**
-	//  * Checks if item has valid dates in last month/year for Billing (dependent on billing cycle)
-	//  *
-	//  * @return Bool
-	//  */
-	// public function check_validity($start = '', $end = '', $timespan = null)
-	// {
-	// 	return parent::check_validity('valid_from', 'valid_to', $this->get_billing_cycle() == 'Yearly' ? 'year' : 'month');
-	// }
-
-
-	// /**
-	//  * Checks if item is valid right now
-	//  *
-	//  * @return Bool 	false, when expired or not yet started - otherwise true
-	//  */
-	// public function actual_valid()
-	// {
-	// 	$start = $this->get_start_time();
-	// 	$end   = $this->get_end_time();
-	// 	$now   = time();
-
-	// 	return $start <= $now && (!$end || $end > $now);
-	// }
-
 
 	/**
-	 * Returns time in seconds after 1970 of start of item - Note: valid_from field has higher priority than created_at
+	 * Returns start time of item - Note: valid_from field has higher priority than created_at
 	 *
-	 * @return integer
+	 * @return integer 		time in seconds after 1970
 	 */
 	public function get_start_time()
 	{
 		$date = $this->valid_from && $this->valid_from != '0000-00-00' ? $this->valid_from : $this->created_at->toDateString();
 		return strtotime($date);
-		
-		// return $this->valid_from && $this->valid_from != '0000-00-00' ? \Carbon\Carbon::createFromFormat('Y-m-d', $this->valid_from) : $this->created_at;
 	}
 
 
 	/**
-	 * Returns time in seconds after 1970 of end of item - Note: valid_from field has higher priority than created_at
+	 * Returns start time of item - Note: valid_from field has higher priority than created_at
 	 *
-	 * @return integer
+	 * @return integer 		time in seconds after 1970
 	 */
 	public function get_end_time()
 	{
@@ -476,20 +449,18 @@ class ItemObserver
 	{
 		// always positiv amount for credits
 		$item->credit_amount = abs($item->credit_amount);
-
 		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
-			// set default valid from date to today for this product types
-			if(!$item->valid_from)
-				$item->valid_from = date('Y-m-d');
+			// set default valid from date to tomorrow for this product types
+			if(!$item->valid_from || $item->valid_from == '0000-00-00')
+				$item->valid_from = date('Y-m-d', strtotime('next day'));
 
 			// set end date of old tariff to starting date of new tariff
 			$tariff = $item->contract->get_valid_tariff($item->product->type);
 
 			if ($tariff)
 			{
-				$start = $item->valid_from && $item->valid_from != '0000-00-00' ? $item->valid_from : $item->created_at;
-				$tariff->valid_to = date('Y-m-d', strtotime($start));
+				$tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
 				$tariff->save();
 			}
 		}
@@ -499,36 +470,37 @@ class ItemObserver
 
 	public function created($item)
 	{
-		if ($item->product->type == 'Internet' || $item->product->type == 'Voip')
-		{
-			// NOTE: keep this order!
-			$item->contract->daily_conversion();
-			$item->contract->push_to_modems();
-		}
+		$this->update_tariff($item);
 	}
+
 
 	public function updating($item)
 	{
 		$item->credit_amount = abs($item->credit_amount);
 	}
 
+
 	public function updated($item)
 	{
-		if ($item->product->type == 'Internet' || $item->product->type == 'Voip')
-		{
-			$item->contract->daily_conversion();
-			$item->contract->push_to_modems();
-		}
+		$this->update_tariff($item);
 	}
+
 
 	public function deleted($item)
 	{
-		if ($item->product->type == 'Internet' || $item->product->type == 'Voip')
-		{
-			$item->contract->daily_conversion();
-			$item->contract->push_to_modems();
-		}
+		$this->update_tariff($item);
 	}
 
+
+	/**
+	 * changes actual tariff for modems and mtas - Note: not necessary when default start date is tomorrow
+	 */
+	private function update_tariff($item)
+	{
+		// if ($item->product->type == 'Internet' || $item->product->type == 'Voip')
+		// {
+		// 	$item->contract->daily_conversion();
+		// }		
+	}
 
 }

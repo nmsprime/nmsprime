@@ -79,9 +79,9 @@ class SepaMandate extends \BaseModel {
 
 
 	/**
-	 * Returns time in seconds after 1970 of start of item - Note: sepa_valid_from field has higher priority than created_at
+	 * Returns start time of item - Note: sepa_valid_from field has higher priority than created_at
 	 *
-	 * @return integer
+	 * @return integer 		time in seconds after 1970
 	 */
 	public function get_start_time()
 	{
@@ -91,9 +91,9 @@ class SepaMandate extends \BaseModel {
 
 
 	/**
-	 * Returns time in seconds after 1970 of end of item - Note: sepa_valid_from field has higher priority than created_at
+	 * Returns start time of item - Note: sepa_valid_from field has higher priority than created_at
 	 *
-	 * @return integer
+	 * @return integer 		time in seconds after 1970
 	 */
 	public function get_end_time()
 	{
