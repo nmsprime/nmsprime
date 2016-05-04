@@ -16,21 +16,23 @@ class ItemController extends \BaseModuleController {
 		if (!$model)
 			$model = new Item;
 
-		$products = Product::select('id', 'type', 'name')->get()->all();
+		$products = Product::select('id', 'type', 'name')->orderBy('type')->orderBy('name')->get()->all();
+				
+		// $prods = $model->html_list($products, 'name');
+		$prods = [];
+		foreach ($products as $p)
+			$prods[$p->id] = $p->type.' - '.$p->name;
 
-		$prods = $model->html_list($products, 'name');
 		$ccs = array_merge([''], $model->html_list(CostCenter::all(), 'name'));
 
-		// $types = Product::lists('type', 'id');
 		foreach ($products as $p)
 			$types[$p->id] = $p->type; 
 
-		// dd($prods, $types);
 
 		$cnt[0] = null;
 		// 	$b[date('Y-m-01', strtotime("now +$i months"))] = date('Y-m', strtotime("now +$i months"));
-		for ($i=0; $i < 10; $i++)
-			$cnt[$i+1] = $i+1;
+		for ($i=1; $i < 10; $i++)
+			$cnt[$i] = $i;
 
 
 		// label has to be the same like column in sql table
@@ -52,11 +54,11 @@ class ItemController extends \BaseModuleController {
 	 */
 	public function prep_rules($rules, $data)
 	{
-		// $tariff_prod_ids = explode(',', substr($rules['count'], strpos($rules['count'], ',')+1)); //tariffs and credits
-		// if ($data['valid_from'] && !in_array($data['product_id'], $tariff_prod_ids))
-		// 	$rules['valid_to'] = 'required|not_null';
-
 		$rules['count'] = str_replace('product_id', $data['product_id'], $rules['count']);
+
+		// termination only allowed on last day of month
+		if ($data['valid_to'])
+			$rules['valid_to'] .= '|In:'.date('Y-m-d', strtotime('last day of this month', strtotime($data['valid_to'])));
 
 		// dd($rules, $data);
 
