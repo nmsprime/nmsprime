@@ -45,7 +45,7 @@ class Tree extends \BaseModel {
 
     public function modems()
     {
-        if ($this->module_is_active('ProvBase'))
+        if (\PPModule::is_active('ProvBase'))
             return $this->hasMany('Modules\ProvBase\Entities\Modem');
 
         return null;
@@ -54,7 +54,7 @@ class Tree extends \BaseModel {
    	// Relation to MPRs Modem Positioning Rules
 	public function mprs()
 	{
-		if ($this->module_is_active('HfcCustomer'))
+		if (\PPModule::is_active('HfcCustomer'))
 			return $this->hasMany('Modules\HfcCustomer\Entities\Mpr');
 
 		return null;
@@ -66,7 +66,7 @@ class Tree extends \BaseModel {
 	 */
 	public function view_has_many()
 	{
-		if ($this->module_is_active('HfcCustomer'))
+		if (\PPModule::is_active('HfcCustomer'))
 			return array(
 					'Mpr' => $this->mprs
 				);
