@@ -4,6 +4,7 @@ namespace Modules\Billingbase\Http\Controllers;
 use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\CostCenter;
+use Modules\BillingBase\Entities\BillingBase;
 use Config;
 
 class ItemController extends \BaseModuleController {
@@ -23,11 +24,10 @@ class ItemController extends \BaseModuleController {
 		foreach ($products as $p)
 			$prods[$p->id] = $p->type.' - '.$p->name;
 
-		$ccs = array_merge([''], $model->html_list(CostCenter::all(), 'name'));
-
 		foreach ($products as $p)
 			$types[$p->id] = $p->type; 
 
+		$ccs = array_merge([''], $model->html_list(CostCenter::all(), 'name'));
 
 		$cnt[0] = null;
 		// 	$b[date('Y-m-01', strtotime("now +$i months"))] = date('Y-m', strtotime("now +$i months"));
@@ -57,7 +57,8 @@ class ItemController extends \BaseModuleController {
 		$rules['count'] = str_replace('product_id', $data['product_id'], $rules['count']);
 
 		// termination only allowed on last day of month
-		if ($data['valid_to'])
+		$fix = BillingBase::select('termination_fix')->first()->termination_fix;
+		if ($fix && $data['valid_to'])
 			$rules['valid_to'] .= '|In:'.date('Y-m-d', strtotime('last day of this month', strtotime($data['valid_to'])));
 
 		// dd($rules, $data);

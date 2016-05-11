@@ -14,13 +14,19 @@ class BillingBaseController extends \BaseModuleController {
 
 	public function get_form_fields($model = null)
 	{
+		$days[0] = null;
+		for ($i=1; $i < 29; $i++)
+			$days[$i] = $i;
+
 		return [
-			array('form_type' => 'text', 'name' => 'rcd', 'description' => 'Day of Requested Collection Date'),
+			// array('form_type' => 'text', 'name' => 'rcd', 'description' => 'Day of Requested Collection Date'),
+			array('form_type' => 'select', 'name' => 'rcd', 'description' => 'Day of Requested Collection Date', 'value' => $days),
 			array('form_type' => 'select', 'name' => 'currency', 'description' => 'Currency', 'value' => BillingBase::getPossibleEnumValues('currency')),
 			array('form_type' => 'text', 'name' => 'tax', 'description' => 'Tax in %'),
-			array('form_type' => 'text', 'name' => 'mandate_ref_template', 'description' => 'Mandate Reference Template', 'options' => ['placeholder' => 'e.g.: String - {contract_id}']),
-			array('form_type' => 'text', 'name' => 'invoice_nr_start', 'description' => 'Start Invoice Number every Year from'),
-			array('form_type' => 'checkbox', 'name' => 'split', 'description' => 'Split Sepa Transfer-Types to different XML-Files'),
+			array('form_type' => 'text', 'name' => 'mandate_ref_template', 'description' => 'Mandate Reference', 'help' => 'A Template can be built with sql columns of contract or mandate table', 'options' => ['placeholder' => 'e.g.: String - {contract_id}']),
+			array('form_type' => 'text', 'name' => 'invoice_nr_start', 'description' => 'Invoice Number Start', 'help' => 'Starts every Year with this number'),
+			array('form_type' => 'checkbox', 'name' => 'split', 'description' => 'Split Sepa Transfer-Types', 'help' => 'Sepa Transfers are split to different XML-Files dependent of their transfer type'),
+			array('form_type' => 'checkbox', 'name' => 'termination_fix', 'description' => 'Item Termination only end of month', 'help' => 'Allow Customers only to terminate booked products on last day of month'),
 		];
 	}
 	
