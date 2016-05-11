@@ -407,7 +407,7 @@ class Item extends \BaseModel {
 
 
 	/**
-	 * Resets the payed flag of all items - flag is necessary because the billing timestamp can be changed
+	 * Resets the payed flag of all items - flag is necessary because the billing timestamp can be changed during year
 	 */
 	public function yearly_conversion()
 	{

@@ -116,12 +116,33 @@ class SepaMandateObserver
 
 	public function creating($mandate)
 	{
+		// build mandate reference from template
 		$mandate->reference = $this->build_mandate_ref($mandate);
-		
+
+
+		// Set default values for empty fields
+		if (!$mandate->sepa_holder)
+		{
+			$contract = $mandate->contract;
+			$mandate->sepa_holder = $contract->firstname.' '.$contract->lastname;
+		}
+
 		if (!$mandate->signature_date)
 			$mandate->signature_date = date('Y-m-d');
+
 		if (!$mandate->sepa_valid_from)
-			$mandate->sepa_valid_from = date('Y-m-d');
+			$mandate->sepa_valid_from = date('Y-m-d', strtotime('next day'));
+
+
+		// set end date of old mandate to starting date of new mandate
+		$mandate_old = $mandate->contract->get_valid_mandate();
+
+		if ($mandate_old)
+		{
+			$mandate_old->sepa_valid_to = date('Y-m-d', strtotime('-1 day', strtotime($mandate->sepa_valid_from)));
+			$mandate_old->save();
+		}
+
 	}
 
 	public function updating($mandate)
@@ -129,13 +150,13 @@ class SepaMandateObserver
 		if (!$mandate->reference)
 			$mandate->reference = $this->build_mandate_ref($mandate);
 
-		if (!$mandate->reference)
-			$mandate->reference = $this->build_mandate_ref($mandate);
 		if (!$mandate->signature_date || $mandate->signature_date == '0000-00-00')
 			$mandate->signature_date = date('Y-m-d');
 	}
 
-
+	/**
+	 * Replaces placeholders from in Global Config defined mandate reference template with values of mandate or the related contract
+	 */
 	private function build_mandate_ref($mandate)
 	{
 		$template = BillingBase::first()->mandate_ref_template;

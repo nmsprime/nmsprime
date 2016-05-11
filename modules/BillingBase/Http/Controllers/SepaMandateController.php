@@ -33,19 +33,5 @@ class SepaMandateController extends \BaseModuleController {
 		);
 	}
 
-	
 
-	protected function prepare_input_post_validation($data)
-	{
-		if ($data['sepa_valid_from'] == '')
-			$data['sepa_valid_from'] = date('Y-m-d');
-		if ($data['sepa_holder'] == '')
-		{
-			$contract = Contract::find($data['contract_id']);
-			$data['sepa_holder'] = $contract->firstname.' '.$contract->lastname;
-		}
-		// dd($data, $data['contract_id']);
-		
-		return $data;
-	}
 }

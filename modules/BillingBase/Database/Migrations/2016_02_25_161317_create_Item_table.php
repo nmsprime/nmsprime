@@ -22,8 +22,8 @@ class CreateItemTable extends BaseMigration {
 			$table->integer('contract_id')->unsigned();
 			$table->integer('product_id')->unsigned();
 			$table->tinyInteger('count')->unsigned()->default(1);
-			$table->date('valid_from');
-			$table->date('valid_to');
+			$table->date('valid_from')->nullable();
+			$table->date('valid_to')->nullable();
 			$table->float('credit_amount')->nullable();
 			$table->integer('costcenter_id')->unsigned();
 			$table->text('accounting_text');
