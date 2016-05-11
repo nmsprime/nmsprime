@@ -7,7 +7,8 @@ class Company extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'company';
 
-    public $guarded = ['upload'];
+    // public $guarded = ['upload'];
+    public $guarded = ['logo_upload', 'template_upload'];
 
 
 	// Add your validation rules here
@@ -71,28 +72,45 @@ class Company extends \BaseModel {
 	public function billing_files() 
 	{
 		// get all available files
-		$files_raw = glob("/tftpboot/bill/*");
+		$all_files['logo'] 		= glob("/tftpboot/bill/logo/*");
+		$all_files['template']  = glob("/tftpboot/bill/template/*");
 		$files['logo'] = $files['template'] = array(null => "None");
 
-		$pic = ['png', 'eps', 'pdf', 'jpg'];
-		$doc = ['tex', 'odt', 'sxw'];
+		// $files_raw = glob("/tftpboot/bill/*");
+		// $pic = ['png', 'eps', 'pdf', 'jpg'];
+		// $doc = ['tex', 'odt', 'sxw'];
 
 		// extract filename
-		foreach ($files_raw as $file)
-		{		
-			if (is_file($file))
-			{
-				$parts = explode("/", $file);
-				$filename = array_pop($parts);
-				$ending = explode('.', $filename);
-				$end = end($ending);
+		// foreach ($files_raw as $file)
+		// {		
+		// 	if (is_file($file))
+		// 	{
+		// 		$parts = explode("/", $file);
+		// 		$filename = array_pop($parts);
+		// 		$ending = explode('.', $filename);
+		// 		$end = end($ending);
 		
-				if (in_array($end, $pic))
-					$files['logo'][$filename] = $filename;
-				else if (in_array($end, $doc))
-					$files['template'][$filename] = $filename;
+		// 		if (in_array($end, $pic))
+		// 			$files['logo'][$filename] = $filename;
+		// 		else if (in_array($end, $doc))
+		// 			$files['template'][$filename] = $filename;
+		// 	}
+		// }
+
+		// extract filename
+		foreach ($all_files as $dir => $files_raw)
+		{
+			foreach ($files_raw as $file) 
+			{
+				if (is_file($file))
+				{
+					$parts = explode("/", $file);
+					$filename = array_pop($parts);
+					$files[$dir][$filename] = $filename;
+				}
 			}
 		}
+
 		return $files;
 	}
 }

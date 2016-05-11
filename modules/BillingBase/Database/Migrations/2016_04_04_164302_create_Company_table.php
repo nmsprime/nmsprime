@@ -15,9 +15,11 @@ class CreateCompanyTable extends BaseMigration {
 	 */
 	public function up()
 	{
-		// creates directory for bill templates of the companies
-		if(!is_dir($this->dir))
-			mkdir ($this->dir, '0744');
+		// create directories for invoice templates and logos of the companies
+		if(!is_dir($this->dir.'logo/'))
+			mkdir ($this->dir.'logo/', '0700', true);
+		if(!is_dir($this->dir.'template/'))
+			mkdir ($this->dir.'template/', '0700', true);
 		system("/bin/chown -R apache ".$this->dir);
 
 		Schema::create('company', function(Blueprint $table)
