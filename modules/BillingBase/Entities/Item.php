@@ -412,6 +412,7 @@ class Item extends \BaseModel {
 	public function yearly_conversion()
 	{
 		DB::table($this->table)->update(['payed' => false]);
+		\Log::info('Billing: Payed flag of all items resettet for new year');
 	}
 
 
