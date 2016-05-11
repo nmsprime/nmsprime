@@ -8,5 +8,6 @@ Route::group(array('before' => 'auth'), function() {
 	Route::get('/provvoipenvia/cron/{job}', array('as' => 'ProvVoipEnvia.cron', 'uses' => 'Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@cron'));
 
 	CoreRoute::resource('EnviaOrder', 'Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderController');
-	CoreRoute::resource('EnviaOrderDocument', 'Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderDocumentController');
+	CoreRoute::resource('EnviaOrderDocument', 'Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderDocumentController',
+		['only' => ['index', 'create', 'store', 'edit', 'update', 'destroy', 'show']]);
 });
