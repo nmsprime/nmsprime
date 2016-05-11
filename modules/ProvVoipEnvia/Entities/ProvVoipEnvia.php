@@ -5,6 +5,7 @@ namespace Modules\ProvVoipEnvia\Entities;
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
+use Modules\ProvVoip\Entities\PhonebookEntry;
 use Modules\ProvVoip\Entities\CarrierCode;
 use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvBase\Entities\Modem;
@@ -100,8 +101,10 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		$this->_get_model_data($view_level, $model);
-
 		$phonenumber_id = $this->phonenumbermanagement->phonenumber_id;
+		if (!is_null($this->phonenumbermanagement->phonebookentry)) {
+			$phonebookentry_id = $this->phonenumbermanagement->phonebookentry->id;
+		}
 		$contract_id = $this->contract->id;
 
 		/* // check for valid view_level and define get models to use */
@@ -164,6 +167,16 @@ class ProvVoipEnvia extends \BaseModel {
 			$this->voipaccount_available = False;
 		}
 
+		if (is_null($this->phonebookentry->external_creation_date)) {
+			$this->phonebookentry_created = False;
+			$this->phonebookentry_available = False;
+		}
+		else {
+			$this->phonebookentry_created = True;
+			$this->phonebookentry_available = True;
+		}
+
+
 	}
 
 
@@ -187,17 +200,27 @@ class ProvVoipEnvia extends \BaseModel {
 		if ($view_level == 'phonenumbermanagement') {
 			$contract_id = $model->phonenumber->mta->modem->contract->id;
 			$phonenumber_id = $model->phonenumber_id;
+			if (!is_null($model->phonebookentry)) {
+				$phonebookentry_id = $model->phonebookentry->id;
+			}
 		}
 		elseif ($view_level == 'contract') {
 			$contract_id = $model->id;
 			$phonenumber_id = null;
+			$phonebookentry_id = null;
 		}
 		elseif ($view_level == 'phonenumber') {
 			$contract_id = $model->mta->modem->contract->id;
 			$phonenumber_id = $model->id;
+			$phonebookentry_id = $model->phonenumbermanagement->phonebookentry->id;
+		}
+		elseif ($view_level == 'phonebookentry') {
+			$contract_id = $model->phonenumbermanagement->phonenumber->mta->modem->contract->id;
+			$phonenumber_id = $model->phonenumbermanagement->phonenumber_id;
+			$phonebookentry_id = $model->id;
 		}
 		else {
-			throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumber|phonenumbermanagement]');
+			throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumber|phonenumbermanagement|phonebookentry]');
 		}
 
 		// add this to all actions that can be performed without extra confirmation
@@ -208,7 +231,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		////////////////////////////////////////
 		// misc jobs
-		if (in_array($view_level, ['contract', 'phonenumber', 'phonenumbermanagement'])) {
+		if (in_array($view_level, ['contract', 'phonenumber', 'phonenumbermanagement', 'phonebookentry'])) {
 			$ret = array(
 				array('class' => 'Misc'),
 				array('linktext' => 'Ping Envia API', 'url' => $base.'misc_ping'.$origin.$really),
@@ -322,6 +345,18 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 		////////////////////////////////////////
+		// phonebookentry related jobs
+		if (in_array($view_level, ['phonebookentry'])) {
+
+			array_push($ret, array('class' => 'Phonebook entry'));
+
+			if (!$this->phonebookentry_created) {
+				array_push($ret, array('linktext' => 'Create phonebook entry', 'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id));
+			}
+
+		}
+
+		////////////////////////////////////////
 		// configuration related stuff
 		/* if (in_array($view_level, ['phonenumbermanagement'])) { */
 		/* 	array_push($ret, array('class' => 'Configuration')); */
@@ -397,6 +432,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->mta = null;
 		$this->phonenumber = null;
 		$this->phonenumbermanagement = null;
+		$this->phonebookentry = null;
 
 		// level is irrelevant (e.g. for creating XML for a given contract_id
 		// this means: the initial model comes from a database search
@@ -420,7 +456,24 @@ class ProvVoipEnvia extends \BaseModel {
 				$this->modem = $this->mta->modem;
 				$this->contract = $this->modem->contract;
 				$this->phonenumbermanagement = $this->phonenumber->phonenumbermanagement;
+				$this->phonebookentry = $this->phonenumbermanagement->phonebookentry;
 			}
+
+			// entry point is phonebookentry
+			$phonebookentry_id = \Input::get('phonebookentry_id', null);
+			if (!is_null($phonebookentry_id)) {
+				$this->phonebookentry = PhonebookEntry::findOrFail($phonebookentry_id);
+			}
+
+			// get related models
+			if (!is_null($this->phonebookentry)) {
+				$this->phonenumbermanagement = $this->phonebookentry->phonenumbermanagement;
+				$this->phonenumber= $this->phonenumbermanagement->phonenumber;
+				$this->mta = $this->phonenumber->mta;
+				$this->modem = $this->mta->modem;
+				$this->contract = $this->modem->contract;
+			}
+
 		}
 		// build relations starting with model contract
 		elseif (($level == 'contract') && (!is_null($model))) {
@@ -429,11 +482,13 @@ class ProvVoipEnvia extends \BaseModel {
 			$this->modem = new Modem();
 			$this->phonenumbermanagement = new PhonenumberManagement();
 			$this->phonenumber = new Phonenumber();
+			$this->phonebookentry = new PhonebookEntry();
 		}
 		// build relations starting with model phonenumbermanagement
 		elseif (($level == 'phonenumbermanagement') && !is_null($model)) {
 			$this->phonenumbermanagement = $model;
 			$this->phonenumber = $this->phonenumbermanagement->phonenumber;
+			$this->phonebookentry = new PhonebookEntry();
 			$this->mta = $this->phonenumber->mta;
 			$this->modem = $this->mta->modem;
 			$this->contract = $this->modem->contract;
@@ -441,7 +496,17 @@ class ProvVoipEnvia extends \BaseModel {
 		// build relations starting with model phonenumber
 		elseif (($level == 'phonenumber') && !is_null($model)) {
 			$this->phonenumbermanagement = new PhonenumberManagement();
+			$this->phonebookentry = new PhonebookEntry();
 			$this->phonenumber = $model;
+			$this->mta = $this->phonenumber->mta;
+			$this->modem = $this->mta->modem;
+			$this->contract = $this->modem->contract;
+		}
+		// build relations starting with model phonebookentry
+		elseif (($level == 'phonebookentry') && !is_null($model)) {
+			$this->phonebookentry = $model;
+			$this->phonenumbermanagement = $this->phonebookentry->phonenumbermanagement;
+			$this->phonenumber = $this->phonenumbermanagement->phonenumber;
 			$this->mta = $this->phonenumber->mta;
 			$this->modem = $this->mta->modem;
 			$this->contract = $this->modem->contract;
@@ -455,6 +520,7 @@ class ProvVoipEnvia extends \BaseModel {
 				throw new \UnexpectedValueException('Value '.$level.' not allowed for param $level');
 			}
 		}
+
 	}
 
 	/**
@@ -710,9 +776,12 @@ class ProvVoipEnvia extends \BaseModel {
 				'order_identifier',
 			),
 
-			/* 'phonebookentry_create' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+			'phonebookentry_create' => array(
+				'reseller_identifier',
+				'contract_identifier',
+				'callnumber_identifier',
+				'phonebookentry_data',
+			),
 
 			/* 'phonebookentry_delete' => array( */
 			/* 	'reseller_identifier', */
@@ -1226,6 +1295,42 @@ class ProvVoipEnvia extends \BaseModel {
 
 	}
 
+
+	/**
+	 * Method to add phonebookentry data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_phonebookentry_data() {
+
+		$inner_xml = $this->xml->addChild('phonebookentry_data');
+
+		$fields= array(
+			'lastname' => 'lastname',
+			'firstname' => 'firstname',
+			'company' => 'company',
+			'noble_rank' => 'noble_rank',
+			'nobiliary_particle' => 'nobiliary_particle',
+			'academic_degree' => 'academic_degree',
+			'other_name_suffix' => 'other_name_suffix',
+			'business' => 'business',
+			'street' => 'street',
+			'houseno' => 'houseno',
+			'zipcode' => 'zipcode',
+			'city' => 'city',
+			'urban_district' => 'urban_district',
+			'usage' => 'number_usage',
+			'publish_in_print_media' => 'publish_in_print_media',
+			'publish_in_electronic_media' => 'publish_in_electronic_media',
+			'directory_assistance' => 'directory_assistance',
+			'entry_type' => 'entry_type',
+			'reverse_search' => 'reverse_search',
+			'publish_address' => 'publish_address',
+			'tag' => 'tag',
+		);
+
+		$this->_add_fields($inner_xml, $fields, $this->phonebookentry);
+	}
 
 	/**
 	 * Method to add fields to xml node

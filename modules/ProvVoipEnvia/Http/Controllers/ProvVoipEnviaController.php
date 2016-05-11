@@ -458,6 +458,16 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			return true;
 		}
 
+		if ($job == "phonebookentry_create") {
+			$this->model->extract_environment($this->model->phonebookentry, 'phonebookentry');
+
+			// can only be created if not existing
+			if ($this->model->phonebookentry_created) {
+				return false;
+			}
+
+			return true;
+		}
 
 
 
@@ -607,7 +617,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'order_create_attachment' => $base_url.'order/create_attachment',
 			'order_get_status' => $base_url.'order/get_status',
 
-			'phonebookentry_create' => $base_url.'____TODO____',
+			'phonebookentry_create' => $base_url.'phonebookentry/create',
 			'phonebookentry_delete' => $base_url.'____TODO____',
 			'phonebookentry_get' => $base_url.'____TODO____',
 
