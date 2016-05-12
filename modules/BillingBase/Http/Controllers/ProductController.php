@@ -95,7 +95,7 @@ class ProductController extends \BaseModuleController {
 		}
 
 		// dd($rules, $data);
-		return $rules;
+		return parent::prep_rules($rules, $data);
 	}
 
 }

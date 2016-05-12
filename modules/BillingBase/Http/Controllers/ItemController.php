@@ -62,9 +62,23 @@ class ItemController extends \BaseModuleController {
 		if ($fix && $data['valid_to'])
 			$rules['valid_to'] .= '|In:'.date('Y-m-d', strtotime('last day of this month', strtotime($data['valid_to'])));
 
+		if ($data['valid_to'] && $data['valid_to'] != '0000-00-00')
+			$rules['valid_to'] .= '|after:'.$data['valid_from'];
+
+		// new tariff start date must be after old tariff start date - does it?
+		$c = Contract::find($data['contract_id']);
+		$p = Product::find($data['product_id']);
+		$tariff = $c->get_valid_tariff($p->type);
+		if ($tariff)
+		{
+			$start = $tariff->get_start_time();
+			$rules['valid_from'] .= '|after:';
+			$rules['valid_from'] .= $tariff->valid_to && $tariff->valid_to != '0000-00-00' ? $tariff->valid_to : date('Y-m-d', $start);
+		}
+
 		// dd($rules, $data);
 
-		return $rules;
+		return parent::prep_rules($rules, $data);
 	}
 
 	public function index()
