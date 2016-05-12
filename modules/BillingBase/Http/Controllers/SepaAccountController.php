@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\Billingbase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
@@ -6,11 +6,11 @@ use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Entities\Company;
 
 class SepaAccountController extends \BaseModuleController {
-	
+
     /**
      * defines the formular fields for the edit and create view
      */
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 		if (!$model)
 			$model = new SepaAccount;
@@ -32,5 +32,5 @@ class SepaAccountController extends \BaseModuleController {
 		);
 	}
 
-	
+
 }

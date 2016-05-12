@@ -64,7 +64,7 @@
 					<ul>
 					@foreach ($relation as $rel_elem)
 						<li>
-							{{ HTML::linkRoute($view.'.show', $rel_elem->get_view_link_title(), $rel_elem->id) }}
+							{{ HTML::linkRoute($view.'.show', $rel_elem->view_index_label(), $rel_elem->id) }}
 						</li>
 					@endforeach
 					</ul>

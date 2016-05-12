@@ -9,7 +9,7 @@ class TreeController extends HfcBaseController {
     /**
      * defines the formular fields for the edit and create view
      */
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 		if ($model) {
 			$parents = $model->parents_list();
@@ -48,10 +48,10 @@ class TreeController extends HfcBaseController {
 	/**
 	 * Overwrites the base method
 	 */
-	protected function store($redirect = true)
+	public function store($redirect = true)
 	{
 		// check and handle uploaded KML files
-		$this->handle_file_upload('kml_file', $this->get_model_obj()->kml_path);
+		$this->handle_file_upload('kml_file', static::get_model_obj()->kml_path);
 
 		// call base method
 		$ret = parent::store();
@@ -67,7 +67,7 @@ class TreeController extends HfcBaseController {
 	public function update($id)
 	{
 		// check and handle uploaded KML files
-		$this->handle_file_upload('kml_file', $this->get_model_obj()->kml_path);
+		$this->handle_file_upload('kml_file', static::get_model_obj()->kml_path);
 
 		// call base method
 		$ret = parent::update($id);

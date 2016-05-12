@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\Billingbase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
@@ -7,11 +7,11 @@ use Modules\BillingBase\Entities\CostCenter;
 use Modules\ProvBase\Entities\Qos;
 
 class ProductController extends \BaseModuleController {
-	
+
     /**
      * defines the formular fields for the edit and create view
      */
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 		if (!$model)
 			$model = new Product;
@@ -42,10 +42,10 @@ class ProductController extends \BaseModuleController {
 	/**
 	 * @author Nino Ryschawy
 	 */
-	public function prep_rules($rules, $data)
+	public function prepare_rules($rules, $data)
 	{
 		// dd($data, $rules);
-		switch ($data['type']) 
+		switch ($data['type'])
 		{
 			case 'Credit':
 				$rules['billing_cycle'] = 'In:Once,Monthly';
@@ -63,7 +63,7 @@ class ProductController extends \BaseModuleController {
 			case 'Internet':
 				$rules['voip_id'] = 'In:0';
 				break;
-			
+
 			case 'Other':
 				$rules['qos_id'] = 'In:0';
 				$rules['voip_id'] = 'In:0';

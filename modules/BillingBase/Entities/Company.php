@@ -28,13 +28,13 @@ class Company extends \BaseModel {
 	 */
 
 	// Name of View
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'Company';
 	}
 
 	// link title in index view
-	public function get_view_link_title()
+	public function view_index_label()
 	{
 		return $this->name;
 	}
@@ -68,7 +68,7 @@ class Company extends \BaseModel {
 	 * Returns all available logos and template files (via directory listing)
 	 * @author Nino Ryschawy
 	 */
-	public function billing_files() 
+	public function billing_files()
 	{
 		// get all available files
 		$files_raw = glob("/tftpboot/bill/*");
@@ -79,14 +79,14 @@ class Company extends \BaseModel {
 
 		// extract filename
 		foreach ($files_raw as $file)
-		{		
+		{
 			if (is_file($file))
 			{
 				$parts = explode("/", $file);
 				$filename = array_pop($parts);
 				$ending = explode('.', $filename);
 				$end = end($ending);
-		
+
 				if (in_array($end, $pic))
 					$files['logo'][$filename] = $filename;
 				else if (in_array($end, $doc))

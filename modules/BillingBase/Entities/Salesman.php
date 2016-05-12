@@ -27,13 +27,13 @@ class Salesman extends \BaseModel {
 	 */
 
 	// Name of View
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'Salesman';
 	}
 
 	// link title in index view
-	public function get_view_link_title()
+	public function view_index_label()
 	{
 		return $this->firstname.' '.$this->lastname;
 	}
@@ -66,7 +66,7 @@ class Salesman extends \BaseModel {
 	/**
 	 * BILLING STUFF
 	 */
-	public $all_prod_types = [];				// array (list) of all possible types of products - 
+	public $all_prod_types = [];				// array (list) of all possible types of products -
 	protected $total_commission = 0;			// total commission amount during actual billing cycle
 	protected $item_names = [];					// all names of items he gets commission for (in actual billing cycle)
 	public $filename = 'salesmen_commission.txt';
@@ -150,7 +150,7 @@ class ContractObserver
 
 	public function updating($salesman)
 	{
-		$salesman->products = str_replace(['/', '|', ';'], ',', $salesman->products);		
+		$salesman->products = str_replace(['/', '|', ';'], ',', $salesman->products);
 	}
 
 }
