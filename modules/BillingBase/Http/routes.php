@@ -5,17 +5,17 @@
 // 	Route::get('/', 'BillingBaseController@index');
 // });
 
-CoreRoute::group([], function() {
+BaseRoute::group([], function() {
 
-	CoreRoute::resource('Product', 'Modules\BillingBase\Http\Controllers\ProductController');
-	CoreRoute::resource('Item', 'Modules\BillingBase\Http\Controllers\ItemController');
-	CoreRoute::resource('SepaMandate', 'Modules\BillingBase\Http\Controllers\SepaMandateController');
-	CoreRoute::resource('SepaAccount', 'Modules\BillingBase\Http\Controllers\SepaAccountController');
-	CoreRoute::resource('CostCenter', 'Modules\BillingBase\Http\Controllers\CostCenterController');
-	CoreRoute::resource('Company', 'Modules\BillingBase\Http\Controllers\CompanyController');
-	CoreRoute::resource('Salesman', 'Modules\BillingBase\Http\Controllers\SalesmanController');
+	BaseRoute::resource('Product', 'Modules\BillingBase\Http\Controllers\ProductController');
+	BaseRoute::resource('Item', 'Modules\BillingBase\Http\Controllers\ItemController');
+	BaseRoute::resource('SepaMandate', 'Modules\BillingBase\Http\Controllers\SepaMandateController');
+	BaseRoute::resource('SepaAccount', 'Modules\BillingBase\Http\Controllers\SepaAccountController');
+	BaseRoute::resource('CostCenter', 'Modules\BillingBase\Http\Controllers\CostCenterController');
+	BaseRoute::resource('Company', 'Modules\BillingBase\Http\Controllers\CompanyController');
+	BaseRoute::resource('Salesman', 'Modules\BillingBase\Http\Controllers\SalesmanController');
 
 	// Route::get('BillingBase', array('as' => 'BillingBase.edit', 'uses' => 'Modules\BillingBase\Http\Controllers\BillingBaseController@edit'));
-	CoreRoute::resource('BillingBase', 'Modules\BillingBase\Http\Controllers\BillingBaseController');
+	BaseRoute::resource('BillingBase', 'Modules\BillingBase\Http\Controllers\BillingBaseController');
 
 });

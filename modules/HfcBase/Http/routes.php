@@ -1,9 +1,9 @@
 <?php
 
-CoreRoute::group([], function() {
+BaseRoute::group([], function() {
 
-	CoreRoute::resource('Tree', 'Modules\HfcBase\Http\Controllers\TreeController');
-	CoreRoute::resource('HfcBase', 'Modules\HfcBase\Http\Controllers\HfcBaseController');
+	BaseRoute::resource('Tree', 'Modules\HfcBase\Http\Controllers\TreeController');
+	BaseRoute::resource('HfcBase', 'Modules\HfcBase\Http\Controllers\HfcBaseController');
 
 	Route::get('tree/fulltextSearch', array('as' => 'Tree.fulltextSearch', 'uses' => 'Modules\HfcBase\Http\Controllers\TreeController@fulltextSearch'));
 
