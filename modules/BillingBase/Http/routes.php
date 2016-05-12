@@ -5,7 +5,7 @@
 // 	Route::get('/', 'BillingBaseController@index');
 // });
 
-Route::group(array('before' => 'auth'), function() {
+CoreRoute::group([], function() {
 
 	CoreRoute::resource('Product', 'Modules\BillingBase\Http\Controllers\ProductController');
 	CoreRoute::resource('Item', 'Modules\BillingBase\Http\Controllers\ItemController');
