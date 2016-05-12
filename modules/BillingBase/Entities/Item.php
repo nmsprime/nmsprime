@@ -416,20 +416,16 @@ class ItemObserver
 				$tariff->save();
 			}
 		}
-		
-	}
 
-
-	public function created($item)
-	{
-		$this->update_tariff($item);
+		// set end date for products with fixed number of cycles
+		$this->handle_fixed_cycles($item);
+	
 	}
 
 
 	public function updating($item)
 	{
 		$item->credit_amount = abs($item->credit_amount);
-
 
 		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
@@ -442,30 +438,30 @@ class ItemObserver
 				$tariff->save();
 			}
 		}
+
+		// set end date for products with fixed number of cycles
+		$this->handle_fixed_cycles($item);
+
 	}
 
-
-	public function updated($item)
-	{
-		$this->update_tariff($item);
-	}
-
-
-	public function deleted($item)
-	{
-		$this->update_tariff($item);
-	}
 
 
 	/**
-	 * changes actual tariff for modems and mtas - Note: not necessary when default start date is tomorrow
+	 * Auto fills valid_from and valid_to fields for items of products with fixed cycle count
 	 */
-	private function update_tariff($item)
+	private function handle_fixed_cycles($item)
 	{
-		// if ($item->product->type == 'Internet' || $item->product->type == 'Voip')
-		// {
-		// 	$item->contract->daily_conversion();
-		// }		
+		if (!$item->product->cycle_count)
+			return;
+
+		$cnt = $item->product->cycle_count;
+		if ($item->product->billing_cycle == 'Quarterly') $cnt *= 3;
+		if ($item->product->billing_cycle == 'Yearly') $cnt *= 12; 
+
+		if(!$item->valid_from || $item->valid_from == '0000-00-00')
+			$item->valid_from = date('Y-m-d');
+
+		$item->valid_to = date('Y-m-d', strtotime('last day of this month', strtotime("+$cnt month", strtotime($item->valid_from))));
 	}
 
 }

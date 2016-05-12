@@ -36,7 +36,7 @@ class ProductController extends \BaseModuleController {
 			array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'Qos (Data Rate)', 'value' => $qos_val, 'select' => 'Internet'),
 			array('form_type' => 'select', 'name' => 'voip_id', 'description' => 'Phone Tariff', 'value' => [0 => '', 1 => 'Basic', 2 => 'Flat'], 'select' => 'Voip'),
 			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle')),
-			array('form_type' => 'text', 'name' => 'cycle_count', 'description' => 'Number of Cycles', 'select' => 'Device Other'),
+			array('form_type' => 'text', 'name' => 'cycle_count', 'description' => 'Number of Cycles', 'select' => 'Device Other', 'help' => 'Take Care!: for all repeatedly payed products the price stands for every charge, for Once payed products the Price is divided by the number of cycles'),
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
 			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)', 'select' => 'Internet Voip TV Device Other'),
 			$tax,
