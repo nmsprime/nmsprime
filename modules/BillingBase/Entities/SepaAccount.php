@@ -11,7 +11,7 @@ use File;
 class SepaAccount extends \BaseModel {
 
 	// The associated SQL table for this Model
-	public $table = 'sepa_account';
+	public $table = 'sepaaccount';
 
 	// Add your validation rules here
 	public static function rules($id = null)
@@ -72,8 +72,10 @@ class SepaAccount extends \BaseModel {
 
 
 
-	public function __construct()
+	public function __construct($attributes = array())
 	{
+		parent::__construct($attributes);
+
 		$this->invoice_nr_prefix = date('Y').'/';
 		$this->logger = new BillingLogger;
 	}
@@ -130,7 +132,10 @@ class SepaAccount extends \BaseModel {
 
 	public function add_accounting_record($item)
 	{
-		$count = $item->count ? $item_count : '1';
+		$count = $item->count ? $item->count : '1';
+
+		// if ($item->contract_id = 500006 && $item->product->type == 'Device')
+		// 	dd($item->count, $count, $item->charge);
 
 		$data = array(
 			
@@ -284,10 +289,10 @@ class SepaAccount extends \BaseModel {
 				continue;
 
 			$file = $this->dir.'accounting_'.$key.'_records_'.$this->name.'.txt';
+			$file = SepaAccount::str_sanitize($file);
 
 			// initialise record files with Column names as first line
 			File::put($file, implode("\t", array_keys($records[0]))."\n");
-			$file = SepaAccount::str_sanitize($file);
 
 			$data = [];
 			foreach ($records as $value)

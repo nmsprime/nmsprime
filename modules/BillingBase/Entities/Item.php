@@ -2,7 +2,6 @@
 
 namespace Modules\BillingBase\Entities;
 
-use Modules\BillingBase\Entities\Product;
 use DB;
 
 class Item extends \BaseModel {
@@ -164,7 +163,7 @@ class Item extends \BaseModel {
 	/**
 	 * Calculate Price for actual month of an item with valid dates - writes it to temporary billing variables of this model
 	 *
-	 * @param 	array of often used billing dates
+	 * @param 	array  $dates 	of often used billing dates
 	 * @return 	null if no costs incurred, 1 otherwise
 	 * @author 	Nino Ryschawy
 	 */
@@ -180,44 +179,6 @@ class Item extends \BaseModel {
 		// contract ends before item ends - contract has higher priority
 		if ($this->contract->expires)
 			$end = !$end || strtotime($this->contract->contract_end) < $end ? strtotime($this->contract->contract_end) : $end;
-
-		
-		$overlapping = 0;
-		// only 1 internet & voip tariff ! or if they overlap - old tariff has to be charged until new tariff begins
-		// TODO: remove && 0
-		if ($this->product->type == 'Internet' && 0)
-		{
-			// get start of valid tariff
-			$valid_tariff = $this->contract->get_valid_tariff('Internet');
-
-			if (!$valid_tariff)
-				return null;
-
-			// set end date of overlapping tariff
-			if ($valid_tariff && $this->id != $valid_tariff->id)
-			{
-				$end = !$end || $end > $valid_tariff->get_start_time() ? $valid_tariff->get_start_time() : $end;
-				$overlapping = 1;
-			}
-		}
-
-
-		// only 1 internet & voip tariff ! or if they overlap - old tariff has to be charged until new tariff begins
-		if ($this->product->type == 'Voip' && 0)
-		{
-			// get start of valid tariff
-			$valid_tariff = $this->contract->get_valid_tariff('Voip');
-
-			if (!$valid_tariff)
-				return null;
-
-			// set end date of overlapping tariff
-			if ($valid_tariff && $this->id != $valid_tariff->id)
-			{
-				$end = !$end || $end > $valid_tariff->get_start_time() ? $valid_tariff->get_start_time() : $end;
-				$overlapping = 1;
-			}
-		}
 		
 
 		switch($billing_cycle)
@@ -241,13 +202,16 @@ class Item extends \BaseModel {
 				// ended last month
 				if ($end && $end < strtotime($dates['thism_01']))
 				{
-					$ratio += (date('d', $end) - $overlapping)/date('t', $end) - 1;
+					$ratio += date('d', $end)/date('t', $end) - 1;
 					$text  .= date('Y-m-d', $end);
 				}
 				else
 					$text  .= date('Y-m-31', strtotime('last month'));
 
 				break;
+
+// if ($this->contract->id == 500005 && $this->product->type == 'Internet')
+// 	dd($this->product->name, date('Y-m-d', $start), $end, date('Y-m-d', $end), $ratio, $billing_cycle, $text);
 
 
 			case 'Yearly':
@@ -291,8 +255,6 @@ class Item extends \BaseModel {
 
 				break;
 
-// if ($this->contract->id == 500007 && $this->product->type == 'TV')
-// 	dd($this->product->name, date('Y-m-d', $start), $end, date('Y-m-d', $end), $ratio, $billing_cycle, $text);
 
 			case 'Quarterly':
 
@@ -369,17 +331,19 @@ class Item extends \BaseModel {
 
 			case 'Once':
 
-				$ratio = 1;
-				$valid_to = $this->valid_to == $dates['null'] ? null : strtotime(date('Y-m', $this->valid_to));		// only month is considered
+				if (date('Y-m', $start) == $dates['lastm_Y'])
+					$ratio = 1;
+
+				$valid_to = $this->valid_to && $this->valid_to != $dates['null'] ? strtotime(date('Y-m', strtotime($this->valid_to))) : null;		// only month is considered
 
 				// if payment is split
 				if ($valid_to)
 				{
-					$tot_months = round(($valid_to - strtotime(date('Y-m', $start))) / $dates['m_in_sec'] + 1, 2);
+					$tot_months = round(($valid_to - strtotime(date('Y-m', $start))) / $dates['m_in_sec'] + 1, 0);
 					$ratio /= $tot_months;
 
 					// $part = totm - (to - this)
-					$part = round((($tot_months)*$dates['m_in_sec'] + strtotime($dates['lastm_01']) - $valid_to)/$dates['m_in_sec']) + 1;
+					$part = round((($tot_months)*$dates['m_in_sec'] + strtotime($dates['lastm_01']) - $valid_to)/$dates['m_in_sec']);
 					$text = " | part $part/$tot_months";
 
 					// items with valid_to in future, but contract expires
@@ -430,10 +394,12 @@ class Item extends \BaseModel {
  */
 class ItemObserver
 {
+
 	public function creating($item)
 	{
 		// always positiv amount for credits
 		$item->credit_amount = abs($item->credit_amount);
+
 		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
 			// set default valid from date to tomorrow for this product types
@@ -462,6 +428,19 @@ class ItemObserver
 	public function updating($item)
 	{
 		$item->credit_amount = abs($item->credit_amount);
+
+
+		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
+		{
+			// set end date of old tariff to starting date of new tariff (if it's not the same)
+			$tariff = $item->contract->get_valid_tariff($item->product->type);
+
+			if ($tariff && $tariff->id != $item->id)
+			{
+				$tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
+				$tariff->save();
+			}
+		}
 	}
 
 

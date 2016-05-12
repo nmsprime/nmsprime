@@ -5,6 +5,7 @@ use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\CostCenter;
 use Modules\BillingBase\Entities\BillingBase;
+use Modules\ProvBase\Entities\Contract;
 use Config;
 
 class ItemController extends \BaseModuleController {

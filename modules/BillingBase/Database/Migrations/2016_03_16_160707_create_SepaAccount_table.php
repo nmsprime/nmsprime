@@ -5,7 +5,7 @@ use Illuminate\Database\Migrations\Migration;
 
 class CreateSepaAccountTable extends BaseMigration {
 
-	protected $tablename = 'sepa_account';
+	protected $tablename = 'sepaaccount';
 
 	/**
 	 * Run the migrations.
