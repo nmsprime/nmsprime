@@ -91,49 +91,61 @@ class SepaAccount extends \BaseModel {
 	protected $logger;
 
 
-	/*
+	/**
 	 * Accounting Records
 		* resulting in 2 files for items and tariffs
 	 	* Filestructure is defined in add_accounting_record()-function
+	 * @var array
 	 */ 
 	protected $acc_recs = array('tariff' => [], 'item' => []);
 
 
-	/*
+	/**
 	 * Booking Records
 		* resulting in 2 files for records with sepa mandate or without
 	 	* Filestructure is defined in add_booking_record()-function		
+	 * @var array
 	 */
 	protected $book_recs = array('sepa' => [], 'no_sepa' => []);
 
 
-	/*
+	/**
 	 * Invoices for every Contract that contain only the products/items that have to be paid to this account
-	 * (related through costcenter)
-	 * each entry results in one invoice pdf file
+	 	* (related through costcenter)
+		* each entry results in one invoice pdf file
+	 * @var array
 	 */
 	protected $invoices = [];
 
 
-	/*
+	/**
 	 * Sepa XML 
-	 * resulting in 2 possible files for direct debits or credits
+		* resulting in 2 possible files for direct debits or credits
+	 * @var array
 	 */
 	protected $sepa_xml = array('debits' => [], 'credits' => []);
 
 
 
 
+	/**
+	 * Returns composed invoice nr string
+	 *
+	 * @return String
+	 */
 	private function get_invoice_nr_formatted()
 	{
 		return $this->invoice_nr_prefix.$this->id.'/'.$this->invoice_nr;
 	}
 
 
+	/**
+	 * Adds an accounting record to this account of an item to the corresponding acc_recs-Array (item/tariff)
+	 *
+	 * @param object 	$item
+	 */
 	public function add_accounting_record($item)
 	{
-		$count = $item->count ? $item->count : '1';
-
 		// if ($item->contract_id = 500006 && $item->product->type == 'Device')
 		// 	dd($item->count, $count, $item->charge);
 
@@ -145,9 +157,9 @@ class SepaAccount extends \BaseModel {
 			'Target Month' 	=> date('m'),
 			'Date' 			=> date('Y-m-d'),
 			'Cost Center'  	=> isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
-			'Count'			=> $count,
+			'Count'			=> $item->count ? $item->count : '1',
 			'Description'  	=> $item->invoice_description,
-			'Price' 		=> $item->charge * $count,
+			'Price' 		=> $item->charge,
 			'Firstname'		=> $item->contract->firstname,
 			'Lastname' 		=> $item->contract->lastname,
 			'Street' 		=> $item->contract->street,
@@ -173,6 +185,12 @@ class SepaAccount extends \BaseModel {
 	}
 
 
+	/**
+	 * Adds a booking record for this account with the charge of a contract to the corresponding book_recs-Array (sepa/no_sepa)
+	 *
+	 * @param object 	$contract, $mandate, $conf
+	 * @param float 	$charge
+	 */
 	public function add_booking_record($contract, $mandate, $charge, $conf)
 	{
 		$data = array(
@@ -250,32 +268,73 @@ class SepaAccount extends \BaseModel {
 			);
 
 			$this->sepa_xml['credits'][] = $data;
-		}
-		else
-		{
-			// determine transaction type: first/recurring/final
-			// TODO: use state field in mandate table
-			$type = PaymentInformation::S_RECURRING;
-			// started this month or last month after last run of accounting command
-			if (!$mandate->recurring && date('Y-m', strtotime($mandate->contract->contract_start)) == $dates['m'] || (date('Y-m', strtotime($mandate->contract->contract_start)) == $dates['lastm_Y'] && strtotime($mandate->contract->contract_start) > strtotime($dates['last_run'])))
-				$type = PaymentInformation::S_FIRST;
-			// else if (date('Y-m', strtotime($mandate->contract->contract_end)) == $this->dates['m'])
-			else if ($mandate->contract->expires)
-				$type = PaymentInformation::S_FINAL;
 
-			$data = array(
-				'endToEndId'			=> 'RG '.$this->get_invoice_nr_formatted(),
-				'amount'                => $value,
-				'debtorIban'            => $mandate->sepa_iban,
-				'debtorBic'             => $mandate->sepa_bic,
-				'debtorName'            => $mandate->sepa_holder,
-				'debtorMandate'         => $mandate->reference,
-				'debtorMandateSignDate' => $mandate->signature_date,
-				'remittanceInformation' => $info,
-			);
-			
-			$this->sepa_xml['debits'][$type][] = $data;
+			return;
 		}
+
+		// determine transaction type: first/recurring/final
+		$type  = PaymentInformation::S_RECURRING;
+		$start = strtotime($mandate->sepa_valid_from);
+		$end   = strtotime($mandate->sepa_valid_to);
+
+		// new mandate - after last run
+		if ($start > strtotime($dates['last_run']) && !$mandate->recurring)
+			$type = PaymentInformation::S_FIRST;
+
+		// when mandate ends next month but before billing run
+		else if ($mandate->contract->expires || $end < strtotime('+1 month'))
+			$type = PaymentInformation::S_FINAL;
+
+
+		// NOTE: also possible with state field of mandate table - dis~/advantage: more complex code / no last run timestamp needed
+		// switch ($mandate->state)
+		// {
+		// 	case null:
+
+		// 		if (!$mandate->recurring)
+		// 		{
+		// 			$type = PaymentInformation::S_FIRST;
+		// 			$mandate->state = 'FIRST';
+		// 		}
+		// 		else
+		// 		{
+		// 			$type = PaymentInformation::S_RECURRING;
+		// 			$mandate->state = 'RECUR';
+		// 		}
+
+		// 		$mandate->save();
+		// 		break;
+
+		// 	case 'FIRST':
+		// 		$mandate->state = 'RECUR';
+		// 		$mandate->save();
+
+		// 	case 'RECUR':
+		// 		$type = PaymentInformation::S_RECURRING;
+
+		// 	default: break;
+		// }
+
+		// if ($mandate->contract->expires || $end < strtotime('+1 month'))
+		// {
+		// 	$type = PaymentInformation::S_FINAL;
+		// 	$mandate->state = 'FINAL';
+		// 	$mandate->save();
+		// }
+
+
+		$data = array(
+			'endToEndId'			=> 'RG '.$this->get_invoice_nr_formatted(),
+			'amount'                => $value,
+			'debtorIban'            => $mandate->sepa_iban,
+			'debtorBic'             => $mandate->sepa_bic,
+			'debtorName'            => $mandate->sepa_holder,
+			'debtorMandate'         => $mandate->reference,
+			'debtorMandateSignDate' => $mandate->signature_date,
+			'remittanceInformation' => $info,
+		);
+
+		$this->sepa_xml['debits'][$type][] = $data;
 	}
 
 
@@ -359,6 +418,43 @@ class SepaAccount extends \BaseModel {
 			return;
 
 		$msg_id = $this->get_sepa_xml_msg_id();
+		$split = BillingBase::select('split')->first()->split;
+
+		if ($split)
+		{
+			foreach ($this->sepa_xml['debits'] as $type => $records)
+			{
+				// Set the initial information for direct debits
+				$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id.$type, $this->name);
+
+				// create a payment
+				$directDebit->addPaymentInfo($msg_id.$type, array(
+					'id'                    => $this->msg_id,
+					'creditorName'          => $this->name,
+					'creditorAccountIBAN'   => $this->iban,
+					'creditorAgentBIC'      => $this->bic,
+					'seqType'               => $type,
+					'creditorId'            => $this->creditorid,
+					// 'dueDate'				=> // requested collection date (Fälligkeits-/Ausführungsdatum) - from global config
+				));
+
+				// Add Transactions to the named payment
+				foreach($records as $r)
+					$directDebit->addTransfer($msg_id.$type, $r);
+
+				// Retrieve the resulting XML
+				// TODO filename without special characters
+				$file = $this->dir.'dd_'.$this->name.'_'.$type.'.xml';
+				$file = SepaAccount::str_sanitize($file);
+
+				File::put($file, $directDebit->asXML());
+
+				echo "stored sepa direct debit $type xml in $file \n";
+				$this->logger->addInfo("Successfully stored sepa direct debit type $type xml in $file \n");
+			}
+
+			return;
+		}
 
 		// Set the initial information for direct debits
 		$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id, $this->name);

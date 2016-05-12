@@ -89,7 +89,7 @@ class Invoice {
 	public function add_item($item) 
 	{
 		$count = $item->count ? $item->count : 1;
-		$this->data['item_table_positions'] .= $count.' & '.$item->invoice_description.' & '.$item->charge.$this->currency.' & '.($item->charge * $count).$this->currency.'\\\\';
+		$this->data['item_table_positions'] .= $count.' & '.$item->invoice_description.' & '.round($item->charge/$count, 2).$this->currency.' & '.($item->charge).$this->currency.'\\\\';
 	}
 
 	public function set_mandate($mandate)

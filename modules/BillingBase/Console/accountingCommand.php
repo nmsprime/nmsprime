@@ -57,6 +57,7 @@ class accountingCommand extends Command {
 
 			'null' 			=> '0000-00-00',
 			'm_in_sec' 		=> 60*60*24*30,			// month in seconds
+			'last_run'		=> '0000-00-00', 					// filled on start of execution
 
 		);
 
@@ -85,10 +86,15 @@ class accountingCommand extends Command {
 
 
 		// remove all entries of this month permanently (if already created)
-		$ret = AccountingRecord::where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->forceDelete();
+		// $ret = AccountingRecord::where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->forceDelete();
+		$ret = AccountingRecord::whereBetween('created_at', [$this->dates['thism_01'], $this->dates['nextm_01']])->forceDelete();
 		if ($ret)
 			$logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 
+		// set time of last run
+		$last_run = AccountingRecord::select('created_at')->orderBy('id', 'desc')->first();
+		if ($last_run)
+			$this->dates['last_run'] = $last_run->created_at;
 
 		// init product types of salesmen and invoice nr counters for each sepa account
 		$this->_init($sepa_accs, $salesmen, $conf);

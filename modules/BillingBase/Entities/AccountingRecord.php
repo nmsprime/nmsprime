@@ -24,7 +24,7 @@ class AccountingRecord extends \BaseModel {
 			'product_id'	=> $item->product->id,
 			'ratio'			=> $item->ratio,
 			'count'			=> $count,
-			'charge'		=> $count * $item->charge,
+			'charge'		=> $item->charge,
 			'invoice_nr'	=> $acc->invoice_nr,
 			'sepa_account_id' => $acc->id,
 			);
