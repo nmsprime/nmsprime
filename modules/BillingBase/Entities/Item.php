@@ -18,7 +18,6 @@ class Item extends \BaseModel {
 		$credit_prods = Product::where('type', '=', 'credit')->lists('id')->all();
 		$credit_ids   = implode(',', $credit_prods);
 
-
 		return array(
 			// 'name' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
 			'valid_from'	=> 'dateornull',	//|in_future ??
@@ -206,12 +205,12 @@ class Item extends \BaseModel {
 					$text  .= date('Y-m-d', $end);
 				}
 				else
-					$text  .= date('Y-m-31', strtotime('last month'));
+					$text  .= date('Y-m-d', strtotime('last day of last month'));
 
 				break;
 
-// if ($this->contract->id == 500005 && $this->product->type == 'Internet')
-// 	dd($this->product->name, date('Y-m-d', $start), $end, date('Y-m-d', $end), $ratio, $billing_cycle, $text);
+// if ($this->contract->id == 500003 && $this->product->type == 'Internet' && strpos($this->product->name, 'Flat 2 M') !== false)
+// 	dd($this->product->name, date('t', $start), $end, date('Y-m-d', $end), $ratio, $billing_cycle, $text);
 
 
 			case 'Yearly':

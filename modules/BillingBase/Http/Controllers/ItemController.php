@@ -65,7 +65,7 @@ class ItemController extends \BaseModuleController {
 		if ($data['valid_to'] && $data['valid_to'] != '0000-00-00')
 			$rules['valid_to'] .= '|after:'.$data['valid_from'];
 
-		// new tariff start date must be after old tariff start date - does it?
+		// new tariff start date must be after old tariff start date if valid tariff exists - otherwise after end date of old tariff - does it?
 		$c = Contract::find($data['contract_id']);
 		$p = Product::find($data['product_id']);
 		$tariff = $c->get_valid_tariff($p->type);
