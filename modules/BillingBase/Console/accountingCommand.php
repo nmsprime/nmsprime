@@ -142,7 +142,6 @@ class accountingCommand extends Command {
 				// skip if price is 0
 				if (!($ret = $item->calculate_price_and_span($this->dates)))
 					continue;
-
 				// get account via costcenter
 				$costcenter = $item->get_costcenter();
 				$acc = $sepa_accs->find($costcenter->sepa_account_id);
@@ -272,6 +271,7 @@ class accountingCommand extends Command {
 			// TODO: remove this!! - only during testing
 			system("rm -rf $dir/*");
 		}
+
 		foreach ($sepa_accs as $acc)
 			$acc->make_billing_files($dir);
 

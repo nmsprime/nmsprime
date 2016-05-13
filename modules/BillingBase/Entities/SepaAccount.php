@@ -13,6 +13,8 @@ class SepaAccount extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'sepaaccount';
 
+    public $guarded = ['template_upload'];
+
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
@@ -68,6 +70,31 @@ class SepaAccount extends \BaseModel {
 	public function company ()
 	{
 		return $this->belongsTo('Modules\BillingBase\Entities\Company');
+	}
+
+
+
+	/**
+	 * Returns all available and template files (via directory listing)
+	 * @author Nino Ryschawy
+	 */
+	public function templates()
+	{
+		$files_raw  = glob("/tftpboot/bill/template/*");
+		$templates 	= array(null => "None");
+
+		// extract filename
+		foreach ($files_raw as $file) 
+		{
+			if (is_file($file))
+			{
+				$parts = explode("/", $file);
+				$filename = array_pop($parts);
+				$templates[$filename] = $filename;
+			}
+		}
+
+		return $templates;
 	}
 
 
@@ -140,7 +167,7 @@ class SepaAccount extends \BaseModel {
 
 
 	/**
-	 * Adds an accounting record to this account of an item to the corresponding acc_recs-Array (item/tariff)
+	 * Adds an accounting record for this account of an item to the corresponding acc_recs-Array (item/tariff)
 	 *
 	 * @param object 	$item
 	 */
@@ -247,20 +274,26 @@ class SepaAccount extends \BaseModel {
 		// Attention! the chronical order of these functions has to be kept until now because of dependencies for extracting the invoice text
 		$this->invoices[$contract->id]->set_mandate($mandate);
 		$this->invoices[$contract->id]->set_company_data($this);
-		$this->invoices[$contract->id]->set_summary($value['net'], $value['tax'], $this->company);
+		$this->invoices[$contract->id]->set_summary($value['net'], $value['tax'], $this);
 	}
 
-
-	public function add_sepa_transfer($mandate, $value, $dates)
+	/**
+	 * Adds a sepa transfer for this account with the charge of a contract to the corresponding sepa_xml-Array (credit/debit)
+	 *
+	 * @param object 	$mandate
+	 * @param float 	$charge
+	 * @param array 	$dates 		last run info is important for transfer type
+	 */
+	public function add_sepa_transfer($mandate, $charge, $dates)
 	{
 		$info = 'Month '.date('m/Y');
 
 		// Note: Charge == 0 is automatically excluded
-		if ($value < 0)
+		if ($charge < 0)
 		{
 			$data = array(
 
-				'amount'                => $value * (-1),
+				'amount'                => $charge * (-1),
 				'creditorIban'          => $mandate->sepa_iban,
 				'creditorBic'           => $mandate->sepa_bic,
 				'creditorName'          => $mandate->sepa_holder,
@@ -325,7 +358,7 @@ class SepaAccount extends \BaseModel {
 
 		$data = array(
 			'endToEndId'			=> 'RG '.$this->get_invoice_nr_formatted(),
-			'amount'                => $value,
+			'amount'                => $charge,
 			'debtorIban'            => $mandate->sepa_iban,
 			'debtorBic'             => $mandate->sepa_bic,
 			'debtorName'            => $mandate->sepa_holder,
@@ -339,7 +372,9 @@ class SepaAccount extends \BaseModel {
 
 
 
-	// TODO: Description, proper filenames, move param $dir to _init in accCmd
+	/**
+	 * Creates the Accounting Record Files (Item/Tariff)
+	 */
 	private function make_accounting_record_files()
 	{
 		foreach ($this->acc_recs as $key => $records)
@@ -368,7 +403,9 @@ class SepaAccount extends \BaseModel {
 
 
 
-	// TODO: Description, proper filenames, move $dir to _init in accCmd
+	/**
+	 * Creates the Booking Record Files (Sepa/No Sepa)
+	 */
 	private function make_booking_record_files()
 	{
 		foreach ($this->book_recs as $key => $records)
@@ -396,15 +433,15 @@ class SepaAccount extends \BaseModel {
 	}
 
 
-	/**
-	 * Create SEPA XML
-	 */
 	private function get_sepa_xml_msg_id()
 	{
 		return date('YmdHis').$this->id;		// km3 uses actual time
 	}
 
 
+	/**
+	 * Create SEPA XML Files
+	 */
 	public function make_sepa_xml()
 	{
 		$this->make_credit_file();
@@ -524,7 +561,9 @@ class SepaAccount extends \BaseModel {
 
 
 
-	// creates all the billing files for the assigned objects
+	/*
+	 * creates all the billing files for the assigned objects
+	 */
 	public function make_billing_files($dir)
 	{
 		$this->dir = $dir;

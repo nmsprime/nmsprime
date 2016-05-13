@@ -46,14 +46,9 @@ class CreateCompanyTable extends BaseMigration {
 			$table->string('tax_id_nr');
 			$table->string('tax_nr');
 
-			$table->string('invoice_text_positiv');
-			$table->string('invoice_text_negativ');
-			$table->string('invoice_text_sepa_positiv');
-			$table->string('invoice_text_sepa_negativ');
 			$table->string('transfer_reason');
 
 			$table->string('logo');
-			$table->string('template');
 		});
 
 		$this->set_fim_fields(['name', 'street', 'zip', 'city', 'phone', 'fax', 'web', 'mail', 'registration_court_1', 'registration_court_2', 'registration_court_3', 'management', 'directorate', 'invoice_text_positiv', 'invoice_text_negativ', 'invoice_text_sepa_negativ', 'invoice_text_sepa_positiv']);

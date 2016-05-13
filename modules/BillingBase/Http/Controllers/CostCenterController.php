@@ -26,7 +26,6 @@ class CostCenterController extends \BaseModuleController {
 			array('form_type' => 'text', 'name' => 'number', 'description' => 'Number'),
 			array('form_type' => 'select', 'name' => 'sepa_account_id', 'description' => 'Associated SEPA Account', 'value' => $list),
 			array('form_type' => 'select', 'name' => 'billing_month', 'description' => 'Month to create Bill', 'value' => $months, 'help' => 'Default: 6 (June) - if not set'),
-			array('form_type' => 'text', 'name' => 'invoice_headline', 'description' => 'Invoice Headline', 'help' => 'Replaces Headline in Invoices created for this Costcenter'),
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
 		);
 	}

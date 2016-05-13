@@ -11,56 +11,62 @@ class Invoice {
 	private $dir = '/var/www/data/invoice/';	// changed in constructor
 	private $currency;
 	private $tax;
-	private $template = '/tftpboot/bill/';
+	private $template = '/tftpboot/bill/template/';
+	private $logo_dir = '/tftpboot/bill/logo/';
+	private $file;
 
 	private $logger;							// logger instance for Billing Module
 
 	public $data = array(
 
-		'company_name'		=> '',
-		'company_street'	=> '',
-		'company_zip'		=> '',
-		'company_city'		=> '',
-		'company_phone'		=> '',
-		'company_fax'		=> '',
-		'company_mail'		=> '',
-		'company_web'		=> '',
+		'company_name'			=> '',
+		'company_street'		=> '',
+		'company_zip'			=> '',
+		'company_city'			=> '',
+		'company_phone'			=> '',
+		'company_fax'			=> '',
+		'company_mail'			=> '',
+		'company_web'			=> '',
 		'company_registration_court' => '',
-		'company_management' => '',
-		'company_directorate' => '',
-		'company_web'		=> '',
+		'company_management' 	=> '',
+		'company_directorate' 	=> '',
+		'company_web'			=> '',
 
-		'company_creditor_id' => '',
+		'company_creditor_id' 	=> '',
 		'company_account_institute' => '',
-		'company_account_iban' => '',
-		'company_account_bic' => '',
-		'company_tax_id_nr' => '',
-		'company_tax_nr' 	=> '',
+		'company_account_iban'  => '',
+		'company_account_bic' 	=> '',
+		'company_tax_id_nr' 	=> '',
+		'company_tax_nr' 		=> '',
 
-		'company_logo'		=> '',
+		'company_logo'			=> '',
 
-		'contract_id' 		=> '',
-		'contract_nr' 		=> '',
-		'contract_firstname' => '',
-		'contract_lastname' => '',
-		'contract_street' 	=> '',
-		'contract_zip' 		=> '',
-		'contract_city' 	=> '',
+		'contract_id' 			=> '',
+		'contract_nr' 			=> '',
+		'contract_firstname' 	=> '',
+		'contract_lastname' 	=> '',
+		'contract_street' 		=> '',
+		'contract_zip' 			=> '',
+		'contract_city' 		=> '',
 
-		'contract_mandate_iban'	=> '',
-		'contract_mandate_ref'	=> '',
+		'contract_mandate_iban'	=> '', 			// iban of the customer
+		'contract_mandate_ref'	=> '', 			// mandate reference of the customer
 
 		// 'date'				=> '',
-		'invoice_nr' 		=> '',
-		'invoice_text'		=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate
-		'invoice_headline'	=> '',
-		'rcd' 				=> '',			// Fälligkeitsdatum
+		'invoice_nr' 			=> '',
+		'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate
+		'invoice_headline'		=> '',
+		'rcd' 					=> '',			// Fälligkeitsdatum
 		// 'tariffs'			=> '',			// (TODO: implement!)
 		// 'start'				=> '',			// Leistungszeitraum start , TODO: implement!
 		// 'end'				=> '',			// Leistungszeitraum ende , TODO: implement!
 
-		'item_table_positions' => '',
-		'table_summary' 	=> '',
+		'item_table_positions'  => '', 			// list of all items to be charged in this invoice
+		'table_summary' 		=> '', 			// preformatted table - use following three keys to set table by yourself
+		'table_sum_charge_net'  => '', 			// net charge - without tax
+		'table_sum_tax_percent' => '', 			// The tax percentage with % character
+		'table_sum_tax' 		=> '', 			// The tax
+		'table_sum_charge_total' => '', 		// total charge - with tax
 
 	);
 
@@ -78,7 +84,7 @@ class Invoice {
 		$this->data['rcd'] 			= $config->rcd ? $config->rcd : date('d.m.Y', strtotime('+6 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr;
 
-		// NOTE: Add other currencies here
+		// TODO: Add other currencies here
 		$this->currency	= strtolower($config->currency) == 'eur' ? '€' : $config->currency;
 		$this->tax		= $config->tax;
 		$this->dir 		.= $contract->number;
@@ -103,7 +109,7 @@ class Invoice {
 
 
 	// Set total sum and invoice text for this invoice - TODO: Translate!!
-	public function set_summary($net, $tax, $company)
+	public function set_summary($net, $tax, $account)
 	{
 		$tax_percent = $tax ? $this->tax : 0;
 		$tax_percent .= '\%';
@@ -112,8 +118,14 @@ class Invoice {
 		$this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$tax.$this->currency.'\\\\';
 		$this->data['table_summary'] .= '~ & Rechnungsbetrag: & ~ & '.($net + $tax).$this->currency.'\\\\';
 
-		// make transfer reason
-		if ($transfer_reason = $company->transfer_reason)
+		$this->data['table_sum_charge_net']  	= $net; 
+		$this->data['table_sum_tax_percent'] 	= $tax_percent;
+		$this->data['table_sum_tax'] 			= $tax;
+		$this->data['table_sum_charge_total'] 	= $net + $tax; 
+
+
+		// make transfer reason (Verwendungszweck)
+		if ($transfer_reason = $account->company->transfer_reason)
 		{
 			preg_match_all('/(?<={)[^}]*(?=})/', $transfer_reason, $matches);
 			foreach ($matches[0] as $value)
@@ -124,27 +136,27 @@ class Invoice {
 		}
 		else
 			$transfer_reason = $this->data['invoice_nr'].' '.$this->data['contract_nr'];		// default
-		
+
 		// prepare invoice text table and get appropriate template
 		if ($net >= 0 && $this->data['contract_mandate_iban'])
 		{
-			$template = $company->invoice_text_sepa_positiv;
+			$template = $account->invoice_text_sepa;
 			// $text = 'IBAN:\>'.$this->data['contract_mandate_iban'].'\\\\Mandatsreferenz:\>'.$this->data['contract_mandate_ref'].'\\\\Gläubiger-ID:\>'.$this->data['company_creditor_id'];
 			$text = 'IBAN: &'.$this->data['contract_mandate_iban'].'\\\\Mandatsreferenz: &'.$this->data['contract_mandate_ref'].'\\\\Gläubiger-ID: &'.$this->data['company_creditor_id'];
 		}
 		else if ($net < 0 && $this->data['contract_mandate_iban'])
 		{
-			$template = $company->invoice_text_sepa_negativ;
+			$template = $account->invoice_text_sepa_negativ;
 			$text = 'IBAN: &'.$this->data['contract_mandate_iban'].'\\\\Mandatsreferenz: &'.$this->data['contract_mandate_ref'];
 		}
 		else if ($net >= 0 && !$this->data['contract_mandate_iban'])
 		{
-			$template = $company->invoice_text_positiv;
+			$template = $account->invoice_text;
 			$text = 'IBAN: &'.$this->data['company_account_iban'].'\\\\BIC: &'.$this->data['company_account_bic'].'\\\\Verwendungszweck: &'.$transfer_reason;
 		}
 		else if ($net < 0 && !$this->data['contract_mandate_iban'])
 		{
-			$template = $company->invoice_text_negativ;
+			$template = $account->invoice_text_negativ;
 			$text = '';
 		}
 
@@ -160,6 +172,7 @@ class Invoice {
 		// $this->data['invoice_text'] = $template.'\\\\'.'\begin{tabbing} \hspace{9em}\=\kill '.$text.' \end{tabbing}';
 		$this->data['invoice_text'] = '\begin{tabular} {ll} \multicolumn{2}{L{\textwidth}} {'.$template.'}\\\\'.$text.' \end{tabular}';
 
+
 	}
 
 	public function set_company_data($account)
@@ -168,6 +181,7 @@ class Invoice {
 		$this->data['company_account_iban'] = $account->iban;
 		$this->data['company_account_bic']  = $account->bic;
 		$this->data['company_creditor_id']  = $account->creditorid;
+		$this->data['invoice_headline'] 	= $account->invoice_headline ? $account->invoice_headline : trans('messages.invoice');
 
 		if (!$account->company)
 		{
@@ -207,8 +221,8 @@ class Invoice {
 		$this->data['company_tax_id_nr'] 	= $account->company->tax_id_nr;
 		$this->data['company_tax_nr'] 		= $account->company->tax_nr;
 
-		$this->data['company_logo'] = $this->template.$account->company->logo;
-		$this->template .= $account->company->template;
+		$this->data['company_logo'] = $this->logo_dir.$account->company->logo;
+		$this->template .= $account->template;
 
 		return true;
 	}
@@ -247,13 +261,26 @@ class Invoice {
 
 
 		// create tex file
-		$file = $this->dir.'/'.date('m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
-		File::put($file, $template);
+		$this->file = $this->dir.'/'.date('m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
+		File::put($this->file, $template);
 
-		// create pdf
+		$this->create_pdf();
+
+		return 0;
+	}
+
+
+	/**
+	 * Creates the pdf out of the prepared tex file - this function is very time consuming
+	 */
+	public function create_pdf()
+	{
 		chdir($this->dir);
-		// TODO: move to end of process
-		system("pdflatex $file &>/dev/null");		// returns 0 on success - $ret as second argument
+
+		$file = $this->file;
+
+		// TODO: execute in background to speed this up by multiprocessing - but what is with the temporary files then?
+		system("pdflatex $file &>/dev/null");			// returns 0 on success - $ret as second argument
 
 		$this->logger->addDebug('Successfully created Invoice for Contract '.$this->data['contract_nr'], [$this->data['contract_id'], $file]);
 
@@ -264,8 +291,6 @@ class Invoice {
 		unlink($file);
 		unlink($file.'.aux');
 		unlink($file.'.log');
-
-		return 0;
 	}
 
 }

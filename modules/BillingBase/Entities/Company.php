@@ -8,7 +8,7 @@ class Company extends \BaseModel {
 	public $table = 'company';
 
     // public $guarded = ['upload'];
-    public $guarded = ['logo_upload', 'template_upload'];
+    public $guarded = ['logo_upload'];
 
 
 	// Add your validation rules here
@@ -66,15 +66,14 @@ class Company extends \BaseModel {
 
 
 	/**
-	 * Returns all available logos and template files (via directory listing)
+	 * Returns all available logo files (via directory listing)
 	 * @author Nino Ryschawy
 	 */
-	public function billing_files() 
+	public function logos() 
 	{
 		// get all available files
-		$all_files['logo'] 		= glob("/tftpboot/bill/logo/*");
-		$all_files['template']  = glob("/tftpboot/bill/template/*");
-		$files['logo'] = $files['template'] = array(null => "None");
+		$files_raw  = glob("/tftpboot/bill/logo/*");
+		$files 		= array(null => "None");
 
 		// $files_raw = glob("/tftpboot/bill/*");
 		// $pic = ['png', 'eps', 'pdf', 'jpg'];
@@ -98,16 +97,13 @@ class Company extends \BaseModel {
 		// }
 
 		// extract filename
-		foreach ($all_files as $dir => $files_raw)
+		foreach ($files_raw as $file) 
 		{
-			foreach ($files_raw as $file) 
+			if (is_file($file))
 			{
-				if (is_file($file))
-				{
-					$parts = explode("/", $file);
-					$filename = array_pop($parts);
-					$files[$dir][$filename] = $filename;
-				}
+				$parts = explode("/", $file);
+				$filename = array_pop($parts);
+				$files[$filename] = $filename;
 			}
 		}
 
