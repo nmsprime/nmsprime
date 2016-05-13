@@ -20,6 +20,7 @@ class AuthController extends Auth {
 		$this->headline2 = 'Customer Control Center';
 		$this->login_page = 'home'; // continue at ccc/home after successful login
 		$this->guard = 'ccc'; // use guard. See: config/auth.php
+		$this->image = 'main-pic-3.png';
 	}
 
 }
