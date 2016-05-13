@@ -1,12 +1,12 @@
 <?php namespace Modules\Ccc\Http\Controllers;
 
-use Pingpong\Modules\Routing\Controller;
 
-class CccController extends Controller {
+class CccController extends \BaseModuleController {
 
-	public function index()
+	// Constructor
+	public function show()
 	{
-		return view('ccc::index');
+		return \View::make('ccc::index');
 	}
 
 }

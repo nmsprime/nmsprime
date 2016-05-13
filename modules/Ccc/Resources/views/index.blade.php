@@ -8,4 +8,6 @@
 		This view is loaded from module: {{ config('ccc.name') }}
 	</p>
 
+	<a href="{{route('CccAuth.logout')}}">{{trans('messages.log_out')}}</a>
+
 @stop
