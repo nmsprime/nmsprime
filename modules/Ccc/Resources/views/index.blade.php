@@ -10,4 +10,6 @@
 
 	<a href="{{route('CccAuth.logout')}}">{{trans('messages.log_out')}}</a>
 
+	<br><br>For a first step a simple foreach statement over all invoices and CDRs will be fine :)
+
 @stop

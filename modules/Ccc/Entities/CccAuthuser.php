@@ -15,6 +15,9 @@ class CccAuthuser extends \BaseModel implements AuthenticatableContract, CanRese
 
 	use Authenticatable, CanResetPassword;
 
+	// SQL connection
+	// This is a security plus to let the CCC sql user only have read-only access to the required tables
+	protected $connection = 'mysql-ccc';
 
 	// The associated SQL table for this Model
 	public $table = 'cccauthusers';
