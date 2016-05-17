@@ -212,7 +212,12 @@ class ProvVoipEnvia extends \BaseModel {
 		elseif ($view_level == 'phonenumber') {
 			$contract_id = $model->mta->modem->contract->id;
 			$phonenumber_id = $model->id;
-			$phonebookentry_id = $model->phonenumbermanagement->phonebookentry->id;
+			if (!is_null($model->phonenumbermanagement) && !is_null($model->phonenumbermanagement->phonebookentry)) {
+				$phonebookentry_id = $model->phonenumbermanagement->phonebookentry->id;
+			}
+			else {
+				$phonebookentry_id = null;
+			}
 		}
 		elseif ($view_level == 'phonebookentry') {
 			$contract_id = $model->phonenumbermanagement->phonenumber->mta->modem->contract->id;
@@ -1704,6 +1709,43 @@ class ProvVoipEnvia extends \BaseModel {
 			return $out;
 		}
 	}
+
+
+	/**
+	 * Extract and process usage csv.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_usage_csv_response($xml, $data, $out) {
+
+		// result is base64 encoded csv
+		$b64 = $xml->data;
+		$csv = base64_decode($b64);
+
+		// csv fieldnames are the first line
+		$lines = explode("\n", $csv);
+		$csv_headers = str_getcsv(array_shift($lines));
+
+		// array for converted data
+		$results = array();
+
+		// process Envia CSV line by line; attach orders to $result array
+		foreach ($lines as $result_csv) {
+			// check if current line contains data => empty lines will crash at array_combine
+			if (boolval($result_csv)) {
+				$result = str_getcsv($result_csv);
+				$entry = array_combine($csv_headers, $result);
+				array_push($results, $entry);
+			}
+		}
+
+		$out = "";
+
+		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.").<h2>Returned csv is:</h2><pre>".$csv."</pre><h2>Extracted data is:</h2>";
+		dd($results);
+
+	}
+
 
 	/**
 	 * Process data for a single order.
