@@ -15,7 +15,7 @@ class SepaMandate extends \BaseModel {
 		return array(
 			'signature_date' 	=> 'date',
 			'sepa_iban' 		=> 'required|iban',
-			'sepa_bic' 			=> 'required|bic',
+			'sepa_bic' 			=> 'bic',
 			// 'sepa_institute' 	=> ,
 			'sepa_valid_from' 	=> 'date',
 			'sepa_valid_to'		=> 'dateornull'
@@ -119,6 +119,8 @@ class SepaMandateObserver
 		// build mandate reference from template
 		$mandate->reference = $this->build_mandate_ref($mandate);
 
+		$mandate->sepa_iban = strtoupper($mandate->sepa_iban);
+		$mandate->sepa_bic  = strtoupper($mandate->sepa_bic);
 
 		// Set default values for empty fields
 		if (!$mandate->sepa_holder)
@@ -152,7 +154,11 @@ class SepaMandateObserver
 
 		if (!$mandate->signature_date || $mandate->signature_date == '0000-00-00')
 			$mandate->signature_date = date('Y-m-d');
+
+		$mandate->sepa_iban = strtoupper($mandate->sepa_iban);
+		$mandate->sepa_bic  = strtoupper($mandate->sepa_bic);
 	}
+
 
 	/**
 	 * Replaces placeholders from in Global Config defined mandate reference template with values of mandate or the related contract
