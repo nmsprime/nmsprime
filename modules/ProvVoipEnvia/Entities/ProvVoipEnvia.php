@@ -17,6 +17,26 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Constructor.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function __construct($attributes = array()) {
+
+		// this has to be a float value to allow stable version compares
+		$v = $_ENV['PROVVOIPENVIA__REST_API_VERSION'];
+		if (!is_numeric($v)) {
+			throw new \InvalidArgumentException('PROVVOIPENVIA__REST_API_VERSION in .env has to be a float value (e.g.: 1.4)');
+		};
+		$this->api_version = floatval($v);
+
+		// call \BaseModel's constructor
+		parent::__construct($attributes);
+
+	}
+
+
+	/**
 	 * Helper method to fake XML returns.
 	 * This will return a SimpleXML instance which can be used instead a real Envia answer.
 	 *
@@ -200,18 +220,21 @@ class ProvVoipEnvia extends \BaseModel {
 		if ($view_level == 'phonenumbermanagement') {
 			$contract_id = $model->phonenumber->mta->modem->contract->id;
 			$phonenumber_id = $model->phonenumber_id;
+			$phonenumbermanagement_id = $model->id;
 			if (!is_null($model->phonebookentry)) {
 				$phonebookentry_id = $model->phonebookentry->id;
 			}
 		}
 		elseif ($view_level == 'contract') {
 			$contract_id = $model->id;
+			$phonenumbermanagement_id = null;
 			$phonenumber_id = null;
 			$phonebookentry_id = null;
 		}
 		elseif ($view_level == 'phonenumber') {
 			$contract_id = $model->mta->modem->contract->id;
 			$phonenumber_id = $model->id;
+			$phonenumbermanagement_id = $model->phonenumbermagement->id;
 			if (!is_null($model->phonenumbermanagement) && !is_null($model->phonenumbermanagement->phonebookentry)) {
 				$phonebookentry_id = $model->phonenumbermanagement->phonebookentry->id;
 			}
@@ -222,6 +245,7 @@ class ProvVoipEnvia extends \BaseModel {
 		elseif ($view_level == 'phonebookentry') {
 			$contract_id = $model->phonenumbermanagement->phonenumber->mta->modem->contract->id;
 			$phonenumber_id = $model->phonenumbermanagement->phonenumber_id;
+			$phonenumbermanagement_id = $model->phonenumbermanagement->id;
 			$phonebookentry_id = $model->id;
 		}
 		else {
@@ -351,12 +375,14 @@ class ProvVoipEnvia extends \BaseModel {
 
 		////////////////////////////////////////
 		// phonebookentry related jobs
-		if (in_array($view_level, ['phonebookentry'])) {
+		if (in_array($view_level, ['phonenumbermanagement', 'phonebookentry'])) {
 
 			array_push($ret, array('class' => 'Phonebook entry'));
 
+			array_push($ret, array('linktext' => 'Get phonebook entry', 'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id));
+
 			if (!$this->phonebookentry_created) {
-				array_push($ret, array('linktext' => 'Create phonebook entry', 'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id));
+				array_push($ret, array('linktext' => 'Create/change phonebook entry', 'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id));
 			}
 
 		}
@@ -462,6 +488,21 @@ class ProvVoipEnvia extends \BaseModel {
 				$this->contract = $this->modem->contract;
 				$this->phonenumbermanagement = $this->phonenumber->phonenumbermanagement;
 				$this->phonebookentry = $this->phonenumbermanagement->phonebookentry;
+			}
+
+			// entry point is phonenumbermanagement
+			$phonenumbermanagement_id = \Input::get('phonenumbermanagement_id', null);
+			if (!is_null($phonenumbermanagement_id)) {
+				$this->phonenumbermanagement = PhonenumberManagement::findOrFail($phonenumbermanagement_id);
+			}
+
+			// get related models
+			if (!is_null($this->phonenumbermanagement)) {
+				$this->phonebookentry = $this->phonenumbermanagement->phonebookentry;
+				$this->phonenumber= $this->phonenumbermanagement->phonenumber;
+				$this->mta = $this->phonenumber->mta;
+				$this->modem = $this->mta->modem;
+				$this->contract = $this->modem->contract;
 			}
 
 			// entry point is phonebookentry
@@ -636,7 +677,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// these elements are used to group the information
 		// e.g. in reseller_identifier man will put username and password for
 		// authentication against the API
-		$second_level_nodes = array(
+		$second_level_nodes = array();
 
 			/* 'blacklist_create_entry' => array( */
 			/* 	'reseller_identifier', */
@@ -646,11 +687,11 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			'blacklist_get' => array(
-				'reseller_identifier',
-				'callnumber_identifier',
-				'blacklist_data',
-			),
+		$second_level_nodes['blacklist_get'] = array(
+			'reseller_identifier',
+			'callnumber_identifier',
+			'blacklist_data',
+		);
 
 			/* 'calllog_delete' => array( */
 			/* 	'reseller_identifier', */
@@ -664,16 +705,16 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			'calllog_get_status' => array(
-				'reseller_identifier',
-				'customer_identifier',
-			),
+		$second_level_nodes['calllog_get_status'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+		);
 
-			'configuration_get' => array(
-				'reseller_identifier',
-				'customer_identifier',
-				'callnumber_identifier',
-			),
+		$second_level_nodes['configuration_get'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+			'callnumber_identifier',
+		);
 
 			/* 'configuration_update' => array( */
 			/* 	'reseller_identifier', */
@@ -687,48 +728,51 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			'contract_change_tariff' => array(
-				'reseller_identifier',
-				'contract_identifier',
-				'tariff_data',
-			),
+		$second_level_nodes['contract_change_tariff'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'tariff_data',
+		);
 
-			'contract_change_variation' => array(
-				'reseller_identifier',
-				'contract_identifier',
-				'variation_data',
-			),
+		$second_level_nodes['contract_change_variation'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'variation_data',
+		);
 
-			'contract_create' => array(
-				'reseller_identifier',
-				'customer_identifier',
-				'customer_data',
-				'contract_data',
-				// in this first step we do not create phonenumbers within
-				// the contract
-				// instead: create each phonenumber in separate step (voipaccount_create)
-				/* 'subscriber_data', */
-			),
+		$second_level_nodes['contract_create'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+			'customer_data',
+			'contract_data',
+			// in this first step we do not create phonenumbers within
+			// the contract
+			// instead: create each phonenumber in separate step (voipaccount_create)
+			/* 'subscriber_data', */
+		);
+		if ($this->api_version >= 1.4) {
+			array_push($second_level_nodes['contract_create'], 'installation_address_data');
+		}
 
 			/* 'contract_get_reference' => array( */
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			'contract_get_voice_data' => array(
-				'reseller_identifier',
-				'contract_identifier',
-			),
+		$second_level_nodes['contract_get_voice_data'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+		);
 
 			/* 'contract_lock' => array( */
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			// not needed atm ⇒ if the last phonenumber is terminated the contract will automatically be deleted
-			'contract_terminate' => array(
-				'reseller_identifier',
-				'contract_identifier',
-				'contract_termination_data',
-			),
+		// not needed atm ⇒ if the last phonenumber is terminated the contract will automatically be deleted
+		$second_level_nodes['contract_terminate'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'contract_termination_data',
+		);
 
 			/* 'contract_unlock' => array( */
 			/* 	'reseller_identifier', */
@@ -738,86 +782,89 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			'customer_update' => array(
-				'reseller_identifier',
-				'customer_identifier',
-				'customer_data',
-			),
+		$second_level_nodes['customer_update'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+			'customer_data',
+		);
 
-			'misc_get_free_numbers' => array(
-				'reseller_identifier',
-				'filter_data',
-			),
+		$second_level_nodes['misc_get_free_numbers'] = array(
+			'reseller_identifier',
+			'filter_data',
+		);
 
-			'misc_get_orders_csv' => array(
-				'reseller_identifier',
-			),
+		$second_level_nodes['misc_get_orders_csv'] = array(
+			'reseller_identifier',
+		);
 
-			'misc_get_usage_csv' => array(
-				'reseller_identifier',
-			),
+		$second_level_nodes['misc_get_usage_csv'] = array(
+			'reseller_identifier',
+		);
 
-			'misc_ping' => array(
-				'reseller_identifier',
-			),
+		$second_level_nodes['misc_ping'] = array(
+			'reseller_identifier',
+		);
 
 			/* 'order_add_mgcp_details' => array( */
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			'order_cancel' => array(
-				'reseller_identifier',
-				'order_identifier',
-			),
-
-			'order_create_attachment' => array(
-				'reseller_identifier',
-				'order_identifier',
-				'attachment_data',
-			),
-
-			'order_get_status' => array(
-				'reseller_identifier',
-				'order_identifier',
-			),
-
-			'phonebookentry_create' => array(
-				'reseller_identifier',
-				'contract_identifier',
-				'callnumber_identifier',
-				'phonebookentry_data',
-			),
-
-			/* 'phonebookentry_delete' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
-
-			/* 'phonebookentry_get' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
-
-			'voip_account_create' => array(
-				'reseller_identifier',
-				'contract_identifier',
-				'account_data',
-				'subscriber_data',
-			),
-
-			'voip_account_terminate' => array(
-				'reseller_identifier',
-				'contract_identifier',
-				'callnumber_identifier',
-				'accounttermination_data',
-			),
-
-			'voip_account_update' => array(
-				'reseller_identifier',
-				'contract_identifier',
-				'callnumber_identifier',
-				'callnumber_data',
-			),
-
+		$second_level_nodes['order_cancel'] = array(
+			'reseller_identifier',
+			'order_identifier',
 		);
+
+		$second_level_nodes['order_create_attachment'] = array(
+			'reseller_identifier',
+			'order_identifier',
+			'attachment_data',
+		);
+
+		$second_level_nodes['order_get_status'] = array(
+			'reseller_identifier',
+			'order_identifier',
+		);
+
+		$second_level_nodes['phonebookentry_create'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'callnumber_identifier',
+			'phonebookentry_data',
+		);
+
+		$second_level_nodes['phonebookentry_delete'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'callnumber_identifier',
+		);
+
+		$second_level_nodes['phonebookentry_get'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'callnumber_identifier',
+		);
+
+		$second_level_nodes['voip_account_create'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'account_data',
+			'subscriber_data',
+		);
+
+		$second_level_nodes['voip_account_terminate'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'callnumber_identifier',
+			'accounttermination_data',
+		);
+
+		$second_level_nodes['voip_account_update'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'callnumber_identifier',
+			'callnumber_data',
+		);
+
 
 		// now call the specific method for each second level element
 		foreach ($second_level_nodes[$job] as $node) {
@@ -1981,4 +2028,45 @@ class ProvVoipEnvia extends \BaseModel {
 
 	}
 
+
+	/**
+	 * Process data after successful creation/change of a phonebook entry
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_phonebookentry_create_response($xml, $data, $out) {
+
+		$out = "";
+
+		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Returned XML is:</h2>";
+		dd($xml);
+	}
+
+
+	/**
+	 * Process data after successful deletion of a phonebook entry
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_phonebookentry_delete_response($xml, $data, $out) {
+
+		$out = "";
+
+		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Returned XML is:</h2>";
+		dd($xml);
+	}
+
+
+	/**
+	 * Process data after successful creation/change of a phonebook entry
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_phonebookentry_get_response($xml, $data, $out) {
+
+		$out = "";
+
+		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Use returned data to create new or update existing phonebookentry</h2><h2>Returned XML is:</h2>";
+		dd($xml);
+	}
 }

@@ -459,13 +459,30 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		}
 
 		if ($job == "phonebookentry_create") {
+
+			$this->model->extract_environment($this->model->phonebookentry, 'phonebookentry');
+
+			// always allowed as this method is also used to change an existing phonebookentry
+			return true;
+		}
+
+		if ($job == "phonebookentry_delete") {
+
 			$this->model->extract_environment($this->model->phonebookentry, 'phonebookentry');
 
 			// can only be created if not existing
 			if ($this->model->phonebookentry_created) {
+				return true;
+			}
+			else {
 				return false;
 			}
+		}
 
+		if ($job == "phonebookentry_get") {
+
+			$this->model->extract_environment($this->model->phonebookentry, 'phonebookentry');
+			// always allowed
 			return true;
 		}
 
@@ -618,8 +635,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'order_get_status' => $base_url.'order/get_status',
 
 			'phonebookentry_create' => $base_url.'phonebookentry/create',
-			'phonebookentry_delete' => $base_url.'____TODO____',
-			'phonebookentry_get' => $base_url.'____TODO____',
+			'phonebookentry_delete' => $base_url.'phonebookentry/delete',
+			'phonebookentry_get' => $base_url.'phonebookentry/get',
 
 			'voip_account_create' => $base_url.'voip_account/create',
 			'voip_account_terminate' => $base_url.'voip_account/terminate',
