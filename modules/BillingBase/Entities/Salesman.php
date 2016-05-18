@@ -2,7 +2,7 @@
 
 namespace Modules\BillingBase\Entities;
 
-use File;
+use Storage;
 use Modules\ProvBase\Entities\Contract;
 
 class Salesman extends \BaseModel {
@@ -70,6 +70,7 @@ class Salesman extends \BaseModel {
 	protected $total_commission = 0;			// total commission amount during actual billing cycle
 	protected $item_names = [];					// all names of items he gets commission for (in actual billing cycle)
 	public $filename = 'salesmen_commission.txt';
+	public $dir;								// set during init of accounting command
 
 
 	// example - $item->product->name == 'Credit Device'
@@ -115,21 +116,21 @@ add:
 		return;
 	}
 
-	public function prepare_output_file($dir)
+	public function prepare_output_file()
 	{
-		File::put($dir.$this->filename, "ID\tName\tCommission in %\tTotal Fee\tCommission Amount\tItems\n");
+		Storage::put($this->dir.$this->filename, "ID\tName\tCommission in %\tTotal Fee\tCommission Amount\tItems\n");
 	}
 
 
 	// id, name, commission %, commission amount, all added items as string
-	public function print_commission($dir)
+	public function print_commission()
 	{
 		if ($this->total_commission == 0)
 			return;
 
-		$file = $dir.$this->filename;
+		$file = $this->dir.$this->filename;
 
-		File::append($file, $this->id."\t".$this->firstname.' '.$this->lastname."\t".$this->commission."\t".$this->total_commission."\t".round($this->total_commission * $this->commission / 100, 2)."\t".implode(', ', $this->item_names));
+		Storage::append($file, $this->id."\t".$this->firstname.' '.$this->lastname."\t".$this->commission."\t".$this->total_commission."\t".round($this->total_commission * $this->commission / 100, 2)."\t".implode(', ', $this->item_names));
 		echo "stored salesmen commissions in $file\n";
 	}
 

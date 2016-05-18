@@ -26,7 +26,7 @@ class accountingCommand extends Command {
 	protected $name 		= 'nms:accounting';
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
-	protected $dir 			= '/var/www/data/billing/';
+	protected $dir 			= 'data/billing/'; 				// relative to storage/app/
 	
 	protected $dates;					// offen needed time strings for faster access - see constructor
 
@@ -61,7 +61,10 @@ class accountingCommand extends Command {
 
 		);
 
+		$this->dir .= date('Y_m').'/';
+
 		parent::__construct();
+
 	}
 
 
@@ -221,7 +224,15 @@ class accountingCommand extends Command {
 		unset($prod_types['Credit']);
 
 		foreach ($salesmen as $key => $sm)
+		{
 			$sm->all_prod_types = $prod_types;
+			// directory to save file
+			$sm->dir = $this->dir;
+		}
+
+		foreach ($sepa_accs as $acc)
+			$acc->dir = $this->dir;
+
 
 		// actual invoice nr counters
 		$last_run = AccountingRecord::orderBy('created_at', 'desc')->select('created_at')->first();
@@ -259,27 +270,12 @@ class accountingCommand extends Command {
 	 */
 	private function _make_billing_files($sepa_accs, $salesmen)
 	{
-		// create directories if not yet existent
-		if (!is_dir($this->dir))
-			mkdir($this->dir, '0700');
-
-		$dir = $this->dir.date('Y_m').'/';
-		if (!is_dir($dir))
-			mkdir($dir, '0744');
-		else
-		{
-			// TODO: remove this!! - only during testing
-			system("rm -rf $dir/*");
-		}
-
 		foreach ($sepa_accs as $acc)
-			$acc->make_billing_files($dir);
+			$acc->make_billing_files();
 
-
-		$salesmen[0]->prepare_output_file($dir);
+		$salesmen[0]->prepare_output_file();
 		foreach ($salesmen as $sm)
-			$sm->print_commission($dir);
-
+			$sm->print_commission();
 	}
 
 

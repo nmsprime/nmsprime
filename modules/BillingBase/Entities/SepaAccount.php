@@ -6,7 +6,7 @@ use Modules\BillingBase\Entities\BillingLogger;
 
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
 use Digitick\Sepa\PaymentInformation;
-use File;
+use Storage;
 
 class SepaAccount extends \BaseModel {
 
@@ -23,7 +23,7 @@ class SepaAccount extends \BaseModel {
 			'holder' 	=> 'required',
 			'creditorid' => 'required|max:35|creditor_id',
 			'iban' 		=> 'required|iban',
-			'bic' 		=> 'required|bic',
+			'bic' 		=> 'bic',
 		);
 	}
 
@@ -382,17 +382,17 @@ class SepaAccount extends \BaseModel {
 			if (!$records)
 				continue;
 
-			$file = $this->dir.'accounting_'.$key.'_records_'.$this->name.'.txt';
+			$file = $this->dir.$this->name.'/accounting_'.$key.'_records.txt';
 			$file = SepaAccount::str_sanitize($file);
 
 			// initialise record files with Column names as first line
-			File::put($file, implode("\t", array_keys($records[0]))."\n");
+			Storage::put($file, implode("\t", array_keys($records[0]))."\n");
 
 			$data = [];
 			foreach ($records as $value)
 				array_push($data, implode("\t", $value)."\n");
 
-			File::append($file, implode($data));
+			Storage::append($file, implode($data));
 
 			echo "stored accounting ".$key." records in $file\n";
 			$this->logger->addInfo("Successfully stored accounting ".$key." records in $file \n");
@@ -413,17 +413,17 @@ class SepaAccount extends \BaseModel {
 			if (!$records)
 				continue;
 
-			$file = $this->dir.'booking_'.$key.'_records_'.$this->name.'.txt';
+			$file = $this->dir.$this->name.'/booking_'.$key.'_records.txt';
 			$file = SepaAccount::str_sanitize($file);
 
 			// initialise record files with Column names as first line
-			File::put($file, implode("\t", array_keys($records[0]))."\n");
+			Storage::put($file, implode("\t", array_keys($records[0]))."\n");
 
 			$data = [];
 			foreach ($records as $value)
 				array_push($data, implode("\t", $value)."\n");
 
-			File::append($file, implode($data));
+			Storage::append($file, implode($data));
 
 			echo "stored booking ".$key." records in $file\n";
 			$this->logger->addInfo("Successfully stored booking ".$key." records in $file \n");
@@ -442,12 +442,6 @@ class SepaAccount extends \BaseModel {
 	/**
 	 * Create SEPA XML Files
 	 */
-	public function make_sepa_xml()
-	{
-		$this->make_credit_file();
-		$this->make_debit_file();
-	}
-
 
 	private function make_debit_file()
 	{
@@ -455,9 +449,9 @@ class SepaAccount extends \BaseModel {
 			return;
 
 		$msg_id = $this->get_sepa_xml_msg_id();
-		$split = BillingBase::select('split')->first()->split;
+		$conf   = BillingBase::first();
 
-		if ($split)
+		if ($conf->split)
 		{
 			foreach ($this->sepa_xml['debits'] as $type => $records)
 			{
@@ -466,7 +460,7 @@ class SepaAccount extends \BaseModel {
 
 				// create a payment
 				$directDebit->addPaymentInfo($msg_id.$type, array(
-					'id'                    => $this->msg_id,
+					'id'                    => $msg_id,
 					'creditorName'          => $this->name,
 					'creditorAccountIBAN'   => $this->iban,
 					'creditorAgentBIC'      => $this->bic,
@@ -480,11 +474,9 @@ class SepaAccount extends \BaseModel {
 					$directDebit->addTransfer($msg_id.$type, $r);
 
 				// Retrieve the resulting XML
-				// TODO filename without special characters
-				$file = $this->dir.'dd_'.$this->name.'_'.$type.'.xml';
-				$file = SepaAccount::str_sanitize($file);
-
-				File::put($file, $directDebit->asXML());
+				$file = SepaAccount::str_sanitize($this->dir.$this->name.'/DD_'.$type.'.xml');
+				$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
+				STORAGE::put($file, $data);
 
 				echo "stored sepa direct debit $type xml in $file \n";
 				$this->logger->addInfo("Successfully stored sepa direct debit type $type xml in $file \n");
@@ -500,7 +492,7 @@ class SepaAccount extends \BaseModel {
 		{
 			// create a payment
 			$directDebit->addPaymentInfo($msg_id.$type, array(
-				'id'                    => $this->msg_id,
+				'id'                    => $msg_id,
 				'creditorName'          => $this->name,
 				'creditorAccountIBAN'   => $this->iban,
 				'creditorAgentBIC'      => $this->bic,
@@ -516,11 +508,9 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Retrieve the resulting XML
-		// TODO filename without special characters
-		$file = $this->dir.'dd_'.$this->name.'.xml';
-		$file = SepaAccount::str_sanitize($file);
-
-		File::put($file, $directDebit->asXML());
+		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/DD.xml');
+		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
+		STORAGE::put($file, $data);
 
 		echo "stored sepa direct debit xml in $file \n";
 		$this->logger->addInfo("Successfully stored sepa direct debit xml in $file \n");
@@ -549,10 +539,9 @@ class SepaAccount extends \BaseModel {
 			$customerCredit->addTransfer($msg_id.'C', $r);
 
 		// Retrieve the resulting XML
-		$file = $this->dir.'dc_'.$this->name.'.xml';
-		$file = SepaAccount::str_sanitize($file);
-
-		File::put($file, $customerCredit->asXML());
+		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/DC.xml');
+		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
+		STORAGE::put($file, $data);
 
 		echo "stored sepa direct credit xml in $file\n";
 		$this->logger->addInfo("Successfully stored sepa direct credit xml in $file \n");
@@ -562,20 +551,21 @@ class SepaAccount extends \BaseModel {
 
 
 	/*
-	 * creates all the billing files for the assigned objects
+	 * Creates all the billing files for the assigned objects
 	 */
-	public function make_billing_files($dir)
+	public function make_billing_files()
 	{
-		$this->dir = $dir;
-
 		if ($this->acc_recs['tariff'] || $this->acc_recs['item'])
 			$this->make_accounting_record_files();
 
 		if ($this->book_recs['sepa'] || $this->book_recs['no_sepa'])
 			$this->make_booking_record_files();
 
-		if ($this->sepa_xml['debits'] || $this->sepa_xml['credits'])
-			$this->make_sepa_xml();
+		if ($this->sepa_xml['debits'])
+			$this->make_debit_file();
+
+		if ($this->sepa_xml['credits'])
+			$this->make_credit_file();
 	}
 
 

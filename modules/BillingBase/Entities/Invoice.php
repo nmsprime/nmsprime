@@ -2,13 +2,13 @@
 
 namespace Modules\BillingBase\Entities;
 
-use File;
+use Storage;
 use Modules\BillingBase\Entities\BillingLogger;
 
 
 class Invoice {
 
-	private $dir = '/var/www/data/invoice/';	// changed in constructor
+	private $dir = 'data/invoice/';				// relativ to storage path - changed in constructor
 	private $currency;
 	private $tax;
 	private $template = '/tftpboot/bill/template/';
@@ -256,13 +256,10 @@ class Invoice {
 		foreach ($this->data as $key => $value)
 			$template = str_replace('{'.$key.'}', $value, $template);
 
-		if (!is_dir($this->dir))
-			mkdir($this->dir, '0744', true);
-
-
 		// create tex file
 		$this->file = $this->dir.'/'.date('m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
-		File::put($this->file, $template);
+		echo 'Stored tex file in '.$this->file."\n";
+		Storage::put($this->file, $template);
 
 		$this->create_pdf();
 
@@ -275,9 +272,10 @@ class Invoice {
 	 */
 	public function create_pdf()
 	{
-		chdir($this->dir);
+		chdir(storage_path().'/app/'.$this->dir);
 
-		$file = $this->file;
+
+		$file = storage_path().'/app/'.$this->file;
 
 		// TODO: execute in background to speed this up by multiprocessing - but what is with the temporary files then?
 		system("pdflatex $file &>/dev/null");			// returns 0 on success - $ret as second argument
