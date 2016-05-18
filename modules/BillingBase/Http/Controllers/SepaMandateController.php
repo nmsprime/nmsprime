@@ -2,7 +2,6 @@
 namespace Modules\Billingbase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
-use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\SepaMandate;
 
 class SepaMandateController extends \BaseModuleController {

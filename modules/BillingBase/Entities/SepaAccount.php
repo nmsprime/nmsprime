@@ -311,13 +311,16 @@ class SepaAccount extends \BaseModel {
 		$end   = strtotime($mandate->sepa_valid_to);
 
 		// new mandate - after last run
+		// if ($start > strtotime('2016-04-12') && !$mandate->recurring)		// for test
 		if ($start > strtotime($dates['last_run']) && !$mandate->recurring)
 			$type = PaymentInformation::S_FIRST;
 
 		// when mandate ends next month but before billing run
-		else if ($mandate->contract->expires || $end < strtotime('+1 month'))
+		else if ($mandate->contract->expires || ($end > 0 && $end < strtotime('+1 month')))
 			$type = PaymentInformation::S_FINAL;
 
+		// if ($mandate->sepa_valid_from == '2016-03-01')
+		// 	dd($mandate->sepa_holder, $type, strtotime('2016-01-01') > 0);
 
 		// NOTE: also possible with state field of mandate table - dis~/advantage: more complex code / no last run timestamp needed
 		// switch ($mandate->state)
@@ -440,9 +443,8 @@ class SepaAccount extends \BaseModel {
 
 
 	/**
-	 * Create SEPA XML Files
+	 * Create SEPA XML File for direct debits
 	 */
-
 	private function make_debit_file()
 	{
 		if (!$this->sepa_xml['debits'])
@@ -517,6 +519,9 @@ class SepaAccount extends \BaseModel {
 	}
 
 
+	/**
+	 * Create SEPA XML File for direct credits
+	 */
 	private function make_credit_file()
 	{
 		if (!$this->sepa_xml['credits'])

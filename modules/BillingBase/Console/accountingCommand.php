@@ -89,7 +89,6 @@ class accountingCommand extends Command {
 
 
 		// remove all entries of this month permanently (if already created)
-		// $ret = AccountingRecord::where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->forceDelete();
 		$ret = AccountingRecord::whereBetween('created_at', [$this->dates['thism_01'], $this->dates['nextm_01']])->forceDelete();
 		if ($ret)
 			$logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
@@ -145,6 +144,7 @@ class accountingCommand extends Command {
 				// skip if price is 0
 				if (!($ret = $item->calculate_price_and_span($this->dates)))
 					continue;
+
 				// get account via costcenter
 				$costcenter = $item->get_costcenter();
 				$acc = $sepa_accs->find($costcenter->sepa_account_id);
@@ -168,12 +168,9 @@ class accountingCommand extends Command {
 				$rec = new AccountingRecord;
 				$rec->store($item, $acc);
 
-				// add item to accounting records of account
+				// add item to accounting records of account, invoice and salesman
 				$acc->add_accounting_record($item);
-
-				// create bill for account and contract and add item
 				$acc->add_invoice_item($item, $conf);
-				// add
 				if ($c->salesman_id)
 					$salesmen->find($c->salesman_id)->add_item($item);
 
@@ -208,6 +205,7 @@ class accountingCommand extends Command {
 
 		} // end of loop over contracts
 
+		
 		$this->_make_billing_files($sepa_accs, $salesmen);
 
 	}
