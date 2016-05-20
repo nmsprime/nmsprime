@@ -23,10 +23,10 @@ class accountingCommand extends Command {
 	 *
 	 * @var string
 	 */
-	protected $name 		= 'nms:accounting';
+	protected $name 		= 'billing:accounting';
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
-	protected $dir 			= 'data/billing/'; 				// relative to storage/app/
+	protected $dir 			= 'data/billing/'; 				// relative to storage/app/ - Note: completed by month in constructor!
 	
 	protected $dates;					// offen needed time strings for faster access - see constructor
 

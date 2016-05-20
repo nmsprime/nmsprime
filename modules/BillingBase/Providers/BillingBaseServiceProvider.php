@@ -16,6 +16,7 @@ class BillingBaseServiceProvider extends ServiceProvider {
 	 */
 	protected $commands = [
 		'Modules\BillingBase\Console\accountingCommand',
+		'Modules\BillingBase\Console\fetchBicCommand'
 	];
 
 	/**
