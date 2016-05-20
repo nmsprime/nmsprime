@@ -8,7 +8,7 @@ use Modules\BillingBase\Entities\BillingLogger;
 
 class Invoice {
 
-	private $dir = 'data/invoice/';				// relativ to storage path - changed in constructor
+	private $dir = 'data/billingbase/invoice/';				// relativ to storage path - changed in constructor
 	private $currency;
 	private $tax;
 	private $template = '/tftpboot/bill/template/';
@@ -81,7 +81,7 @@ class Invoice {
 		$this->data['contract_zip'] 		= $contract->zip;
 		$this->data['contract_city'] 		= $contract->city;
 
-		$this->data['rcd'] 			= $config->rcd ? $config->rcd : date('d.m.Y', strtotime('+6 days'));
+		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr;
 
 		// TODO: Add other currencies here
@@ -258,7 +258,7 @@ class Invoice {
 
 		// create tex file
 		$this->file = $this->dir.'/'.date('m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
-		echo 'Stored tex file in '.$this->file."\n";
+		echo 'Stored tex file in '.storage_path().'/app/'.$this->file."\n";
 		Storage::put($this->file, $template);
 
 		$this->create_pdf();

@@ -26,7 +26,7 @@ class accountingCommand extends Command {
 	protected $name 		= 'billing:accounting';
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
-	protected $dir 			= 'data/billing/'; 				// relative to storage/app/ - Note: completed by month in constructor!
+	protected $dir 			= 'data/billingbase/accounting/'; 				// relative to storage/app/ - Note: completed by month in constructor!
 	
 	protected $dates;					// offen needed time strings for faster access - see constructor
 
@@ -213,11 +213,11 @@ class accountingCommand extends Command {
 
 
 	/*
-	 * Initialise models for this billing cycle
+	 * Initialise models for this billing cycle (could also be done during runtime but with performance degradation)
 	 */
 	private function _init($sepa_accs, $salesmen, $conf)
 	{
-		// init salesmen here because of performance (only 1 DB query)
+		// Salesmen
 		$prod_types = Product::getPossibleEnumValues('type');
 		unset($prod_types['Credit']);
 
@@ -228,8 +228,12 @@ class accountingCommand extends Command {
 			$sm->dir = $this->dir;
 		}
 
+		// SepaAccount
 		foreach ($sepa_accs as $acc)
+		{
 			$acc->dir = $this->dir;
+			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+5 days'));
+		}
 
 
 		// actual invoice nr counters

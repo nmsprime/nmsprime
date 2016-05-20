@@ -126,6 +126,7 @@ class SepaAccount extends \BaseModel {
 	private $invoice_nr_prefix;				// see constructor
 	public $dir;							// directory to store billing files
 	protected $logger;
+	public $rcd; 							// requested collection date from global config
 
 
 	/**
@@ -235,7 +236,7 @@ class SepaAccount extends \BaseModel {
 			'Contractnr' 	=> $contract->number,
 			'Invoicenr' 	=> $this->get_invoice_nr_formatted(),
 			'Date' 			=> date('Y-m-d'),
-			'RCD' 			=> $conf->rcd ? $conf->rcd : date('Y-m-d', strtotime('+6 days')),
+			'RCD' 			=> $this->rcd,
 			'Cost Center'	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
 			'Description' 	=> '',
 			'Net' 			=> $charge['net'],
@@ -407,8 +408,7 @@ class SepaAccount extends \BaseModel {
 
 			Storage::append($file, implode($data));
 
-			echo "stored accounting ".$key." records in $file\n";
-			$this->logger->addInfo("Successfully stored accounting ".$key." records in $file \n");
+			$this->_log("accounting $key records", $file);
 		}
 
 		return;
@@ -438,11 +438,17 @@ class SepaAccount extends \BaseModel {
 
 			Storage::append($file, implode($data));
 
-			echo "stored booking ".$key." records in $file\n";
-			$this->logger->addInfo("Successfully stored booking ".$key." records in $file \n");
+			$this->_log("booking $key records", $file);
 		}
 
 		return;
+	}
+
+	private function _log($name, $pathname)
+	{
+		$path = storage_path().'/app/';
+		echo "stored $name in $path"."$pathname\n";
+		$this->logger->addInfo("Successfully stored $name in $path"."$pathname \n");		
 	}
 
 
@@ -478,7 +484,7 @@ class SepaAccount extends \BaseModel {
 					'creditorAgentBIC'      => $this->bic,
 					'seqType'               => $type,
 					'creditorId'            => $this->creditorid,
-					// 'dueDate'				=> // requested collection date (Fälligkeits-/Ausführungsdatum) - from global config
+					'dueDate'				=> $this->rcd,
 				));
 
 				// Add Transactions to the named payment
@@ -490,8 +496,7 @@ class SepaAccount extends \BaseModel {
 				$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
 				STORAGE::put($file, $data);
 
-				echo "stored sepa direct debit $type xml in $file \n";
-				$this->logger->addInfo("Successfully stored sepa direct debit type $type xml in $file \n");
+				$this->_log("sepa direct debit $type xml", $file);
 			}
 
 			return;
@@ -524,8 +529,7 @@ class SepaAccount extends \BaseModel {
 		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
 		STORAGE::put($file, $data);
 
-		echo "stored sepa direct debit xml in $file \n";
-		$this->logger->addInfo("Successfully stored sepa direct debit xml in $file \n");
+		$this->_log("sepa direct debit $type xml", $file);
 	}
 
 
@@ -558,9 +562,7 @@ class SepaAccount extends \BaseModel {
 		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
 		STORAGE::put($file, $data);
 
-		echo "stored sepa direct credit xml in $file\n";
-		$this->logger->addInfo("Successfully stored sepa direct credit xml in $file \n");
-
+		$this->_log("sepa direct credit xml", $file);
 	}
 
 
