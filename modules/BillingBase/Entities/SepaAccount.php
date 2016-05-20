@@ -7,6 +7,7 @@ use Modules\BillingBase\Entities\BillingLogger;
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
 use Digitick\Sepa\PaymentInformation;
 use Storage;
+use IBAN;
 
 class SepaAccount extends \BaseModel {
 
@@ -25,6 +26,15 @@ class SepaAccount extends \BaseModel {
 			'iban' 		=> 'required|iban',
 			'bic' 		=> 'bic',
 		);
+	}
+
+	/*
+	 * Init Observers
+	 */
+	public static function boot()
+	{
+		SepaAccount::observe(new SepaAccountObserver);
+		parent::boot();
 	}
 
 
@@ -582,6 +592,59 @@ class SepaAccount extends \BaseModel {
 	{
 		$string = str_replace(' ', '_', $string);
 		return preg_replace("/[^a-zA-Z0-9.\/_]/", "", $string);
+	}
+
+
+
+
+	/**
+	 * Returns BIC from iban and parsed config/data-file
+	 */
+	public static function get_bic($iban)
+	{
+		$iban 	 = new IBAN(strtoupper($iban));
+		$country = strtolower($iban->Country());
+		$bank 	 = $iban->Bank();
+
+		$data = Storage::get('config/billingbase/bic_'.$country.'.csv');
+		$data_a = explode("\n", $data);
+
+		foreach ($data_a as $key => $entry)
+		{
+			if (strpos($entry, $bank) !== false)
+			{
+				$entry = explode(',', $entry);
+				return $entry[3];
+			}
+		}
+	}
+
+}
+
+
+
+/**
+ * Observer Class
+ *
+ * can handle   'creating', 'created', 'updating', 'updated',
+ *              'deleting', 'deleted', 'saving', 'saved',
+ *              'restoring', 'restored',
+ */
+class SepaAccountObserver
+{
+
+	public function creating($acc)
+	{
+		$acc->iban = strtoupper($acc->iban);
+		$acc->bic  = $acc->bic ? strtoupper($acc->bic) : SepaAccount::get_bic($acc->iban);
+		$acc->creditorid = strtoupper($acc->creditorid);
+	}
+
+	public function updating($acc)
+	{
+		$acc->iban = strtoupper($acc->iban);
+		$acc->bic  = $acc->bic ? strtoupper($acc->bic) : SepaAccount::get_bic($acc->iban);
+		$acc->creditorid = strtoupper($acc->creditorid);
 	}
 
 }

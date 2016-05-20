@@ -32,5 +32,10 @@ class SepaMandateController extends \BaseModuleController {
 		);
 	}
 
+	public function prep_rules($rules, $data)
+	{
+		$rules['bic'] = $data['sepa_bic'] ? : '|available:'.$data['sepa_iban'];
 
+		return parent::prep_rules($rules, $data);
+	}
 }

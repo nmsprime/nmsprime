@@ -69,13 +69,14 @@ class fetchBicCommand extends Command {
 				if (!$row[0])
 					break;
 
+				// only when bic is set - avoid adding redundant data
 				if ($row[7] && !array_key_exists($row[0], $data))
-					$data[$row[0]] = implode(',', [$row[0], $row[2], $row[4], $row[7]]);
+					$data[$row[0]] = implode(',', [$row[0], $row[2], str_replace(',', '-', $row[4]), $row[7]]);
 
-				if ($n % 500 == 0)
+				if ($n % 1000 == 0)
 				{
 					$now = time();
-					echo 'row nr '.$n.' after: '. ($now - $start)." s\n";
+					echo 'row '.$n.' after: '. ($now - $start)." s\n";
 				}
 				$n++;
 			}

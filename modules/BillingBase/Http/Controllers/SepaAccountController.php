@@ -43,6 +43,15 @@ class SepaAccountController extends \BaseModuleController {
 		);
 	}
 
+
+	public function prep_rules($rules, $data)
+	{
+		$rules['bic'] = $data['bic'] ? : '|available:'.$data['iban'];
+
+		return parent::prep_rules($rules, $data);
+	}
+
+
 	/**
 	 * Overwrites the base methods to handle file uploads
 	 */

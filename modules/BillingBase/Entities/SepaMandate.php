@@ -3,6 +3,7 @@
 namespace Modules\BillingBase\Entities;
 use Modules\ProvBase\Entities\Contract;
 use DB;
+use Storage;
 
 class SepaMandate extends \BaseModel {
 
@@ -15,7 +16,7 @@ class SepaMandate extends \BaseModel {
 		return array(
 			'signature_date' 	=> 'date',
 			'sepa_iban' 		=> 'required|iban',
-			'sepa_bic' 			=> 'bic',
+			'sepa_bic' 			=> 'bic',			// see SepaMandateController@prep_rules
 			// 'sepa_institute' 	=> ,
 			'sepa_valid_from' 	=> 'date',
 			'sepa_valid_to'		=> 'dateornull'
@@ -120,9 +121,10 @@ class SepaMandateObserver
 		$mandate->reference = $this->build_mandate_ref($mandate);
 
 		$mandate->sepa_iban = strtoupper($mandate->sepa_iban);
-		$mandate->sepa_bic  = strtoupper($mandate->sepa_bic);
 
 		// Set default values for empty fields
+		$mandate->sepa_bic  = $mandate->sepa_bic ? strtoupper($mandate->sepa_bic) : SepaAccount::get_bic($mandate->sepa_iban);
+
 		if (!$mandate->sepa_holder)
 		{
 			$contract = $mandate->contract;
@@ -156,7 +158,7 @@ class SepaMandateObserver
 			$mandate->signature_date = date('Y-m-d');
 
 		$mandate->sepa_iban = strtoupper($mandate->sepa_iban);
-		$mandate->sepa_bic  = strtoupper($mandate->sepa_bic);
+		$mandate->sepa_bic  = $mandate->sepa_bic ? strtoupper($mandate->sepa_bic) : SepaAccount::get_bic($mandate->sepa_iban);
 	}
 
 
