@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\Billingbase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
@@ -6,11 +6,11 @@ use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Entities\Company;
 
 class SepaAccountController extends \BaseModuleController {
-	
+
     /**
      * defines the formular fields for the edit and create view
      */
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 		if (!$model)
 			$model = new SepaAccount;
@@ -44,18 +44,19 @@ class SepaAccountController extends \BaseModuleController {
 	}
 
 
-	public function prep_rules($rules, $data)
+	public function prepare_rules($rules, $data)
 	{
-		$rules['bic'] = $data['bic'] ? : '|available:'.$data['iban'];
+		if (!$data['bic'])
+			$rules['bic'] .= '|available:'.$data['iban'];
 
-		return parent::prep_rules($rules, $data);
+		return parent::prepare_rules($rules, $data);
 	}
 
 
 	/**
 	 * Overwrites the base methods to handle file uploads
 	 */
-	protected function store($redirect = true)
+	public function store($redirect = true)
 	{
 		// check and handle uploaded firmware files
 		$this->handle_file_upload('template', '/tftpboot/bill/template/');

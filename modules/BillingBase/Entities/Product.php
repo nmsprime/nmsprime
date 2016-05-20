@@ -14,7 +14,7 @@ class Product extends \BaseModel {
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
-		// Pay attention to the prep_rules()-function in Controller
+		// Pay attention to the prepare_rules()-function in Controller
 		return array(
 			'name' 	=> 'required|unique:product,name,'.$id.',id,deleted_at,NULL',
 			'type' 	=> "required|not_null",
@@ -31,13 +31,13 @@ class Product extends \BaseModel {
 	 */
 
 	// Name of View
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'Product Entry';
 	}
 
 	// link title in index view
-	public function get_view_link_title()
+	public function view_index_label()
 	{
 		// return $this->type.' - '.$this->name.' | '.$this->price.' €';
 

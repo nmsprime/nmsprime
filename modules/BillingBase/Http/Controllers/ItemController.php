@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\Billingbase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
@@ -13,7 +13,7 @@ class ItemController extends \BaseModuleController {
 	/**
 	 * defines the formular fields for the edit and create view
 	 */
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 		if (!$model)
 			$model = new Item;
@@ -47,13 +47,13 @@ class ItemController extends \BaseModuleController {
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
 			array('form_type' => 'text', 'name' => 'accounting_text', 'description' => 'Accounting Text (optional)')
 		);
-	}	
+	}
 
 
 	/**
 	 * @author Nino Ryschawy
 	 */
-	public function prep_rules($rules, $data)
+	public function prepare_rules($rules, $data)
 	{
 		$rules['count'] = str_replace('product_id', $data['product_id'], $rules['count']);
 
@@ -78,7 +78,7 @@ class ItemController extends \BaseModuleController {
 
 		// dd($rules, $data);
 
-		return parent::prep_rules($rules, $data);
+		return parent::prepare_rules($rules, $data);
 	}
 
 	public function index()

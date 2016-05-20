@@ -9,13 +9,13 @@ use Modules\ProvBase\Entities\Contract;
 class BillingBaseController extends \BaseModuleController {
 
 	public $name = 'BillingBase';
-	
+
 	public function index()
 	{
 		return view('billingbase::index');
 	}
 
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 		$days[0] = null;
 		for ($i=1; $i < 29; $i++)
@@ -47,5 +47,5 @@ class BillingBaseController extends \BaseModuleController {
 			array('form_type' => 'checkbox', 'name' => 'termination_fix', 'description' => 'Item Termination only end of month', 'help' => 'Allow Customers only to terminate booked products on last day of month'),
 		];
 	}
-	
+
 }

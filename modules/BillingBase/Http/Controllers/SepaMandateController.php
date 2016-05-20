@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\Billingbase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
@@ -7,11 +7,11 @@ use Modules\BillingBase\Entities\SepaMandate;
 class SepaMandateController extends \BaseModuleController {
 
 	protected $index_create_allowed = false;
-	
+
     /**
      * defines the formular fields for the edit and create view
      */
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 		if (!$model)
 			$model = new SepaMandate;
@@ -32,10 +32,11 @@ class SepaMandateController extends \BaseModuleController {
 		);
 	}
 
-	public function prep_rules($rules, $data)
+	public function prepare_rules($rules, $data)
 	{
 		$rules['bic'] = $data['sepa_bic'] ? : '|available:'.$data['sepa_iban'];
 
-		return parent::prep_rules($rules, $data);
+		return parent::prepare_rules($rules, $data);
 	}
+
 }

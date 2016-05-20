@@ -15,7 +15,7 @@ class EnviaOrderController extends \BaseModuleController {
 	/**
 	 * defines the formular fields for the edit and create view
 	 */
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 
 		// make order_id fillable on create => so man can add an order created at the web GUI to keep data consistent
@@ -121,15 +121,10 @@ class EnviaOrderController extends \BaseModuleController {
 	 */
 	public function destroy($id) {
 
-		// TODO: outsource to own controller/method?
-		try {
-			// this needs view rights; edit rights are checked in store/update methods!
-			$this->_check_permissions("view");
-			$this->_check_permissions("view", "Modules\ProvVoipEnvia\Entities\ProvVoipEnvia");
-		}
-		catch (PermissionDeniedError $ex) {
-			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
-		}
+		// check if user has the right to perform actions against Envia API
+		\App\Http\Controllers\BaseAuthController::auth_check('view', $this->get_model_name());
+		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+
 
 		// get all orders to be canceled
 		$orders = array();
@@ -146,10 +141,10 @@ class EnviaOrderController extends \BaseModuleController {
 			// delete (attention: database ids are the keys of the input array)
 			$ids = array_keys($ids);
 			$id = array_pop($ids);
-			$order = $this->get_model_obj()->findOrFail($id);
+			$order = static::get_model_obj()->findOrFail($id);
 		}
 		else {
-			$order = $this->get_model_obj()->findOrFail($id);
+			$order = static::get_model_obj()->findOrFail($id);
 		}
 
 		$params = array(

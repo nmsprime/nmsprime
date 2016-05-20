@@ -2,7 +2,7 @@
 		/**
 		 * Shows the html links of the related objects recursivly
 		 * TODO: should be placed in a global concept and not on module base
-		 */ 
+		 */
 		$s = "";
 
 		$parent = $view_var;
@@ -13,7 +13,7 @@
 				// Need to be tested !
 				$tmp = explode('\\',get_class($parent));
 				$view = end($tmp);
-				$s = HTML::linkRoute($view.'.edit', $parent->get_view_link_title(), $parent->id).' / '.$s;
+				$s = HTML::linkRoute($view.'.edit', $parent->view_index_label(), $parent->id).' / '.$s;
 			}
 
 			$parent = $parent->view_belongs_to();

@@ -29,13 +29,13 @@ class SepaMandate extends \BaseModel {
 	 */
 
 	// Name of View
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'SEPA Mandate';
 	}
 
 	// link title in index view
-	public function get_view_link_title()
+	public function view_index_label()
 	{
 		return $this->sepa_valid_from.' - '.$this->sepa_valid_to;
 		// return $this->reference.' | '.$this->sepa_valid_from.' - '.$this->sepa_valid_to;

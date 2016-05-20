@@ -83,8 +83,10 @@ class fetchBicCommand extends Command {
 		}
 
 		// Store data of german bics
-		Storage::put('config/billingbase/bic_de.csv', implode("\n", $data));
+		$file = 'config/billingbase/bic_de.csv';
+		Storage::put($file, implode("\n", $data));
 		Storage::delete('tmp/data.xlsx');
+		echo 'Successfully created '.storage_path('app/').$file."\n";
 
 	}
 

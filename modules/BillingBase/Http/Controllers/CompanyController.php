@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\Billingbase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
@@ -6,11 +6,13 @@ use Modules\Billingbase\Entities\Company;
 use Input;
 
 class CompanyController extends \BaseModuleController {
-	
+
+	protected $edit_left_md_size = 7;
+
 	/**
 	 * defines the formular fields for the edit and create view
 	 */
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 		if (!$model)
 			$model = new Company;
@@ -50,7 +52,7 @@ class CompanyController extends \BaseModuleController {
 	/**
 	 * Overwrites the base methods to handle file uploads
 	 */
-	protected function store($redirect = true)
+	public function store($redirect = true)
 	{
 		// check and handle uploaded firmware files
 		$this->handle_file_upload('logo', '/tftpboot/bill/logo/');

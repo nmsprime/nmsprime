@@ -258,7 +258,7 @@ class Invoice {
 
 		// create tex file
 		$this->file = $this->dir.'/'.date('m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
-		echo 'Stored tex file in '.storage_path().'/app/'.$this->file."\n";
+		echo 'Stored tex file in '.storage_path('app/').$this->file."\n";
 		Storage::put($this->file, $template);
 
 		$this->create_pdf();
@@ -272,10 +272,10 @@ class Invoice {
 	 */
 	public function create_pdf()
 	{
-		chdir(storage_path().'/app/'.$this->dir);
+		chdir(storage_path('app/').$this->dir);
 
 
-		$file = storage_path().'/app/'.$this->file;
+		$file = storage_path('app/').$this->file;
 
 		// TODO: execute in background to speed this up by multiprocessing - but what is with the temporary files then?
 		system("pdflatex $file &>/dev/null");			// returns 0 on success - $ret as second argument

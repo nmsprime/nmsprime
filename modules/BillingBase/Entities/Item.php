@@ -33,13 +33,13 @@ class Item extends \BaseModel {
 	 */
 
 	// Name of View
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'Item';
 	}
 
 	// link title in index view
-	public function get_view_link_title()
+	public function view_index_label()
 	{
 		$start = $this->valid_from != '0000-00-00' ? ' - '.$this->valid_from : '';
 		$end   = $this->valid_to != '0000-00-00' ? ' - '.$this->valid_to : '';
@@ -178,7 +178,7 @@ class Item extends \BaseModel {
 		// contract ends before item ends - contract has higher priority
 		if ($this->contract->expires)
 			$end = !$end || strtotime($this->contract->contract_end) < $end ? strtotime($this->contract->contract_end) : $end;
-		
+
 
 		switch($billing_cycle)
 		{
@@ -351,7 +351,6 @@ class Item extends \BaseModel {
 						$ratio *= $tot_months - $part + 1;
 						$text  = " | last ".($tot_months-$part+1)." part(s) of $tot_months";
 					}
-	
 				}
 
 				break;
