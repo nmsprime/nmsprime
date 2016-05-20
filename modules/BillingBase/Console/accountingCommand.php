@@ -23,10 +23,10 @@ class accountingCommand extends Command {
 	 *
 	 * @var string
 	 */
-	protected $name 		= 'nms:accounting';
+	protected $name 		= 'billing:accounting';
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
-	protected $dir 			= '/var/www/data/billing/';
+	protected $dir 			= 'data/billingbase/accounting/'; 				// relative to storage/app/ - Note: completed by month in constructor!
 	
 	protected $dates;					// offen needed time strings for faster access - see constructor
 
@@ -39,23 +39,32 @@ class accountingCommand extends Command {
 	public function __construct()
 	{
 		$this->dates = array(
+
 			'today' 		=> date('Y-m-d'),
 			'm' 			=> date('m'),
 			'Y' 			=> date('Y'),
+
 			'this_m'	 	=> date('Y-m'),
-			'this_m_bill'	=> date('m/Y'),
-			'last_m'		=> date('m', strtotime("first day of last month")),			// written this way because of known bug
-			'last_m_Y'		=> date('Y-m', strtotime("first day of last month")),		// strtotime(first day of last month) is integer with actual timestamp!
-			'last_m_bill'	=> date('m/Y', strtotime("first day of last month")),
-			'null' 			=> '0000-00-00',
-			'lastm_01' 		=> date('Y-m-01', strtotime("first day of last month")),
 			'thism_01'		=> date('Y-m-01'),
+			'thism_bill'	=> date('m/Y'),
+
+			'lastm'			=> date('m', strtotime("first day of last month")),			// written this way because of known bug
+			'lastm_01' 		=> date('Y-m-01', strtotime("first day of last month")),
+			'lastm_bill'	=> date('m/Y', strtotime("first day of last month")),
+			'lastm_Y'		=> date('Y-m', strtotime("first day of last month")),		// strtotime(first day of last month) is integer with actual timestamp!
+
 			'nextm_01' 		=> date('Y-m-01', strtotime("+1 month")),
-			'last_run' 		=> '',					// important for price calculation!!
+
+			'null' 			=> '0000-00-00',
 			'm_in_sec' 		=> 60*60*24*30,			// month in seconds
+			'last_run'		=> '0000-00-00', 					// filled on start of execution
+
 		);
 
+		$this->dir .= date('Y_m').'/';
+
 		parent::__construct();
+
 	}
 
 
@@ -67,6 +76,8 @@ class accountingCommand extends Command {
 	 */
 	public function fire()
 	{
+		// only while testing!! - TODO: remove for production system
+		DB::table('item')->update(['payed' => false]);
 
 		$logger = new BillingLogger;
 		$logger->addInfo(' #####    Start Accounting Command    #####');
@@ -77,17 +88,20 @@ class accountingCommand extends Command {
 		$salesmen 	= Salesman::all();
 
 
+		// remove all entries of this month permanently (if already created)
+		$ret = AccountingRecord::whereBetween('created_at', [$this->dates['thism_01'], $this->dates['nextm_01']])->forceDelete();
+		if ($ret)
+			$logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
+
+		// set time of last run
+		$last_run = AccountingRecord::select('created_at')->orderBy('id', 'desc')->first();
+		if ($last_run)
+			$this->dates['last_run'] = $last_run->created_at;
+
 		// init product types of salesmen and invoice nr counters for each sepa account
 		$this->_init($sepa_accs, $salesmen, $conf);
 
-
-		// remove all entries of this month
-		$ret = AccountingRecord::where('created_at', '>=', $this->dates['thism_01'])->where('created_at', '<=', $this->dates['nextm_01'])->delete();
-		if ($ret)
-			$this->logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
-
-
-
+		
 		/*
 		 * Loop over all Contracts
 		 */
@@ -95,76 +109,70 @@ class accountingCommand extends Command {
 		{
 			// debugging output
 			var_dump($c->id); //, round(microtime(true) - $start, 4));
+			// dd(date('Y-m-d', strtotime('next day')));
 			// dd(strtotime(date('2016-04-01')), strtotime(date('2016-03-31 23:59:59')));
-			// dd(strtotime('0000-00-00'), strtotime(null));
+			// dd(strtotime('0000-00-00'), strtotime(null), date('Y-m-d', strtotime('last year')));
+			// dd(date('z', strtotime(date('Y-12-31'))), date('Y-m-d', strtotime('last month')), date('L'), date('Y-m-d', strtotime('first day of last month')));
 
 
-			// Skip not valid contracts
+			// Skip invalid contracts
 			if (!$c->check_validity())
 			{
-				$this->logger->addNotice('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
+				$logger->addNotice('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
 				continue;				
 			}
 
 			if (!$c->create_invoice)
 			{
-				$this->logger->addInfo('Create invoice for Contract '.$c->number.' is off', [$c->id]);
+				$logger->addInfo('Create invoice for Contract '.$c->number.' is off', [$c->id]);
 				continue;
 			}
 
 			$charge 	= []; 					// total costs for this month for current contract
-			$c->expires = date('Y-m', strtotime($c->contract_end)) == $this->dates['this_m'];
+			$c->expires = date('Y-m-01', strtotime($c->contract_end)) == $this->dates['lastm_01'];
 
 
 			/*
-			 * Collect data for all billing files
+			 * Collect item specific data for all billing files
 			 */
 			foreach ($c->items as $item)
 			{
-				// check validity
-				if (!$item->check_validity())
+				// skip invalid items
+				if (!$item->check_validity($item->get_billing_cycle() == 'Yearly' ? 'year' : 'month'))
 					continue;
 
-				$costcenter = $item->costcenter ? $item->costcenter : $c->costcenter;
-				$ret = $item->calculate_price_and_span($this->dates, $costcenter, $c->expires);
-				
-				// skip adding data if price == 0
-				if (!$ret)
+				// skip if price is 0
+				if (!($ret = $item->calculate_price_and_span($this->dates)))
 					continue;
-				$price = $ret['price'];
 
 				// get account via costcenter
-				$acc_id = $costcenter->sepa_account_id;
-				$acc 	= $sepa_accs->find($acc_id);
-				$text   = $ret['text'];
+				$costcenter = $item->get_costcenter();
+				$acc = $sepa_accs->find($costcenter->sepa_account_id);
 
-
-				// increase invoice nr of account, increase charge for account by price, calculate tax
-				if (isset($charge[$acc_id]))
+				// increase invoice nr of sepa account, increase charge for account by price, calculate tax
+				if (isset($c->charge[$acc->id]))
 				{
-					$charge[$acc_id]['net'] 	+= $price;
-					$charge[$acc_id]['tax'] 	+= $item->product->tax ? $price * $conf->tax/100 : 0;
+					$c->charge[$acc->id]['net'] += $item->charge;
+					$c->charge[$acc->id]['tax'] += $item->product->tax ? $item->charge * $conf->tax/100 : 0;
 				}
 				else
 				{
-					$charge[$acc_id]['net'] 	= $price;
-					$charge[$acc_id]['tax'] 	= $item->product->tax ? $price * $conf->tax/100 : 0;
+					$c->charge[$acc->id]['net'] = $item->charge;
+					$c->charge[$acc->id]['tax'] = $item->product->tax ? $item->charge * $conf->tax/100 : 0;
 					$acc->invoice_nr += 1;
 				}
 
-				// save to accounting table as backup for future checking - NOTE: invoice nr counters are set from that table
-				$count = $item->count ? $item->count : 1;
-				DB::update('INSERT INTO '.$this->tablename.' (created_at, contract_id, name, product_id, ratio, count, invoice_nr, sepa_account_id) VALUES(NOW(),'.$c->id.',"'.$item->name.'",'.$item->product->id.','.$ret['ratio'].','.$count.','.$acc->invoice_nr.','.$acc_id.')');
+				$item->charge = round($item->charge, 2);
 
-				// add item to accounting records of account
-				$acc->add_accounting_record($item, round($price, 2), $text);
+				// save to accounting table (as backup for future) - NOTE: invoice nr counters are set initially from that table
+				$rec = new AccountingRecord;
+				$rec->store($item, $acc);
 
-				// create bill for account and contract and add item
-				$acc->add_invoice_item($c, $conf, $count, round($price, 2), $text);
-
-				// add
-				if ($c->salesman)
-					$salesmen->find($c->salesman->id)->add_item($item, $price);
+				// add item to accounting records of account, invoice and salesman
+				$acc->add_accounting_record($item);
+				$acc->add_invoice_item($item, $conf);
+				if ($c->salesman_id)
+					$salesmen->find($c->salesman_id)->add_item($item);
 
 			} // end of item loop
 
@@ -172,18 +180,18 @@ class accountingCommand extends Command {
 			$mandate = $c->get_valid_mandate();
 
 			if (!$mandate)
-				$this->logger->addNotice('Contract '.$c->number.' has no valid sepa mandate', [$c->id]);
+				$logger->addNotice('Contract '.$c->number.' has no valid sepa mandate', [$c->id]);
 
 
-			// Add billing file entries
-			foreach ($charge as $acc_id => $value)
+			// Add contract specific data for billing files
+			foreach ($c->charge as $acc_id => $value)
 			{
 				$value['net'] = round($value['net'], 2);
 				$value['tax'] = round($value['tax'], 2);
 
 				$acc = $sepa_accs->find($acc_id);
 				$acc->add_booking_record($c, $mandate, $value, $conf);
-				$acc->add_invoice_data($c, $mandate, $value, $this->logger);
+				$acc->add_invoice_data($c, $mandate, $value);
 
 				// make bill already
 				$acc['invoices'][$c->id]->make_invoice();
@@ -197,39 +205,35 @@ class accountingCommand extends Command {
 
 		} // end of loop over contracts
 
-		/*
-		 * store all billing files besides invoices
-		 */
-		if (!is_dir($this->dir))
-			mkdir($this->dir, '0700');		
-		$dir = $this->dir.date('Y_m').'/';
-		if (!is_dir($dir))
-			mkdir($dir, '0744');
-		else
-			system("rm -rf $dir/*");
-
-		foreach ($sepa_accs as $acc)
-			$acc->make_billing_files($dir);
-
-		$salesmen[0]->prepare_output_file($dir);
-		foreach ($salesmen as $sm)
-			$sm->print_commission($dir);
+		
+		$this->_make_billing_files($sepa_accs, $salesmen);
 
 	}
 
 
 
 	/*
-	 * Initialise models for this billing cycle
+	 * Initialise models for this billing cycle (could also be done during runtime but with performance degradation)
 	 */
 	private function _init($sepa_accs, $salesmen, $conf)
 	{
-		// init salesmen here because of performance (only 1 DB query)
+		// Salesmen
 		$prod_types = Product::getPossibleEnumValues('type');
 		unset($prod_types['Credit']);
 
 		foreach ($salesmen as $key => $sm)
+		{
 			$sm->all_prod_types = $prod_types;
+			// directory to save file
+			$sm->dir = $this->dir;
+		}
+
+		// SepaAccount
+		foreach ($sepa_accs as $acc)
+		{
+			$acc->dir = $this->dir;
+			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+5 days'));
+		}
 
 
 		// actual invoice nr counters
@@ -247,7 +251,8 @@ class accountingCommand extends Command {
 				}
 
 				$nr = AccountingRecord::where('sepa_account_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
-				$acc->invoice_nr = $nr->invoice_nr;
+				if (is_object($nr))
+					$acc->invoice_nr = $nr->invoice_nr;
 			}
 		}
 		// first run for this system
@@ -261,6 +266,19 @@ class accountingCommand extends Command {
 		}
 	}
 
+
+	/*
+	 * stores all billing files besides invoices in the directory defined as property of this class
+	 */
+	private function _make_billing_files($sepa_accs, $salesmen)
+	{
+		foreach ($sepa_accs as $acc)
+			$acc->make_billing_files();
+
+		$salesmen[0]->prepare_output_file();
+		foreach ($salesmen as $sm)
+			$sm->print_commission();
+	}
 
 
 	/**
@@ -290,10 +308,10 @@ class accountingCommand extends Command {
  * Programming Notes
  */
 
-// $this->logger = new Logger('Billing');
-// $this->logger->pushHandler(new StreamHandler(storage_path().'/logs/billing-'.date('Y-m').'.log'), Logger::DEBUG, false);
+// $logger = new Logger('Billing');
+// $logger->pushHandler(new StreamHandler(storage_path().'/logs/billing-'.date('Y-m').'.log'), Logger::DEBUG, false);
 
 // switch ($this->argument('cycle'))
 // {
 // 	case 1:
-// $this->logger->addInfo('Cycle without TV items/products');
+// $logger->addInfo('Cycle without TV items/products');

@@ -17,16 +17,7 @@ class CompanyController extends \BaseModuleController {
 		if (!$model)
 			$model = new Company;
 
-		$files = $model->billing_files();
-		// dd($files);
-		$logos = $files['logo'];
-		$templates = $files['template'];
-
-		// TODO: Translation
-		$help = 'The Text of the separate four "Invoice Text"-Fields is automatically chosen dependent of the total charge and SEPA
-				Mandate and is set in the appropriate Invoice for the Customer.
-				It is possible to use all data field keys of the Bill Class as placeholder in the form of {fieldname} to build a kind of
-				template. These are replaced by the actual value of the Invoice.';
+		$logos = $model->logos();
 
 		// label has to be the same like column in sql table
 		return array(
@@ -50,15 +41,10 @@ class CompanyController extends \BaseModuleController {
 			array('form_type' => 'text', 'name' => 'tax_id_nr', 'description' => 'Sales Tax Id Nr'),
 			array('form_type' => 'text', 'name' => 'tax_nr', 'description' => 'Tax Nr', 'space' => '1'),
 
-			array('form_type' => 'text', 'name' => 'invoice_text_sepa_positiv', 'description' => 'Invoice Text for positiv Amount with Sepa Mandate', 'help' => $help),
-			array('form_type' => 'text', 'name' => 'invoice_text_sepa_negativ', 'description' => 'Invoice Text for negativ Amount with Sepa Mandate'),
-			array('form_type' => 'text', 'name' => 'invoice_text_positiv', 'description' => 'Invoice Text for positiv Amount without Sepa Mandate'),
-			array('form_type' => 'text', 'name' => 'invoice_text_negativ', 'description' => 'Invoice Text for negativ Amount without Sepa Mandate'),
-			array('form_type' => 'text', 'name' => 'transfer_reason', 'description' => 'Transfer Reason for Invoices', 'space' => '1'),
+			array('form_type' => 'text', 'name' => 'transfer_reason', 'description' => 'Transfer Reason for Invoices', 'space' => '1', 'help' => 'Template from all Invoice class data field keys'),
 
 			array('form_type' => 'select', 'name' => 'logo', 'description' => 'Choose logo', 'value' => $logos),
-			array('form_type' => 'select', 'name' => 'template', 'description' => 'Choose template file for invoice', 'value' => $templates),
-			array('form_type' => 'file', 'name' => 'upload', 'description' => 'Upload logo or template'),
+			array('form_type' => 'file', 'name' => 'logo_upload', 'description' => 'Upload logo'),
 
 		);
 	}
@@ -69,7 +55,7 @@ class CompanyController extends \BaseModuleController {
 	public function store($redirect = true)
 	{
 		// check and handle uploaded firmware files
-		$this->handle_file_upload('upload', '/tftpboot/bill/');
+		$this->handle_file_upload('logo', '/tftpboot/bill/logo/');
 
 		// finally: call base method
 		return parent::store();
@@ -77,22 +63,22 @@ class CompanyController extends \BaseModuleController {
 
 	public function update($id)
 	{
-		$this->handle_file_upload('upload', '/tftpboot/bill/');
+		$this->handle_file_upload('logo', '/tftpboot/bill/logo/');
 
 		return parent::update($id);
 	}
 
 	// Also overwritten because we don't want a field to be updated, just upload a file
-	protected function handle_file_upload($field, $dst_path)
-	{
-		if (Input::hasFile($field))
-		{
-			// get filename
-			$filename = Input::file($field)->getClientOriginalName();
+	// protected function handle_file_upload($field, $dst_path)
+	// {
+	// 	if (Input::hasFile($field))
+	// 	{
+	// 		// get filename
+	// 		$filename = Input::file($field)->getClientOriginalName();
 
-			// move file
-			Input::file($field)->move($dst_path, $filename);
-		}
-	}
+	// 		// move file
+	// 		Input::file($field)->move($dst_path, $filename);
+	// 	}
+	// }
 
 }

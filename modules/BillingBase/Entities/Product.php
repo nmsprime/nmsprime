@@ -39,7 +39,24 @@ class Product extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		return $this->type.' - '.$this->name.' | '.$this->price.' €';
+		// return $this->type.' - '.$this->name.' | '.$this->price.' €';
+
+		switch ($this->type)
+		{
+			case 'Internet':	$bsclass = 'info'; break; // online
+			case 'TV': $bsclass = 'warning'; break; // warning
+			case 'Voip': $bsclass = 'success'; break; // critical
+			case 'Device': $bsclass = 'warning'; $status = 'offline'; break; // offline
+			case 'Credit': $bsclass = 'danger'; $status = 'offline'; break; // offline
+			case 'Other': $bsclass = 'info'; $status = 'offline'; break; // offline
+
+			default: $bsclass = 'danger'; break;
+		}
+
+		return ['index' => [$this->type, $this->name, $this->price],
+		        'index_header' => ['Type', 'Name', 'Price'],
+		        'bsclass' => $bsclass,
+		        'header' => $this->type.' - '.$this->name.' | '.$this->price.' €'];
 	}
 
 	// Return a pre-formated index list
@@ -75,8 +92,8 @@ class Product extends \BaseModel {
 	/**
 	 * Returns an array with all ids of a specific product type
 	 * Note: until now only Internet & Voip is needed
-	 * @param product type
-	 * @return array of id's
+	 * @param String/Enum 	product type
+	 * @return Array 		of id's
 	 *
 	 * @author Nino Ryschawy
 	 */

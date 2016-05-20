@@ -3,6 +3,7 @@
 namespace Modules\BillingBase\Entities;
 use Modules\ProvBase\Entities\Contract;
 use DB;
+use Storage;
 
 class SepaMandate extends \BaseModel {
 
@@ -15,7 +16,7 @@ class SepaMandate extends \BaseModel {
 		return array(
 			'signature_date' 	=> 'date',
 			'sepa_iban' 		=> 'required|iban',
-			'sepa_bic' 			=> 'required|bic',
+			'sepa_bic' 			=> 'bic',			// see SepaMandateController@prep_rules
 			// 'sepa_institute' 	=> ,
 			'sepa_valid_from' 	=> 'date',
 			'sepa_valid_to'		=> 'dateornull'
@@ -77,11 +78,29 @@ class SepaMandate extends \BaseModel {
 	 * Other Functions
 	 */
 
-	// Checks if item has valid dates in last month
-	public function check_validity($start = '', $end = '')
+
+	/**
+	 * Returns start time of item - Note: sepa_valid_from field has higher priority than created_at
+	 *
+	 * @return integer 		time in seconds after 1970
+	 */
+	public function get_start_time()
 	{
-		return parent::check_validity('sepa_valid_from', 'sepa_valid_to');
+		$date = $this->sepa_valid_from && $this->sepa_valid_from != '0000-00-00' ? $this->sepa_valid_from : $this->created_at->toDateString();
+		return strtotime($date);
 	}
+
+
+	/**
+	 * Returns start time of item - Note: sepa_valid_from field has higher priority than created_at
+	 *
+	 * @return integer 		time in seconds after 1970
+	 */
+	public function get_end_time()
+	{
+		return $this->sepa_valid_to && $this->sepa_valid_to != '0000-00-00' ? strtotime($this->sepa_valid_to) : null;
+	}
+
 
 }
 
@@ -98,12 +117,36 @@ class SepaMandateObserver
 
 	public function creating($mandate)
 	{
+		// build mandate reference from template
 		$mandate->reference = $this->build_mandate_ref($mandate);
+
+		$mandate->sepa_iban = strtoupper($mandate->sepa_iban);
+
+		// Set default values for empty fields
+		$mandate->sepa_bic  = $mandate->sepa_bic ? strtoupper($mandate->sepa_bic) : SepaAccount::get_bic($mandate->sepa_iban);
+
+		if (!$mandate->sepa_holder)
+		{
+			$contract = $mandate->contract;
+			$mandate->sepa_holder = $contract->firstname.' '.$contract->lastname;
+		}
 
 		if (!$mandate->signature_date)
 			$mandate->signature_date = date('Y-m-d');
+
 		if (!$mandate->sepa_valid_from)
-			$mandate->sepa_valid_from = date('Y-m-d');
+			$mandate->sepa_valid_from = date('Y-m-d', strtotime('next day'));
+
+
+		// set end date of old mandate to starting date of new mandate
+		$mandate_old = $mandate->contract->get_valid_mandate();
+
+		if ($mandate_old)
+		{
+			$mandate_old->sepa_valid_to = date('Y-m-d', strtotime('-1 day', strtotime($mandate->sepa_valid_from)));
+			$mandate_old->save();
+		}
+
 	}
 
 	public function updating($mandate)
@@ -111,13 +154,17 @@ class SepaMandateObserver
 		if (!$mandate->reference)
 			$mandate->reference = $this->build_mandate_ref($mandate);
 
-		if (!$mandate->reference)
-			$mandate->reference = $this->build_mandate_ref($mandate);
 		if (!$mandate->signature_date || $mandate->signature_date == '0000-00-00')
 			$mandate->signature_date = date('Y-m-d');
+
+		$mandate->sepa_iban = strtoupper($mandate->sepa_iban);
+		$mandate->sepa_bic  = $mandate->sepa_bic ? strtoupper($mandate->sepa_bic) : SepaAccount::get_bic($mandate->sepa_iban);
 	}
 
 
+	/**
+	 * Replaces placeholders from in Global Config defined mandate reference template with values of mandate or the related contract
+	 */
 	private function build_mandate_ref($mandate)
 	{
 		$template = BillingBase::first()->mandate_ref_template;

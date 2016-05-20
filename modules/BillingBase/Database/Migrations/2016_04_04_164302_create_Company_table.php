@@ -5,7 +5,7 @@ use Illuminate\Database\Migrations\Migration;
 
 class CreateCompanyTable extends BaseMigration {
 
-	private $dir = '/tftpboot/bill';
+	private $dir = '/tftpboot/bill/';
 	protected $tablename = 'company';
 	
 	/**
@@ -15,9 +15,11 @@ class CreateCompanyTable extends BaseMigration {
 	 */
 	public function up()
 	{
-		// creates directory for bill templates of the companies
-		if(!is_dir($this->dir))
-			mkdir ($this->dir, '0744');
+		// create directories for invoice templates and logos of the companies
+		if(!is_dir($this->dir.'logo/'))
+			mkdir ($this->dir.'logo/', '0700', true);
+		if(!is_dir($this->dir.'template/'))
+			mkdir ($this->dir.'template/', '0700', true);
 		system("/bin/chown -R apache ".$this->dir);
 
 		Schema::create('company', function(Blueprint $table)
@@ -44,14 +46,9 @@ class CreateCompanyTable extends BaseMigration {
 			$table->string('tax_id_nr');
 			$table->string('tax_nr');
 
-			$table->string('invoice_text_positiv');
-			$table->string('invoice_text_negativ');
-			$table->string('invoice_text_sepa_positiv');
-			$table->string('invoice_text_sepa_negativ');
 			$table->string('transfer_reason');
 
 			$table->string('logo');
-			$table->string('template');
 		});
 
 		$this->set_fim_fields(['name', 'street', 'zip', 'city', 'phone', 'fax', 'web', 'mail', 'registration_court_1', 'registration_court_2', 'registration_court_3', 'management', 'directorate', 'invoice_text_positiv', 'invoice_text_negativ', 'invoice_text_sepa_negativ', 'invoice_text_sepa_positiv']);

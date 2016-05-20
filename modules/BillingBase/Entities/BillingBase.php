@@ -12,7 +12,7 @@ class BillingBase extends \BaseModel {
 	public static function rules($id = null)
 	{
 		return array(
-			'rcd' 	=> 'numeric|between:1,31',
+			// 'rcd' 	=> 'numeric|between:1,28',
 			'tax' 	=> 'numeric|between:0,100'
 		);
 	}
