@@ -234,7 +234,12 @@ class ProvVoipEnvia extends \BaseModel {
 		elseif ($view_level == 'phonenumber') {
 			$contract_id = $model->mta->modem->contract->id;
 			$phonenumber_id = $model->id;
-			$phonenumbermanagement_id = $model->phonenumbermagement->id;
+			if (!is_null($model->phonenumbermanagement)) {
+				$phonenumbermanagement_id = $model->phonenumbermanagement->id;
+			}
+			else {
+				$phonenumbermanagement_id = null;
+			}
 			if (!is_null($model->phonenumbermanagement) && !is_null($model->phonenumbermanagement->phonebookentry)) {
 				$phonebookentry_id = $model->phonenumbermanagement->phonebookentry->id;
 			}
@@ -1160,15 +1165,21 @@ class ProvVoipEnvia extends \BaseModel {
 		$inner_xml->addChild('trc_class', $trc_class);
 
 		// special handling for incoming porting needed (comes from external table)
+		$carrier_in = CarrierCode::find($this->phonenumbermanagement->carrier_in)->carrier_code;
+		// on porting: check if valid CarrierIn chosen
 		if (boolval($this->phonenumbermanagement->porting_in)) {
-			$carrier_in = CarrierCode::find($this->phonenumbermanagement->carrier_in)->carrier_code;
-			if (CarrierCode::is_valid($carrier_in)) {
-				$inner_xml->addChild('carriercode', $carrier_in);
-			}
-			else {
+			if (!CarrierCode::is_valid($carrier_in)) {
 				throw new \InvalidArgumentException('ERROR: '.$carrier_code.' is not a valid carrier_code');
 			}
 		}
+		// if no porting (new number): CarrierIn has to be D057 (EnviaTEL)
+		else {
+			if ($carrier_in != 'D057') {
+				throw new \InvalidArgumentException('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
+			}
+			$carrier_in = 'D057';
+		}
+		$inner_xml->addChild('carriercode', $carrier_in);
 
 		$this->_add_sip_data($inner_xml->addChild('method'));
 	}
