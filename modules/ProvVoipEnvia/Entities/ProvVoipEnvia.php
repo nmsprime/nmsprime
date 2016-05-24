@@ -7,6 +7,7 @@ use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
 use Modules\ProvVoip\Entities\PhonebookEntry;
 use Modules\ProvVoip\Entities\CarrierCode;
+use Modules\ProvVoip\Entities\EkpCode;
 use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
@@ -1171,15 +1172,27 @@ class ProvVoipEnvia extends \BaseModel {
 			if (!CarrierCode::is_valid($carrier_in)) {
 				throw new \InvalidArgumentException('ERROR: '.$carrier_code.' is not a valid carrier_code');
 			}
+			$inner_xml->addChild('carriercode', $carrier_in);
 		}
-		// if no porting (new number): CarrierIn has to be D057 (EnviaTEL)
+		// if no porting (new number): CarrierIn has to be D057 (EnviaTEL) (API 1.4 and higher)
 		else {
-			if ($carrier_in != 'D057') {
-				throw new \InvalidArgumentException('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
+			if ($this->api_version >= 1.4) {
+				if ($carrier_in != 'D057') {
+					throw new \InvalidArgumentException('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
+				}
+				$carrier_in = 'D057';
+				$inner_xml->addChild('carriercode', $carrier_in);
 			}
-			$carrier_in = 'D057';
 		}
-		$inner_xml->addChild('carriercode', $carrier_in);
+
+		// in API 1.4 and higher we also need the EKP code for incoming porting
+		if ($this->api_version >= 1.4) {
+
+			if (boolval($this->phonenumbermanagement->porting_in)) {
+				$ekp_in = EkpCode::find($this->phonenumbermanagement->ekp_in)->ekp_code;
+				$inner_xml->addChild('ekp_code', $ekp_in);
+			}
+		}
 
 		$this->_add_sip_data($inner_xml->addChild('method'));
 	}
