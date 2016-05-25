@@ -60,24 +60,30 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	public static function prettify_xml($xml, $hide_credentials=True) {
 
-		// replace username and password by some hash signs
-		if ($hide_credentials) {
-
-			// attention: there can also be <username> and <password> in <sip_data>
-			// so we have to include reseller_identifier into the regex (to extract the correct tag for replacing)
-			$regex = '/(<reseller_identifier>.*)(<username>.*<\/username>)(.*<\/reseller_identifier>)/';
-			$replacement = '${1}<username>################</username>${3}';
-			$xml = preg_replace($regex, $replacement, $xml);
-
-			$regex = '/(<reseller_identifier>.*)(<password>.*<\/password>)(.*<\/reseller_identifier>)/';
-			$replacement = '${1}<password>################</password>${3}';
-			$xml = preg_replace($regex, $replacement, $xml);
-		}
-
 		$dom = new \DOMDocument('1.0');
 		$dom->preserveWhiteSpace = false;
 		$dom->formatOutput = true;
 		$dom->loadXML($xml);
+
+		// replace username and password by some hash signs
+		// this replaces the former preg_replace variant which crashes on larger EnviaOrderDocument uploads.
+		// also this is more elegant and should also be faster
+		if ($hide_credentials) {
+		$reseller_identifiers = $dom->getElementsByTagName('reseller_identifier');
+			foreach ($reseller_identifiers as $reseller_identifier) {
+
+				$users = $reseller_identifier->getElementsByTagName('username');
+				foreach ($users as $user) {
+					$user->nodeValue = "################";
+				}
+
+				$pws = $reseller_identifier->getElementsByTagName('password');
+				foreach ($pws as $pw) {
+					$pw->nodeValue = "################";
+				}
+			}
+		}
+
 		$pretty = htmlentities($dom->saveXML());
 		$lines = explode("\n", $pretty);
 
