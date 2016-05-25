@@ -360,9 +360,9 @@ class Item extends \BaseModel {
 		if (!$ratio)
 			return null;
 
-		$count = $this->count ? $this->count : 1;
+		$this->count = $this->count ? $this->count : 1;
 
-		$this->charge = $this->product->type == 'Credit' ?  (-1) * $this->credit_amount : $this->product->price * $ratio * $count;
+		$this->charge = $this->product->type == 'Credit' ?  (-1) * $this->credit_amount : $this->product->price * $ratio * $this->count;
 		$this->ratio  = $ratio ? $ratio : 1;
 		$this->invoice_description = $this->product->name.' '.$text;
 

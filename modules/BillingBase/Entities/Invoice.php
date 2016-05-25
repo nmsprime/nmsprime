@@ -111,16 +111,17 @@ class Invoice {
 		// TODO: Add other currencies here
 		$this->currency	= strtolower($config->currency) == 'eur' ? '€' : $config->currency;
 		$this->tax		= $config->tax;
-		$this->dir 		.= $contract->number;
+		$this->dir 		.= $contract->id.'/';
 
 		$this->logger = new BillingLogger;
 	}
 
 	public function add_item($item) 
 	{
-		$count = $item->count ? $item->count : 1;
-		$this->data['item_table_positions'] .= $count.' & '.$item->invoice_description.' & '.round($item->charge/$count, 2).$this->currency.' & '.($item->charge).$this->currency.'\\\\';
+		// $count = $item->count ? $item->count : 1;
+		$this->data['item_table_positions'] .= $item->count.' & '.$item->invoice_description.' & '.round($item->charge/$item->count, 2).$this->currency.' & '.($item->charge).$this->currency.'\\\\';
 	}
+
 
 	public function set_mandate($mandate)
 	{
