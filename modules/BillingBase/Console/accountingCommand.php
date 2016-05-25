@@ -5,7 +5,7 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-use File;
+use Storage;
 use DB;
 
 use Modules\ProvBase\Entities\Contract;
@@ -61,7 +61,7 @@ class accountingCommand extends Command {
 
 		);
 
-		$this->dir .= date('Y_m').'/';
+		$this->dir .= date('Y-m').'/';
 
 		parent::__construct();
 
@@ -109,10 +109,6 @@ class accountingCommand extends Command {
 		{
 			// debugging output
 			var_dump($c->id); //, round(microtime(true) - $start, 4));
-			// dd(date('Y-m-d', strtotime('next day')));
-			// dd(strtotime(date('2016-04-01')), strtotime(date('2016-03-31 23:59:59')));
-			// dd(strtotime('0000-00-00'), strtotime(null), date('Y-m-d', strtotime('last year')));
-			// dd(date('z', strtotime(date('Y-12-31'))), date('Y-m-d', strtotime('last month')), date('L'), date('Y-m-d', strtotime('first day of last month')));
 
 
 			// Skip invalid contracts
@@ -166,7 +162,7 @@ class accountingCommand extends Command {
 
 				// save to accounting table (as backup for future) - NOTE: invoice nr counters are set initially from that table
 				$rec = new AccountingRecord;
-				$rec->store($item, $acc);
+				$rec->store_item($item, $acc);
 
 				// add item to accounting records of account, invoice and salesman
 				$acc->add_accounting_record($item);
@@ -175,6 +171,7 @@ class accountingCommand extends Command {
 					$salesmen->find($c->salesman_id)->add_item($item);
 
 			} // end of item loop
+
 
 			// get actual valid sepa mandate
 			$mandate = $c->get_valid_mandate();
@@ -212,8 +209,10 @@ class accountingCommand extends Command {
 
 
 
-	/*
+	/**
 	 * Initialise models for this billing cycle (could also be done during runtime but with performance degradation)
+	 	* invoice number counter
+	 	* storage directories
 	 */
 	private function _init($sepa_accs, $salesmen, $conf)
 	{

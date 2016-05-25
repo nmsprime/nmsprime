@@ -14,7 +14,7 @@ class SepaAccount extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'sepaaccount';
 
-    public $guarded = ['template_upload'];
+    public $guarded = ['template_invoice_upload', 'template_cdr_upload'];
 
 	// Add your validation rules here
 	public static function rules($id = null)
@@ -90,13 +90,14 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function templates()
 	{
-		$files_raw  = glob("/tftpboot/bill/template/*");
+		// $files_raw  = glob("/tftpboot/bill/template/*");
+		$files_raw = Storage::files('config/billingbase/template');
 		$templates 	= array(null => "None");
 
 		// extract filename
 		foreach ($files_raw as $file) 
 		{
-			if (is_file($file))
+			if (is_file(storage_path('app/'.$file)))
 			{
 				$parts = explode("/", $file);
 				$filename = array_pop($parts);
@@ -446,8 +447,8 @@ class SepaAccount extends \BaseModel {
 
 	private function _log($name, $pathname)
 	{
-		$path = storage_path('app');
-		echo "stored $name in $path"."$pathname\n";
+		$path = storage_path('app/');
+		echo "Stored $name in $path"."$pathname\n";
 		$this->logger->addInfo("Successfully stored $name in $path"."$pathname \n");		
 	}
 
@@ -593,7 +594,7 @@ class SepaAccount extends \BaseModel {
 	public static function str_sanitize($string)
 	{
 		$string = str_replace(' ', '_', $string);
-		return preg_replace("/[^a-zA-Z0-9.\/_]/", "", $string);
+		return preg_replace("/[^a-zA-Z0-9.\/_-]/", "", $string);
 	}
 
 

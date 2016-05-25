@@ -87,6 +87,7 @@ class fetchBicCommand extends Command {
 		Storage::put($file, implode("\n", $data));
 		Storage::delete('tmp/data.xlsx');
 		echo 'Successfully created '.storage_path('app/').$file."\n";
+		system("/bin/chown -R apache ".storage_path('app/config/billingbase'));
 
 	}
 

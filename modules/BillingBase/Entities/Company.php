@@ -1,6 +1,7 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+use Storage;
 
 class Company extends \BaseModel {
 
@@ -72,7 +73,8 @@ class Company extends \BaseModel {
 	public function logos() 
 	{
 		// get all available files
-		$files_raw  = glob("/tftpboot/bill/logo/*");
+		// $files_raw  = glob("/tftpboot/bill/logo/*");
+		$files_raw  = Storage::files('config/billingbase/logo/');
 		$files 		= array(null => "None");
 
 		// $files_raw = glob("/tftpboot/bill/*");
@@ -99,7 +101,7 @@ class Company extends \BaseModel {
 		// extract filename
 		foreach ($files_raw as $file) 
 		{
-			if (is_file($file))
+			if (is_file(storage_path('app/'.$file)))
 			{
 				$parts = explode("/", $file);
 				$filename = array_pop($parts);

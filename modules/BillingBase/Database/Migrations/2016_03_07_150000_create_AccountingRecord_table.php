@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 class CreateAccountingRecordTable extends BaseMigration {
 
 	// name of the table to create
-	protected $tablename = "accounting_record";
+	protected $tablename = "accountingrecord";
 
 	/**
 	 * Run the migrations.

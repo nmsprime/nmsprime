@@ -55,7 +55,7 @@ class CompanyController extends \BaseModuleController {
 	public function store($redirect = true)
 	{
 		// check and handle uploaded firmware files
-		$this->handle_file_upload('logo', '/tftpboot/bill/logo/');
+		$this->handle_file_upload('logo', storage_path('/app/config/billingbase/logo/'));
 
 		// finally: call base method
 		return parent::store();
@@ -63,7 +63,7 @@ class CompanyController extends \BaseModuleController {
 
 	public function update($id)
 	{
-		$this->handle_file_upload('logo', '/tftpboot/bill/logo/');
+		$this->handle_file_upload('logo', storage_path('/app/config/billingbase/logo/'));
 
 		return parent::update($id);
 	}
