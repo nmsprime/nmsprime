@@ -5,7 +5,7 @@ use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\Product;
 use Config;
 
-class ItemController extends \BaseModuleController {
+class ItemController extends \BaseController {
 
 	/**
 	 * defines the formular fields for the edit and create view

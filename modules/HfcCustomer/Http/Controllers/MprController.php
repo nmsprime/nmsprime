@@ -4,7 +4,7 @@ use Pingpong\Modules\Routing\Controller;
 use Modules\Hfccustomer\Entities\MprGeopos;
 
 
-class MprController extends \BaseModuleController {
+class MprController extends \BaseController {
 
     /**
      * defines the formular fields for the edit and create view

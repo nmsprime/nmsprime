@@ -5,7 +5,7 @@ use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\CostCenter;
 use Modules\BillingBase\Entities\SepaAccount;
 
-class CostCenterController extends \BaseModuleController {
+class CostCenterController extends \BaseController {
 
     /**
      * defines the formular fields for the edit and create view

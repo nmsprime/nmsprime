@@ -3,7 +3,7 @@
 use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\BillingBase;
 
-class BillingBaseController extends \BaseModuleController {
+class BillingBaseController extends \BaseController {
 
 	public $name = 'BillingBase';
 

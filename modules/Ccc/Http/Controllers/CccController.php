@@ -1,7 +1,7 @@
 <?php namespace Modules\Ccc\Http\Controllers;
 
 
-class CccController extends \BaseModuleController {
+class CccController extends \BaseController {
 
 	// Constructor
 	public function show()
