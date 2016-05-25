@@ -101,6 +101,8 @@ class accountingCommand extends Command {
 		// init product types of salesmen and invoice nr counters for each sepa account
 		$this->_init($sepa_accs, $salesmen, $conf);
 
+		// get call data records ordered
+		$cdrs = $this->_parse_cdr_file();
 		
 		/*
 		 * Loop over all Contracts
@@ -180,7 +182,49 @@ class accountingCommand extends Command {
 				$logger->addNotice('Contract '.$c->number.' has no valid sepa mandate', [$c->id]);
 
 
-			// Add contract specific data for billing files
+			// Add Call Data Records - calculate charge and count
+			$charge = $calls = 0;
+
+			if (isset($cdrs[$c->id]))
+			{
+				foreach ($cdrs[$c->id] as $entry)
+				{
+					$charge += $entry[5];
+					$calls++;
+				}
+			}
+
+			if ($charge)
+			{
+				// accounting record
+				$acc = $sepa_accs->find($c->costcenter->sepa_account_id);
+				$rec = new AccountingRecord;
+				$rec->add_cdr($c, $acc, $charge, $calls);
+				$acc->add_cdr_accounting_record($c, $charge, $calls);
+
+				// invoice
+				$acc->add_invoice_cdr($c, $cdrs[$c->id], $conf);
+
+				// increase charge for booking record
+				if (isset($c->charge[$acc->id]))
+				{
+					$c->charge[$acc->id]['net'] += $charge;
+					$c->charge[$acc->id]['tax'] += $charge * $conf->tax/100;
+				}
+				else
+				{
+					// this case should never happen
+					$logger->addAlert('Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
+					$c->charge[$acc->id]['net'] = $charge;
+					$c->charge[$acc->id]['tax'] = $charge * $conf->tax/100;
+					$acc->invoice_nr += 1;
+				}
+
+			}
+
+
+
+			// Add contract specific data for accounting files
 			foreach ($c->charge as $acc_id => $value)
 			{
 				$value['net'] = round($value['net'], 2);
@@ -278,6 +322,64 @@ class accountingCommand extends Command {
 		foreach ($salesmen as $sm)
 			$sm->print_commission();
 	}
+
+	/**
+	 * Calls cdrCommand to get Call data records from Envia and extracts relevant data
+	 *
+	 * @return array calls (time, phonenr) indexed by contract id
+	 */
+	private function _parse_cdr_file()
+	{
+		$data  = [];
+		$csv   = [];
+		$files = Storage::files($this->dir);
+		$bool  = true;
+
+		// check if file is already loaded
+		foreach ($files as $file)
+		{
+			if (strpos(basename($file), 'xxxxxxx') !== false)
+    		{
+    			$csv = file(storage_path('app/'.$file));
+    			break;
+    		}
+    	}
+
+    	if (!$csv)
+    	{
+			// get call data records
+			$ret = $this->call('billing:cdr');
+
+			if ($ret)
+				return array(array());
+
+			$files = Storage::files($this->dir);
+
+			foreach ($files as $file)
+			{
+				if (strpos(basename($file), 'xxxxxxx') !== false)
+	    		{
+	    			$csv = file(storage_path('app/'.$file));
+	    			break;
+	    		}
+	    	}
+    	}
+
+		foreach ($csv as $line)
+		{
+			// skip first line
+			if ($bool)
+			{
+				$bool = false;
+				continue;
+			}
+
+			$line = str_getcsv($line, ';');
+			$data[intval($line[0])][] = array($line[3], substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $line[7], str_replace(',', '.', $line[10]));
+		}	
+
+		return $data;
+    }
 
 
 	/**

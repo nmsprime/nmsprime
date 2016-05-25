@@ -274,11 +274,41 @@ class SepaAccount extends \BaseModel {
 	}
 
 
+	public function add_cdr_accounting_record($contract, $charge, $count)
+	{
+		$this->acc_recs['tariff'][] = array(
+			'Contractnr' 	=> $contract->number,
+			'Invoicenr' 	=> $this->get_invoice_nr_formatted(),
+			'Target Month' 	=> date('m'),
+			'Date' 			=> date('Y-m-d'),
+			'Cost Center'  	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
+			'Count'			=> $count,
+			'Description'  	=> 'Telephone Calls',
+			'Price' 		=> $charge,
+			'Firstname'		=> $contract->firstname,
+			'Lastname' 		=> $contract->lastname,
+			'Street' 		=> $contract->street,
+			'Zip' 			=> $contract->zip,
+			'City' 			=> $contract->city,
+			);
+	}
+
+
 	public function add_invoice_item($item, $conf)
 	{
 		if (!isset($this->invoices[$item->contract->id]))
 			$this->invoices[$item->contract->id] = new Invoice($item->contract, $conf, $this->get_invoice_nr_formatted());
+
 		$this->invoices[$item->contract->id]->add_item($item);
+	}
+
+	public function add_invoice_cdr($contract, $cdrs, $conf)
+	{
+		if (!isset($this->invoices[$contract->id]))
+			// $this->logger->addAlert('No Invoice data genererated for contract '.$contract->number.' but call data records exist', [$contract->id]);
+			$this->invoices[$contract->id] = new Invoice($contract, $conf, '');
+
+		$this->invoices[$contract->id]->cdrs = $cdrs;
 	}
 
 
