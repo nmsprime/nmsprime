@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\View;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
 
-class EnviaOrderController extends \BaseModuleController {
+class EnviaOrderController extends \BaseController {
 
 	/* protected $index_create_allowed = false; */
 

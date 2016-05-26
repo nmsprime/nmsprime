@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\View;
 
 use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
 
-class ProvVoipEnviaController extends \BaseModuleController {
+class ProvVoipEnviaController extends \BaseController {
 
 	// TODO: @Patrick Reichel: is this field required ?
 	public $name = 'VOIP';

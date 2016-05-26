@@ -4,7 +4,7 @@ namespace Modules\Billingbase\Http\Controllers;
 use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Entities\Product;
 
-class SalesmanController extends \BaseModuleController {
+class SalesmanController extends \BaseController {
 
     /**
      * defines the formular fields for the edit and create view
