@@ -35,7 +35,7 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 	/**
 	 * defines the formular fields for the edit and create view
 	 */
-	public function get_form_fields($model = null) {
+	public function view_form_fields($model = null) {
 
 		/* dd($model->enviaorder()); */
 		/* dd($model); */
@@ -52,7 +52,7 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 	 * Overwrites the base method => we need to handle file uploads
 	 * @author Patrick Reichel
 	 */
-	protected function store($redirect=true) {
+	public function store($redirect=true) {
 
 		// check and handle uploaded documents
 		// perform only if file is uploaded, otherwise let the model decide what to do
@@ -72,15 +72,9 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 	 */
 	public function show($id) {
 
-		// TODO: outsource to own controller/method?
-		try {
-			// this needs view rights; edit rights are checked in store/update methods!
-			$this->_check_permissions("view");
-			$this->_check_permissions("view", "Modules\ProvVoipEnvia\Entities\ProvVoipEnvia");
-		}
-		catch (PermissionDeniedError $ex) {
-			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
-		}
+		// check if user has the right to perform actions against Envia API
+		\App\Http\Controllers\BaseAuthController::auth_check('view', $this->get_model_name());
+		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$enviaorderdocument = EnviaOrderDocument::findOrFail($id);
 		$contract_id = $enviaorderdocument->enviaorder->contract_id;
@@ -103,15 +97,9 @@ class EnviaOrderDocumentController extends \BaseModuleController {
 
 	public function edit($id) {
 
-		// TODO: outsource to own controller/method?
-		try {
-			// this needs view rights; edit rights are checked in store/update methods!
-			$this->_check_permissions("view");
-			$this->_check_permissions("view", "Modules\ProvVoipEnvia\Entities\ProvVoipEnvia");
-		}
-		catch (PermissionDeniedError $ex) {
-			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
-		}
+		// check if user has the right to perform actions against Envia API
+		\App\Http\Controllers\BaseAuthController::auth_check('view', $this->get_model_name());
+		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$document = EnviaOrderDocument::findOrFail($id);
 

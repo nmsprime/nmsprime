@@ -9,7 +9,7 @@ class EnviaOrderDocument extends \BaseModel {
 	public $table = 'enviaorderdocument';
 
 	// where to save the uploaded documents (relative to /storage/app)
-	public static $document_base_path = "data/modules/provvoipenvia/EnviaOrderDocuments";
+	public static $document_base_path = "data/provvoipenvia/EnviaOrderDocuments";
 
 	public static $allowed_mimetypes = array(
 		'application/msword',
@@ -47,13 +47,13 @@ class EnviaOrderDocument extends \BaseModel {
 	];
 
 	// Name of View
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'EnviaOrderDocuments';
 	}
 
 	// link title in index view
-	public function get_view_link_title()
+	public function view_index_label()
 	{
 		return $this->created_at.': '.$this->document_type.' ('.$this->upload_order_id.')';
 	}

@@ -184,7 +184,7 @@ class CustomerTopoController extends TreeController {
 	public function show_diagrams ($modems)
 	{
 		// check if ProvMon is installed
-		if (!\BaseModel::__module_is_active('ProvMon'))
+		if (!\PPModule::is_active('ProvMon'))
 			return \View::make('errors.generic')->with('message', 'Module Provisioning Monitoring (ProvMon) not installed');
 
 		// load a new ProvMon object

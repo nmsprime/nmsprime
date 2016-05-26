@@ -223,7 +223,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->extract_environment($model, $view_level);
 
 		// helpers
-		$base = "/lara/provvoipenvia/request/";
+		$base = "/lara/admin/provvoipenvia/request/";
 		if ($view_level == 'phonenumbermanagement') {
 			$contract_id = $model->phonenumber->mta->modem->contract->id;
 			$phonenumber_id = $model->phonenumber_id;

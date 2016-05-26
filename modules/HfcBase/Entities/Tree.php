@@ -20,22 +20,32 @@ class Tree extends \BaseModel {
 			'pos' => 'geopos'
 		);
 	}
-	
+
 	// Name of View
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'Tree Table';
 	}
 
 	// link title in index view
-	public function get_view_link_title()
+	public function view_index_label()
 	{
-		return $this->id.' : '.$this->type.' : '.$this->name.' '.$this->state.' - '.$this->get_native_cluster();
-	}	
+		$bsclass = 'success';
+
+		if ($this->state == 'YELLOW')
+			$bsclass = 'warning';
+		if ($this->state == 'RED')
+			$bsclass = 'danger';
+
+		return ['index' => [$this->id, $this->type, $this->name, $this->state, $this->pos, $this->descr],
+		        'index_header' => ['ID', 'Type', 'Name', 'State', 'Position', 'Description'],
+		        'bsclass' => $bsclass,
+		        'header' => $this->id.':'.$this->type.':'.$this->name];
+	}
 
     public function modems()
     {
-        if ($this->module_is_active('ProvBase'))
+        if (\PPModule::is_active('ProvBase'))
             return $this->hasMany('Modules\ProvBase\Entities\Modem');
 
         return null;
@@ -44,7 +54,7 @@ class Tree extends \BaseModel {
    	// Relation to MPRs Modem Positioning Rules
 	public function mprs()
 	{
-		if ($this->module_is_active('HfcCustomer'))
+		if (\PPModule::is_active('HfcCustomer'))
 			return $this->hasMany('Modules\HfcCustomer\Entities\Mpr');
 
 		return null;
@@ -56,7 +66,7 @@ class Tree extends \BaseModel {
 	 */
 	public function view_has_many()
 	{
-		if ($this->module_is_active('HfcCustomer'))
+		if (\PPModule::is_active('HfcCustomer'))
 			return array(
 					'Mpr' => $this->mprs
 				);
@@ -101,7 +111,7 @@ class Tree extends \BaseModel {
 
     // TODO: rename, avoid recursion
     public function get_non_location_parent($layer='')
-    {   
+    {
         return $this->get_parent();
 
 
@@ -133,7 +143,7 @@ class Tree extends \BaseModel {
 	 * Returns all available firmware files (via directory listing)
 	 * @author Patrick Reichel
 	 */
-	public function kml_files() 
+	public function kml_files()
 	{
 		// get all available files
 		$kml_files_raw = glob($this->kml_path.'/*');
@@ -207,10 +217,10 @@ class Tree extends \BaseModel {
     	$trees = Tree::all();
 
 		\Log::info('nms: build net and cluster index of all tree objects');
-		
-		$i = 1; 
+
+		$i = 1;
 		$num = count ($trees);
-		
+
 		foreach ($trees as $tree)
 		{
 			$debug = "nms: tree - rebuild net and cluster index $i of $num - id ".$tree->id;

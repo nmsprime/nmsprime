@@ -9,6 +9,9 @@ use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
 
 class ProvVoipEnviaController extends \BaseModuleController {
 
+	// TODO: @Patrick Reichel: is this field required ?
+	public $name = 'VOIP';
+
 
 	/**
 	 * Constructor.
@@ -37,7 +40,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 		}
 
 		// build base URL of the envia API
-		$domain = $_ENV['PROVVOIPENVIA__REST_API_URL'];
+		$domain = isset($_ENV['PROVVOIPENVIA__REST_API_URL']) ? $_ENV['PROVVOIPENVIA__REST_API_URL'] : '';
 		$sub_url = '/api/rest/v1/';
 		$this->base_url = $domain.$sub_url;
 
@@ -117,15 +120,9 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 * temporary starter for xml generation
 	 */
 	public function index() {
-		//
-		// check for permissions
-		// TODO: if there are more levels of grants: don't forget to add this here
-		try {
-			$this->_check_permissions("view", "Modules\ProvVoipEnvia\Entities\ProvVoipEnvia");
-		}
-		catch (PermissionDeniedError $ex) {
-			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
-		}
+
+		// check if user has the right to perform actions against Envia API
+		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$base = "/lara/provvoipenvia/request";
 
@@ -585,14 +582,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 	 */
 	public function request($job) {
 
-		// check for permissions
-		// TODO: if there are more levels of grants: don't forget to add this here
-		try {
-			$this->_check_permissions("view", "Modules\ProvVoipEnvia\Entities\ProvVoipEnvia");
-		}
-		catch (PermissionDeniedError $ex) {
-			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
-		}
+		// check if user has the right to perform actions against Envia API
+		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$base_url = $this->base_url;
 
@@ -665,7 +656,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		$view_header = 'Request Envia';
 
-		$view_path = $this->get_view_name().'.request';
+		$view_path = static::get_view_name().'.request';
 
 		// check if job to do is allowed
 		// e.g. to prevent double contract creation on pressing <F5>
