@@ -34,7 +34,7 @@ class CreateSepaAccountTable extends BaseMigration {
 			$table->string('description');
 		});
 
-		$this->set_fim_fields(['name', 'holder', 'iban', 'bic', 'institute', 'description']);
+		$this->set_fim_fields(['name', 'holder', 'iban', 'bic', 'institute', 'invoice_headline', 'invoice_text', 'invoice_text_negativ', 'invoice_text_sepa_negativ', 'invoice_text_sepa', 'description']);
 
 	}
 

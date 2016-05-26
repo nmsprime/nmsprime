@@ -9,7 +9,7 @@ class EnviaOrderDocument extends \BaseModel {
 	public $table = 'enviaorderdocument';
 
 	// where to save the uploaded documents (relative to /storage/app)
-	public static $document_base_path = "modules/ProvVoipEnvia/EnviaOrderDocuments";
+	public static $document_base_path = "data/provvoipenvia/EnviaOrderDocuments";
 
 	public static $allowed_mimetypes = array(
 		'application/msword',

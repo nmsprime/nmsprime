@@ -17,9 +17,9 @@ class CreateCompanyTable extends BaseMigration {
 	{
 		// create directories for invoice templates and logos of the companies
 		if(!is_dir($this->dir.'logo/'))
-			mkdir ($this->dir.'logo/', '0700', true);
+			mkdir ($this->dir.'logo/', '0755', true);
 		if(!is_dir($this->dir.'template/'))
-			mkdir ($this->dir.'template/', '0700', true);
+			mkdir ($this->dir.'template/', '0755', true);
 		system("/bin/chown -R apache ".$this->dir);
 
 		Schema::create('company', function(Blueprint $table)
@@ -51,7 +51,7 @@ class CreateCompanyTable extends BaseMigration {
 			$table->string('logo');
 		});
 
-		$this->set_fim_fields(['name', 'street', 'zip', 'city', 'phone', 'fax', 'web', 'mail', 'registration_court_1', 'registration_court_2', 'registration_court_3', 'management', 'directorate', 'invoice_text_positiv', 'invoice_text_negativ', 'invoice_text_sepa_negativ', 'invoice_text_sepa_positiv']);
+		$this->set_fim_fields(['name', 'street', 'zip', 'city', 'phone', 'fax', 'web', 'mail', 'registration_court_1', 'registration_court_2', 'registration_court_3', 'management', 'directorate']);
 
 	}
 

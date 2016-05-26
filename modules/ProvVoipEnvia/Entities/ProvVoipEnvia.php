@@ -5,7 +5,9 @@ namespace Modules\ProvVoipEnvia\Entities;
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
+use Modules\ProvVoip\Entities\PhonebookEntry;
 use Modules\ProvVoip\Entities\CarrierCode;
+use Modules\ProvVoip\Entities\EkpCode;
 use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
@@ -16,7 +18,27 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Helper function to fake XML returns.
+	 * Constructor.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function __construct($attributes = array()) {
+
+		// this has to be a float value to allow stable version compares
+		$v = $_ENV['PROVVOIPENVIA__REST_API_VERSION'];
+		if (!is_numeric($v)) {
+			throw new \InvalidArgumentException('PROVVOIPENVIA__REST_API_VERSION in .env has to be a float value (e.g.: 1.4)');
+		};
+		$this->api_version = floatval($v);
+
+		// call \BaseModel's constructor
+		parent::__construct($attributes);
+
+	}
+
+
+	/**
+	 * Helper method to fake XML returns.
 	 * This will return a SimpleXML instance which can be used instead a real Envia answer.
 	 *
 	 * @author Patrick Reichel
@@ -38,24 +60,30 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	public static function prettify_xml($xml, $hide_credentials=True) {
 
-		// replace username and password by some hash signs
-		if ($hide_credentials) {
-
-			// attention: there can also be <username> and <password> in <sip_data>
-			// so we have to include reseller_identifier into the regex (to extract the correct tag for replacing)
-			$regex = '/(<reseller_identifier>.*)(<username>.*<\/username>)(.*<\/reseller_identifier>)/';
-			$replacement = '${1}<username>################</username>${3}';
-			$xml = preg_replace($regex, $replacement, $xml);
-
-			$regex = '/(<reseller_identifier>.*)(<password>.*<\/password>)(.*<\/reseller_identifier>)/';
-			$replacement = '${1}<password>################</password>${3}';
-			$xml = preg_replace($regex, $replacement, $xml);
-		}
-
 		$dom = new \DOMDocument('1.0');
 		$dom->preserveWhiteSpace = false;
 		$dom->formatOutput = true;
 		$dom->loadXML($xml);
+
+		// replace username and password by some hash signs
+		// this replaces the former preg_replace variant which crashes on larger EnviaOrderDocument uploads.
+		// also this is more elegant and should also be faster
+		if ($hide_credentials) {
+		$reseller_identifiers = $dom->getElementsByTagName('reseller_identifier');
+			foreach ($reseller_identifiers as $reseller_identifier) {
+
+				$users = $reseller_identifier->getElementsByTagName('username');
+				foreach ($users as $user) {
+					$user->nodeValue = "################";
+				}
+
+				$pws = $reseller_identifier->getElementsByTagName('password');
+				foreach ($pws as $pw) {
+					$pw->nodeValue = "################";
+				}
+			}
+		}
+
 		$pretty = htmlentities($dom->saveXML());
 		$lines = explode("\n", $pretty);
 
@@ -100,8 +128,10 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		$this->_get_model_data($view_level, $model);
-
 		$phonenumber_id = $this->phonenumbermanagement->phonenumber_id;
+		if (!is_null($this->phonenumbermanagement->phonebookentry)) {
+			$phonebookentry_id = $this->phonenumbermanagement->phonebookentry->id;
+		}
 		$contract_id = $this->contract->id;
 
 		/* // check for valid view_level and define get models to use */
@@ -164,6 +194,16 @@ class ProvVoipEnvia extends \BaseModel {
 			$this->voipaccount_available = False;
 		}
 
+		if (is_null($this->phonebookentry->external_creation_date)) {
+			$this->phonebookentry_created = False;
+			$this->phonebookentry_available = False;
+		}
+		else {
+			$this->phonebookentry_created = True;
+			$this->phonebookentry_available = True;
+		}
+
+
 	}
 
 
@@ -183,21 +223,45 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->extract_environment($model, $view_level);
 
 		// helpers
-		$base = "/lara/provvoipenvia/request/";
+		$base = "/lara/admin/provvoipenvia/request/";
 		if ($view_level == 'phonenumbermanagement') {
 			$contract_id = $model->phonenumber->mta->modem->contract->id;
 			$phonenumber_id = $model->phonenumber_id;
+			$phonenumbermanagement_id = $model->id;
+			if (!is_null($model->phonebookentry)) {
+				$phonebookentry_id = $model->phonebookentry->id;
+			}
 		}
 		elseif ($view_level == 'contract') {
 			$contract_id = $model->id;
+			$phonenumbermanagement_id = null;
 			$phonenumber_id = null;
+			$phonebookentry_id = null;
 		}
 		elseif ($view_level == 'phonenumber') {
 			$contract_id = $model->mta->modem->contract->id;
 			$phonenumber_id = $model->id;
+			if (!is_null($model->phonenumbermanagement)) {
+				$phonenumbermanagement_id = $model->phonenumbermanagement->id;
+			}
+			else {
+				$phonenumbermanagement_id = null;
+			}
+			if (!is_null($model->phonenumbermanagement) && !is_null($model->phonenumbermanagement->phonebookentry)) {
+				$phonebookentry_id = $model->phonenumbermanagement->phonebookentry->id;
+			}
+			else {
+				$phonebookentry_id = null;
+			}
+		}
+		elseif ($view_level == 'phonebookentry') {
+			$contract_id = $model->phonenumbermanagement->phonenumber->mta->modem->contract->id;
+			$phonenumber_id = $model->phonenumbermanagement->phonenumber_id;
+			$phonenumbermanagement_id = $model->phonenumbermanagement->id;
+			$phonebookentry_id = $model->id;
 		}
 		else {
-			throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumber|phonenumbermanagement]');
+			throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumber|phonenumbermanagement|phonebookentry]');
 		}
 
 		// add this to all actions that can be performed without extra confirmation
@@ -208,7 +272,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		////////////////////////////////////////
 		// misc jobs
-		if (in_array($view_level, ['contract', 'phonenumber', 'phonenumbermanagement'])) {
+		if (in_array($view_level, ['contract', 'phonenumber', 'phonenumbermanagement', 'phonebookentry'])) {
 			$ret = array(
 				array('class' => 'Misc'),
 				array('linktext' => 'Ping Envia API', 'url' => $base.'misc_ping'.$origin.$really),
@@ -243,6 +307,26 @@ class ProvVoipEnvia extends \BaseModel {
 				array_push($ret, array('linktext' => 'Get voice data', 'url' => $base.'contract_get_voice_data'.$origin.'&amp;contract_id='.$contract_id.$really));
 			}
 
+			// tariff can only be changed if contract exists and a tariff change is wanted
+			// TODO: implement checks for current change state; otherwise we get an error from Envia (change into the same tariff is not possible)
+			if ($this->contract_available) {
+				if (boolval($this->contract->next_voip_id)) {
+					if ($this->contract->voip_id != $this->contract->next_voip_id) {
+						array_push($ret, array('linktext' => 'Change tariff', 'url' => $base.'contract_change_tariff'.$origin.'&amp;contract_id='.$contract_id));
+					}
+				}
+			}
+
+			// variation can only be changed if contract exists and a variation change is wanted
+			// TODO: implement checks for current change state; otherwise we get an error from Envia (change into the same variation is not possible)
+			if ($this->contract_available) {
+				if (boolval($this->contract->next_voip_id)) {
+					if ($this->contract->voip_id != $this->contract->next_voip_id) {
+						array_push($ret, array('linktext' => 'Change variation', 'url' => $base.'contract_change_variation'.$origin.'&amp;contract_id='.$contract_id));
+					}
+				}
+			}
+
 		}
 
 
@@ -259,7 +343,12 @@ class ProvVoipEnvia extends \BaseModel {
 			if ($this->voipaccount_available) {
 				array_push($ret, array('linktext' => 'Terminate VoIP account', 'url' => $base.'voip_account_terminate'.$origin.'&amp;phonenumber_id='.$phonenumber_id));
 			};
+
+			if ($this->voipaccount_available) {
+				array_push($ret, array('linktext' => 'Update VoIP account', 'url' => $base.'voip_account_update'.$origin.'&amp;phonenumber_id='.$phonenumber_id));
+			};
 		}
+
 
 
 		////////////////////////////////////////
@@ -295,6 +384,20 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 		}
 
+
+		////////////////////////////////////////
+		// phonebookentry related jobs
+		if (in_array($view_level, ['phonenumbermanagement', 'phonebookentry'])) {
+
+			array_push($ret, array('class' => 'Phonebook entry'));
+
+			array_push($ret, array('linktext' => 'Get phonebook entry', 'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id));
+
+			if ($view_level == 'phonebookentry') {
+				array_push($ret, array('linktext' => 'Create/change phonebook entry', 'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id));
+			}
+
+		}
 
 		////////////////////////////////////////
 		// configuration related stuff
@@ -372,6 +475,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->mta = null;
 		$this->phonenumber = null;
 		$this->phonenumbermanagement = null;
+		$this->phonebookentry = null;
 
 		// level is irrelevant (e.g. for creating XML for a given contract_id
 		// this means: the initial model comes from a database search
@@ -395,7 +499,39 @@ class ProvVoipEnvia extends \BaseModel {
 				$this->modem = $this->mta->modem;
 				$this->contract = $this->modem->contract;
 				$this->phonenumbermanagement = $this->phonenumber->phonenumbermanagement;
+				$this->phonebookentry = $this->phonenumbermanagement->phonebookentry;
 			}
+
+			// entry point is phonenumbermanagement
+			$phonenumbermanagement_id = \Input::get('phonenumbermanagement_id', null);
+			if (!is_null($phonenumbermanagement_id)) {
+				$this->phonenumbermanagement = PhonenumberManagement::findOrFail($phonenumbermanagement_id);
+			}
+
+			// get related models
+			if (!is_null($this->phonenumbermanagement)) {
+				$this->phonebookentry = $this->phonenumbermanagement->phonebookentry;
+				$this->phonenumber= $this->phonenumbermanagement->phonenumber;
+				$this->mta = $this->phonenumber->mta;
+				$this->modem = $this->mta->modem;
+				$this->contract = $this->modem->contract;
+			}
+
+			// entry point is phonebookentry
+			$phonebookentry_id = \Input::get('phonebookentry_id', null);
+			if (!is_null($phonebookentry_id)) {
+				$this->phonebookentry = PhonebookEntry::findOrFail($phonebookentry_id);
+			}
+
+			// get related models
+			if (!is_null($this->phonebookentry)) {
+				$this->phonenumbermanagement = $this->phonebookentry->phonenumbermanagement;
+				$this->phonenumber= $this->phonenumbermanagement->phonenumber;
+				$this->mta = $this->phonenumber->mta;
+				$this->modem = $this->mta->modem;
+				$this->contract = $this->modem->contract;
+			}
+
 		}
 		// build relations starting with model contract
 		elseif (($level == 'contract') && (!is_null($model))) {
@@ -404,11 +540,13 @@ class ProvVoipEnvia extends \BaseModel {
 			$this->modem = new Modem();
 			$this->phonenumbermanagement = new PhonenumberManagement();
 			$this->phonenumber = new Phonenumber();
+			$this->phonebookentry = new PhonebookEntry();
 		}
 		// build relations starting with model phonenumbermanagement
 		elseif (($level == 'phonenumbermanagement') && !is_null($model)) {
 			$this->phonenumbermanagement = $model;
 			$this->phonenumber = $this->phonenumbermanagement->phonenumber;
+			$this->phonebookentry = new PhonebookEntry();
 			$this->mta = $this->phonenumber->mta;
 			$this->modem = $this->mta->modem;
 			$this->contract = $this->modem->contract;
@@ -416,7 +554,17 @@ class ProvVoipEnvia extends \BaseModel {
 		// build relations starting with model phonenumber
 		elseif (($level == 'phonenumber') && !is_null($model)) {
 			$this->phonenumbermanagement = new PhonenumberManagement();
+			$this->phonebookentry = new PhonebookEntry();
 			$this->phonenumber = $model;
+			$this->mta = $this->phonenumber->mta;
+			$this->modem = $this->mta->modem;
+			$this->contract = $this->modem->contract;
+		}
+		// build relations starting with model phonebookentry
+		elseif (($level == 'phonebookentry') && !is_null($model)) {
+			$this->phonebookentry = $model;
+			$this->phonenumbermanagement = $this->phonebookentry->phonenumbermanagement;
+			$this->phonenumber = $this->phonenumbermanagement->phonenumber;
 			$this->mta = $this->phonenumber->mta;
 			$this->modem = $this->mta->modem;
 			$this->contract = $this->modem->contract;
@@ -430,6 +578,7 @@ class ProvVoipEnvia extends \BaseModel {
 				throw new \UnexpectedValueException('Value '.$level.' not allowed for param $level');
 			}
 		}
+
 	}
 
 	/**
@@ -510,9 +659,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// set defaults if used by job
 		$defaults = array(
 			'contract_data' => array(
-				'variation_id' => '1490',
 				/* 'porting' => 'MISSING', */
-				'tariff' => 'VOIP0413_ERZ_flat',
 				'phonebookentry_fax' => 0,
 				'phonebookentry_reverse_search' => 1,
 			),
@@ -542,7 +689,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// these elements are used to group the information
 		// e.g. in reseller_identifier man will put username and password for
 		// authentication against the API
-		$second_level_nodes = array(
+		$second_level_nodes = array();
 
 			/* 'blacklist_create_entry' => array( */
 			/* 	'reseller_identifier', */
@@ -552,11 +699,11 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			'blacklist_get' => array(
-				'reseller_identifier',
-				'callnumber_identifier',
-				'blacklist_data',
-			),
+		$second_level_nodes['blacklist_get'] = array(
+			'reseller_identifier',
+			'callnumber_identifier',
+			'blacklist_data',
+		);
 
 			/* 'calllog_delete' => array( */
 			/* 	'reseller_identifier', */
@@ -570,16 +717,16 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			'calllog_get_status' => array(
-				'reseller_identifier',
-				'customer_identifier',
-			),
+		$second_level_nodes['calllog_get_status'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+		);
 
-			'configuration_get' => array(
-				'reseller_identifier',
-				'customer_identifier',
-				'callnumber_identifier',
-			),
+		$second_level_nodes['configuration_get'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+			'callnumber_identifier',
+		);
 
 			/* 'configuration_update' => array( */
 			/* 	'reseller_identifier', */
@@ -593,44 +740,51 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			/* 'contract_change_tariff' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+		$second_level_nodes['contract_change_tariff'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'tariff_data',
+		);
 
-			/* 'contract_change_variation' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+		$second_level_nodes['contract_change_variation'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'variation_data',
+		);
 
-			'contract_create' => array(
-				'reseller_identifier',
-				'customer_identifier',
-				'customer_data',
-				'contract_data',
-				// in this first step we do not create phonenumbers within
-				// the contract
-				// instead: create each phonenumber in separate step (voipaccount_create)
-				/* 'subscriber_data', */
-			),
+		$second_level_nodes['contract_create'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+			'customer_data',
+			'contract_data',
+			// in this first step we do not create phonenumbers within
+			// the contract
+			// instead: create each phonenumber in separate step (voipaccount_create)
+			/* 'subscriber_data', */
+		);
+		if ($this->api_version >= 1.4) {
+			array_push($second_level_nodes['contract_create'], 'installation_address_data');
+		}
 
 			/* 'contract_get_reference' => array( */
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			'contract_get_voice_data' => array(
-				'reseller_identifier',
-				'contract_identifier',
-			),
+		$second_level_nodes['contract_get_voice_data'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+		);
 
 			/* 'contract_lock' => array( */
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			// not needed atm ⇒ if the last phonenumber is terminated the contract will automatically be deleted
-			'contract_terminate' => array(
-				'reseller_identifier',
-				'contract_identifier',
-				'contract_termination_data',
-			),
+		// not needed atm ⇒ if the last phonenumber is terminated the contract will automatically be deleted
+		$second_level_nodes['contract_terminate'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'contract_termination_data',
+		);
 
 			/* 'contract_unlock' => array( */
 			/* 	'reseller_identifier', */
@@ -640,80 +794,89 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			'customer_update' => array(
-				'reseller_identifier',
-				'customer_identifier',
-				'customer_data',
-			),
+		$second_level_nodes['customer_update'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+			'customer_data',
+		);
 
-			'misc_get_free_numbers' => array(
-				'reseller_identifier',
-				'filter_data',
-			),
+		$second_level_nodes['misc_get_free_numbers'] = array(
+			'reseller_identifier',
+			'filter_data',
+		);
 
-			'misc_get_orders_csv' => array(
-				'reseller_identifier',
-			),
+		$second_level_nodes['misc_get_orders_csv'] = array(
+			'reseller_identifier',
+		);
 
-			'misc_get_usage_csv' => array(
-				'reseller_identifier',
-			),
+		$second_level_nodes['misc_get_usage_csv'] = array(
+			'reseller_identifier',
+		);
 
-			'misc_ping' => array(
-				'reseller_identifier',
-			),
+		$second_level_nodes['misc_ping'] = array(
+			'reseller_identifier',
+		);
 
 			/* 'order_add_mgcp_details' => array( */
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			'order_cancel' => array(
-				'reseller_identifier',
-				'order_identifier',
-			),
-
-			'order_create_attachment' => array(
-				'reseller_identifier',
-				'order_identifier',
-				'attachment_data',
-			),
-
-			'order_get_status' => array(
-				'reseller_identifier',
-				'order_identifier',
-			),
-
-			/* 'phonebookentry_create' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
-
-			/* 'phonebookentry_delete' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
-
-			/* 'phonebookentry_get' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
-
-			'voip_account_create' => array(
-				'reseller_identifier',
-				'contract_identifier',
-				'account_data',
-				'subscriber_data',
-			),
-
-			'voip_account_terminate' => array(
-				'reseller_identifier',
-				'contract_identifier',
-				'callnumber_identifier',
-				'accounttermination_data',
-			),
-
-			/* 'voip_account_update' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
-
+		$second_level_nodes['order_cancel'] = array(
+			'reseller_identifier',
+			'order_identifier',
 		);
+
+		$second_level_nodes['order_create_attachment'] = array(
+			'reseller_identifier',
+			'order_identifier',
+			'attachment_data',
+		);
+
+		$second_level_nodes['order_get_status'] = array(
+			'reseller_identifier',
+			'order_identifier',
+		);
+
+		$second_level_nodes['phonebookentry_create'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'callnumber_identifier',
+			'phonebookentry_data',
+		);
+
+		$second_level_nodes['phonebookentry_delete'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'callnumber_identifier',
+		);
+
+		$second_level_nodes['phonebookentry_get'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'callnumber_identifier',
+		);
+
+		$second_level_nodes['voip_account_create'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'account_data',
+			'subscriber_data',
+		);
+
+		$second_level_nodes['voip_account_terminate'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'callnumber_identifier',
+			'accounttermination_data',
+		);
+
+		$second_level_nodes['voip_account_update'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'callnumber_identifier',
+			'callnumber_data',
+		);
+
 
 		// now call the specific method for each second level element
 		foreach ($second_level_nodes[$job] as $node) {
@@ -857,17 +1020,46 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$inner_xml = $this->xml->addChild('contract_data');
 
-		// mapping xml to database
-		$fields_contract = array(
-			'phonebookentry_phone' => 'phonebook_entry',
-		);
-
-		$this->_add_fields($inner_xml, $fields_contract, $this->contract);
-
 		// add startdate for contract (default: today – there are no costs without phone numbers)
 		$inner_xml->addChild('orderdate', date('Y-m-d'));
+		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase->external_identifier);
+		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale->external_identifier);
 
 	}
+
+
+	/**
+	 * Method to add tariff data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_tariff_data() {
+
+		$inner_xml = $this->xml->addChild('tariff_data');
+
+		// TODO: get dat from Contract->Item (after merging with Nino)
+		$inner_xml->addChild('orderdate', date('Y-m-d', strtotime('first day of next month')));
+
+		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale_next->external_identifier);
+
+
+	}
+
+
+	/**
+	 * Method to add variation data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_variation_data() {
+
+		$inner_xml = $this->xml->addChild('variation_data');
+
+		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
+
+
+	}
+
 
 	/**
 	 * Method to add contract termination
@@ -980,19 +1172,57 @@ class ProvVoipEnvia extends \BaseModel {
 		$inner_xml->addChild('trc_class', $trc_class);
 
 		// special handling for incoming porting needed (comes from external table)
+		$carrier_in = CarrierCode::find($this->phonenumbermanagement->carrier_in)->carrier_code;
+		// on porting: check if valid CarrierIn chosen
 		if (boolval($this->phonenumbermanagement->porting_in)) {
-			$carrier_in = CarrierCode::find($this->phonenumbermanagement->carrier_in)->carrier_code;
-			if (CarrierCode::is_valid($carrier_in)) {
+			if (!CarrierCode::is_valid($carrier_in)) {
+				throw new \InvalidArgumentException('ERROR: '.$carrier_code.' is not a valid carrier_code');
+			}
+			$inner_xml->addChild('carriercode', $carrier_in);
+		}
+		// if no porting (new number): CarrierIn has to be D057 (EnviaTEL) (API 1.4 and higher)
+		else {
+			if ($this->api_version >= 1.4) {
+				if ($carrier_in != 'D057') {
+					throw new \InvalidArgumentException('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
+				}
+				$carrier_in = 'D057';
 				$inner_xml->addChild('carriercode', $carrier_in);
 			}
-			else {
-				throw new \InvalidArgumentException('ERROR: '.$carrier_code.' is not a valid carrier_code');
+		}
+
+		// in API 1.4 and higher we also need the EKP code for incoming porting
+		if ($this->api_version >= 1.4) {
+
+			if (boolval($this->phonenumbermanagement->porting_in)) {
+				$ekp_in = EkpCode::find($this->phonenumbermanagement->ekp_in)->ekp_code;
+				$inner_xml->addChild('ekp_code', $ekp_in);
 			}
 		}
 
 		$this->_add_sip_data($inner_xml->addChild('method'));
 	}
 
+
+	/**
+	* Method to add data for a callnumber.
+	* This is different from _add_callnumber_single_data – so we have to implement again…
+	*
+	* @author Patrick Reichel
+	*/
+	protected function _add_callnumber_data() {
+
+		$inner_xml = $this->xml->addChild('callnumber_data');
+
+		// TODO: change to date selection instead of performing changes today?
+		$inner_xml->addChild('orderdate', date("Y-m-d"));
+
+		// special handling of trc_class needed (comes from external table)
+		$trc_class = TRCClass::find($this->phonenumbermanagement->trcclass)->trc_id;
+		$inner_xml->addChild('trc_class', $trc_class);
+
+		$this->_add_sip_data($inner_xml->addChild('method'));
+	}
 
 	/**
 	 * Method to add sip data.
@@ -1006,8 +1236,12 @@ class ProvVoipEnvia extends \BaseModel {
 		$fields = array(
 			'username' => 'username',
 			'password' => 'password',
-			'sipdomain' => 'sipdomain',
 		);
+
+		// Envia API throws error if <sipdomain nil="true" /> is given…
+		if (boolval($this->phonenumber->sipdomain)) {
+			$fields['sipdomain'] = 'sipdomain';
+		}
 
 		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
 	}
@@ -1143,6 +1377,42 @@ class ProvVoipEnvia extends \BaseModel {
 
 	}
 
+
+	/**
+	 * Method to add phonebookentry data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_phonebookentry_data() {
+
+		$inner_xml = $this->xml->addChild('phonebookentry_data');
+
+		$fields= array(
+			'lastname' => 'lastname',
+			'firstname' => 'firstname',
+			'company' => 'company',
+			'noble_rank' => 'noble_rank',
+			'nobiliary_particle' => 'nobiliary_particle',
+			'academic_degree' => 'academic_degree',
+			'other_name_suffix' => 'other_name_suffix',
+			'business' => 'business',
+			'street' => 'street',
+			'houseno' => 'houseno',
+			'zipcode' => 'zipcode',
+			'city' => 'city',
+			'urban_district' => 'urban_district',
+			'usage' => 'number_usage',
+			'publish_in_print_media' => 'publish_in_print_media',
+			'publish_in_electronic_media' => 'publish_in_electronic_media',
+			'directory_assistance' => 'directory_assistance',
+			'entry_type' => 'entry_type',
+			'reverse_search' => 'reverse_search',
+			'publish_address' => 'publish_address',
+			'tag' => 'tag',
+		);
+
+		$this->_add_fields($inner_xml, $fields, $this->phonebookentry);
+	}
 
 	/**
 	 * Method to add fields to xml node
@@ -1313,7 +1583,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @author Patrick Reichel
 	 *
 	 * @todo: this method will be used to update phonenumber related data (as sip username and password)
-	 * @todo: this will be used
+	 * @todo: this will be used to update TRCClass – needs testing (not possible ATM because there are no active phonenumbers)
 	 */
 	protected function _process_contract_get_voice_data_response($xml, $data, $out) {
 
@@ -1335,6 +1605,16 @@ class ProvVoipEnvia extends \BaseModel {
 				// find phonenumber object for given phonenumber
 				$where_stmt = "prefix_number=".$entry->localareacode." AND number=".$entry->baseno;
 				$phonenumber = Phonenumber::whereRaw($where_stmt)->first();
+
+				$phonenumbermanagement = $phonenumber->phonenumbermanagement;
+
+				// update TRCClass
+				if (is_numeric($entry)) {
+					// remember: trcclass.id != trclass.trc_id (first is local key, second is Envia Id!)
+					$trcclass = TRCClass::where('trc_id', $entry['trc_class'])->first();
+					$phonenumbermanagement['trcclass'] = $trcclass->id;
+					$phonenumbermanagement->save();
+				}
 
 				$method = $entry->method;
 
@@ -1363,6 +1643,52 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		$out .= "Done.";
+
+		return $out;
+	}
+
+	/**
+	 * Process data after successful tariff change
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_contract_change_tariff_response($xml, $data, $out) {
+
+		// create enviaorder
+		$order_data = array();
+
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['contract_id'] = $this->contract->id;
+		$order_data['ordertype'] = 'contract/change_tariff';
+		$order_data['orderstatus'] = 'initializing';
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// view data
+		$out .= "<h5>Tariff change successful (order ID: ".$xml->orderid.")</h5>";
+
+		return $out;
+	}
+
+	/**
+	 * Process data after successful variation change
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_contract_change_variation_response($xml, $data, $out) {
+
+		// create enviaorder
+		$order_data = array();
+
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['contract_id'] = $this->contract->id;
+		$order_data['ordertype'] = 'contract/change_variation';
+		$order_data['orderstatus'] = 'initializing';
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// view data
+		$out .= "<h5>Variation change successful (order ID: ".$xml->orderid.")</h5>";
 
 		return $out;
 	}
@@ -1460,6 +1786,43 @@ class ProvVoipEnvia extends \BaseModel {
 			return $out;
 		}
 	}
+
+
+	/**
+	 * Extract and process usage csv.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_usage_csv_response($xml, $data, $out) {
+
+		// result is base64 encoded csv
+		$b64 = $xml->data;
+		$csv = base64_decode($b64);
+
+		// csv fieldnames are the first line
+		$lines = explode("\n", $csv);
+		$csv_headers = str_getcsv(array_shift($lines));
+
+		// array for converted data
+		$results = array();
+
+		// process Envia CSV line by line; attach orders to $result array
+		foreach ($lines as $result_csv) {
+			// check if current line contains data => empty lines will crash at array_combine
+			if (boolval($result_csv)) {
+				$result = str_getcsv($result_csv);
+				$entry = array_combine($csv_headers, $result);
+				array_push($results, $entry);
+			}
+		}
+
+		$out = "";
+
+		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.").<h2>Returned csv is:</h2><pre>".$csv."</pre><h2>Extracted data is:</h2>";
+		dd($results);
+
+	}
+
 
 	/**
 	 * Process data for a single order.
@@ -1695,4 +2058,45 @@ class ProvVoipEnvia extends \BaseModel {
 
 	}
 
+
+	/**
+	 * Process data after successful creation/change of a phonebook entry
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_phonebookentry_create_response($xml, $data, $out) {
+
+		$out = "";
+
+		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Returned XML is:</h2>";
+		dd($xml);
+	}
+
+
+	/**
+	 * Process data after successful deletion of a phonebook entry
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_phonebookentry_delete_response($xml, $data, $out) {
+
+		$out = "";
+
+		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Returned XML is:</h2>";
+		dd($xml);
+	}
+
+
+	/**
+	 * Process data after successful creation/change of a phonebook entry
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_phonebookentry_get_response($xml, $data, $out) {
+
+		$out = "";
+
+		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Use returned data to create new or update existing phonebookentry</h2><h2>Returned XML is:</h2>";
+		dd($xml);
+	}
 }

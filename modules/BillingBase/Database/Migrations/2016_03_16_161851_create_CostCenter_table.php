@@ -25,7 +25,7 @@ class CreateCostCenterTable extends BaseMigration {
 			$table->string('description');
 		});
 
-		$this->set_fim_fields(['name', 'number', 'invoice_headline', 'description']);
+		$this->set_fim_fields(['name', 'number', 'description']);
 
 	}
 
