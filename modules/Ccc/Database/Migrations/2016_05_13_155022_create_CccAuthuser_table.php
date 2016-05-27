@@ -32,6 +32,7 @@ class CreateCccAuthuserTable extends BaseMigration {
             $table->string('password', 60);
             $table->string('description');
             $table->boolean('active')->default(1);
+            $table->integer('contract_id')->unsigned();
             $table->rememberToken();
 
             $table->unique('login_name');

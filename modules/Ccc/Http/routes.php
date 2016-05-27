@@ -17,9 +17,13 @@ Route::post('ccc/auth/logout', array('as' => 'CccAuth.logout', 'uses' => 'Module
 
 
 // CCC internal stuff, with CCC authentication checking
-Route::group(['middleware' => 'ccc.base'], function () {
+Route::group(['middleware' => 'ccc.base', 'prefix' => 'ccc'], function () {
 
-	Route::get ('ccc/home', ['as' => 'HomeCcc', 'uses' => 'Modules\Ccc\Http\Controllers\CccController@show']);
+	Route::get ('home', ['as' => 'HomeCcc', 'uses' => 'Modules\Ccc\Http\Controllers\CccController@show']);
+
+	// Download Invoice / CDR, changes could be required ..
+	BaseRoute::get('home/download/{customer}/{year}/{month}', array('as' => 'Ccc.Download', 'uses' => 'Modules\Ccc\Http\Controllers\CccController@download'));
+
 	// TODO: add CCC internal required routing stuff
 
 });

@@ -20,6 +20,9 @@ class CccBaseMiddleware {
             if (is_null(\Auth::guard('ccc')->user())) {
                 throw new AuthExceptions('Login Required');
             }
+
+            // TODO: @Nino Ryschawy: add contract <-> file permission checking
+            // dd(\Auth::guard('ccc')->user()['contract_id'], 'compare to ..' , explode('/', $request->path()));
         }
         catch (PermissionDeniedError $ex) {
             return View::make('auth.denied', array('error_msg' => $ex->getMessage()));

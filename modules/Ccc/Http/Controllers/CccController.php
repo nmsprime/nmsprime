@@ -9,4 +9,9 @@ class CccController extends \BaseController {
 		return \View::make('ccc::index');
 	}
 
+	public function download()
+	{
+		dd('Test');
+	}
+
 }

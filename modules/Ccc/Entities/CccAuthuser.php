@@ -22,5 +22,11 @@ class CccAuthuser extends \BaseModel implements AuthenticatableContract, CanRese
 	// The associated SQL table for this Model
 	public $table = 'cccauthusers';
 
+
+	public function contract()
+	{
+		return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
+	}
+
 }
 
