@@ -17,5 +17,6 @@ BaseRoute::group([], function() {
 
 	// Route::get('BillingBase', array('as' => 'BillingBase.edit', 'uses' => 'Modules\BillingBase\Http\Controllers\BillingBaseController@edit'));
 	BaseRoute::resource('BillingBase', 'Modules\BillingBase\Http\Controllers\BillingBaseController');
+	BaseRoute::resource('SettlementRun', 'Modules\BillingBase\Http\Controllers\SettlementRunController');
 
 });
