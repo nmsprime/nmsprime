@@ -46,10 +46,20 @@ class SepaAccountController extends \BaseModuleController {
 	}
 
 
+	public function prepare_input($data)
+	{
+		$data['bic'] = $data['bic'] ? : SepaAccount::get_bic($data['iban']);
+		$data['bic'] = strtoupper($data['bic']);
+
+		$data['iban'] = strtoupper($data['iban']);
+
+		return parent::prepare_input($data);
+	}
+
+
 	public function prepare_rules($rules, $data)
 	{
-		if (!$data['bic'])
-			$rules['bic'] .= '|available:'.$data['iban'];
+		$rules['bic'] .= $data['bic'] ? '' : '|required';
 
 		return parent::prepare_rules($rules, $data);
 	}

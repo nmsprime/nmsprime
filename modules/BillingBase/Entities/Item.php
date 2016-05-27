@@ -400,11 +400,12 @@ class ItemObserver
 		// always positiv amount for credits
 		$item->credit_amount = abs($item->credit_amount);
 
+		// set default valid from date to tomorrow for this product types
+		if(!$item->valid_from || $item->valid_from == '0000-00-00')
+			$item->valid_from = date('Y-m-d', strtotime('next day'));
+
 		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
-			// set default valid from date to tomorrow for this product types
-			if(!$item->valid_from || $item->valid_from == '0000-00-00')
-				$item->valid_from = date('Y-m-d', strtotime('next day'));
 
 			// set end date of old tariff to starting date of new tariff
 			$tariff = $item->contract->get_valid_tariff($item->product->type);

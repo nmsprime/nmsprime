@@ -329,7 +329,8 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function add_sepa_transfer($mandate, $charge, $dates)
 	{
-		$info = 'Month '.date('m/Y');
+		// $info = trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
+		$info = 'Monat '.date('m/Y', strtotime('-1 month'));
 
 		// Note: Charge == 0 is automatically excluded
 		if ($charge < 0)
@@ -639,8 +640,12 @@ class SepaAccount extends \BaseModel {
 		$iban 	 = new IBAN(strtoupper($iban));
 		$country = strtolower($iban->Country());
 		$bank 	 = $iban->Bank();
+		$csv 	 = 'config/billingbase/bic_'.$country.'.csv';
 
-		$data = Storage::get('config/billingbase/bic_'.$country.'.csv');
+		if (!file_exists(storage_path('app/'.$csv)))
+			return '';
+
+		$data   = Storage::get($csv);
 		$data_a = explode("\n", $data);
 
 		foreach ($data_a as $key => $entry)
