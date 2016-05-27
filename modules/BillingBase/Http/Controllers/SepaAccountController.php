@@ -52,6 +52,7 @@ class SepaAccountController extends \BaseModuleController {
 		$data['bic'] = strtoupper(str_replace(' ', '' , $data['bic']));
 
 		$data['iban'] = strtoupper(str_replace(' ', '' , $data['iban']));
+		$data['creditorid'] = strtoupper($data['creditorid']);
 
 		return parent::prepare_input($data);
 	}

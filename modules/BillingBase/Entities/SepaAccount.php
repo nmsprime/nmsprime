@@ -28,15 +28,6 @@ class SepaAccount extends \BaseModel {
 		);
 	}
 
-	/*
-	 * Init Observers
-	 */
-	public static function boot()
-	{
-		SepaAccount::observe(new SepaAccountObserver);
-		parent::boot();
-	}
-
 
 	/**
 	 * View related stuff
@@ -190,13 +181,11 @@ class SepaAccount extends \BaseModel {
 
 		$data = array(
 			
-			// 'Contractnr' => $item->contract->id,
 			'Contractnr' 	=> $item->contract->number,
 			'Invoicenr' 	=> $this->get_invoice_nr_formatted(),
 			'Target Month' 	=> date('m'),
 			'Date' 			=> date('Y-m-d'),
 			'Cost Center'  	=> isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
-			// 'Count'			=> $item->count ? $item->count : '1',
 			'Count'			=> $item->count,
 			'Description'  	=> $item->invoice_description,
 			'Price' 		=> $item->charge,
@@ -305,7 +294,6 @@ class SepaAccount extends \BaseModel {
 	public function add_invoice_cdr($contract, $cdrs, $conf)
 	{
 		if (!isset($this->invoices[$contract->id]))
-			// $this->logger->addAlert('No Invoice data genererated for contract '.$contract->number.' but call data records exist', [$contract->id]);
 			$this->invoices[$contract->id] = new Invoice($contract, $conf, '');
 
 		$this->invoices[$contract->id]->cdrs = $cdrs;
@@ -477,6 +465,9 @@ class SepaAccount extends \BaseModel {
 		return;
 	}
 
+	/*
+	 * Writes Paths of stored files to Logfiles and Console
+	 */
 	private function _log($name, $pathname)
 	{
 		$path = storage_path('app/');
@@ -656,34 +647,6 @@ class SepaAccount extends \BaseModel {
 				return $entry[3];
 			}
 		}
-	}
-
-}
-
-
-
-/**
- * Observer Class
- *
- * can handle   'creating', 'created', 'updating', 'updated',
- *              'deleting', 'deleted', 'saving', 'saved',
- *              'restoring', 'restored',
- */
-class SepaAccountObserver
-{
-
-	public function creating($acc)
-	{
-		$acc->iban = strtoupper($acc->iban);
-		$acc->bic  = $acc->bic ? strtoupper($acc->bic) : SepaAccount::get_bic($acc->iban);
-		$acc->creditorid = strtoupper($acc->creditorid);
-	}
-
-	public function updating($acc)
-	{
-		$acc->iban = strtoupper($acc->iban);
-		$acc->bic  = $acc->bic ? strtoupper($acc->bic) : SepaAccount::get_bic($acc->iban);
-		$acc->creditorid = strtoupper($acc->creditorid);
 	}
 
 }
