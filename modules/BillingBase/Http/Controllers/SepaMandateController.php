@@ -37,9 +37,9 @@ class SepaMandateController extends \BaseModuleController {
 	public function prepare_input($data)
 	{
 		$data['sepa_bic'] = $data['sepa_bic'] ? : SepaAccount::get_bic($data['sepa_iban']);
-		$data['sepa_bic'] = strtoupper($data['sepa_bic']);
+		$data['sepa_bic'] = strtoupper(str_replace(' ', '' ,$data['sepa_bic']));
 
-		$data['sepa_iban'] = strtoupper($data['sepa_iban']);
+		$data['sepa_iban'] = strtoupper(str_replace(' ', '' ,$data['sepa_iban']));
 
 		return parent::prepare_input($data);
 	}
