@@ -22,11 +22,10 @@ class CreateCostCenterTable extends BaseMigration {
 			$table->string('number');
 			$table->integer('sepa_account_id');
 			$table->tinyInteger('billing_month');
-			$table->string('invoice_headline');
 			$table->string('description');
 		});
 
-		$this->set_fim_fields(['name', 'number', 'invoice_headline', 'description']);
+		$this->set_fim_fields(['name', 'number', 'description']);
 
 	}
 

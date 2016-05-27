@@ -2,7 +2,6 @@
 namespace Modules\Billingbase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
-use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\SepaMandate;
 
 class SepaMandateController extends \BaseController {
@@ -33,19 +32,11 @@ class SepaMandateController extends \BaseController {
 		);
 	}
 
-
-
-	protected function prepare_input_post_validation($data)
+	public function prepare_rules($rules, $data)
 	{
-		if ($data['sepa_valid_from'] == '')
-			$data['sepa_valid_from'] = date('Y-m-d');
-		if ($data['sepa_holder'] == '')
-		{
-			$contract = Contract::find($data['contract_id']);
-			$data['sepa_holder'] = $contract->firstname.' '.$contract->lastname;
-		}
-		// dd($data, $data['contract_id']);
+		$rules['bic'] = $data['sepa_bic'] ? : '|available:'.$data['sepa_iban'];
 
-		return $data;
+		return parent::prepare_rules($rules, $data);
 	}
+
 }

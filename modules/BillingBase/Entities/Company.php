@@ -7,7 +7,8 @@ class Company extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'company';
 
-    public $guarded = ['upload'];
+    // public $guarded = ['upload'];
+    public $guarded = ['logo_upload'];
 
 
 	// Add your validation rules here
@@ -65,34 +66,47 @@ class Company extends \BaseModel {
 
 
 	/**
-	 * Returns all available logos and template files (via directory listing)
+	 * Returns all available logo files (via directory listing)
 	 * @author Nino Ryschawy
 	 */
-	public function billing_files()
+	public function logos() 
 	{
 		// get all available files
-		$files_raw = glob("/tftpboot/bill/*");
-		$files['logo'] = $files['template'] = array(null => "None");
+		$files_raw  = glob("/tftpboot/bill/logo/*");
+		$files 		= array(null => "None");
 
-		$pic = ['png', 'eps', 'pdf', 'jpg'];
-		$doc = ['tex', 'odt', 'sxw'];
+		// $files_raw = glob("/tftpboot/bill/*");
+		// $pic = ['png', 'eps', 'pdf', 'jpg'];
+		// $doc = ['tex', 'odt', 'sxw'];
 
 		// extract filename
-		foreach ($files_raw as $file)
+		// foreach ($files_raw as $file)
+		// {		
+		// 	if (is_file($file))
+		// 	{
+		// 		$parts = explode("/", $file);
+		// 		$filename = array_pop($parts);
+		// 		$ending = explode('.', $filename);
+		// 		$end = end($ending);
+		
+		// 		if (in_array($end, $pic))
+		// 			$files['logo'][$filename] = $filename;
+		// 		else if (in_array($end, $doc))
+		// 			$files['template'][$filename] = $filename;
+		// 	}
+		// }
+
+		// extract filename
+		foreach ($files_raw as $file) 
 		{
 			if (is_file($file))
 			{
 				$parts = explode("/", $file);
 				$filename = array_pop($parts);
-				$ending = explode('.', $filename);
-				$end = end($ending);
-
-				if (in_array($end, $pic))
-					$files['logo'][$filename] = $filename;
-				else if (in_array($end, $doc))
-					$files['template'][$filename] = $filename;
+				$files[$filename] = $filename;
 			}
 		}
+
 		return $files;
 	}
 }

@@ -5,7 +5,7 @@ use Illuminate\Database\Migrations\Migration;
 
 class CreateSepaAccountTable extends BaseMigration {
 
-	protected $tablename = 'sepa_account';
+	protected $tablename = 'sepaaccount';
 
 	/**
 	 * Run the migrations.
@@ -24,11 +24,17 @@ class CreateSepaAccountTable extends BaseMigration {
 			$table->string('iban', 34);
 			$table->string('bic', 11);
 			$table->string('institute');
-			$table->string('description');
 			$table->integer('company_id');
+			$table->string('invoice_headline');
+			$table->string('invoice_text');
+			$table->string('invoice_text_negativ');
+			$table->string('invoice_text_sepa');
+			$table->string('invoice_text_sepa_negativ');
+			$table->string('template');
+			$table->string('description');
 		});
 
-		$this->set_fim_fields(['name', 'holder', 'iban', 'bic', 'institute', 'description']);
+		$this->set_fim_fields(['name', 'holder', 'iban', 'bic', 'institute', 'invoice_headline', 'invoice_text', 'invoice_text_negativ', 'invoice_text_sepa_negativ', 'invoice_text_sepa', 'description']);
 
 	}
 
