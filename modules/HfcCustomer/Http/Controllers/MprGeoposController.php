@@ -2,7 +2,7 @@
 
 use Pingpong\Modules\Routing\Controller;
 
-class MprGeoposController extends \BaseModuleController {
+class MprGeoposController extends \BaseController {
 
     /**
      * defines the formular fields for the edit and create view

@@ -24,6 +24,8 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	public function __construct($attributes = array()) {
 
+		// TODO: @Patrick Reichel: assume default value for API version if config is not set.
+		//       otherwise this will break some artisan commands like route:list
 		// this has to be a float value to allow stable version compares
 		$v = $_ENV['PROVVOIPENVIA__REST_API_VERSION'];
 		if (!is_numeric($v)) {

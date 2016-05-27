@@ -236,7 +236,7 @@ class TreeErdController extends HfcBaseController {
 		        $idtree = $tree->id;
 		        $id = $tree->id;
 		        $type = $tree->type;
-				$url  = \Request::root()."/Customer/tree_id/$idtree";
+				$url  = \BaseRoute::get_base_url()."/Customer/tree_id/$idtree";
 		        $n++;
 
 				$state = ModemHelper::ms_state ("tree_id = $idtree");

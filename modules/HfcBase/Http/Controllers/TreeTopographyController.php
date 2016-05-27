@@ -227,7 +227,7 @@ class TreeTopographyController extends HfcBaseController {
 							$pro  = round(100 * $num / $numa,0);
 							$cri  = $modem_helper::ms_cri("tree_id = $id");
 							$avg  = $modem_helper::ms_avg("tree_id = $id");
-							$url  = \Request::root()."/Customer/tree_id/$id";
+							$url  = \BaseRoute::get_base_url()."/Customer/tree_id/$id";
 
 							$file .= "Amp/Node: $name<br><br>Number All CM: $numa<br>Number Online CM: $num ($pro %)<br>Number Critical CM: $cri<br>US Level Average: $avg<br><br><a href=\"$url\" target=\"".$this->html_target."\" alt=\"\">Show all Customers</a>";
 

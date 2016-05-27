@@ -6,7 +6,7 @@ use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\SepaMandate;
 use Modules\ProvBase\Entities\Contract;
 
-class BillingBaseController extends \BaseModuleController {
+class BillingBaseController extends \BaseController {
 
 	public $name = 'BillingBase';
 

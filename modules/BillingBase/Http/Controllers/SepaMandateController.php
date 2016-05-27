@@ -4,7 +4,7 @@ namespace Modules\Billingbase\Http\Controllers;
 use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\SepaMandate;
 
-class SepaMandateController extends \BaseModuleController {
+class SepaMandateController extends \BaseController {
 
 	protected $index_create_allowed = false;
 

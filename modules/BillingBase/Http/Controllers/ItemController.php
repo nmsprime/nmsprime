@@ -8,7 +8,7 @@ use Modules\BillingBase\Entities\BillingBase;
 use Modules\ProvBase\Entities\Contract;
 use Config;
 
-class ItemController extends \BaseModuleController {
+class ItemController extends \BaseController {
 
 	/**
 	 * defines the formular fields for the edit and create view

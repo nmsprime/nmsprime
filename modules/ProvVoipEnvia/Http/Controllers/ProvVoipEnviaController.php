@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\View;
 
 use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
 
-class ProvVoipEnviaController extends \BaseModuleController {
+class ProvVoipEnviaController extends \BaseController {
 
 	// TODO: @Patrick Reichel: is this field required ?
 	public $name = 'VOIP';
@@ -656,7 +656,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		$view_header = 'Request Envia';
 
-		$view_path = static::get_view_name().'.request';
+		$view_path = \NamespaceController::get_view_name().'.request';
 
 		// check if job to do is allowed
 		// e.g. to prevent double contract creation on pressing <F5>
