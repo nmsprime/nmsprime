@@ -28,5 +28,35 @@ class CccAuthuser extends \BaseModel implements AuthenticatableContract, CanRese
 		return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
 	}
 
+
+	/**
+	 * Create/Update Customer Control Information
+	 * Save the model to the database.
+	 *
+	 * @param  array  $options
+	 * @return array with [login, password, contract id)] or bool if no contract relation
+	 *
+	 * @author Torsten Schmidt
+	 */
+	public function save(array $options = [])
+	{
+		$contract = $this->contract;
+
+		if ($contract)
+		{
+			$psw = \Acme\php\Password::generate_password();
+			$this->login_name = $contract->number;
+			$this->password = \Hash::make($psw);
+			$this->first_name = $contract->firstname;
+			$this->last_name = $contract->lastname;
+			$this->email = $contract->email;
+			$this->active = 1; // TODO: deactivate non active customers for login
+		}
+
+		$ret = parent::save();
+
+		return ($contract && $ret ? ['login' => $contract->number, 'password' => $psw, 'id' => $contract->id] : $ret);
+	}
+
 }
 
