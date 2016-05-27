@@ -40,15 +40,14 @@ class cdrCommand extends Command {
 	 */
 	public function fire()
 	{
+		// TODO: remove hard coded login data for production system
 		$https_user = 'erznet_Reseller';
 		$https_password = 'password';
 		// $https_user = $_ENV['PROVVOIPENVIA__RESELLER_USERNAME'];
 		// $https_password = $_ENV['PROVVOIPENVIA__RESELLER_PASSWORD'];
 		$logger = new BillingLogger;
 
-		$month = $this->argument('month') >= 1 && $this->argument('month') <= 12 ? sprintf('%02d', $this->argument('month')) : date('m', strtotime('-2 months'));
-		//TODO: remove following line - only during testing
-		$month = '04';
+		$month = $this->argument('month') >= 1 && $this->argument('month') <= 12 ? sprintf('%02d', $this->argument('month')) : date('m', strtotime('-1 months'));
 
 		$file 	  = 'cdr.zip';
 		$tmp_path = storage_path('app/tmp/');
@@ -56,16 +55,14 @@ class cdrCommand extends Command {
 		$data = file_get_contents("https://$https_user:$https_password@www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/2016/$month");
 		if (!$data)
 		{
-			$logger->addAlert('Could not get Call Data Records from Envia for month: '.$month);
+			$logger->addAlert('CDR-Import: Could not get Call Data Records from Envia for month: '.$month, ["www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/2016/$month"]);
 			return -1;
 		}
 
 		Storage::put("tmp/$file", $data);
 
 		$zipper = new Zipper;
-		//TODO: remove following line - only during testing
-		$month = '03';
-		$target_dir = storage_path('app/data/billingbase/accounting/'.date("Y-".sprintf('%02d', $month + 2)).'/');
+		$target_dir = storage_path('app/data/billingbase/accounting/'.date("Y-$month").'/');
 
 		if (!is_dir($target_dir))
 			mkdir($target_dir, '0744', true);

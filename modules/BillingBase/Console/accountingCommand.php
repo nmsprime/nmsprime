@@ -61,7 +61,7 @@ class accountingCommand extends Command {
 
 		);
 
-		$this->dir .= date('Y-m').'/';
+		$this->dir .= date('Y-m', strtotime('-1 month')).'/';
 
 		parent::__construct();
 
@@ -145,6 +145,12 @@ class accountingCommand extends Command {
 
 				// get account via costcenter
 				$costcenter = $item->get_costcenter();
+				if (!is_object($costcenter))
+				{
+					$c->charge = [];
+					$logger->addAlert('No CostCenter assigned to Contract/Product/Item - Stop execution for this contract', [$c->id]);
+					break;
+				}
 				$acc = $sepa_accs->find($costcenter->sepa_account_id);
 
 				// increase invoice nr of sepa account, increase charge for account by price, calculate tax
@@ -334,7 +340,6 @@ class accountingCommand extends Command {
 		$csv   = [];
 		$files = Storage::files($this->dir);
 		$bool  = true;
-
 		// check if file is already loaded
 		foreach ($files as $file)
 		{
