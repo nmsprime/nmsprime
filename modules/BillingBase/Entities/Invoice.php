@@ -143,7 +143,7 @@ class Invoice {
 
 		$this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.$net.$this->currency.'\\\\';
 		$this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$tax.$this->currency.'\\\\';
-		$this->data['table_summary'] .= '~ & Rechnungsbetrag: & ~ & '.($net + $tax).$this->currency.'\\\\';
+		$this->data['table_summary'] .= '~ & \textbf{Rechnungsbetrag:} & ~ & \textbf{'.($net + $tax).$this->currency.'}\\\\';
 
 		$this->data['table_sum_charge_net']  	= $net; 
 		$this->data['table_sum_tax_percent'] 	= $tax_percent;
@@ -197,7 +197,7 @@ class Invoice {
 
 		// set invoice text
 		// $this->data['invoice_text'] = $template.'\\\\'.'\begin{tabbing} \hspace{9em}\=\kill '.$text.' \end{tabbing}';
-		$this->data['invoice_text'] = '\begin{tabular} {ll} \multicolumn{2}{L{\textwidth}} {'.$template.'}\\\\'.$text.' \end{tabular}';
+		$this->data['invoice_text'] = '\begin{tabular} {@{}ll} \multicolumn{2}{@{}L{\textwidth}} {'.$template.'}\\\\'.$text.' \end{tabular}';
 
 	}
 
@@ -233,7 +233,7 @@ class Invoice {
 
 		$this->data['company_registration_court'] .= $account->company->registration_court_1 ? $account->company->registration_court_1.'\\\\' : '';
 		$this->data['company_registration_court'] .= $account->company->registration_court_2 ? $account->company->registration_court_2.'\\\\' : '';
-		$this->data['company_registration_court'] .= $account->company->registration_court_3 ? $account->company->registration_court_3.'\\\\' : '';
+		$this->data['company_registration_court'] .= $account->company->registration_court_3 ? $account->company->registration_court_3.'\\\\' : '\\\\';
 
 		if ($account->company->management)
 		{
@@ -269,14 +269,14 @@ class Invoice {
 	 */
 	public function make_invoice()
 	{
+		// Keep this order -> another invoice item is build in this function - TODO: move to separate function
+		if ($this->cdrs)
+			$this->make_cdr_tex();
+
 		if ($this->data['item_table_positions'])
 			$this->make_invoice_tex();
 		else
 			$this->logger->addError("No Items for Invoice - only build CDR", [$this->data['contract_id']]);
-
-
-		if ($this->cdrs)
-			$this->make_cdr_tex();
 
 		// Store as pdf
 		$this->create_pdfs();
@@ -321,13 +321,16 @@ class Invoice {
 		$this->data['cdr_month'] = date("$month/Y");
 
 		// Create tex table
-		$sum = 0;
+		$sum = $count = 0;
 		foreach ($this->cdrs as $entry)
 		{
 			$this->data['cdr_table_positions'] .= date('d.m.Y', strtotime($entry[1])).' '.$entry[2] .' & '. $entry[3] .' & '. $entry[0] .' & '. $entry[4] . ' & '. $entry[5].'\\\\';
 			$sum += $entry[5];
+			$count++;
 		}
 		$this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'. $sum . '}\\\\';
+		$plural = $count > 1 ? 'en' : '';
+		$this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural." & ".round($sum, 2).$this->currency.' & '.round($sum, 2).$this->currency.'\\\\';
 
 		if (!$template = file_get_contents($this->template_cdr_path))
 		{
@@ -355,8 +358,8 @@ class Invoice {
 		$file_paths['Invoice']  = storage_path('app/'.$this->dir.$this->filename_invoice);
 		$file_paths['CDR'] 		= storage_path('app/'.$this->dir.$this->filename_cdr);
 
-// if ($this->data['contract_id'] == 500027)
-// dd($file_paths);
+		// if ($this->data['contract_id'] == 500027)
+		// dd($file_paths);
 
 		// TODO: execute in background to speed this up by multiprocessing - but what is with the temporary files then?
 		foreach ($file_paths as $key => $file)
