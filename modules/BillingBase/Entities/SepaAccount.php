@@ -421,7 +421,7 @@ class SepaAccount extends \BaseModel {
 			$file = SepaAccount::str_sanitize($file);
 
 			// initialise record files with Column names as first line
-			Storage::put($file, implode("\t", array_keys($records[0]))."\n");
+			Storage::put($file, implode("\t", array_keys($records[0])));
 
 			$data = [];
 			foreach ($records as $value)
@@ -451,7 +451,7 @@ class SepaAccount extends \BaseModel {
 			$file = SepaAccount::str_sanitize($file);
 
 			// initialise record files with Column names as first line
-			Storage::put($file, implode("\t", array_keys($records[0]))."\n");
+			Storage::put($file, implode("\t", array_keys($records[0])));
 
 			$data = [];
 			foreach ($records as $value)

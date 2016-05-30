@@ -31,18 +31,31 @@ class SettlementRun extends \BaseModel {
 	{
 		$bsclass = $this->verified ? 'info' : 'warning';
 
-		return ['index' => [$this->year, $this->month, $this->created_at->__get('day')],
+		return ['index' => [$this->year, $this->month, $this->updated_at->__get('day')],
 		        'index_header' => ['Year', 'Month', 'Day'],
 		        'bsclass' => $bsclass,
-		        'header' => $this->year.' - '.$this->month.' - '.$this->created_at->__get('day')];
+		        'header' => $this->year.' - '.$this->month.' - '.$this->updated_at->__get('day')];
 	}
 
 
 	public function view_has_many()
 	{
 		$ret['Billing']['SettlementRun']['view']['view'] = 'billingbase::settlementrun';
+		$ret['Billing']['SettlementRun']['view']['vars'] = $this->accounting_files();
 
 		return $ret;
+	}
+
+
+	public function get_files_dir()
+	{
+		return storage_path('app/data/billingbase/accounting/'.$this->year.'-'.sprintf('%02d', $this->month));		
+	}
+
+
+	public function accounting_files()
+	{
+		return \File::allFiles($this->get_files_dir());
 	}
 
 }
