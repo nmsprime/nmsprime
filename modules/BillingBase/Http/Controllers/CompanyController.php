@@ -35,8 +35,8 @@ class CompanyController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'registration_court_2', 'description' => 'Registration Court 2'),
 			array('form_type' => 'text', 'name' => 'registration_court_3', 'description' => 'Registration Court 3'),
 
-			array('form_type' => 'text', 'name' => 'management', 'description' => 'Management (Comma separated)', 'options' => ['placeholder' => 'Max Mustermann, Luise Musterfrau']),
-			array('form_type' => 'text', 'name' => 'directorate', 'description' => 'Directorate (Comma separated)', 'options' => ['placeholder' => 'Max Mustermann, Luise Musterfrau']),
+			array('form_type' => 'text', 'name' => 'management', 'description' => 'Management', 'options' => ['placeholder' => 'Max Mustermann, Luise Musterfrau'], 'help' => 'Comma separated list of names'),
+			array('form_type' => 'text', 'name' => 'directorate', 'description' => 'Directorate', 'options' => ['placeholder' => 'Max Mustermann, Luise Musterfrau'], 'help' => 'Comma separated list of names'),
 
 			array('form_type' => 'text', 'name' => 'tax_id_nr', 'description' => 'Sales Tax Id Nr'),
 			array('form_type' => 'text', 'name' => 'tax_nr', 'description' => 'Tax Nr', 'space' => '1'),
