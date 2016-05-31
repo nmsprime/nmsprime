@@ -76,9 +76,6 @@ class accountingCommand extends Command {
 	 */
 	public function fire()
 	{
-		// only while testing!! - TODO: remove for production system
-		DB::table('item')->update(['payed' => false]);
-
 		$logger = new BillingLogger;
 		$logger->addInfo(' #####    Start Accounting Command    #####');
 
@@ -93,12 +90,8 @@ class accountingCommand extends Command {
 		if ($ret)
 			$logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 
-		// set time of last run
-		$last_run = AccountingRecord::select('created_at')->orderBy('id', 'desc')->first();
-		if ($last_run)
-			$this->dates['last_run'] = $last_run->created_at;
 
-		// init product types of salesmen and invoice nr counters for each sepa account
+		// init product types of salesmen and invoice nr counters for each sepa account, date of last run
 		$this->_init($sepa_accs, $salesmen, $conf);
 
 		// get call data records ordered
@@ -284,11 +277,13 @@ class accountingCommand extends Command {
 			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+5 days'));
 		}
 
-
 		// actual invoice nr counters
 		$last_run = AccountingRecord::orderBy('created_at', 'desc')->select('created_at')->first();
 		if (is_object($last_run))
 		{
+			// set time of last run
+			$this->dates['last_run'] = $last_run->created_at;
+
 			foreach ($sepa_accs as $acc)
 			{
 				// restart counter every year

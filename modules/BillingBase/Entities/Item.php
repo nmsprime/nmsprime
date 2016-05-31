@@ -215,14 +215,14 @@ class Item extends \BaseModel {
 
 			case 'Yearly':
 
-				if ($this->payed)
+				if ($this->payed_month && $this->payed_month != $dates['m'] - 1)
 					break;
 
 				// calculate only for billing month
 				$costcenter    = $this->get_costcenter();
 				$billing_month = $costcenter->get_billing_month();		// June is default
 
-				if ($dates['m'] != $billing_month)
+				if ($dates['m'] - 1 != $billing_month)
 					break;
 
 				// started last yr
@@ -249,8 +249,11 @@ class Item extends \BaseModel {
 					$text .= date('Y-12-31', strtotime('last year'));
 
 				// set payed flag to avoid double payment in case of billing month is changed during year
-				$this->payed = true;		// is set to false every new year
-				$this->save();
+				if ($ratio)
+				{
+					$this->payed_month = $dates['m'] - 1;				// is set to 0 every new year
+					$this->save();
+				}
 
 				break;
 
@@ -375,8 +378,8 @@ class Item extends \BaseModel {
 	 */
 	public function yearly_conversion()
 	{
-		DB::table($this->table)->update(['payed' => false]);
-		\Log::info('Billing: Payed flag of all items resettet for new year');
+		DB::table($this->table)->update(['payed_month' => 0]);
+		\Log::info('Billing: Payed month flag of all items resettet for new year');
 	}
 
 
