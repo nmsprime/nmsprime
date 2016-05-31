@@ -16,6 +16,8 @@ class BillingBaseDatabaseSeeder extends Seeder {
 		
 		$this->call("CostCenterTableSeeder");
 		$this->call("ProductTableSeeder");
+		$this->call("SepaAccountTableSeeder");
+		// $this->call("CompanyTableSeeder");
 	}
 
 }
