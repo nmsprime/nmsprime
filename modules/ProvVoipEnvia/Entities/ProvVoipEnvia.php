@@ -393,10 +393,13 @@ class ProvVoipEnvia extends \BaseModel {
 
 			array_push($ret, array('class' => 'Phonebook entry'));
 
-			array_push($ret, array('linktext' => 'Get phonebook entry', 'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id));
+			// only if there is a phonenumber to add the entry to
+			if ($this->voipaccount_available) {
+				array_push($ret, array('linktext' => 'Get phonebook entry', 'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id));
 
-			if ($view_level == 'phonebookentry') {
-				array_push($ret, array('linktext' => 'Create/change phonebook entry', 'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id));
+				if ($view_level == 'phonebookentry') {
+					array_push($ret, array('linktext' => 'Create/change phonebook entry', 'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id));
+				}
 			}
 
 		}

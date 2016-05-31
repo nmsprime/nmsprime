@@ -45,9 +45,12 @@ class EnviaOrder extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		$ret = $this->orderid.' – '.$this->ordertype;
+        $bsclass = 'success';
 
-		return $ret;
+        return ['index' => [$this->id],
+                'index_header' => ['ID'],
+                'bsclass' => $bsclass,
+                'header' => $this->id];
 	}
 
 	// belongs to a modem - see BaseModel for explanation
