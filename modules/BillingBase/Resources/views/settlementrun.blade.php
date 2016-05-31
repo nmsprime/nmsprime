@@ -1,7 +1,6 @@
 @extends ('Layout.split')
 
 @section('content_right')
-
 	@if (isset($relation['view']['vars']))
 
 		@section('files')
@@ -34,15 +33,11 @@
 					<tr><td> {{ HTML::linkRoute('Settlement.download', $file->getFilename(), ['id' => $view_var->id, 'key' => $key]) }} </td></tr>
 
 				@endforeach
-
-				<tr><td><b> ZIP </b></td></tr>
-				<tr><td> {{ HTML::linkRoute('Settlement.download', 'All Files', ['id' => $view_var->id, 'key' => $key+1]) }} </td></tr>
 			<table>
 
 		@stop
 
-	@include ('bootstrap.panel', array ('content' => 'files', 'view_header' => 'Files', 'md' => 3))
+		@include ('bootstrap.panel', array ('content' => 'files', 'view_header' => 'Files', 'md' => 3))
 	
 	@endif
-
 @stop

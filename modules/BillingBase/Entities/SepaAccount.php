@@ -318,7 +318,7 @@ class SepaAccount extends \BaseModel {
 	public function add_sepa_transfer($mandate, $charge, $dates)
 	{
 		// $info = trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
-		$info = 'Monat '.date('m/Y', strtotime('-1 month'));
+		$info = 'Monat '.date('m/Y', strtotime('first day of last month'));
 
 		// Note: Charge == 0 is automatically excluded
 		if ($charge < 0)

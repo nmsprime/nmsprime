@@ -269,7 +269,7 @@ class Item extends \BaseModel {
 				if ($start > strtotime($period_start))
 				{
 					$days = date('z', strtotime('last day of this month')) - date('z', $start) + 1;
-					$total_days = date('t') + date('t', strtotime('last month')) + date('t', $start);
+					$total_days = date('t') + date('t', strtotime('first day of last month')) + date('t', $start);
 					$ratio = $days / $total_days;
 					$text = date('Y-m-d', $start);
 				}
@@ -283,7 +283,7 @@ class Item extends \BaseModel {
 				if ($end && ($end > strtotime($period_start)) && ($end < strtotime(date('Y-m-01', strtotime('next month')))))
 				{
 					$days = date('z', strtotime('last day of this month')) - date('z', $end);
-					$total_days = date('t') + date('t', strtotime('last month')) + date('t', $start);
+					$total_days = date('t') + date('t', strtotime('first day of last month')) + date('t', $start);
 					$ratio -= $days / $total_days;
 					$text .= date('Y-m-d', $end);
 				}

@@ -22,7 +22,7 @@ class SettlementRunController extends \BaseModuleController {
 	 */
 	public function prepare_input($data)
 	{
-		$time_last_month = strtotime('last month');
+		$time_last_month = strtotime('first day of last month');
 
 		$data['year']  = date('Y', $time_last_month);
 		$data['month'] = date('m', $time_last_month);
@@ -69,22 +69,7 @@ class SettlementRunController extends \BaseModuleController {
 		$obj 	= SettlementRun::find($id);
 		$files  = $obj->accounting_files();
 
-		// create and download ZIP file 
-		if (!isset($files[$key]))
-		{
-			$filepath = storage_path('app/tmp/billingfiles_'.$obj->year.'-'.$obj->month.'.zip');
-			if (!is_file($filepath))
-			{
-				chdir($obj->get_files_dir());
-				system("zip -r $filepath *");
-			}
-
-			return response()->download($filepath);
-		}
-
-		$file = response()->download($files[$key]->getRealPath());
-
-		return $file;
+		return response()->download($files[$key]->getRealPath());
 	}
 
 }

@@ -48,7 +48,7 @@ class accountingCommand extends Command {
 			'thism_01'		=> date('Y-m-01'),
 			'thism_bill'	=> date('m/Y'),
 
-			'lastm'			=> date('m', strtotime("first day of last month")),			// written this way because of known bug
+			'lastm'			=> date('m', strtotime("first day of last month")),			// written this way because of known bug ("-1 month" or "last month" is erroneous)
 			'lastm_01' 		=> date('Y-m-01', strtotime("first day of last month")),
 			'lastm_bill'	=> date('m/Y', strtotime("first day of last month")),
 			'lastm_Y'		=> date('Y-m', strtotime("first day of last month")),		// strtotime(first day of last month) is integer with actual timestamp!
@@ -61,7 +61,7 @@ class accountingCommand extends Command {
 
 		);
 
-		$this->dir .= date('Y-m', strtotime('-1 month')).'/';
+		$this->dir .= date('Y-m', strtotime('first day of last month')).'/';
 
 		parent::__construct();
 
@@ -327,6 +327,13 @@ class accountingCommand extends Command {
 		$salesmen[0]->prepare_output_file();
 		foreach ($salesmen as $sm)
 			$sm->print_commission();
+
+		// create zip file
+
+		$filename = date('Y_m', strtotime('first day of last month')).'.zip';
+		chdir(storage_path('app/'.$this->dir));
+		system("zip -r $filename *");
+
 	}
 
 	/**
@@ -340,6 +347,7 @@ class accountingCommand extends Command {
 		$csv   = [];
 		$files = Storage::files($this->dir);
 		$bool  = true;
+
 		// check if file is already loaded
 		foreach ($files as $file)
 		{
