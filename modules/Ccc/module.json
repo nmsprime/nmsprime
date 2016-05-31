@@ -1,0 +1,15 @@
+{
+    "name": "Ccc",
+    "alias": "ccc",
+    "description": "",
+    "keywords": [],
+    "active": 1,
+    "order": 0,
+    "providers": [
+        "Modules\\Ccc\\Providers\\CccServiceProvider"
+    ],
+    "aliases":{},
+    "files": [
+        "start.php"
+    ]
+}

@@ -21,7 +21,7 @@ use Modules\ProvBase\Entities\Cmts;
  *
  * @author: Torsten Schmidt
  */
-class ProvMonController extends \BaseModuleController {
+class ProvMonController extends \BaseController {
 
 	protected $domain_name = "";
 

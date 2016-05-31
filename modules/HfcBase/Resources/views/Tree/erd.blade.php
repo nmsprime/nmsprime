@@ -16,7 +16,7 @@
 	 */
 	function getEl (id)
 	{
-			url    = '<?php echo \Request::root() ?>'
+			url    = '<?php echo \BaseRoute::get_base_url() ?>'
 	        kml    = 0;
 
 	        alert ("Element Number: "+id, "<li><a href="+url+"/Tree/"+id+"/edit>Change</a></li>" +
@@ -43,7 +43,7 @@
 
 			if ($is_pos)
 			{
-				$url = \Request::root().'/Tree/create?pos='.$search;
+				$url = \BaseRoute::get_base_url().'/Tree/create?pos='.$search;
 				echo "<h4><div align=\"center\"> <a href=$url>Add Device</a></div></h4>";
 			}
 		?>

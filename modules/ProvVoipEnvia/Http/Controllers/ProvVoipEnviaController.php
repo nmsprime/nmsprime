@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\View;
 
 use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
 
-class ProvVoipEnviaController extends \BaseModuleController {
+class ProvVoipEnviaController extends \BaseController {
 
 	// TODO: @Patrick Reichel: is this field required ?
 	public $name = 'VOIP';
@@ -131,6 +131,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			['api' => 'selfcare', 'link' => 'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=out'],
 			['api' => 'selfcare', 'link' => 'calllog_get_status?contract_id=500000'],
 			['api' => 'selfcare', 'link' => 'configuration_get?phonenumber_id=300001'],
+			['api' => 'order', 'link' => 'contract_change_tariff?contract_id=500010'],
+			['api' => 'order', 'link' => 'contract_change_variation?contract_id=500010'],
 			['api' => 'order', 'link' => 'contract_create?contract_id=500000'],
 			['api' => 'order', 'link' => 'contract_get_voice_data?contract_id=500000'],
 			['api' => 'order', 'link' => 'contract_terminate?contract_id=500000'],
@@ -145,6 +147,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			['api' => 'order', 'link' => 'order_get_status?order_id=72950'],
 			['api' => 'order', 'link' => 'voip_account_create?phonenumber_id=300001'],
 			['api' => 'order', 'link' => 'voip_account_terminate?phonenumber_id=300001'],
+			['api' => 'order', 'link' => 'voip_account_update?phonenumber_id=300001'],
 			['api' => '', 'link' => ''],
 			['api' => 'selfcare', 'link' => 'blacklist_create_entry'],
 			['api' => 'selfcare', 'link' => 'blacklist_delete_entry'],
@@ -154,8 +157,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			['api' => 'selfcare', 'link' => 'configuration_update'],
 			['api' => 'order', 'link' => 'contract_change_method'],
 			['api' => 'order', 'link' => 'contract_change_sla'],
-			['api' => 'order', 'link' => 'contract_change_tariff'],
-			['api' => 'order', 'link' => 'contract_change_variation'],
 			['api' => 'order', 'link' => 'contract_get_reference'],
 			['api' => 'order', 'link' => 'contract_lock'],
 			['api' => 'order', 'link' => 'contract_unlock'],
@@ -166,7 +167,6 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			['api' => 'order', 'link' => 'phonebookentry_create'],
 			['api' => 'order', 'link' => 'phonebookentry_delete'],
 			['api' => 'order', 'link' => 'phonebookentry_get'],
-			['api' => 'order', 'link' => 'voip_account_update'],
 		);
 
 		echo '<h3>Selfcare-API is not active ⇒ links will not be shown</h3>';
@@ -371,6 +371,46 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			return true;
 		}
 
+		if ($job == 'contract_change_tariff') {
+			$this->model->extract_environment($this->model->contract, 'contract');
+
+			// only can get data for a contract that exists
+			if (!$this->model->contract_available) {
+				return false;
+			}
+
+			if (!boolval($this->model->contract->next_voip_id)) {
+				return false;
+			}
+
+			if ($this->model->contract->voip_id == $this->model->contract->next_voip_id) {
+				return false;
+			}
+
+			return true;
+
+		}
+
+		if ($job == 'contract_change_variation') {
+			$this->model->extract_environment($this->model->contract, 'contract');
+
+			// only can get data for a contract that exists
+			if (!$this->model->contract_available) {
+				return false;
+			}
+
+			if (!boolval($this->model->contract->next_purchase_tariff)) {
+				return false;
+			}
+
+			if ($this->model->contract->voip_id == $this->model->contract->next_purchase_tariff) {
+				return false;
+			}
+
+			return true;
+
+		}
+
 		if ($job == "customer_update") {
 			$this->model->extract_environment($this->model->contract, 'contract');
 
@@ -404,6 +444,44 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			return true;
 		}
 
+		if ($job == "voip_account_update") {
+			$this->model->extract_environment($this->model->phonenumbermanagement, 'phonenumbermanagement');
+
+			// can only be terminated if available
+			if (!$this->model->voipaccount_available) {
+				return false;
+			}
+
+			return true;
+		}
+
+		if ($job == "phonebookentry_create") {
+
+			$this->model->extract_environment($this->model->phonebookentry, 'phonebookentry');
+
+			// always allowed as this method is also used to change an existing phonebookentry
+			return true;
+		}
+
+		if ($job == "phonebookentry_delete") {
+
+			$this->model->extract_environment($this->model->phonebookentry, 'phonebookentry');
+
+			// can only be created if not existing
+			if ($this->model->phonebookentry_created) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+
+		if ($job == "phonebookentry_get") {
+
+			$this->model->extract_environment($this->model->phonebookentry, 'phonebookentry');
+			// always allowed
+			return true;
+		}
 
 
 
@@ -525,8 +603,8 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 			'contract_change_method' => $base_url.'____TODO____',
 			'contract_change_sla' => $base_url.'____TODO____',
-			'contract_change_tariff' => $base_url.'____TODO____',
-			'contract_change_variation' => $base_url.'____TODO____',
+			'contract_change_tariff' => $base_url.'contract/change_tariff',
+			'contract_change_variation' => $base_url.'contract/change_variation',
 			'contract_create' => $base_url.'contract/create',
 			'contract_get_reference' => $base_url.'____TODO____',
 			'contract_get_voice_data' => $base_url.'contract/get_voice_data',
@@ -547,13 +625,13 @@ class ProvVoipEnviaController extends \BaseModuleController {
 			'order_create_attachment' => $base_url.'order/create_attachment',
 			'order_get_status' => $base_url.'order/get_status',
 
-			'phonebookentry_create' => $base_url.'____TODO____',
-			'phonebookentry_delete' => $base_url.'____TODO____',
-			'phonebookentry_get' => $base_url.'____TODO____',
+			'phonebookentry_create' => $base_url.'phonebookentry/create',
+			'phonebookentry_delete' => $base_url.'phonebookentry/delete',
+			'phonebookentry_get' => $base_url.'phonebookentry/get',
 
 			'voip_account_create' => $base_url.'voip_account/create',
 			'voip_account_terminate' => $base_url.'voip_account/terminate',
-			'voip_account_update' => $base_url.'____TODO____',
+			'voip_account_update' => $base_url.'voip_account/update',
 		);
 
 		// TODO: improve error handling: Throwing an exception is a bit hard :-)
@@ -578,7 +656,7 @@ class ProvVoipEnviaController extends \BaseModuleController {
 
 		$view_header = 'Request Envia';
 
-		$view_path = static::get_view_name().'.request';
+		$view_path = \NamespaceController::get_view_name().'.request';
 
 		// check if job to do is allowed
 		// e.g. to prevent double contract creation on pressing <F5>

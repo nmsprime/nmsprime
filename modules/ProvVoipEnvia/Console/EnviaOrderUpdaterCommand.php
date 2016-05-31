@@ -102,20 +102,30 @@ class EnviaOrderUpdaterCommand extends Command {
 	 */
 	protected function _update_orders() {
 
+		// orders with one of these orderstatus_ids are complete
+		$final_orderstatus_ids = array(
+			1001,	# erfolreich verarbeitet
+			1017,	# Stornierung bestätigt
+		);
+
 		foreach ($this->orders as $order) {
 
 			$order_id = $order->orderid;
-			Log::debug('Updating order '.$order_id);
 
-			// get the relative URL to execute the cron job for updating the current order_id
-			$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'order_get_status', 'order_id' => $order_id, 'really' => 'True'), false);
+			// if current order is not finished: update
+			if (!in_array($order->orderstatus_id, $final_orderstatus_ids)) {
+				Log::debug('Updating order '.$order_id);
 
-			$url = $this->base_url.$url_suffix;
+				// get the relative URL to execute the cron job for updating the current order_id
+				$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'order_get_status', 'order_id' => $order_id, 'really' => 'True'), false);
 
-			$this->_perform_curl_request($url);
+				$url = $this->base_url.$url_suffix;
 
-			if (!$this->_updated($order_id)) {
-				Log::error("Order id ".$order_id." has not been updated");
+				$this->_perform_curl_request($url);
+
+				if (!$this->_updated($order_id)) {
+					Log::error("Order id ".$order_id." has not been updated");
+				}
 			}
 
 		}
@@ -169,6 +179,7 @@ class EnviaOrderUpdaterCommand extends Command {
 
 		// not older than 30sec
 		$compare_time = date('Y-m-d H:i:s', time() - 30);
+		dd($compare_time);
 
 		$order = EnviaOrder::withTrashed()->where('orderid', '=', $order_id)->first();
 

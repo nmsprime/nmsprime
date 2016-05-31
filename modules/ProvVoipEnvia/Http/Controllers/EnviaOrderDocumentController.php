@@ -10,7 +10,7 @@ use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
 
 /* use Modules\ProvVoipEnvia\Entities\EnviaOrders; */
 
-class EnviaOrderDocumentController extends \BaseModuleController {
+class EnviaOrderDocumentController extends \BaseController {
 
 	protected $index_create_allowed = false;
 

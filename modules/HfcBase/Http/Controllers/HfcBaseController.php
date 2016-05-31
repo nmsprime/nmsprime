@@ -2,10 +2,10 @@
 
 namespace Modules\HfcBase\Http\Controllers;
 
-use App\Http\Controllers\BaseModuleController;
+use App\Http\Controllers\BaseController;
 
 
-class HfcBaseController extends BaseModuleController {
+class HfcBaseController extends BaseController {
 
 	// The Html Link Target
 	protected $html_target = '';

@@ -5,7 +5,7 @@ use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\SepaMandate;
 use Modules\BillingBase\Entities\SepaAccount;
 
-class SepaMandateController extends \BaseModuleController {
+class SepaMandateController extends \BaseController {
 
 	protected $index_create_allowed = false;
 

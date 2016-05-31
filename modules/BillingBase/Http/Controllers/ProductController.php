@@ -6,7 +6,7 @@ use Modules\Billingbase\Entities\Product;
 use Modules\BillingBase\Entities\CostCenter;
 use Modules\ProvBase\Entities\Qos;
 
-class ProductController extends \BaseModuleController {
+class ProductController extends \BaseController {
 
     /**
      * defines the formular fields for the edit and create view

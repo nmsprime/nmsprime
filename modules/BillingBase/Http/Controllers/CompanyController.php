@@ -5,7 +5,7 @@ use Pingpong\Modules\Routing\Controller;
 use Modules\Billingbase\Entities\Company;
 use Input;
 
-class CompanyController extends \BaseModuleController {
+class CompanyController extends \BaseController {
 
 	protected $edit_left_md_size = 7;
 

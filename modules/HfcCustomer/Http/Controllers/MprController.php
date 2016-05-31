@@ -4,7 +4,7 @@ use Pingpong\Modules\Routing\Controller;
 use Modules\Hfccustomer\Entities\MprGeopos;
 
 
-class MprController extends \BaseModuleController {
+class MprController extends \BaseController {
 
     /**
      * defines the formular fields for the edit and create view
@@ -60,7 +60,7 @@ class MprController extends \BaseModuleController {
 			}
 		}
 
-		return \Redirect::route(static::get_route_name().'.edit', $mpr_id)->with('message', 'Created!');
+		return \Redirect::route(\NamespaceController::get_route_name().'.edit', $mpr_id)->with('message', 'Created!');
 	}
 
 }
