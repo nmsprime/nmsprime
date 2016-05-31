@@ -14,7 +14,7 @@ class BillingBaseDatabaseSeeder extends Seeder {
 	{
 		Model::unguard();
 		
-		// $this->call("CostCenterTableSeeder");
+		$this->call("CostCenterTableSeeder");
 		$this->call("ProductTableSeeder");
 	}
 
