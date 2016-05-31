@@ -3,6 +3,7 @@ namespace Modules\Billingbase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\SepaMandate;
+use Modules\BillingBase\Entities\SepaAccount;
 
 class SepaMandateController extends \BaseController {
 
@@ -32,9 +33,21 @@ class SepaMandateController extends \BaseController {
 		);
 	}
 
+
+	public function prepare_input($data)
+	{
+		$data['sepa_bic'] = $data['sepa_bic'] ? : SepaAccount::get_bic($data['sepa_iban']);
+		$data['sepa_bic'] = strtoupper(str_replace(' ', '' ,$data['sepa_bic']));
+
+		$data['sepa_iban'] = strtoupper(str_replace(' ', '' ,$data['sepa_iban']));
+
+		return parent::prepare_input($data);
+	}
+
+
 	public function prepare_rules($rules, $data)
 	{
-		$rules['bic'] = $data['sepa_bic'] ? : '|available:'.$data['sepa_iban'];
+		$rules['sepa_bic'] .= $data['sepa_bic'] ? '' : '|required';
 
 		return parent::prepare_rules($rules, $data);
 	}

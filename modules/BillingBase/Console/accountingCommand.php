@@ -5,7 +5,7 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-use File;
+use Storage;
 use DB;
 
 use Modules\ProvBase\Entities\Contract;
@@ -48,7 +48,7 @@ class accountingCommand extends Command {
 			'thism_01'		=> date('Y-m-01'),
 			'thism_bill'	=> date('m/Y'),
 
-			'lastm'			=> date('m', strtotime("first day of last month")),			// written this way because of known bug
+			'lastm'			=> date('m', strtotime("first day of last month")),			// written this way because of known bug ("-1 month" or "last month" is erroneous)
 			'lastm_01' 		=> date('Y-m-01', strtotime("first day of last month")),
 			'lastm_bill'	=> date('m/Y', strtotime("first day of last month")),
 			'lastm_Y'		=> date('Y-m', strtotime("first day of last month")),		// strtotime(first day of last month) is integer with actual timestamp!
@@ -61,7 +61,7 @@ class accountingCommand extends Command {
 
 		);
 
-		$this->dir .= date('Y_m').'/';
+		$this->dir .= date('Y-m', strtotime('first day of last month')).'/';
 
 		parent::__construct();
 
@@ -76,9 +76,6 @@ class accountingCommand extends Command {
 	 */
 	public function fire()
 	{
-		// only while testing!! - TODO: remove for production system
-		DB::table('item')->update(['payed' => false]);
-
 		$logger = new BillingLogger;
 		$logger->addInfo(' #####    Start Accounting Command    #####');
 
@@ -93,14 +90,12 @@ class accountingCommand extends Command {
 		if ($ret)
 			$logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 
-		// set time of last run
-		$last_run = AccountingRecord::select('created_at')->orderBy('id', 'desc')->first();
-		if ($last_run)
-			$this->dates['last_run'] = $last_run->created_at;
 
-		// init product types of salesmen and invoice nr counters for each sepa account
+		// init product types of salesmen and invoice nr counters for each sepa account, date of last run
 		$this->_init($sepa_accs, $salesmen, $conf);
 
+		// get call data records ordered
+		$cdrs = $this->_parse_cdr_file();
 		
 		/*
 		 * Loop over all Contracts
@@ -109,10 +104,6 @@ class accountingCommand extends Command {
 		{
 			// debugging output
 			var_dump($c->id); //, round(microtime(true) - $start, 4));
-			// dd(date('Y-m-d', strtotime('next day')));
-			// dd(strtotime(date('2016-04-01')), strtotime(date('2016-03-31 23:59:59')));
-			// dd(strtotime('0000-00-00'), strtotime(null), date('Y-m-d', strtotime('last year')));
-			// dd(date('z', strtotime(date('Y-12-31'))), date('Y-m-d', strtotime('last month')), date('L'), date('Y-m-d', strtotime('first day of last month')));
 
 
 			// Skip invalid contracts
@@ -147,6 +138,12 @@ class accountingCommand extends Command {
 
 				// get account via costcenter
 				$costcenter = $item->get_costcenter();
+				if (!is_object($costcenter))
+				{
+					$c->charge = [];
+					$logger->addAlert('No CostCenter assigned to Contract/Product/Item - Stop execution for this contract', [$c->id]);
+					break;
+				}
 				$acc = $sepa_accs->find($costcenter->sepa_account_id);
 
 				// increase invoice nr of sepa account, increase charge for account by price, calculate tax
@@ -166,7 +163,7 @@ class accountingCommand extends Command {
 
 				// save to accounting table (as backup for future) - NOTE: invoice nr counters are set initially from that table
 				$rec = new AccountingRecord;
-				$rec->store($item, $acc);
+				$rec->store_item($item, $acc);
 
 				// add item to accounting records of account, invoice and salesman
 				$acc->add_accounting_record($item);
@@ -176,6 +173,7 @@ class accountingCommand extends Command {
 
 			} // end of item loop
 
+
 			// get actual valid sepa mandate
 			$mandate = $c->get_valid_mandate();
 
@@ -183,7 +181,49 @@ class accountingCommand extends Command {
 				$logger->addNotice('Contract '.$c->number.' has no valid sepa mandate', [$c->id]);
 
 
-			// Add contract specific data for billing files
+			// Add Call Data Records - calculate charge and count
+			$charge = $calls = 0;
+
+			if (isset($cdrs[$c->id]))
+			{
+				foreach ($cdrs[$c->id] as $entry)
+				{
+					$charge += $entry[5];
+					$calls++;
+				}
+			}
+
+			if ($charge)
+			{
+				// accounting record
+				$acc = $sepa_accs->find($c->costcenter->sepa_account_id);
+				$rec = new AccountingRecord;
+				$rec->add_cdr($c, $acc, $charge, $calls);
+				$acc->add_cdr_accounting_record($c, $charge, $calls);
+
+				// invoice
+				$acc->add_invoice_cdr($c, $cdrs[$c->id], $conf);
+
+				// increase charge for booking record
+				if (isset($c->charge[$acc->id]))
+				{
+					$c->charge[$acc->id]['net'] += $charge;
+					$c->charge[$acc->id]['tax'] += $charge * $conf->tax/100;
+				}
+				else
+				{
+					// this case should never happen
+					$logger->addAlert('Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
+					$c->charge[$acc->id]['net'] = $charge;
+					$c->charge[$acc->id]['tax'] = $charge * $conf->tax/100;
+					$acc->invoice_nr += 1;
+				}
+
+			}
+
+
+
+			// Add contract specific data for accounting files
 			foreach ($c->charge as $acc_id => $value)
 			{
 				$value['net'] = round($value['net'], 2);
@@ -212,8 +252,10 @@ class accountingCommand extends Command {
 
 
 
-	/*
+	/**
 	 * Initialise models for this billing cycle (could also be done during runtime but with performance degradation)
+	 	* invoice number counter
+	 	* storage directories
 	 */
 	private function _init($sepa_accs, $salesmen, $conf)
 	{
@@ -235,11 +277,13 @@ class accountingCommand extends Command {
 			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+5 days'));
 		}
 
-
 		// actual invoice nr counters
 		$last_run = AccountingRecord::orderBy('created_at', 'desc')->select('created_at')->first();
 		if (is_object($last_run))
 		{
+			// set time of last run
+			$this->dates['last_run'] = $last_run->created_at;
+
 			foreach ($sepa_accs as $acc)
 			{
 				// restart counter every year
@@ -278,7 +322,72 @@ class accountingCommand extends Command {
 		$salesmen[0]->prepare_output_file();
 		foreach ($salesmen as $sm)
 			$sm->print_commission();
+
+		// create zip file
+
+		$filename = date('Y_m', strtotime('first day of last month')).'.zip';
+		chdir(storage_path('app/'.$this->dir));
+		system("zip -r $filename *");
+
 	}
+
+	/**
+	 * Calls cdrCommand to get Call data records from Envia and extracts relevant data
+	 *
+	 * @return array calls (time, phonenr) indexed by contract id
+	 */
+	private function _parse_cdr_file()
+	{
+		$data  = [];
+		$csv   = [];
+		$files = Storage::files($this->dir);
+		$bool  = true;
+
+		// check if file is already loaded
+		foreach ($files as $file)
+		{
+			if (strpos(basename($file), 'xxxxxxx') !== false)
+    		{
+    			$csv = file(storage_path('app/'.$file));
+    			break;
+    		}
+    	}
+
+    	if (!$csv)
+    	{
+			// get call data records
+			$ret = $this->call('billing:cdr');
+
+			if ($ret)
+				return array(array());
+
+			$files = Storage::files($this->dir);
+
+			foreach ($files as $file)
+			{
+				if (strpos(basename($file), 'xxxxxxx') !== false)
+	    		{
+	    			$csv = file(storage_path('app/'.$file));
+	    			break;
+	    		}
+	    	}
+    	}
+
+		foreach ($csv as $line)
+		{
+			// skip first line
+			if ($bool)
+			{
+				$bool = false;
+				continue;
+			}
+
+			$line = str_getcsv($line, ';');
+			$data[intval($line[0])][] = array($line[3], substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $line[7], str_replace(',', '.', $line[10]));
+		}	
+
+		return $data;
+    }
 
 
 	/**

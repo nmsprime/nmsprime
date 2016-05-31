@@ -10,10 +10,6 @@ class BillingBaseController extends \BaseController {
 
 	public $name = 'BillingBase';
 
-	public function index()
-	{
-		return view('billingbase::index');
-	}
 
 	public function view_form_fields($model = null)
 	{

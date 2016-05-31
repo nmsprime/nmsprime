@@ -50,6 +50,19 @@ class ItemController extends \BaseController {
 	}
 
 
+	public function prepare_input($data)
+	{
+		$data['credit_amount'] = abs($data['credit_amount']);
+
+		// set default valid from date to tomorrow for this product types
+		$data['valid_from'] = $data['valid_from'] ? : date('Y-m-d', strtotime('next day'));
+		// $data['valid_to'] = $data['valid_to'] ? : null;
+
+
+		return parent::prepare_input($data);
+	}
+
+
 	/**
 	 * @author Nino Ryschawy
 	 */
@@ -62,6 +75,7 @@ class ItemController extends \BaseController {
 		if ($fix && $data['valid_to'])
 			$rules['valid_to'] .= '|In:'.date('Y-m-d', strtotime('last day of this month', strtotime($data['valid_to'])));
 
+		// TODO: simplify when it's safe that valid_to=0000-00-00 can not occure
 		if ($data['valid_to'] && $data['valid_to'] != '0000-00-00')
 			$rules['valid_to'] .= '|after:'.$data['valid_from'];
 

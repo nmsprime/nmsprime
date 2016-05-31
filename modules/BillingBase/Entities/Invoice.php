@@ -8,20 +8,42 @@ use Modules\BillingBase\Entities\BillingLogger;
 
 class Invoice {
 
-	private $dir = 'data/billingbase/invoice/';				// relativ to storage path - changed in constructor
 	private $currency;
 	private $tax;
-	private $template = '/tftpboot/bill/template/';
-	private $logo_dir = '/tftpboot/bill/logo/';
-	private $file;
 
-	private $logger;							// logger instance for Billing Module
+	/**
+	 * @var strings  - template file paths relativ to Storage app path
+	 */
+	private $template_invoice_path = 'config/billingbase/template/';
+	private $template_cdr_path = 'config/billingbase/template/';
+	private $logo_path = 'config/billingbase/logo/';
 
+	private $filename_invoice;
+	private $filename_cdr;
+
+	/**
+	 * @var string - Directory to store Inoice pdf - relativ to storage path; completed in constructor by contract id
+	 */
+	private $dir = 'data/billingbase/invoice/';
+
+	/**
+	 * @var object - logger for Billing Module - instantiated in constructor
+	 */
+	private $logger;
+
+	/**
+	 * @var array 	Call Data Records
+	 */
+	public $cdrs;
+
+	/**
+	 * @var array 	All the data used to fill the invoice template file
+	 */
 	public $data = array(
 
 		'company_name'			=> '',
 		'company_street'		=> '',
-		'company_zip'			=> '',
+		'company_zip'			=> '',	
 		'company_city'			=> '',
 		'company_phone'			=> '',
 		'company_fax'			=> '',
@@ -57,11 +79,13 @@ class Invoice {
 		'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate
 		'invoice_headline'		=> '',
 		'rcd' 					=> '',			// Fälligkeitsdatum
+		'cdr_month'				=> '', 			// Month of Call Data Records
 		// 'tariffs'			=> '',			// (TODO: implement!)
 		// 'start'				=> '',			// Leistungszeitraum start , TODO: implement!
 		// 'end'				=> '',			// Leistungszeitraum ende , TODO: implement!
 
-		'item_table_positions'  => '', 			// list of all items to be charged in this invoice
+		'item_table_positions'  => '', 			// tex table of all items to be charged for this invoice
+		'cdr_table_positions'	=> '',			// tex table of all call data records
 		'table_summary' 		=> '', 			// preformatted table - use following three keys to set table by yourself
 		'table_sum_charge_net'  => '', 			// net charge - without tax
 		'table_sum_tax_percent' => '', 			// The tax percentage with % character
@@ -87,16 +111,19 @@ class Invoice {
 		// TODO: Add other currencies here
 		$this->currency	= strtolower($config->currency) == 'eur' ? '€' : $config->currency;
 		$this->tax		= $config->tax;
-		$this->dir 		.= $contract->number;
+		$this->dir 		.= $contract->id.'/';
 
 		$this->logger = new BillingLogger;
 	}
 
 	public function add_item($item) 
 	{
-		$count = $item->count ? $item->count : 1;
-		$this->data['item_table_positions'] .= $count.' & '.$item->invoice_description.' & '.round($item->charge/$count, 2).$this->currency.' & '.($item->charge).$this->currency.'\\\\';
+		// $count = $item->count ? $item->count : 1;
+		$price  = sprintf("%01.2f", round($item->charge/$item->count, 2));
+		$sum 	= sprintf("%01.2f", $item->charge);
+		$this->data['item_table_positions'] .= $item->count.' & '.$item->invoice_description.' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
 	}
+
 
 	public function set_mandate($mandate)
 	{
@@ -108,20 +135,26 @@ class Invoice {
 	}
 
 
-	// Set total sum and invoice text for this invoice - TODO: Translate!!
+	/**
+	 * Set total sum and invoice text for this invoice - TODO: Translate!!
+	 */
 	public function set_summary($net, $tax, $account)
 	{
 		$tax_percent = $tax ? $this->tax : 0;
 		$tax_percent .= '\%';
 
+		$total  = sprintf("%01.2f", $net + $tax);
+		$net 	= sprintf("%01.2f", $net);
+		$tax 	= sprintf("%01.2f", $tax);
+
 		$this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.$net.$this->currency.'\\\\';
 		$this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$tax.$this->currency.'\\\\';
-		$this->data['table_summary'] .= '~ & Rechnungsbetrag: & ~ & '.($net + $tax).$this->currency.'\\\\';
+		$this->data['table_summary'] .= '~ & \textbf{Rechnungsbetrag:} & ~ & \textbf{'.$total.$this->currency.'}\\\\';
 
 		$this->data['table_sum_charge_net']  	= $net; 
 		$this->data['table_sum_tax_percent'] 	= $tax_percent;
 		$this->data['table_sum_tax'] 			= $tax;
-		$this->data['table_sum_charge_total'] 	= $net + $tax; 
+		$this->data['table_sum_charge_total'] 	= $total; 
 
 
 		// make transfer reason (Verwendungszweck)
@@ -170,11 +203,17 @@ class Invoice {
 
 		// set invoice text
 		// $this->data['invoice_text'] = $template.'\\\\'.'\begin{tabbing} \hspace{9em}\=\kill '.$text.' \end{tabbing}';
-		$this->data['invoice_text'] = '\begin{tabular} {ll} \multicolumn{2}{L{\textwidth}} {'.$template.'}\\\\'.$text.' \end{tabular}';
-
+		$this->data['invoice_text'] = '\begin{tabular} {@{}ll} \multicolumn{2}{@{}L{\textwidth}} {'.$template.'}\\\\'.$text.' \end{tabular}';
 
 	}
 
+	/**
+	 * Maps appropriate Company and SepaAccount data to current Invoice
+	 	* address
+	 	* creditor bank account data
+	 	* invoice footer data
+	 	* invoice template path
+	 */
 	public function set_company_data($account)
 	{
 		$this->data['company_account_institute'] = $account->institute;
@@ -200,7 +239,7 @@ class Invoice {
 
 		$this->data['company_registration_court'] .= $account->company->registration_court_1 ? $account->company->registration_court_1.'\\\\' : '';
 		$this->data['company_registration_court'] .= $account->company->registration_court_2 ? $account->company->registration_court_2.'\\\\' : '';
-		$this->data['company_registration_court'] .= $account->company->registration_court_3 ? $account->company->registration_court_3.'\\\\' : '';
+		$this->data['company_registration_court'] .= $account->company->registration_court_3 ? $account->company->registration_court_3.'\\\\' : '\\\\';
 
 		if ($account->company->management)
 		{
@@ -221,74 +260,132 @@ class Invoice {
 		$this->data['company_tax_id_nr'] 	= $account->company->tax_id_nr;
 		$this->data['company_tax_nr'] 		= $account->company->tax_nr;
 
-		$this->data['company_logo'] = $this->logo_dir.$account->company->logo;
-		$this->template .= $account->template;
+		$this->data['company_logo']  = storage_path('app/'.$this->logo_path.$account->company->logo);
+		$this->template_invoice_path = storage_path('app/'.$this->template_invoice_path.$account->template_invoice);
+		$this->template_cdr_path 	 = storage_path('app/'.$this->template_cdr_path.$account->template_cdr);
 
 		return true;
 	}
 
-	/*
-	 * Read .tex or .odt file replace every \_ and all fields of data array that are set
+
+	/**
+	 * Create Invoice files
+	 *
+	 * TODO: consider template type - .tex or .odt
 	 */
 	public function make_invoice()
 	{
-		/*
-		 * TODO: consider template type - .tex or .odt
-		 */
-		// if ($this->data['invoice_nr'] == '2/100002')
-		// 	dd($this->data);
+		// Keep this order -> another invoice item is build in this function - TODO: move to separate function
+		if ($this->cdrs)
+			$this->make_cdr_tex();
 
-		if (!is_file($this->template) || !is_file($this->data['company_logo']))
-		{
-			$this->logger->addError("Failed to Create Invoice: Template or Logo of Company ".$this->data['company_name']." not set!", [$this->data['contract_id']]);
-			return -1;
-		}
+		if ($this->data['item_table_positions'])
+			$this->make_invoice_tex();
+		else
+			$this->logger->addError("No Items for Invoice - only build CDR", [$this->data['contract_id']]);
 
-		if (!$template = file_get_contents($this->template))
-		{
-			$this->logger->addError("Failed to Create Invoice: Could not read template ".$this->template, [$this->data['contract_id']]);
-			return -2;
-		}
-
-		// replace placeholder by value
-		$template = str_replace('\\_', '_', $template);
-
-		foreach ($this->data as $key => $value)
-			$template = str_replace('{'.$key.'}', $value, $template);
-
-		// create tex file
-		$this->file = $this->dir.'/'.date('m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
-		echo 'Stored tex file in '.storage_path('app/').$this->file."\n";
-		Storage::put($this->file, $template);
-
-		$this->create_pdf();
-
-		return 0;
+		// Store as pdf
+		$this->create_pdfs();
 	}
 
 
 	/**
-	 * Creates the pdf out of the prepared tex file - this function is very time consuming
+	 * Creates Tex File of Invoice - replaces all '\_' and all fields of data array that are set
 	 */
-	public function create_pdf()
+	private function make_invoice_tex()
 	{
-		chdir(storage_path('app/').$this->dir);
+		if (!is_file($this->template_invoice_path) || !is_file($this->data['company_logo']))
+		{
+			$this->logger->addError("Failed to Create Invoice: Template or Logo of Company ".$this->data['company_name']." not set!", [$this->data['contract_id']]);
+			return -2;
+		}
+
+		if (!$template = file_get_contents($this->template_invoice_path))
+		{
+			$this->logger->addError("Failed to Create Invoice: Could not read template ".$this->template_invoice_path, [$this->data['contract_id']]);
+			return -3;
+		}
+
+		// Replace placeholder by value
+		$template = str_replace('\\_', '_', $template);
+		foreach ($this->data as $key => $value)
+			$template = str_replace('{'.$key.'}', $value, $template);
+
+		// Create tex file(s)
+		$this->filename_invoice = date('m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
+		Storage::put($this->dir.$this->filename_invoice, $template);
+		// echo 'Stored tex file in '.storage_path('app/'.$this->dir.$this->filename_invoice)."\n";
+	}
 
 
-		$file = storage_path('app/').$this->file;
+	/**
+	 * Creates Tex File of Call Data Records - replaces all '\_' and all fields of data array that are set
+	 */
+	private function make_cdr_tex()
+	{
+		$month = date('m', strtotime($this->cdrs[0][1]));
+		$this->data['cdr_month'] = date("$month/Y");
+
+		// Create tex table
+		$sum = $count = 0;
+		foreach ($this->cdrs as $entry)
+		{
+			$this->data['cdr_table_positions'] .= date('d.m.Y', strtotime($entry[1])).' '.$entry[2] .' & '. $entry[3] .' & '. $entry[0] .' & '. $entry[4] . ' & '. $entry[5].'\\\\';
+			$sum += $entry[5];
+			$count++;
+		}
+		$this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'. $sum . '}\\\\';
+		$plural = $count > 1 ? 'en' : '';
+		$this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural." & ".round($sum, 2).$this->currency.' & '.round($sum, 2).$this->currency.'\\\\';
+
+		if (!$template = file_get_contents($this->template_cdr_path))
+		{
+			$this->logger->addError("Failed to Create Call Data Record: Could not read template ".$this->template_cdr_path, [$this->data['contract_id']]);
+			return -3;
+		}
+
+		// Replace placeholder by value
+		$template = str_replace('\\_', '_', $template);
+		foreach ($this->data as $key => $value)
+			$template = str_replace('{'.$key.'}', $value, $template);
+
+		$this->filename_cdr = date("Y_$month").'_cdr';
+		Storage::put($this->dir.$this->filename_cdr, $template);
+	}
+
+
+	/**
+	 * Creates the pdfs out of the prepared tex files - Note: this function is very time consuming
+	 */
+	private function create_pdfs()
+	{
+		chdir(storage_path('app/'.$this->dir));
+
+		$file_paths['Invoice']  = storage_path('app/'.$this->dir.$this->filename_invoice);
+		$file_paths['CDR'] 		= storage_path('app/'.$this->dir.$this->filename_cdr);
+
+		// if ($this->data['contract_id'] == 500027)
+		// dd($file_paths);
 
 		// TODO: execute in background to speed this up by multiprocessing - but what is with the temporary files then?
-		system("pdflatex $file &>/dev/null");			// returns 0 on success - $ret as second argument
+		foreach ($file_paths as $key => $file)
+		{
+			if (is_file($file))
+			{
+				system("pdflatex $file &>/dev/null");			// returns 0 on success - $ret as second argument
+				echo "Successfully created $key in $file\n";
+				$this->logger->addDebug("Successfully created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
 
-		$this->logger->addDebug('Successfully created Invoice for Contract '.$this->data['contract_nr'], [$this->data['contract_id'], $file]);
+				// remove temporary files
+				unlink($file);
+				unlink($file.'.aux');
+				unlink($file.'.log');
+			}
+		}
 
 		// add hash for security  (files are not downloadable through script that easy)
-		// rename("$file.pdf", $file.'_'.hash('crc32b', $this->data['contract_id'].time()).'.pdf');
+		// rename("$filename.pdf", $filename.'_'.hash('crc32b', $this->data['contract_id'].time()).'.pdf');
 
-		// remove temporary files
-		unlink($file);
-		unlink($file.'.aux');
-		unlink($file.'.log');
 	}
 
 }

@@ -11,7 +11,7 @@ class CostCenter extends \BaseModel {
 	public static function rules($id = null)
 	{
 		// this is to avoid missing customer payments when changing the billing month during the year
-		$m = date('m') % 12 + 1;
+		$m = date('m');
 
 		return array(
 			'name' 			=> 'required',

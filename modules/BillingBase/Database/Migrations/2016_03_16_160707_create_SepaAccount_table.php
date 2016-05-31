@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Storage;
 
 class CreateSepaAccountTable extends BaseMigration {
 
@@ -14,6 +15,10 @@ class CreateSepaAccountTable extends BaseMigration {
 	 */
 	public function up()
 	{
+		Storage::makeDirectory('config/billingbase/template/', '744' ,true);
+		Storage::makeDirectory('config/billingbase/logo/', '744' ,true);
+		system("/bin/chown -R apache ".storage_path('app/config/billingbase'));
+
 		Schema::create($this->tablename, function(Blueprint $table)
 		{
 			$this->up_table_generic($table);
@@ -30,11 +35,12 @@ class CreateSepaAccountTable extends BaseMigration {
 			$table->string('invoice_text_negativ');
 			$table->string('invoice_text_sepa');
 			$table->string('invoice_text_sepa_negativ');
-			$table->string('template');
+			$table->string('template_invoice');
+			$table->string('template_cdr');
 			$table->string('description');
 		});
 
-		$this->set_fim_fields(['name', 'holder', 'iban', 'bic', 'institute', 'invoice_headline', 'invoice_text', 'invoice_text_negativ', 'invoice_text_sepa_negativ', 'invoice_text_sepa', 'description']);
+		$this->set_fim_fields(['name', 'holder', 'iban', 'bic', 'institute', 'invoice_headline', 'description', 'invoice_text', 'invoice_text_negativ', 'invoice_text_sepa_negativ', 'invoice_text_sepa']);
 
 	}
 

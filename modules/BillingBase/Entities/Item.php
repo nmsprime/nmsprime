@@ -215,14 +215,14 @@ class Item extends \BaseModel {
 
 			case 'Yearly':
 
-				if ($this->payed)
+				if ($this->payed_month && $this->payed_month != $dates['m'] - 1)
 					break;
 
 				// calculate only for billing month
 				$costcenter    = $this->get_costcenter();
 				$billing_month = $costcenter->get_billing_month();		// June is default
 
-				if ($dates['m'] != $billing_month)
+				if ($dates['m'] - 1 != $billing_month)
 					break;
 
 				// started last yr
@@ -249,8 +249,11 @@ class Item extends \BaseModel {
 					$text .= date('Y-12-31', strtotime('last year'));
 
 				// set payed flag to avoid double payment in case of billing month is changed during year
-				$this->payed = true;		// is set to false every new year
-				$this->save();
+				if ($ratio)
+				{
+					$this->payed_month = $dates['m'] - 1;				// is set to 0 every new year
+					$this->save();
+				}
 
 				break;
 
@@ -269,7 +272,7 @@ class Item extends \BaseModel {
 				if ($start > strtotime($period_start))
 				{
 					$days = date('z', strtotime('last day of this month')) - date('z', $start) + 1;
-					$total_days = date('t') + date('t', strtotime('last month')) + date('t', $start);
+					$total_days = date('t') + date('t', strtotime('first day of last month')) + date('t', $start);
 					$ratio = $days / $total_days;
 					$text = date('Y-m-d', $start);
 				}
@@ -283,7 +286,7 @@ class Item extends \BaseModel {
 				if ($end && ($end > strtotime($period_start)) && ($end < strtotime(date('Y-m-01', strtotime('next month')))))
 				{
 					$days = date('z', strtotime('last day of this month')) - date('z', $end);
-					$total_days = date('t') + date('t', strtotime('last month')) + date('t', $start);
+					$total_days = date('t') + date('t', strtotime('first day of last month')) + date('t', $start);
 					$ratio -= $days / $total_days;
 					$text .= date('Y-m-d', $end);
 				}
@@ -360,9 +363,9 @@ class Item extends \BaseModel {
 		if (!$ratio)
 			return null;
 
-		$count = $this->count ? $this->count : 1;
+		$this->count = $this->count ? $this->count : 1;
 
-		$this->charge = $this->product->type == 'Credit' ?  (-1) * $this->credit_amount : $this->product->price * $ratio * $count;
+		$this->charge = $this->product->type == 'Credit' ?  (-1) * $this->credit_amount : $this->product->price * $ratio * $this->count;
 		$this->ratio  = $ratio ? $ratio : 1;
 		$this->invoice_description = $this->product->name.' '.$text;
 
@@ -375,8 +378,8 @@ class Item extends \BaseModel {
 	 */
 	public function yearly_conversion()
 	{
-		DB::table($this->table)->update(['payed' => false]);
-		\Log::info('Billing: Payed flag of all items resettet for new year');
+		DB::table($this->table)->update(['payed_month' => 0]);
+		\Log::info('Billing: Payed month flag of all items resettet for new year');
 	}
 
 
@@ -397,16 +400,12 @@ class ItemObserver
 
 	public function creating($item)
 	{
-		// always positiv amount for credits
-		$item->credit_amount = abs($item->credit_amount);
+		// this doesnt work in prepare_input() !!
+		$item->valid_to = $item->valid_to ? : null;
 
+		// set end date of old tariff to starting date of new tariff
 		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
-			// set default valid from date to tomorrow for this product types
-			if(!$item->valid_from || $item->valid_from == '0000-00-00')
-				$item->valid_from = date('Y-m-d', strtotime('next day'));
-
-			// set end date of old tariff to starting date of new tariff
 			$tariff = $item->contract->get_valid_tariff($item->product->type);
 
 			if ($tariff)
@@ -424,11 +423,12 @@ class ItemObserver
 
 	public function updating($item)
 	{
-		$item->credit_amount = abs($item->credit_amount);
+		// this doesnt work in prepare_input() !!
+		$item->valid_to = $item->valid_to ? : null;
 
+		// set end date of old tariff to starting date of new tariff (if it's not the same)
 		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
-			// set end date of old tariff to starting date of new tariff (if it's not the same)
 			$tariff = $item->contract->get_valid_tariff($item->product->type);
 
 			if ($tariff && $tariff->id != $item->id)
@@ -442,7 +442,6 @@ class ItemObserver
 		$this->handle_fixed_cycles($item);
 
 	}
-
 
 
 	/**

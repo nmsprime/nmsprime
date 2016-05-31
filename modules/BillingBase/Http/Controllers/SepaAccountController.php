@@ -37,17 +37,30 @@ class SepaAccountController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'invoice_text_sepa_negativ', 'description' => 'Invoice Text for negativ Amount with Sepa Mandate'),
 			array('form_type' => 'text', 'name' => 'invoice_text', 'description' => 'Invoice Text for positiv Amount without Sepa Mandate'),
 			array('form_type' => 'text', 'name' => 'invoice_text_negativ', 'description' => 'Invoice Text for negativ Amount without Sepa Mandate'),
-			array('form_type' => 'select', 'name' => 'template', 'description' => 'Choose template file for invoice', 'value' => $templates),
-			array('form_type' => 'file', 'name' => 'template_upload', 'description' => 'Upload template'),
+			array('form_type' => 'select', 'name' => 'template_invoice', 'description' => 'Choose invoice template file', 'value' => $templates),
+			array('form_type' => 'select', 'name' => 'template_cdr', 'description' => 'Choose Call Data Record template file', 'value' => $templates),
+			array('form_type' => 'file', 'name' => 'template_invoice_upload', 'description' => 'Upload invoice template'),
+			array('form_type' => 'file', 'name' => 'template_cdr_upload', 'description' => 'Upload CDR template'),
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
 		);
 	}
 
 
+	public function prepare_input($data)
+	{
+		$data['bic'] = $data['bic'] ? : SepaAccount::get_bic($data['iban']);
+		$data['bic'] = strtoupper(str_replace(' ', '' , $data['bic']));
+
+		$data['iban'] = strtoupper(str_replace(' ', '' , $data['iban']));
+		$data['creditorid'] = strtoupper($data['creditorid']);
+
+		return parent::prepare_input($data);
+	}
+
+
 	public function prepare_rules($rules, $data)
 	{
-		if (!$data['bic'])
-			$rules['bic'] .= '|available:'.$data['iban'];
+		$rules['bic'] .= $data['bic'] ? '' : '|required';
 
 		return parent::prepare_rules($rules, $data);
 	}
@@ -59,7 +72,8 @@ class SepaAccountController extends \BaseController {
 	public function store($redirect = true)
 	{
 		// check and handle uploaded firmware files
-		$this->handle_file_upload('template', '/tftpboot/bill/template/');
+		$this->handle_file_upload('template_invoice', storage_path('app/config/billingbase/template/'));
+		$this->handle_file_upload('template_cdr', storage_path('app/config/billingbase/template/'));
 
 		// finally: call base method
 		return parent::store();
@@ -67,7 +81,8 @@ class SepaAccountController extends \BaseController {
 
 	public function update($id)
 	{
-		$this->handle_file_upload('template', '/tftpboot/bill/template/');
+		$this->handle_file_upload('template_invoice', storage_path('app/config/billingbase/template/'));
+		$this->handle_file_upload('template_cdr', storage_path('app/config/billingbase/template/'));
 
 		return parent::update($id);
 	}

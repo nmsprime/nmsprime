@@ -14,7 +14,7 @@ class SepaAccount extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'sepaaccount';
 
-    public $guarded = ['template_upload'];
+    public $guarded = ['template_invoice_upload', 'template_cdr_upload'];
 
 	// Add your validation rules here
 	public static function rules($id = null)
@@ -26,15 +26,6 @@ class SepaAccount extends \BaseModel {
 			'iban' 		=> 'required|iban',
 			'bic' 		=> 'bic',
 		);
-	}
-
-	/*
-	 * Init Observers
-	 */
-	public static function boot()
-	{
-		SepaAccount::observe(new SepaAccountObserver);
-		parent::boot();
 	}
 
 
@@ -90,13 +81,14 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function templates()
 	{
-		$files_raw  = glob("/tftpboot/bill/template/*");
+		// $files_raw  = glob("/tftpboot/bill/template/*");
+		$files_raw = Storage::files('config/billingbase/template');
 		$templates 	= array(null => "None");
 
 		// extract filename
 		foreach ($files_raw as $file) 
 		{
-			if (is_file($file))
+			if (is_file(storage_path('app/'.$file)))
 			{
 				$parts = explode("/", $file);
 				$filename = array_pop($parts);
@@ -189,13 +181,12 @@ class SepaAccount extends \BaseModel {
 
 		$data = array(
 			
-			// 'Contractnr' => $item->contract->id,
 			'Contractnr' 	=> $item->contract->number,
 			'Invoicenr' 	=> $this->get_invoice_nr_formatted(),
 			'Target Month' 	=> date('m'),
 			'Date' 			=> date('Y-m-d'),
 			'Cost Center'  	=> isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
-			'Count'			=> $item->count ? $item->count : '1',
+			'Count'			=> $item->count,
 			'Description'  	=> $item->invoice_description,
 			'Price' 		=> $item->charge,
 			'Firstname'		=> $item->contract->firstname,
@@ -272,11 +263,40 @@ class SepaAccount extends \BaseModel {
 	}
 
 
+	public function add_cdr_accounting_record($contract, $charge, $count)
+	{
+		$this->acc_recs['tariff'][] = array(
+			'Contractnr' 	=> $contract->number,
+			'Invoicenr' 	=> $this->get_invoice_nr_formatted(),
+			'Target Month' 	=> date('m'),
+			'Date' 			=> date('Y-m-d'),
+			'Cost Center'  	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
+			'Count'			=> $count,
+			'Description'  	=> 'Telephone Calls',
+			'Price' 		=> $charge,
+			'Firstname'		=> $contract->firstname,
+			'Lastname' 		=> $contract->lastname,
+			'Street' 		=> $contract->street,
+			'Zip' 			=> $contract->zip,
+			'City' 			=> $contract->city,
+			);
+	}
+
+
 	public function add_invoice_item($item, $conf)
 	{
 		if (!isset($this->invoices[$item->contract->id]))
 			$this->invoices[$item->contract->id] = new Invoice($item->contract, $conf, $this->get_invoice_nr_formatted());
+
 		$this->invoices[$item->contract->id]->add_item($item);
+	}
+
+	public function add_invoice_cdr($contract, $cdrs, $conf)
+	{
+		if (!isset($this->invoices[$contract->id]))
+			$this->invoices[$contract->id] = new Invoice($contract, $conf, '');
+
+		$this->invoices[$contract->id]->cdrs = $cdrs;
 	}
 
 
@@ -297,7 +317,8 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function add_sepa_transfer($mandate, $charge, $dates)
 	{
-		$info = 'Month '.date('m/Y');
+		// $info = trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
+		$info = 'Monat '.date('m/Y', strtotime('first day of last month'));
 
 		// Note: Charge == 0 is automatically excluded
 		if ($charge < 0)
@@ -400,7 +421,7 @@ class SepaAccount extends \BaseModel {
 			$file = SepaAccount::str_sanitize($file);
 
 			// initialise record files with Column names as first line
-			Storage::put($file, implode("\t", array_keys($records[0]))."\n");
+			Storage::put($file, implode("\t", array_keys($records[0])));
 
 			$data = [];
 			foreach ($records as $value)
@@ -430,7 +451,7 @@ class SepaAccount extends \BaseModel {
 			$file = SepaAccount::str_sanitize($file);
 
 			// initialise record files with Column names as first line
-			Storage::put($file, implode("\t", array_keys($records[0]))."\n");
+			Storage::put($file, implode("\t", array_keys($records[0])));
 
 			$data = [];
 			foreach ($records as $value)
@@ -444,10 +465,13 @@ class SepaAccount extends \BaseModel {
 		return;
 	}
 
+	/*
+	 * Writes Paths of stored files to Logfiles and Console
+	 */
 	private function _log($name, $pathname)
 	{
-		$path = storage_path('app');
-		echo "stored $name in $path"."$pathname\n";
+		$path = storage_path('app/');
+		echo "Stored $name in $path"."$pathname\n";
 		$this->logger->addInfo("Successfully stored $name in $path"."$pathname \n");		
 	}
 
@@ -593,7 +617,7 @@ class SepaAccount extends \BaseModel {
 	public static function str_sanitize($string)
 	{
 		$string = str_replace(' ', '_', $string);
-		return preg_replace("/[^a-zA-Z0-9.\/_]/", "", $string);
+		return preg_replace("/[^a-zA-Z0-9.\/_-]/", "", $string);
 	}
 
 
@@ -607,8 +631,12 @@ class SepaAccount extends \BaseModel {
 		$iban 	 = new IBAN(strtoupper($iban));
 		$country = strtolower($iban->Country());
 		$bank 	 = $iban->Bank();
+		$csv 	 = 'config/billingbase/bic_'.$country.'.csv';
 
-		$data = Storage::get('config/billingbase/bic_'.$country.'.csv');
+		if (!file_exists(storage_path('app/'.$csv)))
+			return '';
+
+		$data   = Storage::get($csv);
 		$data_a = explode("\n", $data);
 
 		foreach ($data_a as $key => $entry)
@@ -619,34 +647,6 @@ class SepaAccount extends \BaseModel {
 				return $entry[3];
 			}
 		}
-	}
-
-}
-
-
-
-/**
- * Observer Class
- *
- * can handle   'creating', 'created', 'updating', 'updated',
- *              'deleting', 'deleted', 'saving', 'saved',
- *              'restoring', 'restored',
- */
-class SepaAccountObserver
-{
-
-	public function creating($acc)
-	{
-		$acc->iban = strtoupper($acc->iban);
-		$acc->bic  = $acc->bic ? strtoupper($acc->bic) : SepaAccount::get_bic($acc->iban);
-		$acc->creditorid = strtoupper($acc->creditorid);
-	}
-
-	public function updating($acc)
-	{
-		$acc->iban = strtoupper($acc->iban);
-		$acc->bic  = $acc->bic ? strtoupper($acc->bic) : SepaAccount::get_bic($acc->iban);
-		$acc->creditorid = strtoupper($acc->creditorid);
 	}
 
 }

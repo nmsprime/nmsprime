@@ -120,23 +120,16 @@ class SepaMandateObserver
 		// build mandate reference from template
 		$mandate->reference = $this->build_mandate_ref($mandate);
 
-		$mandate->sepa_iban = strtoupper($mandate->sepa_iban);
-
-		// Set default values for empty fields
-		$mandate->sepa_bic  = $mandate->sepa_bic ? strtoupper($mandate->sepa_bic) : SepaAccount::get_bic($mandate->sepa_iban);
-
+		// Set default values for empty fields - NOTE: prepare_input() functions fills data too
 		if (!$mandate->sepa_holder)
 		{
 			$contract = $mandate->contract;
 			$mandate->sepa_holder = $contract->firstname.' '.$contract->lastname;
 		}
 
-		if (!$mandate->signature_date)
-			$mandate->signature_date = date('Y-m-d');
-
-		if (!$mandate->sepa_valid_from)
-			$mandate->sepa_valid_from = date('Y-m-d', strtotime('next day'));
-
+		$today = date('Y-m-d');
+		$mandate->signature_date = $mandate->signature_date ? : $today;
+		$mandate->sepa_valid_from = $mandate->sepa_valid_from ? : $today;
 
 		// set end date of old mandate to starting date of new mandate
 		$mandate_old = $mandate->contract->get_valid_mandate();
@@ -156,9 +149,6 @@ class SepaMandateObserver
 
 		if (!$mandate->signature_date || $mandate->signature_date == '0000-00-00')
 			$mandate->signature_date = date('Y-m-d');
-
-		$mandate->sepa_iban = strtoupper($mandate->sepa_iban);
-		$mandate->sepa_bic  = $mandate->sepa_bic ? strtoupper($mandate->sepa_bic) : SepaAccount::get_bic($mandate->sepa_iban);
 	}
 
 

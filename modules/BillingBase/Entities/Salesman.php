@@ -108,9 +108,9 @@ add:
 		// all other types that the salesman gets commission for
 		if (in_array($item->product->type, $types))
 		{
-			$count = $item->count ? $item->count : 1;
+			// $count = $item->count ? $item->count : 1;
 			$this->total_commission += $item->charge;
-			array_push($this->item_names, $count.'x '.$item->product->name);
+			array_push($this->item_names, $item->count.'x '.$item->product->name);
 		}
 
 		return;

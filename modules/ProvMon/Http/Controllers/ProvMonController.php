@@ -66,7 +66,7 @@ class ProvMonController extends \BaseController {
 		$lease['text'] = $this->search_lease('hardware ethernet '.$modem->mac);
 		$lease = $this->validate_lease($lease, $type);
 
-		// Log
+		// Log - TODO: grep tftp requests of specific modem - not all!
 		exec ('egrep "('.$modem->mac.'|'.$hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
 
 
