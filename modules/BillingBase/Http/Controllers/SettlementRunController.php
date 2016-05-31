@@ -2,7 +2,7 @@
 namespace Modules\Billingbase\Http\Controllers;
 use Modules\BillingBase\Entities\SettlementRun;
 
-class SettlementRunController extends \BaseModuleController {
+class SettlementRunController extends \BaseController {
 
 	public function view_form_fields($model = null)
 	{
@@ -41,9 +41,9 @@ class SettlementRunController extends \BaseModuleController {
 	 */
 	public function store($redirect = true)
 	{
-		SettlementRun::where('month', '=', (date('m') + 11) % 12)->delete();
-
 		\Artisan::call('billing:accounting');
+
+		SettlementRun::where('month', '=', (date('m') + 11) % 12)->delete();
 
 		return parent::store();
 	}
