@@ -40,14 +40,11 @@ class cdrCommand extends Command {
 	 */
 	public function fire()
 	{
-		// TODO: remove hard coded login data for production system
-		$https_user = 'erznet_Reseller';
-		$https_password = 'password';
-		// $https_user = $_ENV['PROVVOIPENVIA__RESELLER_USERNAME'];
-		// $https_password = $_ENV['PROVVOIPENVIA__RESELLER_PASSWORD'];
+		$https_user = $_ENV['PROVVOIPENVIA__RESELLER_USERNAME'];
+		$https_password = $_ENV['PROVVOIPENVIA__RESELLER_PASSWORD'];
 		$logger = new BillingLogger;
 
-		$month = $this->argument('month') >= 1 && $this->argument('month') <= 12 ? sprintf('%02d', $this->argument('month')) : date('m', strtotime('-1 months'));
+		$month = $this->argument('month') >= 1 && $this->argument('month') <= 12 ? sprintf('%02d', $this->argument('month')) : date('m', strtotime('first day of last month'));
 
 		$file 	  = 'cdr.zip';
 		$tmp_path = storage_path('app/tmp/');
@@ -61,6 +58,7 @@ class cdrCommand extends Command {
 
 		Storage::put("tmp/$file", $data);
 
+
 		$zipper = new Zipper;
 		$target_dir = storage_path('app/data/billingbase/accounting/'.date("Y-$month").'/');
 
@@ -68,6 +66,7 @@ class cdrCommand extends Command {
 			mkdir($target_dir, '0744', true);
 
 		$zipper->make($tmp_path.$file)->extractTo($target_dir);
+		$logger->addInfo("Successfully stored Call Data Record in $target_dir");
 
 		Storage::delete('tmp/cdr.zip');
 	}
