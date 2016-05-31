@@ -397,17 +397,12 @@ class ItemObserver
 
 	public function creating($item)
 	{
-		// always positiv amount for credits
-		$item->credit_amount = abs($item->credit_amount);
+		// this doesnt work in prepare_input() !!
+		$item->valid_to = $item->valid_to ? : null;
 
-		// set default valid from date to tomorrow for this product types
-		if(!$item->valid_from || $item->valid_from == '0000-00-00')
-			$item->valid_from = date('Y-m-d', strtotime('next day'));
-
+		// set end date of old tariff to starting date of new tariff
 		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
-
-			// set end date of old tariff to starting date of new tariff
 			$tariff = $item->contract->get_valid_tariff($item->product->type);
 
 			if ($tariff)
@@ -425,11 +420,12 @@ class ItemObserver
 
 	public function updating($item)
 	{
-		$item->credit_amount = abs($item->credit_amount);
+		// this doesnt work in prepare_input() !!
+		$item->valid_to = $item->valid_to ? : null;
 
+		// set end date of old tariff to starting date of new tariff (if it's not the same)
 		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
-			// set end date of old tariff to starting date of new tariff (if it's not the same)
 			$tariff = $item->contract->get_valid_tariff($item->product->type);
 
 			if ($tariff && $tariff->id != $item->id)
@@ -443,7 +439,6 @@ class ItemObserver
 		$this->handle_fixed_cycles($item);
 
 	}
-
 
 
 	/**

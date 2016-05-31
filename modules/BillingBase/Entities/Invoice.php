@@ -119,7 +119,9 @@ class Invoice {
 	public function add_item($item) 
 	{
 		// $count = $item->count ? $item->count : 1;
-		$this->data['item_table_positions'] .= $item->count.' & '.$item->invoice_description.' & '.round($item->charge/$item->count, 2).$this->currency.' & '.($item->charge).$this->currency.'\\\\';
+		$price  = sprintf("%01.2f", round($item->charge/$item->count, 2));
+		$sum 	= sprintf("%01.2f", $item->charge);
+		$this->data['item_table_positions'] .= $item->count.' & '.$item->invoice_description.' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
 	}
 
 
@@ -141,14 +143,18 @@ class Invoice {
 		$tax_percent = $tax ? $this->tax : 0;
 		$tax_percent .= '\%';
 
+		$total  = sprintf("%01.2f", $net + $tax);
+		$net 	= sprintf("%01.2f", $net);
+		$tax 	= sprintf("%01.2f", $tax);
+
 		$this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.$net.$this->currency.'\\\\';
 		$this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$tax.$this->currency.'\\\\';
-		$this->data['table_summary'] .= '~ & \textbf{Rechnungsbetrag:} & ~ & \textbf{'.($net + $tax).$this->currency.'}\\\\';
+		$this->data['table_summary'] .= '~ & \textbf{Rechnungsbetrag:} & ~ & \textbf{'.$total.$this->currency.'}\\\\';
 
 		$this->data['table_sum_charge_net']  	= $net; 
 		$this->data['table_sum_tax_percent'] 	= $tax_percent;
 		$this->data['table_sum_tax'] 			= $tax;
-		$this->data['table_sum_charge_total'] 	= $net + $tax; 
+		$this->data['table_sum_charge_total'] 	= $total; 
 
 
 		// make transfer reason (Verwendungszweck)
