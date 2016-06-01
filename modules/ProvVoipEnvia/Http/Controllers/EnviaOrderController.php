@@ -37,23 +37,23 @@ class EnviaOrderController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'orderstatus', 'description' => 'Orderstatus', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'orderdate', 'description' => 'Orderdate', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'ordercomment', 'description' => 'Ordercomment', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'customerreference', 'description' => 'Envia customer reference', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'contract', 'description' => 'Contract number', 'init_value' => $model->contract->number, 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'customer', 'description' => 'Customer number', 'init_value' => $model->contract->number3, 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'Envia contract reference', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'options' => ['readonly'], 'hidden' => '0'),
-			/* array('form_type' => 'text', 'name' => 'contract', 'description' => 'Contract', 'value' => $model->contract->number, 'options' => ['readonly']), */
-			array('form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'customerreference', 'description' => 'Envia customer reference', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'options' => ['readonly'], 'hidden' => '1'),
+			/* array('form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber', 'options' => ['readonly']), */
 		);
 
 		// order can be related to phonenumber (and contract) or to contract alone – the current order is maybe not bundled with a number, we have to catch this special case
 		$phonenumber = $model->phonenumber;
 		if (!is_null($phonenumber)) {
 			$nr = $phonenumber->prefix_number.'/'.$phonenumber->number;
-			array_push($ret, array('form_type' => 'text', 'name' => 'phonenumber', 'description' => 'Phonenumber', 'value' => $nr, 'options' => ['readonly']));
+			array_push($ret, array('form_type' => 'text', 'name' => 'phonenumber', 'description' => 'Phonenumber', 'init_value' => $nr, 'options' => ['readonly']));
 		}
 
 		return $ret;
 	}
-
 
 	public function create() {
 
@@ -61,7 +61,7 @@ class EnviaOrderController extends \BaseController {
 		$phonenumber_id = \Input::get('phonenumber_id', null);
 		$contract_id = \Input::get('contract_id', null);
 
-		// if order_id is given: all is fine => call parent
+		// if contract_id is given: all is fine => call parent
 		// in this case we take for sure that the caller is is either contract=>create_envia_order or a redirected phonenumbermanagement=>create_envia_order
 		if (!is_null($contract_id)) {
 			return parent::create();
@@ -74,12 +74,24 @@ class EnviaOrderController extends \BaseController {
 
 		$phonenumbermanagement = PhonenumberManagement::findOrFail($phonenumbermanagement_id);
 
-		// build new parameter set (this is: attach contract_id and phonenumber_id
-		$params = \Input::all();
+		// build new parameter set (this is: attach contract_id and phonenumber_id)
+		// first: preserve the parent (the first _GET param given) as this is needed within BaseViewController
+		// so we put the complete array in front of new params
+		$params = $_GET;
+
+		// then we add all possibly given input values (this is e.g. the _token to avoid CSRF attacks)
+		foreach (\Input::all() as $key => $value) {
+			if (!array_key_exists($key, $params)) {
+				$params[$key] = $value;
+			}
+		}
+
+		// finally we add the related ids
 		$params['phonenumber_id'] = $phonenumbermanagement->phonenumber->id;
 		$params['contract_id'] = $phonenumbermanagement->phonenumber->mta->modem->contract->id;
 		$params['contractreference'] = $phonenumbermanagement->phonenumber->mta->modem->contract->contract_external_id;
 		$params['customerreference'] = $phonenumbermanagement->phonenumber->mta->modem->contract->customer_external_id;
+
 
 		// call create again with extended parameters
 		return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderController@create', $params);
@@ -122,7 +134,7 @@ class EnviaOrderController extends \BaseController {
 	public function destroy($id) {
 
 		// check if user has the right to perform actions against Envia API
-		\App\Http\Controllers\BaseAuthController::auth_check('view', $this->get_model_name());
+		\App\Http\Controllers\BaseAuthController::auth_check('view', \NamespaceController::get_model_name());
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 

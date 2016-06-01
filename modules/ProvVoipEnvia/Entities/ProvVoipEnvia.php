@@ -1443,6 +1443,13 @@ class ProvVoipEnvia extends \BaseModel {
 			// single database field
 			if (is_string($db_field)) {
 				$payload = $model->$db_field;
+
+				// special case salutation: Envia expects Herrn instead of Herr…
+				if ($xml_field == 'salutation') {
+					if ($payload == 'Herr') {
+						$payload = 'Herrn';
+					}
+				}
 			}
 			// concated fields; last element is the string used to concat fields
 			elseif (is_array($db_field)) {

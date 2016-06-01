@@ -47,10 +47,10 @@ class EnviaOrder extends \BaseModel {
 	{
         $bsclass = 'success';
 
-        return ['index' => [$this->id],
+        return ['index' => [$this->orderid],
                 'index_header' => ['ID'],
                 'bsclass' => $bsclass,
-                'header' => $this->id];
+                'header' => $this->orderid.': '.$this->ordertype.' ('.$this->orderstatus.')'];
 	}
 
 	// belongs to a modem - see BaseModel for explanation
@@ -64,12 +64,20 @@ class EnviaOrder extends \BaseModel {
 		}
 	}
 
-	// returns all objects that are related to a mta
+	// returns all objects that are related to an EnviaOrder
 	public function view_has_many()
 	{
-		return array(
-			'EnviaOrderDocument' => $this->enviaorderdocument,
-		);
+		if (\PPModule::is_active('provvoipenvia')) {
+			$ret['Envia']['EnviaOrderDocument']['class'] = 'EnviaOrderDocument';
+			$ret['Envia']['EnviaOrderDocument']['relation'] = $this->enviaorderdocument;
+			$ret['Envia']['EnviaOrderDocument']['method'] = 'show';
+			$ret['Envia']['EnviaOrderDocument']['options']['hide_delete_button'] = '1';
+		}
+		else {
+			$ret = array();
+		}
+
+		return $ret;
 	}
 
 	public function contract() {
