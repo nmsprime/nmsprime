@@ -41,7 +41,7 @@ class ItemTableSeeder extends \BaseSeeder {
 			foreach (range(1,2) as $i)
 			{
 				$product_id = $tariff_ids[rand(0, count($tariff_ids) - 1)];
-				$valid_from = date('Y-m-d', strtotime('-'.rand(1,5).' month'));
+				$valid_from = date('Y-m-d', strtotime('-'.rand(1,20).' month'));
 				$valid_to 	= rand(0,10) > 7 ? null : date('Y-m-d', strtotime('+'.rand(1,5).' month'));
 			
 				Item::create([

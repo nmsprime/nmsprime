@@ -19,7 +19,7 @@ class CostCenterTableSeeder extends \BaseSeeder {
 		foreach(range(1, $this->max_seed_l2) as $index)
 		{
 			$name = 'CC '.$index;
-			$sepa_account_id = (int) ($index / 2);
+			$sepa_account_id = (int) ($index + 2 / 3);
 			$billing_month = rand(3, 10);
 
 			CostCenter::create([
@@ -28,6 +28,10 @@ class CostCenterTableSeeder extends \BaseSeeder {
 				'billing_month' => $billing_month,
 			]);
 		}
+
+		$cc_id = CostCenter::select('id')->get()->first()->id;
+
+		\DB::update('Update contract set costcenter_id='.$cc_id);
 	}
 
 }

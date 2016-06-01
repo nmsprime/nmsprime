@@ -14,7 +14,7 @@ class ProductTableSeeder extends \BaseSeeder {
 		$faker = Faker::create();
 
 		$voip_name = [1 => 'Voip Base', 2 => 'Voip Flat', 3 => 'Voip Flat reduced'];
-		$cycles = [1 => 'Once', 2 => 'Montly', 3 => 'Yearly'];
+		$cycles = [1 => 'Once', 2 => 'Monthly', 3 => 'Yearly'];
 		$other_names = [1 => 'Antenna Dose Installation', 2 => 'Public IP', 3 => 'fixed cycle prod'];
 
 		foreach(Product::getPossibleEnumValues('type') as $type)
