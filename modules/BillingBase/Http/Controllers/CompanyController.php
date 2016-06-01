@@ -41,7 +41,7 @@ class CompanyController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'tax_id_nr', 'description' => 'Sales Tax Id Nr'),
 			array('form_type' => 'text', 'name' => 'tax_nr', 'description' => 'Tax Nr', 'space' => '1'),
 
-			array('form_type' => 'text', 'name' => 'transfer_reason', 'description' => 'Transfer Reason for Invoices', 'space' => '1', 'help' => 'Template from all Invoice class data field keys'),
+			array('form_type' => 'text', 'name' => 'transfer_reason', 'description' => 'Transfer Reason for Invoices', 'space' => '1', 'help' => 'Template from all Invoice class data field keys - Contract Number and Invoice Nr is default', 'options' => ['placeholder' => '{contract_nr} {invoice_nr}']),
 
 			array('form_type' => 'select', 'name' => 'logo', 'description' => 'Choose logo', 'value' => $logos),
 			array('form_type' => 'file', 'name' => 'logo_upload', 'description' => 'Upload logo'),

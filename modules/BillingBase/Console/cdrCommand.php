@@ -49,6 +49,7 @@ class cdrCommand extends Command {
 		$file 	  = 'cdr.zip';
 		$tmp_path = storage_path('app/tmp/');
 
+		// TODO: proof if file is already available
 		$data = file_get_contents("https://$https_user:$https_password@www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/2016/$month");
 		if (!$data)
 		{
