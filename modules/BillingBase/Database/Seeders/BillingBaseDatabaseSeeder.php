@@ -16,11 +16,11 @@ class BillingbaseDatabaseSeeder extends Seeder {
 	{
 		Model::unguard();
 		
-		$this->call("Modules\BillingBase\Database\Seeders\CostCenterTableSeeder");
+		$this->call("Modules\BillingBase\Database\Seeders\CostCenterTableSeeder");				// dependent on Contract Seeds - but not mandatory ? (only sql update)
 		$this->call("Modules\BillingBase\Database\Seeders\ProductTableSeeder");
 		$this->call("Modules\BillingBase\Database\Seeders\SepaAccountTableSeeder");
 		$this->call("Modules\BillingBase\Database\Seeders\CompanyTableSeeder");
-		$this->call("Modules\BillingBase\Database\Seeders\SalesmanTableSeeder");				// half dependent on Contract Seeds - but not mandatory
+		$this->call("Modules\BillingBase\Database\Seeders\SalesmanTableSeeder");				// dependent on Contract Seeds - but not mandatory ? (only sql update)
 		$this->call("Modules\BillingBase\Database\Seeders\SepaMandateTableSeeder");
 		$this->call("Modules\BillingBase\Database\Seeders\ItemTableSeeder");					// dependent on Contract and Product Seeds !!
 	}

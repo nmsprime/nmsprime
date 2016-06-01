@@ -22,7 +22,7 @@ class ProductTableSeeder extends \BaseSeeder {
 			foreach (range(1,3) as $index)
 			{
 				$name = '';
-				$qos_id = $voip_id = $cycle_count = $costcenter_id = $price = 0;
+				$qos_id = $voip_sale_id = $cycle_count = $costcenter_id = $price = 0;
 				$tax = 1;
 				$billing_cycle = 'Once';
 
@@ -38,7 +38,7 @@ class ProductTableSeeder extends \BaseSeeder {
 					case 'Voip':
 						$name = $voip_name[$index];
 						$price = 5 * $index;
-						$voip_id = (int) (($index+3)/3);
+						$voip_sale_id = 1 ; 		// (int) (($index+3)/3);
 						$billing_cycle = 'Monthly';
 						break;
 
@@ -71,7 +71,8 @@ class ProductTableSeeder extends \BaseSeeder {
 					'name' => $name,
 					'type' => $type,
 					'qos_id' => $qos_id,
-					'voip_id' => $voip_id,
+					'voip_sales_tariff_id' => $voip_sale_id,
+					'voip_purchase_tariff_id' => 2,
 					'billing_cycle' => $billing_cycle,
 					'cycle_count' => $cycle_count,
 					'costcenter_id' => $costcenter_id,

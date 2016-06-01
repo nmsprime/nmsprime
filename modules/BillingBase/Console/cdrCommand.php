@@ -61,7 +61,7 @@ class cdrCommand extends Command {
 
 
 		$zipper = new Zipper;
-		$target_dir = storage_path('app/data/billingbase/accounting/'.date("Y-".$month+1).'/');
+		$target_dir = storage_path('app/data/billingbase/accounting/'.date("Y-".sprintf('%02d', ($month+1))).'/');
 
 		if (!is_dir($target_dir))
 			mkdir($target_dir, '0744', true);

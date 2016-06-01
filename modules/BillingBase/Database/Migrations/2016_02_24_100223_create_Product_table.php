@@ -22,7 +22,8 @@ class CreateProductTable extends BaseMigration {
 			$table->string('name');
 			$table->enum('type', ['Internet', 'TV', 'Voip', 'Device', 'Credit', 'Other']);
 			$table->tinyInteger('qos_id')->unsigned()->nullable();
-			$table->tinyInteger('voip_id')->unsigned()->nullable();
+			$table->integer('voip_sales_tariff_id')->unsigned()->nullable();
+			$table->integer('voip_purchase_tariff_id')->unsigned()->nullable();
 			$table->enum('billing_cycle', ['Once', 'Monthly', 'Quarterly', 'Yearly']);
 			$table->tinyInteger('cycle_count'); 		// number of billing cycles
 			$table->integer('costcenter_id')->unsigned();			

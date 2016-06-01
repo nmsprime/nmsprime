@@ -102,10 +102,10 @@ class Product extends \BaseModel {
 		switch ($type)
 		{
 			case 'Internet':
-				$column = 'qos_id';
+				$prod_ids = DB::table('product')->where('type', '=', $type)->where('qos_id', '!=', '0')->select('id')->get();
 				break;
 			case 'Voip':
-				$column = 'voip_id';
+				$prod_ids = DB::table('product')->where('type', '=', $type)->where('voip_sales_tariff_id', '!=', '0')->orWhere('voip_purchase_tariff_id', '!=', '0')->select('id')->get();
 				break;
 			case 'TV':
 				$prod_ids = DB::table('product')->where('type', '=', 'TV')->select('id')->get();
@@ -114,7 +114,6 @@ class Product extends \BaseModel {
 				return null;
 		}
 
-		$prod_ids = DB::table('product')->where('type', '=', $type)->where($column, '!=', '0')->select('id')->get();
 
 make_list:
 
