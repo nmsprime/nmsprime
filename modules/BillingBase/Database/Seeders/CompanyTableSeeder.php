@@ -19,8 +19,8 @@ class CompanyTableSeeder extends \BaseSeeder {
 		{
 			Company::create([
 				'name' => 'MonsterNet '.$enterprises[$index],
-				'street' => $faker->street,
-				'zip' => $faker->zip,
+				'street' => $faker->streetName,
+				'zip' => $faker->postcode,
 				'city' => $faker->city,
 				'phone' => $faker->phoneNumber,
 				'fax' => $faker->phoneNumber,

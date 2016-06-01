@@ -1,9 +1,11 @@
-<?php namespace Modules\Billingbase\Database\Seeders;
+<?php 
+
+namespace Modules\Billingbase\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
-class BillingBaseDatabaseSeeder extends Seeder {
+class BillingbaseDatabaseSeeder extends Seeder {
 
 	/**
 	 * Run the database seeds.
@@ -14,13 +16,13 @@ class BillingBaseDatabaseSeeder extends Seeder {
 	{
 		Model::unguard();
 		
-		$this->call("CostCenterTableSeeder");
-		$this->call("ProductTableSeeder");
-		$this->call("SepaAccountTableSeeder");
-		$this->call("CompanyTableSeeder");
-		$this->call("SalesmanTableSeeder");				// half dependent on Contract Seeds - but not mandatory
-		$this->call("SepaMandateTableSeeder");
-		$this->call("ItemTableSeeder");					// dependent on Contract and Product Seeds !!
+		$this->call("Modules\BillingBase\Database\Seeders\CostCenterTableSeeder");
+		$this->call("Modules\BillingBase\Database\Seeders\ProductTableSeeder");
+		$this->call("Modules\BillingBase\Database\Seeders\SepaAccountTableSeeder");
+		$this->call("Modules\BillingBase\Database\Seeders\CompanyTableSeeder");
+		$this->call("Modules\BillingBase\Database\Seeders\SalesmanTableSeeder");				// half dependent on Contract Seeds - but not mandatory
+		$this->call("Modules\BillingBase\Database\Seeders\SepaMandateTableSeeder");
+		$this->call("Modules\BillingBase\Database\Seeders\ItemTableSeeder");					// dependent on Contract and Product Seeds !!
 	}
 
 }

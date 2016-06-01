@@ -29,7 +29,7 @@ class ProductTableSeeder extends \BaseSeeder {
 				switch ($type)
 				{
 					case 'Internet':
-						$name = 'Flat '.2*pow(10, $index-1).' Mbit/s';
+						$name = 'Flat '.(2*pow(10, $index-1)).' Mbit/s';
 						$price = 10 * $index;
 						$qos_id = $index;
 						$billing_cycle = 'Monthly';

@@ -23,7 +23,7 @@ class SalesmanTableSeeder extends \BaseSeeder {
 
 		$sm_id = Salesman::orderBy('id', 'desc')->select('id')->first()->id;
 
-		DB::update('Update contract set salesman_id='. $sm_id.' where mod(id, 5)=3');
+		\DB::update('Update contract set salesman_id='. $sm_id.' where mod(id, 5)=3');
 	}
 
 }

@@ -26,8 +26,7 @@ class CostCenterTableSeeder extends \BaseSeeder {
 				'name' => $name,
 				'sepa_account_id' => $sepa_account_id,
 				'billing_month' => $billing_month,
-				]);
-			}
+			]);
 		}
 	}
 

@@ -18,11 +18,11 @@ class ItemTableSeeder extends \BaseSeeder {
 		$prods = Product::all();
 
 		$tariffs = Product::whereIn('type', ['Internet', 'Voip', 'TV'])->select('id')->get()->all();
-		foreach ($tariffs as => $prod)
+		foreach ($tariffs as $prod)
 			$tariff_ids[] = $prod->id;
 
 		$others = Product::whereIn('type', ['Device', 'Credit', 'Other'])->select('id')->get()->all();
-		foreach ($others as => $prod)
+		foreach ($others as $prod)
 			$other_ids[] = $prod->id;
 
 		foreach(Contract::select('id')->get()->all() as $c)
@@ -31,17 +31,16 @@ class ItemTableSeeder extends \BaseSeeder {
 		$contract_id = $product_id = $costcenter_id = $credit_amount = $payed_month = 0;
 		$count = 1;
 
-		// choose randomly 6 contracts
-		foreach (range(1,6) as $index)
+		// 7 contracts
+		foreach (range(0,6) as $index)
 		{
+			$k = $index % count($contract_ids);
+			$contract_id = $contract_ids[$k];
 
-			$add = rand(0, 10)) > 7 ? 0 : 1;
-			$contract_id = $contract_ids[$index + $add] > $contract_id ? $contract_ids[$index + $add] : $contract_ids[$index + $add + 1];
-			
 			// Add 2 tariffs
 			foreach (range(1,2) as $i)
 			{
-				$product_id = $tariff_ids[rand(0, count($tariff_ids))];
+				$product_id = $tariff_ids[rand(0, count($tariff_ids) - 1)];
 				$valid_from = date('Y-m-d', strtotime('-'.rand(1,5).' month'));
 				$valid_to 	= rand(0,10) > 7 ? null : date('Y-m-d', strtotime('+'.rand(1,5).' month'));
 			
@@ -61,7 +60,9 @@ class ItemTableSeeder extends \BaseSeeder {
 			foreach (range(1,2) as $i)
 			{
 				$credit_amount = 0;
-				$product_id = $other_ids[rand(0, count($other_ids))];
+				$valid_to = null;
+				$valid_from = null;
+				$product_id = $other_ids[rand(0, count($other_ids) - 1)];
 				if ($prods->find($product_id)->type == 'Credit')
 					$credit_amount = 10 * $index;
 
