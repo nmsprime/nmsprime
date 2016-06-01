@@ -41,10 +41,26 @@ class Item extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		$start = $this->valid_from != '0000-00-00' ? ' - '.$this->valid_from : '';
-		$end   = $this->valid_to != '0000-00-00' ? ' - '.$this->valid_to : '';
+		$bsclass = '';
+		// TODO: simplify when it's secure that 0000-00-00 doesn't occure
+		$start = $this->valid_from && $this->valid_from != '0000-00-00' ? ' - '.$this->valid_from : '';
+		$end   = $this->valid_to && $this->valid_to != '0000-00-00' ? ' - '.$this->valid_to : '';
 
-		return $this->product->name.$start.$end;
+		$billing_valid = $this->check_validity();
+
+		// blue colour means it will be considered for next accounting cycle
+		$bsclass = $billing_valid ? 'info' : '';
+
+		// red means item is outdated
+		if (($this->get_start_time() < strtotime(date('Y-m-01'))) && !$billing_valid)
+			$bsclass = 'danger';
+
+		return ['index' => [$this->product->name, $start, $end],
+		        'index_header' => ['Type', 'Name', 'Price'],
+		        'bsclass' => $bsclass,
+		        'header' => $this->product->name.$start.$end];
+
+		// return $this->product->name.$start.$end;
 	}
 
 	public function view_belongs_to ()
