@@ -19,7 +19,8 @@ class BillingBaseDatabaseSeeder extends Seeder {
 		$this->call("SepaAccountTableSeeder");
 		$this->call("CompanyTableSeeder");
 		$this->call("SalesmanTableSeeder");				// half dependent on Contract Seeds - but not mandatory
-		$this->call("ItemTableSeeder");					// dependent on Contract Seeds !!
+		$this->call("SepaMandateTableSeeder");
+		$this->call("ItemTableSeeder");					// dependent on Contract and Product Seeds !!
 	}
 
 }

@@ -26,8 +26,8 @@ class CreateSepaMandateTable extends \BaseMigration {
 			$table->string('sepa_iban', 34);
 			$table->string('sepa_bic', 11);
 			$table->string('sepa_institute');
-			$table->date('sepa_valid_from');
-			$table->date('sepa_valid_to');
+			$table->date('sepa_valid_from')->nullable();
+			$table->date('sepa_valid_to')->nullable();
 			$table->boolean('recurring');
 			$table->enum('state', ['', 'FIRST', 'RECUR', 'LAST']);		// type that was sent in last SepaXml
 		});
