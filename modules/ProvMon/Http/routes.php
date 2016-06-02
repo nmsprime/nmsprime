@@ -1,11 +1,10 @@
 <?php
 
-// Authentification is necessary before accessing a route
-Route::group(array('before' => 'auth'), function() {
+BaseRoute::group([], function() {
 
-	Route::get('provmon/{id}', array ('as' => 'Provmon.index', 'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@analyses'));
-	Route::get('provmon_cpe/{id}', array ('as' => 'Provmon.cpe', 'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@cpe_analysis'));	
-	Route::get('provmon_mta/{id}', array ('as' => 'Provmon.mta', 'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@mta_analysis'));	
-	Route::post('provmon/{id}', array ('as' => 'Provmon.flood_ping', 'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@analyses'));
+	BaseRoute::get('provmon/{id}', array ('as' => 'Provmon.index', 'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@analyses'));
+	BaseRoute::get('provmon_cpe/{id}', array ('as' => 'Provmon.cpe', 'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@cpe_analysis'));
+	BaseRoute::get('provmon_mta/{id}', array ('as' => 'Provmon.mta', 'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@mta_analysis'));
+	BaseRoute::post('provmon/{id}', array ('as' => 'Provmon.flood_ping', 'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@analyses'));
 
 });

@@ -1,0 +1,15 @@
+{
+    "name": "BillingBase",
+    "alias": "billingbase",
+    "description": "Billing Base",
+    "keywords": [],
+    "active": 1,
+    "order": 23,
+    "providers": [
+        "Modules\\BillingBase\\Providers\\BillingBaseServiceProvider"
+    ],
+    "aliases":{},
+    "files": [
+        "start.php"
+    ]
+}

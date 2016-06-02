@@ -1,5 +1,11 @@
 <?php
 
+namespace App;
+
+use DB;
+use Str;
+use Schema;
+use Module;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model as Eloquent;
 
@@ -10,47 +16,39 @@ class BaseModel extends Eloquent
 {
 	use SoftDeletes;
 
+	// use to enable force delete for inherit models
+	protected $force_delete = 0;
+
+	public $voip_enabled;
+	public $billing_enabled;
+
+	protected $fillable = array();
+
+
+	/**
+	 * Constructor.
+	 * Used to set some helper variables.
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @param $attributes pass through to Eloquent contstructor.
+	 */
+	public function __construct($attributes = array()) {
+
+		// call Eloquent constructor
+		// $attributes are needed! (or e.g. seeding and creating will not work)
+		parent::__construct($attributes);
+
+		// set helper variables
+		$this->voip_enabled = $this->voip_enabled();
+		$this->billing_enabled = $this->billing_enabled();
+
+	}
+
 
 	// Add Comment here. ..
 	protected $guarded = ['id'];
 
-	/**
-	 * check if module exists
-	 *
-	 * Note: This function should be used in relational functions like hasMany() or view_has_many()
-	 *
-	 * @author Torsten Schmidt
-	 *
-	 * @param  Modulename
-	 * @return true if module exists and is active otherwise false
-	 */
-	public function module_is_active($modulename)
-	{
-		$modules = \Module::enabled();
-
-		foreach ($modules as $module)
-			if ($module->getLowerName() == strtolower($modulename))
-				return true;
-
-        return false;
-	}
-
-
-	/**
-	 * check if module exists
-	 * NOTE: this is simply a static pendant to module_is_active(). So call this if required from class context.
-	 *       -> see above
-	 */
-	public static function __module_is_active($modulename)
-	{
-		$modules = \Module::enabled();
-
-		foreach ($modules as $module)
-			if ($module->getLowerName() == strtolower($modulename))
-				return true;
-
-        return false;
-	}
 
 
 	/**
@@ -65,6 +63,7 @@ class BaseModel extends Eloquent
 	 */
 	public function index_list ()
 	{
+		return $this->orderBy('id')->get();
 		return $this->all();
 	}
 
@@ -72,11 +71,14 @@ class BaseModel extends Eloquent
 	/**
 	 * Basefunction for generic use - is needed to place the related html links generically in the edit & create views
 	 * Place this function in the appropriate model and return the relation to the model it belongs
+	 *
+	 * NOTE: this function will return null in all create contexts, because at this time no relation exists!
 	 */
 	public function view_belongs_to ()
 	{
 		return null;
 	}
+
 
 	/**
 	 * Basefunction for returning all objects that a model can have a relation to
@@ -89,6 +91,73 @@ class BaseModel extends Eloquent
 	public function view_has_many ()
 	{
 		return array();
+	}
+
+
+	/**
+	 * Basefunction for returning all objects that a model can have a one-to-one relation to
+	 * Place this function in the model where the edit/create view shall show all related objects
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @return an array with the appropriate hasOne()-functions of the model
+	 */
+	public function view_has_one ()
+	{
+		return array();
+	}
+
+
+	/**
+	 * Check if VoIP is enabled.
+	 *
+	 * TODO: - move to Contract/ContractController or use directly,
+	 *         ore use fucntion directly instead of helpers variable
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @return true if one of the VoIP modules is enabled (currently only ProvVoipEnvia), else false
+	 */
+	public function voip_enabled() {
+
+		$voip_modules = array(
+			'ProvVoipEnvia',
+		);
+
+		foreach ($voip_modules as $module) {
+			if (\PPModule::is_active($module)) {
+				return True;
+			}
+		}
+
+		return False;
+	}
+
+
+	/**
+	 * Check if billing is enabled.
+	 *
+	 * TODO: - currently this is a dummy (= we don't have a billing module yet!!)
+	 *       - move to Contract/ContractController or use directly,
+	 *         ore use fucntion directly instead of helpers variable
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @return true if one of the billing modules is enabled, else false
+	 */
+	public function billing_enabled() {
+
+		$billing_modules = array(
+			'BillingBase',
+		);
+
+		foreach ($billing_modules as $module) {
+			if (\PPModule::is_active($module)) {
+				return True;
+			}
+		}
+
+		return False;
 	}
 
 
@@ -117,6 +186,8 @@ class BaseModel extends Eloquent
 
 		// get metadata for the given column and extract enum options
 		$type = DB::select( DB::raw('SHOW COLUMNS FROM '.$instance->getTable().' WHERE Field = "'.$name.'"') )[0]->Type;
+
+		// create array with enum values (all values in brackets after “enum”)
 		preg_match('/^enum\((.*)\)$/', $type, $matches);
 
 		$enum_values = array();
@@ -171,7 +242,11 @@ class BaseModel extends Eloquent
 		$exclude = array(
 			'BaseModel',
 			'Authmeta',
-			'Authcore'
+			'Authcore',
+			'TRCClass',	# static data; not for standalone use
+			'CarrierCode', # cron updated data; not for standalone use
+			'EkpCode', # cron updated data; not for standalone use
+			'BookingRecords', 'Invoice', 'Sepaxml'
 		);
 		$result = array();
 
@@ -185,7 +260,7 @@ class BaseModel extends Eloquent
 			$model = str_replace(app_path('Models')."/", "", $model);
 			$model = str_replace(".php", "", $model);
 			if (array_search($model, $exclude) === FALSE) {
-				array_push($result, $model);
+				array_push($result, 'App\\'.$model);
 			}
 		}
 
@@ -222,7 +297,8 @@ class BaseModel extends Eloquent
 		return current(preg_grep ('|.*?'.$s.'$|i', $this->get_models()));
 	}
 
-	/*
+
+	/**
 	 * Preselect a sql field while searching
 	 *
 	 * Note: If $field is 'net' or 'cluster' we perform a net and cluster specific search
@@ -241,7 +317,7 @@ class BaseModel extends Eloquent
 		{
 			$ret = $field.'='.$value;
 
-			if($this->module_is_active('Hfcbase'))
+			if(\PPModule::is_active('Hfcbase'))
 			{
 				if (($model[0] == 'Modules\ProvBase\Entities\Modem') && ($field == 'net' || $field == 'cluster'))
 				{
@@ -354,7 +430,7 @@ class BaseModel extends Eloquent
 	/**
 	 * Get results for a fulltext search
 	 *
-	 * @return search result array of whereRaw() results, this means array of class Illuminate\Database\Quer\Builder objects
+	 * @return search result array of whereRaw() results, this means array of Illuminate\Database\Quer\Builder objects
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -437,13 +513,13 @@ class BaseModel extends Eloquent
 
 
 	// Placeholder
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'Need to be Set !';
 	}
 
 	// Placeholder
-	public function get_view_link_title()
+	public function view_index_label()
 	{
 		return 'Need to be Set !';
 	}
@@ -495,13 +571,26 @@ class BaseModel extends Eloquent
 
 
 	/**
+	 * Local Helper to differ between soft- and force-deletes
+	 * @return type mixed
+	 */
+	protected function _delete()
+	{
+		if ($this->force_delete)
+			return parent::performDeleteOnModel();
+
+		return parent::delete();
+	}
+
+
+	/**
 	 *	Recursive delete of all children objects
 	 *
 	 *	@author Torsten Schmidt
 	 *
-	 *	@return true if success
+	 *	@return void
 	 *
-	 *  TODO: return state should take care of deleted children
+	 *  @todo return state on success, should also take care of deleted children
 	 */
 	public function delete()
 	{
@@ -509,7 +598,7 @@ class BaseModel extends Eloquent
 		foreach ($this->get_all_children() as $child)
 			$child->delete();
 
-		return parent::delete();
+		$this->_delete();
 	}
 
 
@@ -523,6 +612,48 @@ class BaseModel extends Eloquent
 		foreach ($ids as $id => $help)
 			$instance->findOrFail($id)->delete();
 	}
+
+
+	/**
+	 * Checks if model is valid in specific time (used for Billing)
+	 *
+	 * Note: Model must have a get_start_time- & get_end_time-Function defined
+	 *
+	 * @param string 	$timespan			year / month / now
+	 * @return Bool  						true, if model had valid dates during last month / year or is actually valid (now)
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public function check_validity($timespan = 'month')
+	{
+		$start = $this->get_start_time();
+		$end   = $this->get_end_time();
+
+
+// if (get_class($this) == 'Modules\BillingBase\Entities\Item' && $this->contract->id == 500005 && $this->product->type == 'Internet')
+// 	dd($this->product->name, $start < strtotime(date('Y-m-01')), !$end, $end >= strtotime(date('Y-m-01', strtotime('first day of last month'))), date('Y-m-d', $start), date('Y-m-d', $end));
+
+
+		switch ($timespan)
+		{
+			case 'month':
+				return $start < strtotime(date('Y-m-01')) && (!$end || $end >= strtotime(date('Y-m-01', strtotime('first day of last month'))));
+
+			case 'year':
+				return $start < strtotime(date('Y-01-01')) && (!$end || $end >= strtotime(date('Y-01-01'), strtotime('last year')));
+
+			case 'now':
+				// $now = time();
+				$now = strtotime('today');
+				return $start <= $now && (!$end || $end >= $now);
+
+			default:
+				\Log::error('Bad timespan param used in function '.__FUNCTION__);
+				break;
+		}
+	}
+
+
 }
 
 

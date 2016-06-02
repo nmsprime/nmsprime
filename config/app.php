@@ -38,7 +38,10 @@ return [
 	|
 	*/
 
-	'url' => 'http://localhost',
+	/* 'url' => 'http://localhost', */
+
+	// changed by Patrick Reichel => use this in /modules/ProvVoipEnvia/Console/EnviaOrderUpdaterCommand.php
+	'url' => 'https://localhost/lara',
 
 	/*
 	|--------------------------------------------------------------------------
@@ -210,8 +213,13 @@ return [
 		'HTML'      => 'Collective\Html\HtmlFacade',
 		'Str'       => 'Illuminate\Support\Str',
 
-		'BaseModuleController' => 'App\Http\Controllers\BaseModuleController',
+		'BaseController' => 'App\Http\Controllers\BaseController',
 		'HtmlServiceProvider'  => 'Acme\html\HtmlServiceProvider',
+		'PPModule' => 'Acme\pingpong\PPModule',
+		'BaseRoute'     => 'Acme\core\BaseRoute',
+		'NamespaceController' => 'App\Http\Controllers\NamespaceController',
+		'BaseModel' => 'App\BaseModel',
+		'GlobalConfig' => 'App\GlobalConfig'
 	],
 
 ];

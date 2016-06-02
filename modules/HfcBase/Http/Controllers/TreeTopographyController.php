@@ -27,7 +27,7 @@ class TreeTopographyController extends HfcBaseController {
 	 * Constructor: Set local vars
 	 */
 	public function __construct()
-	{ 
+	{
 		$this->filename = sha1(uniqid(mt_rand(), true)).'.kml';	// the filename based on a random hash
 		$this->path     = public_path().$this->path_rel;		// absolute path
 		$this->file     = $this->path.'/'.$this->filename;		// absolute path of file
@@ -50,7 +50,7 @@ class TreeTopographyController extends HfcBaseController {
 		if($field == 'all')
 			$s = 'id>2';
 
-		// Generate SVG file 
+		// Generate SVG file
 		$file = $this->kml_generate (Tree::whereRaw($s));
 
 		if(!$file)
@@ -63,7 +63,7 @@ class TreeTopographyController extends HfcBaseController {
 		$view_header = "Topography";
 		$body_onload = 'init_for_map';
 
-		$panel_right = [['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$field, $search]], 
+		$panel_right = [['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$field, $search]],
 						['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]]];
 
 		// MPS: get all Modem Positioning Rules
@@ -119,7 +119,7 @@ class TreeTopographyController extends HfcBaseController {
 		$file = $this->file_pre(asset('modules/hfcbase/kml'));
 
 		#
-		# Note: OpenLayer draws kml file in parse order, 
+		# Note: OpenLayer draws kml file in parse order,
 		# this requires to build kml files in the following order:
 		#  a) Lines
 		#  b) Customer Lines
@@ -133,10 +133,10 @@ class TreeTopographyController extends HfcBaseController {
 
 		if (!$trees->count())
 			return null;
-		
-		foreach ($trees as $tree) 
+
+		foreach ($trees as $tree)
 		{
-			$pos1   = $tree->pos;	
+			$pos1   = $tree->pos;
 			$pos2   = $tree->get_parent()->pos;
 			$name   = $tree->id;
 			$parent = $tree->parent;
@@ -144,9 +144,9 @@ class TreeTopographyController extends HfcBaseController {
 			$tp     = $tree->tp;
 
 			# skip empty pos and lines to elements not in search string
-			if ($pos2 == null || 
-				$pos2 == '' || 
-				$pos2 == '0,0' || 
+			if ($pos2 == null ||
+				$pos2 == '' ||
+				$pos2 == '0,0' ||
 				!ArrayHelper::objArraySearch($trees, 'id', $tree->get_parent()->id))
 					continue;
 
@@ -179,12 +179,12 @@ class TreeTopographyController extends HfcBaseController {
 		#
 		# Customer
 		#
-		if ($tree->module_is_active ('HfcCustomer'))
+		if (\PPModule::is_active ('HfcCustomer'))
 		{
 			$modem_helper = 'Modules\HfcCustomer\Entities\ModemHelper';
 
 			$n = 0;
-			foreach ($trees as $tree) 
+			foreach ($trees as $tree)
 			{
 				$id       = $tree->id;
 				$name     = $tree->name;
@@ -193,10 +193,10 @@ class TreeTopographyController extends HfcBaseController {
 				$pos = $modem_helper::ms_avg_pos('tree_id='.$tree->id);
 
 				if ($pos['x'])
-				{			
+				{
 					$xavg = $pos['x'];
-					$yavg = $pos['y'];			
-					$icon = $modem_helper::ms_state_to_color($modem_helper::ms_state ("tree_id = $id"));		
+					$yavg = $pos['y'];
+					$icon = $modem_helper::ms_state_to_color($modem_helper::ms_state ("tree_id = $id"));
 					$icon .= '-CUS';
 
 					# Draw Line - Customer - Amp
@@ -216,7 +216,7 @@ class TreeTopographyController extends HfcBaseController {
 					</Placemark>";
 
 					# Draw Customer Marker
-					$file .= 
+					$file .=
 					"
 					<Placemark>
 						<name></name>
@@ -227,7 +227,7 @@ class TreeTopographyController extends HfcBaseController {
 							$pro  = round(100 * $num / $numa,0);
 							$cri  = $modem_helper::ms_cri("tree_id = $id");
 							$avg  = $modem_helper::ms_avg("tree_id = $id");
-							$url  = \Request::root()."/Customer/tree_id/$id";
+							$url  = \BaseRoute::get_base_url()."/Customer/tree_id/$id";
 
 							$file .= "Amp/Node: $name<br><br>Number All CM: $numa<br>Number Online CM: $num ($pro %)<br>Number Critical CM: $cri<br>US Level Average: $avg<br><br><a href=\"$url\" target=\"".$this->html_target."\" alt=\"\">Show all Customers</a>";
 
@@ -247,10 +247,10 @@ class TreeTopographyController extends HfcBaseController {
 		#
 		$p1 = '';
 
-		foreach ($trees as $tree) 
+		foreach ($trees as $tree)
 		{
 			$p2  = $tree->pos;
-			
+
 			if ($p1 != $p2)
 			{
 				$rstate  = 0;
@@ -279,7 +279,7 @@ class TreeTopographyController extends HfcBaseController {
 			if ($type == 'NODE')
 				$fiber += 1;
 
-			if ($p1 != $p2) 
+			if ($p1 != $p2)
 			{
 
 				$icon = 'OK';
@@ -294,7 +294,7 @@ class TreeTopographyController extends HfcBaseController {
 					$icon .= '-FIB';
 				else if ($parent == 1)
 					$icon = 'blue-CUS';
-			
+
 				$file .= "$p2";
 				$file .= "]]></description>
 				<styleUrl>#$icon</styleUrl>
@@ -310,7 +310,7 @@ class TreeTopographyController extends HfcBaseController {
 
 		#
 		# Write KML File ..
-		# 
+		#
 		$file .= $this->file_post;
 		$handler = fOpen($this->file, "w");
 		fWrite($handler , $file);
@@ -326,7 +326,7 @@ class TreeTopographyController extends HfcBaseController {
 		</kml>";
 
 
-	private function file_pre ($p) 
+	private function file_pre ($p)
 	{
 		return "
 

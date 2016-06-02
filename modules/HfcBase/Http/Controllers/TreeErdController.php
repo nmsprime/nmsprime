@@ -27,7 +27,7 @@ class TreeErdController extends HfcBaseController {
 
 	// SVG image size setting
 	private $graph_size = '(*,*)';
-    
+
 
     /*
      * check if $s is a valid geoposition
@@ -70,7 +70,7 @@ class TreeErdController extends HfcBaseController {
 		if($field == 'all')
 			$s = 'id>2';
 
-		// Generate SVG file 
+		// Generate SVG file
 		$file = $this->graph_generate (Tree::whereRaw($s));
 
 		if(!$file)
@@ -91,7 +91,7 @@ class TreeErdController extends HfcBaseController {
 		$view_header = "Entity Relation Diagram";
 		$route_name  = 'Tree';
 
-		$panel_right = [['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$field, $search]], 
+		$panel_right = [['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$field, $search]],
 						['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]]];
 
 		$preselect_field = $field;
@@ -137,7 +137,7 @@ class TreeErdController extends HfcBaseController {
 		#
 		# Node
 		#
-		foreach ($trees as $tree) 
+		foreach ($trees as $tree)
 		{
 			$id = $tree->id;
 			$name = $tree->name.' - '.$tree->id;
@@ -155,7 +155,7 @@ class TreeErdController extends HfcBaseController {
 				$url  = 'http://'.$tree->ip;
 			else
 				$url  = $tree->link;
-			
+
 			#
 			# Amplifier
 			#
@@ -169,7 +169,7 @@ class TreeErdController extends HfcBaseController {
 				$color = 'red';
 			if ($state == 'BLUE')
 				$color = 'blue';
-			
+
 			if ($parent == NULL || $parent->id == 1)
 				$file .= "\n node [id = \"$id\" label = \"$id - $name\", shape = rectangle, style = filled, fillcolor=blue, color=darkgrey, URL=\"$url\", target=\"".$this->html_target."\"];";
 			else
@@ -193,11 +193,11 @@ class TreeErdController extends HfcBaseController {
 		$file .= "\n}";
 
 
-		$file .= "\n\n node [shape = diamond];"; 
+		$file .= "\n\n node [shape = diamond];";
 		#
 		# Parent - Child Relations
 		#
-		foreach ($trees as $tree) 
+		foreach ($trees as $tree)
 		{
 			$_parent = $tree->get_parent();
 			$parent = 0;
@@ -209,11 +209,11 @@ class TreeErdController extends HfcBaseController {
 			$color = 'black';
 			$style = "style=bold";
 			if ($type == 'NODE')
-			{ 
+			{
 				$color = 'blue';
 				$style='';
 			}
-			if ($type == 'AMP' || $type == 'CLUSTER' || $tp == 'FOSTRA') 
+			if ($type == 'AMP' || $type == 'CLUSTER' || $tp == 'FOSTRA')
 			{
 				$color = 'red';
 				$style='';
@@ -228,15 +228,15 @@ class TreeErdController extends HfcBaseController {
 		#
 		# TODO: Customer
 		#
-		if ($tree->module_is_active ('HfcCustomer'))
+		if (\PPModule::is_active ('HfcCustomer'))
 		{
 		    $n = 0;
-			foreach ($trees as $tree) 
+			foreach ($trees as $tree)
 			{
 		        $idtree = $tree->id;
 		        $id = $tree->id;
 		        $type = $tree->type;
-				$url  = \Request::root()."/Customer/tree_id/$idtree";
+				$url  = \BaseRoute::get_base_url()."/Customer/tree_id/$idtree";
 		        $n++;
 
 				$state = ModemHelper::ms_state ("tree_id = $idtree");

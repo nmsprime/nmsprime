@@ -18,7 +18,7 @@ class ProvVoipEnviaServiceProvider extends ServiceProvider {
 	 */
 	public function register()
 	{
-		//
+		\View::addNamespace('provvoipenvia', __DIR__.'/../Resources/views');
 	}
 
 	/**

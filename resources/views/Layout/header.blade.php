@@ -1,11 +1,6 @@
 
 	@include ('bootstrap.menu', array(
-		'header' => $header1, 
-		'menus' => array (
-			'0' => array(
-
-			),
-			$view_header_links
-		)
+		'header' => $framework['header1'],
+		'view_header_links' => 	$view_header_links
 	))
 

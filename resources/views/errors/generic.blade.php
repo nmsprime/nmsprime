@@ -15,10 +15,11 @@
 		$message = 'Page not found';
 
 	if (!isset($link))
-		$link = Request::root();
+		$link = \BaseRoute::get_base_url();
+
 ?>
 
-	@include ('bootstrap.header')	
+	@include ('bootstrap.header')
 
 	<body class="pace-top">
 
@@ -28,16 +29,17 @@
                 <div class="error-message">{{$message}}</div>
                 <div class="error-desc m-b-20">
                     The page you're looking for doesn't exist. <br />
-                    Perhaps, there pages will help find what you're looking for.
+                    <!-- Perhaps, there pages will help find what you're looking for. -->
                 </div>
                 <div>
-                    <a href="{{$link}}" class="btn btn-success">Go Back to Home Page</a>
+					<a href="{{$link}}" class="btn btn-success">Go Back to Home Page</a><br><br>
+					<a href="javascript:history.back()" class="btn btn-success">Go Back to previous page.</a>
                 </div>
             </div>
         </div>
         <!-- end error -->
-        
+
     </body>
 
-	@include ('bootstrap.footer')	
+	@include ('bootstrap.footer')
 </html>

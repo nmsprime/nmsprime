@@ -1,5 +1,7 @@
 <?php
 
+namespace App;
+
 class GlobalConfig extends BaseModel {
 
 	// The associated SQL table for this Model
@@ -15,18 +17,36 @@ class GlobalConfig extends BaseModel {
 			'mail' => 'email',
 		);
 	}
-	
+
 	// Name of View
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'Global Config';
 	}
 
 	// link title in index view
-	public function get_view_link_title()
+	public function view_index_label()
 	{
 		return "Global Config";
-	}	
+	}
 
+
+	/*
+	 * Get NMS Version
+	 * NOTE: get the actual rpm version of the installed package
+	 *       or branch name and short commit reference of GIT repo
+	 *
+	 * @param: null
+	 * @return: string containing version information
+	 * @author: Torsten Schmidt
+	 */
+	public function version ()
+	{
+		$version = exec("rpm -q lara-base --queryformat '%{version}'");
+		if (preg_match('/not installed/', $version))
+			$version = 'GIT: '.exec('cd '.app_path().' && git rev-parse --abbrev-ref HEAD').' - '.exec('cd '.app_path().' && git rev-parse --short HEAD');
+
+		return $version;
+	}
 
 }

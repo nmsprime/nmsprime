@@ -1,19 +1,52 @@
-<?php 
+<?php
 
 namespace Acme\Validators;
 
 use Models\Configfiles;
 use File;
 use Log;
+use Modules\Billingbase\Entities\Product;
+use IBAN;
+
+use Modules\ProvVoip\Entities\PhonebookEntry;
 
 /*
  * Our own ExtendedValidator Class
  *
- * IMPORTANT: add Validator::extend('xyz', 'ExtendedValidator@validateXyz'); to 
+ * IMPORTANT: add Validator::extend('xyz', 'ExtendedValidator@validateXyz'); to
  * ExtendedValidatorServiceProvider under app/Providers
  */
 class ExtendedValidator
 {
+
+	public function notNull($attribute, $value, $parameters)
+	{
+		if ($value == '' || $value == '0' || $value == null || $value == '0000-00-00')
+			return false;
+		return true;
+	}
+
+	/*
+	 * Checks if value of a data field is zero when another field has specific values (declared in parameters)
+	 * NOTE: the fields name has to be replaced by prepare_rules-function of the Controller with the value of the data of this field
+	 */
+	public function nullIf($attribute, $value, $parameters)
+	{
+		$data = $parameters[0];
+		// dd($attribute, $value, $parameters);
+		unset($parameters[0]);
+
+		if (in_array($data, $parameters))
+		{
+			if ($value == 0 || $value == null)
+				return true;
+			return false;
+		}
+
+		return true;
+	}
+
+
 	/*
 	 * MAC validation
 	 *
@@ -67,6 +100,7 @@ class ExtendedValidator
 	 */
 	public function ipLarger ($attribute, $value, $parameters)
 	{
+		dd($parameters);
 		$ip = ip2long($value);
 		$ip2 = ip2long($parameters[0]);
 
@@ -87,6 +121,34 @@ class ExtendedValidator
 
 		$number = (int) (10000 * $prefix);
 		return is_int($number /= 10000);
+	}
+
+	/*
+	 * Validates Sepa Creditor Id
+	 * see: https://github.com/AbcAeffchen/SepaUtilities/blob/master/src/SepaUtilities.php
+	 */
+	public function validateCreditorId($attribute, $value, $parameters)
+	{
+		$country_code = substr($value, 0, 2);
+
+		// TODO: add more countries, improve by check against check digits
+		$creditor_id_length = array(
+			'AT' => 18,			// Austria
+			'BE' => 20,			// Belgium
+			'DE' => 18,			// Germany
+			'EE' => 20,			// Estonia
+			'ES' => 16,
+			'FR' => 13,
+			'IT' => 23,
+			'LU' => 26,			// Luxembourg
+			'NL' => 19,
+			'PT' => 13,			// Portugal
+			);
+
+		if (strlen($value) != (isset($creditor_id_length[$country_code]) ? $creditor_id_length[$country_code] : 1000))
+			return false;
+
+		return preg_match('#^[a-zA-Z]{2,2}[0-9]{2,2}([A-Za-z0-9]|[\+|\?|/|\-|:|\(|\)|\.|,|\']){3,3}([A-Za-z0-9]|[\+|\?|/|\-|:|\(|\)|\.|,|\']){1,28}$#', $value);
 	}
 
 
@@ -129,7 +191,7 @@ class ExtendedValidator
         $cf_file = $dir."dummy-validator.conf";
 
 		/*
-		 * Replace all {xyz} content  
+		 * Replace all {xyz} content
 		 */
 		$rows = explode("\n", $value);
 		$s = '';
@@ -142,7 +204,7 @@ class ExtendedValidator
 			else
 				$s .= "\n".preg_replace("/\\{[^\\{]*\\}/im", '1', $row);
 		}
-		
+
 		/*
 		 * Write Dummy File and try to encode
 		 */
@@ -154,12 +216,12 @@ class ExtendedValidator
 
         if ($device == 'cm')
         {
-	        Log::info("Validation: /usr/local/bin/docsis -e $cf_file $dir/../keyfile $dir/dummy-validator.cfg");   
+	        Log::info("Validation: /usr/local/bin/docsis -e $cf_file $dir/../keyfile $dir/dummy-validator.cfg");
 	        exec("rm -f $dir/dummy-validator.cfg && /usr/local/bin/docsis -e $cf_file $dir/../keyfile $dir/dummy-validator.cfg 2>&1", $outs);
         }
         elseif ($device == 'mta')
         {
-	        Log::info("Validation: /usr/local/bin/docsis -p $cf_file $dir/dummy-validator.cfg");   
+	        Log::info("Validation: /usr/local/bin/docsis -p $cf_file $dir/dummy-validator.cfg");
 	        exec("rm -f $dir/dummy-validator.cfg && /usr/local/bin/docsis -p $cf_file $dir/dummy-validator.cfg 2>&1", $outs, $ret);	//return value is always 0
 		}
 
@@ -183,11 +245,138 @@ class ExtendedValidator
         	$validator->setCustomMessages(array('docsis' => $report));
         	return false;
         }
-        
+
 		return true;
 	}
 
+	// $value (field value) must only contain strings of product type enums - used on Salesman
+	public function validateProductType($attribute, $value, $parameters)
+	{
+		$types = Product::getPossibleEnumValues('type');
+
+		$tmp   = str_replace([',', '|', '/', ';'], ' ', $value);
+		$prods = explode(' ', $tmp);
+
+		foreach ($prods as $type)
+		{
+			// skip empty strings
+			if (!$type)
+				continue;
+			if (!in_array($type, $types))
+				return false;
+		}
+
+		return true;
+	}
+
+
+	/**
+	 * Check if given string (freetext) for phonebookentry is valid.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function validatePhonebookString($attribute, $value, $parameters) {
+
+		// see: https://laracasts.com/discuss/channels/general-discussion/extending-validation-with-custom-message-attribute?page=1
+		// when laravel calls the actual validation function (validate) they luckily pass "$this" that is the Validator instance as 4th argument - so we can get it here
+		$validator = \func_get_arg(3);
+
+		// for easier access and improved readability: get needed informations out of config
+		$maxlen = PhonebookEntry::$config[$attribute]['maxlen'];
+		$valid = str_split(PhonebookEntry::$config[$attribute]['valid']);
+
+		// check if given value is to long
+		if (strlen($value) > $maxlen) {
+			$validator->setCustomMessages(array('phonebook_string' => $attribute.' to long (max. '.$maxlen.' characters allowed)'));
+			return false;
+		}
+
+		// check all value's characters against the list of valid chars
+		$invalids = array();
+		foreach (str_split($value) as $char) {
+			if (!in_array($char, $valid)) {
+				array_push($invalids, $char);
+			}
+		}
+		// input invalid if at least one invalid character has been found
+		if (boolval($invalids)) {
+			$validator->setCustomMessages(array('phonebook_string' => 'The following characters are not allowed in '.$attribute.': '.implode('', array_unique($invalids))));
+			return false;
+		}
+
+		// all fine => valid
+		return true;
+
+	}
+
+
+	/**
+	 * Check if given string (predefined) for phonebookentry is valid.
+	 * The valid values are defined by Telekom and delivered in several files.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function validatePhonebookPredefinedString($attribute, $value, $parameters) {
+
+		// see: https://laracasts.com/discuss/channels/general-discussion/extending-validation-with-custom-message-attribute?page=1
+		// when laravel calls the actual validation function (validate) they luckily pass "$this" that is the Validator instance as 4th argument - so we can get it here
+		$validator = \func_get_arg(3);
+
+		// attention: data coming into validators are still htmlencoded from view level!
+		$search = html_entity_decode($value);
+
+		// use the method that builds the array for the selects => that contains all valid values…
+		if (!array_key_exists($search, PhonebookEntry::get_options_from_file($attribute))) {
+			$validator->setCustomMessages(array('phonebook_predefined_string' => $value.' is not a valid value for '.$attribute));
+			return false;
+		}
+
+		return true;
+	}
+
+
+	/**
+	 * Check if given one character option is valid
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function validatePhonebookOneCharacterOption($attribute, $value, $parameters) {
+
+		// see: https://laracasts.com/discuss/channels/general-discussion/extending-validation-with-custom-message-attribute?page=1
+		// when laravel calls the actual validation function (validate) they luckily pass "$this" that is the Validator instance as 4th argument - so we can get it here
+		$validator = \func_get_arg(3);
+
+		// get the allowed chars out of config
+		$valid = PhonebookEntry::$config[$attribute]['in_list'];
+
+		if (!in_array($value, $valid)) {
+			$validator->setCustomMessages(array('phonebook_one_character_option' => $value.' is not valid for '.$attribute.' (have to be in ['.implode('', $valid).']).'));
+			return false;
+		}
+
+		return true;
+
+	}
+
+
+	/**
+	 * Checks if a BIC entry exists in a config/data file
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public function valdidateBicAvailable($attribute, $value, $parameters)
+	{
+		$iban 	 = new IBAN(strtoupper($parameters[0]));
+		$country = strtolower($iban->Country());
+		$bank 	 = $iban->Bank();
+
+		$data = Storage::get('config/billingbase/bic_'.$country.'.csv');
+
+		if (strpos($data, $bank) !== false)
+			return true;
+
+		return false;
+	}
+
 }
-
-
 

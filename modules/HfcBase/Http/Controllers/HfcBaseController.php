@@ -1,11 +1,11 @@
-<?php 
+<?php
 
 namespace Modules\HfcBase\Http\Controllers;
 
-use App\Http\Controllers\BaseModuleController;
+use App\Http\Controllers\BaseController;
 
 
-class HfcBaseController extends BaseModuleController {
+class HfcBaseController extends BaseController {
 
 	// The Html Link Target
 	protected $html_target = '';
@@ -13,7 +13,7 @@ class HfcBaseController extends BaseModuleController {
 	/**
      * defines the formular fields for the edit and create view
      */
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 		// label has to be the same like column in sql table
 		return array(

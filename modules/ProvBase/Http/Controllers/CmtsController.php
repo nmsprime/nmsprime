@@ -5,12 +5,12 @@ namespace Modules\ProvBase\Http\Controllers;
 use Modules\ProvBase\Entities\Cmts;
 use Modules\ProvBase\Entities\IpPool;
 
-class CmtsController extends \BaseModuleController {
+class CmtsController extends \BaseController {
 
     /**
      * defines the formular fields for the edit and create view
      */
-	public function get_form_fields($model = null)
+	public function view_form_fields($model = null)
 	{
 		// label has to be the same like column in sql table
 		return array(

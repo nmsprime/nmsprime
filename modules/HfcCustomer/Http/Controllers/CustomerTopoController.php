@@ -184,7 +184,7 @@ class CustomerTopoController extends TreeController {
 	public function show_diagrams ($modems)
 	{
 		// check if ProvMon is installed
-		if (!\BaseModel::__module_is_active('ProvMon'))
+		if (!\PPModule::is_active('ProvMon'))
 			return \View::make('errors.generic')->with('message', 'Module Provisioning Monitoring (ProvMon) not installed');
 
 		// load a new ProvMon object
@@ -287,7 +287,7 @@ class CustomerTopoController extends TreeController {
 		$descr = '';
 		$file  = $this->file_pre;
 
-		foreach ($modems->orderByRaw('10000000*x+y')->get() as $modem)
+		foreach ($modems->where('contract_id', '>', '0')->orderByRaw('10000000*x+y')->get() as $modem)
 		{
 			#
 			# Print Marker AND Reset Vars IF new GPS position
@@ -361,7 +361,7 @@ class CustomerTopoController extends TreeController {
 			}
 
 			# add descr line
-			$descr .= "<a target=\"".$this->html_target."\" href='".\Request::root()."/Modem/$mid/edit'>$mac</a>, $contractid, $lastname, $hf<br>";
+			$descr .= "<a target=\"".$this->html_target."\" href='".\BaseRoute::get_base_url()."/Modem/$mid/edit'>$mac</a>, $contractid, $lastname, $hf<br>";
 			$num += 1;
 		}
 

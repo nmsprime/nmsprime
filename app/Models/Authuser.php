@@ -1,5 +1,8 @@
 <?php
 
+namespace App;
+
+use DB;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
@@ -38,13 +41,13 @@ class Authuser extends BaseModel implements AuthenticatableContract, CanResetPas
 
 
 	// Name of View
-	public static function get_view_header()
+	public static function view_headline()
 	{
 		return 'Users';
 	}
 
 	// link title in index view
-	public function get_view_link_title()
+	public function view_index_label()
 	{
 		return $this->login_name;
 	}
@@ -57,7 +60,7 @@ class Authuser extends BaseModel implements AuthenticatableContract, CanResetPas
 	 * @author Patrick Reichel
 	 */
 	protected function _meta() {
-		return $this->belongsToMany('Authmeta', 'authusermeta', 'user_id', 'meta_id');
+		return $this->belongsToMany('App\Authmeta', 'authusermeta', 'user_id', 'meta_id');
 	}
 
 	/**
@@ -200,7 +203,7 @@ class Authuser extends BaseModel implements AuthenticatableContract, CanResetPas
 	{
 		parent::boot();
 
-		Authuser::observe(new \AuthObserver);
+		Authuser::observe(new AuthObserver);
 	}
 }
 

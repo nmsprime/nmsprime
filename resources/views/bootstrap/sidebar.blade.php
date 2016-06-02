@@ -9,10 +9,10 @@
 <!--             <div class="image">
               <a href="javascript:;"><img src="assets/img/user-11.jpg" alt="" /></a>
             </div>
- -->   
+ -->
             <div class="info">
-              {{ $header2 }}
-              <!-- <small>...</small> -->
+              {{ $framework['header2'] }}
+              <small>Version {{ $framework['version'] }}</small>
             </div>
           </li>
         </ul>
@@ -35,23 +35,23 @@
           <li class="nav-header">Networks</li>
 
           @foreach ($networks as $network)
-	          <li class="has-sub">
-	            <a href="javascript:;">
-	              <i class="fa fa-suitcase"></i> 
-	              <b class="caret pull-right"></b>
-	              <span>{{$network->name}}</span> 
-	            </a>
-	            <ul class="sub-menu">
-	            	<li><a href="{{Request::root()}}/Tree/erd/net/{{$network->id}}">Network</a></li>
-		            @foreach ($network->get_all_cluster_to_net() as $cluster)
-			           <li><a href="{{Request::root()}}/Tree/erd/cluster/{{$cluster->id}}">--{{$cluster->name}}</a></li>
-			        @endforeach
-		        </ul>
-	          </li>
-	       @endforeach
+            <li class="has-sub">
+              <a href="javascript:;">
+                <i class="fa fa-suitcase"></i>
+                <b class="caret pull-right"></b>
+                <span>{{$network->name}}</span>
+              </a>
+              <ul class="sub-menu">
+                <li><a href="{{BaseRoute::get_base_url()}}/Tree/erd/net/{{$network->id}}">Network</a></li>
+                @foreach ($network->get_all_cluster_to_net() as $cluster)
+                 <li><a href="{{BaseRoute::get_base_url()}}/Tree/erd/cluster/{{$cluster->id}}">--{{$cluster->name}}</a></li>
+                @endforeach
+              </ul>
+            </li>
+         @endforeach
 
 
-         
+
           <!-- begin sidebar minify button -->
           <li><a href="javascript:;" class="sidebar-minify-btn" data-click="sidebar-minify"><i class="fa fa-angle-double-left"></i></a></li>
           <!-- end sidebar minify button -->
@@ -64,8 +64,8 @@
     <!-- end #sidebar -->
 
 
-
-@if(isset($panel_right))
+<!-- java script dynamic panel on right top side under tabs -->
+@if(isset($panel_right_extra))
     <!-- begin theme-panel -->
     <div class="theme-panel">
       <a href="javascript:;" data-click="theme-panel-expand" class="theme-collapse-btn">
@@ -75,7 +75,7 @@
         <h5 class="m-t-0">Menu</h5>
 
         <h4>
-          @foreach ($panel_right as $menu)
+          @foreach ($panel_right_extra as $menu)
             <?php
               $route = $menu['route'];
               $name  = $menu['name'];

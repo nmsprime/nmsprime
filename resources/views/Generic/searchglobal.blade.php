@@ -1,3 +1,10 @@
+{{--
+
+@param $query: the string query to search for
+@param $scope: scope means context to search in (all | model name, like contract)
+
+--}}
+
 @extends ('Layout.split84')
 
 @section('content_top')
@@ -9,47 +16,47 @@
 @section('content_left')
 
 
-	{{ Form::openDivClass(12) }}
-		<?php
-			// searchscope for following form is the current model
-			$next_scope = 'all';
-		?>
-		{{ Form::openDivClass(6) }}
-			{{ Form::model(null, array('route'=>'Base.fulltextSearch', 'method'=>'GET')) }}
-				@include('Generic.searchform', ['button_text' => 'Search'])
-			{{ Form::close() }}
-		{{ Form::closeDivClass() }}
-	{{ Form::closeDivClass() }}
-
-
-	{{ Form::openDivClass(12) }}
-
+	@DivOpen(12)
 		@if (isset($query))
 			<h4>Global Search: Matches for <tt>'{{ $query }}'</tt></h4>
 		@endif
 
-		<table>
-			@foreach ($view_var as $object)
+		<table class="table">
+			<thead>
 				<tr>
-					<td>
-						{{ Form::checkbox('ids['.$object->id.']') }}
-					</td>
-					<td>
+					<th></th>
+					<th>Type</th>
+					<th>Entry</th>
+					<th>Description</th>
+				</tr>
+			</thead>
 
-						<?php
-							// TODO: move away from view!!
-							$cur_model_complete = get_class($object);
-							$cur_model_parts = explode('\\', $cur_model_complete);
-							$cur_model = array_pop($cur_model_parts);
-						?>
+			@foreach ($view_var as $object)
+				<?php
+					// TODO: move away from view!!
+					$cur_model_parts = explode('\\', get_class($object));
+					$cur_model = array_pop($cur_model_parts);
 
-					{{ HTML::linkRoute($cur_model.'.edit', $object->get_view_link_title(), $object->id) }}
+					if (is_array($object->view_index_label()))
+					{
+						$link = \HTML::linkRoute($cur_model.'.edit', $object->view_index_label()['header'], $object->id);
+						$descr = implode (', ', $object->view_index_label()['index']);
+					}
+					else
+					{
+						$link = \HTML::linkRoute($cur_model.'.edit', $object->view_index_label(), $object->id);
+						$descr = $object->view_index_label();
+					}
+				?>
 
-					</td>
+				<tr class={{\App\Http\Controllers\BaseViewController::prep_index_entries_color($object)}}>
+					<td>{{Form::checkbox('ids['.$object->id.']', 1, null, null, ['style' => 'simple'])}}</td>
+					<td>{{$cur_model}}</td>
+					<td>{{$link}}</td>
+					<td>{{$descr}}</td>
 				</tr>
 			@endforeach
 		</table>
-
-	{{ Form::closeDivClass() }}
+	@DivClose()
 
 @stop

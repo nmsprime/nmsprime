@@ -16,15 +16,19 @@ class ContractTableSeeder extends \BaseSeeder {
 
 		foreach(range(1, $this->max_seed) as $index)
 		{
-			$start_contract = $faker->dateTimeBetween('-10 years', 'now');
+			$start_contract = $faker->dateTimeBetween('-10 years', '+1 year');
 
 			Contract::create([
-				'number2' => 'Cu/2015/Q4/-'.$index-1,
+				'number' => 'contr_'.$index,
+				'number2' => 'Cu/2015/Q4/'.($index-1),
+				'number3' => 'contr_'.$index,
+				'company' => (rand(0,10) > 7 ? $faker->company: ''),
+				'salutation' => 'Frau',
+				'academic_degree' => '',
 				'firstname' => $faker->firstName,
 				'lastname' => $faker->lastName,
-				'salutation' => (rand(0,10) > 7 ? $faker->title: ''),
-				'company' => (rand(0,10) > 7 ? $faker->company: ''),
 				'street' => $faker->streetName,
+				'house_number' => rand(1, 128),
 				'city' => $faker->city,
 				'zip' => $faker->postcode,
 				'country_id' => 0,
@@ -34,9 +38,9 @@ class ContractTableSeeder extends \BaseSeeder {
 				'fax' => (rand(0,10) > 7 ? $faker->phoneNumber : ''),
 				'email' => $faker->email,
 				'birthday' => $faker->dateTimeBetween('-100 years', '-18 years'),
+				'network_access' => $faker->boolean(85),
 				'contract_start' => $start_contract,
 				'contract_end' => (rand(0,10) > 8 ? $faker->dateTimeBetween($start_contract, '+1 year') : 0),
-				'network_access' => $faker->boolean(85),
 				'qos_id' => Qos::all()->random(1)->id,
 				'next_qos_id' => (rand(0,10) > 8 ? Qos::all()->random(1)->id : 0),
 				'voip_id' => rand(0, 2),								// TODO: use Envia interface
@@ -45,7 +49,7 @@ class ContractTableSeeder extends \BaseSeeder {
 				'sepa_bic' => $faker->swiftBicNumber,
 				'sepa_holder' => (rand(0,10) > 8 ? $faker->name : ''),
 				'sepa_institute' => $faker->colorName.' Bank',			// L5: use ->bank
-				'create_invoice' => $faker->boolean(10),				// true means invoice will pe send via post office each month
+				'create_invoice' => true,  //$faker->boolean(10),				// true means invoice will pe send via post office each month
 				'login' => $faker->userName,							// for feature use. Now it should same as id
 				'password' => \Acme\php\Password::generate_password(),
 				'description' => $faker->sentence
