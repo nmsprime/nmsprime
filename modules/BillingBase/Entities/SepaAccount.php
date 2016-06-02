@@ -583,7 +583,7 @@ class SepaAccount extends \BaseModel {
 
 		// Retrieve the resulting XML
 		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/DC.xml');
-		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
+		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $customerCredit->asXML());
 		STORAGE::put($file, $data);
 
 		$this->_log("sepa direct credit xml", $file);

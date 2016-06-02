@@ -37,7 +37,18 @@ class SepaMandate extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		return $this->sepa_valid_from.' - '.$this->sepa_valid_to;
+		$bsclass = '';
+		$valid_to = $this->sepa_valid_to ? ' - '.$this->sepa_valid_to : '';
+
+		if (($this->get_start_time() > strtotime(date('Y-m-d'))) && !$this->check_validity('now'))
+			$bsclass = 'danger';
+
+		return ['index' => [$this->sepa_valid_from, $valid_to],
+		        'index_header' => ['From', 'To'],
+		        'bsclass' => $bsclass,
+		        'header' => $this->sepa_valid_from.$valid_to];
+
+		// return $this->sepa_valid_from.$valid_to;
 		// return $this->reference.' | '.$this->sepa_valid_from.' - '.$this->sepa_valid_to;
 	}
 

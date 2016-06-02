@@ -55,7 +55,10 @@ class SettlementRun extends \BaseModel {
 
 	public function accounting_files()
 	{
-		return \File::allFiles($this->get_files_dir());
+		if (is_dir($this->get_files_dir()))
+			return \File::allFiles($this->get_files_dir());
+
+		return [];
 	}
 
 }

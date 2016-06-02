@@ -4,7 +4,7 @@
     "description": "Billing Base",
     "keywords": [],
     "active": 1,
-    "order": 22,
+    "order": 23,
     "providers": [
         "Modules\\BillingBase\\Providers\\BillingBaseServiceProvider"
     ],

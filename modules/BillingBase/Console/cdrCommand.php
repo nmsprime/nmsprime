@@ -44,11 +44,12 @@ class cdrCommand extends Command {
 		$https_password = $_ENV['PROVVOIPENVIA__RESELLER_PASSWORD'];
 		$logger = new BillingLogger;
 
-		$month = $this->argument('month') >= 1 && $this->argument('month') <= 12 ? sprintf('%02d', $this->argument('month')) : date('m', strtotime('first day of last month'));
+		$month = $this->argument('month') >= 1 && $this->argument('month') <= 12 ? sprintf('%02d', $this->argument('month')) : date('m', strtotime('-2 month'));
 
 		$file 	  = 'cdr.zip';
 		$tmp_path = storage_path('app/tmp/');
 
+		// TODO: proof if file is already available
 		$data = file_get_contents("https://$https_user:$https_password@www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/2016/$month");
 		if (!$data)
 		{
@@ -60,7 +61,7 @@ class cdrCommand extends Command {
 
 
 		$zipper = new Zipper;
-		$target_dir = storage_path('app/data/billingbase/accounting/'.date("Y-$month").'/');
+		$target_dir = storage_path('app/data/billingbase/accounting/'.date("Y-".sprintf('%02d', ($month+1))).'/');
 
 		if (!is_dir($target_dir))
 			mkdir($target_dir, '0744', true);
