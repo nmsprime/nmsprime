@@ -85,6 +85,12 @@ class accountingCommand extends Command {
 		$salesmen 	= Salesman::all();
 
 
+		if (!isset($sepa_accs[0]))
+		{
+			$logger->addError('There are no Sepa Accounts to create Billing Files for - Stopping here!');
+			return -1;
+		}
+
 		// remove all entries of this month permanently (if already created)
 		$ret = AccountingRecord::whereBetween('created_at', [$this->dates['thism_01'], $this->dates['nextm_01']])->forceDelete();
 		if ($ret)
@@ -324,11 +330,11 @@ class accountingCommand extends Command {
 			$sm->print_commission();
 
 		// create zip file
-
 		$filename = date('Y_m', strtotime('first day of last month')).'.zip';
-		chdir(storage_path('app/'.$this->dir));
+		$dir = storage_path('app/'.$this->dir);
+		chdir($dir);
 		system("zip -r $filename *");
-
+		system('chmod -R 0700 '.$dir);
 	}
 
 	/**
