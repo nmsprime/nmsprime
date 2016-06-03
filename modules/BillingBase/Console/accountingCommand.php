@@ -271,6 +271,13 @@ class accountingCommand extends Command {
 	 */
 	private function _init($sepa_accs, $salesmen, $conf)
 	{
+		// create directory structure
+		if (!is_dir(storage_path('app/'.$this->dir)))
+		{
+			// mkdir(storage_path('app/'.$this->dir, '0700', true)); does not work?
+			system('mkdir -p 0700 '.storage_path('app/'.$this->dir)); // system call because php mkdir creates weird permissions - umask couldnt solve it !?
+		}
+
 		// Salesmen
 		$prod_types = Product::getPossibleEnumValues('type');
 		unset($prod_types['Credit']);

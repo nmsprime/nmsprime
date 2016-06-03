@@ -275,24 +275,31 @@ class Invoice {
 	 */
 	public function make_invoice()
 	{
+		$dir = storage_path('app/'.$this->dir);
+
+		if (!is_dir($dir))
+			system('mkdir -p '.$dir.' -m 0700'); // system call because php mkdir creates weird permissions - umask couldnt solve it !?
+
 		// Keep this order -> another invoice item is build in this function - TODO: move to separate function
 		if ($this->cdrs)
-			$this->make_cdr_tex();
+			$this->_make_cdr_tex();
 
 		if ($this->data['item_table_positions'])
-			$this->make_invoice_tex();
+			$this->_make_invoice_tex();
 		else
 			$this->logger->addError("No Items for Invoice - only build CDR", [$this->data['contract_id']]);
 
 		// Store as pdf
-		$this->create_pdfs();
+		$this->_create_pdfs();
 	}
+
+
 
 
 	/**
 	 * Creates Tex File of Invoice - replaces all '\_' and all fields of data array that are set
 	 */
-	private function make_invoice_tex()
+	private function _make_invoice_tex()
 	{
 		if (!is_file($this->template_invoice_path) || !is_file($this->data['company_logo']))
 		{
@@ -321,7 +328,7 @@ class Invoice {
 	/**
 	 * Creates Tex File of Call Data Records - replaces all '\_' and all fields of data array that are set
 	 */
-	private function make_cdr_tex()
+	private function _make_cdr_tex()
 	{
 		$month = date('m', strtotime($this->cdrs[0][1]));
 		$this->data['cdr_month'] = date("$month/Y");
@@ -357,7 +364,7 @@ class Invoice {
 	/**
 	 * Creates the pdfs out of the prepared tex files - Note: this function is very time consuming
 	 */
-	private function create_pdfs()
+	private function _create_pdfs()
 	{
 		chdir(storage_path('app/'.$this->dir));
 
