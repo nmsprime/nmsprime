@@ -372,7 +372,14 @@ class Invoice {
 		{
 			if (is_file($file))
 			{
-				system("pdflatex $file &>/dev/null");			// returns 0 on success - $ret as second argument
+				system("pdflatex $file &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
+
+				if ($ret == 127)
+				{
+					$this->logger->addError("Illegal Command - PdfLatex not installed!");
+					return;
+				}
+
 				echo "Successfully created $key in $file\n";
 				$this->logger->addDebug("Successfully created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
 

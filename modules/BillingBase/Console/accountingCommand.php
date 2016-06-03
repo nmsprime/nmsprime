@@ -125,6 +125,12 @@ class accountingCommand extends Command {
 				continue;
 			}
 
+			if(!$c->costcenter)
+			{
+				$logger->addAlert('Contract '.$c->number.' has no CostCenter assigned', [$c->id]);
+				continue;
+			}
+
 			$charge 	= []; 					// total costs for this month for current contract
 			$c->expires = date('Y-m-01', strtotime($c->contract_end)) == $this->dates['lastm_01'];
 
@@ -325,9 +331,12 @@ class accountingCommand extends Command {
 		foreach ($sepa_accs as $acc)
 			$acc->make_billing_files();
 
-		$salesmen[0]->prepare_output_file();
-		foreach ($salesmen as $sm)
-			$sm->print_commission();
+		if (isset($salesmen[0]))
+		{
+			$salesmen[0]->prepare_output_file();
+			foreach ($salesmen as $sm)
+				$sm->print_commission();
+		}
 
 		// create zip file
 		$filename = date('Y_m', strtotime('first day of last month')).'.zip';
