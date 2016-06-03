@@ -27,7 +27,7 @@ class CreateProductTable extends BaseMigration {
 			$table->enum('billing_cycle', ['Once', 'Monthly', 'Quarterly', 'Yearly']);
 			$table->tinyInteger('cycle_count'); 		// number of billing cycles
 			$table->integer('costcenter_id')->unsigned();			
-			$table->float('price');
+			$table->float('price', 10, 4);
 			$table->boolean('tax');
 		});
 

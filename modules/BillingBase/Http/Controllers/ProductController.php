@@ -40,7 +40,7 @@ class ProductController extends \BaseController {
 			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => $types, 'select' => $type_selects, 'help' => 'All fields besides Billing Cycle have to be cleared before a type change! Otherwise products can not be saved in most cases'),
 			array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'Qos (Data Rate)', 'value' => $qos_val, 'select' => 'Internet'),
 			array('form_type' => 'select', 'name' => 'voip_sales_tariff_id', 'description' => 'Phone Sales Tariff', 'value' => $sales_tariffs, 'select' => 'Voip'),
-			array('form_type' => 'select', 'name' => 'voip_sales_tariff_id', 'description' => 'Phone Purchase Tariff', 'value' => $purchase_tariffs, 'select' => 'Voip'),
+			array('form_type' => 'select', 'name' => 'voip_purchase_tariff_id', 'description' => 'Phone Purchase Tariff', 'value' => $purchase_tariffs, 'select' => 'Voip'),
 			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle')),
 			array('form_type' => 'text', 'name' => 'cycle_count', 'description' => 'Number of Cycles', 'select' => 'Device Other', 'help' => 'Take Care!: for all repeatedly payed products the price stands for every charge, for Once payed products the Price is divided by the number of cycles'),
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
@@ -60,29 +60,34 @@ class ProductController extends \BaseController {
 			case 'Credit':
 				$rules['billing_cycle'] = 'In:Once,Monthly';
 				$rules['qos_id'] = 'In:0';
-				$rules['voip_id'] = 'In:0';
+				$rules['voip_sales_tariff_id'] = 'In:0';
+				$rules['voip_purchase_tariff_id'] = 'In:0';
 				$rules['price'] = 'In:"",0';
 				break;
 
 			case 'Device':
 				$rules['qos_id'] = 'In:0';
-				$rules['voip_id'] = 'In:0';
+				$rules['voip_sales_tariff_id'] = 'In:0';
+				$rules['voip_purchase_tariff_id'] = 'In:0';
 				break;
 
 			case 'Internet':
 				$rules['billing_cycle'] = 'In:Monthly,Quarterly,Yearly';
-				$rules['voip_id'] = 'In:0';
+				$rules['voip_sales_tariff_id'] = 'In:0';
+				$rules['voip_purchase_tariff_id'] = 'In:0';
 				break;
 
 			case 'Other':
 				$rules['qos_id'] = 'In:0';
-				$rules['voip_id'] = 'In:0';
+				$rules['voip_sales_tariff_id'] = 'In:0';
+				$rules['voip_purchase_tariff_id'] = 'In:0';
 				break;
 
 			case 'TV':
 				$rules['billing_cycle'] = 'In:Monthly,Quarterly,Yearly';
 				$rules['qos_id'] = 'In:0';
-				$rules['voip_id'] = 'In:0';
+				$rules['voip_sales_tariff_id'] = 'In:0';
+				$rules['voip_purchase_tariff_id'] = 'In:0';
 				break;
 
 			case 'Voip':
