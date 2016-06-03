@@ -194,11 +194,16 @@ class accountingCommand extends Command {
 
 
 			// Add Call Data Records - calculate charge and count
-			$charge = $calls = 0;
+			$charge = $calls = $id = 0;
 
 			if (isset($cdrs[$c->id]))
+				$id = $c->id;
+			else if (isset($cdrs[$c->number]))
+				$id = $c->number;
+
+			if ($id)
 			{
-				foreach ($cdrs[$c->id] as $entry)
+				foreach ($cdrs[$id] as $entry)
 				{
 					$charge += $entry[5];
 					$calls++;
@@ -353,10 +358,11 @@ class accountingCommand extends Command {
 		system('chmod -R 0700 '.$dir);
 	}
 
+
 	/**
-	 * Calls cdrCommand to get Call data records from Envia and extracts relevant data
+	 * Calls cdrCommand to get Call data records from Envia and formats relevant data to array
 	 *
-	 * @return array calls (time, phonenr) indexed by contract id
+	 * @return array 	[contract_id => [phonr_nr, time, duration, ...], next_id => [...], ...]
 	 */
 	private function _parse_cdr_file()
 	{
@@ -406,7 +412,7 @@ class accountingCommand extends Command {
 
 			$line = str_getcsv($line, ';');
 			$data[intval($line[0])][] = array($line[3], substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $line[7], str_replace(',', '.', $line[10]));
-		}	
+		}
 
 		return $data;
     }
