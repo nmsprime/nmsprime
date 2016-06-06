@@ -356,6 +356,7 @@ class accountingCommand extends Command {
 		chdir($dir);
 		system("zip -r $filename *");
 		system('chmod -R 0700 '.$dir);
+		system('chown -R apache '.$dir);
 	}
 
 

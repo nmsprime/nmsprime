@@ -291,6 +291,8 @@ class Invoice {
 
 		// Store as pdf
 		$this->_create_pdfs();
+
+		system('chown -R apache '.$dir);
 	}
 
 
