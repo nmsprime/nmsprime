@@ -85,6 +85,12 @@ class accountingCommand extends Command {
 		$salesmen 	= Salesman::all();
 
 
+		if (!isset($sepa_accs[0]))
+		{
+			$logger->addError('There are no Sepa Accounts to create Billing Files for - Stopping here!');
+			return -1;
+		}
+
 		// remove all entries of this month permanently (if already created)
 		$ret = AccountingRecord::whereBetween('created_at', [$this->dates['thism_01'], $this->dates['nextm_01']])->forceDelete();
 		if ($ret)
@@ -116,6 +122,12 @@ class accountingCommand extends Command {
 			if (!$c->create_invoice)
 			{
 				$logger->addInfo('Create invoice for Contract '.$c->number.' is off', [$c->id]);
+				continue;
+			}
+
+			if(!$c->costcenter)
+			{
+				$logger->addAlert('Contract '.$c->number.' has no CostCenter assigned', [$c->id]);
 				continue;
 			}
 
@@ -182,11 +194,16 @@ class accountingCommand extends Command {
 
 
 			// Add Call Data Records - calculate charge and count
-			$charge = $calls = 0;
+			$charge = $calls = $id = 0;
 
 			if (isset($cdrs[$c->id]))
+				$id = $c->id;
+			else if (isset($cdrs[$c->number]))
+				$id = $c->number;
+
+			if ($id)
 			{
-				foreach ($cdrs[$c->id] as $entry)
+				foreach ($cdrs[$id] as $entry)
 				{
 					$charge += $entry[5];
 					$calls++;
@@ -259,6 +276,13 @@ class accountingCommand extends Command {
 	 */
 	private function _init($sepa_accs, $salesmen, $conf)
 	{
+		// create directory structure
+		if (!is_dir(storage_path('app/'.$this->dir)))
+		{
+			// mkdir(storage_path('app/'.$this->dir, '0700', true)); does not work?
+			system('mkdir -p 0700 '.storage_path('app/'.$this->dir)); // system call because php mkdir creates weird permissions - umask couldnt solve it !?
+		}
+
 		// Salesmen
 		$prod_types = Product::getPossibleEnumValues('type');
 		unset($prod_types['Credit']);
@@ -319,22 +343,27 @@ class accountingCommand extends Command {
 		foreach ($sepa_accs as $acc)
 			$acc->make_billing_files();
 
-		$salesmen[0]->prepare_output_file();
-		foreach ($salesmen as $sm)
-			$sm->print_commission();
+		if (isset($salesmen[0]))
+		{
+			$salesmen[0]->prepare_output_file();
+			foreach ($salesmen as $sm)
+				$sm->print_commission();
+		}
 
 		// create zip file
-
 		$filename = date('Y_m', strtotime('first day of last month')).'.zip';
-		chdir(storage_path('app/'.$this->dir));
+		$dir = storage_path('app/'.$this->dir);
+		chdir($dir);
 		system("zip -r $filename *");
-
+		system('chmod -R 0700 '.$dir);
+		system('chown -R apache '.$dir);
 	}
 
+
 	/**
-	 * Calls cdrCommand to get Call data records from Envia and extracts relevant data
+	 * Calls cdrCommand to get Call data records from Envia and formats relevant data to array
 	 *
-	 * @return array calls (time, phonenr) indexed by contract id
+	 * @return array 	[contract_id => [phonr_nr, time, duration, ...], next_id => [...], ...]
 	 */
 	private function _parse_cdr_file()
 	{
@@ -384,7 +413,7 @@ class accountingCommand extends Command {
 
 			$line = str_getcsv($line, ';');
 			$data[intval($line[0])][] = array($line[3], substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $line[7], str_replace(',', '.', $line[10]));
-		}	
+		}
 
 		return $data;
     }
