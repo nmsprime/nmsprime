@@ -471,7 +471,7 @@ class SepaAccount extends \BaseModel {
 	private function _log($name, $pathname)
 	{
 		$path = storage_path('app/');
-		echo "Stored $name in $path"."$pathname\n";
+		// echo "Stored $name in $path"."$pathname\n";
 		$this->logger->addInfo("Successfully stored $name in $path"."$pathname \n");		
 	}
 

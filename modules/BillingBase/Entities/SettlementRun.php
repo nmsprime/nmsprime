@@ -40,8 +40,8 @@ class SettlementRun extends \BaseModel {
 
 	public function view_has_many()
 	{
-		$ret['Billing']['SettlementRun']['view']['view'] = 'billingbase::settlementrun';
-		$ret['Billing']['SettlementRun']['view']['vars'] = $this->accounting_files();
+		$ret['Files']['SettlementRun']['view']['view'] = 'billingbase::settlementrun';
+		$ret['Files']['SettlementRun']['view']['vars'] = $this->accounting_files();
 
 		return $ret;
 	}
@@ -53,10 +53,28 @@ class SettlementRun extends \BaseModel {
 	}
 
 
+	/**
+	 * Return all Billing Files the corresponding directory contains
+	 *
+	 * @return array 	containing all files ordered for view
+	 */
 	public function accounting_files()
 	{
 		if (is_dir($this->get_files_dir()))
-			return \File::allFiles($this->get_files_dir());
+		{
+			$files = \File::allFiles($this->get_files_dir());
+
+			//order files
+			foreach ($files as $file)
+			{
+				if (!$file->getRelativePath())
+					$a[] = $file;
+				else
+					$b[] = $file;
+			}
+
+			return array_merge($a,$b);
+		}
 
 		return [];
 	}

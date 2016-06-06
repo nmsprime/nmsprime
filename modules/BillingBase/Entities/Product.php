@@ -19,7 +19,8 @@ class Product extends \BaseModel {
 			'name' 	=> 'required|unique:product,name,'.$id.',id,deleted_at,NULL',
 			'type' 	=> "required|not_null",
 			// 'type' => "required|not_null|unique:product,type,$id,id,type,Credit,deleted_at,NULL",	// if credit shall exist only once
-			'voip_tariff' => 'required_if:type,Voip',
+			'voip_sales_tariff_id' => 'required_if:type,Voip',
+			'voip_purchase_tariff_id' => 'required_if:type,Voip',
 			'qos_id' => 'required_if:type,Internet',
 			'price'  => 'required_if:type,Internet,Voip,TV,Other,Device,Mixed',
 		);

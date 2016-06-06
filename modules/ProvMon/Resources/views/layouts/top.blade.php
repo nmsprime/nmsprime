@@ -8,12 +8,13 @@
 		$parent = $view_var;
 		do
 		{
+
 			if ($parent)
 			{
 				// Need to be tested !
 				$tmp = explode('\\',get_class($parent));
 				$view = end($tmp);
-				$s = HTML::linkRoute($view.'.edit', $parent->view_index_label(), $parent->id).' / '.$s;
+				$s = HTML::linkRoute($view.'.edit', is_array($parent->view_index_label()) ? $parent->view_index_label()['header'] : $parent->view_index_label(), $parent->id).' / '.$s;
 			}
 
 			$parent = $parent->view_belongs_to();
