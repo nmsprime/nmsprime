@@ -1047,7 +1047,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$inner_xml = $this->xml->addChild('tariff_data');
 
-		// TODO: get dat from Contract->Item (after merging with Nino)
+		// TODO: get date from Contract->Item (after merging with Nino)
 		$inner_xml->addChild('orderdate', date('Y-m-d', strtotime('first day of next month')));
 
 		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale_next->external_identifier);
@@ -1065,6 +1065,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$inner_xml = $this->xml->addChild('variation_data');
 
+		// no date to be given ⇒ changed automatically on 1st of next month
 		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
 
 
