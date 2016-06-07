@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\View;
 
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
+use Modules\ProvVoip\Entities\Phonenumber;
 
 class EnviaOrderController extends \BaseController {
 
@@ -18,38 +19,68 @@ class EnviaOrderController extends \BaseController {
 	public function view_form_fields($model = null)
 	{
 
+		$init_values = array();
+		$phonenumber_id = null;
+		$contract_id = null;
+
 		// make order_id fillable on create => so man can add an order created at the web GUI to keep data consistent
 		if (!$model->exists) {
+
 			$order_id = array('form_type' => 'text', 'name' => 'orderid', 'description' => 'Order ID');
+
+			// order can be related to phonenumber (and contract) or to contract alone
+			// get the contract (has to be given; watch create()
+			$contract_id = \Input::get('contract_id', null);
+			if (!is_null($contract_id)) {
+				$init_values['contract_id'] = $contract_id;
+			}
+			else {
+				throw new \InvalidArgumentException('Order at least has to be related to a contract, but could not get a contract id');
+			}
+
+			// try to get phonenumber (can be given)
+			$phonenumber_id = \Input::get('phonenumber_id', null);
+			if (!is_null($phonenumber_id)) {
+				$init_values['phonenumber_id'] = $phonenumber_id;
+				$phonenumber = Phonenumber::findOrFail($phonenumber_id);
+				$init_values['contract_id'] = $phonenumber->mta->modem->contract->id;
+			}
+
+
 		}
 		else {
 			$order_id = array('form_type' => 'text', 'name' => 'orderid', 'description' => 'Order ID', 'options' => ['readonly']);
 		}
 
 
-
 		// label has to be the same like column in sql table
-		$ret = array(
+		$ret_tmp = array(
 			$order_id,
-			/* array('form_type' => 'text', 'name' => 'ordertype_id', 'description' => 'Ordertype', 'options' => ['readonly']), */
-			array('form_type' => 'text', 'name' => 'ordertype', 'description' => 'Order type', 'options' => ['readonly']),
-			/* array('form_type' => 'text', 'name' => 'orderstatus_id', 'description' => 'Orderstatus ID', 'options' => ['readonly']), */
+			array('form_type' => 'text', 'name' => 'ordertype_id', 'description' => 'Ordertype ID', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'ordertype', 'description' => 'Ordertype', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'orderstatus_id', 'description' => 'Orderstatus ID', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'orderstatus', 'description' => 'Orderstatus', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'orderdate', 'description' => 'Orderdate', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'ordercomment', 'description' => 'Ordercomment', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'contract', 'description' => 'Contract number', 'init_value' => $model->contract->number, 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'customer', 'description' => 'Customer number', 'init_value' => $model->contract->number3, 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'Envia contract reference', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'customerreference', 'description' => 'Envia customer reference', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'options' => ['readonly'], 'hidden' => '1'),
-			/* array('form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber', 'options' => ['readonly']), */
+			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'Envia contract reference', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract ID', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber ID', 'options' => ['readonly']),
 		);
 
-		// order can be related to phonenumber (and contract) or to contract alone – the current order is maybe not bundled with a number, we have to catch this special case
-		$phonenumber = $model->phonenumber;
-		if (!is_null($phonenumber)) {
-			$nr = $phonenumber->prefix_number.'/'.$phonenumber->number;
-			array_push($ret, array('form_type' => 'text', 'name' => 'phonenumber', 'description' => 'Phonenumber', 'init_value' => $nr, 'options' => ['readonly']));
+
+		// add init values if set
+		$ret = array();
+		foreach ($ret_tmp as $elem) {
+
+			/* echo '<pre>'; */
+			/* print_r($elem); */
+			/* echo '</pre>'; */
+
+			if (array_key_exists($elem['name'], $init_values)) {
+				$elem['init_value'] = $init_values[$elem['name']];
+			}
+			array_push($ret, $elem);
 		}
 
 		return $ret;

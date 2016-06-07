@@ -131,7 +131,7 @@ class EnviaOrderDocumentController extends \BaseController {
 		// build path to store document in – this is the base path with subdir contract ID
 		$enviaorder_id = \Input::get('enviaorder_id', -1);
 		if ($enviaorder_id < 0) {
-			throw new \ValueError('No enviaorder_id given');
+			throw new \InvalidArgumentException('No enviaorder_id given');
 		}
 		\Input::merge(array('enviaorder_id' => $enviaorder_id));
 
