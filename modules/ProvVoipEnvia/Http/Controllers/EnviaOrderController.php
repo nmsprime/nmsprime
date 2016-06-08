@@ -31,7 +31,7 @@ class EnviaOrderController extends \BaseController {
 			// order can be related to phonenumber (and contract) or to contract alone
 			// get the contract (has to be given; watch create()
 			$contract_id = \Input::get('contract_id', null);
-			if (!is_null($contract_id)) {
+			if (boolval($contract_id)) {
 				$init_values['contract_id'] = $contract_id;
 			}
 			else {
@@ -40,7 +40,7 @@ class EnviaOrderController extends \BaseController {
 
 			// try to get phonenumber (can be given)
 			$phonenumber_id = \Input::get('phonenumber_id', null);
-			if (!is_null($phonenumber_id)) {
+			if (boolval($phonenumber_id)) {
 				$init_values['phonenumber_id'] = $phonenumber_id;
 				$phonenumber = Phonenumber::findOrFail($phonenumber_id);
 				$init_values['contract_id'] = $phonenumber->mta->modem->contract->id;
@@ -56,16 +56,16 @@ class EnviaOrderController extends \BaseController {
 		// label has to be the same like column in sql table
 		$ret_tmp = array(
 			$order_id,
-			array('form_type' => 'text', 'name' => 'ordertype_id', 'description' => 'Ordertype ID', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'ordertype', 'description' => 'Ordertype', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'orderstatus_id', 'description' => 'Orderstatus ID', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'orderstatus', 'description' => 'Orderstatus', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'orderdate', 'description' => 'Orderdate', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'ordercomment', 'description' => 'Ordercomment', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'customerreference', 'description' => 'Envia customer reference', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'Envia contract reference', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract ID', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber ID', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'ordertype_id', 'description' => 'Ordertype ID', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'ordertype', 'description' => 'Ordertype', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'orderstatus_id', 'description' => 'Orderstatus ID', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'orderstatus', 'description' => 'Orderstatus', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'orderdate', 'description' => 'Orderdate', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'ordercomment', 'description' => 'Ordercomment', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'customerreference', 'description' => 'Envia customer reference', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'Envia contract reference', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract ID', 'options' => ['readonly'], 'hidden' => 1),
+			array('form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber ID', 'options' => ['readonly'], 'hidden' => 1),
 		);
 
 
