@@ -1,6 +1,8 @@
 <?php
 
 namespace Modules\ProvVoipEnvia\Entities;
+use Modules\ProvBase\Entities\Contract;
+use Modules\ProvVoip\Entities\Phonenumber;
 
 // Model not found? execute composer dump-autoload in lara root dir
 class EnviaOrder extends \BaseModel {
@@ -45,12 +47,49 @@ class EnviaOrder extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-        $bsclass = 'success';
+		$colors = [
+			1000 => 'info',			# in Bearbeitung
+			1001 => 'success',		# erfolgreich verarbeitet
+			1009 => 'warning',		# Warte auf Portierungserklärung
+			1010 => 'warning',		# Terminverschiebung
+			1012 => 'danger',		# Dokument fehlerhaft oder nicht lesbar
+			1013 => 'warning',		# Warte auf Portierungsbestätigung
+			1014 => 'danger',		# Fehlgeschlagen, Details siehe Bemerkung
+			1015 => 'success',		# Schaltung bestätigt zum Zieltermin
+			1017 => 'success',		# Stornierung bestätigt
+			1018 => 'danger',		# Stornierung nicht möglich
+			1019 => 'warning',		# Warte auf Zieltermin
+			1036 => 'danger',		# Eskalationsstufe 1 - Warte auf Portierungsbestätigung
+			1037 => 'danger',		# Eskalationsstufe 2 - Warte auf Portierungsbestätigung
+			1038 => 'danger',		# Portierungsablehnung, siehe Bemerkung
+			1039 => 'warning',		# Warte auf Zieltermin kleiner gleich 180 Kalendertage
+		];
 
-        return ['index' => [$this->orderid],
-                'index_header' => ['ID'],
+		if (!boolval($this->orderstatus_id)) {
+			$bsclass = 'info';
+		}
+		else {
+	        $bsclass = $colors[$this->orderstatus_id];
+		}
+
+		$contract_nr = Contract::findOrFail($this->contract_id)->number;
+		$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract_nr.'</a>';
+
+		if (boolval($this->phonenumber_id)) {
+			$phonenumber = Phonenumber::findOrFail($this->phonenumber_id);
+			$phonenumbermanagement_id = $phonenumber->phonenumbermanagement->id;
+			$phonenumber_nr = $phonenumber->prefix_number.'/'.$phonenumber->number;
+			$phonenumber_nr = '<a href="'.\URL::route('PhonenumberManagement.edit', array($phonenumbermanagement_id)).'" target="_blank">'.$phonenumber_nr.'</a>';
+		}
+		else {
+			$phonenumber_nr = '–';
+		}
+
+        return ['index' => [$this->ordertype, $this->orderstatus, $contract_nr, $phonenumber_nr, $this->created_at, $this->updated_at],
+                'index_header' => ['Ordertype', 'Orderstatus', 'Contract&nbsp;Nr.', 'Phonenumber', 'Created at', 'Updated at'],
                 'bsclass' => $bsclass,
-                'header' => $this->orderid.': '.$this->ordertype.' ('.$this->orderstatus.')'];
+				'header' => $this->orderid.': '.$this->ordertype.' ('.$this->orderstatus.')',
+		];
 	}
 
 	// belongs to a modem - see BaseModel for explanation
