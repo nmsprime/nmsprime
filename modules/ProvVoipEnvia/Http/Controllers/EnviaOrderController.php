@@ -11,7 +11,8 @@ use Modules\ProvVoip\Entities\Phonenumber;
 
 class EnviaOrderController extends \BaseController {
 
-	/* protected $index_create_allowed = false; */
+	protected $index_create_allowed = false;
+	protected $index_delete_allowed = false;
 
 	/**
 	 * defines the formular fields for the edit and create view

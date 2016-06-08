@@ -328,8 +328,8 @@ class ProvVoipEnvia extends \BaseModel {
 			// variation can only be changed if contract exists and a variation change is wanted
 			// TODO: implement checks for current change state; otherwise we get an error from Envia (change into the same variation is not possible)
 			if ($this->contract_available) {
-				if (boolval($this->contract->next_voip_id)) {
-					if ($this->contract->voip_id != $this->contract->next_voip_id) {
+				if (boolval($this->contract->next_purchase_tariff)) {
+					if ($this->contract->purchase_tariff != $this->contract->next_purchase_tariff) {
 						array_push($ret, array('linktext' => 'Change variation', 'url' => $base.'contract_change_variation'.$origin.'&amp;contract_id='.$contract_id));
 					}
 				}
