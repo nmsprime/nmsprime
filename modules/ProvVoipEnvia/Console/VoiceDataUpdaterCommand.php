@@ -54,6 +54,7 @@ class VoiceDataUpdaterCommand extends Command {
 	 */
 	public function fire()
 	{
+		Log::info($this->description);
 
 		echo "\n";
 		$this->_get_affected_sip_orders();

@@ -2,6 +2,7 @@
 
 namespace Modules\ProvVoipEnvia\Entities;
 
+use Log;
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
@@ -1950,6 +1951,32 @@ class ProvVoipEnvia extends \BaseModel {
 		$out .= "</table><br>";
 
 		$order->save();
+
+		// get the related contract to check if external identifier are set
+		$contract = Contract::findOrFail($order->contract_id);
+
+		// check external identifiers:
+		//   if not set (e.g. not known at manual creation time: update
+		//   if set to different values: something went wrong!
+		if (!boolval($contract->contract_external_id)) {
+			$contract->contract_external_id = $xml->contractreference;
+			$contract->save();
+		}
+		if ($xml->contractreference != $contract->contract_external_id) {
+			$msg = '<h4>Error: Contract reference in order '.$order->contractreference.' and contract '.$contract->contract_external_id.' are different!</h4>';
+			$out .= $msg;
+			Log::error($msg);
+		}
+
+		if (!boolval($contract->customer_external_id)) {
+			$contract->customer_external_id = $xml->customerreference;
+			$contract->save();
+		}
+		if ($xml->customerreference != $contract->customer_external_id) {
+			$msg = '<h4>Error: Customer reference in order '.$order->customerreference.' and contract '.$contract->customer_external_id.' are different!</h4>';
+			$out .= $msg;
+			Log::error($msg);
+		}
 
 		$out .= "<b>Database updated</b>";
 		return $out;
