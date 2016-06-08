@@ -47,6 +47,7 @@ class EnviaOrder extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
+		// combine all possible orderstatus IDs with GUI colors
 		$colors = [
 			1000 => 'info',			# in Bearbeitung
 			1001 => 'success',		# erfolgreich verarbeitet
@@ -65,12 +66,21 @@ class EnviaOrder extends \BaseModel {
 			1039 => 'warning',		# Warte auf Zieltermin kleiner gleich 180 Kalendertage
 		];
 
+		// this is used to order the orders (*grin*) by their escalation levels
+		$escalations = [
+			'success' => 0,
+			'info' => 1,
+			'warning' => 2,
+			'danger' => 3,
+		];
+
 		if (!boolval($this->orderstatus_id)) {
 			$bsclass = 'info';
 		}
 		else {
 	        $bsclass = $colors[$this->orderstatus_id];
 		}
+		$escalation_level = $escalations[$bsclass].' – '.$bsclass;
 
 		$contract_nr = Contract::findOrFail($this->contract_id)->number;
 		$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract_nr.'</a>';
@@ -85,8 +95,8 @@ class EnviaOrder extends \BaseModel {
 			$phonenumber_nr = '–';
 		}
 
-        return ['index' => [$this->ordertype, $this->orderstatus, $contract_nr, $phonenumber_nr, $this->created_at, $this->updated_at],
-                'index_header' => ['Ordertype', 'Orderstatus', 'Contract&nbsp;Nr.', 'Phonenumber', 'Created at', 'Updated at'],
+        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $phonenumber_nr, $this->created_at, $this->updated_at],
+                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Phonenumber', 'Created at', 'Updated at'],
                 'bsclass' => $bsclass,
 				'header' => $this->orderid.': '.$this->ordertype.' ('.$this->orderstatus.')',
 		];
