@@ -15,7 +15,7 @@ class AuthController extends Auth {
 	// Constructor
 	public function __construct()
 	{
-		$this->prefix = 'ccc'; // url prefix
+		$this->prefix = 'customer'; // url prefix
 		$this->headline1 = 'ERZNET';
 		$this->headline2 = 'Customer Control Center';
 		$this->login_page = 'home'; // continue at ccc/home after successful login
