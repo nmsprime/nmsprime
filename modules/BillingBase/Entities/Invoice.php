@@ -37,10 +37,16 @@ class Invoice {
 	public $cdrs;
 
 	/**
+	 * @var bool 	Error Flag - if set then invoice cant be created
+	 */
+	private $error_flag = false;
+
+	/**
 	 * @var array 	All the data used to fill the invoice template file
 	 */
 	public $data = array(
 
+		// Company
 		'company_name'			=> '',
 		'company_street'		=> '',
 		'company_zip'			=> '',	
@@ -49,20 +55,27 @@ class Invoice {
 		'company_fax'			=> '',
 		'company_mail'			=> '',
 		'company_web'			=> '',
-		'company_registration_court' => '',
+		'company_registration_court_1' => '',
+		'company_registration_court_2' => '',
+		'company_registration_court_3' => '',
 		'company_management' 	=> '',
 		'company_directorate' 	=> '',
 		'company_web'			=> '',
+		'company_tax_id_nr' 	=> '',
+		'company_tax_nr' 		=> '',
+		'company_logo'			=> '',
 
+		// SepaAccount
 		'company_creditor_id' 	=> '',
 		'company_account_institute' => '',
 		'company_account_iban'  => '',
 		'company_account_bic' 	=> '',
-		'company_tax_id_nr' 	=> '',
-		'company_tax_nr' 		=> '',
 
-		'company_logo'			=> '',
+		'invoice_nr' 			=> '',
+		'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate
+		'invoice_headline'		=> '',
 
+		// Contract
 		'contract_id' 			=> '',
 		'contract_nr' 			=> '',
 		'contract_firstname' 	=> '',
@@ -74,16 +87,12 @@ class Invoice {
 		'contract_mandate_iban'	=> '', 			// iban of the customer
 		'contract_mandate_ref'	=> '', 			// mandate reference of the customer
 
+		// Dates
 		'date_invoice'			=> '',
-		'invoice_nr' 			=> '',
-		'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate
-		'invoice_headline'		=> '',
 		'rcd' 					=> '',			// Fälligkeitsdatum
 		'cdr_month'				=> '', 			// Month of Call Data Records
-		// 'tariffs'			=> '',			// (TODO: implement!)
-		// 'start'				=> '',			// Leistungszeitraum start , TODO: implement!
-		// 'end'				=> '',			// Leistungszeitraum ende , TODO: implement!
 
+		// Charges
 		'item_table_positions'  => '', 			// tex table of all items to be charged for this invoice
 		'cdr_table_positions'	=> '',			// tex table of all call data records
 		'table_summary' 		=> '', 			// preformatted table - use following three keys to set table by yourself
@@ -217,49 +226,29 @@ class Invoice {
 	 */
 	public function set_company_data($account)
 	{
+		if (!$account)
+		{
+			$this->logger->addError('Missing account data for Invoice', [$this->data['contract_id']]);
+			$this->error_flag = true;
+			return false;
+		}
+
 		$this->data['company_account_institute'] = $account->institute;
 		$this->data['company_account_iban'] = $account->iban;
 		$this->data['company_account_bic']  = $account->bic;
 		$this->data['company_creditor_id']  = $account->creditorid;
 		$this->data['invoice_headline'] 	= $account->invoice_headline ? $account->invoice_headline : trans('messages.invoice');
 
-		if (!$account->company)
+		$company = $account->company;
+
+		if (!$company)
 		{
 			$this->logger->addError('No Company assigned to Account '.$account->name);
+			$this->error_flag = true;
 			return false;
 		}
 
-		$this->data['company_name']		= $account->company->name;
-		$this->data['company_street']	= $account->company->street;
-		$this->data['company_zip']		= $account->company->zip;
-		$this->data['company_city']		= $account->company->city;
-		$this->data['company_phone']	= $account->company->phone;
-		$this->data['company_fax']		= $account->company->fax;
-		$this->data['company_mail']		= $account->company->mail;
-		$this->data['company_web']		= $account->company->web;
-
-		$this->data['company_registration_court'] .= $account->company->registration_court_1 ? $account->company->registration_court_1.'\\\\' : '';
-		$this->data['company_registration_court'] .= $account->company->registration_court_2 ? $account->company->registration_court_2.'\\\\' : '';
-		$this->data['company_registration_court'] .= $account->company->registration_court_3 ? $account->company->registration_court_3.'\\\\' : '\\\\';
-
-		if ($account->company->management)
-		{
-			$management = explode(',', $account->company->management);
-			foreach ($management as $key => $value) 
-				$management[$key] = trim($value);
-			$this->data['company_management'] = implode('\\\\', $management);
-		}
-
-		if ($account->company->directorate)
-		{
-			$directorate = explode(',', $account->company->directorate);
-			foreach ($directorate as $key => $value) 
-				$directorate[$key] = trim($value);
-			$this->data['company_directorate'] = implode('\\\\', $directorate);
-		}
-
-		$this->data['company_tax_id_nr'] 	= $account->company->tax_id_nr;
-		$this->data['company_tax_nr'] 		= $account->company->tax_nr;
+		$this->data = array_merge($this->data, $company->template_data());
 
 		$this->data['company_logo']  = storage_path('app/'.$this->logo_path.$account->company->logo);
 		$this->template_invoice_path = storage_path('app/'.$this->template_invoice_path.$account->template_invoice);
@@ -305,10 +294,10 @@ class Invoice {
 	 */
 	private function _make_invoice_tex()
 	{
-		if (!is_file($this->template_invoice_path) || !is_file($this->data['company_logo']))
+		if ($this->error_flag)
 		{
-			$this->logger->addError("Failed to Create Invoice: Template or Logo of Company ".$this->data['company_name']." not set!", [$this->data['contract_id']]);
-			return -2;
+			$this->logger->addError("Missing Data from SepaAccount or Company to Create Invoice", [$this->data['contract_id']]);
+			return -2;			
 		}
 
 		if (!$template = file_get_contents($this->template_invoice_path))

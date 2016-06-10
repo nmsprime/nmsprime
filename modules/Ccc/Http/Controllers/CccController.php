@@ -52,40 +52,4 @@ class CccController extends \BaseController {
 		return parent::update($id);
 	}
 
-
-	
-	/**
-	 * Create and Download Connection Information
-	 * @param integer  	$id  	contract id
-	 * @return file response() - download box from browser
-	 *
-	 * @author Torsten Schmidt, Nino Ryschawy
-	 */
-	public function connection_info_download ($id)
-	{
-		// TODO: @Nino Ryschawy: create connection information under storage path
-		//       and set $pdf to created pdf file (recursive under storage/apps)
-		$template_dir = storage_path('app/config/ccc/template/');
-		$c = Contract::find($id);
-		$data = $c->ccc();
-
-		$template_data = array(
-			''
-
-			);
-
-		$logo_path = \PPModule::is_active('billingbase') ? : null;
-
-		$dir = storage_path('app/data/ccc/');
-		$filename = 'conn_info_'.$c->id.'.pdf';
-
-		if (!is_file($dir.$filename))
-			return $data;
-
-		$pdf = response()->download($dir.$filename);
-
-		return $pdf;
-	}
-
-
 }
