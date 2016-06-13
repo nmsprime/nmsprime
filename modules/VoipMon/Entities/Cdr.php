@@ -24,7 +24,15 @@ class Cdr extends \BaseModel {
 	// Link title in index view
 	public function view_index_label()
 	{
-		$bsclass = 'success';
+		if ($this->mos_min_mult10 > 40)
+			$bsclass = 'success';
+		elseif ($this->mos_min_mult10 > 30)
+			$bsclass = 'info';
+		elseif ($this->mos_min_mult10 > 20)
+			$bsclass = 'warning';
+		else
+			$bsclass = 'danger';
+
 		return ['index' =>	[$this->calldate, $this->callend, $this->caller,
 					$this->called, $this->mos_min_mult10, $this->packet_loss_perc_mult1000,
 					$this->jitter_mult10, $this->delay_avg_mult100],
