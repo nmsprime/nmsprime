@@ -55,6 +55,7 @@ class Invoice {
 		'company_fax'			=> '',
 		'company_mail'			=> '',
 		'company_web'			=> '',
+		'company_registration_court' => '', 	// all 3 fields together separated by tex newline ('\\\\')
 		'company_registration_court_1' => '',
 		'company_registration_court_2' => '',
 		'company_registration_court_3' => '',
@@ -250,6 +251,10 @@ class Invoice {
 
 		$this->data = array_merge($this->data, $company->template_data());
 
+		$this->data['company_registration_court'] .= $this->data['company_registration_court_1'] ? $this->data['company_registration_court_1'].'\\\\' : '';
+		$this->data['company_registration_court'] .= $this->data['company_registration_court_2'] ? $this->data['company_registration_court_2'].'\\\\' : '';
+		$this->data['company_registration_court'] .= $this->data['company_registration_court_3'];
+
 		$this->data['company_logo']  = storage_path('app/'.$this->logo_path.$account->company->logo);
 		$this->template_invoice_path = storage_path('app/'.$this->template_invoice_path.$account->template_invoice);
 		$this->template_cdr_path 	 = storage_path('app/'.$this->template_cdr_path.$account->template_cdr);
@@ -375,10 +380,15 @@ class Invoice {
 			{
 				system("pdflatex $file &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
 
-				if ($ret == 127)
+				switch ($ret)
 				{
-					$this->logger->addError("Illegal Command - PdfLatex not installed!");
-					return;
+					case 0: break;
+					case 127:
+						$this->logger->addError("Illegal Command - PdfLatex not installed!");
+						return null;
+					default:
+						$this->logger->addError("Error executing PdfLatex - Return Code: $ret");
+						return null;
 				}
 
 				echo "Successfully created $key in $file\n";

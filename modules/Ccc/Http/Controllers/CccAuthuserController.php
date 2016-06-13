@@ -121,7 +121,7 @@ class CccAuthuserController extends \BaseController {
 		// Replace placeholder by value
 		$template = str_replace('\\_', '_', $template);
 		foreach ($this->data as $key => $value)
-			$template = $value ? str_replace('{'.$key.'}', $value, $template) : $template;
+			$template = str_replace('{'.$key.'}', $value, $template);
 
 		File::put($dir_path.$filename, $template);
 
@@ -130,7 +130,6 @@ class CccAuthuserController extends \BaseController {
 		chdir($dir_path);
 
 		system("pdflatex $filename &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
-dd(File::allFiles($dir_path), $ret);
 
 		switch ($ret)
 		{
@@ -139,7 +138,7 @@ dd(File::allFiles($dir_path), $ret);
 				Log::error("Illegal Command - PdfLatex not installed!");
 				return null;
 			default:
-				Log::error("Error executing PdfLatex!");
+				Log::error("Error executing PdfLatex - Return Code: $ret");
 				return null;
 		}
 
