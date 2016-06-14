@@ -76,8 +76,9 @@ class SepaAccount extends \BaseModel {
 
 
 	/**
-	 * Returns all available and template files (via directory listing)
+	 * Returns all available template files (via directory listing)
 	 * @author Nino Ryschawy
+	 * @return array 	filenames
 	 */
 	public function templates()
 	{

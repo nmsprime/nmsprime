@@ -37,10 +37,16 @@ class Invoice {
 	public $cdrs;
 
 	/**
+	 * @var bool 	Error Flag - if set then invoice cant be created
+	 */
+	private $error_flag = false;
+
+	/**
 	 * @var array 	All the data used to fill the invoice template file
 	 */
 	public $data = array(
 
+		// Company
 		'company_name'			=> '',
 		'company_street'		=> '',
 		'company_zip'			=> '',	
@@ -49,20 +55,28 @@ class Invoice {
 		'company_fax'			=> '',
 		'company_mail'			=> '',
 		'company_web'			=> '',
-		'company_registration_court' => '',
+		'company_registration_court' => '', 	// all 3 fields together separated by tex newline ('\\\\')
+		'company_registration_court_1' => '',
+		'company_registration_court_2' => '',
+		'company_registration_court_3' => '',
 		'company_management' 	=> '',
 		'company_directorate' 	=> '',
 		'company_web'			=> '',
+		'company_tax_id_nr' 	=> '',
+		'company_tax_nr' 		=> '',
+		'company_logo'			=> '',
 
+		// SepaAccount
 		'company_creditor_id' 	=> '',
 		'company_account_institute' => '',
 		'company_account_iban'  => '',
 		'company_account_bic' 	=> '',
-		'company_tax_id_nr' 	=> '',
-		'company_tax_nr' 		=> '',
 
-		'company_logo'			=> '',
+		'invoice_nr' 			=> '',
+		'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate
+		'invoice_headline'		=> '',
 
+		// Contract
 		'contract_id' 			=> '',
 		'contract_nr' 			=> '',
 		'contract_firstname' 	=> '',
@@ -74,16 +88,12 @@ class Invoice {
 		'contract_mandate_iban'	=> '', 			// iban of the customer
 		'contract_mandate_ref'	=> '', 			// mandate reference of the customer
 
-		// 'date'				=> '',
-		'invoice_nr' 			=> '',
-		'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate
-		'invoice_headline'		=> '',
+		// Dates
+		'date_invoice'			=> '',
 		'rcd' 					=> '',			// Fälligkeitsdatum
 		'cdr_month'				=> '', 			// Month of Call Data Records
-		// 'tariffs'			=> '',			// (TODO: implement!)
-		// 'start'				=> '',			// Leistungszeitraum start , TODO: implement!
-		// 'end'				=> '',			// Leistungszeitraum ende , TODO: implement!
 
+		// Charges
 		'item_table_positions'  => '', 			// tex table of all items to be charged for this invoice
 		'cdr_table_positions'	=> '',			// tex table of all call data records
 		'table_summary' 		=> '', 			// preformatted table - use following three keys to set table by yourself
@@ -107,6 +117,7 @@ class Invoice {
 
 		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr;
+		$this->data['date_invoice'] = date('d.m.Y', strtotime('last day of last month'));
 
 		// TODO: Add other currencies here
 		$this->currency	= strtolower($config->currency) == 'eur' ? '€' : $config->currency;
@@ -216,49 +227,33 @@ class Invoice {
 	 */
 	public function set_company_data($account)
 	{
+		if (!$account)
+		{
+			$this->logger->addError('Missing account data for Invoice', [$this->data['contract_id']]);
+			$this->error_flag = true;
+			return false;
+		}
+
 		$this->data['company_account_institute'] = $account->institute;
 		$this->data['company_account_iban'] = $account->iban;
 		$this->data['company_account_bic']  = $account->bic;
 		$this->data['company_creditor_id']  = $account->creditorid;
 		$this->data['invoice_headline'] 	= $account->invoice_headline ? $account->invoice_headline : trans('messages.invoice');
 
-		if (!$account->company)
+		$company = $account->company;
+
+		if (!$company)
 		{
 			$this->logger->addError('No Company assigned to Account '.$account->name);
+			$this->error_flag = true;
 			return false;
 		}
 
-		$this->data['company_name']		= $account->company->name;
-		$this->data['company_street']	= $account->company->street;
-		$this->data['company_zip']		= $account->company->zip;
-		$this->data['company_city']		= $account->company->city;
-		$this->data['company_phone']	= $account->company->phone;
-		$this->data['company_fax']		= $account->company->fax;
-		$this->data['company_mail']		= $account->company->mail;
-		$this->data['company_web']		= $account->company->web;
+		$this->data = array_merge($this->data, $company->template_data());
 
-		$this->data['company_registration_court'] .= $account->company->registration_court_1 ? $account->company->registration_court_1.'\\\\' : '';
-		$this->data['company_registration_court'] .= $account->company->registration_court_2 ? $account->company->registration_court_2.'\\\\' : '';
-		$this->data['company_registration_court'] .= $account->company->registration_court_3 ? $account->company->registration_court_3.'\\\\' : '\\\\';
-
-		if ($account->company->management)
-		{
-			$management = explode(',', $account->company->management);
-			foreach ($management as $key => $value) 
-				$management[$key] = trim($value);
-			$this->data['company_management'] = implode('\\\\', $management);
-		}
-
-		if ($account->company->directorate)
-		{
-			$directorate = explode(',', $account->company->directorate);
-			foreach ($directorate as $key => $value) 
-				$directorate[$key] = trim($value);
-			$this->data['company_directorate'] = implode('\\\\', $directorate);
-		}
-
-		$this->data['company_tax_id_nr'] 	= $account->company->tax_id_nr;
-		$this->data['company_tax_nr'] 		= $account->company->tax_nr;
+		$this->data['company_registration_court'] .= $this->data['company_registration_court_1'] ? $this->data['company_registration_court_1'].'\\\\' : '';
+		$this->data['company_registration_court'] .= $this->data['company_registration_court_2'] ? $this->data['company_registration_court_2'].'\\\\' : '';
+		$this->data['company_registration_court'] .= $this->data['company_registration_court_3'];
 
 		$this->data['company_logo']  = storage_path('app/'.$this->logo_path.$account->company->logo);
 		$this->template_invoice_path = storage_path('app/'.$this->template_invoice_path.$account->template_invoice);
@@ -279,6 +274,7 @@ class Invoice {
 
 		if (!is_dir($dir))
 			system('mkdir -p '.$dir.' -m 0700'); // system call because php mkdir creates weird permissions - umask couldnt solve it !?
+			// mkdir($dir, 0700, true); -- this should work! permissions not as string!
 
 		// Keep this order -> another invoice item is build in this function - TODO: move to separate function
 		if ($this->cdrs)
@@ -303,10 +299,10 @@ class Invoice {
 	 */
 	private function _make_invoice_tex()
 	{
-		if (!is_file($this->template_invoice_path) || !is_file($this->data['company_logo']))
+		if ($this->error_flag)
 		{
-			$this->logger->addError("Failed to Create Invoice: Template or Logo of Company ".$this->data['company_name']." not set!", [$this->data['contract_id']]);
-			return -2;
+			$this->logger->addError("Missing Data from SepaAccount or Company to Create Invoice", [$this->data['contract_id']]);
+			return -2;			
 		}
 
 		if (!$template = file_get_contents($this->template_invoice_path))
@@ -321,7 +317,8 @@ class Invoice {
 			$template = str_replace('{'.$key.'}', $value, $template);
 
 		// Create tex file(s)
-		$this->filename_invoice = date('m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
+		// $this->filename_invoice = date('m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
+		$this->filename_invoice = date('Y_m', strtotime('first day of last month'));
 		Storage::put($this->dir.$this->filename_invoice, $template);
 		// echo 'Stored tex file in '.storage_path('app/'.$this->dir.$this->filename_invoice)."\n";
 	}
@@ -383,10 +380,15 @@ class Invoice {
 			{
 				system("pdflatex $file &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
 
-				if ($ret == 127)
+				switch ($ret)
 				{
-					$this->logger->addError("Illegal Command - PdfLatex not installed!");
-					return;
+					case 0: break;
+					case 127:
+						$this->logger->addError("Illegal Command - PdfLatex not installed!");
+						return null;
+					default:
+						$this->logger->addError("Error executing PdfLatex - Return Code: $ret");
+						return null;
 				}
 
 				echo "Successfully created $key in $file\n";

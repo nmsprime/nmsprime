@@ -111,4 +111,45 @@ class Company extends \BaseModel {
 
 		return $files;
 	}
+
+
+	/**
+	 * Prepare data array with keys replaced by values in tex templates for pdf creation
+	 *
+	 * @return array
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public function template_data()
+	{
+		$class  = 'company';
+		$ignore = ['created_at', 'updated_at', 'deleted_at', 'id'];
+		$data 	= [];
+
+		foreach ($this->attributes as $key => $value)
+		{
+			if (in_array($key, $ignore))
+				continue;
+
+			// separate comma separated values by linebreakings
+			if (in_array($key, ['management', 'directorate']))
+			{
+				$value = explode(',', $value);
+				$tmp = [];
+
+				foreach ($value as $name)
+					$tmp[] = trim($name);
+				
+				$data[$class.'_'.$key] = implode('\\\\', $tmp);
+
+				continue;
+			}
+
+			$data[$class.'_'.$key] = $value;
+		}
+
+		return $data;
+	}
+
+
 }
