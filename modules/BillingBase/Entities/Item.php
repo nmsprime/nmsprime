@@ -418,12 +418,11 @@ class ItemObserver
 	{
 		// this doesnt work in prepare_input() !!
 		$item->valid_to = $item->valid_to ? : null;
+		$tariff = $item->contract->get_valid_tariff($item->product->type);
 
 		// set end date of old tariff to starting date of new tariff
 		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
-			$tariff = $item->contract->get_valid_tariff($item->product->type);
-
 			if ($tariff)
 			{
 				$tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
@@ -431,9 +430,11 @@ class ItemObserver
 			}
 		}
 
+		$this->update_contract($item, $tariff);
+
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);
-	
+
 	}
 
 
@@ -454,9 +455,38 @@ class ItemObserver
 			}
 		}
 
+		$this->update_contract($item, $tariff);
+
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);
 
+	}
+
+
+	/**
+	 * Writes some information from item also to contract
+	 * This is needed e.g. for creating/changing contract against Envia API
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function update_contract($item, $tariff) {
+
+		// write informations of phone tariff and variation also to contract
+		// so data will be available if billing is deactivated, access from module Envia is easier
+		if ($item->product->type == 'Voip') {
+
+			if ($tariff) {
+				// there currently is a voip item ⇒ given data is for next month
+				$item->contract->next_voip_id = $item->product->voip_sales_tariff_id;
+				$item->contract->next_purchase_tariff = $item->product->voip_purchase_tariff_id;
+			}
+			else {
+				// given data is for current values
+				$item->contract->voip_id = $item->product->voip_sales_tariff_id;
+				$item->contract->purchase_tariff = $item->product->voip_purchase_tariff_id;
+			}
+			$item->contract->save();
+		}
 	}
 
 
