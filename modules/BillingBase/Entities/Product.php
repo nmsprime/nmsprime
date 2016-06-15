@@ -54,17 +54,7 @@ class Product extends \BaseModel {
 			default: $bsclass = 'danger'; break;
 		}
 
-		$name = $this->name;
-		if ($this->type == 'Internet') {
-			if (boolval($this->bundled_with_voip)) {
-				$name .= ' (bundled with VoIP)';
-			}
-			else {
-				$name .= ' (standalone)';
-			}
-		}
-
-		return ['index' => [$this->type, $name, $this->price],
+		return ['index' => [$this->type, $this->name, $this->price],
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
 		        'header' => $this->type.' - '.$this->name.' | '.$this->price.' €'];
@@ -136,6 +126,43 @@ make_list:
 		return $ids;
 	}
 
+
+	/*
+	 * Init Observers
+	 */
+	public static function boot()
+	{
+		Product::observe(new ProductObserver);
+		parent::boot();
+	}
+
 }
 
 
+
+/**
+ * Observer Class
+ *
+ * can handle   'creating', 'created', 'updating', 'updated',
+ *              'deleting', 'deleted', 'saving', 'saved',
+ *              'restoring', 'restored',
+ */
+class ProductObserver
+{
+
+	public function creating($product)
+	{
+
+		// add information for bundling on internet names
+		if ($product->type == 'Internet') {
+			if (boolval($product->bundled_with_voip)) {
+				$product->name .= ' (bundled with VoIP)';
+			}
+			else {
+				$product->name .= ' (standalone)';
+			}
+		}
+
+	}
+
+}

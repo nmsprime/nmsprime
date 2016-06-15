@@ -54,8 +54,17 @@ class ItemController extends \BaseController {
 	{
 		$data['credit_amount'] = abs($data['credit_amount']);
 
+		$type = Product::findOrFail($data['product_id'])->type;
 		// set default valid from date to tomorrow for this product types
-		$data['valid_from'] = $data['valid_from'] ? : date('Y-m-d', strtotime('next day'));
+		// specially for Voip: Has to be created externally – and this will not be done today…
+		if ($type == 'Voip') {
+			$data['valid_from'] = $data['valid_from'] ? : date('Y-m-d', strtotime('next day'));
+		}
+		// others: set today as start date
+		else {
+			$data['valid_from'] = $data['valid_from'] ? : date('Y-m-d');
+		}
+
 		// $data['valid_to'] = $data['valid_to'] ? : null;
 
 
