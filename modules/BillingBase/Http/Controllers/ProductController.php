@@ -19,9 +19,8 @@ class ProductController extends \BaseController {
 
 		$qos_val 		= array_merge([null], $model->html_list(Qos::all(), 'name'));
 		$ccs 			= array_merge([''], $model->html_list(CostCenter::all(), 'name'));
-		$sales_tariffs 	= array_merge([null], $model->html_list(PhoneTariff::where('type', '=', 'sale')->get(), 'name'));
-		$purchase_tariffs = array_merge([null], $model->html_list(PhoneTariff::where('type', '=', 'purchase')->get(), 'name'));
-		// $sales_tariffs = [0 => '', 1 => 'Basic', 2 => 'Flat'];
+		$sales_tariffs 	= PhoneTariff::get_sale_tariffs();
+		$purchase_tariffs = PhoneTariff::get_purchase_tariffs();
 
 		$tax = array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV');
 		if ($model->tax === null)
