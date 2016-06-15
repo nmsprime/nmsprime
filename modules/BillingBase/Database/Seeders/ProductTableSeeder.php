@@ -19,7 +19,7 @@ class ProductTableSeeder extends \BaseSeeder {
 
 		foreach(Product::getPossibleEnumValues('type') as $type)
 		{
-			foreach (range(1,3) as $index)
+			foreach (range(1,4) as $index)
 			{
 				$name = '';
 				$qos_id = $voip_sale_id = $voip_purchase_tariff_id = $cycle_count = $costcenter_id = $price = 0;
@@ -33,6 +33,7 @@ class ProductTableSeeder extends \BaseSeeder {
 						$price = 10 * $index;
 						$qos_id = $index;
 						$billing_cycle = 'Monthly';
+						$bundled_with_voip = rand(0, 1);
 						break;
 
 					case 'Voip':
@@ -41,6 +42,7 @@ class ProductTableSeeder extends \BaseSeeder {
 						$voip_sale_id = 1 ; 		// (int) (($index+3)/3);
 						$billing_cycle = 'Monthly';
 						$voip_purchase_tariff_id = 2;
+						$bundled_with_voip = 0;
 						break;
 
 					case 'TV':
@@ -49,22 +51,26 @@ class ProductTableSeeder extends \BaseSeeder {
 						$billing_cycle = 'Yearly';
 						$tax = rand(0,1);
 						$costcenter_id = rand(0,10) > 3 ? 0 : $index;
+						$bundled_with_voip = 0;
 						break;
 
 					case 'Device':
 						$name = 'Cable Modem '.$index.'.0';
 						$price = 50 * $index;
+						$bundled_with_voip = 0;
 						break;
 
 					case 'Credit':
 						$name = $type.' '.$cycles[$index];
 						$billing_cycle = $cycles[$index];
+						$bundled_with_voip = 0;
 						break;
 
 					case 'Other':
 						$name = $other_names[$index];
 						$price = rand(2, 5);
 						$cycle_count = $index == 3 ? 18 : 0;
+						$bundled_with_voip = 0;
 						break;
 				}
 
@@ -79,6 +85,7 @@ class ProductTableSeeder extends \BaseSeeder {
 					'costcenter_id' => $costcenter_id,
 					'price' => $price,
 					'tax' => $tax,
+					'bundled_with_voip' => $bundled_with_voip,
 					]);
 			}
 		}
