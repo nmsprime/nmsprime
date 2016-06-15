@@ -54,7 +54,17 @@ class Product extends \BaseModel {
 			default: $bsclass = 'danger'; break;
 		}
 
-		return ['index' => [$this->type, $this->name, $this->price],
+		$name = $this->name;
+		if ($this->type == 'Internet') {
+			if (boolval($this->bundled_with_voip)) {
+				$name .= ' (bundled with VoIP)';
+			}
+			else {
+				$name .= ' (standalone)';
+			}
+		}
+
+		return ['index' => [$this->type, $name, $this->price],
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
 		        'header' => $this->type.' - '.$this->name.' | '.$this->price.' €'];
