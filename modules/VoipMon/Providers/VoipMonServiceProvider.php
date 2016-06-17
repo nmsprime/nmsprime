@@ -12,6 +12,14 @@ class VoipMonServiceProvider extends ServiceProvider {
 	protected $defer = false;
 
 	/**
+	 * The artisan commands provided by this module
+	 */
+	protected $commands = [
+		'Modules\VoipMon\Console\MatchRecordsCommand',
+		'Modules\VoipMon\Console\DeleteOldRecordsCommand'
+	];
+
+	/**
 	 * Boot the application events.
 	 * 
 	 * @return void
@@ -29,8 +37,8 @@ class VoipMonServiceProvider extends ServiceProvider {
 	 * @return void
 	 */
 	public function register()
-	{		
-		//
+	{
+		$this->commands($this->commands);
 	}
 
 	/**
