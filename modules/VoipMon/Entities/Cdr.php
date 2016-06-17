@@ -34,11 +34,11 @@ class Cdr extends \BaseModel {
 			$bsclass = 'danger';
 
 		return ['index' =>	[$this->calldate, $this->callend, $this->caller,
-					$this->called, $this->mos_min_mult10, $this->packet_loss_perc_mult1000,
-					$this->jitter_mult10, $this->delay_avg_mult100],
+					$this->called, $this->mos_min_mult10/10, $this->packet_loss_perc_mult1000/1000,
+					$this->jitter_mult10/10, $this->delay_avg_mult100/100],
 			'index_header' =>	['Call Start', 'Call End', 'Caller',
-				'		Callee', 'MOS x 10', 'Packet loss/% x 1000',
-						'Jitter/ms x 10', 'Delay/ms x 100'],
+				'		Callee', 'MOS', 'Packet loss/%',
+						'Jitter/ms', 'Delay/ms'],
 			'bsclass' => $bsclass,
 			'header' => 'Caller: '.$this->caller.' (Start: '.$this->calldate.')'];
 	}
