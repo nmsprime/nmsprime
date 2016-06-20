@@ -25,8 +25,11 @@ class CreateCdrTable extends BaseMigration {
 			// We can't use up_table_generic($table), as existing table already contains an id column
 			$table->timestamps();
 			$table->softDeletes();
+			// Add link to phonenumbers
 			$table->integer('phonenumber_id')->unsigned()->nullable();
 		});
+		// See renameColumn() removed: https://github.com/doctrine/dbal/blob/master/UPGRADE.md
+		\DB::statement('ALTER TABLE voipmonitor.cdr CHANGE COLUMN `ID` `id` bigint unsigned auto_increment;');
 
 		return parent::up();
 	}

@@ -37,7 +37,10 @@ class deleteOldRecordsCommand extends Command {
 	 */
 	public function fire()
 	{
+		// Delete records older than 14 days
 		\DB::table('voipmonitor.cdr')->where('calldate', '<', \DB::raw('DATE_SUB(NOW(), INTERVAL 14 DAY)'))->delete();
+		// Delete records with an ideal MOS score of 45
+		//\DB::table('voipmonitor.cdr')->whereNotNull('created_at')->where('mos_min_mult10', '=', 45)->delete();
 	}
 
 	/**
