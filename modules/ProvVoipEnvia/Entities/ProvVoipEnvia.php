@@ -1772,9 +1772,20 @@ class ProvVoipEnvia extends \BaseModel {
 			$order_id = $result['orderid'];
 			$order = EnviaOrder::where('orderid', $order_id)->first();
 
-			// if order already exists: do nothing (will be updated by order_get_status
+			// check if this order already exists within the database
 			if (!is_null($order)) {
-				$out .= '<br>Order '.$order_id.' already exists in database. Skipping.';
+
+				// ordertype_id is not given by order_get_status: we have to set it here if there are any changes
+				if ($order->ordertype_id != $result['ordertype_id']) {
+					$order->ordertype_id = $result['ordertype_id'];
+					$order->save();
+					Log::info('Updated ordertype_id in table enviaorder for order '.$order_id);
+					$out .= '<br>Order '.$order_id.' already exists but updated ordertype_id.';
+				}
+				else {
+					// do nothing (will be updated by order_get_status)
+					$out .= '<br>Order '.$order_id.' already exists in database. Skipping.';
+				}
 				continue;
 			}
 
