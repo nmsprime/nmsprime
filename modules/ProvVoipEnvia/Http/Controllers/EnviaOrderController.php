@@ -57,6 +57,8 @@ class EnviaOrderController extends \BaseController {
 		// label has to be the same like column in sql table
 		$ret_tmp = array(
 			$order_id,
+			array('form_type' => 'text', 'name' => 'created_at', 'description' => 'Created at', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'updated_at', 'description' => 'Last status update', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordertype_id', 'description' => 'Ordertype ID', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordertype', 'description' => 'Ordertype', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'orderstatus_id', 'description' => 'Orderstatus ID', 'options' => ['readonly'], 'hidden' => 'C'),
