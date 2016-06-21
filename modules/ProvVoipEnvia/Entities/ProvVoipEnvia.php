@@ -1894,83 +1894,98 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$out .= "<table>";
 
+		// flag to detect if an order has to be saved or not
+		$order_changed = False;
+
+		// for each database field:
+		//   - check if related data in XML is given
+		//   - if so: check if data has changed to this in database
+		//   - if so: change in order object and set changed flag
+		//   - print the current value
 		if (boolval(sprintf($xml->ordertype_id))) {
-			$order->ordertype_id = $xml->ordertype_id;
+			if ($order->ordertype_id != $xml->ordertype_id) {
+				$order->ordertype_id = $xml->ordertype_id;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Ordertype ID: </td><td>".$xml->ordertype_id."</td></tr>";
-		}
-		else {
-			$order->ordertype_id = null;
 		}
 
 		if (boolval(sprintf($xml->ordertype))) {
-			$order->ordertype = $xml->ordertype;
+			if ($order->ordertype != $xml->ordertype) {
+				$order->ordertype = $xml->ordertype;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Ordertype: </td><td>".$xml->ordertype."</td></tr>";
-		}
-		else {
-			$order->ordertype = null;
 		}
 
 		if (boolval(sprintf($xml->orderstatus_id))) {
-			$order->orderstatus_id = $xml->orderstatus_id;
+			if ($order->orderstatus_id != $xml->orderstatus_id) {
+				$order->orderstatus_id = $xml->orderstatus_id;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Orderstatus ID: </td><td>".$xml->orderstatus_id."</td></tr>";
-		}
-		else {
-			$order->orderstatus_id = null;
 		}
 
 		if (boolval(sprintf($xml->orderstatus))) {
-			$order->orderstatus = $xml->orderstatus;
+			if ($order->orderstatus != $xml->orderstatus) {
+				$order->orderstatus = $xml->orderstatus;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Orderstatus: </td><td>".$xml->orderstatus."</td></tr>";
-		}
-		else {
-			$order->orderstatus = null;
 		}
 
 		if (boolval(sprintf($xml->ordercomment))) {
-			$order->ordercomment = $xml->ordercomment;
+			if ($order->ordercomment != $xml->ordercomment) {
+				$order->ordercomment = $xml->ordercomment;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Ordercomment: </td><td>".$xml->ordercomment."</td></tr>";
-		}
-		else {
-			$order->ordercomment = null;
 		}
 
 		if (boolval(sprintf($xml->customerreference))) {
-			$order->customerreference = $xml->customerreference;
+			if ($order->customerreference != $xml->customerreference) {
+				$order->customerreference = $xml->customerreference;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Customerreference: </td><td>".$xml->customerreference."</td></tr>";
-		}
-		else {
-			$order->customerreference = null;
 		}
 
 		if (boolval(sprintf($xml->contractreference))) {
-			$order->contractreference = $xml->contractreference;
+			if ($order->contractreference != $xml->contractreference) {
+				$order->contractreference = $xml->contractreference;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Contractreference: </td><td>".$xml->contractreference."</td></tr>";
-		}
-		else {
-			$order->contractreference = null;
 		}
 
 		if (boolval(sprintf($xml->orderdate))) {
-			$order->orderdate = $xml->orderdate;
+			if ($order->orderdate != \Str::limit($xml->orderdate, 10, '')) {
+				$order->orderdate = $xml->orderdate;
+				$order_changed = True;
+			}
 			// TODO: do we need to store the orderdate in other tables (contract, phonnumber??)
 			$out .= "<tr><td>Orderdate: </td><td>".\Str::limit($xml->orderdate, 10,  '')."</td></tr>";
-		}
-		else {
-			$order->orderdate = null;
 		}
 
 		$out .= "</table><br>";
 
-		$order->save();
+		// check if we have to write object to database: do so to store the date of the last update
+		if ($order_changed) {
+			$order->save();
+			Log::info('Database table enviaorder updated for order with id '.$order_id);
+			$out .= "<b>Order table updated</b>";
+		}
 
 		// get the related contract to check if external identifier are set
 		$contract = Contract::findOrFail($order->contract_id);
+		$contract_changed = False;
 
 		// check external identifiers:
 		//   if not set (e.g. not known at manual creation time: update
 		//   if set to different values: something went wrong!
 		if (!boolval($contract->contract_external_id)) {
 			$contract->contract_external_id = $xml->contractreference;
+			$contract_changed = True;
 			$contract->save();
 		}
 		if ($xml->contractreference != $contract->contract_external_id) {
@@ -1981,6 +1996,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		if (!boolval($contract->customer_external_id)) {
 			$contract->customer_external_id = $xml->customerreference;
+			$contract_changed = True;
 			$contract->save();
 		}
 		if ($xml->customerreference != $contract->customer_external_id) {
@@ -1989,7 +2005,32 @@ class ProvVoipEnvia extends \BaseModel {
 			Log::error($msg);
 		}
 
-		$out .= "<b>Database updated</b>";
+		if ($contract_changed) {
+			$out .= "<b>Database updated</b>";
+		};
+
+		// TODO: update item start end end dates for phonenumber (de)activation
+		if (\PPModule::is_active('billingbase')) {
+			$raw_items = $contract->items;
+			$items = array();
+
+			foreach ($raw_items as $item) {
+				$type = $item->product->type;
+				if (!array_key_exists($type, $items)) {
+					$items[$type] = array();
+				}
+
+				// if both dates are fixed: ignore
+				if (boolval($item->valid_from_fixed) && boolval($item->valid_to_fixed)) {
+					continue;
+				}
+
+				// all checks passed: item potentially to update
+				$items[$type][$item->valid_from] = $item;
+			}
+			/* dd($items); */
+		}
+
 		return $out;
 	}
 
