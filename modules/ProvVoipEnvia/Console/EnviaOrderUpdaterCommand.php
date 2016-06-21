@@ -109,7 +109,7 @@ class EnviaOrderUpdaterCommand extends Command {
 
 		// orders with one of these orderstatus_ids are complete
 		$final_orderstatus_ids = array(
-			1001,	# erfolreich verarbeitet
+			1001,	# erfolgreich verarbeitet
 			1017,	# Stornierung bestätigt
 		);
 

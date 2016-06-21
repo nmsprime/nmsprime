@@ -66,7 +66,7 @@ class EnviaOrder extends \BaseModel {
 			1039 => 'warning',		# Warte auf Zieltermin kleiner gleich 180 Kalendertage
 		];
 
-		// this is used to order the orders (*grin*) by their escalation levels
+		// this is used to group the orders by their escalation levels (so later on we can sort them by these levels)
 		$escalations = [
 			'success' => 0,
 			'info' => 1,
