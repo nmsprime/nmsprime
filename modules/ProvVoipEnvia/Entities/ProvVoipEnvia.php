@@ -4,6 +4,7 @@ namespace Modules\ProvVoipEnvia\Entities;
 
 use Log;
 use Modules\ProvBase\Entities\Contract;
+use Modules\ProvBase\Entities\VoipRelatedDataUpdaterByEnvia;
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
 use Modules\ProvVoip\Entities\PhonebookEntry;
@@ -2030,6 +2031,12 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 			/* dd($items); */
 		}
+
+		// finally check if there is data e.g. in items to update – use the updater from Contract.php
+		// TODO: hier weiter 
+		if ($order_changed) {
+			/* $updater = new VoipRelatedDataUpdaterByEnvia($order->contract_id); */
+		};
 
 		return $out;
 	}
