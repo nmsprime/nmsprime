@@ -23,6 +23,7 @@ class EnviaOrderController extends \BaseController {
 		$init_values = array();
 		$phonenumber_id = null;
 		$contract_id = null;
+		$related_id = null;
 
 		// make order_id fillable on create => so man can add an order created at the web GUI to keep data consistent
 		if (!$model->exists) {
@@ -50,6 +51,21 @@ class EnviaOrderController extends \BaseController {
 
 		}
 		else {
+
+			// try to get related order
+			// this can also be deleted!
+			$related_id = $model->related_order_id;
+			if (boolval($related_id)) {
+				$init_values['related_order_id_show'] = $related_id;
+				$order_related = EnviaOrder::withTrashed()->where('orderid', $related_id)->first();
+				$init_values['related_order_type'] = $order_related->ordertype;
+				$init_values['related_order_created_at'] = $order_related->created_at;
+				$init_values['related_order_updated_at'] = $order_related->updated_at;
+				if (boolval($order_related->deleted_at)) {
+					$init_values['related_order_deleted_at'] = $order_related->deleted_at;
+				}
+			}
+
 			$order_id = array('form_type' => 'text', 'name' => 'orderid', 'description' => 'Order ID', 'options' => ['readonly']);
 		}
 
@@ -66,10 +82,23 @@ class EnviaOrderController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'orderdate', 'description' => 'Orderdate', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordercomment', 'description' => 'Ordercomment', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'customerreference', 'description' => 'Envia customer reference', 'options' => ['readonly'], 'hidden' => 'C'),
-			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'Envia contract reference', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'Envia contract reference', 'options' => ['readonly'], 'hidden' => 'C', 'space' => '1'),
 			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract ID', 'options' => ['readonly'], 'hidden' => 1),
 			array('form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber ID', 'options' => ['readonly'], 'hidden' => 1),
 		);
+
+		// add information to related order (e.g. for “Stornierung”) if exists
+		if (boolval($related_id)) {
+			// this fields are for information only => they have to be removed in observer on updating
+			// attention: related order can also be deleted!
+			array_push($ret_tmp, array('form_type' => 'text', 'name' => 'related_order_id_show', 'description' => 'Related order ID', 'options' => ['readonly'], 'hidden' => 'C'));
+			array_push($ret_tmp, array('form_type' => 'text', 'name' => 'related_order_type', 'description' => 'Related order type', 'options' => ['readonly'], 'hidden' => 'C'));
+			array_push($ret_tmp, array('form_type' => 'text', 'name' => 'related_order_created_at', 'description' => 'Related order created', 'options' => ['readonly'], 'hidden' => 'C'));
+			array_push($ret_tmp, array('form_type' => 'text', 'name' => 'related_order_updated_at', 'description' => 'Related order last updated', 'options' => ['readonly'], 'hidden' => 'C'));
+			if (array_key_exists('related_order_deleted_at', $init_values)) {
+				array_push($ret_tmp, array('form_type' => 'text', 'name' => 'related_order_deleted_at', 'description' => 'Related order deleted', 'options' => ['readonly'], 'hidden' => 'C'));
+			};
+		}
 
 
 		// add init values if set
