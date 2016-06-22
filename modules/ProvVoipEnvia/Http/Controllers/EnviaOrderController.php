@@ -232,4 +232,34 @@ class EnviaOrderController extends \BaseController {
 		return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request', $params);
 	}
 
+
+	/**
+	 * Overwrite BaseController method => allow some fields to be NULL in database if not set
+	 * Otherwise we get entries like 0000-00-00, which cause crashes on validation rules in case of update
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function prepare_input($data) {
+
+		$data = parent::prepare_input($data);
+
+		$nullable_fields = array(
+			'ordertype_id',
+			'ordertype',
+			'orderstatus_id',
+			'orderstatus',
+			'orderdate',
+			'ordercomment',
+			'related_order_id',
+			'customerreference',
+			'contractreference',
+			'contract_id',
+			'phonenumber_id',
+		);
+		$data = $this->_nullify_fields($data, $nullable_fields);
+
+
+		return $data;
+	}
+
 }
