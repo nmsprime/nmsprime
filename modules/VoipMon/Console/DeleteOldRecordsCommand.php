@@ -6,6 +6,11 @@ use Symfony\Component\Console\Input\InputArgument;
 
 class deleteOldRecordsCommand extends Command {
 
+	// Default config of the voipmonitor daemon is to create its own database, use it instead of the default db
+	protected $connection = 'mysql-voipmonitor';
+	// Name of the table
+	protected $tablename = 'cdr';
+
 	/**
 	 * The console command name.
 	 *
@@ -37,10 +42,12 @@ class deleteOldRecordsCommand extends Command {
 	 */
 	public function fire()
 	{
+		// Name of the database accessed through $this->connection
+		$database = \Schema::connection($this->connection)->getConnection()->getConfig('database');
 		// Delete records older than 14 days
-		\DB::table('voipmonitor.cdr')->where('calldate', '<', \DB::raw('DATE_SUB(NOW(), INTERVAL 14 DAY)'))->delete();
+		\DB::table($database.'.'.$this->tablename)->where('calldate', '<', \DB::raw('DATE_SUB(NOW(), INTERVAL 14 DAY)'))->delete();
 		// Delete records with an ideal MOS score of 45
-		//\DB::table('voipmonitor.cdr')->whereNotNull('created_at')->where('mos_min_mult10', '=', 45)->delete();
+		//\DB::table($database.'.'.$this->tablename)->whereNotNull('created_at')->where('mos_min_mult10', '=', 45)->delete();
 	}
 
 	/**
