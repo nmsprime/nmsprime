@@ -48,7 +48,7 @@ class CreateCdrTable extends BaseMigration {
 	 */
 	public function down()
 	{
-		Schema::connection($this->connection)->drop($this->tablename);
+		Schema::connection($this->connection)->dropIfExists($this->tablename);
 	}
 
 	/**
