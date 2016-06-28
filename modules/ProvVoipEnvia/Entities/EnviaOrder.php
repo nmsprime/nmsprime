@@ -25,6 +25,7 @@ class EnviaOrder extends \BaseModel {
 	// Don't forget to fill this array
 	protected $fillable = [
 		'orderid',
+		'method',
 		'ordertype_id',
 		'ordertype',
 		'orderstatus_id',

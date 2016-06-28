@@ -75,6 +75,7 @@ class EnviaOrderController extends \BaseController {
 			$order_id,
 			array('form_type' => 'text', 'name' => 'created_at', 'description' => 'Created at', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'updated_at', 'description' => 'Last status update', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'method', 'description' => 'Methode', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordertype_id', 'description' => 'Ordertype ID', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordertype', 'description' => 'Ordertype', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'orderstatus_id', 'description' => 'Orderstatus ID', 'options' => ['readonly'], 'hidden' => 'C'),
@@ -150,6 +151,7 @@ class EnviaOrderController extends \BaseController {
 		}
 
 		// finally we add the related ids
+		$params['method'] = 'manually';
 		$params['phonenumber_id'] = $phonenumbermanagement->phonenumber->id;
 		$params['contract_id'] = $phonenumbermanagement->phonenumber->mta->modem->contract->id;
 		$params['contractreference'] = $phonenumbermanagement->phonenumber->mta->modem->contract->contract_external_id;
