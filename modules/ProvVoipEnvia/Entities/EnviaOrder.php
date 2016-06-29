@@ -10,6 +10,132 @@ class EnviaOrder extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'enviaorder';
 
+	// collect all order related informations ⇒ later we can use subarrays of this array to get needed informations
+	// mark missing data with value null
+	protected static $meta = array(
+
+		// TODO: Process the list with all possible ordertypes ⇒ hope to get this from envia…
+		'orders' => array(
+			array(
+				'ordertype' => 'Neuschaltung envia TEL voip reselling',
+				'ordertype_id' => null,
+				'method' => 'contract/create',
+				'phonenumber_related' => False,
+			),
+			array(
+				'ordertype' => 'Neuschaltung einer Rufnummer',
+				'ordertype_id' => 19,
+				'method' => 'voip_account/create',
+				'phonenumber_related' => True,
+			),
+			array(
+				'ordertype' => 'Sprachtarif wird geändert',
+				'ordertype_id' => null,
+				'method' => 'contract/change_tariff',
+				'phonenumber_related' => False,
+			),
+			array(
+				'ordertype' => 'Stornierung eines Auftrags',
+				'ordertype_id' => null,
+				'method' => 'order/cancel',
+				'phonenumber_related' => False,
+			),
+		),
+		'states' => array(
+			array(
+				'orderstatus_id' => 1000,
+				'orderstatus' => 'in Bearbeitung',
+				'view_class' => 'info',
+				'final' => False,
+			),
+			array(
+				'orderstatus_id' => 1001,
+				'orderstatus' => 'erfolgreich verarbeitet',
+				'view_class' => 'success',
+				'final' => True,
+			),
+			array(
+				'orderstatus_id' => 1009,
+				'orderstatus' => 'Warte auf Portierungserklärung',
+				'view_class' => 'warning',
+				'final' => False,
+			),
+			array(
+				'orderstatus_id' => 1010,
+				'orderstatus' => 'Terminverschiebung',
+				'view_class' => 'warning',
+				'final' => False,
+			),
+			array(
+				'orderstatus_id' => 1012,
+				'orderstatus' => 'Dokument fehlerhaft oder nicht lesbar',
+				'view_class' => 'danger',
+				'final' => False,
+			),
+			array(
+				'orderstatus_id' => 1013,
+				'orderstatus' => 'Warte auf Portierungsbestätigung',
+				'view_class' => 'warning',
+				'final' => False,
+			),
+			array(
+				'orderstatus_id' => 1014,
+				'orderstatus' => 'Fehlgeschlagen, Details siehe Bemerkung',
+				'view_class' => 'danger',
+				'final' => True,
+			),
+			array(
+				'orderstatus_id' => 1015,
+				'orderstatus' => 'Schaltung bestätigt zum Zieltermin',
+				'view_class' => 'success',
+				'final' => True,
+			),
+			array(
+				'orderstatus_id' => 1017,
+				'orderstatus' => 'Stornierung bestätigt',
+				'view_class' => 'success',
+				'final' => True,
+			),
+			array(
+				'orderstatus_id' => 1018,
+				'orderstatus' => 'Stornierung nicht möglich',
+				'view_class' => 'danger',
+				'final' => True,
+			),
+			array(
+				'orderstatus_id' => 1019,
+				'orderstatus' => 'Warte auf Zieltermin',
+				'view_class' => 'warning',
+				'final' => False,
+			),
+			array(
+				'orderstatus_id' => 1036,
+				'orderstatus' => 'Eskalationsstufe 1 - Warte auf Portierungsbestätigung',
+				'view_class' => 'danger',
+				'final' => False,
+			),
+			array(
+				'orderstatus_id' => 1037,
+				'orderstatus' => 'Eskalationsstufe 2 - Warte auf Portierungsbestätigung',
+				'view_class' => 'danger',
+				'final' => False,
+			),
+			array(
+				'orderstatus_id' => 1038,
+				'orderstatus' => 'Portierungsablehnung, siehe Bemerkung',
+				'view_class' => 'danger',
+				'final' => True,
+			),
+			array(
+				'orderstatus_id' => 1039,
+				'orderstatus' => 'Warte auf Zieltermin kleiner gleich 180 Kalendertage',
+				'view_class' => 'warning',
+				'final' => False,
+			),
+		),
+
+	);
+
 	// Add your validation rules here
 	public static function rules($id=null) {
 
@@ -39,6 +165,94 @@ class EnviaOrder extends \BaseModel {
 		'phonenumber_id',
 	];
 
+
+	/**
+	 * Get the order subarray from meta
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @return array containing metadata for all order types:
+	 *			<str> ordertype
+	 *			<int> ordertype_id
+	 *			<str> method
+	 *			<bool> phonenumber_related
+	 */
+	public static function get_orders_metadata() {
+		return self::$meta['orders'];
+	}
+
+
+	/**
+	 * Get the stats subarray from meta
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @return array containing metadata for all order states:
+	 *			<int> orderstatus_id
+	 *			<str> orderstatus
+	 *			<str> view_class
+	 *			<bool> final
+	 */
+	public static function get_states_metadata() {
+		return self::$meta['states'];
+	}
+
+
+	/**
+	 * Checks if an orderstatus is final
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @param $orderstatus_or_orderstatus_id this is either a numerical orderstatus_id or a string with an orderstatus
+	 *
+	 * @return true if orderstatus is final (will not change anymore), else false
+	 */
+	public static function orderstate_is_final($orderstatus_or_orderstatus_id) {
+
+		$finals = array();
+		foreach (self::$meta['states'] as $state) {
+			$final = $state['final'];
+			$type = $state['orderstatus'];
+			$id = $state['orderstatus_id'];
+
+			if ($final) {
+				if (!is_null($type))
+					array_push($finals, $type);
+				if (!is_null($id))
+					array_push($finals, $id);
+			}
+		};
+
+		return in_array($orderstatus_or_orderstatus_id, $finals);
+	}
+
+
+	/**
+	 * Checks if a given ordertype is phonenmumber related
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function ordertype_is_phonenumber_related($ordertype_or_ordertype_id) {
+
+		$relates = array();
+		foreach (self::$meta['orders'] as $order) {
+
+			$related = $order['phonenumber_related'];
+			$type = $order['ordertype'];
+			$id = $order['ordertype_id'];
+
+			if ($related) {
+				if (!is_null($type))
+					array_push($relates, $type);
+				if (!is_null($id))
+					array_push($relates, $id);
+			}
+		}
+
+		return in_array($ordertype_or_ordertype_id, $relates);
+	}
+
+
 	// Name of View
 	public static function view_headline()
 	{
@@ -49,23 +263,10 @@ class EnviaOrder extends \BaseModel {
 	public function view_index_label()
 	{
 		// combine all possible orderstatus IDs with GUI colors
-		$colors = [
-			1000 => 'info',			# in Bearbeitung
-			1001 => 'success',		# erfolgreich verarbeitet
-			1009 => 'warning',		# Warte auf Portierungserklärung
-			1010 => 'warning',		# Terminverschiebung
-			1012 => 'danger',		# Dokument fehlerhaft oder nicht lesbar
-			1013 => 'warning',		# Warte auf Portierungsbestätigung
-			1014 => 'danger',		# Fehlgeschlagen, Details siehe Bemerkung
-			1015 => 'success',		# Schaltung bestätigt zum Zieltermin
-			1017 => 'success',		# Stornierung bestätigt
-			1018 => 'danger',		# Stornierung nicht möglich
-			1019 => 'warning',		# Warte auf Zieltermin
-			1036 => 'danger',		# Eskalationsstufe 1 - Warte auf Portierungsbestätigung
-			1037 => 'danger',		# Eskalationsstufe 2 - Warte auf Portierungsbestätigung
-			1038 => 'danger',		# Portierungsablehnung, siehe Bemerkung
-			1039 => 'warning',		# Warte auf Zieltermin kleiner gleich 180 Kalendertage
-		];
+		$colors = array();
+		foreach (self::$meta['states'] as $state) {
+			$colors[$state['orderstatus_id']] = $state['view_class'];
+		}
 
 		// this is used to group the orders by their escalation levels (so later on we can sort them by these levels)
 		$escalations = [
