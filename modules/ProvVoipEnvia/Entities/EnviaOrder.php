@@ -45,91 +45,106 @@ class EnviaOrder extends \BaseModel {
 			array(
 				'orderstatus_id' => 1000,
 				'orderstatus' => 'in Bearbeitung',
-				'state_type' => 'info',
+				'view_class' => 'info',
+				'state_type' => 'pending',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1001,
 				'orderstatus' => 'erfolgreich verarbeitet',
+				'view_class' => 'success',
 				'state_type' => 'success',
 				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1009,
 				'orderstatus' => 'Warte auf Portierungserklärung',
-				'state_type' => 'warning',
+				'view_class' => 'warning',
+				'state_type' => 'pending',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1010,
 				'orderstatus' => 'Terminverschiebung',
-				'state_type' => 'warning',
+				'view_class' => 'warning',
+				'state_type' => 'pending',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1012,
 				'orderstatus' => 'Dokument fehlerhaft oder nicht lesbar',
-				'state_type' => 'danger',
+				'view_class' => 'danger',
+				'state_type' => 'pending',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1013,
 				'orderstatus' => 'Warte auf Portierungsbestätigung',
-				'state_type' => 'warning',
+				'view_class' => 'warning',
+				'state_type' => 'pending',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1014,
 				'orderstatus' => 'Fehlgeschlagen, Details siehe Bemerkung',
-				'state_type' => 'danger',
+				'view_class' => 'danger',
+				'state_type' => 'failed',
 				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1015,
 				'orderstatus' => 'Schaltung bestätigt zum Zieltermin',
+				'view_class' => 'success',
 				'state_type' => 'success',
 				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1017,
 				'orderstatus' => 'Stornierung bestätigt',
+				'view_class' => 'success',
 				'state_type' => 'success',
 				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1018,
 				'orderstatus' => 'Stornierung nicht möglich',
-				'state_type' => 'danger',
+				'view_class' => 'danger',
+				'state_type' => 'failed',
 				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1019,
 				'orderstatus' => 'Warte auf Zieltermin',
-				'state_type' => 'warning',
+				'view_class' => 'warning',
+				'state_type' => 'pending',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1036,
 				'orderstatus' => 'Eskalationsstufe 1 - Warte auf Portierungsbestätigung',
-				'state_type' => 'danger',
+				'view_class' => 'danger',
+				'state_type' => 'pending',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1037,
 				'orderstatus' => 'Eskalationsstufe 2 - Warte auf Portierungsbestätigung',
-				'state_type' => 'danger',
+				'view_class' => 'danger',
+				'state_type' => 'pending',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1038,
 				'orderstatus' => 'Portierungsablehnung, siehe Bemerkung',
-				'state_type' => 'danger',
+				'view_class' => 'danger',
+				'state_type' => 'failed',
 				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1039,
 				'orderstatus' => 'Warte auf Zieltermin kleiner gleich 180 Kalendertage',
-				'state_type' => 'warning',
+				'view_class' => 'warning',
+				'state_type' => 'pending',
 				'final' => False,
 			),
 		),
@@ -190,6 +205,7 @@ class EnviaOrder extends \BaseModel {
 	 * @return array containing metadata for all order states:
 	 *			<int> orderstatus_id
 	 *			<str> orderstatus
+	 *			<str> view_class
 	 *			<str> state_type
 	 *			<bool> final
 	 */
@@ -340,8 +356,28 @@ class EnviaOrder extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	public static function order_state_is_success($order) {
+	public static function order_successful($order) {
 		return self::_order_mapped_to_state_type($order, 'success');
+	}
+
+
+	/**
+	 * Check if order is pending.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function order_pending($order) {
+		return self::_order_mapped_to_state_type($order, 'pending');
+	}
+
+
+	/**
+	 * Check if order has failed
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function order_failed($order) {
+		return self::_order_mapped_to_state_type($order, 'failed');
 	}
 
 
@@ -353,6 +389,27 @@ class EnviaOrder extends \BaseModel {
 	public static function order_creates_voip_account($order) {
 		return self::_order_mapped_to_method($order, 'voip_account/create');
 	}
+
+
+	/**
+	 * Checks if order is related to termination of a phonenumber
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function order_terminates_voip_account($order) {
+		return self::_order_mapped_to_method($order, 'voip_account/terminate');
+	}
+
+
+	/**
+	 * Checks if order cancels another order
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function order_cancels_other_order($order) {
+		return self::_order_mapped_to_method($order, 'order/cancel');
+	}
+
 
 	// Name of View
 	public static function view_headline()
@@ -366,7 +423,7 @@ class EnviaOrder extends \BaseModel {
 		// combine all possible orderstatus IDs with GUI colors
 		$colors = array();
 		foreach (self::$meta['states'] as $state) {
-			$colors[$state['orderstatus_id']] = $state['state_type'];
+			$colors[$state['orderstatus_id']] = $state['view_class'];
 		}
 
 		// this is used to group the orders by their escalation levels (so later on we can sort them by these levels)
