@@ -19,6 +19,7 @@ class UpdateEnviaOrderForMethod extends BaseMigration {
         Schema::table($this->tablename, function(Blueprint $table) {
 
 			$table->string('method')->after('orderid')->nullable()->default(NULL);
+			$table->datetime('last_user_interaction')->after('phonenumber_id')->nullable()->default(NULL);
 		});
 
 	}
@@ -31,9 +32,13 @@ class UpdateEnviaOrderForMethod extends BaseMigration {
 	 */
 	public function down()
 	{
+        Schema::table($this->tablename, function(Blueprint $table) {
+
 			$table->dropColumn([
 				'method',
+				'last_user_interaction',
 			]);
+		});
 	}
 
 }
