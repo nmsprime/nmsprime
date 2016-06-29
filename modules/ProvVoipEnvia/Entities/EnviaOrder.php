@@ -455,8 +455,9 @@ class EnviaOrder extends \BaseModel {
 			$phonenumber_nr = '–';
 		}
 
-        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $phonenumber_nr, $this->created_at, $this->updated_at],
-                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Phonenumber', 'Created at', 'Updated at'],
+		($this->updated_at < $this->last_user_interaction) ? $current = '-' : $current = '<b>Yes!!</b>';
+        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $phonenumber_nr, $this->created_at, $this->updated_at, $current],
+                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Phonenumber', 'Created at', 'Updated at', 'Interaction needed?'],
                 'bsclass' => $bsclass,
 				'header' => $this->orderid.': '.$this->ordertype.' ('.$this->orderstatus.')',
 		];
