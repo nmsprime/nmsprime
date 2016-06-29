@@ -107,18 +107,12 @@ class EnviaOrderUpdaterCommand extends Command {
 	 */
 	protected function _update_orders() {
 
-		// orders with one of these orderstatus_ids are complete
-		$final_orderstatus_ids = array(
-			1001,	# erfolgreich verarbeitet
-			1017,	# Stornierung bestätigt
-		);
-
 		foreach ($this->orders as $order) {
 
 			$order_id = $order->orderid;
 
-			// if current order is not finished: update
-			if (!in_array($order->orderstatus_id, $final_orderstatus_ids)) {
+			// if current order is not in final state: update
+			if (!EnviaOrder::orderstate_is_final($order)) {
 				Log::debug('Updating order '.$order_id);
 
 				// get the relative URL to execute the cron job for updating the current order_id
