@@ -203,11 +203,11 @@ class EnviaOrder extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 *
-	 * @param $orderstatus_or_orderstatus_id this is either a numerical orderstatus_id or a string with an orderstatus
+	 * @param $order to check
 	 *
 	 * @return true if orderstatus is final (will not change anymore), else false
 	 */
-	public static function orderstate_is_final($orderstatus_or_orderstatus_id) {
+	public static function orderstate_is_final($order) {
 
 		$finals = array();
 		foreach (self::$meta['states'] as $state) {
@@ -223,23 +223,31 @@ class EnviaOrder extends \BaseModel {
 			}
 		};
 
-		return in_array($orderstatus_or_orderstatus_id, $finals);
+		$final_state = (
+			in_array($order->orderstatus_id, $finals)
+			||
+			in_array($order->orderstatus, $finals)
+		);
+
+		return $final_state;
 	}
 
 
 	/**
 	 * Checks if a given ordertype is phonenmumber related
 	 *
+	 * @param order to check
+	 *
 	 * @author Patrick Reichel
 	 */
-	public static function ordertype_is_phonenumber_related($ordertype_or_ordertype_id) {
+	public static function ordertype_is_phonenumber_related($order) {
 
 		$relates = array();
-		foreach (self::$meta['orders'] as $order) {
+		foreach (self::$meta['orders'] as $order_meta) {
 
-			$related = $order['phonenumber_related'];
-			$type = $order['ordertype'];
-			$id = $order['ordertype_id'];
+			$related = $order_meta['phonenumber_related'];
+			$type = $order_meta['ordertype'];
+			$id = $order_meta['ordertype_id'];
 
 			if ($related) {
 				if (!is_null($type))
@@ -249,7 +257,15 @@ class EnviaOrder extends \BaseModel {
 			}
 		}
 
-		return in_array($ordertype_or_ordertype_id, $relates);
+		$related_state = (
+			in_array($order->ordertype, $relates)
+			||
+			in_array($order->ordertype_id, $relates)
+			||
+			in_array($order->method, $relates)
+		);
+
+		return $related_state;
 	}
 
 
