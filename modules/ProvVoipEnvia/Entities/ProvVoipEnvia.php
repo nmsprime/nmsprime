@@ -1981,6 +1981,70 @@ class ProvVoipEnvia extends \BaseModel {
 			$out .= "<b>Order table updated</b>";
 		}
 
+		// update related tables if order has changed
+		if ($order_changed) {
+
+			$out = $this->_process_order_get_status_response_for_phonenumbermanagement($order, $out);
+			$out = $this->_process_order_get_status_response_for_contract($xml, $order, $out);
+
+		}
+
+		return $out;
+	}
+
+
+	/**
+	 * Apply order changes to phonenumbermanagement.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_get_status_response_for_phonenumbermanagement($order, $out) {
+
+		$phonenumbermanagement_changed = False;
+		// check if we have to update phonenmumber management (e.g. with fixed activation dates)
+		if (EnviaOrder::ordertype_is_phonenumber_related($order)) {
+
+			// phonenumber entry can be missing on order (e.g. on manually created orders); this information will be added by the nightly cron job – so we can stop here
+			if (boolval($order->phonenumber_id)) {
+				$phonenumber = Phonenumber::findOrFail($order->phonenumber_id);
+				$phonenumbermanagement = $phonenumber->PhonenumberManagement;
+
+				if (EnviaOrder::order_creates_voip_account($order)) {
+					// we got a new target date
+					if (!\Str::startsWith($phonenumbermanagement->activation_date, $order->orderdate)) {
+						$phonenumbermanagement->activation_date = $order->orderdate;
+						Log::info('New target date for activation ('.$order->orderdate.') set in phonenumbermanagement with id '.$phonenumbermanagement->id);
+						$phonenumbermanagement_changed = True;
+					}
+					// all is fine: fix the activation date
+					if (EnviaOrder::order_state_is_success($order)) {
+						if (!\Str::startsWith($phonenumbermanagement->external_activation_date, $order->orderdate)) {
+							$phonenumbermanagement->external_activation_date = $order->orderdate;
+							Log::info('Creation of voip account successful; will be activated on '.$order->orderdate.' (phonenumbermanagement with id '.$phonenumbermanagement->id.')');
+							$phonenumbermanagement_changed = True;
+						}
+					}
+				}
+			}
+		}
+
+		if ($phonenumbermanagement_changed) {
+			$phonenumbermanagement->save();
+			Log::info('Database table phonenumbermanagement updated for phonenumbermanagement with id '.$phonenumbermanagement->id);
+			$out .= "<b>PhonenumberManagement table updated</b>";
+		};
+
+		return $out;
+	}
+
+
+	/**
+	 * Apply orde changes to contract (and mayby to items)
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_get_status_response_for_contract($xml, $order, $out) {
+
 		// get the related contract to check if external identifier are set
 		$contract = Contract::findOrFail($order->contract_id);
 		$contract_changed = False;
@@ -2011,39 +2075,22 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		if ($contract_changed) {
-			$out .= "<b>Database updated</b>";
+			Log::info('Database table contract updated for contract with id '.$contract_id);
+			$out .= "<b>Contract table updated</b>";
 		};
 
-		// TODO: update item start end end dates for phonenumber (de)activation
-		if (\PPModule::is_active('billingbase')) {
-			$raw_items = $contract->items;
-			$items = array();
-
-			foreach ($raw_items as $item) {
-				$type = $item->product->type;
-				if (!array_key_exists($type, $items)) {
-					$items[$type] = array();
-				}
-
-				// if both dates are fixed: ignore
-				if (boolval($item->valid_from_fixed) && boolval($item->valid_to_fixed)) {
-					continue;
-				}
-
-				// all checks passed: item potentially to update
-				$items[$type][$item->valid_from] = $item;
-			}
-			/* dd($items); */
-		}
-
 		// finally check if there is data e.g. in items to update – use the updater from Contract.php
-		// TODO: hier weiter 
-		if ($order_changed) {
-			/* $updater = new VoipRelatedDataUpdaterByEnvia($order->contract_id); */
+		// perform update only if order/get_status has been triggered manually
+		// if run by cron we first get the current state for all orders and then calling the update function from EnviaOrderUpdaterCommand
+		// TODO: hier weiter
+$order_changed = true;
+		if (\Str::endswith(\Request::path(), '/request/order_get_status') && $order_changed) {
+			$updater = new VoipRelatedDataUpdaterByEnvia($order->contract_id);
 		};
 
 		return $out;
 	}
+
 
 	/**
 	 * Process data after successful voipaccount creation
