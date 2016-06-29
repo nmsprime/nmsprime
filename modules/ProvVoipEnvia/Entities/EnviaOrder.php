@@ -45,91 +45,91 @@ class EnviaOrder extends \BaseModel {
 			array(
 				'orderstatus_id' => 1000,
 				'orderstatus' => 'in Bearbeitung',
-				'view_class' => 'info',
+				'state_type' => 'info',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1001,
 				'orderstatus' => 'erfolgreich verarbeitet',
-				'view_class' => 'success',
+				'state_type' => 'success',
 				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1009,
 				'orderstatus' => 'Warte auf Portierungserklärung',
-				'view_class' => 'warning',
+				'state_type' => 'warning',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1010,
 				'orderstatus' => 'Terminverschiebung',
-				'view_class' => 'warning',
+				'state_type' => 'warning',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1012,
 				'orderstatus' => 'Dokument fehlerhaft oder nicht lesbar',
-				'view_class' => 'danger',
+				'state_type' => 'danger',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1013,
 				'orderstatus' => 'Warte auf Portierungsbestätigung',
-				'view_class' => 'warning',
+				'state_type' => 'warning',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1014,
 				'orderstatus' => 'Fehlgeschlagen, Details siehe Bemerkung',
-				'view_class' => 'danger',
+				'state_type' => 'danger',
 				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1015,
 				'orderstatus' => 'Schaltung bestätigt zum Zieltermin',
-				'view_class' => 'success',
+				'state_type' => 'success',
 				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1017,
 				'orderstatus' => 'Stornierung bestätigt',
-				'view_class' => 'success',
+				'state_type' => 'success',
 				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1018,
 				'orderstatus' => 'Stornierung nicht möglich',
-				'view_class' => 'danger',
+				'state_type' => 'danger',
 				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1019,
 				'orderstatus' => 'Warte auf Zieltermin',
-				'view_class' => 'warning',
+				'state_type' => 'warning',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1036,
 				'orderstatus' => 'Eskalationsstufe 1 - Warte auf Portierungsbestätigung',
-				'view_class' => 'danger',
+				'state_type' => 'danger',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1037,
 				'orderstatus' => 'Eskalationsstufe 2 - Warte auf Portierungsbestätigung',
-				'view_class' => 'danger',
+				'state_type' => 'danger',
 				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1038,
 				'orderstatus' => 'Portierungsablehnung, siehe Bemerkung',
-				'view_class' => 'danger',
+				'state_type' => 'danger',
 				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1039,
 				'orderstatus' => 'Warte auf Zieltermin kleiner gleich 180 Kalendertage',
-				'view_class' => 'warning',
+				'state_type' => 'warning',
 				'final' => False,
 			),
 		),
@@ -190,7 +190,7 @@ class EnviaOrder extends \BaseModel {
 	 * @return array containing metadata for all order states:
 	 *			<int> orderstatus_id
 	 *			<str> orderstatus
-	 *			<str> view_class
+	 *			<str> state_type
 	 *			<bool> final
 	 */
 	public static function get_states_metadata() {
@@ -210,10 +210,10 @@ class EnviaOrder extends \BaseModel {
 	public static function orderstate_is_final($order) {
 
 		$finals = array();
-		foreach (self::$meta['states'] as $state) {
-			$final = $state['final'];
-			$type = $state['orderstatus'];
-			$id = $state['orderstatus_id'];
+		foreach (self::$meta['states'] as $state_meta) {
+			$final = $state_meta['final'];
+			$type = $state_meta['orderstatus'];
+			$id = $state_meta['orderstatus_id'];
 
 			if ($final) {
 				if (!is_null($type))
@@ -269,6 +269,91 @@ class EnviaOrder extends \BaseModel {
 	}
 
 
+	/**
+	 * Checks if an order is related to a given method.
+	 * Call this in your specialized methods
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected static function _order_mapped_to_method($order, $method) {
+
+		$matches = array();
+		foreach (self::$meta['orders'] as $order_meta) {
+			$cur_method = $order_meta['method'];
+			if ($cur_method == $method) {
+				$cur_type = $order_meta['ordertype'];
+				$cur_id = $order_meta['ordertype_id'];
+
+				array_push($matches, $cur_method);
+				if (!is_null($cur_type))
+					array_push($matches, $cur_type);
+				if (!is_null($cur_id))
+					array_push($matches, $cur_id);
+			}
+		}
+
+		$mapped_to_method = (
+			in_array($order->ordertype, $matches)
+			||
+			in_array($order->ordertype_id, $matches)
+			||
+			in_array($order->method, $matches)
+		);
+
+		return $mapped_to_method;
+	}
+
+
+	/**
+	 * Checks if an order matches a given state_type.
+	 * Use this in your concrete checks
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected static function _order_mapped_to_state_type($order, $state_type) {
+
+		$matches = array();
+		foreach (self::$meta['states'] as $state_meta) {
+			$cur_state_type = $state_meta['state_type'];
+			if ($cur_state_type == $state_type) {
+				$cur_state = $state_meta['orderstatus'];
+				$cur_id = $state_meta['orderstatus_id'];
+				if (!is_null($cur_state))
+					array_push($matches, $cur_state);
+				if (!is_null($cur_id))
+					array_push($matches, $cur_id);
+			}
+		}
+
+		$mapped_to_state_type = (
+			in_array($order->orderstatus, $matches)
+			||
+			in_array($order->orderstatus_id, $matches)
+		);
+
+		return $mapped_to_state_type;
+	}
+
+
+	/**
+	 * Check if order is successfully processed.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function order_state_is_success($order) {
+		return self::_order_mapped_to_state_type($order, 'success');
+	}
+
+
+	/**
+	 * Checks if order is related to creation of a phonenumber
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function order_creates_voip_account($order) {
+		return self::_order_mapped_to_method($order, 'voip_account/create');
+	}
+
 	// Name of View
 	public static function view_headline()
 	{
@@ -281,7 +366,7 @@ class EnviaOrder extends \BaseModel {
 		// combine all possible orderstatus IDs with GUI colors
 		$colors = array();
 		foreach (self::$meta['states'] as $state) {
-			$colors[$state['orderstatus_id']] = $state['view_class'];
+			$colors[$state['orderstatus_id']] = $state['state_type'];
 		}
 
 		// this is used to group the orders by their escalation levels (so later on we can sort them by these levels)
