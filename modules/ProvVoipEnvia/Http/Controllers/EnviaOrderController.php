@@ -162,6 +162,23 @@ class EnviaOrderController extends \BaseController {
 		return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderController@create', $params);
 	}
 
+
+	/**
+	 * Overwrite base method.
+	 * Here we inject the mailto: link to Envia support as additional data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_additional_data_for_edit_view($model) {
+
+		$additional_data = array(
+			'mailto_links' => $model->get_mailto_links(),
+		);
+
+		return $additional_data;
+	}
+
+
 	/**
 	 * Overwrite base function => before creation in database we have to check if order exists at envia!
 	 *

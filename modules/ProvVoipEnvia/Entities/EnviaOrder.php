@@ -502,4 +502,49 @@ class EnviaOrder extends \BaseModel {
 		return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrderDocument', 'enviaorder_id')->orderBy('created_at');
 	}
 
+	public function get_mailto_links() {
+
+		$mailto_links = array();
+
+		$user = \Auth::user();
+
+		$line = str_repeat("-", 64);
+
+		// prepare the mailto link
+		$to = "Realisierung-Standard@enviatel.de";
+
+		// create the subject
+		$subject = "Frage zu Order ".$this->orderid;
+		if ($this->ordertype)
+			$subject .= " (".$this->ordertype.")";
+
+		// create the mail body
+		$body = "Sehr geehrte Damen und Herren,\n\n";
+		$body .= "zu folgender Order hätte ich eine Frage:\n\n";
+		$body .= "Order ID: ".$this->orderid."\n";
+		if ($this->customerreference)
+			$body .= "Customer reference: ".$this->customerreference."\n";
+		if ($this->contractreference)
+			$body .= "Contract reference: ".$this->contractreference."\n";
+		if ($this->ordertype)
+			$body .= "Order type: ".$this->ordertype."\n";
+		$body .= "\n\n$line\n\n\n\n$line\n\n\nMit freundlichen Grüßen\n\n";
+
+		// add the current logged in user's name (after the greeting)
+		if ($user->first_name)
+			$body .= $user->first_name;
+		if ($user->last_name) {
+			if ($user->first_name) {
+				$body .= " ";
+			}
+			$body .= $user->last_name."\n";
+		}
+
+		// add to array; later on there can be multiple links to different mail addresses
+		$mailto_links[$to] = "mailto:".$to."?Subject=".rawurlencode($subject)."&amp;Body=".rawurlencode($body);
+
+		return $mailto_links;
+
+	}
+
 }
