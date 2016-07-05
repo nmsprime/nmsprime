@@ -75,6 +75,7 @@ class EnviaOrderController extends \BaseController {
 			$order_id,
 			array('form_type' => 'text', 'name' => 'created_at', 'description' => 'Created at', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'updated_at', 'description' => 'Last status update', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'last_user_interaction', 'description' => 'Last user interaction', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'method', 'description' => 'Methode', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordertype_id', 'description' => 'Ordertype ID', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordertype', 'description' => 'Ordertype', 'options' => ['readonly'], 'hidden' => 'C'),
@@ -165,18 +166,44 @@ class EnviaOrderController extends \BaseController {
 
 	/**
 	 * Overwrite base method.
-	 * Here we inject the mailto: link to Envia support as additional data
+	 *
+	 * Here we inject the following data:
+	 *	- information about needed/possible user actions
+	 *	- mailto: link to Envia support as additional data
 	 *
 	 * @author Patrick Reichel
 	 */
 	protected function _get_additional_data_for_edit_view($model) {
 
 		$additional_data = array(
+			'user_actions' => $model->get_user_action_information(),
 			'mailto_links' => $model->get_mailto_links(),
 		);
 
 		return $additional_data;
 	}
+
+	/**
+	 * Call this method to mark an order as solved.
+	 * (that is: update last_user_interaction in database to current date without touching updated_at)
+	 *
+	 * After triggering the action this will redirect to edit
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function mark_solved($id) {
+
+		// check if user has the right to perform actions against Envia API
+		\App\Http\Controllers\BaseAuthController::auth_check('edit', \NamespaceController::get_model_name());
+		\App\Http\Controllers\BaseAuthController::auth_check('edit', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+
+		$model = EnviaOrder::findOrFail($id);
+
+		$model->mark_as_solved();
+
+		return \Redirect::back();
+	}
+
 
 
 	/**
@@ -274,6 +301,7 @@ class EnviaOrderController extends \BaseController {
 			'contractreference',
 			'contract_id',
 			'phonenumber_id',
+			'last_user_interaction',
 		);
 		$data = $this->_nullify_fields($data, $nullable_fields);
 

@@ -455,9 +455,17 @@ class EnviaOrder extends \BaseModel {
 			$phonenumber_nr = '–';
 		}
 
-		($this->updated_at < $this->last_user_interaction) ? $current = '-' : $current = '<b>Yes!!</b>';
-        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $phonenumber_nr, $this->created_at, $this->updated_at, $current],
-                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Phonenumber', 'Created at', 'Updated at', 'Interaction needed?'],
+		if (!$this->user_interaction_necessary()) {
+			$current = '-';
+		    $solve_link = '';
+		}
+		else {
+			$current = '<b>Yes!!</b>';
+			$solve_link = '<a href="'.\URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id)).'" target="_self">Mark solved</a>';
+		}
+
+        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $phonenumber_nr, $this->created_at, $this->updated_at, $current, $solve_link],
+                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Phonenumber', 'Created at', 'Updated at', 'Interaction needed?', ''],
                 'bsclass' => $bsclass,
 				'header' => $this->orderid.': '.$this->ordertype.' ('.$this->orderstatus.')',
 		];
@@ -502,6 +510,30 @@ class EnviaOrder extends \BaseModel {
 		return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrderDocument', 'enviaorder_id')->orderBy('created_at');
 	}
 
+
+	/**
+	 * Get informations about necessary/possible user interaction.
+	 * In this first step we only provide a link to mark this open order as (manually) solved.
+	 * Later on we can provide hints what to do or even solve automagically
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function get_user_action_information() {
+
+		$user_actions = array();
+
+		if ($this->user_interaction_necessary()) {
+			$user_actions['Mark as solved'] = \URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id));
+		}
+
+		return $user_actions;
+	}
+
+	/**
+	 * Creates the mailto: links (ready-to-use) for generation of email templates.
+	 *
+	 * @author Patrick Reichel
+	 */
 	public function get_mailto_links() {
 
 		$mailto_links = array();
@@ -545,6 +577,38 @@ class EnviaOrder extends \BaseModel {
 
 		return $mailto_links;
 
+	}
+
+
+	/**
+	 * Checks if user interaction is necessary.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function user_interaction_necessary() {
+
+		if ($this->updated_at > $this->last_user_interaction) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Marks an open order as “solved“.
+	 * That means: update the last_user_interaction to now without touching updated_at
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function mark_as_solved() {
+
+		// temporary disable refreshing of timestamps
+		$this->timestamps = false;
+
+		// set last user interaction date to now
+		$now = \Carbon\Carbon::now()->toDateTimeString();
+		$this->last_user_interaction = $now;
+		$this->save();
 	}
 
 }
