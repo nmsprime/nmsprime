@@ -14,7 +14,7 @@ class EnviaOrder extends \BaseModel {
 	// mark missing data with value null
 	protected static $meta = array(
 
-		// TODO: Process the list with all possible ordertypes ⇒ hope to get this from envia…
+		// TODO: Process the list with all possible ordertypes ⇒ hope to get this from envia some day…
 		'orders' => array(
 			array(
 				'ordertype' => 'Neuschaltung envia TEL voip reselling',
@@ -584,14 +584,23 @@ class EnviaOrder extends \BaseModel {
 	 * Checks if user interaction is necessary.
 	 *
 	 * @author Patrick Reichel
+	 *
+	 * @todo add more rules for ordertype-orderstatus combinations that don't need user interaction
 	 */
 	public function user_interaction_necessary() {
 
-		if ($this->updated_at > $this->last_user_interaction) {
-			return true;
+		// first: if last user interaction was after last status update – nothing to do
+		if ($this->last_user_interaction > $this->updated_at) {
+			return false;
 		}
 
-		return false;
+		// if current state is “in Bearbeitung” then we have to do nothing
+		if ($this->orderstatus_id == 1000) {
+			return false;
+		}
+
+		// default (be pessimistic): we have to perform action…
+		return true;
 	}
 
 	/**
@@ -602,12 +611,11 @@ class EnviaOrder extends \BaseModel {
 	 */
 	public function mark_as_solved() {
 
-		// temporary disable refreshing of timestamps
+		// temporary disable refreshing of timestamps (= don't touch updated_at)
 		$this->timestamps = false;
 
 		// set last user interaction date to now
-		$now = \Carbon\Carbon::now()->toDateTimeString();
-		$this->last_user_interaction = $now;
+		$this->last_user_interaction = \Carbon\Carbon::now()->toDateTimeString();
 		$this->save();
 	}
 
