@@ -532,18 +532,26 @@ class EnviaOrder extends \BaseModel {
 	 */
 	protected function _get_user_action_information_items($items){
 
+		$padding = "padding-right: 10px;";
 		$ret = '<table>';
 		$ret .= '<tr>';
-		$ret .= '<th>Product</th>';
-		$ret .= '<th>Valid from</th>';
-		$ret .= '<th>Valid to</th>';
+		$ret .= '<th style="'.$padding.'">Product</th>';
+		$ret .= '<th style="'.$padding.'">Valid from</th>';
+		$ret .= '<th style="'.$padding.'">Fixed?</th>';
+		$ret .= '<th style="'.$padding.'">Valid to</th>';
+		$ret .= '<th style="'.$padding.'">Fixed?</th>';
 		$ret .= '</tr>';
 
 		foreach ($items as $item) {
 			$ret .= '<tr>';
-			$ret .= '<td><a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a></td>';
-			$ret .= '<td>'.$item->valid_from.'</td>';
-			$ret .= '<td>'.$item->valid_to.'</td>';
+			$ret .= '<td style="'.$padding.'"><a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a></td>';
+			$ret .= '<td style="'.$padding.'">'.$item->valid_from.'</td>';
+			$ret .= '<td style="'.$padding.'">';
+				($item->valid_from_fixed > 0 ? $ret.="✔" : $ret.="");
+				$ret .'</td>';
+			$ret .= '<td style="'.$padding.'">'.$item->valid_to.'</td>';
+			$ret .= '<td style="'.$padding.'">';
+				$ret .'</td>';
 			$ret .= '</tr>';
 		}
 
@@ -562,18 +570,25 @@ class EnviaOrder extends \BaseModel {
 	 */
 	protected function _get_user_action_information_phonenumbers($phonenumbers){
 
+		$padding = "padding-right: 10px;";
+
 		$ret = '<table>';
 		$ret .= '<tr>';
-		$ret .= '<th>Phonenumber</th>';
-		/* $ret .= '<th>Valid from</th>'; */
-		/* $ret .= '<th>Valid to</th>'; */
+		$ret .= '<th style="'.$padding.'">Phonenumber</th>';
+		$ret .= '<th style="'.$padding.'">Activation target</th>';
+		$ret .= '<th style="'.$padding.'">Activation confirmed</th>';
+		$ret .= '<th style="'.$padding.'">Deactivation target</th>';
+		$ret .= '<th style="'.$padding.'">Deactivation confirmed</th>';
 		$ret .= '</tr>';
 
 		foreach ($phonenumbers as $phonenumber) {
+			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 			$ret .= '<tr>';
-			$ret .= '<td><a href="'.\URL::route("Phonenumber.edit", array("phonenumber" => $phonenumber->id)).'">'.$phonenumber->id.'</a></td>';
-			/* $ret .= '<td>'.$item->valid_from.'</td>'; */
-			/* $ret .= '<td>'.$item->valid_to.'</td>'; */
+			$ret .= '<td style='.$padding.'"><a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a></td>';
+			$ret .= '<td style="'.$padding.'">'.$phonenumbermanagement->activation_date.'</td>';
+			$ret .= '<td style="'.$padding.'">'.$phonenumbermanagement->external_activation_date.'</td>';
+			$ret .= '<td style="'.$padding.'">'.$phonenumbermanagement->deactivation_date.'</td>';
+			$ret .= '<td style="'.$padding.'">'.$phonenumbermanagement->external_deactivation_date.'</td>';
 			$ret .= '</tr>';
 		}
 
