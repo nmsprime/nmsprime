@@ -2062,7 +2062,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Apply orde changes to contract (and mayby to items)
+	 * Apply order changes to contract (and mayby to items)
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -2105,8 +2105,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// perform update only if order/get_status has been triggered manually
 		// if run by cron we first get the current state for all orders and then calling the update method from EnviaOrderUpdaterCommand
 		// TODO: hier weiter
-$order_changed = true;
-		if (\Str::endswith(\Request::path(), '/request/order_get_status') && $order_changed) {
+		if (\Str::endswith(\Request::path(), '/request/order_get_status')) {
 			$updater = new VoipRelatedDataUpdaterByEnvia($order->contract_id);
 		};
 
