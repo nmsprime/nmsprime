@@ -526,6 +526,66 @@ class EnviaOrder extends \BaseModel {
 
 
 	/**
+	 * Create table containing information about related items
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_user_action_information_items($items){
+
+		$ret = '<table>';
+		$ret .= '<tr>';
+		$ret .= '<th>Product</th>';
+		$ret .= '<th>Valid from</th>';
+		$ret .= '<th>Valid to</th>';
+		$ret .= '</tr>';
+
+		foreach ($items as $item) {
+			$ret .= '<tr>';
+			$ret .= '<td><a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a></td>';
+			$ret .= '<td>'.$item->valid_from.'</td>';
+			$ret .= '<td>'.$item->valid_to.'</td>';
+			$ret .= '</tr>';
+		}
+
+		$ret .= '</table>';
+
+		/* echo $ret; */
+		/* d($item->product); */
+		return $ret;
+	}
+
+
+	/**
+	 * Create table containing information about related phonenumbers
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_user_action_information_phonenumbers($phonenumbers){
+
+		$ret = '<table>';
+		$ret .= '<tr>';
+		$ret .= '<th>Phonenumber</th>';
+		/* $ret .= '<th>Valid from</th>'; */
+		/* $ret .= '<th>Valid to</th>'; */
+		$ret .= '</tr>';
+
+		foreach ($phonenumbers as $phonenumber) {
+			$ret .= '<tr>';
+			$ret .= '<td><a href="'.\URL::route("Phonenumber.edit", array("phonenumber" => $phonenumber->id)).'">'.$phonenumber->id.'</a></td>';
+			/* $ret .= '<td>'.$item->valid_from.'</td>'; */
+			/* $ret .= '<td>'.$item->valid_to.'</td>'; */
+			$ret .= '</tr>';
+		}
+
+		$ret .= '</table>';
+
+		/* echo $ret; */
+		/* d($item->product); */
+		return $ret;
+	}
+
+
+	/**
 	 * Get informations about necessary/possible user interaction.
 	 * In this first step we only provide a link to mark this open order as (manually) solved.
 	 * Later on we can provide hints what to do or even solve automagically
@@ -535,9 +595,43 @@ class EnviaOrder extends \BaseModel {
 	public function get_user_action_information() {
 
 		$user_actions = array();
+		$user_actions['hints'] = array();
+		$user_actions['links'] = array();
+
 
 		if ($this->user_interaction_necessary()) {
-			$user_actions['Mark as solved'] = \URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id));
+
+			$contract = $this->contract;
+
+			$user_actions['hints']['Contract'] = '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->id.'</a><br>';
+
+			$items = $contract->items;
+			if ($items) {
+				$user_actions['hints']['Items'] = $this->_get_user_action_information_items($items);
+			};
+
+			$phonenumbers = array();
+			foreach ($contract->modems as $modem) {
+				if ($modem) {
+					$mtas = $modem->mtas;
+					if ($mtas) {
+						foreach ($mtas as $mta) {
+							foreach ($mta->phonenumbers as $phonenumber) {
+								if ($phonenumber) {
+									array_push($phonenumbers, $phonenumber);
+								}
+							}
+						}
+					}
+				}
+			}
+
+			if ($phonenumbers) {
+				$user_actions['hints']['Phonenumbers'] = $this->_get_user_action_information_phonenumbers($phonenumbers);
+			}
+
+			// finally add link to mark open order as solved
+			$user_actions['links']['Mark as solved'] = \URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id));
 		}
 
 		return $user_actions;

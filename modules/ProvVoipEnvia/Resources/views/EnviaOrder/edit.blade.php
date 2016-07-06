@@ -13,8 +13,14 @@
 				echo '<h5>EnviaOrder has been updated</h5>';
 				echo 'Please check if user interaction is necessary<br><br>';
 
+				foreach ($additional_data['user_actions']['hints'] as $class => $content) {
+					echo "<b><u>".$class."</u></b><br>";
+					echo $content;
+					echo "<br>";
+				}
+
 				$tmp = array();
-				foreach ($additional_data['user_actions'] as $linktext => $link) {
+				foreach ($additional_data['user_actions']['links'] as $linktext => $link) {
 					array_push($tmp, '<a href="'.$link.'" target="_self">» '.$linktext.'</a>');
 				}
 				echo implode('<br>', $tmp);

@@ -365,6 +365,8 @@ class ProvVoipEnvia extends \BaseModel {
 		if (in_array($view_level, ['contract', 'phonenumber', 'phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Orders'));
 			array_push($ret, array('linktext' => 'Get all phonenumber related orders', 'url' => $base.'misc_get_orders_csv'.$origin.$really));
+
+			array_push($ret, array('class' => 'Related orders (click to get status update)'));
 			// order(s) exist if contract has been created
 			if ($this->contract_created) {
 				foreach (EnviaOrder::withTrashed()->where('contract_id', '=', $contract_id)->orderBy("created_at")->get() as $order) {
