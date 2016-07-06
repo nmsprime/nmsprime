@@ -697,6 +697,13 @@ class ProvVoipEnviaController extends \BaseController {
 			$view_var['plain_html'] .= $origin_link;
 		}
 
+		// check if there should be an instant redirect – if so do so :-)
+		if (\Input::get('instant_redirect', false)) {
+			// we have to add the GET param manually as Redirect::to()->with('recentlty_updated', true) is not running
+			// this param is used to break out of the endless redirect loop :-)
+			return \Redirect::to(urldecode($origin).'?recently_updated=1');
+		}
+
 		return View::make($view_path, $this->compact_prep_view(compact('model_name', 'view_header', 'view_var')));
 	}
 

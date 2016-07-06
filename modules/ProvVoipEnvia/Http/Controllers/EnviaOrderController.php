@@ -205,6 +205,34 @@ class EnviaOrderController extends \BaseController {
 	}
 
 
+	/**
+	 * Before showing the edit form we update the order using envia api
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function edit($id) {
+
+		// call parent and store return
+		// so authentication is done!
+		$parent_return = parent::edit($id);
+
+		// if already updated against Envia API: show edit form
+		if (\Input::get('recently_updated', false)) {
+			return $parent_return;
+		}
+
+		// else redirect to update order
+		$params = array(
+			'job' => 'order_get_status',
+			'order_id' => EnviaOrder::findOrFail($id)->orderid,
+			'really' => 'true',
+			'origin' => urlencode(\URL::current()),
+			'instant_redirect' => true,
+		);
+
+		return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request', $params);
+	}
+
 
 	/**
 	 * Overwrite base function => before creation in database we have to check if order exists at envia!
