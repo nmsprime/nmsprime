@@ -471,6 +471,20 @@ class EnviaOrder extends \BaseModel {
 		];
 	}
 
+
+	/**
+	 * Prepare the list of orders to be shown on index page
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @todo check if there should be some filters (e.g. to show only open orders)
+	 */
+	public function index_list() {
+
+		return $this->orderBy('id')->get();
+	}
+
+
 	// belongs to a modem - see BaseModel for explanation
 	public function view_belongs_to ()
 	{
