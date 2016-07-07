@@ -14,3 +14,15 @@ BaseRoute::group([], function() {
 	BaseRoute::get('Tree/{id}/delete', array('as' => 'Tree.delete', 'uses' => 'Modules\HfcBase\Http\Controllers\TreeController@delete'));
 
 });
+
+// TODO: proper user authentication needed
+Route::get('app/data/hfcbase/{type}/{file}', function($type = null, $file = null)
+{
+	$path = storage_path("app/data/hfcbase/$type/$file");
+	// return 404 if user is not logged in or if type is neither 'erd' nor 'kml'
+	if(!Auth::user() || ($type != 'erd' && $type != 'kml')) {
+		return App::abort(404);
+	}
+	if (file_exists($path))
+		return Response::file($path);
+});
