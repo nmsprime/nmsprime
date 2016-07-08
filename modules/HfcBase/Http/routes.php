@@ -15,14 +15,6 @@ BaseRoute::group([], function() {
 
 });
 
-// TODO: proper user authentication needed
-Route::get('app/data/hfcbase/{type}/{file}', function($type = null, $file = null)
-{
-	$path = storage_path("app/data/hfcbase/$type/$file");
-	// return 404 if user is not logged in or if type is neither 'erd' nor 'kml'
-	if(!Auth::user() || ($type != 'erd' && $type != 'kml')) {
-		return App::abort(404);
-	}
-	if (file_exists($path))
-		return Response::file($path);
+Route::group(['middleware' => 'auth:view', 'prefix' => 'app/data/hfcbase'], function () {
+	Route::get('{type}/{filename}', array('uses' => 'Modules\HfcBase\Http\Controllers\HfcBaseController@get_file'));
 });
