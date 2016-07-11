@@ -12,5 +12,5 @@ BaseRoute::group([], function() {
 });
 
 Route::group(['middleware' => 'auth:view', 'prefix' => 'app/data/hfccustomer'], function () {
-	Route::get('kml/{filename}', array('uses' => 'Modules\HfcBase\Http\Controllers\HfcCustomerController@get_file'));
+	Route::get('kml/{filename}', array('uses' => 'Modules\HfcCustomer\Http\Controllers\HfcCustomerController@get_file'));
 });
