@@ -20,7 +20,7 @@
 			echo '<div class="col-md-12" style="margin-top: 30px; padding-top: 20px; border-top:solid #888 1px">';
 
 			echo '<h5>EnviaOrder has been updated</h5>';
-			echo 'Please check if user interaction is necessary<br><br>';
+			echo 'Please check if user interaction is necessary.<br><br>';
 
 			foreach ($additional_data['user_actions']['hints'] as $class => $content) {
 				echo "<b><u>".$class."</u></b><br>";

@@ -467,7 +467,7 @@ class EnviaOrder extends \BaseModel {
         return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $phonenumber_nr, $this->created_at, $this->updated_at, $current, $solve_link],
                 'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Phonenumber', 'Created at', 'Updated at', 'Interaction needed?', ''],
                 'bsclass' => $bsclass,
-				'header' => $this->orderid.': '.$this->ordertype.' ('.$this->orderstatus.')',
+				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
 		];
 	}
 
@@ -718,6 +718,7 @@ class EnviaOrder extends \BaseModel {
 		}
 
 		// if current state is “in Bearbeitung” then we have to do nothing
+		// next action is to perform by Envia
 		if ($this->orderstatus_id == 1000) {
 			return false;
 		}
@@ -725,6 +726,7 @@ class EnviaOrder extends \BaseModel {
 		// default (be pessimistic): we have to perform action…
 		return true;
 	}
+
 
 	/**
 	 * Marks an open order as “solved“.

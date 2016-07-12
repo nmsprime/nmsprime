@@ -448,14 +448,20 @@ class ItemObserver
 		{
 			$tariff = $item->contract->get_valid_tariff($item->product->type);
 
-			if ($tariff && $tariff->id != $item->id)
-			{
+			if (
+				$tariff
+				&&
+				($tariff->id != $item->id)
+				&&
+				($tariff->valid_from < $item->valid_from)
+			) {
 				$tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
 				$tariff->save();
 			}
 		}
 
-		$this->update_contract($item, $tariff);
+		// check if we have to update voip related data in contract – this has to be done for both objects
+		$this->_update_contract_voip_data([$item, $tariff]);
 
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);
@@ -469,23 +475,73 @@ class ItemObserver
 	 *
 	 * @author Patrick Reichel
 	 */
-	public function update_contract($item, $tariff) {
+	protected function _update_contract_voip_data($items) {
 
 		// write informations of phone tariff and variation also to contract
 		// so data will be available if billing is deactivated, access from module Envia is easier
-		if ($item->product->type == 'Voip') {
+		foreach ($items as $item) {
 
-			if ($tariff) {
-				// there currently is a voip item ⇒ given data is for next month
-				$item->contract->next_voip_id = $item->product->voip_sales_tariff_id;
-				$item->contract->next_purchase_tariff = $item->product->voip_purchase_tariff_id;
+			// a given item can be null
+			if (!$item) {
+				continue;
 			}
-			else {
-				// given data is for current values
-				$item->contract->voip_id = $item->product->voip_sales_tariff_id;
-				$item->contract->purchase_tariff = $item->product->voip_purchase_tariff_id;
+
+			if ($item->product->type == 'Voip') {
+
+				$contract_changed = False;
+
+				// check if information is for current month
+				// this is the case for currently active items:
+				//	- latest possible startday is today
+				//	- closest possible endday is today
+				if (
+					($item->valid_from <= date('Y-m-d'))
+					&&
+					($item->valid_to >= date('Y-m-d'))
+				) {
+					// check if there are changes in state for voip_id and purchase_tariff
+					if ($item->contract->voip_id != $item->product->voip_sales_tariff_id) {
+						$item->contract->voip_id = $item->product->voip_sales_tariff_id;
+						$contract_changed = True;
+					}
+					if ($item->contract->purchase_tariff != $item->product->voip_purchase_tariff_id) {
+						$item->contract->purchase_tariff = $item->product->voip_purchase_tariff_id;
+						$contract_changed = True;
+					}
+				}
+
+				// check if information is for next month:
+				// startday is between the first and the last day of the next month
+				if (
+					($item->valid_from >= date('Y-m-d', strtotime('first day of next month')))
+					&&
+					($item->valid_from <= date('Y-m-d', strtotime('last day of next month')))
+				) {
+					// check if there are changes in state for voip_id and purchase_tariff
+					if ($item->contract->next_voip_id != $item->product->voip_sales_tariff_id) {
+						$item->contract->next_voip_id = $item->product->voip_sales_tariff_id;
+						$contract_changed = True;
+					}
+					if ($item->contract->next_purchase_tariff != $item->product->voip_purchase_tariff_id) {
+						$item->contract->next_purchase_tariff = $item->product->voip_purchase_tariff_id;
+						$contract_changed = True;
+					}
+				}
+
+				/* if ($tariff) { */
+				/* 	// there currently is a voip item ⇒ given data is for next month */
+				/* 	$item->contract->next_voip_id = $item->product->voip_sales_tariff_id; */
+				/* 	$item->contract->next_purchase_tariff = $item->product->voip_purchase_tariff_id; */
+				/* } */
+				/* else { */
+				/* 	// given data is for current values */
+				/* 	$item->contract->voip_id = $item->product->voip_sales_tariff_id; */
+				/* 	$item->contract->purchase_tariff = $item->product->voip_purchase_tariff_id; */
+				/* } */
+				if ($contract_changed) {
+					$item->contract->save();
+				}
 			}
-			$item->contract->save();
 		}
 	}
 
