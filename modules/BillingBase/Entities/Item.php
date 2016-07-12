@@ -458,6 +458,9 @@ class ItemObserver
 				$tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
 				$tariff->save();
 			}
+			else {
+				$tariff = null;
+			}
 		}
 
 		// check if we have to update voip related data in contract – this has to be done for both objects
