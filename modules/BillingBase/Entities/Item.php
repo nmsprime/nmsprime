@@ -46,6 +46,9 @@ class Item extends \BaseModel {
 		$start = $this->valid_from && $this->valid_from != '0000-00-00' ? ' - '.$this->valid_from : '';
 		$end   = $this->valid_to && $this->valid_to != '0000-00-00' ? ' - '.$this->valid_to : '';
 
+		$start_fixed = boolval($this->valid_from_fixed) ? '(!)' : '';
+		$end_fixed = boolval($this->valid_to_fixed) ? '(!)' : '';
+
 		$billing_valid = $this->check_validity();
 
 		// blue colour means it will be considered for next accounting cycle
@@ -58,7 +61,7 @@ class Item extends \BaseModel {
 		return ['index' => [$this->product->name, $start, $end],
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
-		        'header' => $this->product->name.$start.$end];
+		        'header' => $this->product->name.$start.$start_fixed.$end];
 
 		// return $this->product->name.$start.$end;
 	}

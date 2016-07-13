@@ -533,18 +533,20 @@ class EnviaOrder extends \BaseModel {
 	protected function _get_user_action_information_items($items){
 
 		$padding = "padding-right: 10px;";
-		$ret = '<table>';
+		$ret = '<table class="table-hover">';
 		$ret .= '<tr>';
 		$ret .= '<th style="'.$padding.'">Product</th>';
+		$ret .= '<th style="'.$padding.'">Type</th>';
 		$ret .= '<th style="'.$padding.'">Valid from</th>';
-		$ret .= '<th style="'.$padding.'">Fixed?</th>';
+		$ret .= '<th style="'.$padding.'">Fix?</th>';
 		$ret .= '<th style="'.$padding.'">Valid to</th>';
-		$ret .= '<th style="'.$padding.'">Fixed?</th>';
+		$ret .= '<th style="'.$padding.'">Fix?</th>';
 		$ret .= '</tr>';
 
 		foreach ($items as $item) {
 			$ret .= '<tr>';
 			$ret .= '<td style="'.$padding.'"><a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a></td>';
+			$ret .= '<td style="'.$padding.'">'.$item->product->type.'</td>';
 			$ret .= '<td style="'.$padding.'">'.$item->valid_from.'</td>';
 			$ret .= '<td style="'.$padding.'">';
 				($item->valid_from_fixed > 0 ? $ret.="✔" : $ret.="");
@@ -572,7 +574,7 @@ class EnviaOrder extends \BaseModel {
 
 		$padding = "padding-right: 10px;";
 
-		$ret = '<table>';
+		$ret = '<table class="table-hover">';
 		$ret .= '<tr>';
 		$ret .= '<th style="'.$padding.'">Phonenumber</th>';
 		$ret .= '<th style="'.$padding.'">Activation target</th>';

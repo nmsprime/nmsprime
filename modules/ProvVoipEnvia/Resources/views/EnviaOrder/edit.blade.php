@@ -4,7 +4,7 @@
 @section('content_left')
 
 	@DivOpen(12)
-	<table>
+	<table class="table-hover">
 	@foreach($form_fields as $field)
 		<tr>
 			<td style="padding-right:20px;">{{ $field['description'] }}</td>
