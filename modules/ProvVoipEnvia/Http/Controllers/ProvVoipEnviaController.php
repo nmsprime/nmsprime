@@ -49,6 +49,20 @@ class ProvVoipEnviaController extends \BaseController {
 
 
 	/**
+	 * Checks if API version is set.
+ 	 *
+	 * @author Patrick Reichel
+	 */
+	public function check_api_version($job) {
+
+		if ($this->model->api_version < 0) {
+			throw new \InvalidArgumentException('Error performing '.$job.': PROVVOIPENVIA__REST_API_VERSION in .env has to be set to a positive float value (e.g.: 1.4) ⇒ ask your admin for proper values');
+		}
+
+	}
+
+
+	/**
 	 * Entry method for cron jobs.
 	 * Here we can use a different level of authentication – a cron job typically acts not as a logged in user :-)
 	 * So with this in mind we have to restrict the possible actions that can be performed from here.
@@ -65,6 +79,7 @@ class ProvVoipEnviaController extends \BaseController {
 		$request_uri = \Request::getUri();
 		$origin = \URL::to('/');	// origin is not relevant in cron jobs; set only for compatibility reasons…
 
+		$this->check_api_version('cron job');
 
 		// as this method is not protected by normal auth mechanism we will allow only a small number of jobs
 		$allowed_cron_jobs = array(
@@ -584,6 +599,8 @@ class ProvVoipEnviaController extends \BaseController {
 
 		// check if user has the right to perform actions against Envia API
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+
+		$this->check_api_version('request');
 
 		$base_url = $this->base_url;
 

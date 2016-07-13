@@ -51,6 +51,8 @@ class EnviaOrderUpdaterCommand extends Command {
 	public function fire()
 	{
 
+		Log::info($this->description);
+
 		echo "\n";
 		$this->_get_all_orders_csv();
 
@@ -72,6 +74,8 @@ class EnviaOrderUpdaterCommand extends Command {
 
 	protected function _get_all_orders_csv() {
 
+		Log::debug('Getting all orders csv');
+
 		// create URL suffix
 		$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'misc_get_orders_csv', 'really' => 'True'), false);
 
@@ -91,6 +95,7 @@ class EnviaOrderUpdaterCommand extends Command {
 	 */
 	protected function _get_orders() {
 
+		Log::debug('Getting orders from database');
 		$this->orders = EnviaOrder::all();
 
 	}
@@ -177,9 +182,10 @@ class EnviaOrderUpdaterCommand extends Command {
 	 */
 	protected function _updated($order_id) {
 
-		// not older than 30sec
-		$compare_time = date('Y-m-d H:i:s', time() - 30);
-		dd($compare_time);
+		// not older than 2 hours (this is relatively long; but there are some timing issues and
+		// the script is run late at night…)
+		$timedelta_max = 60 * 60 * 2;
+		$compare_time = date('Y-m-d H:i:s', time() - $timedelta_max);
 
 		$order = EnviaOrder::withTrashed()->where('orderid', '=', $order_id)->first();
 

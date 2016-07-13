@@ -127,7 +127,7 @@ class accountingCommand extends Command {
 
 			if(!$c->costcenter)
 			{
-				$logger->addAlert('Contract '.$c->number.' has no CostCenter assigned', [$c->id]);
+				$logger->addAlert('Contract '.$c->number.' has no CostCenter assigned - Stop execution for this contract', [$c->id]);
 				continue;
 			}
 
@@ -142,21 +142,29 @@ class accountingCommand extends Command {
 			{
 				// skip invalid items
 				if (!$item->check_validity($item->get_billing_cycle() == 'Yearly' ? 'year' : 'month'))
+				{
+					$logger->addDebug('Item '.$item->product->name.' is outdated', [$c->id]);
 					continue;
+				}
 
 				// skip if price is 0
 				if (!($ret = $item->calculate_price_and_span($this->dates)))
+				{
+					$logger->addDebug('Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
 					continue;
+				}
 
 				// get account via costcenter
 				$costcenter = $item->get_costcenter();
-				if (!is_object($costcenter))
-				{
-					$c->charge = [];
-					$logger->addAlert('No CostCenter assigned to Contract/Product/Item - Stop execution for this contract', [$c->id]);
-					break;
-				}
+				// if (!is_object($costcenter))
+				// {
+				// 	$c->charge = [];
+				// 	$logger->addAlert('No CostCenter assigned to Contract/Product/Item - Stop execution for this contract', [$c->id]);
+				// 	break;
+				// }
+
 				$acc = $sepa_accs->find($costcenter->sepa_account_id);
+
 
 				// increase invoice nr of sepa account, increase charge for account by price, calculate tax
 				if (isset($c->charge[$acc->id]))
@@ -208,10 +216,7 @@ class accountingCommand extends Command {
 					$charge += $entry[5];
 					$calls++;
 				}
-			}
 
-			if ($charge)
-			{
 				// accounting record
 				$acc = $sepa_accs->find($c->costcenter->sepa_account_id);
 				$rec = new AccountingRecord;
@@ -219,7 +224,7 @@ class accountingCommand extends Command {
 				$acc->add_cdr_accounting_record($c, $charge, $calls);
 
 				// invoice
-				$acc->add_invoice_cdr($c, $cdrs[$c->id], $conf);
+				$acc->add_invoice_cdr($c, $cdrs[$id], $conf);
 
 				// increase charge for booking record
 				if (isset($c->charge[$acc->id]))
@@ -314,7 +319,7 @@ class accountingCommand extends Command {
 				if ($this->dates['m'] == '01')
 				{
 					if ($conf->invoice_nr_start)
-						$acc->invoice_nr = $conf->invoice_nr_start;
+						$acc->invoice_nr = $conf->invoice_nr_start - 1;
 					continue;
 				}
 
@@ -329,7 +334,7 @@ class accountingCommand extends Command {
 			foreach ($sepa_accs as $acc)
 			{
 				if ($conf->invoice_nr_start)
-					$acc->invoice_nr = $conf->invoice_nr_start;
+					$acc->invoice_nr = $conf->invoice_nr_start - 1;
 			}
 		}
 	}

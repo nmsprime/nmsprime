@@ -2,6 +2,7 @@
 
 namespace Modules\ProvVoipEnvia\Entities;
 
+use Log;
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
@@ -24,10 +25,15 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	public function __construct($attributes = array()) {
 
-		// TODO: @Patrick Reichel: assume default value for API version if config is not set.
-		//       otherwise this will break some artisan commands like route:list
-		// this has to be a float value to allow stable version compares
-		$v = $_ENV['PROVVOIPENVIA__REST_API_VERSION'];
+		// if not available in .env: set to -1 to not break e.g. “php artisan” command ⇒ thas has to be caught later on
+		if (array_key_exists('PROVVOIPENVIA__REST_API_VERSION', $_ENV)) {
+			$v = $_ENV['PROVVOIPENVIA__REST_API_VERSION'];
+		}
+		else {
+			$v = -1;
+		}
+
+		// this has to be a float value to allow stable version compares ⇒ make some basic tests
 		if (!is_numeric($v)) {
 			throw new \InvalidArgumentException('PROVVOIPENVIA__REST_API_VERSION in .env has to be a float value (e.g.: 1.4)');
 		};
@@ -322,8 +328,8 @@ class ProvVoipEnvia extends \BaseModel {
 			// variation can only be changed if contract exists and a variation change is wanted
 			// TODO: implement checks for current change state; otherwise we get an error from Envia (change into the same variation is not possible)
 			if ($this->contract_available) {
-				if (boolval($this->contract->next_voip_id)) {
-					if ($this->contract->voip_id != $this->contract->next_voip_id) {
+				if (boolval($this->contract->next_purchase_tariff)) {
+					if ($this->contract->purchase_tariff != $this->contract->next_purchase_tariff) {
 						array_push($ret, array('linktext' => 'Change variation', 'url' => $base.'contract_change_variation'.$origin.'&amp;contract_id='.$contract_id));
 					}
 				}
@@ -393,10 +399,13 @@ class ProvVoipEnvia extends \BaseModel {
 
 			array_push($ret, array('class' => 'Phonebook entry'));
 
-			array_push($ret, array('linktext' => 'Get phonebook entry', 'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id));
+			// only if there is a phonenumber to add the entry to
+			if ($this->voipaccount_available) {
+				array_push($ret, array('linktext' => 'Get phonebook entry', 'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id));
 
-			if ($view_level == 'phonebookentry') {
-				array_push($ret, array('linktext' => 'Create/change phonebook entry', 'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id));
+				if ($view_level == 'phonebookentry') {
+					array_push($ret, array('linktext' => 'Create/change phonebook entry', 'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id));
+				}
 			}
 
 		}
@@ -1039,7 +1048,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$inner_xml = $this->xml->addChild('tariff_data');
 
-		// TODO: get dat from Contract->Item (after merging with Nino)
+		// TODO: get date from Contract->Item (after merging with Nino)
 		$inner_xml->addChild('orderdate', date('Y-m-d', strtotime('first day of next month')));
 
 		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale_next->external_identifier);
@@ -1057,6 +1066,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$inner_xml = $this->xml->addChild('variation_data');
 
+		// no date to be given ⇒ changed automatically on 1st of next month
 		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
 
 
@@ -1440,6 +1450,13 @@ class ProvVoipEnvia extends \BaseModel {
 			// single database field
 			if (is_string($db_field)) {
 				$payload = $model->$db_field;
+
+				// special case salutation: Envia expects Herrn instead of Herr…
+				if ($xml_field == 'salutation') {
+					if ($payload == 'Herr') {
+						$payload = 'Herrn';
+					}
+				}
 			}
 			// concated fields; last element is the string used to concat fields
 			elseif (is_array($db_field)) {
@@ -1934,6 +1951,32 @@ class ProvVoipEnvia extends \BaseModel {
 		$out .= "</table><br>";
 
 		$order->save();
+
+		// get the related contract to check if external identifier are set
+		$contract = Contract::findOrFail($order->contract_id);
+
+		// check external identifiers:
+		//   if not set (e.g. not known at manual creation time: update
+		//   if set to different values: something went wrong!
+		if (!boolval($contract->contract_external_id)) {
+			$contract->contract_external_id = $xml->contractreference;
+			$contract->save();
+		}
+		if ($xml->contractreference != $contract->contract_external_id) {
+			$msg = '<h4>Error: Contract reference in order '.$order->contractreference.' and contract '.$contract->contract_external_id.' are different!</h4>';
+			$out .= $msg;
+			Log::error($msg);
+		}
+
+		if (!boolval($contract->customer_external_id)) {
+			$contract->customer_external_id = $xml->customerreference;
+			$contract->save();
+		}
+		if ($xml->customerreference != $contract->customer_external_id) {
+			$msg = '<h4>Error: Customer reference in order '.$order->customerreference.' and contract '.$contract->customer_external_id.' are different!</h4>';
+			$out .= $msg;
+			Log::error($msg);
+		}
 
 		$out .= "<b>Database updated</b>";
 		return $out;
