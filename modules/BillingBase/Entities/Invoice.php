@@ -88,8 +88,10 @@ class Invoice {
 		'contract_mandate_iban'	=> '', 			// iban of the customer
 		'contract_mandate_ref'	=> '', 			// mandate reference of the customer
 
-		// Dates
 		'date_invoice'			=> '',
+		'invoice_nr' 			=> '',
+		'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate
+		'invoice_headline'		=> '',
 		'rcd' 					=> '',			// Fälligkeitsdatum
 		'cdr_month'				=> '', 			// Month of Call Data Records
 
@@ -317,7 +319,7 @@ class Invoice {
 			$template = str_replace('{'.$key.'}', $value, $template);
 
 		// Create tex file(s)
-		// $this->filename_invoice = date('m').'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
+		// $this->filename_invoice = ((date('m')+11)%12).'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
 		$this->filename_invoice = date('Y_m', strtotime('first day of last month'));
 		Storage::put($this->dir.$this->filename_invoice, $template);
 		// echo 'Stored tex file in '.storage_path('app/'.$this->dir.$this->filename_invoice)."\n";
