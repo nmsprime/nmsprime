@@ -80,12 +80,11 @@ class Salesman extends \BaseModel {
 		foreach ($types as $key => $value)
 			$types[$key] = trim($value);
 
-
 		if ($item->product->type == 'Credit')
 		{
 			// get credit type from product name
 			$credit_type = '';
-			foreach ($this->all_types as $type)
+			foreach ($this->all_prod_types as $type)
 			{
 				if (strpos($item->product->name, $type) !== false)
 					$credit_type = $type;
