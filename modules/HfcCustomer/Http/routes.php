@@ -10,3 +10,7 @@ BaseRoute::group([], function() {
 	BaseRoute::resource('MprGeopos', 'Modules\HfcCustomer\Http\Controllers\MprGeoposController');
 
 });
+
+Route::group(['middleware' => 'auth:view', 'prefix' => 'app/data/hfccustomer'], function () {
+	Route::get('kml/{filename}', array('uses' => 'Modules\HfcCustomer\Http\Controllers\HfcCustomerController@get_file'));
+});

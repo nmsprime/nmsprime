@@ -162,7 +162,9 @@ class accountingCommand extends Command {
 				// 	$logger->addAlert('No CostCenter assigned to Contract/Product/Item - Stop execution for this contract', [$c->id]);
 				// 	break;
 				// }
+
 				$acc = $sepa_accs->find($costcenter->sepa_account_id);
+
 
 				// increase invoice nr of sepa account, increase charge for account by price, calculate tax
 				if (isset($c->charge[$acc->id]))
@@ -214,10 +216,7 @@ class accountingCommand extends Command {
 					$charge += $entry[5];
 					$calls++;
 				}
-			}
 
-			if ($charge)
-			{
 				// accounting record
 				$acc = $sepa_accs->find($c->costcenter->sepa_account_id);
 				$rec = new AccountingRecord;
@@ -225,7 +224,7 @@ class accountingCommand extends Command {
 				$acc->add_cdr_accounting_record($c, $charge, $calls);
 
 				// invoice
-				$acc->add_invoice_cdr($c, $cdrs[$c->id], $conf);
+				$acc->add_invoice_cdr($c, $cdrs[$id], $conf);
 
 				// increase charge for booking record
 				if (isset($c->charge[$acc->id]))

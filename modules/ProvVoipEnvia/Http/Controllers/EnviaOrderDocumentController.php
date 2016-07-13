@@ -37,11 +37,11 @@ class EnviaOrderDocumentController extends \BaseController {
 	 */
 	public function view_form_fields($model = null) {
 
-		/* dd($model->enviaorder()); */
+		$enviaorder_id = \Input::get('enviaorder_id', null);
 		/* dd($model); */
 		$ret = array(
+			array('form_type' => 'select', 'name' => 'enviaorder_id', 'description' => 'Envia Order', 'hidden' => '1', 'init_value' => $enviaorder_id),
 			array('form_type' => 'select', 'name' => 'document_type', 'description' => 'Document type', 'value' => EnviaOrderDocument::getPossibleEnumValues('document_type')),
-			array('form_type' => 'text', 'name' => 'enviaorder_id', 'description' => 'Envia Order'),
 			array('form_type' => 'file', 'name' => 'document_upload', 'description' => 'Upload document'),
 		);
 
@@ -73,7 +73,7 @@ class EnviaOrderDocumentController extends \BaseController {
 	public function show($id) {
 
 		// check if user has the right to perform actions against Envia API
-		\App\Http\Controllers\BaseAuthController::auth_check('view', $this->get_model_name());
+		\App\Http\Controllers\BaseAuthController::auth_check('view', \NamespaceController::get_model_name());
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$enviaorderdocument = EnviaOrderDocument::findOrFail($id);
@@ -98,7 +98,7 @@ class EnviaOrderDocumentController extends \BaseController {
 	public function edit($id) {
 
 		// check if user has the right to perform actions against Envia API
-		\App\Http\Controllers\BaseAuthController::auth_check('view', $this->get_model_name());
+		\App\Http\Controllers\BaseAuthController::auth_check('view', \NamespaceController::get_model_name());
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$document = EnviaOrderDocument::findOrFail($id);
@@ -131,7 +131,7 @@ class EnviaOrderDocumentController extends \BaseController {
 		// build path to store document in – this is the base path with subdir contract ID
 		$enviaorder_id = \Input::get('enviaorder_id', -1);
 		if ($enviaorder_id < 0) {
-			throw new ValueError('No enviaorder_id given');
+			throw new \InvalidArgumentException('No enviaorder_id given');
 		}
 		\Input::merge(array('enviaorder_id' => $enviaorder_id));
 
