@@ -430,7 +430,7 @@ class ItemObserver
 			}
 		}
 
-		$this->update_contract($item, $tariff);
+		$item->contract->update_product_related_data([$item, $tariff]);
 
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);
@@ -451,9 +451,12 @@ class ItemObserver
 			if (
 				$tariff
 				&&
-				($tariff->id != $item->id)
-				&&
+				// prevent from writing smaller valid_to than valid_from which
+				// before adding this was caused by daily_conversion
 				($tariff->valid_from < $item->valid_from)
+				&&
+				// obsoleted by the above – but left here to keep the original condition
+				($tariff->id != $item->id)
 			) {
 				$tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
 				$tariff->save();
@@ -463,89 +466,13 @@ class ItemObserver
 			}
 		}
 
-		// check if we have to update voip related data in contract – this has to be done for both objects
-		$this->_update_contract_voip_data([$item, $tariff]);
+		// check if we have to update product related data (qos, voip tariff, etc.) in contract
+		// this has to be done for both objects
+		$item->contract->update_product_related_data([$item, $tariff]);
 
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);
 
-	}
-
-
-	/**
-	 * Writes some information from item also to contract
-	 * This is needed e.g. for creating/changing contract against Envia API
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _update_contract_voip_data($items) {
-
-		// write informations of phone tariff and variation also to contract
-		// so data will be available if billing is deactivated, access from module Envia is easier
-		foreach ($items as $item) {
-
-			// a given item can be null
-			if (!$item) {
-				continue;
-			}
-
-			if ($item->product->type == 'Voip') {
-
-				$contract_changed = False;
-
-				// check if information is for current month
-				// this is the case for currently active items:
-				//	- latest possible startday is today
-				//	- closest possible endday is today
-				if (
-					($item->valid_from <= date('Y-m-d'))
-					&&
-					($item->valid_to >= date('Y-m-d'))
-				) {
-					// check if there are changes in state for voip_id and purchase_tariff
-					if ($item->contract->voip_id != $item->product->voip_sales_tariff_id) {
-						$item->contract->voip_id = $item->product->voip_sales_tariff_id;
-						$contract_changed = True;
-					}
-					if ($item->contract->purchase_tariff != $item->product->voip_purchase_tariff_id) {
-						$item->contract->purchase_tariff = $item->product->voip_purchase_tariff_id;
-						$contract_changed = True;
-					}
-				}
-
-				// check if information is for next month:
-				// startday is between the first and the last day of the next month
-				if (
-					($item->valid_from >= date('Y-m-d', strtotime('first day of next month')))
-					&&
-					($item->valid_from <= date('Y-m-d', strtotime('last day of next month')))
-				) {
-					// check if there are changes in state for voip_id and purchase_tariff
-					if ($item->contract->next_voip_id != $item->product->voip_sales_tariff_id) {
-						$item->contract->next_voip_id = $item->product->voip_sales_tariff_id;
-						$contract_changed = True;
-					}
-					if ($item->contract->next_purchase_tariff != $item->product->voip_purchase_tariff_id) {
-						$item->contract->next_purchase_tariff = $item->product->voip_purchase_tariff_id;
-						$contract_changed = True;
-					}
-				}
-
-				/* if ($tariff) { */
-				/* 	// there currently is a voip item ⇒ given data is for next month */
-				/* 	$item->contract->next_voip_id = $item->product->voip_sales_tariff_id; */
-				/* 	$item->contract->next_purchase_tariff = $item->product->voip_purchase_tariff_id; */
-				/* } */
-				/* else { */
-				/* 	// given data is for current values */
-				/* 	$item->contract->voip_id = $item->product->voip_sales_tariff_id; */
-				/* 	$item->contract->purchase_tariff = $item->product->voip_purchase_tariff_id; */
-				/* } */
-				if ($contract_changed) {
-					$item->contract->save();
-				}
-			}
-		}
 	}
 
 
