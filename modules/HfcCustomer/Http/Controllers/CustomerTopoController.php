@@ -30,16 +30,9 @@ class CustomerTopoController extends TreeController {
 
 	/*
 	 * Local tmp folder required for generating the images
-	 * app/storage/modules
+	 * (relative to /storage/app)
 	 */
-	private $path_rel = '/modules/hfccustomer/kml/';
-
-	// the absolute path: public_path().$this->path_rel
-	private $path;
-
-	// filename, will be based on a random hash function
-	private $filename;
-
+	public static $path_rel = 'data/hfccustomer/kml/';
 
 	/*
 	 * File Specific Stuff
@@ -101,9 +94,7 @@ class CustomerTopoController extends TreeController {
 	 */
 	public function __construct()
 	{
-		$this->path     = public_path().$this->path_rel;
-		$this->filename = sha1(uniqid(mt_rand(), true)).'.kml';
-		$this->file     = $this->path.'/'.$this->filename;
+		$this->file = self::$path_rel.sha1(uniqid(mt_rand(), true)).'.kml';
 	}
 
 
@@ -159,6 +150,9 @@ class CustomerTopoController extends TreeController {
 
 		// Generate SVG file
 		$file = $this->kml_generate ($modems);
+
+		if(!$file)
+			return \View::make('errors.generic')->with('message', 'Failed to generate SVG file');
 
 		// Prepare and Topography Map
 		$target      = $this->html_target;
@@ -388,11 +382,9 @@ class CustomerTopoController extends TreeController {
 
 		# Write Files ..
 		$file .= $this->file_end;
-		$handler = fOpen($this->file, "w");
-		fWrite($handler , $file);
-		fClose($handler);
+		\Storage::put($this->file, $file);
 
-		return $this->path_rel.'/'.$this->filename;
+		return str_replace(storage_path(), '', \Storage::getAdapter()->applyPathPrefix($this->file));
 	}
 
 }
