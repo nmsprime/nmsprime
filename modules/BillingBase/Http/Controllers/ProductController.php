@@ -19,8 +19,10 @@ class ProductController extends \BaseController {
 
 		$qos_val 		= array_merge([null], $model->html_list(Qos::all(), 'name'));
 		$ccs 			= array_merge([''], $model->html_list(CostCenter::all(), 'name'));
-		$sales_tariffs 	= PhoneTariff::get_sale_tariffs();
-		$purchase_tariffs = PhoneTariff::get_purchase_tariffs();
+
+		// add null values (as they have to be 0 in types other than Voip (watch $this->prepare_rules())
+		$sales_tariffs = array_merge([0 => ''], PhoneTariff::get_sale_tariffs());
+		$purchase_tariffs = array_merge([0 => ''], PhoneTariff::get_purchase_tariffs());
 
 		$tax = array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV');
 		if ($model->tax === null)
@@ -105,7 +107,6 @@ class ProductController extends \BaseController {
 				$rules[$key] .= '|not_null';
 		}
 
-		// dd($rules, $data);
 		return parent::prepare_rules($rules, $data);
 	}
 

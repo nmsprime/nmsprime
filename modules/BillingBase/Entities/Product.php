@@ -150,18 +150,51 @@ make_list:
 class ProductObserver
 {
 
-	public function creating($product)
-	{
+	/**
+	 * Add textual informäation about bundling with voip to internet products
+	 * First remove the existing suffix, then add a suffix depending on the bundling state.
+	 *
+	 * This behaviour can be discussed – we also could add this information in all views…
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _set_bundled_with_voip_textual_information($name, $type, $bundled) {
+
+		// change only for internet products, leave the rest untouched
+		if ($type != 'Internet') {
+			return $name;
+		}
+
+		// remove old markers
+		$name = str_replace(' (bundled with VoIP)', '', $name);
+		$name = str_replace(' (standalone)', '', $name);
 
 		// add information for bundling on internet names
-		if ($product->type == 'Internet') {
-			if (boolval($product->bundled_with_voip)) {
-				$product->name .= ' (bundled with VoIP)';
-			}
-			else {
-				$product->name .= ' (standalone)';
-			}
+		if (boolval($bundled)) {
+			$name .= ' (bundled with VoIP)';
 		}
+		else {
+			$name .= ' (standalone)';
+		}
+
+		return $name;
+	}
+
+	/**
+	 * @author Patrick Reichel
+	 */
+	public function creating($product) {
+
+		$product->name = $this->_set_bundled_with_voip_textual_information($product->name, $product->type, $product->bundled_with_voip);
+	}
+
+
+	/**
+	 * @author Patrick Reichel
+	 */
+	public function updating($product) {
+
+		$product->name = $this->_set_bundled_with_voip_textual_information($product->name, $product->type, $product->bundled_with_voip);
 
 	}
 
