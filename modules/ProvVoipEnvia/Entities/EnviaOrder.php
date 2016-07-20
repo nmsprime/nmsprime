@@ -532,27 +532,30 @@ class EnviaOrder extends \BaseModel {
 	 */
 	protected function _get_user_action_information_items($items){
 
-		$padding = "padding-right: 10px;";
+		$th_style = "padding-right: 10px;";
+		$td_style = $th_style;
+
 		$ret = '<table class="table-hover">';
 		$ret .= '<tr>';
-		$ret .= '<th style="'.$padding.'">Product</th>';
-		$ret .= '<th style="'.$padding.'">Type</th>';
-		$ret .= '<th style="'.$padding.'">Valid from</th>';
-		$ret .= '<th style="'.$padding.'">Fix?</th>';
-		$ret .= '<th style="'.$padding.'">Valid to</th>';
-		$ret .= '<th style="'.$padding.'">Fix?</th>';
+		$ret .= '<th style="'.$th_style.'">Product</th>';
+		$ret .= '<th style="'.$th_style.'">Type</th>';
+		$ret .= '<th style="'.$th_style.'">Valid from</th>';
+		$ret .= '<th style="'.$th_style.'">Fix?</th>';
+		$ret .= '<th style="'.$th_style.'">Valid to</th>';
+		$ret .= '<th style="'.$th_style.'">Fix?</th>';
 		$ret .= '</tr>';
 
 		foreach ($items as $item) {
 			$ret .= '<tr>';
-			$ret .= '<td style="'.$padding.'"><a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a></td>';
-			$ret .= '<td style="'.$padding.'">'.$item->product->type.'</td>';
-			$ret .= '<td style="'.$padding.'">'.$item->valid_from.'</td>';
-			$ret .= '<td style="'.$padding.'">';
+			$ret .= '<td style="'.$td_style.'"><a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a></td>';
+			$ret .= '<td style="'.$td_style.'">'.$item->product->type.'</td>';
+			$ret .= '<td style="'.$td_style.'">'.$item->valid_from.'</td>';
+			$ret .= '<td style="'.$td_style.'">';
 				($item->valid_from_fixed > 0 ? $ret.="✔" : $ret.="");
 				$ret .'</td>';
-			$ret .= '<td style="'.$padding.'">'.$item->valid_to.'</td>';
-			$ret .= '<td style="'.$padding.'">';
+			$ret .= '<td style="'.$td_style.'">'.$item->valid_to.'</td>';
+			$ret .= '<td style="'.$td_style.'">';
+				($item->valid_to_fixed > 0 ? $ret.="✔" : $ret.="");
 				$ret .'</td>';
 			$ret .= '</tr>';
 		}
@@ -572,25 +575,26 @@ class EnviaOrder extends \BaseModel {
 	 */
 	protected function _get_user_action_information_phonenumbers($phonenumbers){
 
-		$padding = "padding-right: 10px;";
+		$th_style = "padding-right: 10px;";
+		$td_style = $th_style;
 
 		$ret = '<table class="table-hover">';
 		$ret .= '<tr>';
-		$ret .= '<th style="'.$padding.'">Phonenumber</th>';
-		$ret .= '<th style="'.$padding.'">Activation target</th>';
-		$ret .= '<th style="'.$padding.'">Activation confirmed</th>';
-		$ret .= '<th style="'.$padding.'">Deactivation target</th>';
-		$ret .= '<th style="'.$padding.'">Deactivation confirmed</th>';
+		$ret .= '<th style="'.$th_style.'">Phonenumber</th>';
+		$ret .= '<th style="'.$th_style.'">Activation target</th>';
+		$ret .= '<th style="'.$th_style.'">Activation confirmed</th>';
+		$ret .= '<th style="'.$th_style.'">Deactivation target</th>';
+		$ret .= '<th style="'.$th_style.'">Deactivation confirmed</th>';
 		$ret .= '</tr>';
 
 		foreach ($phonenumbers as $phonenumber) {
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 			$ret .= '<tr>';
-			$ret .= '<td style='.$padding.'"><a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a></td>';
-			$ret .= '<td style="'.$padding.'">'.$phonenumbermanagement->activation_date.'</td>';
-			$ret .= '<td style="'.$padding.'">'.$phonenumbermanagement->external_activation_date.'</td>';
-			$ret .= '<td style="'.$padding.'">'.$phonenumbermanagement->deactivation_date.'</td>';
-			$ret .= '<td style="'.$padding.'">'.$phonenumbermanagement->external_deactivation_date.'</td>';
+			$ret .= '<td style='.$td_style.'"><a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a></td>';
+			$ret .= '<td style="'.$td_style.'">'.$phonenumbermanagement->activation_date.'</td>';
+			$ret .= '<td style="'.$td_style.'">'.$phonenumbermanagement->external_activation_date.'</td>';
+			$ret .= '<td style="'.$td_style.'">'.$phonenumbermanagement->deactivation_date.'</td>';
+			$ret .= '<td style="'.$td_style.'">'.$phonenumbermanagement->external_deactivation_date.'</td>';
 			$ret .= '</tr>';
 		}
 

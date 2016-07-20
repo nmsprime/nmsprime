@@ -27,12 +27,12 @@ class ModemHelper extends \BaseModel {
 
 	public static function ms_avg ( $s )
 	{
-	    return round(Modem::whereRaw("$s AND status > 0")->avg('status')/10,1);
+	    return round(Modem::whereRaw("$s AND status > 0")->avg('status'),1);
 	}
 
 	public static function ms_cri ( $s )
 	{
-		$c = 10*self::$single_critical_us;
+		$c = self::$single_critical_us;
 		return ( Modem::whereRaw("(($s) AND status > $c)")->get()->count() );
 	}
 
@@ -70,7 +70,7 @@ class ModemHelper extends \BaseModel {
 
 	public static function ms_avg_pos ( $s )
 	{
-	    $q = Modem::whereRaw("$s AND status > 0");
+	    $q = Modem::whereRaw("$s AND status > 0 AND x != 0 AND y != 0");
 
 	    return [ 'x' => round($q->avg('x'),4), 'y' => round($q->avg('y'),4) ];
 	}

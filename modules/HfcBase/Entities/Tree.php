@@ -8,7 +8,7 @@ class Tree extends \BaseModel {
 	public $table = 'tree';
 
 
-	public $kml_path = '/var/www/lara/app/storage/hfc/kml/static/';
+	public $kml_path = 'app/data/hfcbase/kml/static';
     private $max_parents = 25;
 
 	// Add your validation rules here
@@ -146,7 +146,7 @@ class Tree extends \BaseModel {
 	public function kml_files()
 	{
 		// get all available files
-		$kml_files_raw = glob($this->kml_path.'/*');
+		$kml_files_raw = glob(storage_path($this->kml_path.'/*'));
 		$kml_files = array(null => "None");
 		// extract filename
 		foreach ($kml_files_raw as $file) {

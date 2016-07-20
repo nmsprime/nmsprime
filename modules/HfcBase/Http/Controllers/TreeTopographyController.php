@@ -18,19 +18,23 @@ class TreeTopographyController extends HfcBaseController {
 
 	/*
 	 * Local tmp folder required for generating the kml files
-	 * app/storage/modules
+	 * (relative to /storage/app)
 	 */
-	private $path_rel = '/modules/hfcbase/kml/';
+	public static $path_rel = 'data/hfcbase/kml/';
 
+	/*
+	 * Public folder, where our assets are stored (*.png used by kml)
+	 * (relative to /public)
+	 */
+	private $path_images = 'modules/hfcbase/kml/';
 
 	/*
 	 * Constructor: Set local vars
 	 */
 	public function __construct()
 	{
-		$this->filename = sha1(uniqid(mt_rand(), true)).'.kml';	// the filename based on a random hash
-		$this->path     = public_path().$this->path_rel;		// absolute path
-		$this->file     = $this->path.'/'.$this->filename;		// absolute path of file
+		// the relative (to /storage/app) file path based on a random hash
+		$this->file = self::$path_rel.sha1(uniqid(mt_rand(), true)).'.kml';
 	}
 
 
@@ -116,8 +120,7 @@ class TreeTopographyController extends HfcBaseController {
 	 */
 	public function kml_generate($_trees)
 	{
-		$file = $this->file_pre(asset('modules/hfcbase/kml'));
-
+		$file = $this->file_pre(asset($this->path_images));
 		#
 		# Note: OpenLayer draws kml file in parse order,
 		# this requires to build kml files in the following order:
@@ -312,11 +315,9 @@ class TreeTopographyController extends HfcBaseController {
 		# Write KML File ..
 		#
 		$file .= $this->file_post;
-		$handler = fOpen($this->file, "w");
-		fWrite($handler , $file);
-		fClose($handler); // Datei schließen
+		\Storage::put($this->file, $file);
 
-		return $this->path_rel.'/'.$this->filename;
+		return str_replace(storage_path(), '', \Storage::getAdapter()->applyPathPrefix($this->file));
 	}
 
 
@@ -337,7 +338,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id=\"OK\">
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/green-amp.png</href>
+						<href>$p/green-amp.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>
@@ -345,7 +346,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id=\"YELLOW\">
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/yellow-amp.png</href>
+						<href>$p/yellow-amp.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>
@@ -353,7 +354,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id=\"RED\">
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/red-amp.png</href>
+						<href>$p/red-amp.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>
@@ -361,7 +362,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id=\"OK-FIB\">
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/green-fib.png</href>
+						<href>$p/green-fib.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>
@@ -369,7 +370,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id=\"YELLOW-FIB\">
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/yellow-fib.png</href>
+						<href>$p/yellow-fib.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>
@@ -377,7 +378,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id=\"RED-FIB\">
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/red-fib.png</href>
+						<href>$p/red-fib.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>
@@ -385,7 +386,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id=\"OK-ROUTER\">
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/router.png</href>
+						<href>$p/router.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>
@@ -393,7 +394,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id=\"RED-ROUTER\">
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/router-red.png</href>
+						<href>$p/router-red.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>
@@ -401,7 +402,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id=\"YELLOW-ROUTER\">
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/router-yellow.png</href>
+						<href>$p/router-yellow.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>
@@ -409,7 +410,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id='green-CUS'>
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/green-dot.png</href>
+						<href>$p/green-dot.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>
@@ -417,7 +418,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id='yellow-CUS'>
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/yellow-dot.png</href>
+						<href>$p/yellow-dot.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>
@@ -425,7 +426,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id='red-CUS'>
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/red-dot.png</href>
+						<href>$p/red-dot.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>
@@ -433,7 +434,7 @@ class TreeTopographyController extends HfcBaseController {
 			<Style id='blue-CUS'>
 				<IconStyle>
 					<Icon>
-						<href>$p/dot/blue-dot.png</href>
+						<href>$p/blue-dot.png</href>
 					</Icon>
 				</IconStyle>
 			</Style>

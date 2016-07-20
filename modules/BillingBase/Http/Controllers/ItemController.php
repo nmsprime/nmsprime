@@ -19,16 +19,19 @@ class ItemController extends \BaseController {
 			$model = new Item;
 
 		$products = Product::select('id', 'type', 'name')->orderBy('type')->orderBy('name')->get()->all();
-				
+
 		// $prods = $model->html_list($products, 'name');
 		$prods = [];
 		foreach ($products as $p)
 			$prods[$p->id] = $p->type.' - '.$p->name;
 
 		foreach ($products as $p)
-			$types[$p->id] = $p->type; 
+			$types[$p->id] = $p->type;
 
-		$ccs = array_merge([''], $model->html_list(CostCenter::all(), 'name'));
+		// the options should start with a 0 entry which is chosen if nothing is given explicitely
+		// (watch $this->prepare_rules())
+		// don't use array_merge for this because that reassignes the index!
+		$ccs = $this->_add_empty_first_element_to_options($model->html_list(CostCenter::all(), 'name'));
 
 		$cnt[0] = null;
 		// 	$b[date('Y-m-01', strtotime("now +$i months"))] = date('Y-m', strtotime("now +$i months"));
@@ -39,7 +42,7 @@ class ItemController extends \BaseController {
 		// label has to be the same like column in sql table
 		return array(
 			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'value' => $model->contract(), 'hidden' => '1'),
-			array('form_type' => 'select', 'name' => 'product_id', 'description' => 'Product', 'value' => $prods, 'select' => $types, 'help' => 'All fields besides Billing Cycle have to be cleared before a type change! Otherwise items can not be saved in most cases'), 
+			array('form_type' => 'select', 'name' => 'product_id', 'description' => 'Product', 'value' => $prods, 'select' => $types, 'help' => 'All fields besides Billing Cycle have to be cleared before a type change! Otherwise items can not be saved in most cases'),
 			array('form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt, 'select' => 'Device Other'),
 			array('form_type' => 'text', 'name' => 'valid_from', 'description' => 'Valid from', 'options' => ['placeholder' => 'YYYY-MM-DD'], 'help' => 'for One Time Payments the fields can be used to split payment - Only Y-M is considered then!'),
 			array('form_type' => 'checkbox', 'name' => 'valid_from_fixed', 'description' => 'Valid from fixed', 'help' => 'Fixed dates are used for billing and not updated by external orders'),
@@ -96,9 +99,13 @@ class ItemController extends \BaseController {
 		$tariff = $c->get_valid_tariff($p->type);
 		if ($tariff)
 		{
-			$start = $tariff->get_start_time();
-			$rules['valid_from'] .= '|after:';
-			$rules['valid_from'] .= $tariff->valid_to && $tariff->valid_to != '0000-00-00' ? $tariff->valid_to : date('Y-m-d', $start);
+			// check only on creating:
+			if (\Str::contains(\URL::previous(), '/Item/create')) {
+				// check if date is after today
+				$start = $tariff->get_start_time();
+				$rules['valid_from'] .= '|after:';
+				$rules['valid_from'] .= $tariff->valid_to && $tariff->valid_to != '0000-00-00' ? $tariff->valid_to : date('Y-m-d', $start);
+			}
 		}
 
 		// dd($rules, $data);

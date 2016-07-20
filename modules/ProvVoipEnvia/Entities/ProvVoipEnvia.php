@@ -14,6 +14,7 @@ use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
+use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
 
 // Model not found? execute composer dump-autoload in lara root dir
 class ProvVoipEnvia extends \BaseModel {
@@ -1000,6 +1001,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 	}
 
+
 	/**
 	 * Method to add customer data
 	 *
@@ -1025,6 +1027,39 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->_add_fields($inner_xml, $fields, $this->contract);
 	}
 
+
+	/**
+	 * Method to add installation address
+	 *
+	 * The address is taken from first assigned modem – EnviaTEL only accepts one installation address per contract (which IMO does not really make sense)
+	 * @todo: try to change this at Envia…
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_installation_address_data() {
+
+		$inner_xml = $this->xml->contract_data->addChild('installation_address_data');
+
+		// mapping xml to database
+		$fields = array(
+			'salutation' => 'salutation',
+			'firstname' => 'firstname',
+			'lastname' => 'lastname',
+			'street' => 'street',
+			'houseno' => 'house_number',
+			'zipcode' => 'zip',
+			'city' => 'city',
+			'birthday' => 'birthday',
+			'company' => 'company',
+		);
+
+		if (!$this->contract->modems) {
+			throw new XmlCreationError('There needs to be a modem to get installation address from.');
+		}
+		$this->_add_fields($inner_xml, $fields, $this->contract->modems[0]);
+	}
+
+
 	/**
 	 * Method to add contract data
 	 *
@@ -1036,8 +1071,36 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// add startdate for contract (default: today – there are no costs without phone numbers)
 		$inner_xml->addChild('orderdate', date('Y-m-d'));
-		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase->external_identifier);
-		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale->external_identifier);
+
+		// check if there are missing values (e.g. they are missing if billing is enabled but man forgot to add voip item before calling this
+		$value_missing = False;
+		if (!boolval($this->contract->phonetariff_purchase_next)) {
+			$value_missing = True;
+			$msg = 'phonenumber_purchase_next not set in contract '.$this->contract->id;
+			if (\PPModule::is_active('billingbase')) {
+				$msg .= ' – maybe you have to create a Voip item with future start date?';
+			}
+		}
+
+		if (!boolval($this->contract->phonetariff_sale_next)) {
+			$value_missing = True;
+			$msg = 'phonenumber_sale_next not set in contract '.$this->contract->id;
+			if (\PPModule::is_active('billingbase')) {
+				$msg .= ' – maybe you have to create a Voip item with future start date?';
+			}
+		}
+
+		if ($value_missing) {
+			throw new XmlCreationError($msg);
+		}
+
+		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
+		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale_next->external_identifier);
+
+		// set phonebookentry to no by default ⇒ this later can be overwritten by excplicitely creating a phonebookentry
+		 $inner_xml->addChild('phonebookentry_phone', 0);
+		 $inner_xml->addChild('phonebookentry_fax', 0);
+		 $inner_xml->addChild('phonebookentry_reverse_search', 0);
 
 	}
 

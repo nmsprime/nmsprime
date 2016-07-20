@@ -14,3 +14,7 @@ BaseRoute::group([], function() {
 	BaseRoute::get('Tree/{id}/delete', array('as' => 'Tree.delete', 'uses' => 'Modules\HfcBase\Http\Controllers\TreeController@delete'));
 
 });
+
+Route::group(['middleware' => 'auth:view', 'prefix' => 'app/data/hfcbase'], function () {
+	Route::get('{type}/{filename}', array('uses' => 'Modules\HfcBase\Http\Controllers\HfcBaseController@get_file'));
+});

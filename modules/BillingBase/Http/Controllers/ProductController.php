@@ -14,15 +14,17 @@ class ProductController extends \BaseController {
      */
 	public function view_form_fields($model = null)
 	{
+
 		if (!$model)
 			$model = new Product;
 
-		$qos_val 		= array_merge([null], $model->html_list(Qos::all(), 'name'));
-		$ccs 			= array_merge([''], $model->html_list(CostCenter::all(), 'name'));
-
-		// add null values (as they have to be 0 in types other than Voip (watch $this->prepare_rules())
-		$sales_tariffs = array_merge([0 => ''], PhoneTariff::get_sale_tariffs());
-		$purchase_tariffs = array_merge([0 => ''], PhoneTariff::get_purchase_tariffs());
+		// the options should start with a 0 entry which is chosen if nothing is given explicitely
+		// (watch $this->prepare_rules())
+		// don't use array_merge for this because that reassignes the index!
+		$qos_val = $this->_add_empty_first_element_to_options($model->html_list(Qos::all(), 'name'), null);
+		$ccs = $this->_add_empty_first_element_to_options($model->html_list(CostCenter::all(), 'name'));
+		$sales_tariffs = $this->_add_empty_first_element_to_options(PhoneTariff::get_sale_tariffs());
+		$purchase_tariffs = $this->_add_empty_first_element_to_options(PhoneTariff::get_purchase_tariffs());
 
 		$tax = array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV');
 		if ($model->tax === null)

@@ -19,7 +19,7 @@ class ProductTableSeeder extends \BaseSeeder {
 
 		foreach(Product::getPossibleEnumValues('type') as $type)
 		{
-			foreach (range(1,4) as $index)
+			foreach (range(1,3) as $index)
 			{
 				$name = '';
 				$qos_id = $voip_sale_id = $voip_purchase_tariff_id = $cycle_count = $costcenter_id = $price = 0;

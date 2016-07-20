@@ -15,7 +15,10 @@ class CostCenterController extends \BaseController {
 		if (!$model)
 			$model = new CostCenter;
 
-		$list = array_merge([''], $model->html_list(SepaAccount::all(), 'name'));
+		// the options should start with a 0 entry which is chosen if nothing is given explicitely
+		// (watch $this->prepare_rules())
+		// don't use array_merge for this because that reassignes the index!
+		$list = $this->_add_empty_first_element_to_options($model->html_list(SepaAccount::all(), 'name'));
 
 		for($i=0; $i<13; $i++)
 			$months[$i] = $i;
