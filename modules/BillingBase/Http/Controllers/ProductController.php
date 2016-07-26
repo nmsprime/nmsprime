@@ -14,14 +14,17 @@ class ProductController extends \BaseController {
      */
 	public function view_form_fields($model = null)
 	{
+
 		if (!$model)
 			$model = new Product;
 
-		$qos_val 		= array_merge([null], $model->html_list(Qos::all(), 'name'));
-		$ccs 			= array_merge([''], $model->html_list(CostCenter::all(), 'name'));
-		$sales_tariffs 	= array_merge([null], $model->html_list(PhoneTariff::where('type', '=', 'sale')->get(), 'name'));
-		$purchase_tariffs = array_merge([null], $model->html_list(PhoneTariff::where('type', '=', 'purchase')->get(), 'name'));
-		// $sales_tariffs = [0 => '', 1 => 'Basic', 2 => 'Flat'];
+		// the options should start with a 0 entry which is chosen if nothing is given explicitely
+		// (watch $this->prepare_rules())
+		// don't use array_merge for this because that reassignes the index!
+		$qos_val = $this->_add_empty_first_element_to_options($model->html_list(Qos::all(), 'name'), null);
+		$ccs = $this->_add_empty_first_element_to_options($model->html_list(CostCenter::all(), 'name'));
+		$sales_tariffs = $this->_add_empty_first_element_to_options(PhoneTariff::get_sale_tariffs());
+		$purchase_tariffs = $this->_add_empty_first_element_to_options(PhoneTariff::get_purchase_tariffs());
 
 		$tax = array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV');
 		if ($model->tax === null)
@@ -46,6 +49,7 @@ class ProductController extends \BaseController {
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
 			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)', 'select' => 'Internet Voip TV Device Other'),
 			$tax,
+			array('form_type' => 'checkbox', 'name' => 'bundled_with_voip', 'description' => 'Bundled with VoIP product?', 'select' => 'Internet'),
 		);
 	}
 
@@ -105,7 +109,6 @@ class ProductController extends \BaseController {
 				$rules[$key] .= '|not_null';
 		}
 
-		// dd($rules, $data);
 		return parent::prepare_rules($rules, $data);
 	}
 

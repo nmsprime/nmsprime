@@ -107,18 +107,12 @@ class EnviaOrderUpdaterCommand extends Command {
 	 */
 	protected function _update_orders() {
 
-		// orders with one of these orderstatus_ids are complete
-		$final_orderstatus_ids = array(
-			1001,	# erfolreich verarbeitet
-			1017,	# Stornierung bestätigt
-		);
-
 		foreach ($this->orders as $order) {
 
 			$order_id = $order->orderid;
 
-			// if current order is not finished: update
-			if (!in_array($order->orderstatus_id, $final_orderstatus_ids)) {
+			// if current order is not in final state: update
+			if (!EnviaOrder::orderstate_is_final($order)) {
 				Log::debug('Updating order '.$order_id);
 
 				// get the relative URL to execute the cron job for updating the current order_id
@@ -128,8 +122,8 @@ class EnviaOrderUpdaterCommand extends Command {
 
 				$this->_perform_curl_request($url);
 
-				if (!$this->_updated($order_id)) {
-					Log::error("Order id ".$order_id." has not been updated");
+				if ($this->_updated($order_id)) {
+					Log::info("Updated Order id ".$order_id.".");
 				}
 			}
 
@@ -174,7 +168,6 @@ class EnviaOrderUpdaterCommand extends Command {
 	/**
 	 * Check if the given order id has been updated.
 	 * This simply compares database “updated_at” against the system clock.
-	 * If updated_at is to old we assume that somenthing went wrong – and make a log entry.
 	 *
 	 * @author Patrick Reichel
 	 *
@@ -182,9 +175,9 @@ class EnviaOrderUpdaterCommand extends Command {
 	 */
 	protected function _updated($order_id) {
 
-		// not older than 2 hours (this is relatively long; but there are some timing issues and
+		// not older than 1 hours (this is relatively long; but there are some timing issues and
 		// the script is run late at night…)
-		$timedelta_max = 60 * 60 * 2;
+		$timedelta_max = 60 * 60 * 1;
 		$compare_time = date('Y-m-d H:i:s', time() - $timedelta_max);
 
 		$order = EnviaOrder::withTrashed()->where('orderid', '=', $order_id)->first();

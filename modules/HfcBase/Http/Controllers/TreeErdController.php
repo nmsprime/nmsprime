@@ -18,9 +18,9 @@ class TreeErdController extends HfcBaseController {
 
 	/*
 	 * Local tmp folder required for generating the images
-	 * app/storage/modules
+	 * relative (to /storage/app)
 	 */
-	private $path_rel = '/modules/hfcbase/erd/';
+	public static $path_rel = 'data/hfcbase/erd/';
 
 	// graph id used for graphviz (svg) naming and html map
 	private $graph_id;
@@ -48,9 +48,8 @@ class TreeErdController extends HfcBaseController {
     	$this->graph_id = rand(0, 1000000);
 
     	// Note: we create several files with differnt endings *.dot, *.svg, *.map
-		$this->filename = sha1(uniqid(mt_rand(), true));	// the filename based on a random hash
-		$this->path     = public_path().$this->path_rel;	// absolute path
-		$this->file     = $this->path.'/'.$this->filename;	// absolute path of file
+		// the relative (to /storage/app) file path based on a random hash
+		$this->file = self::$path_rel.sha1(uniqid(mt_rand(), true));
     }
 
 
@@ -86,7 +85,7 @@ class TreeErdController extends HfcBaseController {
 		// NOTE: Do not load from url via asset() with file_get_contents().
 		//       file_get_contents() does not work with port forwarding or any kind of port option.
 		//       Also curl with port setting and ssl verify disabled does not work on port forwarding. Tested about 2 hours.
-		$usemap = str_replace ('alt', 'onContextMenu="return getEl(this.id)" alt', file_get_contents(public_path().'/modules/hfcbase/erd/'.$this->filename.'.map'));
+		$usemap = str_replace ('alt', 'onContextMenu="return getEl(this.id)" alt', \Storage::get($this->file.'.map'));
 
 		$view_header = "Entity Relation Diagram";
 		$route_name  = 'Tree';
@@ -262,18 +261,15 @@ class TreeErdController extends HfcBaseController {
 		#
 		# Write Base Files *.dot for SVG translation ..
 		#
-		$fn = $this->file;
-		$handler = fOpen($fn.'.dot', "w");
-		fWrite($handler , $file);
-		fClose($handler); // Datei schließen
-
+		\Storage::put($this->file.'.dot', $file);
 		#
 		# Create SVG
 		# Debug File: Add o exec: '1>$fn.log 2>&1';
 		#
+		$fn = \Storage::getAdapter()->applyPathPrefix($this->file);
 		exec ("dot -v -Tcmapx -o $fn.map -Tsvg -o $fn.svg $fn.dot");
 
-		return $this->path_rel.'/'.$this->filename;
+		return str_replace(storage_path(), '', $fn);
 	}
 
 }
