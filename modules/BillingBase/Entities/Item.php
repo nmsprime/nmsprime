@@ -46,6 +46,9 @@ class Item extends \BaseModel {
 		$start = $this->valid_from && $this->valid_from != '0000-00-00' ? ' - '.$this->valid_from : '';
 		$end   = $this->valid_to && $this->valid_to != '0000-00-00' ? ' - '.$this->valid_to : '';
 
+		$start_fixed = boolval($this->valid_from_fixed) ? '(!)' : '';
+		$end_fixed = boolval($this->valid_to_fixed) ? '(!)' : '';
+
 		$billing_valid = $this->check_validity();
 
 		// blue colour means it will be considered for next accounting cycle
@@ -58,7 +61,7 @@ class Item extends \BaseModel {
 		return ['index' => [$this->product->name, $start, $end],
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
-		        'header' => $this->product->name.$start.$end];
+		        'header' => $this->product->name.$start.$start_fixed.$end];
 
 		// return $this->product->name.$start.$end;
 	}
@@ -418,12 +421,11 @@ class ItemObserver
 	{
 		// this doesnt work in prepare_input() !!
 		$item->valid_to = $item->valid_to ? : null;
+		$tariff = $item->contract->get_valid_tariff($item->product->type);
 
 		// set end date of old tariff to starting date of new tariff
 		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
-			$tariff = $item->contract->get_valid_tariff($item->product->type);
-
 			if ($tariff)
 			{
 				$tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
@@ -431,9 +433,11 @@ class ItemObserver
 			}
 		}
 
+		$item->contract->update_product_related_data([$item, $tariff]);
+
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);
-	
+
 	}
 
 
@@ -447,12 +451,27 @@ class ItemObserver
 		{
 			$tariff = $item->contract->get_valid_tariff($item->product->type);
 
-			if ($tariff && $tariff->id != $item->id)
-			{
+			if (
+				$tariff
+				&&
+				// prevent from writing smaller valid_to than valid_from which
+				// before adding this was caused by daily_conversion
+				($tariff->valid_from < $item->valid_from)
+				&&
+				// obsoleted by the above – but left here to keep the original condition
+				($tariff->id != $item->id)
+			) {
 				$tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
 				$tariff->save();
 			}
+			else {
+				$tariff = null;
+			}
 		}
+
+		// check if we have to update product related data (qos, voip tariff, etc.) in contract
+		// this has to be done for both objects
+		$item->contract->update_product_related_data([$item, $tariff]);
 
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);

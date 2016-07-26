@@ -4,6 +4,7 @@ namespace Modules\ProvVoipEnvia\Entities;
 
 use Log;
 use Modules\ProvBase\Entities\Contract;
+use Modules\ProvBase\Entities\VoipRelatedDataUpdaterByEnvia;
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
 use Modules\ProvVoip\Entities\PhonebookEntry;
@@ -13,6 +14,7 @@ use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
+use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
 
 // Model not found? execute composer dump-autoload in lara root dir
 class ProvVoipEnvia extends \BaseModel {
@@ -364,6 +366,8 @@ class ProvVoipEnvia extends \BaseModel {
 		if (in_array($view_level, ['contract', 'phonenumber', 'phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Orders'));
 			array_push($ret, array('linktext' => 'Get all phonenumber related orders', 'url' => $base.'misc_get_orders_csv'.$origin.$really));
+
+			array_push($ret, array('class' => 'Related orders (click to get status update)'));
 			// order(s) exist if contract has been created
 			if ($this->contract_created) {
 				foreach (EnviaOrder::withTrashed()->where('contract_id', '=', $contract_id)->orderBy("created_at")->get() as $order) {
@@ -997,6 +1001,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 	}
 
+
 	/**
 	 * Method to add customer data
 	 *
@@ -1022,6 +1027,39 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->_add_fields($inner_xml, $fields, $this->contract);
 	}
 
+
+	/**
+	 * Method to add installation address
+	 *
+	 * The address is taken from first assigned modem – EnviaTEL only accepts one installation address per contract (which IMO does not really make sense)
+	 * @todo: try to change this at Envia…
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_installation_address_data() {
+
+		$inner_xml = $this->xml->contract_data->addChild('installation_address_data');
+
+		// mapping xml to database
+		$fields = array(
+			'salutation' => 'salutation',
+			'firstname' => 'firstname',
+			'lastname' => 'lastname',
+			'street' => 'street',
+			'houseno' => 'house_number',
+			'zipcode' => 'zip',
+			'city' => 'city',
+			'birthday' => 'birthday',
+			'company' => 'company',
+		);
+
+		if (!$this->contract->modems) {
+			throw new XmlCreationError('There needs to be a modem to get installation address from.');
+		}
+		$this->_add_fields($inner_xml, $fields, $this->contract->modems[0]);
+	}
+
+
 	/**
 	 * Method to add contract data
 	 *
@@ -1033,8 +1071,36 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// add startdate for contract (default: today – there are no costs without phone numbers)
 		$inner_xml->addChild('orderdate', date('Y-m-d'));
-		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase->external_identifier);
-		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale->external_identifier);
+
+		// check if there are missing values (e.g. they are missing if billing is enabled but man forgot to add voip item before calling this
+		$value_missing = False;
+		if (!boolval($this->contract->phonetariff_purchase_next)) {
+			$value_missing = True;
+			$msg = 'phonenumber_purchase_next not set in contract '.$this->contract->id;
+			if (\PPModule::is_active('billingbase')) {
+				$msg .= ' – maybe you have to create a Voip item with future start date?';
+			}
+		}
+
+		if (!boolval($this->contract->phonetariff_sale_next)) {
+			$value_missing = True;
+			$msg = 'phonenumber_sale_next not set in contract '.$this->contract->id;
+			if (\PPModule::is_active('billingbase')) {
+				$msg .= ' – maybe you have to create a Voip item with future start date?';
+			}
+		}
+
+		if ($value_missing) {
+			throw new XmlCreationError($msg);
+		}
+
+		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
+		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale_next->external_identifier);
+
+		// set phonebookentry to no by default ⇒ this later can be overwritten by excplicitely creating a phonebookentry
+		 $inner_xml->addChild('phonebookentry_phone', 0);
+		 $inner_xml->addChild('phonebookentry_fax', 0);
+		 $inner_xml->addChild('phonebookentry_reverse_search', 0);
 
 	}
 
@@ -1581,6 +1647,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data = array();
 
 		$order_data['orderid'] = $xml->orderid;
+		$order_data['method'] = 'contract/create';
 		$order_data['customerreference'] = $xml->customerreference;
 		$order_data['contractreference'] = $xml->contractreference;
 		$order_data['contract_id'] = $this->contract->id;
@@ -1677,6 +1744,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data = array();
 
 		$order_data['orderid'] = $xml->orderid;
+		$order_data['method'] = 'contract/change_tariff';
 		$order_data['contract_id'] = $this->contract->id;
 		$order_data['ordertype'] = 'contract/change_tariff';
 		$order_data['orderstatus'] = 'initializing';
@@ -1700,6 +1768,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data = array();
 
 		$order_data['orderid'] = $xml->orderid;
+		$order_data['method'] = 'contract/change_variation';
 		$order_data['contract_id'] = $this->contract->id;
 		$order_data['ordertype'] = 'contract/change_variation';
 		$order_data['orderstatus'] = 'initializing';
@@ -1723,6 +1792,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data = array();
 
 		$order_data['orderid'] = $xml->orderid;
+		$order_data['method'] = 'customer/update';
 		$order_data['contract_id'] = $this->contract->id;
 		$order_data['ordertype'] = 'customer/update';
 		$order_data['orderstatus'] = 'initializing';
@@ -1772,9 +1842,20 @@ class ProvVoipEnvia extends \BaseModel {
 			$order_id = $result['orderid'];
 			$order = EnviaOrder::where('orderid', $order_id)->first();
 
-			// if order already exists: do nothing (will be updated by order_get_status
+			// check if this order already exists within the database
 			if (!is_null($order)) {
-				$out .= '<br>Order '.$order_id.' already exists in database. Skipping.';
+
+				// ordertype_id is not given by order_get_status: we have to set it here if there are any changes
+				if ($order->ordertype_id != $result['ordertype_id']) {
+					$order->ordertype_id = $result['ordertype_id'];
+					$order->save();
+					Log::info('Updated ordertype_id in table enviaorder for order '.$order_id);
+					$out .= '<br>Order '.$order_id.' already exists but updated ordertype_id.';
+				}
+				else {
+					// do nothing (will be updated by order_get_status)
+					$out .= '<br>Order '.$order_id.' already exists in database. Skipping.';
+				}
 				continue;
 			}
 
@@ -1883,104 +1964,240 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$out .= "<table>";
 
+		// flag to detect if an order has to be saved or not
+		$order_changed = False;
+
+		// for each database field:
+		//   - check if related data in XML is given
+		//   - if so: check if data has changed to this in database
+		//   - if so: change in order object and set changed flag
+		//   - print the current value
 		if (boolval(sprintf($xml->ordertype_id))) {
-			$order->ordertype_id = $xml->ordertype_id;
+			if ($order->ordertype_id != $xml->ordertype_id) {
+				$order->ordertype_id = $xml->ordertype_id;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Ordertype ID: </td><td>".$xml->ordertype_id."</td></tr>";
-		}
-		else {
-			$order->ordertype_id = null;
 		}
 
 		if (boolval(sprintf($xml->ordertype))) {
-			$order->ordertype = $xml->ordertype;
+			if ($order->ordertype != $xml->ordertype) {
+				$order->ordertype = $xml->ordertype;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Ordertype: </td><td>".$xml->ordertype."</td></tr>";
-		}
-		else {
-			$order->ordertype = null;
 		}
 
 		if (boolval(sprintf($xml->orderstatus_id))) {
-			$order->orderstatus_id = $xml->orderstatus_id;
+			if ($order->orderstatus_id != $xml->orderstatus_id) {
+				$order->orderstatus_id = $xml->orderstatus_id;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Orderstatus ID: </td><td>".$xml->orderstatus_id."</td></tr>";
-		}
-		else {
-			$order->orderstatus_id = null;
 		}
 
 		if (boolval(sprintf($xml->orderstatus))) {
-			$order->orderstatus = $xml->orderstatus;
+			if ($order->orderstatus != $xml->orderstatus) {
+				$order->orderstatus = $xml->orderstatus;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Orderstatus: </td><td>".$xml->orderstatus."</td></tr>";
-		}
-		else {
-			$order->orderstatus = null;
 		}
 
 		if (boolval(sprintf($xml->ordercomment))) {
-			$order->ordercomment = $xml->ordercomment;
+			if ($order->ordercomment != $xml->ordercomment) {
+				$order->ordercomment = $xml->ordercomment;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Ordercomment: </td><td>".$xml->ordercomment."</td></tr>";
-		}
-		else {
-			$order->ordercomment = null;
 		}
 
 		if (boolval(sprintf($xml->customerreference))) {
-			$order->customerreference = $xml->customerreference;
+			if ($order->customerreference != $xml->customerreference) {
+				$order->customerreference = $xml->customerreference;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Customerreference: </td><td>".$xml->customerreference."</td></tr>";
-		}
-		else {
-			$order->customerreference = null;
 		}
 
 		if (boolval(sprintf($xml->contractreference))) {
-			$order->contractreference = $xml->contractreference;
+			if ($order->contractreference != $xml->contractreference) {
+				$order->contractreference = $xml->contractreference;
+				$order_changed = True;
+			}
 			$out .= "<tr><td>Contractreference: </td><td>".$xml->contractreference."</td></tr>";
-		}
-		else {
-			$order->contractreference = null;
 		}
 
 		if (boolval(sprintf($xml->orderdate))) {
-			$order->orderdate = $xml->orderdate;
+			if ($order->orderdate != \Str::limit($xml->orderdate, 10, '')) {
+				$order->orderdate = $xml->orderdate;
+				$order_changed = True;
+			}
 			// TODO: do we need to store the orderdate in other tables (contract, phonnumber??)
 			$out .= "<tr><td>Orderdate: </td><td>".\Str::limit($xml->orderdate, 10,  '')."</td></tr>";
-		}
-		else {
-			$order->orderdate = null;
 		}
 
 		$out .= "</table><br>";
 
-		$order->save();
+		// check if we have to write object to database: do so to store the date of the last update
+		if ($order_changed) {
+			$order->save();
+			Log::info('Database table enviaorder updated for order with id '.$order_id);
+			$out .= "<br><b>Order table updated</b>";
+		}
+
+		// update related tables if order has changed
+		if ($order_changed) {
+
+			// if cancelation of an order failed: restore the original order
+			if (EnviaOrder::order_cancels_other_order($order) && EnviaOrder::order_failed($order))
+				$out = $this->_process_order_get_status_response_for_cancelation_failed($order, $out);
+
+			// if phonenumber related: update phonenumbermanagement
+			if (EnviaOrder::ordertype_is_phonenumber_related($order))
+				$out = $this->_process_order_get_status_response_for_phonenumbermanagement($order, $out);
+
+			// update contract
+			$out = $this->_process_order_get_status_response_for_contract($order, $out);
+		}
+
+		return $out;
+	}
+
+
+	/**
+	 * Apply order changes to phonenumbermanagement.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_get_status_response_for_phonenumbermanagement($order, $out) {
+
+		$phonenumbermanagement_changed = False;
+
+		// phonenumber entry can be missing on order (e.g. on manually created orders); this information will be added by the nightly cron job – so we can stop here
+		if (boolval($order->phonenumber_id)) {
+			$phonenumber = Phonenumber::findOrFail($order->phonenumber_id);
+			$phonenumbermanagement = $phonenumber->PhonenumberManagement;
+
+			// actions to perform if order handles creation of voip account
+			if (EnviaOrder::order_creates_voip_account($order)) {
+				// we got a new target date
+				if (!\Str::startsWith($phonenumbermanagement->activation_date, $order->orderdate)) {
+					$phonenumbermanagement->activation_date = $order->orderdate;
+					Log::info('New target date for activation ('.$order->orderdate.') set in phonenumbermanagement with id '.$phonenumbermanagement->id);
+					$phonenumbermanagement_changed = True;
+				}
+				// all is fine: fix the activation date
+				if (EnviaOrder::order_successful($order)) {
+					if (!\Str::startsWith($phonenumbermanagement->external_activation_date, $order->orderdate)) {
+						$phonenumbermanagement->external_activation_date = $order->orderdate;
+						Log::info('Creation of voip account successful; will be activated on '.$order->orderdate.' (phonenumbermanagement with id '.$phonenumbermanagement->id.')');
+						$phonenumbermanagement_changed = True;
+					}
+				}
+			}
+
+			// actions to perform if order handles termination of voip account
+			if (EnviaOrder::order_terminates_voip_account($order)) {
+				// we got a new target date
+				if (!\Str::startsWith($phonenumbermanagement->deactivation_date, $order->orderdate)) {
+					$phonenumbermanagement->deactivation_date = $order->orderdate;
+					Log::info('New target date for deactivation ('.$order->orderdate.') set in phonenumbermanagement with id '.$phonenumbermanagement->id);
+					$phonenumbermanagement_changed = True;
+				}
+				// all is fine: fix the activation date
+				if (EnviaOrder::order_successful($order)) {
+					if (!\Str::startsWith($phonenumbermanagement->external_deactivation_date, $order->orderdate)) {
+						$phonenumbermanagement->external_deactivation_date = $order->orderdate;
+						Log::info('Termination of voip account successful; will be activated on '.$order->orderdate.' (phonenumbermanagement with id '.$phonenumbermanagement->id.')');
+						$phonenumbermanagement_changed = True;
+					}
+				}
+			}
+		}
+
+		if ($phonenumbermanagement_changed) {
+			$phonenumbermanagement->save();
+			Log::info('Database table phonenumbermanagement updated for phonenumbermanagement with id '.$phonenumbermanagement->id);
+			$out .= "<br><b>PhonenumberManagement table updated</b>";
+		};
+
+		return $out;
+	}
+
+
+	/**
+	 * Apply order changes to contract (and mayby to items)
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_get_status_response_for_contract($order, $out) {
 
 		// get the related contract to check if external identifier are set
 		$contract = Contract::findOrFail($order->contract_id);
+		$contract_changed = False;
 
 		// check external identifiers:
 		//   if not set (e.g. not known at manual creation time: update
 		//   if set to different values: something went wrong!
 		if (!boolval($contract->contract_external_id)) {
-			$contract->contract_external_id = $xml->contractreference;
-			$contract->save();
+			$contract->contract_external_id = $order->contractreference;
+			$contract_changed = True;
 		}
-		if ($xml->contractreference != $contract->contract_external_id) {
+		if ($order->contractreference != $contract->contract_external_id) {
 			$msg = '<h4>Error: Contract reference in order '.$order->contractreference.' and contract '.$contract->contract_external_id.' are different!</h4>';
 			$out .= $msg;
 			Log::error($msg);
 		}
 
 		if (!boolval($contract->customer_external_id)) {
-			$contract->customer_external_id = $xml->customerreference;
-			$contract->save();
+			$contract->customer_external_id = $order->customerreference;
+			$contract_changed = True;
 		}
-		if ($xml->customerreference != $contract->customer_external_id) {
+		if ($order->customerreference != $contract->customer_external_id) {
 			$msg = '<h4>Error: Customer reference in order '.$order->customerreference.' and contract '.$contract->customer_external_id.' are different!</h4>';
 			$out .= $msg;
 			Log::error($msg);
 		}
 
-		$out .= "<b>Database updated</b>";
+		if ($contract_changed) {
+			$contract->save();
+			Log::info('Database table contract updated for contract with id '.$contract_id);
+			$out .= "<br><b>Contract table updated</b>";
+		};
+
+		// finally check if there is data e.g. in items to update – use the updater from Contract.php
+		// perform update only if order/get_status has been triggered manually
+		// if run by cron we first get the current state for all orders and then calling the update method from EnviaOrderUpdaterCommand
+		// TODO: hier weiter
+		if (\Str::endswith(\Request::path(), '/request/order_get_status')) {
+			$updater = new VoipRelatedDataUpdaterByEnvia($order->contract_id);
+		};
+
 		return $out;
 	}
+
+
+	/**
+	 * Restore canceled order.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_get_status_response_for_cancelation_failed($order, $out) {
+
+		$order_to_restore = EnviaOrder::withTrashed()->where('orderid', $order->related_order_id)->first();
+
+		if ($order_to_restore && $order_to_restore->trashed()) {
+
+			$order_to_restore->restore();
+			Log::info('Cancel of order '.$order_to_restore->id.' failed. Restored soft deleted order');
+			$out .= '<br><b>Cancelation failed. Restored order with id '.$order_to_restore->id.' (Envia ID '.$order_to_restore->orderid.')</b>';
+		}
+
+		return $out;
+
+	}
+
 
 	/**
 	 * Process data after successful voipaccount creation
@@ -1997,6 +2214,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data = array();
 
 		$order_data['orderid'] = $xml->orderid;
+		$order_data['method'] = 'voip_account/create';
 		$order_data['contract_id'] = $this->contract->id;
 		$order_data['phonenumber_id'] = $this->phonenumber->id;
 		$order_data['ordertype'] = 'voip_account/create';
@@ -2046,6 +2264,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data = array();
 
 		$order_data['orderid'] = $xml->orderid;
+		$order_data['method'] = 'order/cancel';
 		$order_data['contract_id'] = $canceled_enviaorder->contract_id;
 		$order_data['phonenumber_id'] = $canceled_enviaorder->phonenumber_id;
 		$order_data['ordertype'] = 'Stornierung eines Auftrags';
@@ -2078,6 +2297,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data = array();
 
 		$order_data['orderid'] = $xml->orderid;
+		$order_data['method'] = 'order/create_attachment';
 		$order_data['contract_id'] = $related_enviaorder->contract_id;
 		$order_data['phonenumber_id'] = $related_enviaorder->phonenumber_id;
 		$order_data['ordertype'] = 'order/create_attachment';

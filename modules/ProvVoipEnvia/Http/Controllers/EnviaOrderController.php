@@ -23,6 +23,7 @@ class EnviaOrderController extends \BaseController {
 		$init_values = array();
 		$phonenumber_id = null;
 		$contract_id = null;
+		$related_id = null;
 
 		// make order_id fillable on create => so man can add an order created at the web GUI to keep data consistent
 		if (!$model->exists) {
@@ -50,6 +51,21 @@ class EnviaOrderController extends \BaseController {
 
 		}
 		else {
+
+			// try to get related order
+			// this can also be deleted!
+			$related_id = $model->related_order_id;
+			if (boolval($related_id)) {
+				$init_values['related_order_id_show'] = $related_id;
+				$order_related = EnviaOrder::withTrashed()->where('orderid', $related_id)->first();
+				$init_values['related_order_type'] = $order_related->ordertype;
+				$init_values['related_order_created_at'] = $order_related->created_at;
+				$init_values['related_order_updated_at'] = $order_related->updated_at;
+				if (boolval($order_related->deleted_at)) {
+					$init_values['related_order_deleted_at'] = $order_related->deleted_at;
+				}
+			}
+
 			$order_id = array('form_type' => 'text', 'name' => 'orderid', 'description' => 'Order ID', 'options' => ['readonly']);
 		}
 
@@ -57,6 +73,10 @@ class EnviaOrderController extends \BaseController {
 		// label has to be the same like column in sql table
 		$ret_tmp = array(
 			$order_id,
+			array('form_type' => 'text', 'name' => 'created_at', 'description' => 'Created at', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'updated_at', 'description' => 'Last status update', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'last_user_interaction', 'description' => 'Last user interaction', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'method', 'description' => 'Methode', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordertype_id', 'description' => 'Ordertype ID', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordertype', 'description' => 'Ordertype', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'orderstatus_id', 'description' => 'Orderstatus ID', 'options' => ['readonly'], 'hidden' => 'C'),
@@ -64,10 +84,23 @@ class EnviaOrderController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'orderdate', 'description' => 'Orderdate', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordercomment', 'description' => 'Ordercomment', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'customerreference', 'description' => 'Envia customer reference', 'options' => ['readonly'], 'hidden' => 'C'),
-			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'Envia contract reference', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'Envia contract reference', 'options' => ['readonly'], 'hidden' => 'C', 'space' => '1'),
 			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract ID', 'options' => ['readonly'], 'hidden' => 1),
 			array('form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber ID', 'options' => ['readonly'], 'hidden' => 1),
 		);
+
+		// add information to related order (e.g. for “Stornierung”) if exists
+		if (boolval($related_id)) {
+			// this fields are for information only => they have to be removed in observer on updating
+			// attention: related order can also be deleted!
+			array_push($ret_tmp, array('form_type' => 'text', 'name' => 'related_order_id_show', 'description' => 'Related order ID', 'options' => ['readonly'], 'hidden' => 'C'));
+			array_push($ret_tmp, array('form_type' => 'text', 'name' => 'related_order_type', 'description' => 'Related order type', 'options' => ['readonly'], 'hidden' => 'C'));
+			array_push($ret_tmp, array('form_type' => 'text', 'name' => 'related_order_created_at', 'description' => 'Related order created', 'options' => ['readonly'], 'hidden' => 'C'));
+			array_push($ret_tmp, array('form_type' => 'text', 'name' => 'related_order_updated_at', 'description' => 'Related order last updated', 'options' => ['readonly'], 'hidden' => 'C'));
+			if (array_key_exists('related_order_deleted_at', $init_values)) {
+				array_push($ret_tmp, array('form_type' => 'text', 'name' => 'related_order_deleted_at', 'description' => 'Related order deleted', 'options' => ['readonly'], 'hidden' => 'C'));
+			};
+		}
 
 
 		// add init values if set
@@ -119,6 +152,7 @@ class EnviaOrderController extends \BaseController {
 		}
 
 		// finally we add the related ids
+		$params['method'] = 'manually';
 		$params['phonenumber_id'] = $phonenumbermanagement->phonenumber->id;
 		$params['contract_id'] = $phonenumbermanagement->phonenumber->mta->modem->contract->id;
 		$params['contractreference'] = $phonenumbermanagement->phonenumber->mta->modem->contract->contract_external_id;
@@ -128,6 +162,77 @@ class EnviaOrderController extends \BaseController {
 		// call create again with extended parameters
 		return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderController@create', $params);
 	}
+
+
+	/**
+	 * Overwrite base method.
+	 *
+	 * Here we inject the following data:
+	 *	- information about needed/possible user actions
+	 *	- mailto: link to Envia support as additional data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_additional_data_for_edit_view($model) {
+
+		$additional_data = array(
+			'user_actions' => $model->get_user_action_information(),
+			'mailto_links' => $model->get_mailto_links(),
+		);
+
+		return $additional_data;
+	}
+
+	/**
+	 * Call this method to mark an order as solved.
+	 * (that is: update last_user_interaction in database to current date without touching updated_at)
+	 *
+	 * After triggering the action this will redirect to edit
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function mark_solved($id) {
+
+		// check if user has the right to perform actions against Envia API
+		\App\Http\Controllers\BaseAuthController::auth_check('edit', \NamespaceController::get_model_name());
+		\App\Http\Controllers\BaseAuthController::auth_check('edit', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+
+		$model = EnviaOrder::findOrFail($id);
+
+		$model->mark_as_solved();
+
+		return \Redirect::back();
+	}
+
+
+	/**
+	 * Before showing the edit form we update the order using envia api
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function edit($id) {
+
+		// call parent and store return
+		// so authentication is done!
+		$parent_return = parent::edit($id);
+
+		// if already updated against Envia API: show edit form
+		if (\Input::get('recently_updated', false)) {
+			return $parent_return;
+		}
+
+		// else redirect to update order
+		$params = array(
+			'job' => 'order_get_status',
+			'order_id' => EnviaOrder::findOrFail($id)->orderid,
+			'really' => 'true',
+			'origin' => urlencode(\URL::current()),
+			'instant_redirect' => true,
+		);
+
+		return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request', $params);
+	}
+
 
 	/**
 	 * Overwrite base function => before creation in database we have to check if order exists at envia!
@@ -199,6 +304,37 @@ class EnviaOrderController extends \BaseController {
 		);
 
 		return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request', $params);
+	}
+
+
+	/**
+	 * Overwrite BaseController method => allow some fields to be NULL in database if not set
+	 * Otherwise we get entries like 0000-00-00, which cause crashes on validation rules in case of update
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function prepare_input($data) {
+
+		$data = parent::prepare_input($data);
+
+		$nullable_fields = array(
+			'ordertype_id',
+			'ordertype',
+			'orderstatus_id',
+			'orderstatus',
+			'orderdate',
+			'ordercomment',
+			'related_order_id',
+			'customerreference',
+			'contractreference',
+			'contract_id',
+			'phonenumber_id',
+			'last_user_interaction',
+		);
+		$data = $this->_nullify_fields($data, $nullable_fields);
+
+
+		return $data;
 	}
 
 }

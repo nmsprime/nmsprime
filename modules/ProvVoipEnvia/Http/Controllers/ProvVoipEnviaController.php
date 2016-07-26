@@ -6,6 +6,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\View;
 
 use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
+use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
 
 class ProvVoipEnviaController extends \BaseController {
 
@@ -527,6 +528,19 @@ class ProvVoipEnviaController extends \BaseController {
 	}
 
 
+	protected function _show_xml_creation_error($msg, $origin) {
+
+		$ret = array();
+
+		$ret['plain_html'] = '';
+		$ret['plain_html'] .= "<h4>There was error creating XML to be sent to Envia:</h4>";
+		$ret['plain_html'] .= "<h5>".$msg."</h5><br><br>";
+
+		$ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">Bring me back…</a>';
+
+		return $ret;
+	}
+
 	/**
 	 * Get confirmation to continue with chosen action.
 	 * Used for every job that changes data at Envia.
@@ -539,7 +553,7 @@ class ProvVoipEnviaController extends \BaseController {
 		$ret = array();
 
 		$ret['plain_html'] = '';
-		$ret['plain_html'] = "<h4>Data to be sent to Envia</h4>";
+		$ret['plain_html'] .= "<h4>Data to be sent to Envia</h4>";
 		$ret['plain_html'] .= "URL: ".$url."<br><br>";
 		$ret['plain_html'] .= "<pre>";
 		$ret['plain_html'] .= ProvVoipEnvia::prettify_xml($payload, True);
@@ -666,7 +680,17 @@ class ProvVoipEnviaController extends \BaseController {
 		}
 
 		// the requests payload (=XML)
-		$payload = $this->model->get_xml($job);
+		$xml_creation_failed = True;
+		try {
+			$payload = $this->model->get_xml($job);
+			$xml_creation_failed = False;
+		}
+		catch (XmlCreationError $ex) {
+			$payload = $ex->getMessage();
+		}
+		catch (\Exception $ex) {
+			throw $ex;
+		}
 
 		// extract origin
 		$origin = \Input::get('origin', \URL::to('/'));
@@ -675,26 +699,38 @@ class ProvVoipEnviaController extends \BaseController {
 
 		$view_path = \NamespaceController::get_view_name().'.request';
 
-		// check if job to do is allowed
-		// e.g. to prevent double contract creation on pressing <F5>
-		if (!$this->_job_allowed($job)) {
-			$view_var = $this->_show_job_not_allowed_info($job, $origin);
-		}
-		// on jobs changing data at Envia: Ask if job shall be performed
-		elseif (!\Input::get('really', False)) {
-			$view_var = $this->_show_confirmation_request($payload, $url, $origin);
+		if ($xml_creation_failed) {
+			$view_var = $this->_show_xml_creation_error($payload, $origin);
 		}
 		else {
+			// check if job to do is allowed
+			// e.g. to prevent double contract creation on pressing <F5>
+			if (!$this->_job_allowed($job)) {
+				$view_var = $this->_show_job_not_allowed_info($job, $origin);
+			}
+			// on jobs changing data at Envia: Ask if job shall be performed
+			elseif (!\Input::get('really', False)) {
+				$view_var = $this->_show_confirmation_request($payload, $url, $origin);
+			}
+			else {
 
-			$view_var = $this->_perform_request($url, $payload, $job);
+				$view_var = $this->_perform_request($url, $payload, $job);
 
-			// add link to original page
-			$origin_link = '<hr>';
-			$origin_name = urldecode($origin);
-			$origin_name = explode($_SERVER['CONTEXT_PREFIX'], $origin_name);
-			$origin_name = array_pop($origin_name);
-			$origin_link .= '<h5><b><a href="'.urldecode($origin).'" target="_self">Back to '.$origin_name.'</a></b></h5>';
-			$view_var['plain_html'] .= $origin_link;
+				// add link to original page
+				$origin_link = '<hr>';
+				$origin_name = urldecode($origin);
+				$origin_name = explode($_SERVER['CONTEXT_PREFIX'], $origin_name);
+				$origin_name = array_pop($origin_name);
+				$origin_link .= '<h5><b><a href="'.urldecode($origin).'" target="_self">Back to '.$origin_name.'</a></b></h5>';
+				$view_var['plain_html'] .= $origin_link;
+			}
+
+			// check if there should be an instant redirect – if so do so :-)
+			if (\Input::get('instant_redirect', false)) {
+				// we have to add the GET param manually as Redirect::to()->with('recentlty_updated', true) is not running
+				// this param is used to break out of the endless redirect loop :-)
+				return \Redirect::to(urldecode($origin).'?recently_updated=1');
+			}
 		}
 
 		return View::make($view_path, $this->compact_prep_view(compact('model_name', 'view_header', 'view_var')));
