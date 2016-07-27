@@ -37,6 +37,10 @@ class SettlementRun extends \BaseModel {
 		        'header' => $this->year.' - '.$this->month.' - '.$this->updated_at->__get('day')];
 	}
 
+	public function index_list()
+	{
+		return $this->orderBy('id', 'desc')->get();
+	}
 
 	public function view_has_many()
 	{
