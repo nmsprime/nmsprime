@@ -467,11 +467,12 @@ class ItemObserver
 			else {
 				$tariff = null;
 			}
+
+			// check if we have to update product related data (qos, voip tariff, etc.) in contract
+			// this has to be done for both objects
+			$item->contract->update_product_related_data([$item, $tariff]);
 		}
 
-		// check if we have to update product related data (qos, voip tariff, etc.) in contract
-		// this has to be done for both objects
-		$item->contract->update_product_related_data([$item, $tariff]);
 
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);
