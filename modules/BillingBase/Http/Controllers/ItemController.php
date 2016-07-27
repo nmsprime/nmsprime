@@ -48,7 +48,7 @@ class ItemController extends \BaseController {
 			array('form_type' => 'checkbox', 'name' => 'valid_from_fixed', 'description' => 'Valid from fixed', 'help' => 'Fixed dates are used for billing and not updated by external orders'),
 			array('form_type' => 'text', 'name' => 'valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD']),
 			array('form_type' => 'checkbox', 'name' => 'valid_to_fixed', 'description' => 'Valid to fixed', 'help' => 'Fixed dates are used for billing and not updated by external orders'),
-			array('form_type' => 'text', 'name' => 'credit_amount', 'description' => 'Credit Amount', 'select' => 'Credit'),
+			array('form_type' => 'text', 'name' => 'credit_amount', 'description' => 'Credit Amount', 'select' => 'Credit', 'help' => 'Gross price actualy - will be changed in future to Net price'),
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
 			array('form_type' => 'text', 'name' => 'accounting_text', 'description' => 'Accounting Text (optional)')
 		);
