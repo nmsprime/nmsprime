@@ -84,7 +84,8 @@ class CccAuthuserController extends \BaseController {
 
 		// dd($login_data);
 
-		// create pdf 
+		// create pdf
+		// TODO: try - catch exceptions that this function shall throw
 		$ret = $this->make_conn_info_pdf();
 
 		if ($ret)
@@ -131,9 +132,13 @@ class CccAuthuserController extends \BaseController {
 
 		system("pdflatex $filename &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
 
+		// TODO: use exception handling to handle errors
 		switch ($ret)
 		{
 			case 0: break;
+			case 1: 
+				Log::error("PdfLatex - Syntax error in tex template (misspelled placeholder?)", [$template_dir.$template_filename, $dir_path.$filename]);
+				return null;
 			case 127:
 				Log::error("Illegal Command - PdfLatex not installed!");
 				return null;
