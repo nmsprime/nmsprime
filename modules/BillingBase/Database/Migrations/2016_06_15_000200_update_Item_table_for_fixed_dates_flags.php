@@ -23,8 +23,8 @@ class UpdateItemTableForFixedDatesFlags extends BaseMigration {
     {
         Schema::table($this->tablename, function(Blueprint $table) {
 
-			$table->boolean('valid_from_fixed')->default(False);
-			$table->boolean('valid_to_fixed')->default(False);
+			$table->boolean('valid_from_fixed')->after('valid_from')->default(False);
+			$table->boolean('valid_to_fixed')->after('valid_to')->default(False);
 		});
 	}
 
