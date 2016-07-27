@@ -245,7 +245,7 @@ function clk_init_2()
 				alert('Modem Positioning System',
 				      'Lat: ' + minLat + ' to ' + maxLat+ '<br>Lng: ' + minLng + ' to ' + maxLng + '<br><br>' +
 				      '<li><a href="'+ global_url + 'CustomerRect/' + minLng + '/' + maxLng + '/' + minLat + '/' + maxLat + '">Show Customer in Rectangle</a><br>' +
-				      '</li><li><a href=' + global_url + '/Mpr/create?value=' + x1 + ';' + x2 + ';' + y1 + ';' +y2 + '">Add Modem Positioning Rule</a>' +
+				      '</li><li><a href=' + global_url + 'Mpr/create?value=' + x1 + ';' + x2 + ';' + y1 + ';' +y2 + '">Add Modem Positioning Rule</a>' +
 				      '</li><br>(x > ' + x1 + ' AND x <  ' + x2 + ') AND (y > ' + y1 + ' AND y < ' + y2 + ')', {width:500} );
 
             }
