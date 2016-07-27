@@ -103,12 +103,6 @@ class ProductController extends \BaseController {
 				break;
 		}
 
-		foreach ($rules as $key => $value)
-		{
-			if (strpos($value, 'required_if') !== false)
-				$rules[$key] .= '|not_null';
-		}
-
 		return parent::prepare_rules($rules, $data);
 	}
 
