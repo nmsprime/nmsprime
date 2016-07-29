@@ -163,7 +163,7 @@ class accountingCommand extends Command {
 				// 	break;
 				// }
 
-				$acc = $sepa_accs->find($costcenter->sepa_account_id);
+				$acc = $sepa_accs->find($costcenter->sepaaccount_id);
 
 
 				// increase invoice nr of sepa account, increase charge for account by price, calculate tax
@@ -218,7 +218,7 @@ class accountingCommand extends Command {
 				}
 
 				// accounting record
-				$acc = $sepa_accs->find($c->costcenter->sepa_account_id);
+				$acc = $sepa_accs->find($c->costcenter->sepaaccount_id);
 				$rec = new AccountingRecord;
 				$rec->add_cdr($c, $acc, $charge, $calls);
 				$acc->add_cdr_accounting_record($c, $charge, $calls);

@@ -42,12 +42,6 @@ class CostCenter extends \BaseModel {
 		return $this->orderBy('id')->get();
 	}
 
-	// public function view_has_many()
-	// {
-	// 	return array(
-	// 		);
-	// }
-
 
 
 	/**
@@ -55,7 +49,7 @@ class CostCenter extends \BaseModel {
 	 */
 	public function sepa_account ()
 	{
-		return $this->belongsTo('Modules\BillingBase\Entities\SepaAccount', 'sepa_account_id');
+		return $this->belongsTo('Modules\BillingBase\Entities\SepaAccount', 'sepaaccount_id');
 	}
 
 	public function items()
