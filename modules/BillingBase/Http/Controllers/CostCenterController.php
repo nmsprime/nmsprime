@@ -27,7 +27,7 @@ class CostCenterController extends \BaseController {
 		return array(
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name'),
 			array('form_type' => 'text', 'name' => 'number', 'description' => 'Number'),
-			array('form_type' => 'select', 'name' => 'sepa_account_id', 'description' => 'Associated SEPA Account', 'value' => $list),
+			array('form_type' => 'select', 'name' => 'sepaaccount_id', 'description' => 'Associated SEPA Account', 'value' => $list),
 			array('form_type' => 'select', 'name' => 'billing_month', 'description' => 'Month to create Bill', 'value' => $months, 'help' => 'Default: 6 (June) - if not set. Has to be minimum current month on change to avoid missing payments'),
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
 		);

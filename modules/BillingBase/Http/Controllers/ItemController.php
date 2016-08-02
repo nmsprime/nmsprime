@@ -21,7 +21,7 @@ class ItemController extends \BaseController {
 		$products = Product::select('id', 'type', 'name')->orderBy('type')->orderBy('name')->get()->all();
 
 		// $prods = $model->html_list($products, 'name');
-		$prods = [];
+		$prods[0] = '';
 		foreach ($products as $p)
 			$prods[$p->id] = $p->type.' - '.$p->name;
 

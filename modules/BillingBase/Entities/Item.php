@@ -58,10 +58,12 @@ class Item extends \BaseModel {
 		if (($this->get_start_time() < strtotime(date('Y-m-01'))) && !$billing_valid)
 			$bsclass = 'danger';
 
-		return ['index' => [$this->product->name, $start, $end],
+		$name = isset($this->product) ? $this->product->name : $this->accounting_text;
+
+		return ['index' => [$name, $start, $end],
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
-		        'header' => $this->product->name.$start.$start_fixed.$end];
+		        'header' => $name.$start.$start_fixed.$end];
 
 		// return $this->product->name.$start.$end;
 	}
@@ -89,7 +91,6 @@ class Item extends \BaseModel {
 	{
 		return $this->belongsTo('Modules\BillingBase\Entities\Costcenter');
 	}
-
 
 
 	/*
