@@ -65,7 +65,7 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function costcenters ()
 	{
-		return $this->hasMany('Modules\BillingBase\Entities\CostCenter');
+		return $this->hasMany('Modules\BillingBase\Entities\CostCenter', 'sepaaccount_id');
 	}
 
 	public function company ()

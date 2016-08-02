@@ -21,6 +21,15 @@ class Salesman extends \BaseModel {
 		);
 	}
 
+	/*
+	 * Init Observers
+	 */
+	public static function boot()
+	{
+		Salesman::observe(new SalesmanObserver);
+		parent::boot();
+	}
+
 
 	/**
 	 * View related stuff
@@ -145,7 +154,7 @@ add:
  *              'deleting', 'deleted', 'saving', 'saved',
  *              'restoring', 'restored',
  */
-class ContractObserver
+class SalesmanObserver
 {
 	public function creating($salesman)
 	{

@@ -58,10 +58,12 @@ class Item extends \BaseModel {
 		if (($this->get_start_time() < strtotime(date('Y-m-01'))) && !$billing_valid)
 			$bsclass = 'danger';
 
-		return ['index' => [$this->product->name, $start, $end],
+		$name = isset($this->product) ? $this->product->name : $this->accounting_text;
+
+		return ['index' => [$name, $start, $end],
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
-		        'header' => $this->product->name.$start.$start_fixed.$end];
+		        'header' => $name.$start.$start_fixed.$end];
 
 		// return $this->product->name.$start.$end;
 	}
@@ -89,7 +91,6 @@ class Item extends \BaseModel {
 	{
 		return $this->belongsTo('Modules\BillingBase\Entities\Costcenter');
 	}
-
 
 
 	/*
@@ -467,11 +468,12 @@ class ItemObserver
 			else {
 				$tariff = null;
 			}
+
+			// check if we have to update product related data (qos, voip tariff, etc.) in contract
+			// this has to be done for both objects
+			$item->contract->update_product_related_data([$item, $tariff]);
 		}
 
-		// check if we have to update product related data (qos, voip tariff, etc.) in contract
-		// this has to be done for both objects
-		$item->contract->update_product_related_data([$item, $tariff]);
 
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);

@@ -1076,7 +1076,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$value_missing = False;
 		if (!boolval($this->contract->phonetariff_purchase_next)) {
 			$value_missing = True;
-			$msg = 'phonenumber_purchase_next not set in contract '.$this->contract->id;
+			$msg = 'next_purchase_tariff not set in contract '.$this->contract->id;
 			if (\PPModule::is_active('billingbase')) {
 				$msg .= ' – maybe you have to create a Voip item with future start date?';
 			}
@@ -1084,7 +1084,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		if (!boolval($this->contract->phonetariff_sale_next)) {
 			$value_missing = True;
-			$msg = 'phonenumber_sale_next not set in contract '.$this->contract->id;
+			$msg = 'next_voip_id not set in contract '.$this->contract->id;
 			if (\PPModule::is_active('billingbase')) {
 				$msg .= ' – maybe you have to create a Voip item with future start date?';
 			}
