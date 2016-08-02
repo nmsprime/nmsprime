@@ -140,6 +140,13 @@ class accountingCommand extends Command {
 			 */
 			foreach ($c->items as $item)
 			{
+				// skip items that are related to a deleted product
+				if (!isset($item->product))
+				{
+					$logger->addDebug('Product '.$item->accounting_text.' was deleted', [$c->id]);
+					continue;
+				}
+
 				// skip invalid items
 				if (!$item->check_validity($item->get_billing_cycle() == 'Yearly' ? 'year' : 'month'))
 				{
@@ -156,15 +163,10 @@ class accountingCommand extends Command {
 
 				// get account via costcenter
 				$costcenter = $item->get_costcenter();
-				// if (!is_object($costcenter))
-				// {
-				// 	$c->charge = [];
-				// 	$logger->addAlert('No CostCenter assigned to Contract/Product/Item - Stop execution for this contract', [$c->id]);
-				// 	break;
-				// }
+				$acc 		= $sepa_accs->find($costcenter->sepaaccount_id);
 
-				$acc = $sepa_accs->find($costcenter->sepaaccount_id);
-
+				// if ($c->number == 10003 && $item->product->type == 'Credit')
+				// 	dd($item->charge);
 
 				// increase invoice nr of sepa account, increase charge for account by price, calculate tax
 				if (isset($c->charge[$acc->id]))
