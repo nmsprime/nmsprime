@@ -86,6 +86,27 @@ class Product extends \BaseModel {
 	}
 
 
+	/**
+	 *	Recursive delete of all children objects
+	 *
+	 *	@author Torsten Schmidt
+	 *
+	 *	@return void
+	 *
+	 *  @todo return state on success, should also take care of deleted children
+	 */
+	public function delete()
+	{
+		foreach ($this->item as $child)
+		{
+			$child->accounting_text = $this->name;
+			$child->save();
+		}
+
+		$this->_delete();
+	}
+
+
 	/*
 	 * Other Functions
 	 */
