@@ -127,7 +127,7 @@ class ProvVoipEnvia extends \BaseModel {
 	}
 
 	/**
-	 * Get some environmental data and set to global vars
+	 * Get some environmental data and set to global vars.
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -138,6 +138,7 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		$this->_get_model_data($view_level, $model);
+
 		$phonenumber_id = $this->phonenumbermanagement->phonenumber_id;
 		if (!is_null($this->phonenumbermanagement->phonebookentry)) {
 			$phonebookentry_id = $this->phonenumbermanagement->phonebookentry->id;
@@ -282,7 +283,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		////////////////////////////////////////
 		// misc jobs
-		if (in_array($view_level, ['contract', 'phonenumber', 'phonenumbermanagement', 'phonebookentry'])) {
+		if (in_array($view_level, ['contract', 'modem', 'phonenumber', 'phonenumbermanagement', 'phonebookentry'])) {
 			$ret = array(
 				array('class' => 'Misc'),
 				array('linktext' => 'Ping Envia API', 'url' => $base.'misc_ping'.$origin.$really),
@@ -492,13 +493,25 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->phonenumbermanagement = null;
 		$this->phonebookentry = null;
 
-		// level is irrelevant (e.g. for creating XML for a given contract_id
+		// level is irrelevant (e.g. for creating XML for a given contract_id)
 		// this means: the initial model comes from a database search
 		if ($level == '') {
+
 			// entry point to database is contract
 			$contract_id = \Input::get('contract_id', null);
 			if (!is_null($contract_id)) {
 				$this->contract = Contract::findOrFail($contract_id);
+			}
+
+			// entry point to database is modem
+			$modem_id = \Input::get('modem_id', null);
+			if (!is_null($modem_id)) {
+				$this->modem = Modem::findOrFail($modem_id);
+			}
+			// get related models (if modem model exists)
+			// in other cases: there are no clear relations
+			if (!is_null($this->modem)) {
+				$this->contract = $this->modem->contract;
 			}
 
 			// entry point to database is phonenumber
@@ -553,6 +566,15 @@ class ProvVoipEnvia extends \BaseModel {
 			$this->contract = $model;
 			$this->mta = new Mta();
 			$this->modem = new Modem();
+			$this->phonenumbermanagement = new PhonenumberManagement();
+			$this->phonenumber = new Phonenumber();
+			$this->phonebookentry = new PhonebookEntry();
+		}
+		// build relations starting with model modem
+		elseif (($level == 'modem') && (!is_null($model))) {
+			$this->modem = $model;
+			$this->contract = $this->modem->contract;
+			$this->mta = new Mta();
 			$this->phonenumbermanagement = new PhonenumberManagement();
 			$this->phonenumber = new Phonenumber();
 			$this->phonebookentry = new PhonebookEntry();
@@ -795,11 +817,11 @@ class ProvVoipEnvia extends \BaseModel {
 			/* ), */
 
 		// not needed atm ⇒ if the last phonenumber is terminated the contract will automatically be deleted
-		$second_level_nodes['contract_terminate'] = array(
-			'reseller_identifier',
-			'contract_identifier',
-			'contract_termination_data',
-		);
+		/* $second_level_nodes['contract_terminate'] = array( */
+		/* 	'reseller_identifier', */
+		/* 	'contract_identifier', */
+		/* 	'contract_termination_data', */
+		/* ); */
 
 			/* 'contract_unlock' => array( */
 			/* 	'reseller_identifier', */
@@ -1053,15 +1075,12 @@ class ProvVoipEnvia extends \BaseModel {
 			'company' => 'company',
 		);
 
-		if (!$this->contract->modems) {
-			throw new XmlCreationError('There needs to be a modem to get installation address from.');
-		}
-		$this->_add_fields($inner_xml, $fields, $this->contract->modems[0]);
+		$this->_add_fields($inner_xml, $fields, $this->modem);
 	}
 
 
 	/**
-	 * Method to add contract data
+	 * Method to add contract data.
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -1074,6 +1093,10 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// check if there are missing values (e.g. they are missing if billing is enabled but man forgot to add voip item before calling this
 		$value_missing = False;
+
+		// as we ATM only allow one variation per user we can safely take this data out of contract
+		// TODO: this has to be changed if someday we want to allow different variations on multiple modems
+		// therefore we also have to update Contract::daily_conversion()!
 		if (!boolval($this->contract->phonetariff_purchase_next)) {
 			$value_missing = True;
 			$msg = 'next_purchase_tariff not set in contract '.$this->contract->id;
@@ -1082,6 +1105,9 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 		}
 
+		// as we ATM only allow one tariff per user we can safely take this data out of contract
+		// TODO: this has to be changed if someday we want to allow different tariffs on multiple modems
+		// therefore we also have to update Contract::daily_conversion()!
 		if (!boolval($this->contract->phonetariff_sale_next)) {
 			$value_missing = True;
 			$msg = 'next_voip_id not set in contract '.$this->contract->id;
@@ -1094,6 +1120,7 @@ class ProvVoipEnvia extends \BaseModel {
 			throw new XmlCreationError($msg);
 		}
 
+		// the data exists: now we can safely get the external identifiers without raising an Exception
 		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
 		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale_next->external_identifier);
 
@@ -1117,6 +1144,9 @@ class ProvVoipEnvia extends \BaseModel {
 		// TODO: get date from Contract->Item (after merging with Nino)
 		$inner_xml->addChild('orderdate', date('Y-m-d', strtotime('first day of next month')));
 
+		// as we ATM only allow one tariff per user we can safely take this data out of contract
+		// TODO: this has to be changed if someday we want to allow different tariffs on multiple modems
+		// therefore we also have to update Contract::daily_conversion()!
 		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale_next->external_identifier);
 
 
@@ -1133,6 +1163,10 @@ class ProvVoipEnvia extends \BaseModel {
 		$inner_xml = $this->xml->addChild('variation_data');
 
 		// no date to be given ⇒ changed automatically on 1st of next month
+
+		// as we ATM only allow one variation per user we can safely take this data out of contract
+		// TODO: this has to be changed if someday we want to allow different variations on multiple modems
+		// therefore we also have to update Contract::daily_conversion()!
 		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
 
 
@@ -1397,7 +1431,9 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Method to add contract identifier
+	 * Method to add contract identifier.
+	 * In Envia speech a contract is phone connection (“Anschluss”) and so equals with our modems.
+	 * This is especially important to support different installation addresses on multiple modems per user.
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -1410,7 +1446,7 @@ class ProvVoipEnvia extends \BaseModel {
 			'contractreference' => 'contract_external_id',
 		);
 
-		$this->_add_fields($inner_xml, $fields_contract_identifier, $this->contract);
+		$this->_add_fields($inner_xml, $fields_contract_identifier, $this->modem);
 	}
 
 
@@ -1638,9 +1674,12 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// update contract
 		$this->contract->customer_external_id = $xml->customerreference;
-		$this->contract->contract_external_id = $xml->contractreference;
-		$this->contract->contract_ext_creation_date = date('Y-m-d H:i:s');
 		$this->contract->save();
+
+		// update modem
+		$this->modem->contract_external_id = $xml->contractreference;
+		$this->modem->contract_ext_creation_date = date('Y-m-d H:i:s');
+		$this->modem->save();
 
 
 		// create enviaorder
@@ -1651,6 +1690,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['customerreference'] = $xml->customerreference;
 		$order_data['contractreference'] = $xml->contractreference;
 		$order_data['contract_id'] = $this->contract->id;
+		$order_data['modem_id'] = $this->modem->id;
 		$order_data['ordertype'] = 'contract/create';
 		$order_data['orderstatus'] = 'initializing';
 
@@ -1746,6 +1786,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['orderid'] = $xml->orderid;
 		$order_data['method'] = 'contract/change_tariff';
 		$order_data['contract_id'] = $this->contract->id;
+		$order_data['modem_id'] = $this->modem->id;
 		$order_data['ordertype'] = 'contract/change_tariff';
 		$order_data['orderstatus'] = 'initializing';
 
@@ -1770,6 +1811,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['orderid'] = $xml->orderid;
 		$order_data['method'] = 'contract/change_variation';
 		$order_data['contract_id'] = $this->contract->id;
+		$order_data['modem_id'] = $this->modem->id;
 		$order_data['ordertype'] = 'contract/change_variation';
 		$order_data['orderstatus'] = 'initializing';
 

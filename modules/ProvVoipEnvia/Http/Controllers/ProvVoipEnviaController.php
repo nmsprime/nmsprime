@@ -366,7 +366,7 @@ class ProvVoipEnviaController extends \BaseController {
 
 		// perform checks for the rest of the jobs
 		if ($job == "contract_create") {
-			$this->model->extract_environment($this->model->contract, 'contract');
+			$this->model->extract_environment($this->model->modem, 'modem');
 
 			// contract creation is only allowed once (you cannot re-create a contract)
 			if ($this->model->contract_created) {
@@ -377,7 +377,7 @@ class ProvVoipEnviaController extends \BaseController {
 		}
 
 		if ($job == "contract_get_voice_data") {
-			$this->model->extract_environment($this->model->contract, 'contract');
+			$this->model->extract_environment($this->model->modem, 'modem');
 
 			// only can get data for a contract that exists (or existed)
 			if (!$this->model->contract_created) {
@@ -388,7 +388,7 @@ class ProvVoipEnviaController extends \BaseController {
 		}
 
 		if ($job == 'contract_change_tariff') {
-			$this->model->extract_environment($this->model->contract, 'contract');
+			$this->model->extract_environment($this->model->modem, 'modem');
 
 			// only can get data for a contract that exists
 			if (!$this->model->contract_available) {
@@ -408,7 +408,7 @@ class ProvVoipEnviaController extends \BaseController {
 		}
 
 		if ($job == 'contract_change_variation') {
-			$this->model->extract_environment($this->model->contract, 'contract');
+			$this->model->extract_environment($this->model->modem, 'modem');
 
 			// only can get data for a contract that exists
 			if (!$this->model->contract_available) {
@@ -431,7 +431,7 @@ class ProvVoipEnviaController extends \BaseController {
 			$this->model->extract_environment($this->model->contract, 'contract');
 
 			// Customer can only be updated if active contract exists
-			if (!$this->model->contract_available) {
+			if (!$this->model->at_least_one_contract_available) {
 				return false;
 			}
 
