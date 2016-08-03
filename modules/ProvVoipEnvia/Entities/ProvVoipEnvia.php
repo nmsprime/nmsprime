@@ -300,8 +300,16 @@ class ProvVoipEnvia extends \BaseModel {
 		if (in_array($view_level, ['contract', 'modem', 'phonenumber', 'phonenumbermanagement', 'phonebookentry'])) {
 			$ret = array(
 				array('class' => 'Misc'),
-				array('linktext' => 'Ping Envia API', 'url' => $base.'misc_ping'.$origin.$really),
-				array('linktext' => 'Get free numbers', 'url' => $base.'misc_get_free_numbers'.$origin.$really),
+				array(
+					'linktext' => 'Ping Envia API',
+					'url' => $base.'misc_ping'.$origin.$really,
+					'help' => 'Checks if Envia API is reachable and running.',
+				),
+				array(
+					'linktext' => 'Get free numbers',
+					'url' => $base.'misc_get_free_numbers'.$origin.$really,
+					'help' => 'Gets all currently unused numbers from Envia.',
+				),
 			);
 		}
 
@@ -313,7 +321,11 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// customer data change possible if there is an active contract for this user
 			if ($this->at_least_one_contract_available) {
-				array_push($ret, array('linktext' => 'Update customer', 'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id));
+				array_push($ret, array(
+					'linktext' => 'Update customer',
+					'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id,
+					'help' => 'Pushes changes on customer data to Envia.'
+				));
 			}
 		}
 
@@ -322,10 +334,22 @@ class ProvVoipEnvia extends \BaseModel {
 		if (in_array($view_level, ['modem', 'phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Telephone connection (= Envia contract)'));
 
-
 			// contract can be created if not yet created
 			if (!$this->contract_created) {
-				array_push($ret, array('linktext' => 'Create contract', 'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id));
+				array_push($ret, array(
+					'linktext' => 'Create contract',
+					'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id,
+					'help' => 'Creates a contract (= telephone connection)',
+				));
+			}
+
+			// contract can be created if created
+			if ($this->contract_created) {
+				array_push($ret, array(
+					'linktext' => 'Relocate contract',
+					'url' => $base.'contract_relocate'.$origin.'&amp;modem_id='.$modem_id,
+					'help' => 'Changes (physically) installation address of this modem',
+				));
 			}
 
 			// contract can be terminated if is created and not yet terminated
@@ -336,7 +360,11 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// can get contract related information if contract is available
 			if ($this->contract_available) {
-				array_push($ret, array('linktext' => 'Get voice data', 'url' => $base.'contract_get_voice_data'.$origin.'&amp;modem_id='.$modem_id.$really));
+				array_push($ret, array(
+					'linktext' => 'Get voice data',
+					'url' => $base.'contract_get_voice_data'.$origin.'&amp;modem_id='.$modem_id.$really,
+					'help' => 'Get all phonenumbers for this modem.',
+				));
 			}
 
 			// tariff can only be changed if contract exists and a tariff change is wanted
@@ -344,7 +372,11 @@ class ProvVoipEnvia extends \BaseModel {
 			if ($this->contract_available) {
 				if (boolval($this->contract->next_voip_id)) {
 					if ($this->contract->voip_id != $this->contract->next_voip_id) {
-						array_push($ret, array('linktext' => 'Change tariff', 'url' => $base.'contract_change_tariff'.$origin.'&amp;modem_id='.$modem_id));
+						array_push($ret, array(
+							'linktext' => 'Change tariff',
+							'url' => $base.'contract_change_tariff'.$origin.'&amp;modem_id='.$modem_id,
+							'help' => 'Changes the VoIP sales tariff for all modems assigned to this contract',
+						));
 					}
 				}
 			}
@@ -354,7 +386,11 @@ class ProvVoipEnvia extends \BaseModel {
 			if ($this->contract_available) {
 				if (boolval($this->contract->next_purchase_tariff)) {
 					if ($this->contract->purchase_tariff != $this->contract->next_purchase_tariff) {
-						array_push($ret, array('linktext' => 'Change variation', 'url' => $base.'contract_change_variation'.$origin.'&amp;modem_id='.$modem_id));
+						array_push($ret, array(
+							'linktext' => 'Change variation',
+							'url' => $base.'contract_change_variation'.$origin.'&amp;modem_id='.$modem_id,
+							'help' => 'Changes the VoIP purchase tariff for all modems assigned to thics contract',
+						));
 					}
 				}
 			}
@@ -369,15 +405,27 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// voip account needs a contract
 			if (!$this->voipaccount_created && $this->contract_available) {
-				array_push($ret, array('linktext' => 'Create VoIP account', 'url' => $base.'voip_account_create'.$origin.'&amp;phonenumber_id='.$phonenumber_id,));
+				array_push($ret, array(
+					'linktext' => 'Create VoIP account',
+					'url' => $base.'voip_account_create'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
+					'help' => 'Creates the phonenumber at Envia',
+				));
 			}
 
 			if ($this->voipaccount_available) {
-				array_push($ret, array('linktext' => 'Terminate VoIP account', 'url' => $base.'voip_account_terminate'.$origin.'&amp;phonenumber_id='.$phonenumber_id));
+				array_push($ret, array(
+					'linktext' => 'Terminate VoIP account',
+					'url' => $base.'voip_account_terminate'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
+					'help' => 'Terminates the phonenumber at Envia',
+				));
 			};
 
 			if ($this->voipaccount_available) {
-				array_push($ret, array('linktext' => 'Update VoIP account', 'url' => $base.'voip_account_update'.$origin.'&amp;phonenumber_id='.$phonenumber_id));
+				array_push($ret, array(
+					'linktext' => 'Update VoIP account',
+					'url' => $base.'voip_account_update'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
+					'help' => 'Updates phonenumber related data (TRC class, SIP data) at Envia',
+				));
 			};
 		}
 
@@ -390,10 +438,18 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// only if there is a phonenumber to add the entry to
 			if ($this->voipaccount_available) {
-				array_push($ret, array('linktext' => 'Get phonebook entry', 'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id));
+				array_push($ret, array(
+					'linktext' => 'Get phonebook entry',
+					'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id,
+					'help' => 'Gets the current phonebook entry for this phonenumber.',
+				));
 
 				if ($view_level == 'phonebookentry') {
-					array_push($ret, array('linktext' => 'Create/change phonebook entry', 'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id));
+					array_push($ret, array(
+						'linktext' => 'Create/change phonebook entry',
+						'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
+						'help' => 'Creates a new or updates an existing phonebook entry for this phonenumber.'
+					));
 				}
 			}
 
@@ -404,7 +460,11 @@ class ProvVoipEnvia extends \BaseModel {
 		// order related jobs
 		if (in_array($view_level, ['contract', 'modem', 'phonenumber', 'phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Orders'));
-			array_push($ret, array('linktext' => 'Get all phonenumber related orders', 'url' => $base.'misc_get_orders_csv'.$origin.$really));
+			array_push($ret, array(
+				'linktext' => 'Get all phonenumber related orders',
+				'url' => $base.'misc_get_orders_csv'.$origin.$really,
+				'help' => 'Fetches all phonenumber related orders from Envia.',
+			));
 
 			// order(s) exist if at least one contract has been created
 			if ($this->at_least_one_contract_created) {
@@ -429,7 +489,11 @@ class ProvVoipEnvia extends \BaseModel {
 					}
 					// add order (exept create_attachements)
 					if ($order_type != 'order/create_attachment') {
-						array_push($ret, array('linktext' => $linktext, 'url' => $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really));
+						array_push($ret, array(
+							'linktext' => $linktext,
+							'url' => $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really,
+							'help' => 'Gets the current state of this order from Envia.',
+						));
 					}
 				}
 			}
