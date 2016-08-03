@@ -324,7 +324,7 @@ class ProvVoipEnvia extends \BaseModel {
 				array_push($ret, array(
 					'linktext' => 'Update customer',
 					'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id,
-					'help' => 'Pushes changes on customer data to Envia.'
+					'help' => 'Pushes changes on customer data to Envia. Changes of modem installation address have to be sent separately (using “Relocate contract”)!'
 				));
 			}
 		}
@@ -343,13 +343,15 @@ class ProvVoipEnvia extends \BaseModel {
 				));
 			}
 
-			// contract can be created if created
+			// contract can be created if created; available with Envia API version 1.4
 			if ($this->contract_created) {
-				array_push($ret, array(
-					'linktext' => 'Relocate contract',
-					'url' => $base.'contract_relocate'.$origin.'&amp;modem_id='.$modem_id,
-					'help' => 'Changes (physically) installation address of this modem',
-				));
+				if ($this->api_version >= 1.4) {
+					array_push($ret, array(
+						'linktext' => 'Relocate contract',
+						'url' => $base.'contract_relocate'.$origin.'&amp;modem_id='.$modem_id,
+						'help' => 'Changes (physical) installation address of this modem. Changes of customer address have to be sent separately (using “Update customer”)!',
+					));
+				}
 			}
 
 			// contract can be terminated if is created and not yet terminated
@@ -807,6 +809,9 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _create_final_xml_by_topic($job) {
 
+		// set as class variable; this is later used to place xml nodes on different positions
+		$this->job = $job;
+
 		// these elements are used to group the information
 		// e.g. in reseller_identifier man will put username and password for
 		// authentication against the API
@@ -899,6 +904,12 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 'contract_lock' => array( */
 			/* 	'reseller_identifier', */
 			/* ), */
+
+		$second_level_nodes['contract_relocate'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'contract_relocation_data',
+		);
 
 		// not needed atm ⇒ if the last phonenumber is terminated the contract will automatically be deleted
 		/* $second_level_nodes['contract_terminate'] = array( */
@@ -1135,16 +1146,18 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Method to add installation address
-	 *
-	 * The address is taken from first assigned modem – EnviaTEL only accepts one installation address per contract (which IMO does not really make sense)
-	 * @todo: try to change this at Envia…
+	 * Method to add installation address.
 	 *
 	 * @author Patrick Reichel
 	 */
 	protected function _add_installation_address_data() {
 
-		$inner_xml = $this->xml->contract_data->addChild('installation_address_data');
+		if ($this->job == 'contract_create') {
+			$inner_xml = $this->xml->contract_data->addChild('installation_address_data');
+		}
+		elseif ($this->job == 'contract_relocate') {
+			$inner_xml = $this->xml->contract_relocation_data->addChild('installation_address_data');
+		}
 
 		// mapping xml to database
 		$fields = array(
@@ -1535,6 +1548,27 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Method to add contract relocation data (used to change installation address of modem).
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_contract_relocation_data() {
+
+		$inner_xml = $this->xml->addChild('contract_relocation_data');
+
+		if (is_null($this->modem->installation_address_change_date)) {
+			throw new \InvalidArgumentException('ERROR: Date of installation address change has to be set.');
+		}
+
+		$inner_xml->addChild('orderdate', $this->modem->installation_address_change_date);
+
+		$this->_add_installation_address_data();
+
+		$inner_xml->addChild('apply_to_customer', 0);
+	}
+
+
+	/**
 	 * Method to add attachment
 	 *
 	 * @author Patrick Reichel
@@ -1903,6 +1937,31 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// view data
 		$out .= "<h5>Variation change successful (order ID: ".$xml->orderid.")</h5>";
+
+		return $out;
+	}
+
+	/**
+	 * Process data after successful change of installation address
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_contract_relocate_response($xml, $data, $out) {
+
+		// create enviaorder
+		$order_data = array();
+
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['method'] = 'contract/relocate';
+		$order_data['contract_id'] = $this->contract->id;
+		$order_data['modem_id'] = $this->modem->id;
+		$order_data['ordertype'] = 'contract/relocate';
+		$order_data['orderstatus'] = 'initializing';
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// view data
+		$out .= "<h5>Installation address change successful (order ID: ".$xml->orderid.")</h5>";
 
 		return $out;
 	}

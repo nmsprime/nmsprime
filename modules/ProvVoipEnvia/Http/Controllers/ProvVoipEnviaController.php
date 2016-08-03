@@ -427,6 +427,18 @@ class ProvVoipEnviaController extends \BaseController {
 
 		}
 
+		if ($job == 'contract_relocate') {
+			$this->model->extract_environment($this->model->modem, 'modem');
+
+			// only can change data for a contract that exists
+			if (!$this->model->contract_available) {
+				return false;
+			}
+
+			return true;
+
+		}
+
 		if ($job == "customer_update") {
 			$this->model->extract_environment($this->model->contract, 'contract');
 
@@ -640,6 +652,7 @@ class ProvVoipEnviaController extends \BaseController {
 			'contract_get_reference' => $base_url.'____TODO____',
 			'contract_get_voice_data' => $base_url.'contract/get_voice_data',
 			'contract_lock' => $base_url.'____TODO____',
+			'contract_relocate' => $base_url.'contract/relocate',
 			'contract_terminate' => $base_url.'contract/terminate',
 			'contract_unlock' => $base_url.'____TODO____',
 
