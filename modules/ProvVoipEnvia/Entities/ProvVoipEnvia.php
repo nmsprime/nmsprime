@@ -2273,11 +2273,12 @@ class ProvVoipEnvia extends \BaseModel {
 			// actions to perform if order handles creation of voip account
 			if (EnviaOrder::order_creates_voip_account($order)) {
 				// we got a new target date
-				if (!\Str::startsWith($phonenumbermanagement->activation_date, $order->orderdate)) {
-					$phonenumbermanagement->activation_date = $order->orderdate;
-					Log::info('New target date for activation ('.$order->orderdate.') set in phonenumbermanagement with id '.$phonenumbermanagement->id);
-					$phonenumbermanagement_changed = True;
-				}
+// TODO: check if this should be re-enabled (if Envia sends correct dates in orderdate)
+				/* if (!\Str::startsWith($phonenumbermanagement->activation_date, $order->orderdate)) { */
+				/* 	$phonenumbermanagement->activation_date = $order->orderdate; */
+				/* 	Log::info('New target date for activation ('.$order->orderdate.') set in phonenumbermanagement with id '.$phonenumbermanagement->id); */
+				/* 	$phonenumbermanagement_changed = True; */
+				/* } */
 				// all is fine: fix the activation date
 				if (EnviaOrder::order_successful($order)) {
 					if (!\Str::startsWith($phonenumbermanagement->external_activation_date, $order->orderdate)) {
@@ -2291,11 +2292,12 @@ class ProvVoipEnvia extends \BaseModel {
 			// actions to perform if order handles termination of voip account
 			if (EnviaOrder::order_terminates_voip_account($order)) {
 				// we got a new target date
-				if (!\Str::startsWith($phonenumbermanagement->deactivation_date, $order->orderdate)) {
-					$phonenumbermanagement->deactivation_date = $order->orderdate;
-					Log::info('New target date for deactivation ('.$order->orderdate.') set in phonenumbermanagement with id '.$phonenumbermanagement->id);
-					$phonenumbermanagement_changed = True;
-				}
+// TODO: check if this should be re-enabled (if Envia sends correct dates in orderdate)
+				/* if (!\Str::startsWith($phonenumbermanagement->deactivation_date, $order->orderdate)) { */
+				/* 	$phonenumbermanagement->deactivation_date = $order->orderdate; */
+				/* 	Log::info('New target date for deactivation ('.$order->orderdate.') set in phonenumbermanagement with id '.$phonenumbermanagement->id); */
+				/* 	$phonenumbermanagement_changed = True; */
+				/* } */
 				// all is fine: fix the activation date
 				if (EnviaOrder::order_successful($order)) {
 					if (!\Str::startsWith($phonenumbermanagement->external_deactivation_date, $order->orderdate)) {
