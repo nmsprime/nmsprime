@@ -143,34 +143,18 @@ class ProvVoipEnvia extends \BaseModel {
 		if (!is_null($this->phonenumbermanagement->phonebookentry)) {
 			$phonebookentry_id = $this->phonenumbermanagement->phonebookentry->id;
 		}
+		$modem_id = $this->modem->id;
 		$contract_id = $this->contract->id;
 
-		/* // check for valid view_level and define get models to use */
-		/* if ($view_level == 'phonenumbermanagement') { */
-
-		/* 	// given model is a phonenumbermanagement object */
-		/* 	$phonenumber_id = $phonenumbermanagement->phonenumber_id; */
-		/* 	$contract_id = $contract->id; */
-		/* } */
-		/* elseif ($view_level == 'contract') { */
-
-		/* 	// given model is a contract object */
-		/* 	$phonenumber_id = null; */
-		/* 	$contract_id = $contract->id; */
-		/* } */
-		/* else { */
-		/* 	throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumbermanagement]'); */
-		/* } */
-
 		// set the variables
-		if (is_null($this->contract->contract_ext_creation_date)) {
+		if (is_null($this->modem->contract_ext_creation_date)) {
 			$this->contract_created = False;
 		}
 		else {
 			$this->contract_created = True;
 		}
 
-		if (is_null($this->contract->contract_ext_termination_date)) {
+		if (is_null($this->modem->contract_ext_termination_date)) {
 			$this->contract_terminated = False;
 		}
 		else {
@@ -182,6 +166,25 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 		else {
 			$this->contract_available = False;
+		}
+
+		// check if at least one active envia contract is assigned to contract
+		$this->at_least_one_contract_created = False;
+		$this->at_least_one_contract_available = False;
+		if ($this->contract_available) {
+			$this->at_least_one_contract_created = True;
+			$this->at_least_one_contract_available = True;
+		}
+		else {
+			foreach ($this->contract->modems as $modem) {
+				if (!is_null($modem->contract_ext_creation_date)) {
+					$this->at_least_one_contract_created = True;
+
+					if (is_null($modem->contract_ext_termination_date)) {
+						$this->at_least_one_contract_available = True;
+					}
+				}
+			}
 		}
 
 		if (is_null($this->phonenumbermanagement->voipaccount_ext_creation_date)) {
@@ -237,6 +240,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$base = "/lara/admin/provvoipenvia/request/";
 		if ($view_level == 'phonenumbermanagement') {
 			$contract_id = $model->phonenumber->mta->modem->contract->id;
+			$modem_id = $model->phonenumber->mta->modem->id;
 			$phonenumber_id = $model->phonenumber_id;
 			$phonenumbermanagement_id = $model->id;
 			if (!is_null($model->phonebookentry)) {
@@ -245,12 +249,21 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 		elseif ($view_level == 'contract') {
 			$contract_id = $model->id;
+			$modem_id = null;
+			$phonenumbermanagement_id = null;
+			$phonenumber_id = null;
+			$phonebookentry_id = null;
+		}
+		elseif ($view_level == 'modem') {
+			$contract_id = $model->contract->id;
+			$modem_id = $model->id;
 			$phonenumbermanagement_id = null;
 			$phonenumber_id = null;
 			$phonebookentry_id = null;
 		}
 		elseif ($view_level == 'phonenumber') {
 			$contract_id = $model->mta->modem->contract->id;
+			$modem_id = $model->mta->modem->id;
 			$phonenumber_id = $model->id;
 			if (!is_null($model->phonenumbermanagement)) {
 				$phonenumbermanagement_id = $model->phonenumbermanagement->id;
@@ -267,12 +280,13 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 		elseif ($view_level == 'phonebookentry') {
 			$contract_id = $model->phonenumbermanagement->phonenumber->mta->modem->contract->id;
+			$modem_id = $model->phonenumbermanagement->phonenumber->mta->modem->id;
 			$phonenumber_id = $model->phonenumbermanagement->phonenumber_id;
 			$phonenumbermanagement_id = $model->phonenumbermanagement->id;
 			$phonebookentry_id = $model->id;
 		}
 		else {
-			throw new \UnexpectedValueException('param $view_level has to be in [contract|phonenumber|phonenumbermanagement|phonebookentry]');
+			throw new \UnexpectedValueException('param $view_level has to be in [contract|modem|phonenumber|phonenumbermanagement|phonebookentry]');
 		}
 
 		// add this to all actions that can be performed without extra confirmation
@@ -294,12 +308,24 @@ class ProvVoipEnvia extends \BaseModel {
 
 		////////////////////////////////////////
 		// contract related jobs
-		if (in_array($view_level, ['contract', 'phonenumbermanagement'])) {
-			array_push($ret, array('class' => 'Contract'));
+		if (in_array($view_level, ['contract', 'modem', 'phonenumbermanagement'])) {
+			array_push($ret, array('class' => 'Customer'));
+
+			// customer data change possible if there is an active contract for this user
+			if ($this->at_least_one_contract_available) {
+				array_push($ret, array('linktext' => 'Update customer', 'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id));
+			}
+		}
+
+		////////////////////////////////////////
+		// modem related jobs
+		if (in_array($view_level, ['modem', 'phonenumbermanagement'])) {
+			array_push($ret, array('class' => 'Telephone connection (= Envia contract)'));
+
 
 			// contract can be created if not yet created
 			if (!$this->contract_created) {
-				array_push($ret, array('linktext' => 'Create contract', 'url' => $base.'contract_create'.$origin.'&amp;contract_id='.$contract_id));
+				array_push($ret, array('linktext' => 'Create contract', 'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id));
 			}
 
 			// contract can be terminated if is created and not yet terminated
@@ -308,14 +334,9 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	array_push($ret, array('linktext' => 'Terminate contract', 'url' => $base.'contract_terminate'.$origin.'&amp;contract_id='.$contract_id)); */
 			/* } */
 
-			// customer data change possible if there is a contract
-			if ($this->contract_available) {
-				array_push($ret, array('linktext' => 'Update customer', 'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id));
-			}
-
 			// can get contract related information if contract is available
 			if ($this->contract_available) {
-				array_push($ret, array('linktext' => 'Get voice data', 'url' => $base.'contract_get_voice_data'.$origin.'&amp;contract_id='.$contract_id.$really));
+				array_push($ret, array('linktext' => 'Get voice data', 'url' => $base.'contract_get_voice_data'.$origin.'&amp;modem_id='.$modem_id.$really));
 			}
 
 			// tariff can only be changed if contract exists and a tariff change is wanted
@@ -323,7 +344,7 @@ class ProvVoipEnvia extends \BaseModel {
 			if ($this->contract_available) {
 				if (boolval($this->contract->next_voip_id)) {
 					if ($this->contract->voip_id != $this->contract->next_voip_id) {
-						array_push($ret, array('linktext' => 'Change tariff', 'url' => $base.'contract_change_tariff'.$origin.'&amp;contract_id='.$contract_id));
+						array_push($ret, array('linktext' => 'Change tariff', 'url' => $base.'contract_change_tariff'.$origin.'&amp;modem_id='.$modem_id));
 					}
 				}
 			}
@@ -333,7 +354,7 @@ class ProvVoipEnvia extends \BaseModel {
 			if ($this->contract_available) {
 				if (boolval($this->contract->next_purchase_tariff)) {
 					if ($this->contract->purchase_tariff != $this->contract->next_purchase_tariff) {
-						array_push($ret, array('linktext' => 'Change variation', 'url' => $base.'contract_change_variation'.$origin.'&amp;contract_id='.$contract_id));
+						array_push($ret, array('linktext' => 'Change variation', 'url' => $base.'contract_change_variation'.$origin.'&amp;modem_id='.$modem_id));
 					}
 				}
 			}
@@ -361,16 +382,33 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 
+		////////////////////////////////////////
+		// phonebookentry related jobs
+		if (in_array($view_level, ['phonenumbermanagement', 'phonebookentry'])) {
+
+			array_push($ret, array('class' => 'Phonebook entry'));
+
+			// only if there is a phonenumber to add the entry to
+			if ($this->voipaccount_available) {
+				array_push($ret, array('linktext' => 'Get phonebook entry', 'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id));
+
+				if ($view_level == 'phonebookentry') {
+					array_push($ret, array('linktext' => 'Create/change phonebook entry', 'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id));
+				}
+			}
+
+		}
+
 
 		////////////////////////////////////////
 		// order related jobs
-		if (in_array($view_level, ['contract', 'phonenumber', 'phonenumbermanagement'])) {
+		if (in_array($view_level, ['contract', 'modem', 'phonenumber', 'phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Orders'));
 			array_push($ret, array('linktext' => 'Get all phonenumber related orders', 'url' => $base.'misc_get_orders_csv'.$origin.$really));
 
-			array_push($ret, array('class' => 'Related orders (click to get status update)'));
-			// order(s) exist if contract has been created
-			if ($this->contract_created) {
+			// order(s) exist if at least one contract has been created
+			if ($this->at_least_one_contract_created) {
+				array_push($ret, array('class' => 'Related orders (click to get status update)'));
 				foreach (EnviaOrder::withTrashed()->where('contract_id', '=', $contract_id)->orderBy("created_at")->get() as $order) {
 
 					// if in view phonenumber*: show only orders related to this phonenumber
@@ -395,24 +433,6 @@ class ProvVoipEnvia extends \BaseModel {
 					}
 				}
 			}
-		}
-
-
-		////////////////////////////////////////
-		// phonebookentry related jobs
-		if (in_array($view_level, ['phonenumbermanagement', 'phonebookentry'])) {
-
-			array_push($ret, array('class' => 'Phonebook entry'));
-
-			// only if there is a phonenumber to add the entry to
-			if ($this->voipaccount_available) {
-				array_push($ret, array('linktext' => 'Get phonebook entry', 'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id));
-
-				if ($view_level == 'phonebookentry') {
-					array_push($ret, array('linktext' => 'Create/change phonebook entry', 'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id));
-				}
-			}
-
 		}
 
 		////////////////////////////////////////
@@ -1910,6 +1930,7 @@ class ProvVoipEnvia extends \BaseModel {
 				continue;
 			}
 			$result['phonenumber_id'] = $phonenumber->id;
+			$result['modem_id'] = $phonenumber->mta->modem->id;
 			$result['contract_id'] = $phonenumber->mta->modem->contract->id;
 
 			// create a new Order, add given data to model instance

@@ -23,6 +23,7 @@ class EnviaOrderController extends \BaseController {
 		$init_values = array();
 		$phonenumber_id = null;
 		$contract_id = null;
+		$modem_id = null;
 		$related_id = null;
 
 		// make order_id fillable on create => so man can add an order created at the web GUI to keep data consistent
@@ -30,7 +31,7 @@ class EnviaOrderController extends \BaseController {
 
 			$order_id = array('form_type' => 'text', 'name' => 'orderid', 'description' => 'Order ID');
 
-			// order can be related to phonenumber (and contract) or to contract alone
+			// order can be related to phonenumber and/or modem and/or contract
 			// get the contract (has to be given; watch create()
 			$contract_id = \Input::get('contract_id', null);
 			if (boolval($contract_id)) {
@@ -40,11 +41,20 @@ class EnviaOrderController extends \BaseController {
 				throw new \InvalidArgumentException('Order at least has to be related to a contract, but could not get a contract id');
 			}
 
+			// try to get modem (can be given)
+			$modem_id = \Input::get('modem_id', null);
+			if (boolval($modem_id)) {
+				$init_values['modem_id'] = $modem_id;
+				$modem = modem::findOrFail($modem_id);
+				$init_values['contract_id'] = $modem->contract->id;
+			}
+
 			// try to get phonenumber (can be given)
 			$phonenumber_id = \Input::get('phonenumber_id', null);
 			if (boolval($phonenumber_id)) {
 				$init_values['phonenumber_id'] = $phonenumber_id;
 				$phonenumber = Phonenumber::findOrFail($phonenumber_id);
+				$init_values['modem_id'] = $phonenumber->mta->modem->id;
 				$init_values['contract_id'] = $phonenumber->mta->modem->contract->id;
 			}
 
@@ -86,6 +96,7 @@ class EnviaOrderController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'customerreference', 'description' => 'Envia customer reference', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'Envia contract reference', 'options' => ['readonly'], 'hidden' => 'C', 'space' => '1'),
 			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract ID', 'options' => ['readonly'], 'hidden' => 1),
+			array('form_type' => 'text', 'name' => 'modem_id', 'description' => 'Modem ID', 'options' => ['readonly'], 'hidden' => 1),
 			array('form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber ID', 'options' => ['readonly'], 'hidden' => 1),
 		);
 
@@ -124,6 +135,7 @@ class EnviaOrderController extends \BaseController {
 
 		$phonenumbermanagement_id = \Input::get('phonenumbermanagement_id', null);
 		$phonenumber_id = \Input::get('phonenumber_id', null);
+		$modem_id = \Input::get('modem_id', null);
 		$contract_id = \Input::get('contract_id', null);
 
 		// if contract_id is given: all is fine => call parent
@@ -132,14 +144,7 @@ class EnviaOrderController extends \BaseController {
 			return parent::create();
 		}
 
-		// else: calculate contract_id and (if possible) phonenumber_id
-		if (is_null($phonenumbermanagement_id)) {
-			throw new \RuntimeException("Order has to be related to contract or to phonenumbermanagement");
-		}
-
-		$phonenumbermanagement = PhonenumberManagement::findOrFail($phonenumbermanagement_id);
-
-		// build new parameter set (this is: attach contract_id and phonenumber_id)
+		// build new parameter set (this is: attach contract_id, modem_id and phonenumber_id)
 		// first: preserve the parent (the first _GET param given) as this is needed within BaseViewController
 		// so we put the complete array in front of new params
 		$params = $_GET;
@@ -151,12 +156,30 @@ class EnviaOrderController extends \BaseController {
 			}
 		}
 
+		// if no contract_id has been given: calculate contract_id and (if possible) modem_id and/or phonenumber_id
+		if (is_null($modem_id) && is_null($phonenumbermanagement_id)) {
+			throw new \RuntimeException("Order has to be related to contract or modem or phonenumbermanagement");
+		}
+
+		if (!is_null($phonenumbermanagement_id)) {
+			$phonenumbermanagement = PhonenumberManagement::findOrFail($phonenumbermanagement_id);
+			$params['phonenumber_id'] = $phonenumbermanagement->phonenumber->id;
+			$params['modem_id'] = $phonenumbermanagement->phonenumber->mta->modem->id;
+			$params['contract_id'] = $phonenumbermanagement->phonenumber->mta->modem->contract->id;
+			$params['contractreference'] = $phonenumbermanagement->phonenumber->mta->modem->contract_external_id;
+			$params['customerreference'] = $phonenumbermanagement->phonenumber->mta->modem->contract->customer_external_id;
+		}
+		elseif (!is_null($modem_id)) {
+			$modem = Modem::findOrFail($modem_id);
+			$params['phonenumber_id'] = null;
+			$params['modem_id'] = $modem->id;
+			$params['contract_id'] = $modem->contract->id;
+			$params['contractreference'] = $modem->contract_external_id;
+			$params['customerreference'] = $modem->contract->customer_external_id;
+		}
+
 		// finally we add the related ids
 		$params['method'] = 'manually';
-		$params['phonenumber_id'] = $phonenumbermanagement->phonenumber->id;
-		$params['contract_id'] = $phonenumbermanagement->phonenumber->mta->modem->contract->id;
-		$params['contractreference'] = $phonenumbermanagement->phonenumber->mta->modem->contract->contract_external_id;
-		$params['customerreference'] = $phonenumbermanagement->phonenumber->mta->modem->contract->customer_external_id;
 
 
 		// call create again with extended parameters

@@ -2,6 +2,7 @@
 
 namespace Modules\ProvVoipEnvia\Entities;
 use Modules\ProvBase\Entities\Contract;
+use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoip\Entities\Phonenumber;
 
 // Model not found? execute composer dump-autoload in lara root dir
@@ -177,6 +178,7 @@ class EnviaOrder extends \BaseModel {
 		'customerreference',
 		'contractreference',
 		'contract_id',
+		'modem_id',
 		'phonenumber_id',
 	];
 
@@ -445,6 +447,14 @@ class EnviaOrder extends \BaseModel {
 		$contract_nr = Contract::findOrFail($this->contract_id)->number;
 		$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract_nr.'</a>';
 
+		if (boolval($this->modem_id)) {
+			$modem = Modem::findOrFail($this->modem_id);
+			$modem_nr = '<a href="'.\URL::route('Modem.edit', array($this->modem_id)).'" target="_blank">'.$this->modem_id.'</a>';
+		}
+		else {
+			$modem_nr = '–';
+		}
+
 		if (boolval($this->phonenumber_id)) {
 			$phonenumber = Phonenumber::findOrFail($this->phonenumber_id);
 			$phonenumbermanagement_id = $phonenumber->phonenumbermanagement->id;
@@ -464,8 +474,8 @@ class EnviaOrder extends \BaseModel {
 			$solve_link = '<a href="'.\URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id)).'" target="_self">Mark solved</a>';
 		}
 
-        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $phonenumber_nr, $this->created_at, $this->updated_at, $current, $solve_link],
-                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Phonenumber', 'Created at', 'Updated at', 'Interaction needed?', ''],
+        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $modem_nr, $phonenumber_nr, $this->created_at, $this->updated_at, $current, $solve_link],
+                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Modem', 'Phonenumber', 'Created at', 'Updated at', 'Interaction needed?', ''],
                 'bsclass' => $bsclass,
 				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
 		];
@@ -485,11 +495,14 @@ class EnviaOrder extends \BaseModel {
 	}
 
 
-	// belongs to a modem - see BaseModel for explanation
+	// belongs to phonenumber or modem or contract - see BaseModel for explanation
 	public function view_belongs_to ()
 	{
 		if (boolval($this->phonenumber_id)) {
 			return $this->phonenumber->phonenumbermanagement;
+		}
+		elseif (boolval($this->modem_id)) {
+			return $this->modem;
 		}
 		else {
 			return $this->contract;
@@ -514,6 +527,10 @@ class EnviaOrder extends \BaseModel {
 
 	public function contract() {
 		return $this->belongsTo('Modules\ProvBase\Entities\Contract');
+	}
+
+	public function modem() {
+		return $this->belongsTo('Modules\ProvBase\Entities\Modem');
 	}
 
 	public function phonenumber() {
@@ -623,7 +640,6 @@ class EnviaOrder extends \BaseModel {
 		if ($this->user_interaction_necessary()) {
 
 			$contract = $this->contract;
-
 			$user_actions['hints']['Contract'] = '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->id.'</a><br>';
 
 			$items = $contract->items;
@@ -631,16 +647,19 @@ class EnviaOrder extends \BaseModel {
 				$user_actions['hints']['Items'] = $this->_get_user_action_information_items($items);
 			};
 
+			$modem = $this->modem;
+			if ($modem) {
+				$user_actions['hints']['Modem'] = '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->id.'</a><br>';
+			};
+
 			$phonenumbers = array();
-			foreach ($contract->modems as $modem) {
-				if ($modem) {
-					$mtas = $modem->mtas;
-					if ($mtas) {
-						foreach ($mtas as $mta) {
-							foreach ($mta->phonenumbers as $phonenumber) {
-								if ($phonenumber) {
-									array_push($phonenumbers, $phonenumber);
-								}
+			if ($modem) {
+				$mtas = $modem->mtas;
+				if ($mtas) {
+					foreach ($mtas as $mta) {
+						foreach ($mta->phonenumbers as $phonenumber) {
+							if ($phonenumber) {
+								array_push($phonenumbers, $phonenumber);
 							}
 						}
 					}
