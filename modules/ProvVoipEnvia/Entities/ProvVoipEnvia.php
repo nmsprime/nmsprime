@@ -972,6 +972,7 @@ class ProvVoipEnvia extends \BaseModel {
 			'order_identifier',
 		);
 
+
 		$second_level_nodes['phonebookentry_create'] = array(
 			'reseller_identifier',
 			'contract_identifier',
@@ -990,6 +991,7 @@ class ProvVoipEnvia extends \BaseModel {
 			'contract_identifier',
 			'callnumber_identifier',
 		);
+
 
 		$second_level_nodes['voip_account_create'] = array(
 			'reseller_identifier',
@@ -2353,9 +2355,9 @@ class ProvVoipEnvia extends \BaseModel {
 		// perform update only if order/get_status has been triggered manually
 		// if run by cron we first get the current state for all orders and then calling the update method from EnviaOrderUpdaterCommand
 		// TODO: hier weiter
-		if (\Str::endswith(\Request::path(), '/request/order_get_status')) {
-			$updater = new VoipRelatedDataUpdaterByEnvia($order->contract_id);
-		};
+		/* if (\Str::endswith(\Request::path(), '/request/order_get_status')) { */
+		/* 	$updater = new VoipRelatedDataUpdaterByEnvia($order->contract_id); */
+		/* }; */
 
 		return $out;
 	}
@@ -2433,6 +2435,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['orderid'] = $xml->orderid;
 		$order_data['method'] = 'voip_account/create';
 		$order_data['contract_id'] = $this->contract->id;
+		$order_data['modem_id'] = $this->modem->id;
 		$order_data['phonenumber_id'] = $this->phonenumber->id;
 		$order_data['ordertype'] = 'voip_account/create';
 		$order_data['orderstatus'] = 'initializing';
@@ -2455,11 +2458,25 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_voip_account_termination_response($xml, $data, $out) {
 
-		// set deletion date (voipaccount_ext_termination_date)
+		// update phonenumbermanagement
+		$this->phonenumbermanagement->voipaccount_ext_termination_date = date('Y-m-d H:i:s');
+		$this->phonenumbermanagement->save();
 
-		// check if last account at this contract => if so, set end voip_contract_end
+		// create enviaorder
+		$order_data = array();
 
-		$out .= "<h5>Attention: Noting happened! Feature still not implemented</h5>";
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['method'] = 'voip_account/terminate';
+		$order_data['contract_id'] = $this->contract->id;
+		$order_data['modem_id'] = $this->modem->id;
+		$order_data['phonenumber_id'] = $this->phonenumber->id;
+		$order_data['ordertype'] = 'voip_account/terminate';
+		$order_data['orderstatus'] = 'initializing';
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// view data
+		$out .= "<h5>VoIP account terminated (order ID: ".$xml->orderid.")</h5>";
 
 		return $out;
 	}
