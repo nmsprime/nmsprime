@@ -2245,6 +2245,8 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// update contract
 			$out = $this->_process_order_get_status_response_for_contract($order, $out);
+			// update modem
+			$out = $this->_process_order_get_status_response_for_modem($order, $out);
 		}
 
 		return $out;
@@ -2323,19 +2325,9 @@ class ProvVoipEnvia extends \BaseModel {
 		$contract = Contract::findOrFail($order->contract_id);
 		$contract_changed = False;
 
-		// check external identifiers:
+		// check external identifier:
 		//   if not set (e.g. not known at manual creation time: update
 		//   if set to different values: something went wrong!
-		if (!boolval($contract->contract_external_id)) {
-			$contract->contract_external_id = $order->contractreference;
-			$contract_changed = True;
-		}
-		if ($order->contractreference != $contract->contract_external_id) {
-			$msg = '<h4>Error: Contract reference in order '.$order->contractreference.' and contract '.$contract->contract_external_id.' are different!</h4>';
-			$out .= $msg;
-			Log::error($msg);
-		}
-
 		if (!boolval($contract->customer_external_id)) {
 			$contract->customer_external_id = $order->customerreference;
 			$contract_changed = True;
@@ -2358,6 +2350,40 @@ class ProvVoipEnvia extends \BaseModel {
 		// TODO: hier weiter
 		if (\Str::endswith(\Request::path(), '/request/order_get_status')) {
 			$updater = new VoipRelatedDataUpdaterByEnvia($order->contract_id);
+		};
+
+		return $out;
+	}
+
+
+	/**
+	 * Apply order changes to modem
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_get_status_response_for_modem($order, $out) {
+
+		// get the related modem to check if external identifier is set
+		$modem = Modem::findOrFail($order->modem_id);
+		$modem_changed = False;
+
+		// check external identifier:
+		//   if not set (e.g. not known at manual creation time: update
+		//   if set to different values: something went wrong!
+		if (!boolval($modem->contract_external_id)) {
+			$modem->contract_external_id = $order->contractreference;
+			$modem_changed = True;
+		}
+		if ($modem->contractreference != $modem->contract_external_id) {
+			$msg = '<h4>Error: Contract reference in order '.$order->contractreference.' and modem '.$modem->contract_external_id.' are different!</h4>';
+			$out .= $msg;
+			Log::error($msg);
+		}
+
+		if ($modem_changed) {
+			$modem->save();
+			Log::info('Database table modem updated for modem with id '.$modem_id);
+			$out .= "<br><b>Modem table updated</b>";
 		};
 
 		return $out;
