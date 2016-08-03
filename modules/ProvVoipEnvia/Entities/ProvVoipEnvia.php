@@ -892,18 +892,18 @@ class ProvVoipEnvia extends \BaseModel {
 			array_push($second_level_nodes['contract_create'], 'installation_address_data');
 		}
 
-			/* 'contract_get_reference' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+		/* 'contract_get_reference' => array( */
+		/* 	'reseller_identifier', */
+		/* ), */
 
 		$second_level_nodes['contract_get_voice_data'] = array(
 			'reseller_identifier',
 			'contract_identifier',
 		);
 
-			/* 'contract_lock' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+		/* 'contract_lock' => array( */
+		/* 	'reseller_identifier', */
+		/* ), */
 
 		$second_level_nodes['contract_relocate'] = array(
 			'reseller_identifier',
@@ -918,19 +918,21 @@ class ProvVoipEnvia extends \BaseModel {
 		/* 	'contract_termination_data', */
 		/* ); */
 
-			/* 'contract_unlock' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+		/* 'contract_unlock' => array( */
+		/* 	'reseller_identifier', */
+		/* ), */
 
-			/* 'customer_get_reference' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+
+		/* 'customer_get_reference' => array( */
+		/* 	'reseller_identifier', */
+		/* ), */
 
 		$second_level_nodes['customer_update'] = array(
 			'reseller_identifier',
 			'customer_identifier',
 			'customer_data',
 		);
+
 
 		$second_level_nodes['misc_get_free_numbers'] = array(
 			'reseller_identifier',
@@ -949,9 +951,10 @@ class ProvVoipEnvia extends \BaseModel {
 			'reseller_identifier',
 		);
 
-			/* 'order_add_mgcp_details' => array( */
-			/* 	'reseller_identifier', */
-			/* ), */
+
+		/* 'order_add_mgcp_details' => array( */
+		/* 	'reseller_identifier', */
+		/* ), */
 
 		$second_level_nodes['order_cancel'] = array(
 			'reseller_identifier',
