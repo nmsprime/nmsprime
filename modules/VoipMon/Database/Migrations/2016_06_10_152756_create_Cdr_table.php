@@ -132,11 +132,7 @@ class CreateCdrTable extends BaseMigration {
 		if(!$this->_voipmonitor_exists())
 			return;
 
-		system("echo $cmd > $file");
-		// $file will be removed by nmsd
-		while(file_exists($file))
-			// sleep to reduce busy-waiting load
-			sleep(1);
+		system("systemctl $cmd voipmonitor.service");
 	}
 
 }
