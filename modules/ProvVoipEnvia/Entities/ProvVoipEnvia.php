@@ -1589,7 +1589,11 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$this->_add_installation_address_data();
 
-		$inner_xml->addChild('apply_to_customer', 0);
+		// necessary in version 1.4, in 1.5 removed again
+		if ($this->api_version == 1.4) {
+			$inner_xml->addChild('apply_to_customer', 0);
+		}
+
 	}
 
 
