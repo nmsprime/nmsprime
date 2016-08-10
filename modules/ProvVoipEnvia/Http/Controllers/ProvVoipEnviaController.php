@@ -786,9 +786,11 @@ class ProvVoipEnviaController extends \BaseController {
 			$view_var = $this->_handle_request_success($job, $data);
 		}
 		// a 404 on order_get_status is meaningful ⇒ we have to delete this order
+		// so let's handle this with the success logic
 		elseif (($job == "order_get_status") && ($data['status'] == 404)) {
 			$view_var = $this->_handle_request_success($job, $data);
 		}
+		// TODO: should we handle some of the errors in a special way?
 		/* // bad request */
 		/* elseif ($data['status'] == 400) { */
 		/* 	$view_var = $this->_handle_request_failed_400($job, $data); */
@@ -805,7 +807,7 @@ class ProvVoipEnviaController extends \BaseController {
 		/* elseif ($data['status'] == 404) { */
 		/* 	$view_var = $this->_handle_request_failed_404($job, $data); */
 		/* } */
-		// other => something went wrong
+		// none of the above (fallback) => use generic error handling
 		else {
 			$view_var = $this->_handle_request_failed($job, $data);
 		}
@@ -905,15 +907,21 @@ class ProvVoipEnviaController extends \BaseController {
 		$errors = $this->model->get_error_messages($data['xml']);
 
 		if ($this->entry_method == 'cron') {
-			echo "ERROR(S) occured:";
-			echo "Exiting…";
+			foreach ($errors as $error) {
+				if (boolval($error['status']) || boolval($error['message'])) {
+					echo 'Error '.$error['status'].' occured on job '.$job.': '.$error['message'];
+					Log::error('Error '.$error['status'].' occured on job '.$job.': '.$error['message']);
+				}
+			}
+			Log::error('Exiting cronjob because of the above errors.');
+			echo 'Exiting cronjob because of the above errors.';
 			exit(1);
 		}
 		else {
 			$ret = '';
 
-			$ret .= "<h4>The following errors occured:</h4>";
-			$ret .= "<table style=\"background-color: #faa;\">";
+			$ret .= "<h4>The following error(s) occured:</h4>";
+			$ret .= "<table style=\"background-color: #fcc; color: #000; font-size: 1.05em; font-family: monospace\">";
 			foreach ($errors as $error) {
 				if (boolval($error['status']) || boolval($error['message'])) {
 					$ret .= "<tr>";
