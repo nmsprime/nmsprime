@@ -1162,8 +1162,10 @@ class ProvVoipEnvia extends \BaseModel {
 			'houseno' => 'house_number',
 			'zipcode' => 'zip',
 			'city' => 'city',
+			'district' => 'district',
 			'birthday' => 'birthday',
 			'company' => 'company',
+			'department' => 'department',
 		);
 
 		$this->_add_fields($inner_xml, $fields, $this->contract);
@@ -1193,8 +1195,10 @@ class ProvVoipEnvia extends \BaseModel {
 			'houseno' => 'house_number',
 			'zipcode' => 'zip',
 			'city' => 'city',
+			'district' => 'district',
 			'birthday' => 'birthday',
 			'company' => 'company',
+			'department' => 'department',
 		);
 
 		$this->_add_fields($inner_xml, $fields, $this->modem);
@@ -1341,6 +1345,7 @@ class ProvVoipEnvia extends \BaseModel {
 			'street' => 'subscriber_street',
 			'zipcode' => 'subscriber_zip',
 			'city' => 'subscriber_city',
+			'district' => 'subscriber_district',
 		);
 
 		$this->_add_fields($inner_xml, $fields_subscriber, $this->phonenumbermanagement);
