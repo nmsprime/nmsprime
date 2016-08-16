@@ -2441,7 +2441,7 @@ $articles->addChild('article_id', '399554');
 			$modem->contract_external_id = $order->contractreference;
 			$modem_changed = True;
 		}
-		if ($modem->contractreference != $modem->contract_external_id) {
+		if ($order->contractreference != $modem->contract_external_id) {
 			$msg = 'Error: Contract reference in order '.$order->contractreference.' and modem '.$modem->contract_external_id.' are different!';
 			$out .= '<h4>'.$msg.'</h4>';
 			Log::error($msg);
