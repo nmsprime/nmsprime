@@ -1255,6 +1255,16 @@ class ProvVoipEnvia extends \BaseModel {
 		foreach ($defaults as $xml_field => $payload) {
 			$inner_xml->addChild($xml_field, $payload);
 		}
+
+// workaround for defective EnviaAPI – delete this if running normal again!!
+// BEGIN OF WORKAROUND
+$contract_configurations = $inner_xml->addChild('contract_configurations');
+$contract_configuration_data = $contract_configurations->addChild('contract_configuration_data');
+$type = $contract_configuration_data->addChild('type', 'sprachtarif');
+$articles = $contract_configuration_data->addChild('articles');
+$articles->addChild('article_id', '399554');
+// END OF WORKAROUND
+
 	}
 
 
