@@ -1069,7 +1069,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$order_id = \Input::get('order_id', null);
 		if (!is_numeric($order_id)) {
-			throw new \InvalidArgumentException("order_id has to be numeric");
+			throw new XmlCreationError("order_id has to be numeric");
 		}
 
 		$inner_xml = $this->xml->addChild('order_identifier');
@@ -1100,7 +1100,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// if given: localareacode has to be numeric
 		// TODO: error handling
 		if (!is_numeric($localareacode)) {
-			throw new \InvalidArgumentException("localareacode has to be numeric");
+			throw new XmlCreationError("localareacode has to be numeric");
 		}
 
 		// localareacode is valid: add filter
@@ -1113,7 +1113,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// if given: baseno has to be numeric
 		// TODO: error handling
 		if (!is_numeric($baseno)) {
-			throw new \InvalidArgumentException("baseno has to be numeric");
+			throw new XmlCreationError("baseno has to be numeric");
 		}
 
 		// baseno is valid
@@ -1415,7 +1415,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// on porting: check if valid CarrierIn chosen
 		if (boolval($this->phonenumbermanagement->porting_in)) {
 			if (!CarrierCode::is_valid($carrier_in)) {
-				throw new \InvalidArgumentException('ERROR: '.$carrier_code.' is not a valid carrier_code');
+				throw new XmlCreationError('ERROR: '.$carrier_code.' is not a valid carrier_code');
 			}
 			$inner_xml->addChild('carriercode', $carrier_in);
 		}
@@ -1423,7 +1423,7 @@ class ProvVoipEnvia extends \BaseModel {
 		else {
 			if ($this->api_version >= 1.4) {
 				if ($carrier_in != 'D057') {
-					throw new \InvalidArgumentException('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
+					throw new XmlCreationError('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
 				}
 				$carrier_in = 'D057';
 				$inner_xml->addChild('carriercode', $carrier_in);
@@ -1517,6 +1517,10 @@ class ProvVoipEnvia extends \BaseModel {
 			'orderdate' => 'deactivation_date',
 		);
 
+		if (!boolval($this->phonenumbermanagement->deactivation_date)) {
+			throw new XmlCreationError('ERROR: PhonenumberManagement::deactivation_date needs to be set');
+		}
+
 		$this->_add_fields($inner_xml, $fields, $this->phonenumbermanagement);
 
 		// handle outgoing porting
@@ -1526,7 +1530,7 @@ class ProvVoipEnvia extends \BaseModel {
 				$inner_xml->addChild('carriercode', $carrier_out);
 			}
 			else {
-				throw new \InvalidArgumentException('ERROR: '.$carrier_code.' is not a valid carrier_code');
+				throw new XmlCreationError('ERROR: '.$carrier_code.' is not a valid carrier_code');
 			}
 		}
 		else {
@@ -1549,7 +1553,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$valid_directions = ['in', 'out'];
 
 		if (!in_array($direction, $valid_directions)) {
-			throw new \UnexpectedValueException('envia_blacklist_get_direction has to be in ['.implode('|', $valid_directions).']');
+			throw new XmlCreationError('envia_blacklist_get_direction has to be in ['.implode('|', $valid_directions).']');
 		}
 
 		$inner_xml = $this->xml->addChild('blacklist_data');
@@ -1587,7 +1591,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$inner_xml = $this->xml->addChild('contract_relocation_data');
 
 		if (is_null($this->modem->installation_address_change_date)) {
-			throw new \InvalidArgumentException('ERROR: Date of installation address change has to be set.');
+			throw new XmlCreationError('ERROR: Date of installation address change has to be set.');
 		}
 
 		$inner_xml->addChild('orderdate', $this->modem->installation_address_change_date);
@@ -1615,10 +1619,10 @@ class ProvVoipEnvia extends \BaseModel {
 		$enviaorderdocument = EnviaOrderDocument::findOrFail($enviaorderdocument_id);
 
 		if ($enviaorderdocument->enviaorder->orderid != $enviaorder_id) {
-			throw new \InvalidArgumentException('Given order_id ('.$enviaorder_id.') not correct for given enviaorderdocument');
+			throw new XmlCreationError('Given order_id ('.$enviaorder_id.') not correct for given enviaorderdocument');
 		}
 		if (boolval($enviaorderdocument->upload_order_id)) {
-			throw new \InvalidArgumentException('Given document has aleady been uploaded');
+			throw new XmlCreationError('Given document has aleady been uploaded');
 		}
 
 		$filename = $enviaorderdocument->filename;

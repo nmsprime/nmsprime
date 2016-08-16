@@ -921,7 +921,7 @@ class ProvVoipEnviaController extends \BaseController {
 			$ret = '';
 
 			$ret .= "<h4>The following error(s) occured:</h4>";
-			$ret .= "<table style=\"background-color: #fcc; color: #000; font-size: 1.05em; font-family: monospace\">";
+			$ret .= "<table style=\"background-color: #fcc; color: #000; font-size: 1.05em; font-family: monospace; font-weight: bold\">";
 			foreach ($errors as $error) {
 				if (boolval($error['status']) || boolval($error['message'])) {
 					$ret .= "<tr>";
