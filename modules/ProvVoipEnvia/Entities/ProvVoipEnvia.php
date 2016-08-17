@@ -150,10 +150,12 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$this->_get_model_data($view_level, $model);
 
-		$phonenumber_id = $this->phonenumbermanagement->phonenumber_id;
-		if (!is_null($this->phonenumbermanagement->phonebookentry)) {
+		$phonenumber_id = $this->phonenumber->id;
+
+		if (!is_null($this->phonenumbermanagement) && !is_null($this->phonenumbermanagement->phonebookentry)) {
 			$phonebookentry_id = $this->phonenumbermanagement->phonebookentry->id;
 		}
+
 		$modem_id = $this->modem->id;
 		$contract_id = $this->contract->id;
 
