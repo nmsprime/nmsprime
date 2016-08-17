@@ -622,7 +622,7 @@ class ProvVoipEnvia extends \BaseModel {
 		\Storage::makeDirectory($path);
 		\Storage::put($filename, $filecontent);
 		$absfile = storage_path().'/'.$filename;
-		chmod(storage_path().'/app/'.$filename, 0440);
+		chmod(storage_path().'/app/'.$filename, 0640);
 
 	}
 
