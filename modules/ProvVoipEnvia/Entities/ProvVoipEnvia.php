@@ -614,9 +614,9 @@ class ProvVoipEnvia extends \BaseModel {
 		// create filename (use current datetime as ISO like string with microseconds to avoid filename conflicts)
 		// therefore we have to use microtime instead of date('u') (which in every case returns 000000 μs)
 		$microseconds = explode(' ', microtime(false))[0];
-		$microseconds = str_replace('0.', '.', $microseconds);
-		$now = date('Y-m-d\tH-i-s').$microseconds;
-		$filename = strtolower($now.'__'.$context).'.xml';
+		$microseconds = str_replace('0.', '-', $microseconds);
+		$now = date('Y-m-d__H-i-s').$microseconds;
+		$filename = strtolower($now.'____'.$context).'.xml';
 
 		// move uploaded file to document_path (after making directories)
 		$path = 'data/provvoipenvia/XML/'.substr($now, 0, 7);
