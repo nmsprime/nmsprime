@@ -35,6 +35,14 @@ class ProvVoipEnvia extends \BaseModel {
 			$v = -1;
 		}
 
+		// check if sent and received XML shall be stored
+		if (array_key_exists('PROVVOIPENVIA__STORE_XML', $_ENV)) {
+			$this->xml_storing_enabled = boolval($_ENV['PROVVOIPENVIA__STORE_XML']);
+		}
+		else {
+			$this->xml_storing_enabled = false;
+		}
+
 		// this has to be a float value to allow stable version compares ⇒ make some basic tests
 		if (!is_numeric($v)) {
 			throw new \InvalidArgumentException('PROVVOIPENVIA__REST_API_VERSION in .env has to be a float value (e.g.: 1.4)');
@@ -575,7 +583,47 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->_create_base_xml_by_topic($job);
 		$this->_create_final_xml_by_topic($job);
 
+		$this->store_xml($job, $this->xml);
+
 		return $this->xml->asXML();
+	}
+
+	/**
+	 * Helper to save all sent and received XML to HDD for later debugging.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function store_xml($context, $xml) {
+
+		// first check if we want to store the xml
+		if (!$this->xml_storing_enabled) {
+			return;
+		}
+
+		// make xml more human readable
+		// so later man can faster understand the content; also grepping will be easier
+		$dom = new \DOMDocument('1.0');
+		$dom->preserveWhiteSpace = false;
+		$dom->formatOutput = true;
+		$dom->loadXML($xml->asXML());
+		$filecontent = $dom->saveXML();
+
+
+		// create filename (use current datetime as ISO like string with microseconds to avoid filename conflicts)
+		// therefore we have to use microtime instead of date('u') (which in every case returns 000000 μs)
+		$microseconds = explode(' ', microtime(false))[0];
+		$microseconds = str_replace('0.', '.', $microseconds);
+		$now = date('Y-m-d\tH-i-s').$microseconds;
+		$filename = strtolower($now.'__'.$context).'.xml';
+
+		// move uploaded file to document_path (after making directories)
+		$path = 'data/provvoipenvia/XML/'.substr($now, 0, 7);
+		$filename = $path.'/'.$filename;
+		\Storage::makeDirectory($path);
+		\Storage::put($filename, $filecontent);
+		$absfile = storage_path().'/'.$filename;
+		chmod(storage_path().'/app/'.$filename, 0440);
+
 	}
 
 
@@ -1771,6 +1819,9 @@ $articles->addChild('article_id', '399554');
 
 		$raw_xml = $data['xml'];
 		$xml = new \SimpleXMLElement($raw_xml);
+
+		// check if we want to store the xml
+		$this->store_xml($job.'_response', $xml);
 
 		$method = '_process_'.$job.'_response';
 		$out = $this->${"method"}($xml, $data, $out);
