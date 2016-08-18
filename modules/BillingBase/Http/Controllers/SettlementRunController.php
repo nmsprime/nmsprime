@@ -24,8 +24,8 @@ class SettlementRunController extends \BaseController {
 	{
 		$time_last_month = strtotime('first day of last month');
 
-		$data['year']  = date('Y', $time_last_month);
-		$data['month'] = date('m', $time_last_month);
+		$data['year']  = isset($data['year']) && $data['year'] ? $data['year'] : date('Y', $time_last_month);
+		$data['month'] = (int) (isset($data['month']) && $data['month'] ? $data['month'] : date('m', $time_last_month));
 
 		if (!isset($data['description']))
 		{
@@ -37,7 +37,20 @@ class SettlementRunController extends \BaseController {
 	}
 
 	/**
-	 * Create new Model, Run Accounting Command and Delete current Model if already existent
+	 * Remove Index Create button when actual Run was already created and is verified - so it's not possible
+	 * to overwrite accidentially the verified data
+	 */
+	public function __construct()
+	{
+		$last_run = SettlementRun::get_last_run();
+		$this->index_create_allowed = !($last_run->verified && ($last_run->month == date('m', strtotime('first day of last month'))));
+		return parent::__construct();
+	}
+
+
+	/**
+	 * Extension of generic Store function of BaseController 
+	 * Run Accounting Command, Delete current Model if already existent, Create new Model
 	 */
 	public function store($redirect = true)
 	{
@@ -50,12 +63,12 @@ class SettlementRunController extends \BaseController {
 
 
 	/*
-	 * Remove Rerun Button when next month has begun
+	 * Extends generic edit function from Basecontroller for own view - Removes Rerun Button when next month has begun
 	 */
 	public function edit($id)
 	{
 		$obj = SettlementRun::find($id);
-		$bool = date('m') == $obj->updated_at->__get('month');
+		$bool = (date('m') == $obj->created_at->__get('month')) && !$obj->verified;
 
 		return parent::edit($id)->with('rerun_button', $bool);
 	}
