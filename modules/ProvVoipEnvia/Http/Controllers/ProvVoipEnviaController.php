@@ -111,9 +111,6 @@ class ProvVoipEnviaController extends \BaseController {
 			exit(1);
 		}
 
-		// the requests payload (=XML), also
-		$payload = $this->model->get_xml($job);
-
 		// execute only if job is currently allowed
 		if (!$this->_job_allowed($job)) {
 			$view_var = $this->_show_job_not_allowed_info($job, $origin);
@@ -695,7 +692,10 @@ class ProvVoipEnviaController extends \BaseController {
 		// the requests payload (=XML)
 		$xml_creation_failed = True;
 		try {
-			$payload = $this->model->get_xml($job);
+			// check if data is going to be sent – don't store XML created to be shown for confirmation request
+			// if the XML to create is for sending against Envia there should be a …&really=True within the GET params
+			$store_xml = \Input::get('really', False);
+			$payload = $this->model->get_xml($job, $store_xml);
 			$xml_creation_failed = False;
 		}
 		catch (XmlCreationError $ex) {

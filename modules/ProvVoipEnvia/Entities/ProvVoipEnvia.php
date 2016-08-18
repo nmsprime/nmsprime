@@ -575,17 +575,20 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @author Patrick Reichel
 	 *
 	 * @param $job job to do
+	 * @param store created XML (used to deactivate the function e.g. for XML created to be shown only)
 	 *
 	 * @return XML
 	 */
-	public function get_xml($job) {
+	public function get_xml($job, $store=True) {
 
 		$this->_get_model_data();
 
 		$this->_create_base_xml_by_topic($job);
 		$this->_create_final_xml_by_topic($job);
 
-		$this->store_xml($job, $this->xml);
+		if ($store) {
+			$this->store_xml($job, $this->xml);
+		}
 
 		return $this->xml->asXML();
 	}
