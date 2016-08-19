@@ -21,6 +21,12 @@ class Cdr extends \BaseModel {
 		return array();
 	}
 
+	// Show only the last 1000 non-ideal CDRs
+	public function index_list()
+	{
+		return $this->where('mos_min_mult10','<',45)->orderBy('id', 'DESC')->simplePaginate(1000);
+	}
+
 	// Link title in index view
 	public function view_index_label()
 	{

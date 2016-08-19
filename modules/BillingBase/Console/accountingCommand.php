@@ -358,12 +358,7 @@ class accountingCommand extends Command {
 		}
 
 		// create zip file
-		$filename = date('Y_m', strtotime('first day of last month')).'.zip';
-		$dir = storage_path('app/'.$this->dir);
-		chdir($dir);
-		system("zip -r $filename *");
-		system('chmod -R 0700 '.$dir);
-		system('chown -R apache '.$dir);
+		\Artisan::call('billing:zip');
 	}
 
 

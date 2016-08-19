@@ -11,7 +11,7 @@ class SettlementRun extends \BaseModel {
 	public static function rules($id = null)
 	{
 		return array(
-			// 'rcd' 	=> 'numeric|between:1,28',
+			// 'month' => 'unique:settlementrun,month,'.$id.',id,year,'.$year.',deleted_at,NULL', //,year,'.$year
 		);
 	}
 
@@ -31,10 +31,10 @@ class SettlementRun extends \BaseModel {
 	{
 		$bsclass = $this->verified ? 'info' : 'warning';
 
-		return ['index' => [$this->year, $this->month, $this->updated_at->__get('day')],
+		return ['index' => [$this->year, $this->month, $this->created_at->__get('day')],
 		        'index_header' => ['Year', 'Month', 'Day'],
 		        'bsclass' => $bsclass,
-		        'header' => $this->year.' - '.$this->month.' - '.$this->updated_at->__get('day')];
+		        'header' => $this->year.' - '.$this->month.' - '.$this->created_at->__get('day')];
 	}
 
 	public function index_list()
@@ -54,6 +54,11 @@ class SettlementRun extends \BaseModel {
 	public function get_files_dir()
 	{
 		return storage_path('app/data/billingbase/accounting/'.$this->year.'-'.sprintf('%02d', $this->month));		
+	}
+
+	public static function get_last_run()
+	{
+		return SettlementRun::orderBy('id', 'desc')->get()->first();
 	}
 
 

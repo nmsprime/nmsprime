@@ -10,6 +10,7 @@ class AccountingRecord extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'accountingrecord';
 
+	public $observer_enabled = false;
 
 	/**
 	 * Stores a Record in the database - TODO: move to controller!
