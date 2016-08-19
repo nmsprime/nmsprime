@@ -57,7 +57,7 @@ class ItemController extends \BaseController {
 
 	public function prepare_input($data)
 	{
-		$data['credit_amount'] = abs($data['credit_amount']);
+		$data['credit_amount'] = $data['credit_amount'] ? abs($data['credit_amount']) : $data['credit_amount'];
 
 		$type = Product::findOrFail($data['product_id'])->type;
 		// set default valid from date to tomorrow for this product types
@@ -71,7 +71,6 @@ class ItemController extends \BaseController {
 		}
 
 		// $data['valid_to'] = $data['valid_to'] ? : null;
-
 
 		return parent::prepare_input($data);
 	}
