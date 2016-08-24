@@ -23,7 +23,7 @@ class SalesmanController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'firstname', 'description' => 'Firstname'),
 			array('form_type' => 'text', 'name' => 'lastname', 'description' => 'Lastname'),
 			array('form_type' => 'text', 'name' => 'commission', 'description' => 'Commission in %'),
-			array('form_type' => 'text', 'name' => 'products', 'description' => 'Product List', 'help' => 'Add all Product types he gets provision for - possible: '.$types, 'options' => ['placeholder' => $types]),
+			array('form_type' => 'text', 'name' => 'products', 'description' => 'Product List', 'help' => trans('helper.Salesman_ProductList').$types, 'options' => ['placeholder' => $types]),
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
 		);
 	}
