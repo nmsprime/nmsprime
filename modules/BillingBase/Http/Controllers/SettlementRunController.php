@@ -43,7 +43,8 @@ class SettlementRunController extends \BaseController {
 	public function __construct()
 	{
 		$last_run = SettlementRun::get_last_run();
-		$this->index_create_allowed = !($last_run->verified && ($last_run->month == date('m', strtotime('first day of last month'))));
+		$this->index_create_allowed = !is_object($last_run) || !($last_run->verified && ($last_run->month == date('m', strtotime('first day of last month'))));
+
 		return parent::__construct();
 	}
 
