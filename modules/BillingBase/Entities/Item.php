@@ -51,8 +51,8 @@ class Item extends \BaseModel {
 
 		$billing_valid = $this->check_validity();
 
-		// blue colour means it will be considered for next accounting cycle
-		$bsclass = $billing_valid ? 'info' : '';
+		// green colour means it will be considered for next accounting cycle, blue is a new item
+		$bsclass = $billing_valid ? 'success' : 'info';
 
 		// red means item is outdated
 		if (($this->get_start_time() < strtotime(date('Y-m-01'))) && !$billing_valid)
