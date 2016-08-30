@@ -24,6 +24,7 @@ use Modules\ProvBase\Entities\Cmts;
 class ProvMonController extends \BaseController {
 
 	protected $domain_name = "";
+	protected $modem = null;
 
 	public function __construct()
 	{
@@ -36,10 +37,18 @@ class ProvMonController extends \BaseController {
 	 */
 	public function prep_sidebar($id)
 	{
-		return [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]],
+		$modem = Modem::find($id);
+		$this->modem = $modem;
+
+		$a = array(['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]],
 						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
 						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]],
-						['name' => 'MTA-Analysis', 'route' => 'Provmon.mta', 'link' => [$id]]];
+				);
+
+		if (isset($modem->mtas[0]))
+			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'Provmon.mta', 'link' => [$id]]);
+
+		return $a;
 	}
 
 	/**
@@ -49,10 +58,11 @@ class ProvMonController extends \BaseController {
 	 */
 	public function analyses($id)
 	{
-		$modem = Modem::find($id);
 		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = null;
+		$modem 	  = $this->modem ? $this->modem : Modem::find($id);
 		$view_var = $modem; // for top header
 		$hostname = $modem->hostname.'.'.$this->domain_name;
+		$mac 	  = strtolower($modem->mac);
 
 		// Ping: Send 5 request's at once with max timeout of 1 second
 		exec ('sudo ping -c5 -i0 -w1 '.$hostname, $ping);
@@ -63,11 +73,11 @@ class ProvMonController extends \BaseController {
 		$flood_ping = $this->flood_ping ($hostname);
 
 		// Lease
-		$lease['text'] = $this->search_lease('hardware ethernet '.$modem->mac);
+		$lease['text'] = $this->search_lease('hardware ethernet '.$mac);
 		$lease = $this->validate_lease($lease, $type);
 
 		// Log - TODO: grep tftp requests of specific modem - not all!
-		exec ('egrep "('.$modem->mac.'|'.$hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
+		exec ('egrep -i "('.$mac.'|'.$hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
 
 
 		// Realtime Measure
@@ -139,19 +149,19 @@ class ProvMonController extends \BaseController {
 	public function cpe_analysis($id)
 	{
 		$ping = $lease = $log = $dash = $realtime = null;
-		$modem = Modem::find($id);
+		$modem 	  = $this->modem ? $this->modem : Modem::find($id);
 		$view_var = $modem; // for top header
-		$type = 'CPE';
+		$type 	  = 'CPE';
 
 		// get MAC of CPE first
-		exec ('grep '.$modem->mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+		exec ('grep -i '.$modem->mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
 		if ($str == [])
 		{
 			$mac = $modem->mac;
 			$mac[0] = ' ';
 			$mac = trim($mac);
 			$mac_bug = true;
-			exec ('grep '.$mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+			exec ('grep -i '.$mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
 		}
 
 		if (isset($str[0]))
@@ -164,10 +174,10 @@ class ProvMonController extends \BaseController {
 
 		// Log
 		if (isset($cpe_mac[0][0]))
-			exec ('grep '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
+			exec ('grep -i '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
 
 		// Lease
-		$lease['text'] = $this->search_lease('billing subclass', $modem->mac);
+		$lease['text'] = $this->search_lease('billing subclass', strtolower($modem->mac));
 		$lease = $this->validate_lease($lease, $type);
 
 		// Ping
@@ -199,7 +209,7 @@ class ProvMonController extends \BaseController {
 	public function mta_analysis($id)
 	{
 		$ping = $lease = $log = $dash = $realtime = null;
-		$modem = Modem::find($id);
+		$modem 	  = $this->modem ? $this->modem : Modem::find($id);
 		$view_var = $modem; // for top header
 		$type = 'MTA';
 
@@ -219,7 +229,7 @@ class ProvMonController extends \BaseController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// log
-		exec ('grep "'.$mta->mac.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
+		exec ('grep -i "'.$mta->mac.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
 
 end:

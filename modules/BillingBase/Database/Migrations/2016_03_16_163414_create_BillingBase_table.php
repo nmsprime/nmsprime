@@ -27,7 +27,8 @@ class CreateBillingBaseTable extends BaseMigration {
 			$table->boolean('termination_fix'); 	// termination of items only allowed on last days of month
 		});
 
-		DB::update("INSERT INTO ".$this->tablename.' (currency) VALUES("EUR");');
+		// set default values for new installation
+		DB::update("INSERT INTO ".$this->tablename.' (currency, tax) VALUES("EUR", 19);');
 
 	}
 

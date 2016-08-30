@@ -72,10 +72,6 @@ class Invoice {
 		'company_account_iban'  => '',
 		'company_account_bic' 	=> '',
 
-		'invoice_nr' 			=> '',
-		'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate
-		'invoice_headline'		=> '',
-
 		// Contract
 		'contract_id' 			=> '',
 		'contract_nr' 			=> '',
@@ -90,7 +86,8 @@ class Invoice {
 
 		'date_invoice'			=> '',
 		'invoice_nr' 			=> '',
-		'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate
+		'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate as table with sepa mandate info
+		'invoice_msg' 			=> '', 			// invoice text without sepa mandate information
 		'invoice_headline'		=> '',
 		'rcd' 					=> '',			// Fälligkeitsdatum
 		'cdr_month'				=> '', 			// Month of Call Data Records
@@ -216,6 +213,7 @@ class Invoice {
 
 		// set invoice text
 		// $this->data['invoice_text'] = $template.'\\\\'.'\begin{tabbing} \hspace{9em}\=\kill '.$text.' \end{tabbing}';
+		$this->data['invoice_msg'] = $template;
 		$this->data['invoice_text'] = '\begin{tabular} {@{}ll} \multicolumn{2}{@{}L{\textwidth}} {'.$template.'}\\\\'.$text.' \end{tabular}';
 
 	}
@@ -385,6 +383,9 @@ class Invoice {
 				switch ($ret)
 				{
 					case 0: break;
+					case 1: 
+						$this->logger->addError("PdfLatex: Syntax Error in filled tex template!");
+						return null;
 					case 127:
 						$this->logger->addError("Illegal Command - PdfLatex not installed!");
 						return null;
