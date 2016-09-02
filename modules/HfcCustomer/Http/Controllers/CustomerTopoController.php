@@ -181,6 +181,8 @@ class CustomerTopoController extends TreeController {
 		if (!\PPModule::is_active('ProvMon'))
 			return \View::make('errors.generic')->with('message', 'Module Provisioning Monitoring (ProvMon) not installed');
 
+		$monitoring = array();
+
 		// load a new ProvMon object
 		$provmon = new \Modules\ProvMon\Http\Controllers\ProvMonController;
 
@@ -298,9 +300,6 @@ class CustomerTopoController extends TreeController {
 
 				if ($x)                  # ignore (0,0)
 				{
-					$descr .= "<br><div align=right><a target=\"".$this->html_target."\"
-						   href=\"../customer/mps.php?mp_sys_operation=mp_op_Add&pos=$pos\">
-						   Set New Parent Device</a></div>";
 					$file .= "\n <Placemark><name>1</name>
 						 <description><![CDATA[$descr]]></description>
 						 <styleUrl>$style</styleUrl>
@@ -385,6 +384,24 @@ class CustomerTopoController extends TreeController {
 		\Storage::put($this->file, $file);
 
 		return str_replace(storage_path(), '', \Storage::getAdapter()->applyPathPrefix($this->file));
+	}
+
+	/**
+	 * retrieve file if existent, this can be only used by authenticated and
+	 * authorized users (see corresponding Route::get in Http/routes.php)
+	 *
+	 * @author Ole Ernst
+	 *
+	 * @param string $filename name of the file
+	 * @return mixed
+	 */
+	public function get_file($type, $filename)
+	{
+		$path = storage_path("app/data/hfccustomer/kml/$filename");
+		if (file_exists($path))
+			return \Response::file($path);
+		else
+			return \App::abort(404);
 	}
 
 }
