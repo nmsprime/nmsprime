@@ -366,9 +366,6 @@ class CustomerTopoController extends TreeController {
 		$pos ="$x, $y, 0.000000";
 		if ($x)
 		{
-			$descr .= "<br><div align=right><a target=\"".$this->html_target."\"
-				   href=\"../customer/mps.php?mp_sys_operation=mp_op_Add&pos=$pos\">
-				   Set New Parent Device</a></div>";
 			$file .= "\n <Placemark><name></name>
 				 <description><![CDATA[$descr]]></description>
 				 <styleUrl>$style</styleUrl>

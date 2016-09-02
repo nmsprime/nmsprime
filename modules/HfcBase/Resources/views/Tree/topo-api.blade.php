@@ -132,7 +132,9 @@ function clk_init_1()
 			return;
 		}
 
-		if (!descr.contains('='))
+		var coord = /^-?\d+\.\d+,-?\d+\.\d+$/;
+		// descr matches a geo-coordinate (-)xx.xxx,(-)xx.xxx
+		if (coord.test(descr))
 			// window.open("mapdia.header.php?kml="+descr, "_blank",
 			// "directories=no, status= no, fullscreen=no, location=no, menubar=no, resizeable=yes, scrollbars=yes, status=no, titlebar=no, toolbar=no, left=50, top=50, width=300, height=300");
 			window.open(global_url + "Tree/erd/pos/"+descr, "_bank");
