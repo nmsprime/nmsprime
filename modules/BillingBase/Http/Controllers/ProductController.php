@@ -44,7 +44,7 @@ class ProductController extends \BaseController {
 			array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'Qos (Data Rate)', 'value' => $qos_val, 'select' => 'Internet'),
 			array('form_type' => 'select', 'name' => 'voip_sales_tariff_id', 'description' => 'Phone Sales Tariff', 'value' => $sales_tariffs, 'select' => 'Voip'),
 			array('form_type' => 'select', 'name' => 'voip_purchase_tariff_id', 'description' => 'Phone Purchase Tariff', 'value' => $purchase_tariffs, 'select' => 'Voip'),
-			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => trans("description.Billing_Cycle"), 'value' => Product::getPossibleEnumValues('billing_cycle')),
+			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle' , 'value' => Product::getPossibleEnumValues('billing_cycle')),
 			array('form_type' => 'text', 'name' => 'cycle_count', 'description' => 'Number of Cycles', 'select' => 'Device Other', 'help' => trans('helper.Product_Number_of_Cycles')),
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
 			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)', 'select' => 'Internet Voip TV Device Other'),
