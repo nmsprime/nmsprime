@@ -16,6 +16,7 @@ use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Salesman;
 
+
 class accountingCommand extends Command {
 
 	/**
@@ -100,8 +101,10 @@ class accountingCommand extends Command {
 		// init product types of salesmen and invoice nr counters for each sepa account, date of last run
 		$this->_init($sepa_accs, $salesmen, $conf);
 
-		// get call data records ordered
-		$cdrs = $this->_parse_cdr_file();
+		// get call data records as ordered structure (array)
+		$cdrs = $this->_get_cdr_data();
+		if (!$cdrs)
+			$logger->addAlert('No Call Data Records available for this Run!');
 		
 		/*
 		 * Loop over all Contracts
@@ -342,6 +345,7 @@ class accountingCommand extends Command {
 	}
 
 
+
 	/*
 	 * stores all billing files besides invoices in the directory defined as property of this class
 	 */
@@ -363,62 +367,92 @@ class accountingCommand extends Command {
 
 
 	/**
-	 * Calls cdrCommand to get Call data records from Envia and formats relevant data to array
+	 * Calls cdrCommand to get Call data records from Provider and formats relevant data to structured array
 	 *
-	 * @return array 	[contract_id => [phonr_nr, time, duration, ...], next_id => [...], ...]
+	 * @return array 	[contract_id => [phonr_nr, time, duration, ...], 
+	 *					 next_contract_id => [...],
+	 * 					 ...]
+	 *					on success, else empty 2 dimensional array
 	 */
-	private function _parse_cdr_file()
+	private function _get_cdr_data()
 	{
-		$data  = [];
-		$csv   = [];
-		$files = Storage::files($this->dir);
-		$bool  = true;
-
-		// check if file is already loaded
-		foreach ($files as $file)
-		{
-			if (strpos(basename($file), 'xxxxxxx') !== false)
-    		{
-    			$csv = file(storage_path('app/'.$file));
-    			break;
-    		}
-    	}
-
-    	if (!$csv)
-    	{
-			// get call data records
+		$filename = 'cdr_'.date('Y_m', strtotime('-2 month')).'.csv';
+		$dir_path = storage_path('app/'.$this->dir.'/');
+		$filepath = $dir_path.$filename;
+		
+		if (!is_file($filepath))
 			$ret = $this->call('billing:cdr');
 
-			if ($ret)
-				return array(array());
+		if ($ret)
+			return array(array());
 
-			$files = Storage::files($this->dir);
 
-			foreach ($files as $file)
-			{
-				if (strpos(basename($file), 'xxxxxxx') !== false)
-	    		{
-	    			$csv = file(storage_path('app/'.$file));
-	    			break;
-	    		}
-	    	}
-    	}
+		// NOTE: Add new Providers here!
+		if (isset($_ENV['PROVVOIPENVIA__RESELLER_USERNAME']))
+		{
+			return $this->_parse_envia_csv($filepath);
+		}
+
+		else if (isset($_ENV['HLKOMM_RESELLER_USERNAME']))
+		{
+			return $this->_parse_hlkomm_csv($filepath);
+		}
+
+		else
+			// we could throw an redundant exception here as well - is already thrown in cdrCommand
+			return array(array());
+
+	}
+
+
+	/**
+	 * Parse Envia CSV
+	 *
+	 * @return array  [contract_id/contract_number => [Calling Number, Date, Start, Duration, Called Number, Price], ...]
+	 */
+	protected function _parse_envia_csv($filepath)
+	{
+		$csv = is_file($filepath) ? file($filepath) : array(array());
+
+		// skip first line (column description)
+		if (isset($csv[0]))
+			unset($csv[0]);
+		else
+			return $csv;
 
 		foreach ($csv as $line)
 		{
-			// skip first line
-			if ($bool)
-			{
-				$bool = false;
-				continue;
-			}
-
 			$line = str_getcsv($line, ';');
 			$data[intval($line[0])][] = array($line[3], substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $line[7], str_replace(',', '.', $line[10]));
 		}
 
 		return $data;
-    }
+	}
+
+
+	/**
+	 * Parse HLKomm CSV
+	 *
+	 * @return array 	[contract_id/contract_number => [Calling Number, Date, Start, Duration, Called Number, Price], ...]
+	 */
+	protected function _parse_hlkomm_csv($filepath)
+	{
+		$csv = is_file($filepath) ? file($filepath) : array(array());
+
+		// skip first 5 lines (column description)
+		if (isset($csv[0]))
+			unset($csv[0], $csv[1], $csv[2], $csv[3], $csv[4]);
+		else
+			return $csv;
+
+		foreach ($csv as $line)
+		{
+			$line = str_getcsv($line, ';');
+			// $data[intval($line[0])][] = array($line[3], substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $line[7], str_replace(',', '.', $line[10]));
+		}
+
+		return $data;
+	}	
 
 
 	/**
