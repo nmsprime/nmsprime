@@ -52,11 +52,17 @@ class cdrCommand extends Command {
 	{
 		$this->_init();
 
+		// skip if file is already loaded
 		if (is_file($this->target_dir.$this->target_file))
+		{
+			$logger = new BillingLogger;
+			$logger->addDebug('CDR already loaded');
 			return;
+		}
 
 
-		// NOTE: Add new Providers here!
+		// Choose Provider from specified array key in environment file
+		// NOTE: Add new Providers here!!!
 		if (isset($_ENV['PROVVOIPENVIA__RESELLER_USERNAME']))
 		{
 			$this->_get_envia_cdr();
@@ -95,6 +101,8 @@ class cdrCommand extends Command {
 
 	/**
 	 * Load Call Data Records from Envia Interface and save file to accounting directory of appropriate date
+	 *
+ 	 * @return integer 		0 on success, -1 on error
 	 */
 	private function _get_envia_cdr()
 	{
@@ -139,24 +147,59 @@ class cdrCommand extends Command {
 
 	/**
 	 * Load Call Data Records from HLKomm Interface and save to accounting directory of appropriate date
+	 *
+	 * @return integer 		0 on success, -1 on error
 	 */
 	private function _get_hlkomm_cdr()
 	{
 		$user 	  = $_ENV['HLKOMM_RESELLER_USERNAME'];
 		$password = $_ENV['HLKOMM_RESELLER_PASSWORD'];
 		$logger = new BillingLogger;
+		// establish ftp connection and login
+		$ftp_server = "ftp.hlkomm.net";
 
-
-		// TODO: proof if file is already available
-		$data = file_get_contents("ftp://$user:$password@ftp.hlkomm.net/"/* Add file name here*/);
-		if (!$data)
+		$ftp_conn = ftp_connect($ftp_server);
+		if (!$ftp_conn)
 		{
-			$logger->addAlert('CDR-Import: Could not get Call Data Records from HLKomm for month: '.$month);
+			$logger->addError('Load-CDR: Could not establish ftp connection!', [__FUNCTION__]);
 			return -1;
 		}
 
+		$login = ftp_login($ftp_conn, $user, $password);
+		// enable passive mode for client-to-server connections
+		ftp_pasv($ftp_conn, true);
+		$file_list = ftp_nlist($ftp_conn, ".");
+		// $file_list = ftp_rawlist($ftp_conn, ".");
+
+		// find correct filename
+		foreach ($file_list as $fname)
+		{
+			if (strpos($fname, $this->year.$this->month) !== false && strpos($fname, '_EVN.TXT') !== false)
+				$remote_fname = $fname;
+		}
+
+		if (!isset($remote_fname))
+		{
+			$logger->addError('No CDR File on ftp Server that matches naming conventions', [__FUNCTION__]);
+			return -1;			
+		}
+
+		// load file
+		$target_file = $this->target_dir.'/'.$this->target_file;
+
 		if (!is_dir($this->target_dir))
 			mkdir($this->target_dir, 0744, true);
+
+		if (ftp_get($ftp_conn, $target_file, $remote_fname, FTP_BINARY))
+			$logger->addDebug('Successfully stored CDR txt', [$target_file]);
+		else
+		{
+			$logger->addError('Could not Retrieve CDR File from ftp Server', [__FUNCTION__]);
+			return -1;
+		}
+
+		ftp_close($conn_id);
+
 	}
 
 

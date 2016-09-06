@@ -412,14 +412,14 @@ class accountingCommand extends Command {
 	/**
 	 * Parse Envia CSV
 	 *
-	 * @return array  [contract_id/contract_number => [Calling Number, Date, Start, Duration, Called Number, Price], ...]
+	 * @return array  [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
 	 */
 	protected function _parse_envia_csv($filepath)
 	{
 		$csv = is_file($filepath) ? file($filepath) : array(array());
 
 		// skip first line (column description)
-		if (isset($csv[0]))
+		if ($csv[0])
 			unset($csv[0]);
 		else
 			return $csv;
@@ -437,22 +437,49 @@ class accountingCommand extends Command {
 	/**
 	 * Parse HLKomm CSV
 	 *
-	 * @return array 	[contract_id/contract_number => [Calling Number, Date, Start, Duration, Called Number, Price], ...]
+	 * @return array 	[contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
 	 */
 	protected function _parse_hlkomm_csv($filepath)
 	{
 		$csv = is_file($filepath) ? file($filepath) : array(array());
-
-		// skip first 5 lines (column description)
-		if (isset($csv[0]))
+		// skip first 5 lines (descriptions)
+		if ($csv[0])
 			unset($csv[0], $csv[1], $csv[2], $csv[3], $csv[4]);
 		else
 			return $csv;
 
+		// get phonenr to contract_id listing - needed because only phonenr is mentioned in csv
+		// select m.contract_id, a.username from phonenumber a, mta b, modem m where a.mta_id=b.id AND b.modem_id=m.id order by m.contract_id;
+		$phonenumbers_o = \DB::table('phonenumber')
+			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
+			->join('modem', 'modem.id', '=', 'mta.modem_id')
+			->select('modem.contract_id', 'phonenumber.username')
+			->orderBy('modem.contract_id')->get();
+
+        foreach ($phonenumbers_o as $value)
+			$phonenrs[$value->username] = $value->contract_id;
+
+
+		// create structured array
 		foreach ($csv as $line)
 		{
-			$line = str_getcsv($line, ';');
-			// $data[intval($line[0])][] = array($line[3], substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $line[7], str_replace(',', '.', $line[10]));
+			$line = str_getcsv($line, '\t');
+			$phonenr1 = $line[4].$line[5].$line[6];			// calling nr
+			$phonenr2 = $line[7].$line[8].$line[9];			// called nr
+
+			// TODO: simplify after checking 2nd case!
+			if (isset($phonenrs[$phonenr1]))
+				$data[$phonenrs[$phonenr1]][] = array($phonenr1, $line[0], $line[1], $line[10], $phonenr2, $line[13]);
+			else if (isset($phonenrs[$phonenr2]))
+				// our phonenr is the called nr - TODO: proof if this case can actually happen - normally this shouldnt be the case
+				$data[$phonenrs[$phonenr2]][] = array($phonenr1, $line[0], $line[1], $line[10], $phonenr2, $line[13]);
+			else
+			{
+				// there is a phonenr entry in csv that doesnt exist in our db - this case should never happen
+				$logger = new BillingLogger;
+				$logger->addError('Parse CDR.csv: Call Data Record with Phonenr that doesnt exist in the Database - Phonenr deleted?');
+			}
+
 		}
 
 		return $data;
