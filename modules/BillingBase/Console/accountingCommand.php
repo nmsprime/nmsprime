@@ -15,6 +15,7 @@ use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Salesman;
+use Modules\BillingBase\Entities\Invoice;
 
 
 class accountingCommand extends Command {
@@ -280,20 +281,20 @@ class accountingCommand extends Command {
 
 
 	/**
-	 * Initialise models for this billing cycle (could also be done during runtime but with performance degradation)
+	 * (1) Clear/Create (Prepare) Directories
+	 *
+	 * (2) Initialise models for this billing cycle
 		* invoice number counter
 		* storage directories
+	 	* NOTES:
+	 		* this could also be done during runtime but with performance degradation
+	 		* this works because models are handled by reference
 	 */
 	private function _init($sepa_accs, $salesmen, $conf)
 	{
-		// Remove old files in case command was called again
-		Storage::deleteDirectory($this->dir);
-
-		// TODO: Delete all invoices in case command was called again to avoid keeping invoices 
-		// after switching off the create_invoice flag for example
-
-		// create directory structure
-		if (!is_dir(storage_path('app/'.$this->dir)))
+		if (is_dir(storage_path('app/'.$this->dir)))
+			$this->_directory_cleanup();
+		else
 			mkdir(storage_path('app/'.$this->dir, 0700, true));
 
 
@@ -304,7 +305,7 @@ class accountingCommand extends Command {
 		foreach ($salesmen as $key => $sm)
 			$sm->all_prod_types = $prod_types;
 
-		// directory to save file - is actually only needed for first
+		// directory to save file - is actually only needed for first salesmen
 		if (isset($salesmen[0])) $salesmen[0]->dir = $this->dir;
 
 
@@ -346,12 +347,36 @@ class accountingCommand extends Command {
 					$acc->invoice_nr = $conf->invoice_nr_start - 1;
 			}
 		}
+
 	}
 
 
+	/**
+	 * This function removes all "old" files created by the previous called Command
+	 * This is necessary because otherwise e.g. after deleting contracts the invoice would be kept and is still shown
+	 * in customer control centre
+	 */
+	private function _directory_cleanup()
+	{
+		// Delete all invoices
+		Invoice::delete_current_invoices();
+
+		// everything in accounting directory - SepaAccount specific
+		foreach (Storage::files($this->dir) as $f)
+		{
+			// keep cdr
+			if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
+				Storage::delete($f);
+		}
+
+		foreach (Storage::directories($this->dir) as $d)
+			Storage::deleteDirectory($d);
+			
+	}
+
 
 	/*
-	 * stores all billing files besides invoices in the directory defined as property of this class
+	 * Stores all billing files besides invoices in the directory defined as property of this class
 	 */
 	private function _make_billing_files($sepa_accs, $salesmen)
 	{
@@ -385,10 +410,12 @@ class accountingCommand extends Command {
 		$filepath = $dir_path.$filename;
 
 		if (!is_file($filepath))
+		{
 			$ret = $this->call('billing:cdr');
 
-		if ($ret)
-			return array(array());
+			if ($ret)
+				return array(array());
+		}
 
 
 		// NOTE: Add new Providers here!
@@ -442,6 +469,7 @@ class accountingCommand extends Command {
 	protected function _parse_hlkomm_csv($filepath)
 	{
 		$csv = is_file($filepath) ? file($filepath) : array(array());
+
 		// skip first 5 lines (descriptions)
 		if ($csv[0])
 			unset($csv[0], $csv[1], $csv[2], $csv[3], $csv[4]);
@@ -484,6 +512,9 @@ class accountingCommand extends Command {
 
 		return $data;
 	}	
+
+
+
 
 
 	/**
