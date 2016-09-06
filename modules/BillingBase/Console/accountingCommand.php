@@ -82,7 +82,7 @@ class accountingCommand extends Command {
 
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
-		$contracts  = Contract::with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
+		$contracts  = Contract::orderBy('id')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
 		$salesmen 	= Salesman::all();
 
 
@@ -96,7 +96,6 @@ class accountingCommand extends Command {
 		$ret = AccountingRecord::whereBetween('created_at', [$this->dates['thism_01'], $this->dates['nextm_01']])->forceDelete();
 		if ($ret)
 			$logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
-
 
 		// init product types of salesmen and invoice nr counters for each sepa account, date of last run
 		$this->_init($sepa_accs, $salesmen, $conf);
@@ -115,7 +114,8 @@ class accountingCommand extends Command {
 			var_dump($c->id); //, round(microtime(true) - $start, 4));
 
 
-			// Skip invalid contracts
+			// Skip invalid contracts - TODO: we must not skip contracts that still have CDRs
+			// so contracts that had a voip item should not be skipped one extra month
 			if (!$c->check_validity())
 			{
 				$logger->addNotice('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
@@ -281,28 +281,32 @@ class accountingCommand extends Command {
 
 	/**
 	 * Initialise models for this billing cycle (could also be done during runtime but with performance degradation)
-	 	* invoice number counter
-	 	* storage directories
+		* invoice number counter
+		* storage directories
 	 */
 	private function _init($sepa_accs, $salesmen, $conf)
 	{
+		// Remove old files in case command was called again
+		Storage::deleteDirectory($this->dir);
+
+		// TODO: Delete all invoices in case command was called again to avoid keeping invoices 
+		// after switching off the create_invoice flag for example
+
 		// create directory structure
 		if (!is_dir(storage_path('app/'.$this->dir)))
-		{
-			// mkdir(storage_path('app/'.$this->dir, '0700', true)); does not work?
-			system('mkdir -p 0700 '.storage_path('app/'.$this->dir)); // system call because php mkdir creates weird permissions - umask couldnt solve it !?
-		}
+			mkdir(storage_path('app/'.$this->dir, 0700, true));
+
 
 		// Salesmen
 		$prod_types = Product::getPossibleEnumValues('type');
 		unset($prod_types['Credit']);
 
 		foreach ($salesmen as $key => $sm)
-		{
 			$sm->all_prod_types = $prod_types;
-			// directory to save file
-			$sm->dir = $this->dir;
-		}
+
+		// directory to save file - is actually only needed for first
+		if (isset($salesmen[0])) $salesmen[0]->dir = $this->dir;
+
 
 		// SepaAccount
 		foreach ($sepa_accs as $acc)
@@ -372,14 +376,14 @@ class accountingCommand extends Command {
 	 * @return array 	[contract_id => [phonr_nr, time, duration, ...], 
 	 *					 next_contract_id => [...],
 	 * 					 ...]
-	 *					on success, else empty 2 dimensional array
+	 *					on success, else 2 dimensional empty array
 	 */
 	private function _get_cdr_data()
 	{
 		$filename = 'cdr_'.date('Y_m', strtotime('-2 month')).'.csv';
 		$dir_path = storage_path('app/'.$this->dir.'/');
 		$filepath = $dir_path.$filename;
-		
+
 		if (!is_file($filepath))
 			$ret = $this->call('billing:cdr');
 

@@ -273,8 +273,7 @@ class Invoice {
 		$dir = storage_path('app/'.$this->dir);
 
 		if (!is_dir($dir))
-			system('mkdir -p '.$dir.' -m 0700'); // system call because php mkdir creates weird permissions - umask couldnt solve it !?
-			// mkdir($dir, 0700, true); -- this should work! permissions not as string!
+			mkdir($dir, 0700, true);
 
 		// Keep this order -> another invoice item is build in this function - TODO: move to separate function
 		if ($this->cdrs)
@@ -362,6 +361,8 @@ class Invoice {
 
 	/**
 	 * Creates the pdfs out of the prepared tex files - Note: this function is very time consuming
+	 *
+	 * TODO: Performance Improvements necessary!!
 	 */
 	private function _create_pdfs()
 	{
@@ -373,7 +374,7 @@ class Invoice {
 		// if ($this->data['contract_id'] == 500027)
 		// dd($file_paths);
 
-		// TODO: execute in background to speed this up by multiprocessing - but what is with the temporary files then?
+		// TODO: execute in background to speed this up by multiprocessing - but what is with the temporary files and return value then?
 		foreach ($file_paths as $key => $file)
 		{
 			if (is_file($file))
@@ -403,9 +404,6 @@ class Invoice {
 				unlink($file.'.log');
 			}
 		}
-
-		// add hash for security  (files are not downloadable through script that easy)
-		// rename("$filename.pdf", $filename.'_'.hash('crc32b', $this->data['contract_id'].time()).'.pdf');
 
 	}
 
