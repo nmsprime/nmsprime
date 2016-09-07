@@ -126,7 +126,7 @@ add:
 
 	public function prepare_output_file()
 	{
-		Storage::put($this->dir.$this->filename, "ID\tName\tCommission in %\tTotal Fee\tCommission Amount\tItems\n");
+		Storage::put($this->dir.$this->filename, "ID\t".\App\Http\Controllers\BaseViewController::translate_label('Name')."\t".\App\Http\Controllers\BaseViewController::translate_label('Commission in %')."\t".\App\Http\Controllers\BaseViewController::translate_label('Total Fee')."\t".		\App\Http\Controllers\BaseViewController::translate_label('Commission Amount')."\t".\App\Http\Controllers\BaseViewController::translate_label('Items')."\n");
 	}
 
 

@@ -7,7 +7,7 @@
 
 			@if ($rerun_button)
 				{{ Form::open(array('route' => ['SettlementRun.store', 0], 'method' => 'post')) }}
-					{{ Form::submit('Rerun Accounting Command for current Month', ['style' => 'simple']) }}
+					{{ Form::submit( \App\Http\Controllers\BaseViewController::translate_view('Rerun Accounting Command for current Month', 'Button') , ['style' => 'simple']) }}
 				{{ Form::close() }}
 			@endif
 
