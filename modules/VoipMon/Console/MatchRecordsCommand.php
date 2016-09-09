@@ -61,10 +61,10 @@ class matchRecordsCommand extends Command {
 		\DB::table($database.'.'.$this->tablename.' as c')->join($match_db.'.phonenumber as p', 'c.called', '=', \DB::raw('concat(p.prefix_number, p.number)'))->whereNull('c.created_at')->update(['c.phonenumber_id' => \DB::raw('p.id'), 'c.mos_min_mult10' => \DB::raw('IF(c.b_mos_f1_min_mult10, c.b_mos_f1_min_mult10, 45)')]);
 
 		// If no match was found (i.e. phonenumber_id is NULL), use worst MOS of both directions
-		\DB::table($database.'.'.$this->tablename)->whereNull('created_at')->whereNull('phonenumber_id')->update(['mos_min_mult10' => \DB::raw('LEAST(IF(a_mos_f1_min_mult10, a_mos_f1_min_mult10, 45), IF(b_mos_f1_min_mult10, b_mos_f1_min_mult10, 45))')]);
+		\DB::connection($this->connection)->table($this->tablename)->whereNull('created_at')->whereNull('phonenumber_id')->update(['mos_min_mult10' => \DB::raw('LEAST(IF(a_mos_f1_min_mult10, a_mos_f1_min_mult10, 45), IF(b_mos_f1_min_mult10, b_mos_f1_min_mult10, 45))')]);
 
 		// Set {created,updated}_at to callend to signify that matching was done
-		\DB::table($database.'.'.$this->tablename)->whereNull('created_at')->update(['created_at' => \DB::raw('callend'), 'updated_at' => \DB::raw('callend')]);
+		\DB::connection($this->connection)->table($this->tablename)->whereNull('created_at')->update(['created_at' => \DB::raw('callend'), 'updated_at' => \DB::raw('callend')]);
 	}
 
 	/**

@@ -42,12 +42,10 @@ class deleteOldRecordsCommand extends Command {
 	 */
 	public function fire()
 	{
-		// Name of the database accessed through $this->connection
-		$database = \Schema::connection($this->connection)->getConnection()->getConfig('database');
 		// Delete records older than 14 days
-		\DB::table($database.'.'.$this->tablename)->where('calldate', '<', \DB::raw('DATE_SUB(NOW(), INTERVAL 14 DAY)'))->delete();
+		\DB::connection($this->connection)->table($this->tablename)->where('calldate', '<', \DB::raw('DATE_SUB(NOW(), INTERVAL 14 DAY)'))->delete();
 		// Delete records with an ideal MOS score of 45
-		//\DB::table($database.'.'.$this->tablename)->whereNotNull('created_at')->where('mos_min_mult10', '=', 45)->delete();
+		//\DB::connection($this->connection)->table($this->tablename)->whereNotNull('created_at')->where('mos_min_mult10', '=', 45)->delete();
 	}
 
 	/**
