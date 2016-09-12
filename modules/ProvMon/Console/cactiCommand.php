@@ -26,6 +26,8 @@ class cactiCommand extends Command {
 	 */
 	protected $description = 'Create all missing Cablemodem Diagrams';
 
+	protected $connection = 'mysql-cacti';
+
 	/**
 	 * Create a new command instance.
 	 *
@@ -58,6 +60,9 @@ class cactiCommand extends Command {
 	 */
 	public function fire()
 	{
+		$matches = array();
+		$path = '/usr/share/cacti/cli';
+
 		foreach (Modem::all() as $modem)
 		{
 			// Skip all $modem's that already have cacti graphs
@@ -71,14 +76,59 @@ class cactiCommand extends Command {
 			// $hostname  = $this->_debug_ip();
 			$community = ProvBase::first()->ro_community;
 
-			// Run Artisan Command for adding a cacti host
-			$cmd = base_path()."/modules/ProvMon/Console/cacti_add.sh $name $hostname $community";
-			$result_short = exec($cmd, $result);
-			$result = implode("\n", $result);
+
+			// Assumption: host template and graph tree are named 'cablemodem' (case-insensitive)
+			$host_template_id = \DB::connection($this->connection)->table('host_template')
+				->where('name', '=', 'cablemodem')
+				->select('id')->first()->id;
+
+			$graph_template_ids = \DB::connection($this->connection)->table('host_template_graph')
+				->join('host_template', 'host_template_graph.host_template_id', '=', 'host_template.id')
+				->where('host_template.name', '=', 'cablemodem')
+				->select('host_template_graph.graph_template_id')->get();
+			$graph_template_ids = array_flatten(array_map(function($item) { return get_object_vars($item); }, $graph_template_ids));
+
+			$tree_id = \DB::connection($this->connection)->table('graph_tree')
+				->where('name', '=', 'cablemodem')
+				->select('id')->first()->id;
+
+			$out = system("php -q $path/add_device.php --description=$name --ip=$hostname --template=$host_template_id --community=$community --avail=snmp --version=2");
+			preg_match('/^Success - new device-id: \(([0-9]+)\)$/', $out, $matches);
+			if(count($matches) != 2)
+				continue;
+
+			// add host to cabelmodem tree
+			system("php -q $path/add_tree.php --type=node --node-type=host --tree-id=$tree_id --host-id=$matches[1]");
+
+			// create all graphs belonging to host template cablemodem
+			foreach ($graph_template_ids as $id)
+			{
+				system("php -q $path/add_graphs.php --host-id=$matches[1] --graph-type=cg --graph-template-id=$id");
+			}
+
+			// get first RRD belonging to newly created host
+			$first = \DB::connection($this->connection)->table('host AS h')
+				->join('data_local AS l', 'h.id', '=', 'l.host_id')
+				->join('data_template_data AS t', 'l.id', '=', 't.local_data_id')
+				->where('h.id', '=', $matches[1])
+				->orderBy('t.id')
+				->select('t.id', 't.data_source_path')
+				->first();
+
+			// disable updating all RRDs except for first and use first RRD for all graphs
+			\DB::connection($this->connection)->table('host AS h')
+				->join('data_local AS l', 'h.id', '=', 'l.host_id')
+				->join('data_template_data AS t', 'l.id', '=', 't.local_data_id')
+				->where('h.id', '=', $matches[1])
+				->where('t.id', '!=', $first->id)
+				->update(['t.active' => '', 't.data_source_path' => $first->data_source_path]);
+
+			// rebuild poller cache, since we changed the database manually
+			system("php -q $path/rebuild_poller_cache.php --host-id=$matches[1]");
 
 			// Info Message
-			echo "\ncacti: create diagrams for Modem: $name - CMD: $result_short";
-			\Log::info("cacti: create diagrams for Modem: $name - CMD: $result");
+			echo "\ncacti: create diagrams for Modem: $name";
+			\Log::info("cacti: create diagrams for Modem: $name");
 		}
 
 		echo "\n";
