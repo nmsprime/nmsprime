@@ -677,7 +677,15 @@ class EnviaOrder extends \BaseModel {
 		foreach ($phonenumbers as $phonenumber) {
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 			$ret .= '<tr>';
-			$ret .= '<td style='.$td_style.'"><a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a></td>';
+			$ret .= '<td style='.$td_style.'">';
+			if ($this->phonenumber->id != $phonenumber->id) {
+				$ret .= '<i>';
+			}
+			$ret .= '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number;
+			if ($this->phonenumber->id != $phonenumber->id) {
+				$ret .= '</i>';
+			}
+			$ret .= '</a></td>';
 			$ret .= '<td style="'.$td_style.'">'.(boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "–").'</td>';
 			$ret .= '<td style="'.$td_style.'">'.(boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "–").'</td>';
 			$ret .= '<td style="'.$td_style.'">'.(boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "–").'</td>';
