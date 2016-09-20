@@ -25,7 +25,7 @@
 			foreach ($additional_data['user_actions']['hints'] as $class => $content) {
 				echo "<b><u>".$class."</u></b><br>";
 				echo $content;
-				echo "<br>";
+				echo "<br><br>";
 			}
 
 			echo "<br>";

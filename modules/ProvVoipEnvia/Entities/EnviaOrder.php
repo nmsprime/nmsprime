@@ -543,6 +543,43 @@ class EnviaOrder extends \BaseModel {
 
 
 	/**
+	 * Create table containing information about the contract
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_user_action_information_contract($contract){
+
+		$th_style = "padding-right: 10px;";
+		$td_style = $th_style;
+
+		$ret = '<table class="table-hover">';
+		$ret .= '<tr>';
+		$ret .= '<th style="'.$th_style.'">Number</th>';
+		$ret .= '<th style="'.$th_style.'">Contract start</th>';
+		$ret .= '<th style="'.$th_style.'">Contract end</th>';
+		$ret .= '<th style="'.$th_style.'">Internet access?</th>';
+		$ret .= '</tr>';
+
+		$ret .= '<tr>';
+		$ret .= '<td style="'.$td_style.'"><a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a></td>';
+		$ret .= '<td style="'.$td_style.'">';
+			(boolval($contract->contract_start) ? $ret.=$contract->contract_start : $ret.='–');
+		$ret .= '</td>';
+		$ret .= '<td style="'.$td_style.'">';
+			(boolval($contract->contract_end) ? $ret.=$contract->contract_end : $ret.='–');
+		$ret .= '</td>';
+		$ret .= '<td style="'.$td_style.'">';
+			($contract->network_access > 0 ? $ret.="✔" : $ret.="");
+			$ret .'</td>';
+		$ret .= '</tr>';
+
+		$ret .= '</table>';
+
+		return $ret;
+	}
+
+
+	/**
 	 * Create table containing information about related items
 	 *
 	 * @author Patrick Reichel
@@ -566,11 +603,11 @@ class EnviaOrder extends \BaseModel {
 			$ret .= '<tr>';
 			$ret .= '<td style="'.$td_style.'"><a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a></td>';
 			$ret .= '<td style="'.$td_style.'">'.$item->product->type.'</td>';
-			$ret .= '<td style="'.$td_style.'">'.$item->valid_from.'</td>';
+			$ret .= '<td style="'.$td_style.'">'.(boolval($item->valid_from) ? $item->valid_from : "–").'</td>';
 			$ret .= '<td style="'.$td_style.'">';
 				($item->valid_from_fixed > 0 ? $ret.="✔" : $ret.="");
 				$ret .'</td>';
-			$ret .= '<td style="'.$td_style.'">'.$item->valid_to.'</td>';
+			$ret .= '<td style="'.$td_style.'">'.(boolval($item->valid_to) ? $item->valid_to : "–").'</td>';
 			$ret .= '<td style="'.$td_style.'">';
 				($item->valid_to_fixed > 0 ? $ret.="✔" : $ret.="");
 				$ret .'</td>';
@@ -581,6 +618,39 @@ class EnviaOrder extends \BaseModel {
 
 		/* echo $ret; */
 		/* d($item->product); */
+		return $ret;
+	}
+
+
+	/**
+	 * Create table containing information about the modem
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_user_action_information_modem($modem){
+
+		$th_style = "padding-right: 10px;";
+		$td_style = $th_style;
+
+		$ret = '<table class="table-hover">';
+		$ret .= '<tr>';
+		$ret .= '<th style="'.$th_style.'">Hostname</th>';
+		$ret .= '<th style="'.$th_style.'">MAC address</th>';
+		$ret .= '<th style="'.$th_style.'">Configfile</th>';
+		$ret .= '<th style="'.$th_style.'">Network access?</th>';
+		$ret .= '</tr>';
+
+		$ret .= '<tr>';
+		$ret .= '<td style="'.$td_style.'"><a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->hostname.'</a></td>';
+		$ret .= '<td style="'.$td_style.'">'.$modem->mac.'</td>';
+		$ret .= '<td style="'.$td_style.'">'.$modem->configfile->name.'</td>';
+		$ret .= '<td style="'.$td_style.'">';
+			($modem->network_access > 0 ? $ret.="✔" : $ret.="");
+			$ret .'</td>';
+		$ret .= '</tr>';
+
+		$ret .= '</table>';
+
 		return $ret;
 	}
 
@@ -608,10 +678,10 @@ class EnviaOrder extends \BaseModel {
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 			$ret .= '<tr>';
 			$ret .= '<td style='.$td_style.'"><a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a></td>';
-			$ret .= '<td style="'.$td_style.'">'.$phonenumbermanagement->activation_date.'</td>';
-			$ret .= '<td style="'.$td_style.'">'.$phonenumbermanagement->external_activation_date.'</td>';
-			$ret .= '<td style="'.$td_style.'">'.$phonenumbermanagement->deactivation_date.'</td>';
-			$ret .= '<td style="'.$td_style.'">'.$phonenumbermanagement->external_deactivation_date.'</td>';
+			$ret .= '<td style="'.$td_style.'">'.(boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "–").'</td>';
+			$ret .= '<td style="'.$td_style.'">'.(boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "–").'</td>';
+			$ret .= '<td style="'.$td_style.'">'.(boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "–").'</td>';
+			$ret .= '<td style="'.$td_style.'">'.(boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "–").'</td>';
 			$ret .= '</tr>';
 		}
 
@@ -640,7 +710,7 @@ class EnviaOrder extends \BaseModel {
 		if ($this->user_interaction_necessary()) {
 
 			$contract = $this->contract;
-			$user_actions['hints']['Contract'] = '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->id.'</a><br>';
+			$user_actions['hints']['Contract (= Envia Customer)'] = $this->_get_user_action_information_contract($contract);
 
 			$items = $contract->items;
 			if ($items) {
@@ -649,7 +719,7 @@ class EnviaOrder extends \BaseModel {
 
 			$modem = $this->modem;
 			if ($modem) {
-				$user_actions['hints']['Modem'] = '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->id.'</a><br>';
+				$user_actions['hints']['Modem (= Envia Contract)'] = $this->_get_user_action_information_modem($modem);
 			};
 
 			$phonenumbers = array();
@@ -667,7 +737,7 @@ class EnviaOrder extends \BaseModel {
 			}
 
 			if ($phonenumbers) {
-				$user_actions['hints']['Phonenumbers'] = $this->_get_user_action_information_phonenumbers($phonenumbers);
+				$user_actions['hints']['Phonenumbers (= Envia VoipAccounts)'] = $this->_get_user_action_information_phonenumbers($phonenumbers);
 			}
 
 			// finally add link to mark open order as solved
