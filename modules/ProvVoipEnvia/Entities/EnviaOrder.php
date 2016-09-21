@@ -603,10 +603,7 @@ class EnviaOrder extends \BaseModel {
 
 		$row= array();
 
-		// contract number
 		array_push($row, '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a>');
-
-		// contract start
 		array_push($row, boolval($contract->contract_start) ? $contract->contract_start : 'placeholder_unset');
 		array_push($row, boolval($contract->contract_end) ? $contract->contract_end : 'placeholder_unset');
 		array_push($row, ($contract->network_access > 0 ? 'placeholder_yes' : 'placeholder_no'));
@@ -683,18 +680,20 @@ class EnviaOrder extends \BaseModel {
 		$data = array();
 
 		$head = array(
-			'Hostname',
 			'MAC address',
+			'Hostname',
 			'Configfile',
+			'QoS',
 			'Network access?',
 		);
 		array_push($data, $head);
 
 		$row = array();
 
-		array_push($row, '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->hostname.'</a>');
-		array_push($row, $modem->mac);
+		array_push($row, '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->mac.'</a>');
+		array_push($row, $modem->hostname);
 		array_push($row, $modem->configfile->name);
+		array_push($row, $modem->qos->name);
 		array_push($row, ($modem->network_access > 0 ? 'placeholder_yes': 'placeholder_no'));
 
 		array_push($data, $row);
