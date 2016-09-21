@@ -542,6 +542,48 @@ class EnviaOrder extends \BaseModel {
 	}
 
 
+	protected function _get_user_action_table($data) {
+
+		$replace = function($data) {
+			$placeholders = array(
+				'placeholder_yes' => '<span class="text-success">&#10004;</span>',
+				'placeholder_no' => '<span class="text-danger">&#10008;</span>',
+				'placeholder_unset' => '–',
+			);
+			foreach ($placeholders as $placeholder => $replacement) {
+				$data = str_replace($placeholder, $replacement, $data);
+			}
+			return $data;
+		};
+
+		$td_style = "padding-left: 5px; padding-right: 5px;";
+		$th_style = $td_style." padding-bottom: 2px; padding-top: 4px;";
+
+		$ret = "";
+
+		// the tables head
+		$ret = '<table class="table-hover">';
+		$ret .= '<tr>';
+		foreach (array_shift($data) as $col) {
+			$ret .= '<th style="'.$th_style.'">'.$col.'</th>';
+		}
+		$ret .= '</tr>';
+
+		// the tables body (row by row)
+		foreach ($data as $row) {
+			$ret .= '<tr>';
+			foreach ($row as $col) {
+				$ret .= '<td style="'.$td_style.'">';
+				$ret .= $replace($col);
+				$ret .= '</td>';
+			}
+			$ret .= '</tr>';
+		}
+
+		$ret .= '</table>';
+		return $ret;
+	}
+
 	/**
 	 * Create table containing information about the contract
 	 *
@@ -549,31 +591,29 @@ class EnviaOrder extends \BaseModel {
 	 */
 	protected function _get_user_action_information_contract($contract){
 
-		$th_style = "padding-right: 10px;";
-		$td_style = $th_style;
+		$data = array();
 
-		$ret = '<table class="table-hover">';
-		$ret .= '<tr>';
-		$ret .= '<th style="'.$th_style.'">Number</th>';
-		$ret .= '<th style="'.$th_style.'">Contract start</th>';
-		$ret .= '<th style="'.$th_style.'">Contract end</th>';
-		$ret .= '<th style="'.$th_style.'">Internet access?</th>';
-		$ret .= '</tr>';
+		$head = array(
+			'Number',
+			'Contract start',
+			'Contract end',
+			'Internet access?',
+		);
+		array_push($data, $head);
 
-		$ret .= '<tr>';
-		$ret .= '<td style="'.$td_style.'"><a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a></td>';
-		$ret .= '<td style="'.$td_style.'">';
-			(boolval($contract->contract_start) ? $ret.=$contract->contract_start : $ret.='–');
-		$ret .= '</td>';
-		$ret .= '<td style="'.$td_style.'">';
-			(boolval($contract->contract_end) ? $ret.=$contract->contract_end : $ret.='–');
-		$ret .= '</td>';
-		$ret .= '<td style="'.$td_style.'">';
-			($contract->network_access > 0 ? $ret.="✔" : $ret.="");
-			$ret .'</td>';
-		$ret .= '</tr>';
+		$row= array();
 
-		$ret .= '</table>';
+		// contract number
+		array_push($row, '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a></td>');
+
+		// contract start
+		array_push($row, boolval($contract->contract_start) ? $contract->contract_start : 'placeholder_unset');
+		array_push($row, boolval($contract->contract_end) ? $contract->contract_end : 'placeholder_unset');
+		array_push($row, ($contract->network_access > 0 ? 'placeholder_yes' : 'placeholder_no'));
+
+		array_push($data, $row);
+
+		$ret = $this->_get_user_action_table($data);
 
 		return $ret;
 	}
@@ -586,38 +626,49 @@ class EnviaOrder extends \BaseModel {
 	 */
 	protected function _get_user_action_information_items($items){
 
-		$th_style = "padding-right: 10px;";
-		$td_style = $th_style;
+		$data = array();
 
-		$ret = '<table class="table-hover">';
-		$ret .= '<tr>';
-		$ret .= '<th style="'.$th_style.'">Product</th>';
-		$ret .= '<th style="'.$th_style.'">Type</th>';
-		$ret .= '<th style="'.$th_style.'">Valid from</th>';
-		$ret .= '<th style="'.$th_style.'">Fix?</th>';
-		$ret .= '<th style="'.$th_style.'">Valid to</th>';
-		$ret .= '<th style="'.$th_style.'">Fix?</th>';
-		$ret .= '</tr>';
+		$head = array(
+			'Product',
+			'Type',
+			'Valid from',
+			'Fix?',
+			'Valid to',
+			'Fix?',
+		);
+		array_push($data, $head);
 
 		foreach ($items as $item) {
-			$ret .= '<tr>';
-			$ret .= '<td style="'.$td_style.'"><a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a></td>';
-			$ret .= '<td style="'.$td_style.'">'.$item->product->type.'</td>';
-			$ret .= '<td style="'.$td_style.'">'.(boolval($item->valid_from) ? $item->valid_from : "–").'</td>';
-			$ret .= '<td style="'.$td_style.'">';
-				($item->valid_from_fixed > 0 ? $ret.="✔" : $ret.="");
-				$ret .'</td>';
-			$ret .= '<td style="'.$td_style.'">'.(boolval($item->valid_to) ? $item->valid_to : "–").'</td>';
-			$ret .= '<td style="'.$td_style.'">';
-				($item->valid_to_fixed > 0 ? $ret.="✔" : $ret.="");
-				$ret .'</td>';
-			$ret .= '</tr>';
+
+			$row = array();
+
+			array_push($row, '<a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a></td>');
+			array_push($row, $item->product->type);
+			array_push($row, (boolval($item->valid_from) ? $item->valid_from : 'placeholder_unset'));
+			if ($item->valid_from_fixed > 0) {
+				array_push($row, 'placeholder_yes');
+			}
+			elseif ($item->valid_from) {
+				array_push($row, 'placeholder_no');
+			}
+			else {
+				array_push($row, '');
+			}
+			array_push($row, (boolval($item->valid_to) ? $item->valid_to : "placeholder_unset"));
+			if ($item->valid_to_fixed > 0) {
+				array_push($row, 'placeholder_yes');
+			}
+			elseif ($item->valid_to) {
+				array_push($row, 'placeholder_no');
+			}
+			else {
+				array_push($row, '');
+			}
+
+			array_push($data, $row);
 		}
 
-		$ret .= '</table>';
-
-		/* echo $ret; */
-		/* d($item->product); */
+		$ret = $this->_get_user_action_table($data);
 		return $ret;
 	}
 
@@ -629,28 +680,26 @@ class EnviaOrder extends \BaseModel {
 	 */
 	protected function _get_user_action_information_modem($modem){
 
-		$th_style = "padding-right: 10px;";
-		$td_style = $th_style;
+		$data = array();
 
-		$ret = '<table class="table-hover">';
-		$ret .= '<tr>';
-		$ret .= '<th style="'.$th_style.'">Hostname</th>';
-		$ret .= '<th style="'.$th_style.'">MAC address</th>';
-		$ret .= '<th style="'.$th_style.'">Configfile</th>';
-		$ret .= '<th style="'.$th_style.'">Network access?</th>';
-		$ret .= '</tr>';
+		$head = array(
+			'Hostname',
+			'MAC address',
+			'Configfile',
+			'Network access?',
+		);
+		array_push($data, $head);
 
-		$ret .= '<tr>';
-		$ret .= '<td style="'.$td_style.'"><a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->hostname.'</a></td>';
-		$ret .= '<td style="'.$td_style.'">'.$modem->mac.'</td>';
-		$ret .= '<td style="'.$td_style.'">'.$modem->configfile->name.'</td>';
-		$ret .= '<td style="'.$td_style.'">';
-			($modem->network_access > 0 ? $ret.="✔" : $ret.="");
-			$ret .'</td>';
-		$ret .= '</tr>';
+		$row = array();
 
-		$ret .= '</table>';
+		array_push($row, '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->hostname.'</a>');
+		array_push($row, $modem->mac);
+		array_push($row, $modem->configfile->name);
+		array_push($row, ($modem->network_access > 0 ? 'placeholder_yes': 'placeholder_no'));
 
+		array_push($data, $row);
+
+		$ret = $this->_get_user_action_table($data);
 		return $ret;
 	}
 
@@ -662,41 +711,41 @@ class EnviaOrder extends \BaseModel {
 	 */
 	protected function _get_user_action_information_phonenumbers($phonenumbers){
 
-		$th_style = "padding-right: 10px;";
-		$td_style = $th_style;
+		$data = array();
 
-		$ret = '<table class="table-hover">';
-		$ret .= '<tr>';
-		$ret .= '<th style="'.$th_style.'">Phonenumber</th>';
-		$ret .= '<th style="'.$th_style.'">Activation target</th>';
-		$ret .= '<th style="'.$th_style.'">Activation confirmed</th>';
-		$ret .= '<th style="'.$th_style.'">Deactivation target</th>';
-		$ret .= '<th style="'.$th_style.'">Deactivation confirmed</th>';
-		$ret .= '</tr>';
+		$head = array(
+			'Phonenumber',
+			'Activation target',
+			'Activation confirmed',
+			'Deactivation target',
+			'Deactivation confirmed',
+		);
+		array_push($data, $head);
 
 		foreach ($phonenumbers as $phonenumber) {
+
+			$row = array();
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
-			$ret .= '<tr>';
-			$ret .= '<td style='.$td_style.'">';
+
+			$tmp = '';
 			if ($this->phonenumber->id != $phonenumber->id) {
-				$ret .= '<i>';
+				$tmp .= '<i>(';
 			}
-			$ret .= '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number;
+			$tmp .= '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number;
 			if ($this->phonenumber->id != $phonenumber->id) {
-				$ret .= '</i>';
+				$tmp .= '</a>)</i>';
 			}
-			$ret .= '</a></td>';
-			$ret .= '<td style="'.$td_style.'">'.(boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "–").'</td>';
-			$ret .= '<td style="'.$td_style.'">'.(boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "–").'</td>';
-			$ret .= '<td style="'.$td_style.'">'.(boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "–").'</td>';
-			$ret .= '<td style="'.$td_style.'">'.(boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "–").'</td>';
-			$ret .= '</tr>';
+			array_push($row, $tmp);
+
+			array_push($row, (boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"));
+			array_push($row, (boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "placeholder_unset"));
+			array_push($row, (boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "placeholder_unset"));
+			array_push($row, (boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "placeholder_unset"));
+
+			array_push($data, $row);
 		}
 
-		$ret .= '</table>';
-
-		/* echo $ret; */
-		/* d($item->product); */
+		$ret = $this->_get_user_action_table($data);
 		return $ret;
 	}
 
@@ -711,45 +760,53 @@ class EnviaOrder extends \BaseModel {
 	public function get_user_action_information() {
 
 		$user_actions = array();
+		$user_actions['head'] = "";
 		$user_actions['hints'] = array();
 		$user_actions['links'] = array();
 
 
-		if ($this->user_interaction_necessary()) {
+		$contract = $this->contract;
+		$user_actions['hints']['Contract (= Envia Customer)'] = $this->_get_user_action_information_contract($contract);
 
-			$contract = $this->contract;
-			$user_actions['hints']['Contract (= Envia Customer)'] = $this->_get_user_action_information_contract($contract);
+		$items = $contract->items;
+		if ($items) {
+			$user_actions['hints']['Items'] = $this->_get_user_action_information_items($items);
+		};
 
-			$items = $contract->items;
-			if ($items) {
-				$user_actions['hints']['Items'] = $this->_get_user_action_information_items($items);
-			};
+		$modem = $this->modem;
+		if ($modem) {
+			$user_actions['hints']['Modem (= Envia Contract)'] = $this->_get_user_action_information_modem($modem);
+		};
 
-			$modem = $this->modem;
-			if ($modem) {
-				$user_actions['hints']['Modem (= Envia Contract)'] = $this->_get_user_action_information_modem($modem);
-			};
-
-			$phonenumbers = array();
-			if ($modem) {
-				$mtas = $modem->mtas;
-				if ($mtas) {
-					foreach ($mtas as $mta) {
-						foreach ($mta->phonenumbers as $phonenumber) {
-							if ($phonenumber) {
-								array_push($phonenumbers, $phonenumber);
-							}
+		$phonenumbers = array();
+		if ($modem) {
+			$mtas = $modem->mtas;
+			if ($mtas) {
+				foreach ($mtas as $mta) {
+					foreach ($mta->phonenumbers as $phonenumber) {
+						if ($phonenumber) {
+							array_push($phonenumbers, $phonenumber);
 						}
 					}
 				}
 			}
+		}
 
-			if ($phonenumbers) {
-				$user_actions['hints']['Phonenumbers (= Envia VoipAccounts)'] = $this->_get_user_action_information_phonenumbers($phonenumbers);
-			}
+		if ($phonenumbers) {
+			$user_actions['hints']['Phonenumbers (= Envia VoipAccounts)'] = $this->_get_user_action_information_phonenumbers($phonenumbers);
+		}
+
+
+		// show headline and link to solve if order has changed since the last user interaction
+		if ($this->user_interaction_necessary()) {
+
+			// show that user interaction is necessary
+			$user_actions['head'] = '<h5 class="text-danger">EnviaOrder has been updated</h5>';
+			$user_actions['head'] .= 'Please check if user interaction is necessary.<br><br>';
 
 			// finally add link to mark open order as solved
 			$user_actions['links']['Mark as solved'] = \URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id));
+
 		}
 
 		return $user_actions;

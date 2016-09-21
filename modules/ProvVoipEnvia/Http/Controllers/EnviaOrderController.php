@@ -244,7 +244,7 @@ class EnviaOrderController extends \BaseController {
 			return $parent_return;
 		}
 
-		// else redirect to update order
+		// else redirect to update order against Envia
 		$params = array(
 			'job' => 'order_get_status',
 			'order_id' => EnviaOrder::findOrFail($id)->orderid,
