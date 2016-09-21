@@ -604,7 +604,7 @@ class EnviaOrder extends \BaseModel {
 		$row= array();
 
 		// contract number
-		array_push($row, '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a></td>');
+		array_push($row, '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a>');
 
 		// contract start
 		array_push($row, boolval($contract->contract_start) ? $contract->contract_start : 'placeholder_unset');
@@ -642,7 +642,7 @@ class EnviaOrder extends \BaseModel {
 
 			$row = array();
 
-			array_push($row, '<a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a></td>');
+			array_push($row, '<a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a>');
 			array_push($row, $item->product->type);
 			array_push($row, (boolval($item->valid_from) ? $item->valid_from : 'placeholder_unset'));
 			if ($item->valid_from_fixed > 0) {
