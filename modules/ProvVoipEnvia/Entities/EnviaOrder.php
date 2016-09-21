@@ -542,9 +542,19 @@ class EnviaOrder extends \BaseModel {
 	}
 
 
+	/**
+	 * Build the table HTML for given data.
+	 *
+	 * @param $data array containing the rows of the table (first is used as header)
+	 *					each row has to be given as an array holding the cols of this row
+	 *
+	 * @return raw HTML string for direct use
+	 *
+	 * @author Patrick Reichel
+	 */
 	protected function _get_user_action_table($data) {
 
-		$replace = function($data) {
+		$replace_func = function($data) {
 			$placeholders = array(
 				'placeholder_yes' => '<span class="text-success">&#10004;</span>',
 				'placeholder_no' => '<span class="text-danger">&#10008;</span>',
@@ -556,7 +566,7 @@ class EnviaOrder extends \BaseModel {
 			return $data;
 		};
 
-		$td_style = "padding-left: 5px; padding-right: 5px;";
+		$td_style = "padding-left: 5px; padding-right: 5px; vertical-align: top;";
 		$th_style = $td_style." padding-bottom: 2px; padding-top: 4px;";
 
 		$ret = "";
@@ -574,7 +584,7 @@ class EnviaOrder extends \BaseModel {
 			$ret .= '<tr>';
 			foreach ($row as $col) {
 				$ret .= '<td style="'.$td_style.'">';
-				$ret .= $replace($col);
+				$ret .= $replace_func($col);
 				$ret .= '</td>';
 			}
 			$ret .= '</tr>';
@@ -589,7 +599,7 @@ class EnviaOrder extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _get_user_action_information_contract($contract){
+	protected function _get_user_action_information_contract($contract) {
 
 		$data = array();
 
@@ -621,7 +631,7 @@ class EnviaOrder extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _get_user_action_information_items($items){
+	protected function _get_user_action_information_items($items) {
 
 		$data = array();
 
@@ -675,7 +685,7 @@ class EnviaOrder extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _get_user_action_information_modem($modem){
+	protected function _get_user_action_information_modem($modem) {
 
 		$data = array();
 
@@ -708,7 +718,7 @@ class EnviaOrder extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _get_user_action_information_phonenumbers($phonenumbers){
+	protected function _get_user_action_information_phonenumbers($phonenumbers) {
 
 		$data = array();
 
