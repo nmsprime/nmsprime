@@ -23,7 +23,7 @@
 						<?php $header = $file->getRelativePath() ?>
 						
 						@if (!$header && !$i)
-							<tr><td><b> General </b></td></tr>
+							<tr><td><b> {{ \App\Http\Controllers\BaseViewController::translate_label('General') }} </b></td></tr>
 							<?php $i++ ?>
 						@else
 							<tr><td><b> {{ $header }} </b></td></tr>
