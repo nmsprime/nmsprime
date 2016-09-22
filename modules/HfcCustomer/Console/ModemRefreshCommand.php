@@ -78,7 +78,11 @@ class ModemRefreshCommand extends Command {
 		foreach (\Modules\ProvBase\Entities\Modem::all() as $modem)
 		{
 			// Refresh Modem State
-			$res = $modem->refresh_state();
+			// take last value from cacti (fast path)
+			$res = $modem->refresh_state_cacti();
+			// something went wrong using cacti -> fallback to snmp request
+			if($res == -1)
+				$res = $modem->refresh_state();
 
 			// Log / Debug
 			if ($this->option('debug'))
