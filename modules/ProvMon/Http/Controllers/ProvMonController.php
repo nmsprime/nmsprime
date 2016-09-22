@@ -419,6 +419,7 @@ end:
 		$c['Hostname'] = [$cmts->hostname];
 
 		// remove all inactive channels (no range success)
+		$tmp = count($ds['Frequency MHz']);
 		foreach ($ds['Frequency MHz'] as $key => $freq)
 		{
 			if ($ds['Modulation'][$key] == '' && $ds['MER dB'][$key] == 0)
@@ -427,10 +428,12 @@ end:
 					unset($ds[$entry][$key]);
 			}
 		}
+		$ds['Operational CHs %'] = [count($ds['Frequency MHz']) / $tmp * 100];
 
 		if ($docsis >= 4)
 		{
 			$us_ranging_status = snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9');
+			$tmp = count($us['Frequency MHz']);
 			foreach ($us_ranging_status as $key => $value)
 			{
 				if ($value != 4)
@@ -439,7 +442,10 @@ end:
 						unset($us[$entry][$key]);
 				}
 			}
+			$us['Operational CHs %'] = [count($us['Frequency MHz']) / $tmp * 100];
 		}
+		else
+			$us['Operational CHs %'] = [100];
 
 		// Put Sections together
 		$ret['System']      = $sys;
