@@ -76,7 +76,7 @@ class EnviaOrderController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'created_at', 'description' => 'Created at', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'updated_at', 'description' => 'Last status update', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'last_user_interaction', 'description' => 'Last user interaction', 'options' => ['readonly'], 'hidden' => 'C'),
-			array('form_type' => 'text', 'name' => 'method', 'description' => 'Methode', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'method', 'description' => 'Method', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordertype_id', 'description' => 'Ordertype ID', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordertype', 'description' => 'Ordertype', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'orderstatus_id', 'description' => 'Orderstatus ID', 'options' => ['readonly'], 'hidden' => 'C'),
