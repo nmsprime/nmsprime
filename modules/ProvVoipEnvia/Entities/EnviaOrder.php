@@ -702,8 +702,20 @@ class EnviaOrder extends \BaseModel {
 
 		array_push($row, '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->mac.'</a>');
 		array_push($row, $modem->hostname);
-		array_push($row, $modem->configfile->name);
-		array_push($row, $modem->qos->name);
+
+		if ($modem->configfile) {
+			array_push($row, $modem->configfile->name);
+		}
+		else {
+			array_push($row, '–');
+		}
+
+		if ($modem->qos) {
+			array_push($row, $modem->qos->name);
+		}
+		else {
+			array_push($row, '–');
+		}
 		array_push($row, ($modem->network_access > 0 ? 'placeholder_yes': 'placeholder_no'));
 
 		array_push($data, $row);
