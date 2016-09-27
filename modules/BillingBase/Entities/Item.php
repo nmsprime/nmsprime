@@ -46,8 +46,8 @@ class Item extends \BaseModel {
 		$start = $this->valid_from && $this->valid_from != '0000-00-00' ? ' - '.$this->valid_from : '';
 		$end   = $this->valid_to && $this->valid_to != '0000-00-00' ? ' - '.$this->valid_to : '';
 
-		$start_fixed = boolval($this->valid_from_fixed) ? '(!)' : '';
-		$end_fixed = boolval($this->valid_to_fixed) ? '(!)' : '';
+		$start_fixed = !boolval($this->valid_from_fixed) ? '(!)' : '';
+		$end_fixed = !boolval($this->valid_to_fixed) ? '(!)' : '';
 
 		$billing_valid = $this->check_validity();
 

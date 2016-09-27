@@ -19,21 +19,26 @@
 		if ($additional_data['user_actions']['hints'] || $additional_data['user_actions']['links']) {
 			echo '<div class="col-md-12" style="margin-top: 30px; padding-top: 20px; border-top:solid #888 1px">';
 
-			echo '<h5>EnviaOrder has been updated</h5>';
-			echo 'Please check if user interaction is necessary.<br><br>';
+			if ($additional_data['user_actions']['head']) {
+				echo $additional_data['user_actions']['head'];
+			}
 
 			foreach ($additional_data['user_actions']['hints'] as $class => $content) {
+				echo "<br>";
 				echo "<b><u>".$class."</u></b><br>";
 				echo $content;
 				echo "<br>";
 			}
 
-			echo "<br>";
-			$tmp = array();
-			foreach ($additional_data['user_actions']['links'] as $linktext => $link) {
-				array_push($tmp, '<a href="'.$link.'" target="_self">» '.$linktext.'</a>');
+			if ($additional_data['user_actions']['links']) {
+
+				echo "<br>";
+				$tmp = array();
+				foreach ($additional_data['user_actions']['links'] as $linktext => $link) {
+					array_push($tmp, '<a href="'.$link.'" target="_self">» '.$linktext.'</a>');
+				}
+				echo implode('<br>', $tmp);
 			}
-			echo implode('<br>', $tmp);
 			echo '</div>';
 		}
 	?>
