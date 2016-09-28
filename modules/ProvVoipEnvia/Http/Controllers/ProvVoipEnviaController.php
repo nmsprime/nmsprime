@@ -905,10 +905,6 @@ class ProvVoipEnviaController extends \BaseController {
 	 */
 	protected function _handle_request_failed($job, $data) {
 
-		// check if we want to store the xml
-		$xml = new \SimpleXMLElement($data['xml']);
-		$this->model->store_xml($job.'_response', $xml);
-
 		$errors = $this->model->get_error_messages($data['xml']);
 
 		if ($this->entry_method == 'cron') {
