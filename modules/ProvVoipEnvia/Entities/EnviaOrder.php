@@ -510,9 +510,6 @@ class EnviaOrder extends \BaseModel {
 			}
 		}
 
-		// reset the keys to integers 0…n-1 (table header in index view is built from $view_var[0])
-		$orders = array_flatten($orders);
-
 		return $orders;
 	}
 
@@ -770,12 +767,14 @@ class EnviaOrder extends \BaseModel {
 			$row = array();
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 
-			$tmp = '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a>';
-			// if phonenumber is only related (not assigned to current order, but to assigned contract) mark with special markup
-			if (is_null($this->phonenumber) || ($this->phonenumber->id != $phonenumber->id)) {
-				$tmp = '<i>('.$tmp.')</i>';
+			$tmp = '';
+			if ($this->phonenumber->id != $phonenumber->id) {
+				$tmp .= '<i>(';
 			}
-
+			$tmp .= '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number;
+			if ($this->phonenumber->id != $phonenumber->id) {
+				$tmp .= '</a>)</i>';
+			}
 			array_push($row, $tmp);
 
 			array_push($row, (boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"));
@@ -901,19 +900,6 @@ class EnviaOrder extends \BaseModel {
 
 		return $mailto_links;
 
-	}
-
-
-	/**
-	 * For use in layout view: get number of user interaction needing orders
-	 *
-	 * @author Patrick Reichel
-	 */
-	public static function get_user_interaction_needing_enviaorder_count() {
-
-		$count = EnviaOrder::whereRaw('(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND orderstatus_id != 1000')->count();
-
-		return $count;
 	}
 
 
