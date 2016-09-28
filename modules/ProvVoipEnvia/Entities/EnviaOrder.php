@@ -30,21 +30,9 @@ class EnviaOrder extends \BaseModel {
 				'phonenumber_related' => True,
 			),
 			array(
-				'ordertype' => 'Kündigung einer Rufnummer',
-				'ordertype_id' => 23,
-				'method' => 'voip_account/terminate',
-				'phonenumber_related' => True,
-			),
-			array(
 				'ordertype' => 'Sprachtarif wird geändert',
 				'ordertype_id' => null,
 				'method' => 'contract/change_tariff',
-				'phonenumber_related' => False,
-			),
-			array(
-				'ordertype' => 'n/a',
-				'ordertype_id' => null,
-				'method' => 'contract/change_variation',
 				'phonenumber_related' => False,
 			),
 			array(
@@ -486,8 +474,8 @@ class EnviaOrder extends \BaseModel {
 			$solve_link = '<a href="'.\URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id)).'" target="_self">Mark solved</a>';
 		}
 
-        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $modem_nr, $phonenumber_nr, $this->created_at, $this->updated_at, $this->orderdate, $current, $solve_link],
-                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Modem', 'Phonenumber', 'Created at', 'Updated at', 'Orderdate', 'Interaction needed?', ''],
+        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $modem_nr, $phonenumber_nr, $this->created_at, $this->updated_at, $current, $solve_link],
+                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Modem', 'Phonenumber', 'Created at', 'Updated at', 'Interaction needed?', ''],
                 'bsclass' => $bsclass,
 				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
 		];
@@ -521,9 +509,6 @@ class EnviaOrder extends \BaseModel {
 				$orders->forget($key);
 			}
 		}
-
-		// reset the keys to integers 0…n-1 (table header in index view is built from $view_var[0])
-		$orders = array_flatten($orders);
 
 		return $orders;
 	}
@@ -774,7 +759,6 @@ class EnviaOrder extends \BaseModel {
 			'Activation confirmed',
 			'Deactivation target',
 			'Deactivation confirmed',
-			'Active?',
 		);
 		array_push($data, $head);
 
@@ -783,19 +767,20 @@ class EnviaOrder extends \BaseModel {
 			$row = array();
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 
-			$tmp = '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a>';
-			// if phonenumber is only related (not assigned to current order, but to assigned contract) mark with special markup
-			if (is_null($this->phonenumber) || ($this->phonenumber->id != $phonenumber->id)) {
-				$tmp = '<i>('.$tmp.')</i>';
+			$tmp = '';
+			if ($this->phonenumber->id != $phonenumber->id) {
+				$tmp .= '<i>(';
 			}
-
+			$tmp .= '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number;
+			if ($this->phonenumber->id != $phonenumber->id) {
+				$tmp .= '</a>)</i>';
+			}
 			array_push($row, $tmp);
 
 			array_push($row, (boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"));
 			array_push($row, (boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "placeholder_unset"));
 			array_push($row, (boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "placeholder_unset"));
 			array_push($row, (boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "placeholder_unset"));
-			array_push($row, ($phonenumber->active > 0 ? 'placeholder_yes': 'placeholder_no'));
 
 			array_push($data, $row);
 		}
@@ -915,19 +900,6 @@ class EnviaOrder extends \BaseModel {
 
 		return $mailto_links;
 
-	}
-
-
-	/**
-	 * For use in layout view: get number of user interaction needing orders
-	 *
-	 * @author Patrick Reichel
-	 */
-	public static function get_user_interaction_needing_enviaorder_count() {
-
-		$count = EnviaOrder::whereRaw('(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND orderstatus_id != 1000')->count();
-
-		return $count;
 	}
 
 
