@@ -482,6 +482,37 @@ class EnviaOrder extends \BaseModel {
 	}
 
 
+	/**
+	 * Prepare the list of orders to be shown on index page
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @todo check if there should be some filters (e.g. to show only open orders)
+	 */
+	public function index_list() {
+
+		$filter = \Input::get('show_filter', 'all');
+		if ($filter != 'action_needed') {
+			$filter = 'all';
+		}
+
+		$orders =  $this->orderBy('updated_at', 'desc')->get();
+
+		// all shall be shown: return as is
+		if ($filter == 'all') {
+			return $orders;
+		}
+
+		// remove all orders from collection where no user interaction is necessary
+		foreach ($orders as $key => $order) {
+			if (!$order->user_interaction_necessary()) {
+				$orders->forget($key);
+			}
+		}
+
+		return $orders;
+	}
+
 
 	// belongs to phonenumber or modem or contract - see BaseModel for explanation
 	public function view_belongs_to ()
