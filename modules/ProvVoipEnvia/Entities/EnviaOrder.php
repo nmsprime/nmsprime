@@ -491,7 +491,26 @@ class EnviaOrder extends \BaseModel {
 	 */
 	public function index_list() {
 
-		return $this->orderBy('id')->get();
+		$filter = \Input::get('show_filter', 'all');
+		if ($filter != 'action_needed') {
+			$filter = 'all';
+		}
+
+		$orders =  $this->orderBy('updated_at', 'desc')->get();
+
+		// all shall be shown: return as is
+		if ($filter == 'all') {
+			return $orders;
+		}
+
+		// remove all orders from collection where no user interaction is necessary
+		foreach ($orders as $key => $order) {
+			if (!$order->user_interaction_necessary()) {
+				$orders->forget($key);
+			}
+		}
+
+		return $orders;
 	}
 
 
