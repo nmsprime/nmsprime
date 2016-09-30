@@ -63,6 +63,18 @@ class cactiCommand extends Command {
 		$matches = array();
 		$path = '/usr/share/cacti/cli';
 
+		try {
+			if(!\Schema::connection($this->connection)->hasTable('host'))
+				return false;
+		}
+		catch (\PDOException $e) {
+			// Code 1049 == Unknown database '%s' -> cacti is not installed yet
+			if($e->getCode() == 1049)
+				return false;
+			// Don't catch other PDOExceptions
+			throw $e;
+		}
+
 		foreach (Modem::all() as $modem)
 		{
 			// Skip all $modem's that already have cacti graphs
