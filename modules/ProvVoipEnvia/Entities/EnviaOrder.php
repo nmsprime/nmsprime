@@ -751,6 +751,7 @@ class EnviaOrder extends \BaseModel {
 	 */
 	protected function _get_user_action_information_phonenumbers($phonenumbers) {
 
+		/* d($this, $phonenumbers); */
 		$data = array();
 
 		$head = array(
@@ -767,14 +768,12 @@ class EnviaOrder extends \BaseModel {
 			$row = array();
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 
-			$tmp = '';
-			if ($this->phonenumber->id != $phonenumber->id) {
-				$tmp .= '<i>(';
+			$tmp = '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a>';
+			// if phonenumber is only related (not assigned to current order, but to assigned contract) mark with special markup
+			if (is_null($this->phonenumber) || ($this->phonenumber->id != $phonenumber->id)) {
+				$tmp = '<i>('.$tmp.')</i>';
 			}
-			$tmp .= '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number;
-			if ($this->phonenumber->id != $phonenumber->id) {
-				$tmp .= '</a>)</i>';
-			}
+
 			array_push($row, $tmp);
 
 			array_push($row, (boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"));
