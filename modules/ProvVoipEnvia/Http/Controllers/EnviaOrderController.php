@@ -66,8 +66,8 @@ class EnviaOrderController extends \BaseController {
 			// this can also be deleted!
 			$related_id = $model->related_order_id;
 			if (boolval($related_id)) {
-				$init_values['related_order_id_show'] = $related_id;
-				$order_related = EnviaOrder::withTrashed()->where('orderid', $related_id)->first();
+				$order_related = EnviaOrder::withTrashed()->find($related_id);
+				$init_values['related_order_id_show'] = $order_related->orderid.' <i>(DB ID: '.$order_related->id.')</i>';
 				$init_values['related_order_type'] = $order_related->ordertype;
 				$init_values['related_order_created_at'] = $order_related->created_at;
 				$init_values['related_order_updated_at'] = $order_related->updated_at;
