@@ -2323,16 +2323,24 @@ class ProvVoipEnvia extends \BaseModel {
 		if ($order_changed) {
 			$order->save();
 			Log::info('Database table enviaorder updated for order with id '.$order_id);
-			$out .= "<br><b>Order table updated</b>";
+			$out .= "<br><b>Table EnviaOrder updated</b>";
 		}
 
 		// update related tables if order has changed
 		if ($order_changed) {
 
-			// if cancelation of an order failed: restore the original order
-			if (EnviaOrder::order_cancels_other_order($order) && EnviaOrder::order_failed($order)) {
-				$out = $this->_process_order_get_status_response_for_cancelation_failed($order, $out);
+			// special case: current order was sent to cancel another order
+			if (EnviaOrder::order_cancels_other_order($order)) {
+				if (EnviaOrder::order_failed($order)) {
+					// if cancelation of an order failed: restore the original order
+					$out = $this->_process_order_get_status_response_for_cancelation_failed($order, $out);
+				}
+				elseif (EnviaOrder::order_successful($order)) {
+					// if cancelation was successful: clear the cancelled database entry (e.g. to be able to create a contract again)
+					$out = $this->_process_order_get_status_response_for_cancellation_successful($order, $out);
+				}
 			}
+
 
 			// update contract
 			$out = $this->_process_order_get_status_response_for_contract($order, $out);
@@ -2447,7 +2455,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		if ($contract_changed) {
 			$contract->save();
-			Log::info('Database table contract updated for contract with id '.$contract_id);
+			Log::info('Database table contract updated for contract with id '.$contract->id);
 			$out .= "<br><b>Contract table updated</b>";
 		};
 
@@ -2511,17 +2519,86 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_order_get_status_response_for_cancelation_failed($order, $out) {
 
-		$order_to_restore = EnviaOrder::withTrashed()->where('orderid', $order->related_order_id)->first();
+		$order_to_restore = EnviaOrder::withTrashed()->find($order->related_order_id);
 
 		if ($order_to_restore && $order_to_restore->trashed()) {
 
 			$order_to_restore->restore();
-			Log::info('Cancel of order '.$order_to_restore->id.' failed. Restored soft deleted order');
+			Log::info('Cancel of order '.$order_to_restore->id.' failed. Restored soft deleted original order');
 			$out .= '<br><b>Cancelation failed. Restored order with id '.$order_to_restore->id.' (Envia ID '.$order_to_restore->orderid.')</b>';
 		}
 
 		return $out;
 
+	}
+
+
+	/**
+	 * Cancellation of an order was successfull: Now we have to reset the related database entries
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_get_status_response_for_cancellation_successful($order, $out) {
+
+		$cancelled_order = EnviaOrder::withTrashed()->find($order->related_order_id);
+		$cancelled_method = $cancelled_order->method;
+
+		$msg = 'Cancelation of order '.$cancelled_order->id.' (Envia ID '.$cancelled_order->orderid.', method '.$cancelled_method.') was successful.';
+		Log::info($msg);
+		$out .= '<br><b>'.$msg.'</b>';
+
+		// order cancelled creation of a contract
+		if ($cancelled_method == 'contract/create') {
+
+			// clear modem data
+			$modem = $cancelled_order->modem;
+			$modem->contract_external_id = null;
+			$modem->contract_ext_creation_date = null;
+			$modem->save();
+
+			// clear contract data
+			$contract = $cancelled_order->contract;
+			$contract->customer_external_id = null;
+			$contract->save();
+
+			$msg = 'Cleared data in modem '.$modem->id.' and contract '.$contract->id.'.';
+			Log::info($msg);
+			$out .= '<br><b>'.$msg.'</b>';
+		}
+		// order cancelled creation of a voip account
+		elseif ($cancelled_method == 'voip_account/create') {
+
+			$management = $cancelled_order->phonenumber->phonenumbermanagement;
+
+			$management->voipaccount_ext_creation_date = null;
+			$management->external_activation_date = null;
+			$management->save();
+
+			$msg = 'Cleared data in phonenumbermanagement '.$management->id.'.';
+			Log::info($msg);
+			$out .= '<br><b>'.$msg.'</b>';
+		}
+		// order cancelled termination of a voip account
+		elseif ($cancelled_method == 'voip_account/terminate') {
+
+			$management = $cancelled_order->phonenumber->phonenumbermanagement;
+
+			$management->voipaccount_ext_termination_date = null;
+			$management->external_deactivation_date = null;
+			$management->save();
+
+			$msg = 'Cleared data in phonenumbermanagement '.$management->id.'.';
+			Log::info($msg);
+			$out .= '<br><b>'.$msg.'</b>';
+		}
+		// fallback: At least warn the user!
+		else {
+			$msg = 'Updating the database to reset related database entries for method '.$cancelled_method.' (on cancelled order '.$cancelled_order->id.' not yet implemented. Has to be done manually!!';
+			Log::error($msg);
+			$out .= '<h5>Attention: '.$msg.'</h5>';
+		}
+
+		return $out;
 	}
 
 
@@ -2610,7 +2687,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['phonenumber_id'] = $canceled_enviaorder->phonenumber_id;
 		$order_data['ordertype'] = 'Stornierung eines Auftrags';
 		$order_data['orderstatus'] = 'in Bearbeitung';
-		$order_data['related_order_id'] = $canceled_enviaorder_id;
+		$order_data['related_order_id'] = $canceled_enviaorder->id;
 		$order_data['customerreference'] = $canceled_enviaorder->customerreference;
 		$order_data['contractreference'] = $canceled_enviaorder->contractreference;
 
