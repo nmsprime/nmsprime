@@ -5,8 +5,11 @@ read -e -p "Enter MYSQL root psw:" mysql_root_psw
 read -e -p "Enter MYSQL cactiuser (will be automatically created) psw:" mysql_cacti_psw
 read -e -p "Enter Cacti web admin psw:" admin_psw
 
-# install cacti, create DB accessed by cactiuser
+# install cacti
 yum -y install cacti
+# avoid excessive DB access, seen in all 0.8.8 versions of cacti
+rpm -qi cacti | grep Version | grep -q '0.8.8' && sed -i 's/usleep(500)/sleep(1)/' /usr/share/cacti/poller.php
+# create DB accessed by cactiuser
 mysqladmin -u root --password="$mysql_root_psw" create cacti
 echo "GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY '$mysql_cacti_psw';" | mysql -u root --password="$mysql_root_psw"
 sed -i "s/database_password =.*/database_password = \"$mysql_cacti_psw\";/" /etc/cacti/db.php
