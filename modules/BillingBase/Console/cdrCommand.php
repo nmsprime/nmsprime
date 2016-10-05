@@ -7,6 +7,7 @@ use Symfony\Component\Console\Input\InputArgument;
 
 use \Chumper\Zipper\Zipper;
 use Storage;
+use File;
 use Modules\BillingBase\Entities\BillingLogger;
 
 class cdrCommand extends Command {
@@ -62,13 +63,22 @@ class cdrCommand extends Command {
 
 		$zipper = new Zipper;
 		$target_dir = storage_path('app/data/billingbase/accounting/'.date("Y-".sprintf('%02d', ($month+1))).'/');
+		$cdr_tmp_path = storage_path('app/tmp/cdr/');
 
 		if (!is_dir($target_dir))
-			mkdir($target_dir, '0744', true);
+			mkdir($target_dir, 0744, true);
+		if (!is_dir($cdr_tmp_path))
+			mkdir($cdr_tmp_path, 0744, true);
 
-		$zipper->make($tmp_path.$file)->extractTo($target_dir);
+		$zipper->make($tmp_path.$file)->extractTo($cdr_tmp_path);
+		$fname = head(File::allFiles($cdr_tmp_path))->getFilename();
+		File::move($cdr_tmp_path.$fname, $target_dir.\App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'.txt');
+
+
 		$logger->addInfo("Successfully stored Call Data Record in $target_dir");
+		//dd(Storage::files($target_dir));
 
+		Storage::delete('tmp/cdr/'.$fname);
 		Storage::delete('tmp/cdr.zip');
 	}
 

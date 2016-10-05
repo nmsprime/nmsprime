@@ -64,7 +64,8 @@ class zipCommand extends Command {
 		$tmp 		= exec("find $dir_abs_path_invoice_files -type f -name $invoices -o -name $cdrs | sort", $files, $ret);
 
 		$files = implode(' ', $files);
-		system("gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=$dir_abs_path_acc_files/invoices.pdf $files", $ret);
+		$fname = \App\Http\Controllers\BaseViewController::translate_label('Invoices');
+		system("gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=$dir_abs_path_acc_files/$fname.pdf $files", $ret);
 
 		if ($ret != 0)
 			$logger->addError('Could not concatenate invoice files! Missing Ghostscript?');

@@ -39,13 +39,13 @@ class ProductController extends \BaseController {
 		return array(
 			// TODO: pre select field for product types -> smaller list of possible products to choose from
 			// array('form_type' => 'text', 'name' => 'type_pre_choice', 'description' => 'Price (Net)', 'select' => 'Internet Voip TV Device Other'),
-			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name', 'help' => 'For Credits it is possible to assign a Type by adding the type name to the Name of the Credit - e.g.: \'Credit Device\''),
-			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => $types, 'select' => $type_selects, 'help' => 'All fields besides Billing Cycle have to be cleared before a type change! Otherwise products can not be saved in most cases'),
+			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name', 'help' => trans('helper.Product_Name')),
+			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => $types, 'select' => $type_selects, 'help' => trans('helper.Product_Type')),
 			array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'Qos (Data Rate)', 'value' => $qos_val, 'select' => 'Internet'),
 			array('form_type' => 'select', 'name' => 'voip_sales_tariff_id', 'description' => 'Phone Sales Tariff', 'value' => $sales_tariffs, 'select' => 'Voip'),
 			array('form_type' => 'select', 'name' => 'voip_purchase_tariff_id', 'description' => 'Phone Purchase Tariff', 'value' => $purchase_tariffs, 'select' => 'Voip'),
-			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle')),
-			array('form_type' => 'text', 'name' => 'cycle_count', 'description' => 'Number of Cycles', 'select' => 'Device Other', 'help' => 'Take Care!: for all repeatedly payed products the price stands for every charge, for Once payed products the Price is divided by the number of cycles'),
+			array('form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle' , 'value' => Product::getPossibleEnumValues('billing_cycle')),
+			array('form_type' => 'text', 'name' => 'cycle_count', 'description' => 'Number of Cycles', 'select' => 'Device Other', 'help' => trans('helper.Product_Number_of_Cycles')),
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
 			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)', 'select' => 'Internet Voip TV Device Other'),
 			$tax,
