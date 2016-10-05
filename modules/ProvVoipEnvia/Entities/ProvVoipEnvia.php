@@ -1200,9 +1200,22 @@ class ProvVoipEnvia extends \BaseModel {
 	/**
 	 * Method to add customer data
 	 *
+	 * This data is attached on:
+	 *	– contract/create for now customers
+	 *	– customer/update
+	 *
 	 * @author Patrick Reichel
 	 */
 	protected function _add_customer_data() {
+
+		// if in method contract/create: check if customer already exist at Envia ⇒ if so: don't add <customer_data>
+		if (
+			($this->job == 'contract_create')
+			&&
+			(boolval($this->contract->customer_external_id))
+		) {
+			return;
+		}
 
 		$inner_xml = $this->xml->addChild('customer_data');
 
