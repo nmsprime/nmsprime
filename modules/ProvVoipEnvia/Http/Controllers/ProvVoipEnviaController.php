@@ -565,7 +565,6 @@ class ProvVoipEnviaController extends \BaseController {
 		$ret['plain_html'] .= "<h4>Data to be sent to Envia</h4>";
 		$ret['plain_html'] .= "URL: ".$url."<br>";
 		$ret['plain_html'] .= "API version: ".$this->model->api_version."<br><br>";
-$url."<br><br>";
 		$ret['plain_html'] .= "<pre>";
 		$ret['plain_html'] .= ProvVoipEnvia::prettify_xml($payload, True);
 		$ret['plain_html'] .= "</pre>";
