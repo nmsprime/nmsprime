@@ -751,7 +751,6 @@ class EnviaOrder extends \BaseModel {
 	 */
 	protected function _get_user_action_information_phonenumbers($phonenumbers) {
 
-		/* d($this, $phonenumbers); */
 		$data = array();
 
 		$head = array(
