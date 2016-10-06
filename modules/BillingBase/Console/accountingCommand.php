@@ -81,7 +81,7 @@ class accountingCommand extends Command {
 
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
-		$contracts  = Contract::with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
+		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
 		$salesmen 	= Salesman::all();
 
 
