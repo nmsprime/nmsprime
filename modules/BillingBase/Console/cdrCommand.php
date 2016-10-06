@@ -72,7 +72,8 @@ class cdrCommand extends Command {
 
 		$zipper->make($tmp_path.$file)->extractTo($cdr_tmp_path);
 		$fname = head(File::allFiles($cdr_tmp_path))->getFilename();
-		File::move($cdr_tmp_path.$fname, $target_dir.\App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'.txt');
+		// dd(\App\Http\Controllers\BaseViewController::translate_label('Call Data Record'));
+		File::move($cdr_tmp_path.$fname, $target_dir.\App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'.csv');
 
 
 		$logger->addInfo("Successfully stored Call Data Record in $target_dir");

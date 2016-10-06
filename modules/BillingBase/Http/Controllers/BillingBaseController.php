@@ -39,7 +39,7 @@ class BillingBaseController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'tax', 'description' => 'Tax in %'),
 			array('form_type' => 'text', 'name' => 'mandate_ref_template', 'description' => 'Mandate Reference', 'help' => trans('helper.BillingBase_MandateRef').$cols , 'options' => ['placeholder' => \App\Http\Controllers\BaseViewController::translate_label('e.g.: String - {number}')]), 
 			array('form_type' => 'text', 'name' => 'invoice_nr_start', 'description' => 'Invoice Number Start', 'help' => trans('helper.BillingBase_InvoiceNrStart')),
-			array('form_type' => 'select', 'name' => 'currency', 'description' => 'Language for Accounting command', 'value' => BillingBase::getPossibleEnumValues('userlang')),
+			array('form_type' => 'select', 'name' => 'userlang', 'description' => 'Language for Accounting command', 'value' => BillingBase::getPossibleEnumValues('userlang')),
 			array('form_type' => 'checkbox', 'name' => 'split', 'description' => 'Split Sepa Transfer-Types', 'help' => trans('helper.BillingBase_SplitSEPA')),
 			array('form_type' => 'checkbox', 'name' => 'termination_fix', 'description' => 'Item Termination only end of month', 'help' => trans('helper.BillingBase_ItemTermination')),
 		];

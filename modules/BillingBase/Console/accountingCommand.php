@@ -84,6 +84,8 @@ class accountingCommand extends Command {
 		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
 		$salesmen 	= Salesman::all();
 
+		// set language for this run
+		\App::setLocale($conf->userlang);
 
 		if (!isset($sepa_accs[0]))
 		{
@@ -377,7 +379,7 @@ class accountingCommand extends Command {
 		// check if file is already loaded
 		foreach ($files as $file)
 		{
-			if (strpos(basename($file), 'xxxxxxx') !== false)
+			if (basename($file, '.csv') == \App\Http\Controllers\BaseViewController::translate_label('Call Data Record'))
     		{
     			$csv = file(storage_path('app/'.$file));
     			break;
@@ -396,7 +398,7 @@ class accountingCommand extends Command {
 
 			foreach ($files as $file)
 			{
-				if (strpos(basename($file), 'xxxxxxx') !== false)
+				if (basename($file, '.csv') == \App\Http\Controllers\BaseViewController::translate_label('Call Data Record'))
 	    		{
 	    			$csv = file(storage_path('app/'.$file));
 	    			break;

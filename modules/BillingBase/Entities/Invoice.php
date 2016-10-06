@@ -6,6 +6,15 @@ use Storage;
 use Modules\BillingBase\Entities\BillingLogger;
 
 
+
+/**
+ * Contains Functions to collect Data for Invoice & create the corresponding PDFs
+ *
+ * TODO: Translate for multiple language support, improve functional structure
+ *
+ * @author Nino Ryschawy
+ */
+
 class Invoice {
 
 	private $currency;
