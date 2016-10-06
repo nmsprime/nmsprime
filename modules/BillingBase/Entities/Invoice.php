@@ -110,7 +110,7 @@ class Invoice {
 		$this->data['contract_nr'] 			= $contract->number;
 		$this->data['contract_firstname'] 	= $contract->firstname;
 		$this->data['contract_lastname'] 	= $contract->lastname;
-		$this->data['contract_street'] 		= $contract->street;
+		$this->data['contract_street'] 		= $contract->street.' '.$contract->house_number;
 		$this->data['contract_zip'] 		= $contract->zip;
 		$this->data['contract_city'] 		= $contract->city;
 
