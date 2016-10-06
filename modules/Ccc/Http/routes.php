@@ -26,7 +26,7 @@ Route::group(['middleware' => 'ccc.base', 'prefix' => 'customer'], function () {
 
 
 // Home Route, This will redirect depending on valid Login
-Route::get('customer', array('as' => 'Home', 'uses' => 'Modules\Ccc\Http\Controllers\AuthController@home'));
+Route::get('customer', array('as' => 'CHome', 'uses' => 'Modules\Ccc\Http\Controllers\AuthController@home'));
 
 // Auth => login form
 Route::get('customer/auth/login', array('as' => 'CustomerAuth.login', 'uses' => 'Modules\Ccc\Http\Controllers\AuthController@showLoginForm'));
