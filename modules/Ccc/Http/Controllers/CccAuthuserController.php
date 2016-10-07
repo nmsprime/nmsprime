@@ -5,6 +5,7 @@ use Modules\Ccc\Entities\Ccc;
 use Modules\ProvBase\Entities\Contract;
 use Log;
 use File;
+use Modules\BillingBase\Entities\SettlementRun;
 
 class CccAuthuserController extends \BaseController {
 
@@ -207,6 +208,63 @@ class CccAuthuserController extends \BaseController {
 
 		$this->data['company_logo'] = storage_path('app/config/billingbase/logo/'.$this->data['company_logo']);
 
+	}
+
+
+
+	/**
+	 * Stuff for the CCC on Customer side
+	 */
+	private $rel_dir_path_invoices = 'data/billingbase/invoice/';
+
+
+	/**
+	 * Shows the invoice history for the Customer
+	 */
+	public function show()
+	{
+		$contract_id = \Auth::guard('ccc')->user()['contract_id'];
+		$dir 		 = storage_path('app/'.$this->rel_dir_path_invoices.$contract_id);
+		$invoices 	 = is_dir($dir) ? \File::allFiles($dir) : [];		// returns file objects
+		// $invoices 	 = is_dir($dir) ? \Storage::files($this->rel_dir_path_invoices.$contract_id) : []; 	// returns file path strings
+
+		// TODO: take from contract->country_id when it has usable values
+		\App::setLocale('de');
+
+
+		// hide invoices from unverified Settlementruns
+		$runs = Settlementrun::where('verified', '=', 0)->get(['year', 'month']);
+		$hide = [];
+
+		foreach ($runs as $run)
+		{
+			$hide[] = $run->year.'_'.sprintf("%'.02d", $run->month).'.pdf';
+			$hide[] = $run->year.'_'.sprintf("%'.02d", $run->month == 1 ? 12 : $run->month - 1).'_cdr.pdf';
+		}
+
+		if ($hide)
+		{
+			foreach ($invoices as $key => $invoice)
+			{
+				if (in_array($invoice->getBasename(), $hide))
+					unset($invoices[$key]);
+			}
+		}
+
+		// dd($invoices, $runs, $hide);
+
+		return \View::make('ccc::index', compact('invoices', 'contract_id'));
+	}
+
+
+	/**
+	 * Download an Invoice
+	 */
+	public function download($contract_id, $filename)
+	{
+		$dir = storage_path('app/'.$this->rel_dir_path_invoices.$contract_id.'/');
+
+		return response()->download($dir.$filename);
 	}
 
 }
