@@ -12,7 +12,7 @@ class SettlementRunController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'month', 'description' => 'Month', 'hidden' => 'C', 'options' => ['readonly']),
 			// array('form_type' => 'text', 'name' => 'path', 'description' => 'Path'),
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
-			array('form_type' => 'checkbox', 'name' => 'verified', 'description' => 'Verified', 'hidden' => 'C'),
+			array('form_type' => 'checkbox', 'name' => 'verified', 'description' => 'Verified', 'hidden' => 'C', 'help' => trans('helper.settlement_verification')),
 		];
 	}
 

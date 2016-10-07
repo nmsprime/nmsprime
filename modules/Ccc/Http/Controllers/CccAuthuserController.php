@@ -118,6 +118,10 @@ class CccAuthuserController extends \BaseController {
 
 		// make target tex file
 		$dir_path = storage_path('app/tmp/');
+
+		if (!is_dir($dir_path))
+			mkdir($dir_path, 0733, true);
+
 		$filename = 'conn_info';
 
 		// Replace placeholder by value
@@ -215,7 +219,7 @@ class CccAuthuserController extends \BaseController {
 	/**
 	 * Stuff for the CCC on Customer side
 	 */
-	private $rel_dir_path_invoices = 'data/billingbase/invoice/';
+	private static $rel_dir_path_invoices = 'data/billingbase/invoice/';
 
 
 	/**
@@ -224,13 +228,29 @@ class CccAuthuserController extends \BaseController {
 	public function show()
 	{
 		$contract_id = \Auth::guard('ccc')->user()['contract_id'];
-		$dir 		 = storage_path('app/'.$this->rel_dir_path_invoices.$contract_id);
-		$invoices 	 = is_dir($dir) ? \File::allFiles($dir) : [];		// returns file objects
 		// $invoices 	 = is_dir($dir) ? \Storage::files($this->rel_dir_path_invoices.$contract_id) : []; 	// returns file path strings
 
 		// TODO: take from contract->country_id when it has usable values
 		\App::setLocale('de');
 
+		$invoices = self::get_customer_invoices($contract_id);
+
+		return \View::make('ccc::index', compact('invoices', 'contract_id'));
+	}
+
+	/**
+	 * Get the invoice Files for a specific contract id
+	 * ATTENTION: Handle with care !!! - invoices must not be available to strangers
+	 * This function is used also in Contract
+	 *
+	 * @return Array of FileObjects
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public static function get_customer_invoices($contract_id)
+	{
+		$dir 		 = storage_path('app/'.self::$rel_dir_path_invoices.$contract_id);
+		$invoices 	 = is_dir($dir) ? \File::allFiles($dir) : [];		// returns file objects
 
 		// hide invoices from unverified Settlementruns
 		$runs = Settlementrun::where('verified', '=', 0)->get(['year', 'month']);
@@ -251,9 +271,7 @@ class CccAuthuserController extends \BaseController {
 			}
 		}
 
-		// dd($invoices, $runs, $hide);
-
-		return \View::make('ccc::index', compact('invoices', 'contract_id'));
+		return $invoices;
 	}
 
 
