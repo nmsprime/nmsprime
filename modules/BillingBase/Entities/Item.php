@@ -387,7 +387,8 @@ class Item extends \BaseModel {
 
 		$this->charge = $this->product->type == 'Credit' ?  (-1) * $this->credit_amount : $this->product->price * $ratio * $this->count;
 		$this->ratio  = $ratio ? $ratio : 1;
-		$this->invoice_description = $this->product->name.' '.$text.' - '.$this->accounting_text;
+		$this->invoice_description = $this->product->name.' '.$text;
+		$this->invoice_description .= $this->accounting_text ? ' - '.$this->accounting_text : '';
 
 		return true;
 	}
