@@ -510,7 +510,7 @@ class EnviaOrder extends \BaseModel {
 			}
 		}
 
-		// reset the keys to int 0 to n-1 (table header in index view is built from $view_var[0])
+		// reset the keys to integers 0…n-1 (table header in index view is built from $view_var[0])
 		$orders = array_flatten($orders);
 
 		return $orders;
@@ -901,6 +901,19 @@ class EnviaOrder extends \BaseModel {
 
 		return $mailto_links;
 
+	}
+
+
+	/**
+	 * For use in layout view: get number of user interaction needing orders
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function get_user_interaction_needing_enviaorder_count() {
+
+		$count = EnviaOrder::whereRaw('(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND orderstatus_id != 1000')->count();
+
+		return $count;
 	}
 
 
