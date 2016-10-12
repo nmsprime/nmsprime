@@ -510,6 +510,9 @@ class EnviaOrder extends \BaseModel {
 			}
 		}
 
+		// reset the keys to int 0 to n-1 (table header in index view is built from $view_var[0])
+		$orders = array_flatten($orders);
+
 		return $orders;
 	}
 
