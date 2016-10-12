@@ -424,7 +424,7 @@ class ProvVoipEnvia extends \BaseModel {
 		////////////////////////////////////////
 		// voip account related jobs
 		if (in_array($view_level, ['phonenumbermanagement'])) {
-			array_push($ret, array('class' => 'VoIP account'));
+			array_push($ret, array('class' => 'Phonenumber (= Envia VoIP account)'));
 
 			// voip account needs a contract
 			if (!$this->voipaccount_created && $this->contract_available) {
@@ -1410,6 +1410,7 @@ class ProvVoipEnvia extends \BaseModel {
 			'firstname' => 'subscriber_firstname',
 			'lastname' => 'subscriber_lastname',
 			'street' => 'subscriber_street',
+			'houseno' => 'subscriber_house_number',
 			'zipcode' => 'subscriber_zip',
 			'city' => 'subscriber_city',
 			'district' => 'subscriber_district',
