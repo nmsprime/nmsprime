@@ -240,6 +240,39 @@ end:
 
 
 	/**
+	 * Returns view of cmts analysis page
+	 */
+	public function cmts_analysis($id)
+	{
+		$ping = $lease = $log = $dash = $realtime = $monitoring = $type = $flood_ping = null;
+		$modem = $this->modem ? $this->modem : Cmts::find($id);
+		$ip = $modem->ip;
+		$view_var = $modem; // for top header
+
+		// Ping: Send 5 request's at once with max timeout of 1 second
+		exec ('sudo ping -c5 -i0 -w1 '.$ip, $ping);
+		if (count(array_keys($ping)) <= 9)
+			$ping = null;
+
+		// Realtime Measure
+		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
+		{
+			$realtime['measure']  = $this->realtime_cmts($modem, ProvBase::first()->ro_community);
+			$realtime['forecast'] = 'TODO';
+		}
+
+		// Monitoring
+		$monitoring = $this->monitoring($modem);
+
+		$panel_right =  [
+			['name' => 'Edit', 'route' => 'Cmts.edit', 'link' => [$id]],
+			['name' => 'Analysis', 'route' => 'Provmon.cmts', 'link' => [$id]]
+		];
+
+		return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var')));
+	}
+
+	/**
 	 * Proves if the last found lease is actually valid or has already expired
 	 */
 	private function validate_lease($lease, $type)
@@ -457,6 +490,102 @@ end:
 		return $ret;
 	}
 
+	/**
+	 * Calculate and set "Actual RX Power" of CMTS
+	 *
+	 * @param cmts:	CMTS object
+	 * @param com:	SNMP RW community
+	 * @param us:	Upstream values
+	 * @return: array[section][Fieldname][Values]
+	 */
+	protected function _set_new_rx_power($cmts, $com, $us)
+	{
+		$rx_pwr = array();
+		foreach ($us['If Id'] as $i => $idx) {
+			// the reference SNR is 24 dB
+			$r = round($us['Power dBmV'][$i] + 24 - $us['SNR dB'][$i]);
+			if ($r < 0)
+				// minimum actual power is 0 dB
+				$r = 0;
+			if ($r > 10)
+				// maximum actual power is 10 dB
+				$r = 10;
+			if ($cmts->company == 'CASA')
+				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
+			if ($cmts->company == 'Cisco')
+				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.9.9.116.1.4.1.1.6.$idx", 'i', 10 * $r);
+
+			array_push($rx_pwr, $r);
+		}
+		return $rx_pwr;
+	}
+
+
+	/**
+	 * The CMTS Realtime Measurement Function
+	 * Fetches all realtime values from CMTS with SNMP
+	 *
+	 * @param cmts:	CMTS object
+	 * @param com:	SNMP RO community
+	 * @param ctrl:	shall the RX power be controlled?
+	 * @return: array[section][Fieldname][Values]
+	 */
+	public function realtime_cmts($cmts, $com, $ctrl=false)
+	{
+		// Copy from SnmpController
+		$this->snmp_def_mode();
+		try
+		{
+			// First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
+			$docsis = snmpget($cmts->ip, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
+		}
+		catch (\Exception $e)
+		{
+			if (((strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false) || (strpos($e->getMessage(), "No response from") !== false)))
+			return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
+		}
+
+		// System
+		$sys['SysDescr'] = [snmpget($cmts->ip, $com, '.1.3.6.1.2.1.1.1.0')];
+		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)];
+
+		$i = 0;
+		foreach(snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2') as $id => $freq)
+		{
+			$id = end((explode('.', $id)));
+			$us['Cluster'][$i] = snmpget($cmts->ip, $com, ".1.3.6.1.2.1.31.1.1.1.18.$id");
+			$us['If Id'][$i] = $id;
+			$us['Frequency MHz'][$i] = $freq / 1000000;
+			$i++;
+		}
+
+		$us['SNR dB'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
+
+		if ($cmts->company == 'CASA')
+			$us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
+		if ($cmts->company == 'Cisco')
+			$us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.9.9.116.1.4.1.1.6'));
+
+		// unset unused interfaces, as we don't want to show them on the web gui
+		foreach ($us['Frequency MHz'] as $key => $freq)
+		{
+			if ($us['Frequency MHz'][$key] == 0 && $us['SNR dB'][$key] == 0)
+			{
+				foreach ($us as $entry => $arr)
+					unset($us[$entry][$key]);
+			}
+		}
+
+		if($ctrl && isset($us['Power dBmV']))
+			$us['Power dBmV'] = $this->_set_new_rx_power($cmts, ProvBase::first()->rw_community, $us);
+
+		// unset interface ID, as we don't want to show it on the web gui, we just needed them for setting the RX power
+		unset($us['If Id']);
+
+		$ret['System'] = $sys;
+		$ret['Upstream'] = $us;
+		return $ret;
+	}
 
 	/**
 	 * Get CMTS for a registered CM
