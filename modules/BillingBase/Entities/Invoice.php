@@ -58,12 +58,14 @@ class Invoice extends \BaseModel{
 	/**
 	 * @var strings  - template file paths relativ to Storage app path
 	 */
-	private $template_invoice_path  = 'config/billingbase/template/';
-	private $template_cdr_path 		= 'config/billingbase/template/';
-	private $logo_path 				= 'config/billingbase/logo/';
+	private $rel_template_dir_path 	= 'config/billingbase/template/';
+	private $template_invoice_fname = '';
+	private $template_cdr_fname		= '';
+	private $rel_logo_dir_path 		= 'config/billingbase/logo/';
 
-	private $filename_invoice;
-	private $filename_cdr;
+	// without .pdf extension
+	private $filename_invoice 	= '';
+	private $filename_cdr 		= '';
 
 	/**
 	 * @var string - Directory to store Invoice pdf - relativ to storage path; completed in constructor by contract id
@@ -76,9 +78,9 @@ class Invoice extends \BaseModel{
 	private $logger;
 
 	/**
-	 * @var array 	Call Data Records
+	 * @var Bool 	1 - Invoice has Call Data Records, 0 - Only Invoice
 	 */
-	public $cdrs;
+	public $has_cdr = 0;
 
 	/**
 	 * @var bool 	Error Flag - if set then invoice cant be created
@@ -151,6 +153,7 @@ class Invoice extends \BaseModel{
 	public function __construct($attributes = array())
 	{
 		$this->logger = new BillingLogger;
+		$this->filename_invoice = date('Y_m', strtotime('first day of last month'));
 		
 		parent::__construct($attributes);
 	}
@@ -167,6 +170,14 @@ class Invoice extends \BaseModel{
 		return $this->rel_storage_invoice_dir;
 	}
 
+	/**
+	 * @param 	String 		$type 		invoice or cdr
+	 * @return 	String 					absolute Path & Filename of Template File
+	 */
+	private function _get_abs_template_path($type = 'invoice')
+	{
+		return storage_path('app/'.$this->rel_template_dir_path.$this->{'template_'.$type.'_fname'});
+	}
 
 	public function add_contract_data($contract, $config, $invoice_nr)
 	{
@@ -317,11 +328,35 @@ class Invoice extends \BaseModel{
 		$this->data['company_registration_court'] .= $this->data['company_registration_court_2'] ? $this->data['company_registration_court_2'].'\\\\' : '';
 		$this->data['company_registration_court'] .= $this->data['company_registration_court_3'];
 
-		$this->data['company_logo']  = storage_path('app/'.$this->logo_path.$account->company->logo);
-		$this->template_invoice_path = storage_path('app/'.$this->template_invoice_path.$account->template_invoice);
-		$this->template_cdr_path 	 = storage_path('app/'.$this->template_cdr_path.$account->template_cdr);
+		$this->data['company_logo']   = storage_path('app/'.$this->rel_logo_dir_path.$account->company->logo);
+		$this->template_invoice_fname = $account->template_invoice;
+		$this->template_cdr_fname 	  = $account->template_cdr;
 
 		return true;
+	}
+
+	/**
+	 * @param 	Array 	$cdrs 		Call Data Record array designated for this Invoice formatted by parse_cdr_data in accountingCommand
+	 */
+	public function add_cdr_data($cdrs)
+	{
+		$this->has_cdr = 1;
+		$time_cdr = strtotime($cdrs[0][1]);
+		$this->data['cdr_month'] = date('m/Y', $time_cdr);
+
+		$sum = $count = 0;
+		foreach ($cdrs as $entry)
+		{
+			$this->data['cdr_table_positions'] .= date('d.m.Y', strtotime($entry[1])).' '.$entry[2] .' & '. $entry[3] .' & '. $entry[0] .' & '. $entry[4] . ' & '. $entry[5].'\\\\';
+			$sum += $entry[5];
+			$count++;
+		}
+		$this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'. $sum . '}\\\\';
+		$plural = $count > 1 ? 'en' : '';
+		$this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural." & ".round($sum, 2).$this->currency.' & '.round($sum, 2).$this->currency.'\\\\';
+
+		$this->filename_cdr = date('Y_m', $time_cdr).'_cdr';
+
 	}
 
 
@@ -340,8 +375,7 @@ class Invoice extends \BaseModel{
 		// if ($this->data['contract_id'] == 500026)
 		// 	var_dump($this->data['invoice_nr']);
 
-		// Keep this order -> another invoice item is build in this function - TODO: move to separate function
-		if ($this->cdrs)
+		if ($this->has_cdr)
 		{
 			$this->_make_cdr_tex();
 			$this->_create_db_entry(0);
@@ -400,9 +434,9 @@ class Invoice extends \BaseModel{
 			return -2;			
 		}
 
-		if (!$template = file_get_contents($this->template_invoice_path))
+		if (!$template = file_get_contents($this->_get_abs_template_path('invoice')))
 		{
-			$this->logger->addError("Failed to Create Invoice: Could not read template ".$this->template_invoice_path, [$this->data['contract_id']]);
+			$this->logger->addError("Failed to Create Invoice: Could not read template ".$this->_get_abs_template_path('invoice'), [$this->data['contract_id']]);
 			return -3;
 		}
 
@@ -411,44 +445,28 @@ class Invoice extends \BaseModel{
 
 
 		// Create tex file(s)
-		$this->filename_invoice = date('Y_m', strtotime('first day of last month'));
 		Storage::put($this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->filename_invoice, $template);
 		// echo 'Stored tex file in '.storage_path('app/'.$this->rel_storage_invoice_dir.$this->filename_invoice)."\n";
 	}
 
 
+
 	/**
 	 * Creates Tex File of Call Data Records - replaces all '\_' and all fields of data array that are set
 	 *
-	 * TODO: add add_cdr_data-Function and merge make_tex-Functions together
+	 * TODO: merge make_tex-Functions together
 	 */
 	private function _make_cdr_tex()
 	{
-		$month = date('m', strtotime($this->cdrs[0][1]));
-		$this->data['cdr_month'] = date("$month/Y");
-
-		// Create tex table
-		$sum = $count = 0;
-		foreach ($this->cdrs as $entry)
+		if (!$template = file_get_contents($this->_get_abs_template_path('cdr')))
 		{
-			$this->data['cdr_table_positions'] .= date('d.m.Y', strtotime($entry[1])).' '.$entry[2] .' & '. $entry[3] .' & '. $entry[0] .' & '. $entry[4] . ' & '. $entry[5].'\\\\';
-			$sum += $entry[5];
-			$count++;
-		}
-		$this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'. $sum . '}\\\\';
-		$plural = $count > 1 ? 'en' : '';
-		$this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural." & ".round($sum, 2).$this->currency.' & '.round($sum, 2).$this->currency.'\\\\';
-
-		if (!$template = file_get_contents($this->template_cdr_path))
-		{
-			$this->logger->addError("Failed to Create Call Data Record: Could not read template ".$this->template_cdr_path, [$this->data['contract_id']]);
+			$this->logger->addError("Failed to Create Call Data Record: Could not read template ".$this->_get_abs_template_path('cdr'), [$this->data['contract_id']]);
 			return -3;
 		}
 
 		// Replace placeholder by value
 		$template = $this->_replace_placeholder($template);
 
-		$this->filename_cdr = date("Y_$month").'_cdr';
 		Storage::put($this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->filename_cdr, $template);
 	}
 
