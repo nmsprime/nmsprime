@@ -15,6 +15,7 @@ use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Salesman;
+use Modules\BillingBase\Entities\Invoice;
 
 class accountingCommand extends Command {
 
@@ -282,6 +283,7 @@ class accountingCommand extends Command {
 	 * Initialise models for this billing cycle (could also be done during runtime but with performance degradation)
 	 	* invoice number counter
 	 	* storage directories
+	 * Remove already created Invoice Database Entries
 	 */
 	private function _init($sepa_accs, $salesmen, $conf)
 	{
@@ -309,6 +311,9 @@ class accountingCommand extends Command {
 			$acc->dir = $this->dir;
 			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+5 days'));
 		}
+
+		// Invoices
+		Invoice::delete_current_invoices();
 
 		// actual invoice nr counters
 		$last_run = AccountingRecord::orderBy('created_at', 'desc')->select('created_at')->first();

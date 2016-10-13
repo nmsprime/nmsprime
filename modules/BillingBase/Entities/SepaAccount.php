@@ -12,6 +12,11 @@ use IBAN;
 use \App\Http\Controllers\BaseViewController;
 
 
+/**
+ * Contains the functionality for Creating the SEPA-XML-Files of a SettlementRun
+ *
+ * @author Nino Ryschawy
+ */
 class SepaAccount extends \BaseModel {
 
 	// The associated SQL table for this Model
@@ -297,7 +302,10 @@ class SepaAccount extends \BaseModel {
 	public function add_invoice_item($item, $conf)
 	{
 		if (!isset($this->invoices[$item->contract->id]))
-			$this->invoices[$item->contract->id] = new Invoice($item->contract, $conf, $this->get_invoice_nr_formatted());
+		{
+			$this->invoices[$item->contract->id] = new Invoice;
+			$this->invoices[$item->contract->id]->add_contract_data($item->contract, $conf, $this->get_invoice_nr_formatted());
+		}
 
 		$this->invoices[$item->contract->id]->add_item($item);
 	}
@@ -305,7 +313,10 @@ class SepaAccount extends \BaseModel {
 	public function add_invoice_cdr($contract, $cdrs, $conf)
 	{
 		if (!isset($this->invoices[$contract->id]))
-			$this->invoices[$contract->id] = new Invoice($contract, $conf, '');
+		{
+			$this->invoices[$contract->id] = new Invoice;
+			$this->invoices[$contract->id]->add_contract_data($contract, $conf, '');
+		}
 
 		$this->invoices[$contract->id]->cdrs = $cdrs;
 	}
