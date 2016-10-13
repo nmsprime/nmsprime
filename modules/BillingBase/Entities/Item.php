@@ -20,8 +20,8 @@ class Item extends \BaseModel {
 
 		return array(
 			// 'name' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
-			'valid_from'	=> 'dateornull',	//|in_future ??
-			'valid_to'		=> 'dateornull',
+			'valid_from'	=> 'date',	//|in_future ??
+			'valid_to'		=> 'date',
 			'credit_amount' => 'required_if:product_id,'.$credit_ids,
 			'count'			=> 'null_if:product_id,'.$tariff_ids.','.$credit_ids,
 		);
@@ -41,7 +41,6 @@ class Item extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		$bsclass = '';
 		// TODO: simplify when it's secure that 0000-00-00 doesn't occure
 		$start = $this->valid_from && $this->valid_from != '0000-00-00' ? ' - '.$this->valid_from : '';
 		$end   = $this->valid_to && $this->valid_to != '0000-00-00' ? ' - '.$this->valid_to : '';
@@ -49,14 +48,12 @@ class Item extends \BaseModel {
 		$start_fixed = !boolval($this->valid_from_fixed) ? '(!)' : '';
 		$end_fixed = !boolval($this->valid_to_fixed) ? '(!)' : '';
 
-		$billing_valid = $this->check_validity();
+		// Evaluate Colours
+		$billing_valid = $this->check_validity('month', $this->is_tariff());
 
-		// green colour means it will be considered for next accounting cycle, blue is a new item
-		$bsclass = $billing_valid ? 'success' : 'info';
-
-		// red means item is outdated
-		if (($this->get_start_time() < strtotime(date('Y-m-01'))) && !$billing_valid)
-			$bsclass = 'danger';
+		// green colour means it will be considered for next accounting cycle, blue is a new item and not yet considered
+		// red means item is outdated/expired and will not be charged this month
+		$bsclass = $billing_valid ? 'success' : ($this->get_start_time() < strtotime(date('Y-m-01')) ? 'danger' : 'info');
 
 		$name = isset($this->product) ? $this->product->name : $this->accounting_text;
 
@@ -64,8 +61,6 @@ class Item extends \BaseModel {
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
 		        'header' => $name.$start.$start_fixed.$end];
-
-		// return $this->product->name.$start.$end;
 	}
 
 	public function view_belongs_to ()
@@ -73,10 +68,10 @@ class Item extends \BaseModel {
 		return $this->contract;
 	}
 
+
 	/**
 	 * Relationships:
 	 */
-
 	public function product ()
 	{
 		return $this->belongsTo('Modules\BillingBase\Entities\Product');
@@ -176,6 +171,17 @@ class Item extends \BaseModel {
 	public function get_costcenter()
 	{
 		return $this->costcenter ? $this->costcenter : ($this->product->costcenter ? $this->product->costcenter : $this->contract->costcenter);
+	}
+
+
+	/**
+	 * Check if item is of type Tariff or not
+	 *
+	 * @return 	Integer 	1 - yes is Tariff, 0 - no it's another type
+	 */
+	public function is_tariff()
+	{
+		return in_array($this->product->type, ['Internet', 'Voip', 'TV']) ? 1 : 0;
 	}
 
 
