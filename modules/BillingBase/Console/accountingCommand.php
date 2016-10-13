@@ -113,7 +113,7 @@ class accountingCommand extends Command {
 
 
 			// Skip invalid contracts
-			if (!$c->check_validity())
+			if (!$c->check_validity() && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number])))
 			{
 				$logger->addNotice('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
 				continue;				
@@ -219,16 +219,10 @@ class accountingCommand extends Command {
 					$calls++;
 				}
 
-				// accounting record
 				$acc = $sepa_accs->find($c->costcenter->sepaaccount_id);
-				$rec = new AccountingRecord;
-				$rec->add_cdr($c, $acc, $charge, $calls);
-				$acc->add_cdr_accounting_record($c, $charge, $calls);
-
-				// invoice
-				$acc->add_invoice_cdr($c, $cdrs[$id], $conf);
 
 				// increase charge for booking record
+				// Keep this order in case we need to increment the invoice nr if only cdrs are charged for this contract
 				if (isset($c->charge[$acc->id]))
 				{
 					$c->charge[$acc->id]['net'] += $charge;
@@ -242,6 +236,15 @@ class accountingCommand extends Command {
 					$c->charge[$acc->id]['tax'] = $charge * $conf->tax/100;
 					$acc->invoice_nr += 1;
 				}
+
+				// accounting record
+				$rec = new AccountingRecord;
+				$rec->add_cdr($c, $acc, $charge, $calls);
+				$acc->add_cdr_accounting_record($c, $charge, $calls);
+
+				// invoice
+				$acc->add_invoice_cdr($c, $cdrs[$id], $conf);
+
 
 			}
 
