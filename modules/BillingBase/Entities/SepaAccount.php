@@ -183,7 +183,7 @@ class SepaAccount extends \BaseModel {
 	 *
 	 * @return String
 	 */
-	private function get_invoice_nr_formatted()
+	private function _get_invoice_nr_formatted()
 	{
 		return $this->invoice_nr_prefix.$this->id.'/'.$this->invoice_nr;
 	}
@@ -199,7 +199,7 @@ class SepaAccount extends \BaseModel {
 		$data = array(
 			
 			BaseViewController::translate_label('Contractnr') 	=> $item->contract->number,
-			BaseViewController::translate_label('Invoicenr') 	=> $this->get_invoice_nr_formatted(),
+			BaseViewController::translate_label('Invoicenr') 	=> $this->_get_invoice_nr_formatted(),
 			BaseViewController::translate_label('Target Month') => date('m'),
 			BaseViewController::translate_label('Date')			=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
 			BaseViewController::translate_label('Cost Center')  => isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
@@ -241,7 +241,7 @@ class SepaAccount extends \BaseModel {
 		$data = array(
 
 			BaseViewController::translate_label('Contractnr')	=> $contract->number,
-			BaseViewController::translate_label('Invoicenr') 	=> $this->get_invoice_nr_formatted(),
+			BaseViewController::translate_label('Invoicenr') 	=> $this->_get_invoice_nr_formatted(),
 			BaseViewController::translate_label('Date') 		=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
 			BaseViewController::translate_label('RCD') 			=> $this->rcd,
 			BaseViewController::translate_label('Cost Center')  => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
@@ -283,7 +283,7 @@ class SepaAccount extends \BaseModel {
 	{
 		$this->acc_recs['tariff'][] = array(
 			BaseViewController::translate_label('Contractnr') 	=> $contract->number,
-			BaseViewController::translate_label('Invoicenr') 	=> $this->get_invoice_nr_formatted(),
+			BaseViewController::translate_label('Invoicenr') 	=> $this->_get_invoice_nr_formatted(),
 			BaseViewController::translate_label('Target Month') => date('m'),
 			BaseViewController::translate_label('Date') 		=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
 			BaseViewController::translate_label('Cost Center')  => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
@@ -304,7 +304,7 @@ class SepaAccount extends \BaseModel {
 		if (!isset($this->invoices[$item->contract->id]))
 		{
 			$this->invoices[$item->contract->id] = new Invoice;
-			$this->invoices[$item->contract->id]->add_contract_data($item->contract, $conf, $this->get_invoice_nr_formatted());
+			$this->invoices[$item->contract->id]->add_contract_data($item->contract, $conf, $this->_get_invoice_nr_formatted());
 		}
 
 		$this->invoices[$item->contract->id]->add_item($item);
@@ -315,7 +315,7 @@ class SepaAccount extends \BaseModel {
 		if (!isset($this->invoices[$contract->id]))
 		{
 			$this->invoices[$contract->id] = new Invoice;
-			$this->invoices[$contract->id]->add_contract_data($contract, $conf, '');
+			$this->invoices[$contract->id]->add_contract_data($contract, $conf, $this->_get_invoice_nr_formatted());
 		}
 
 		$this->invoices[$contract->id]->cdrs = $cdrs;
@@ -378,7 +378,7 @@ class SepaAccount extends \BaseModel {
 
 
 		$data = array(
-			'endToEndId'			=> 'RG '.$this->get_invoice_nr_formatted(),
+			'endToEndId'			=> 'RG '.$this->_get_invoice_nr_formatted(),
 			'amount'                => $charge,
 			'debtorIban'            => $mandate->sepa_iban,
 			'debtorBic'             => $mandate->sepa_bic,

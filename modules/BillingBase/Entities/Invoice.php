@@ -523,6 +523,8 @@ class Invoice extends \BaseModel{
 
 	/**
 	 * Used to delete invoices created by previous settlement run in current month - executed in accountingCommand
+	 *
+	 * TODO: Delete PDF Files in storage
 	 */
 	public static function delete_current_invoices()
 	{
@@ -533,7 +535,7 @@ class Invoice extends \BaseModel{
 
 
 	/**
-	 * Remove all old Invoice & CDR DB-Entries & Files as it's prescribe by law
+	 * Remove all old Invoice & CDR DB-Entries & Files as it's prescribed by law
 	 *
 	 * TODO: implement - NOTE: This can be different from country to country
 	 */

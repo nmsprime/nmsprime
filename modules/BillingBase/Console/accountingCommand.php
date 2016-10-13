@@ -85,9 +85,6 @@ class accountingCommand extends Command {
 		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
 		$salesmen 	= Salesman::all();
 
-		// set language for this run
-		\App::setLocale($conf->userlang);
-
 		if (!isset($sepa_accs[0]))
 		{
 			$logger->addError('There are no Sepa Accounts to create Billing Files for - Stopping here!');
@@ -283,16 +280,17 @@ class accountingCommand extends Command {
 	 * Initialise models for this billing cycle (could also be done during runtime but with performance degradation)
 	 	* invoice number counter
 	 	* storage directories
+	 * Set Language for Billing
 	 * Remove already created Invoice Database Entries
 	 */
 	private function _init($sepa_accs, $salesmen, $conf)
 	{
+		// set language for this run
+		\App::setLocale($conf->userlang);
+
 		// create directory structure
 		if (!is_dir(storage_path('app/'.$this->dir)))
-		{
-			// mkdir(storage_path('app/'.$this->dir, '0700', true)); does not work?
-			system('mkdir -p 0700 '.storage_path('app/'.$this->dir)); // system call because php mkdir creates weird permissions - umask couldnt solve it !?
-		}
+			mkdir(storage_path('app/'.$this->dir, 0700, true));
 
 		// Salesmen
 		$prod_types = Product::getPossibleEnumValues('type');
