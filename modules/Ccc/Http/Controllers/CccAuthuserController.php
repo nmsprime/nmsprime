@@ -253,14 +253,7 @@ class CccAuthuserController extends \BaseController {
 		$invoices 	 = is_dir($dir) ? \File::allFiles($dir) : [];		// returns file objects
 
 		// hide invoices from unverified Settlementruns
-		$runs = Settlementrun::where('verified', '=', 0)->get(['year', 'month']);
-		$hide = [];
-
-		foreach ($runs as $run)
-		{
-			$hide[] = $run->year.'_'.sprintf("%'.02d", $run->month).'.pdf';
-			$hide[] = $run->year.'_'.sprintf("%'.02d", $run->month == 1 ? 12 : $run->month - 1).'_cdr.pdf';
-		}
+		$hide = SettlementRun::unverified_files();
 
 		if ($hide)
 		{
