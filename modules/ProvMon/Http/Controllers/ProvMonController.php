@@ -310,25 +310,11 @@ end:
 	 *
 	 * TODO: move somewhere else
 	 */
-	private function _d_h_m_s__array($seconds, $format = 'string')
-	{
-		$ret = array();
-
-		$divs = array(86400, 3600, 60, 1);
-
-		for ($d = 0; $d < 4; $d++)
-		{
-			$q = $seconds / $divs[$d];
-			$r = $seconds % $divs[$d];
-			$ret[substr('dhms', $d, 1)] = round($q);
-
-			$seconds = $r;
-		}
-
-		if ($format == 'string')
-			return $ret['d'].' Days '.$ret['h'].' Hours '.$ret['m'].' Min '.$ret['s'].' Sec';
-
-		return $ret; // Array Format
+	private function _secondsToTime($seconds) {
+		$seconds = round($seconds);
+		$dtF = new \DateTime('@0');
+		$dtT = new \DateTime("@$seconds");
+		return $dtF->diff($dtT)->format('%a Days %h Hours %i Min %s Sec');
 	}
 
 
@@ -420,7 +406,7 @@ end:
 		// System
 		$sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')];
 		$sys['Firmware'] = [snmpget($host, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
-		$sys['Uptime']   = [$this->_d_h_m_s__array(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0'))];
+		$sys['Uptime']   = [$this->_secondsToTime(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
 		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
 
 		// Downstream
@@ -503,7 +489,7 @@ end:
 		$rx_pwr = array();
 		foreach ($us['If Id'] as $i => $idx) {
 			// the reference SNR is 24 dB
-			$r = round($us['Power dBmV'][$i] + 24 - $us['SNR dB'][$i]);
+			$r = round($us['Rx Power dBmV'][$i] + 24 - $us['SNR dB'][$i]);
 			if ($r < 0)
 				// minimum actual power is 0 dB
 				$r = 0;
@@ -547,6 +533,7 @@ end:
 
 		// System
 		$sys['SysDescr'] = [snmpget($cmts->ip, $com, '.1.3.6.1.2.1.1.1.0')];
+		$sys['Uptime']   = [$this->_secondsToTime(snmpget($cmts->ip, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
 		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)];
 
 		$i = 0;
@@ -562,9 +549,11 @@ end:
 		$us['SNR dB'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
 
 		if ($cmts->company == 'CASA')
-			$us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
-		if ($cmts->company == 'Cisco')
-			$us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.9.9.116.1.4.1.1.6'));
+			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
+		if ($cmts->company == 'Cisco') {
+			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.9.9.116.1.4.1.1.6'));
+			$us['Avg Utilization %'] = snmpwalk($cmts->ip, $com, ".1.3.6.1.4.1.9.9.116.1.4.1.1.7");
+		}
 
 		// unset unused interfaces, as we don't want to show them on the web gui
 		foreach ($us['Frequency MHz'] as $key => $freq)
@@ -576,8 +565,8 @@ end:
 			}
 		}
 
-		if($ctrl && isset($us['Power dBmV']))
-			$us['Power dBmV'] = $this->_set_new_rx_power($cmts, ProvBase::first()->rw_community, $us);
+		if($ctrl && isset($us['Rx Power dBmV']))
+			$us['Rx Power dBmV'] = $this->_set_new_rx_power($cmts, ProvBase::first()->rw_community, $us);
 
 		// unset interface ID, as we don't want to show it on the web gui, we just needed them for setting the RX power
 		unset($us['If Id']);
