@@ -61,7 +61,7 @@ class CreateInvoiceTable extends BaseMigration {
 		{
 			if ($bool)
 			{
-				echo 'Import data for adapted Invoice Model - Ensure that all Settlement Runs are verified!';
+				echo "Import data for adapted Invoice Model - Ensure that all Settlement Runs are verified!!! Rollback BillingBase module otherwise and migrate after verification again\n";
 				$bool = false;
 			}
 
