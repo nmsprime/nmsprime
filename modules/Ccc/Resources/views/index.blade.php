@@ -1,6 +1,6 @@
 @extends('ccc::layouts.master')
 
-@section('content')
+@section('content_left')
 
 	<table class="table">
 		@foreach($invoices as $file)
@@ -10,3 +10,8 @@
 
 @stop
 
+@section('content')
+
+	@include ('bootstrap.panel', array ('content' => 'content_left', 'invoices' => $invoices, 'view_header' => trans('messages.Invoices'), 'md' => 4))
+
+@stop

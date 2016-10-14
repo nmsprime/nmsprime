@@ -14,26 +14,9 @@
 		<div id="page-container" class="fade page-sidebar-fixed page-header-fixed in">
 			<div id="content" class="content">
 
-				<div id="page-container" class="fade page-sidebar-fixed page-header-fixed in">
+				@include ('ccc::layouts.header')
 
-					<div id="header" class="header navbar navbar-default navbar-fixed-top">
-						<div class="container-fluid">
-							<div class="navbar-header">
-								<h1 id="item_name">{{ trans('messages.ccc') }}</h1>
-							</div>
-							<div id="header-navbar" class="collapse navbar-collapse">
-								<ul class="nav navbar-nav navbar-right">
-									<li><a class="btn btn-theme" data-click="scroll-to-target" href="{{route('CustomerAuth.logout')}}">{{trans('messages.log_out')}}</a></li>
-								</ul>
-							</div>
-						</div>
-					</div>
-
-
-					<div id="sidebar" class="sidebar">
-				</div>
-
-				@include ('bootstrap.panel', array ('content' => 'content', 'invoices' => $invoices, 'view_header' => trans('messages.Invoices'), 'md' => 4))
+				@yield('content')
 
 				@include ('bootstrap.footer')
 

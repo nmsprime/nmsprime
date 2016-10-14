@@ -9,6 +9,13 @@ use Modules\BillingBase\Entities\SettlementRun;
 
 class CccAuthuserController extends \BaseController {
 
+	public function __construct()
+	{
+		// TODO: take from contract->country_id when it has usable values
+		\App::setLocale('de');
+	}
+
+
 	/**
 	 * @var Array 	Data to fill placeholder in Connection Info Template
 	 */
@@ -230,9 +237,6 @@ class CccAuthuserController extends \BaseController {
 		$contract_id = \Auth::guard('ccc')->user()['contract_id'];
 		// $invoices 	 = is_dir($dir) ? \Storage::files($this->rel_dir_path_invoices.$contract_id) : []; 	// returns file path strings
 
-		// TODO: take from contract->country_id when it has usable values
-		\App::setLocale('de');
-
 		$invoices = self::get_customer_invoices($contract_id);
 
 		return \View::make('ccc::index', compact('invoices', 'contract_id'));
@@ -277,5 +281,33 @@ class CccAuthuserController extends \BaseController {
 
 		return response()->download($dir.$filename);
 	}
+
+
+	public function psw_update()
+	{
+		// dd(\Input::get(), \Input::get('password'));
+		if (\Input::has('password'))
+		{
+			// update psw
+			$customer = \Auth::guard('ccc')->user();
+			$rules = array('password' => 'required|confirmed|min:6');
+			$data = \Input::get();
+
+			$validator = \Validator::make($data, $rules);
+
+			if ($validator->fails())
+			{
+				return \Redirect::back()->withErrors($validator)->withInput()->with('message', 'please correct the following errors')->with('message_color', 'red');
+			}
+
+			$customer->password = \Hash::make(\Input::get('password'));
+			$customer->save();
+
+			return $this->show();
+		}
+
+		return \View::make('ccc::psw_update');		
+	}
+
 
 }

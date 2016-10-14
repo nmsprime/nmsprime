@@ -16,6 +16,8 @@ BaseRoute::group([], function() {
 Route::group(['middleware' => 'ccc.base', 'prefix' => 'customer'], function () {
 
 	Route::get ('home', ['as' => 'HomeCcc', 'uses' => 'Modules\Ccc\Http\Controllers\CccAuthuserController@show']);
+	Route::get ('password', ['as' => 'CustomerPsw', 'uses' => 'Modules\Ccc\Http\Controllers\CccAuthuserController@psw_update']);
+	Route::post ('password', ['as' => 'CustomerPsw', 'uses' => 'Modules\Ccc\Http\Controllers\CccAuthuserController@psw_update']);
 
 	// Download Invoice
 	Route::get('home/download/{id}/{filename}', array('as' => 'Customer.Download', 'uses' => 'Modules\Ccc\Http\Controllers\CccAuthuserController@download'));
