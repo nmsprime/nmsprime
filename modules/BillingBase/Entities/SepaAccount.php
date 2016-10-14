@@ -196,12 +196,14 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function add_accounting_record($item)
 	{
+		$time = strtotime('last day of last month');
+
 		$data = array(
-			
+
 			BaseViewController::translate_label('Contractnr') 	=> $item->contract->number,
 			BaseViewController::translate_label('Invoicenr') 	=> $this->_get_invoice_nr_formatted(),
-			BaseViewController::translate_label('Target Month') => date('m'),
-			BaseViewController::translate_label('Date')			=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
+			BaseViewController::translate_label('Target Month') => date('m', $time),
+			BaseViewController::translate_label('Date')			=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y', $time) : date('Y-m-d', $time),
 			BaseViewController::translate_label('Cost Center')  => isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
 			BaseViewController::translate_label('Count')		=> $item->count,
 			BaseViewController::translate_label('Description') 	=> $item->invoice_description,
@@ -242,7 +244,7 @@ class SepaAccount extends \BaseModel {
 
 			BaseViewController::translate_label('Contractnr')	=> $contract->number,
 			BaseViewController::translate_label('Invoicenr') 	=> $this->_get_invoice_nr_formatted(),
-			BaseViewController::translate_label('Date') 		=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
+			BaseViewController::translate_label('Date') 		=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
 			BaseViewController::translate_label('RCD') 			=> $this->rcd,
 			BaseViewController::translate_label('Cost Center')  => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
 			BaseViewController::translate_label('Description')  => '',
