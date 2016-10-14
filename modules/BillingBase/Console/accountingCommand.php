@@ -83,9 +83,9 @@ class accountingCommand extends Command {
 
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
-		$contracts  = Contract::orderBy('id')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
-		$salesmen 	= Salesman::all();
 
+		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
+		$salesmen 	= Salesman::all();
 
 		if (!isset($sepa_accs[0]))
 		{
@@ -114,10 +114,8 @@ class accountingCommand extends Command {
 			// debugging output
 			var_dump($c->id); //, round(microtime(true) - $start, 4));
 
-
-			// Skip invalid contracts - TODO: we must not skip contracts that still have CDRs
-			// so contracts that had a voip item should not be skipped one extra month
-			if (!$c->check_validity())
+			// Skip invalid contracts
+			if (!$c->check_validity() && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number])))
 			{
 				$logger->addNotice('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
 				continue;				
@@ -152,7 +150,7 @@ class accountingCommand extends Command {
 				}
 
 				// skip invalid items
-				if (!$item->check_validity($item->get_billing_cycle() == 'Yearly' ? 'year' : 'month'))
+				if (!$item->check_validity($item->get_billing_cycle() == 'Yearly' ? 'year' : 'month', $item->is_tariff()))
 				{
 					$logger->addDebug('Item '.$item->product->name.' is outdated', [$c->id]);
 					continue;
@@ -223,16 +221,10 @@ class accountingCommand extends Command {
 					$calls++;
 				}
 
-				// accounting record
 				$acc = $sepa_accs->find($c->costcenter->sepaaccount_id);
-				$rec = new AccountingRecord;
-				$rec->add_cdr($c, $acc, $charge, $calls);
-				$acc->add_cdr_accounting_record($c, $charge, $calls);
-
-				// invoice
-				$acc->add_invoice_cdr($c, $cdrs[$id], $conf);
 
 				// increase charge for booking record
+				// Keep this order in case we need to increment the invoice nr if only cdrs are charged for this contract
 				if (isset($c->charge[$acc->id]))
 				{
 					$c->charge[$acc->id]['net'] += $charge;
@@ -246,6 +238,15 @@ class accountingCommand extends Command {
 					$c->charge[$acc->id]['tax'] = $charge * $conf->tax/100;
 					$acc->invoice_nr += 1;
 				}
+
+				// accounting record
+				$rec = new AccountingRecord;
+				$rec->add_cdr($c, $acc, $charge, $calls);
+				$acc->add_cdr_accounting_record($c, $charge, $calls);
+
+				// invoice
+				$acc->add_invoice_cdr($c, $cdrs[$id], $conf);
+
 
 			}
 
@@ -279,24 +280,25 @@ class accountingCommand extends Command {
 	}
 
 
-
 	/**
 	 * (1) Clear/Create (Prepare) Directories
 	 *
-	 * (2) Initialise models for this billing cycle
-		* invoice number counter
-		* storage directories
-	 	* NOTES:
-	 		* this could also be done during runtime but with performance degradation
-	 		* this works because models are handled by reference
+	 * (2) Initialise models for this billing cycle (could also be done during runtime but with performance degradation)
+	 	* invoice number counter
+	 	* storage directories
+	 * Set Language for Billing
+	 * Remove already created Invoice Database Entries
 	 */
 	private function _init($sepa_accs, $salesmen, $conf)
 	{
+		// set language for this run
+		\App::setLocale($conf->userlang);
+
+		// create directory structure
 		if (is_dir(storage_path('app/'.$this->dir)))
 			$this->_directory_cleanup();
 		else
 			mkdir(storage_path('app/'.$this->dir, 0700, true));
-
 
 		// Salesmen
 		$prod_types = Product::getPossibleEnumValues('type');
@@ -315,6 +317,9 @@ class accountingCommand extends Command {
 			$acc->dir = $this->dir;
 			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+5 days'));
 		}
+
+		// Invoices
+		Invoice::delete_current_invoices();
 
 		// actual invoice nr counters
 		$last_run = AccountingRecord::orderBy('created_at', 'desc')->select('created_at')->first();
@@ -411,6 +416,7 @@ class accountingCommand extends Command {
 
 		if (!is_file($filepath))
 		{
+			// get call data records
 			$ret = $this->call('billing:cdr');
 
 			if ($ret)
@@ -434,6 +440,7 @@ class accountingCommand extends Command {
 			return array(array());
 
 	}
+
 
 
 	/**

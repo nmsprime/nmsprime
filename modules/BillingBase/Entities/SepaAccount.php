@@ -9,7 +9,14 @@ use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
 use Digitick\Sepa\PaymentInformation;
 use Storage;
 use IBAN;
+use \App\Http\Controllers\BaseViewController;
 
+
+/**
+ * Contains the functionality for Creating the SEPA-XML-Files of a SettlementRun
+ *
+ * @author Nino Ryschawy
+ */
 class SepaAccount extends \BaseModel {
 
 	// The associated SQL table for this Model
@@ -122,19 +129,17 @@ class SepaAccount extends \BaseModel {
 	protected $logger;
 	public $rcd; 							// requested collection date from global config
 
+
 	/**
 	 * get billing user language
-	 * returns language letters selected in Billing Base ConfigS
+	 * returns language letters selected in Billing Base Config
 	 * @author Christian Schramm
 	 */
-
-	private function get_billing_lang()
+	private function _get_billing_lang()
 	{
-
-	$lang = BillingBase::first(['userlang'])->userlang;
-	
-	return $lang;
+		return \App::getLocale();
 	}
+
 
 	/**
 	 * Accounting Records
@@ -178,7 +183,7 @@ class SepaAccount extends \BaseModel {
 	 *
 	 * @return String
 	 */
-	private function get_invoice_nr_formatted()
+	private function _get_invoice_nr_formatted()
 	{
 		return $this->invoice_nr_prefix.$this->id.'/'.$this->invoice_nr;
 	}
@@ -191,28 +196,25 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function add_accounting_record($item)
 	{
-		// if ($item->contract_id = 500006 && $item->product->type == 'Device')
-		// 	dd($item->count, $count, $item->charge);
-		//dd(number_format($item->charge , 2 , ',' , '.' ).$conf->currency);
+		$time = strtotime('last day of last month');
 
 		$data = array(
-			
-			\App\Http\Controllers\BaseViewController::translate_label('Contractnr') 	=> $item->contract->number,
-			\App\Http\Controllers\BaseViewController::translate_label('Invoicenr') 		=> $this->get_invoice_nr_formatted(),
-			\App\Http\Controllers\BaseViewController::translate_label('Target Month') 	=> date('m'),
-			\App\Http\Controllers\BaseViewController::translate_label('Date')			=> ($this->get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
-			\App\Http\Controllers\BaseViewController::translate_label('Cost Center')  	=> isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
-			\App\Http\Controllers\BaseViewController::translate_label('Count')			=> $item->count,
-			\App\Http\Controllers\BaseViewController::translate_label('Description') 	=> $item->invoice_description,
-			\App\Http\Controllers\BaseViewController::translate_label('Price')			=> ($this->get_billing_lang() == 'de') ? number_format($item->charge, 2 , ',' , '.' ) : number_format($item->charge, 2 , '.' , ',' ),
-			\App\Http\Controllers\BaseViewController::translate_label('Firstname')		=> $item->contract->firstname,
-			\App\Http\Controllers\BaseViewController::translate_label('Lastname') 		=> $item->contract->lastname,
-			\App\Http\Controllers\BaseViewController::translate_label('Street') 		=> $item->contract->street,
-			\App\Http\Controllers\BaseViewController::translate_label('Zip') 			=> $item->contract->zip,
-			\App\Http\Controllers\BaseViewController::translate_label('City') 			=> $item->contract->city,
+
+			BaseViewController::translate_label('Contractnr') 	=> $item->contract->number,
+			BaseViewController::translate_label('Invoicenr') 	=> $this->_get_invoice_nr_formatted(),
+			BaseViewController::translate_label('Target Month') => date('m', $time),
+			BaseViewController::translate_label('Date')			=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y', $time) : date('Y-m-d', $time),
+			BaseViewController::translate_label('Cost Center')  => isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
+			BaseViewController::translate_label('Count')		=> $item->count,
+			BaseViewController::translate_label('Description') 	=> $item->invoice_description,
+			BaseViewController::translate_label('Price')		=> ($this->_get_billing_lang() == 'de') ? number_format($item->charge, 2 , ',' , '.' ) : number_format($item->charge, 2 , '.' , ',' ),
+			BaseViewController::translate_label('Firstname')	=> $item->contract->firstname,
+			BaseViewController::translate_label('Lastname') 	=> $item->contract->lastname,
+			BaseViewController::translate_label('Street') 		=> $item->contract->street,
+			BaseViewController::translate_label('Zip') 			=> $item->contract->zip,
+			BaseViewController::translate_label('City') 		=> $item->contract->city,
 
 		);
-
 
 		switch ($item->product->type)
 		{
@@ -240,32 +242,32 @@ class SepaAccount extends \BaseModel {
 	{
 		$data = array(
 
-			\App\Http\Controllers\BaseViewController::translate_label('Contractnr')	=> $contract->number,
-			\App\Http\Controllers\BaseViewController::translate_label('Invoicenr') 	=> $this->get_invoice_nr_formatted(),
-			\App\Http\Controllers\BaseViewController::translate_label('Date') 		=> ($this->get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
-			\App\Http\Controllers\BaseViewController::translate_label('RCD') 		=> $this->rcd,
-			\App\Http\Controllers\BaseViewController::translate_label('Cost Center') => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
-			\App\Http\Controllers\BaseViewController::translate_label('Description') => '',
-			\App\Http\Controllers\BaseViewController::translate_label('Net') 			=> ($this->get_billing_lang() == 'de') ? number_format($charge['net'], 2 , ',' , '.' ) : number_format($charge['net'], 2 , '.' , ',' ),
-			\App\Http\Controllers\BaseViewController::translate_label('Tax') 			=> $charge['tax']." %",
-			\App\Http\Controllers\BaseViewController::translate_label('Gross') 			=> ($this->get_billing_lang() == 'de') ? number_format($charge['net'] + $charge['tax'], 2 , ',' , '.' ) : number_format($charge['net'] + $charge['tax'], 2 , '.' , ',' ),
-			\App\Http\Controllers\BaseViewController::translate_label('Currency') 		=> $conf->currency ? $conf->currency : 'EUR',
-			\App\Http\Controllers\BaseViewController::translate_label('Firstname') 		=> $contract->firstname,
-			\App\Http\Controllers\BaseViewController::translate_label('Lastname') 		=> $contract->lastname,
-			\App\Http\Controllers\BaseViewController::translate_label('Street') 		=> $contract->street,
-			\App\Http\Controllers\BaseViewController::translate_label('Zip' )			=> $contract->zip,
-			\App\Http\Controllers\BaseViewController::translate_label('City') 			=> $contract->city,
+			BaseViewController::translate_label('Contractnr')	=> $contract->number,
+			BaseViewController::translate_label('Invoicenr') 	=> $this->_get_invoice_nr_formatted(),
+			BaseViewController::translate_label('Date') 		=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
+			BaseViewController::translate_label('RCD') 			=> $this->rcd,
+			BaseViewController::translate_label('Cost Center')  => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
+			BaseViewController::translate_label('Description')  => '',
+			BaseViewController::translate_label('Net') 			=> ($this->_get_billing_lang() == 'de') ? number_format($charge['net'], 2 , ',' , '.' ) : number_format($charge['net'], 2 , '.' , ',' ),
+			BaseViewController::translate_label('Tax') 			=> $charge['tax']." %",
+			BaseViewController::translate_label('Gross') 		=> ($this->_get_billing_lang() == 'de') ? number_format($charge['net'] + $charge['tax'], 2 , ',' , '.' ) : number_format($charge['net'] + $charge['tax'], 2 , '.' , ',' ),
+			BaseViewController::translate_label('Currency') 	=> $conf->currency ? $conf->currency : 'EUR',
+			BaseViewController::translate_label('Firstname') 	=> $contract->firstname,
+			BaseViewController::translate_label('Lastname') 	=> $contract->lastname,
+			BaseViewController::translate_label('Street') 		=> $contract->street,
+			BaseViewController::translate_label('Zip' )			=> $contract->zip,
+			BaseViewController::translate_label('City') 		=> $contract->city,
 
 			);
 
 		if ($mandate)
 		{
 			$data2 = array(
-				\App\Http\Controllers\BaseViewController::translate_label('Account Holder') => $mandate->sepa_holder,
-				\App\Http\Controllers\BaseViewController::translate_label('IBAN')			=> $mandate->sepa_iban,
-				\App\Http\Controllers\BaseViewController::translate_label('BIC') 			=> $mandate->sepa_bic,
-				\App\Http\Controllers\BaseViewController::translate_label('MandateID') 	=> $mandate->reference,
-				\App\Http\Controllers\BaseViewController::translate_label('MandateDate')	=> $mandate->signature_date,
+				BaseViewController::translate_label('Account Holder') => $mandate->sepa_holder,
+				BaseViewController::translate_label('IBAN')			=> $mandate->sepa_iban,
+				BaseViewController::translate_label('BIC') 			=> $mandate->sepa_bic,
+				BaseViewController::translate_label('MandateID') 	=> $mandate->reference,
+				BaseViewController::translate_label('MandateDate')	=> $mandate->signature_date,
 			);
 
 			$data = array_merge($data, $data2);
@@ -282,19 +284,19 @@ class SepaAccount extends \BaseModel {
 	public function add_cdr_accounting_record($contract, $charge, $count)
 	{
 		$this->acc_recs['tariff'][] = array(
-			\App\Http\Controllers\BaseViewController::translate_label('Contractnr') 	=> $contract->number,
-			\App\Http\Controllers\BaseViewController::translate_label('Invoicenr') 	=> $this->get_invoice_nr_formatted(),
-			\App\Http\Controllers\BaseViewController::translate_label('Target Month') 	=> date('m'),
-			\App\Http\Controllers\BaseViewController::translate_label('Date') 			=> ($this->get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
-			\App\Http\Controllers\BaseViewController::translate_label('Cost Center')  	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
-			\App\Http\Controllers\BaseViewController::translate_label('Count')			=> $count,
-			\App\Http\Controllers\BaseViewController::translate_label('Description')  	=> 'Telephone Calls',
-			\App\Http\Controllers\BaseViewController::translate_label('Price') 			=> $charge,
-			\App\Http\Controllers\BaseViewController::translate_label('Firstname')		=> $contract->firstname,
-			\App\Http\Controllers\BaseViewController::translate_label('Lastname') 		=> $contract->lastname,
-			\App\Http\Controllers\BaseViewController::translate_label('Street') 		=> $contract->street,
-			\App\Http\Controllers\BaseViewController::translate_label('Zip' )			=> $contract->zip,
-			\App\Http\Controllers\BaseViewController::translate_label('City') 			=> $contract->city,
+			BaseViewController::translate_label('Contractnr') 	=> $contract->number,
+			BaseViewController::translate_label('Invoicenr') 	=> $this->_get_invoice_nr_formatted(),
+			BaseViewController::translate_label('Target Month') => date('m'),
+			BaseViewController::translate_label('Date') 		=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
+			BaseViewController::translate_label('Cost Center')  => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
+			BaseViewController::translate_label('Count')		=> $count,
+			BaseViewController::translate_label('Description')  => 'Telephone Calls',
+			BaseViewController::translate_label('Price') 		=> $charge,
+			BaseViewController::translate_label('Firstname')	=> $contract->firstname,
+			BaseViewController::translate_label('Lastname') 	=> $contract->lastname,
+			BaseViewController::translate_label('Street') 		=> $contract->street,
+			BaseViewController::translate_label('Zip' )			=> $contract->zip,
+			BaseViewController::translate_label('City') 		=> $contract->city,
 			);
 	}
 
@@ -302,7 +304,10 @@ class SepaAccount extends \BaseModel {
 	public function add_invoice_item($item, $conf)
 	{
 		if (!isset($this->invoices[$item->contract->id]))
-			$this->invoices[$item->contract->id] = new Invoice($item->contract, $conf, $this->get_invoice_nr_formatted());
+		{
+			$this->invoices[$item->contract->id] = new Invoice;
+			$this->invoices[$item->contract->id]->add_contract_data($item->contract, $conf, $this->_get_invoice_nr_formatted());
+		}
 
 		$this->invoices[$item->contract->id]->add_item($item);
 	}
@@ -310,9 +315,12 @@ class SepaAccount extends \BaseModel {
 	public function add_invoice_cdr($contract, $cdrs, $conf)
 	{
 		if (!isset($this->invoices[$contract->id]))
-			$this->invoices[$contract->id] = new Invoice($contract, $conf, '');
+		{
+			$this->invoices[$contract->id] = new Invoice;
+			$this->invoices[$contract->id]->add_contract_data($contract, $conf, $this->_get_invoice_nr_formatted());
+		}
 
-		$this->invoices[$contract->id]->cdrs = $cdrs;
+		$this->invoices[$contract->id]->add_cdr_data($cdrs);
 	}
 
 
@@ -333,22 +341,21 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function add_sepa_transfer($mandate, $charge, $dates)
 	{
-		// $info = trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
-		if (\App::getLocale() == 'de')
-			$info = 'Monat '.date('m/Y', strtotime('first day of last month'));
-		else
-			$info = 'Month '.date('m/Y', strtotime('first day of last month'));
+		if ($charge == 0)
+			return;
 
-		// Note: Charge == 0 is automatically excluded
+		$info = trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
+
+		// Credits
 		if ($charge < 0)
 		{
 			$data = array(
 
-				\App\Http\Controllers\BaseViewController::translate_label('amount')                => $charge * (-1),
-				\App\Http\Controllers\BaseViewController::translate_label('creditorIban')          => $mandate->sepa_iban,
-				\App\Http\Controllers\BaseViewController::translate_label('creditorBic' )          => $mandate->sepa_bic,
-				\App\Http\Controllers\BaseViewController::translate_label('creditorName')          => $mandate->sepa_holder,
-				\App\Http\Controllers\BaseViewController::translate_label('remittanceInformation') => $info,
+				BaseViewController::translate_label('amount')                => $charge * (-1),
+				BaseViewController::translate_label('creditorIban')          => $mandate->sepa_iban,
+				BaseViewController::translate_label('creditorBic' )          => $mandate->sepa_bic,
+				BaseViewController::translate_label('creditorName')          => $mandate->sepa_holder,
+				BaseViewController::translate_label('remittanceInformation') => $info,
 			);
 
 			$this->sepa_xml['credits'][] = $data;
@@ -356,6 +363,7 @@ class SepaAccount extends \BaseModel {
 			return;
 		}
 
+		// Debits
 		// determine transaction type: first/recurring/final
 		$type  = PaymentInformation::S_RECURRING;
 		$start = strtotime($mandate->sepa_valid_from);
@@ -370,48 +378,9 @@ class SepaAccount extends \BaseModel {
 		else if ($mandate->contract->expires || ($end > 0 && $end < strtotime('+1 month')))
 			$type = PaymentInformation::S_FINAL;
 
-		// if ($mandate->sepa_valid_from == '2016-03-01')
-		// 	dd($mandate->sepa_holder, $type, strtotime('2016-01-01') > 0);
-
-		// NOTE: also possible with state field of mandate table - dis~/advantage: more complex code / no last run timestamp needed
-		// switch ($mandate->state)
-		// {
-		// 	case null:
-
-		// 		if (!$mandate->recurring)
-		// 		{
-		// 			$type = PaymentInformation::S_FIRST;
-		// 			$mandate->state = 'FIRST';
-		// 		}
-		// 		else
-		// 		{
-		// 			$type = PaymentInformation::S_RECURRING;
-		// 			$mandate->state = 'RECUR';
-		// 		}
-
-		// 		$mandate->save();
-		// 		break;
-
-		// 	case 'FIRST':
-		// 		$mandate->state = 'RECUR';
-		// 		$mandate->save();
-
-		// 	case 'RECUR':
-		// 		$type = PaymentInformation::S_RECURRING;
-
-		// 	default: break;
-		// }
-
-		// if ($mandate->contract->expires || $end < strtotime('+1 month'))
-		// {
-		// 	$type = PaymentInformation::S_FINAL;
-		// 	$mandate->state = 'FINAL';
-		// 	$mandate->save();
-		// }
-
 
 		$data = array(
-			'endToEndId'			=> 'RG '.$this->get_invoice_nr_formatted(),
+			'endToEndId'			=> 'RG '.$this->_get_invoice_nr_formatted(),
 			'amount'                => $charge,
 			'debtorIban'            => $mandate->sepa_iban,
 			'debtorBic'             => $mandate->sepa_bic,
@@ -438,14 +407,10 @@ class SepaAccount extends \BaseModel {
 			if (!$records)
 				continue;
 
-			$accounting = \App\Http\Controllers\BaseViewController::translate_label('accounting');
+			$accounting = BaseViewController::translate_label('accounting');
+			$rec 		= $this->_get_billing_lang() == 'de' ? '' : '_records';
 
-			if ($this->get_billing_lang() == 'de')
-				$rec = '';
-			else
-				$rec = '_records';
-
-			$file = $this->dir.$this->name.'/'.$accounting.'_'.\App\Http\Controllers\BaseViewController::translate_label($key).$rec.'.txt';
+			$file = $this->dir.$this->name.'/'.$accounting.'_'.BaseViewController::translate_label($key).$rec.'.txt';
 			$file = SepaAccount::str_sanitize($file);
 
 			// initialise record files with Column names as first line
@@ -475,14 +440,14 @@ class SepaAccount extends \BaseModel {
 			if (!$records)
 				continue;
 
-			$booking = \App\Http\Controllers\BaseViewController::translate_label('booking');
+			$booking = BaseViewController::translate_label('booking');
 
-			if ($this->get_billing_lang() == 'de')
+			if ($this->_get_billing_lang() == 'de')
 				$rec = '';
 			else
 				$rec = '_records';
 
-			$file = $this->dir.$this->name.'/'.$booking.'_'.\App\Http\Controllers\BaseViewController::translate_label($key).$rec.'.txt';
+			$file = $this->dir.$this->name.'/'.$booking.'_'.BaseViewController::translate_label($key).$rec.'.txt';
 			$file = SepaAccount::str_sanitize($file);
 
 			// initialise record files with Column names as first line
@@ -584,7 +549,7 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Retrieve the resulting XML
-		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/'.\App\Http\Controllers\BaseViewController::translate_label('DD').'.xml');
+		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DD').'.xml');
 		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
 		STORAGE::put($file, $data);
 
@@ -617,7 +582,7 @@ class SepaAccount extends \BaseModel {
 			$customerCredit->addTransfer($msg_id.'C', $r);
 
 		// Retrieve the resulting XML
-		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/'.\App\Http\Controllers\BaseViewController::translate_label('DC').'.xml');
+		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DC').'.xml');
 		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $customerCredit->asXML());
 		STORAGE::put($file, $data);
 

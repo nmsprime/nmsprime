@@ -61,7 +61,7 @@ class zipCommand extends Command {
 		// find all invoices and concatenate them
 		$invoices 	= sprintf('%s.pdf', date('Y_m', $time));
 		$cdrs 		= sprintf('%s_cdr.pdf', date('Y_m', strtotime('-1 month', $time)));
-		$tmp 		= exec("find $dir_abs_path_invoice_files -type f -name $invoices -o -name $cdrs | sort", $files, $ret);
+		$tmp 		= exec("find $dir_abs_path_invoice_files -type f -name $invoices -o -name $cdrs | sort -r", $files, $ret);
 
 		$files = implode(' ', $files);
 		$fname = \App\Http\Controllers\BaseViewController::translate_label('Invoices');

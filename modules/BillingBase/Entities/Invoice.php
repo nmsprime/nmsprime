@@ -6,26 +6,71 @@ use Storage;
 use Modules\BillingBase\Entities\BillingLogger;
 
 
-class Invoice {
+
+/**
+ * Contains Functions to collect Data for Invoice & create the corresponding PDFs
+ *
+ * TODO: Translate for multiple language support, improve functional structure
+ *
+ * @author Nino Ryschawy
+ */
+
+class Invoice extends \BaseModel{
+
+	public $table = 'invoice';
+	public $observer_enabled = false;
 
 	private $currency;
 	private $tax;
 
+
+	/**
+	 * View Stuff
+	 */
+	public static function view_headline()
+	{
+		return 'Invoices';
+	}
+
+	public function view_index_label()
+	{
+		$bsclass = 'info';
+
+		$type = $this->type == 'Invoice' ? '' : ' ('.trans('messages.Call Data Record').')';
+
+		return ['index' => [$this->type, $this->year, $this->month],
+				'index_header' => ['Type', 'Year', 'Month'],
+				'bsclass' => $bsclass,
+				'header' => $this->year.' - '.$this->month.$type];
+	}
+
+	/**
+	 * Relations
+	 */
+	public function contract()
+	{
+		return $this->belongsTo('Modules\ProvBase\Entities\Contract');
+	}
+
+
+
+
 	/**
 	 * @var strings  - template file paths relativ to Storage app path
 	 */
-	private $template_invoice_path = 'config/billingbase/template/';
-	private $template_cdr_path = 'config/billingbase/template/';
-	private $logo_path = 'config/billingbase/logo/';
+	private $rel_template_dir_path 	= 'config/billingbase/template/';
+	private $template_invoice_fname = '';
+	private $template_cdr_fname		= '';
+	private $rel_logo_dir_path 		= 'config/billingbase/logo/';
 
-	private $filename_invoice;
-	private $filename_cdr;
+	// without .pdf extension
+	private $filename_invoice 	= '';
+	private $filename_cdr 		= '';
 
 	/**
-	 * @var string - Directory to store Inoice pdf - relativ to storage path; completed in constructor by contract id
+	 * @var string - Directory to store Invoice pdf - relativ to storage path
 	 */
-	private $dir = 'data/billingbase/invoice/';
-	static private $dir_s = 'data/billingbase/invoice/';
+	private $rel_storage_invoice_dir = 'data/billingbase/invoice/';
 
 	/**
 	 * @var object - logger for Billing Module - instantiated in constructor
@@ -33,9 +78,9 @@ class Invoice {
 	private $logger;
 
 	/**
-	 * @var array 	Call Data Records
+	 * @var Bool 	1 - Invoice has Call Data Records, 0 - Only Invoice
 	 */
-	public $cdrs;
+	public $has_cdr = 0;
 
 	/**
 	 * @var bool 	Error Flag - if set then invoice cant be created
@@ -105,30 +150,34 @@ class Invoice {
 	);
 
 
-	public function __construct($contract, $config, $invoice_nr)
+	public function __construct($attributes = array())
 	{
-		$this->data['contract_id'] 			= $contract->id;
-		$this->data['contract_nr'] 			= $contract->number;
-		$this->data['contract_firstname'] 	= $contract->firstname;
-		$this->data['contract_lastname'] 	= $contract->lastname;
-		$this->data['contract_street'] 		= $contract->street;
-		$this->data['contract_zip'] 		= $contract->zip;
-		$this->data['contract_city'] 		= $contract->city;
-
-		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
-		$this->data['invoice_nr'] 	= $invoice_nr;
-		$this->data['date_invoice'] = date('d.m.Y', strtotime('last day of last month'));
-
-		// TODO: Add other currencies here
-		$this->currency	= strtolower($config->currency) == 'eur' ? '€' : $config->currency;
-		$this->tax		= $config->tax;
-		$this->dir 		.= $contract->id.'/';
-
 		$this->logger = new BillingLogger;
-
 		$this->filename_invoice = self::_get_invoice_filename();
+		
+		parent::__construct($attributes);
 	}
 
+
+	private function _get_invoice_dir_path()
+	{
+		return storage_path('app/'.$this->rel_storage_invoice_dir.$this->data['contract_id'].'/');
+	}
+
+
+	public function get_rel_invoice_dir_path()
+	{
+		return $this->rel_storage_invoice_dir;
+	}
+
+	/**
+	 * @param 	String 		$type 		invoice or cdr
+	 * @return 	String 					absolute Path & Filename of Template File
+	 */
+	private function _get_abs_template_path($type = 'invoice')
+	{
+		return storage_path('app/'.$this->rel_template_dir_path.$this->{'template_'.$type.'_fname'});
+	}
 
 	/**
 	 * @return String 	Invoice Filename without extension (like .pdf)
@@ -144,6 +193,26 @@ class Invoice {
 	private static function _get_cdr_filename()
 	{
 		return date('Y_m', strtotime('-2 month')).'_cdr';
+	}
+
+
+	public function add_contract_data($contract, $config, $invoice_nr)
+	{
+		$this->data['contract_id'] 			= $contract->id;
+		$this->data['contract_nr'] 			= $contract->number;
+		$this->data['contract_firstname'] 	= $contract->firstname;
+		$this->data['contract_lastname'] 	= $contract->lastname;
+		$this->data['contract_street'] 		= $contract->street.' '.$contract->house_number;
+		$this->data['contract_zip'] 		= $contract->zip;
+		$this->data['contract_city'] 		= $contract->city;
+
+		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
+		$this->data['invoice_nr'] 	= $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
+		$this->data['date_invoice'] = date('d.m.Y', strtotime('last day of last month'));
+
+		// TODO: Add other currencies here
+		$this->currency	= strtolower($config->currency) == 'eur' ? '€' : $config->currency;
+		$this->tax		= $config->tax;
 	}
 
 
@@ -277,44 +346,98 @@ class Invoice {
 		$this->data['company_registration_court'] .= $this->data['company_registration_court_2'] ? $this->data['company_registration_court_2'].'\\\\' : '';
 		$this->data['company_registration_court'] .= $this->data['company_registration_court_3'];
 
-		$this->data['company_logo']  = storage_path('app/'.$this->logo_path.$account->company->logo);
-		$this->template_invoice_path = storage_path('app/'.$this->template_invoice_path.$account->template_invoice);
-		$this->template_cdr_path 	 = storage_path('app/'.$this->template_cdr_path.$account->template_cdr);
+		$this->data['company_logo']   = storage_path('app/'.$this->rel_logo_dir_path.$account->company->logo);
+		$this->template_invoice_fname = $account->template_invoice;
+		$this->template_cdr_fname 	  = $account->template_cdr;
 
 		return true;
+	}
+
+	/**
+	 * @param 	Array 	$cdrs 		Call Data Record array designated for this Invoice formatted by parse_cdr_data in accountingCommand
+	 */
+	public function add_cdr_data($cdrs)
+	{
+		$this->has_cdr = 1;
+		$time_cdr = strtotime($cdrs[0][1]);
+		$this->data['cdr_month'] = date('m/Y', $time_cdr);
+
+		$sum = $count = 0;
+		foreach ($cdrs as $entry)
+		{
+			$this->data['cdr_table_positions'] .= date('d.m.Y', strtotime($entry[1])).' '.$entry[2] .' & '. $entry[3] .' & '. $entry[0] .' & '. $entry[4] . ' & '. $entry[5].'\\\\';
+			$sum += $entry[5];
+			$count++;
+		}
+		$this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'. $sum . '}\\\\';
+		$plural = $count > 1 ? 'en' : '';
+		$this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural." & ".round($sum, 2).$this->currency.' & '.round($sum, 2).$this->currency.'\\\\';
+
+		$this->filename_cdr = date('Y_m', $time_cdr).'_cdr';
+
 	}
 
 
 
 
 	/**
-	 * Create Invoice files
+	 * Create Invoice files and Database Entries
 	 *
 	 * TODO: consider template type - .tex or .odt
 	 */
 	public function make_invoice()
 	{
-		$dir = storage_path('app/'.$this->dir);
+		$dir = $this->_get_invoice_dir_path();
 
 		if (!is_dir($dir))
 			mkdir($dir, 0700, true);
 
-		// Keep this order -> another invoice item is build in this function - TODO: move to separate function
-		if ($this->cdrs)
+		if ($this->has_cdr)
+		{
 			$this->_make_cdr_tex();
+			$this->_create_db_entry(0);
+		}
 
 		if ($this->data['item_table_positions'])
+		{
 			$this->_make_invoice_tex();
+			$this->_create_db_entry();
+		}
 		else
 			$this->logger->addError("No Items for Invoice - only build CDR", [$this->data['contract_id']]);
+
 
 		// Store as pdf
 		$this->_create_pdfs();
 
 		system('chown -R apache '.$dir);
+		
 	}
 
 
+	/**
+	 * Create Database Entry for an Invoice or a Call Data Record
+	 *
+	 * @param 	int 	$type 	[1] Invoice, [0] Call Data Record
+	 */
+	private function _create_db_entry($type = 1)
+	{
+		// TODO: implement time of cdr as generic, variable way
+		$time = $type ? strtotime('first day of last month') : strtotime('-2 month');
+
+		$data = array(
+			'contract_id' 	=> $this->data['contract_id'],
+			'year' 			=> date('Y', $time),
+			'month' 		=> date('m', $time),
+			'filename' 		=> $type ? $this->filename_invoice.'.pdf' :  $this->filename_cdr.'.pdf',
+			'type'  		=> $type ? 'Invoice' : 'CDR',
+			'number' 		=> $this->data['invoice_nr'],
+			// TODO: calculate cdr costs in add_cdr_data function - write to variable and get data from it
+			'charge' 		=> $type ? $this->data['table_sum_charge_net'] : 0
+		);
+
+		self::create($data);
+	}
 
 
 	/**
@@ -328,56 +451,58 @@ class Invoice {
 			return -2;			
 		}
 
-		if (!$template = file_get_contents($this->template_invoice_path))
+		if (!$template = file_get_contents($this->_get_abs_template_path('invoice')))
 		{
-			$this->logger->addError("Failed to Create Invoice: Could not read template ".$this->template_invoice_path, [$this->data['contract_id']]);
+			$this->logger->addError("Failed to Create Invoice: Could not read template ".$this->_get_abs_template_path('invoice'), [$this->data['contract_id']]);
 			return -3;
 		}
 
 		// Replace placeholder by value
-		$template = str_replace('\\_', '_', $template);
-		foreach ($this->data as $key => $value)
-			$template = str_replace('{'.$key.'}', $value, $template);
+		$template = $this->_replace_placeholder($template);
+
 
 		// Create tex file(s)
-		Storage::put($this->dir.$this->filename_invoice, $template);
+		Storage::put($this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->filename_invoice, $template);
+		// echo 'Stored tex file in '.storage_path('app/'.$this->rel_storage_invoice_dir.$this->filename_invoice)."\n";
 	}
+
 
 
 	/**
 	 * Creates Tex File of Call Data Records - replaces all '\_' and all fields of data array that are set
+	 *
+	 * TODO: merge make_tex-Functions together
 	 */
 	private function _make_cdr_tex()
 	{
-		$time = strtotime($this->cdrs[0][1]);
-
-		$this->data['cdr_month'] = date('m/Y', $time);
-		$this->filename_cdr = date('Y_m', $time).'_cdr'; 
-
-		// Create tex table
-		$sum = $count = 0;
-		foreach ($this->cdrs as $entry)
+		if (!$template = file_get_contents($this->_get_abs_template_path('cdr')))
 		{
-			$this->data['cdr_table_positions'] .= date('d.m.Y', strtotime($entry[1])).' '.$entry[2] .' & '. $entry[3] .' & '. $entry[0] .' & '. $entry[4] . ' & '. $entry[5].'\\\\';
-			$sum += $entry[5];
-			$count++;
-		}
-		$this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'. $sum . '}\\\\';
-		$plural = $count > 1 ? 'en' : '';
-		$this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural." & ".round($sum, 2).$this->currency.' & '.round($sum, 2).$this->currency.'\\\\';
-
-		if (!$template = file_get_contents($this->template_cdr_path))
-		{
-			$this->logger->addError("Failed to Create Call Data Record: Could not read template ".$this->template_cdr_path, [$this->data['contract_id']]);
+			$this->logger->addError("Failed to Create Call Data Record: Could not read template ".$this->_get_abs_template_path('cdr'), [$this->data['contract_id']]);
 			return -3;
 		}
 
 		// Replace placeholder by value
-		$template = str_replace('\\_', '_', $template);
-		foreach ($this->data as $key => $value)
-			$template = str_replace('{'.$key.'}', $value, $template);
+		$template = $this->_replace_placeholder($template);
 
-		Storage::put($this->dir.$this->filename_cdr, $template);
+		Storage::put($this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->filename_cdr, $template);
+	}
+
+
+	private function _replace_placeholder($template)
+	{
+		// var_dump($this->data['invoice_nr']);
+		$template = str_replace('\\_', '_', $template);
+
+		foreach ($this->data as $key => $value)
+		{
+			// escape underscores for pdflatex to work
+			if (strpos($value, 'logo') === false)
+				$value = str_replace('_', '\\_', $value);
+			
+			$template = str_replace('{'.$key.'}', $value, $template);		
+		}
+
+		return $template;
 	}
 
 
@@ -388,10 +513,10 @@ class Invoice {
 	 */
 	private function _create_pdfs()
 	{
-		chdir(storage_path('app/'.$this->dir));
+		chdir($this->_get_invoice_dir_path());
 
-		$file_paths['Invoice']  = storage_path('app/'.$this->dir.$this->filename_invoice);
-		$file_paths['CDR'] 		= storage_path('app/'.$this->dir.$this->filename_cdr);
+		$file_paths['Invoice']  = $this->_get_invoice_dir_path().$this->filename_invoice;
+		$file_paths['CDR'] 		= $this->_get_invoice_dir_path().$this->filename_cdr;
 
 		// if ($this->data['contract_id'] == 500027)
 		// dd($file_paths);
@@ -432,15 +557,24 @@ class Invoice {
 
 	/**
 	 * Deletes currently created invoices
+	 * Used to delete invoices created by previous settlement run in current month - executed in accountingCommand
 	 * is used to remove files before settlement run is repeatedly created (accountingCommand executed again)
 	 * NOTE: Use Carefully!!
+	 *
+	 * TODO: delete pdf files from filenames of eloquent model
 	 */
 	public static function delete_current_invoices()
 	{
+		$time = strtotime('first day of last month');
+
+		Invoice::where('month', '=', (int) date('m', $time))->where('year', '=', (int) date('Y', $time))->forceDelete();
+
+
 		$invoices = self::_get_invoice_filename().'.pdf';
 		$cdrs 	  = self::_get_cdr_filename().'.pdf';
 
-		$dir_abs_path_invoice_files = storage_path('app/'.self::$dir_s);
+		// TODO: replace by get path function for easy adaption
+		$dir_abs_path_invoice_files = storage_path('app/data/billingbase/invoice/');
 
 		$files = array_merge(glob($invoices), glob($cdrs));
 		$tmp = exec("find $dir_abs_path_invoice_files -type f -name $invoices -o -name $cdrs | sort", $files);
@@ -448,5 +582,16 @@ class Invoice {
 			unlink($f);
 	}
 
-	// TODO: add delete function for temporary files after performance improvements
+
+	/**
+	 * Remove all old Invoice & CDR DB-Entries & Files as it's prescribed by law
+	 *
+	 * TODO: implement - NOTE: This can be different from country to country
+	 */
+	public static function clean_up()
+	{
+
+	}
+
+
 }

@@ -90,4 +90,25 @@ class SettlementRun extends \BaseModel {
 		return [];
 	}
 
+
+	/**
+	 * Get a list of all Invoice & CDR - Filenames from Settlement Runs that are not verified yet
+	 * This list is used to hide these files until they & the Settlement Run are verified
+	 *
+	 * @return 	Array 	Filenames, empty array if all is verified
+	 */
+	public static function unverified_files()
+	{
+		$runs = Settlementrun::where('verified', '=', 0)->get(['year', 'month']);
+		$hide = [];
+
+		foreach ($runs as $run)
+		{
+			$hide[] = $run->year.'_'.sprintf("%'.02d", $run->month).'.pdf';
+			$hide[] = $run->year.'_'.sprintf("%'.02d", $run->month == 1 ? 12 : $run->month - 1).'_cdr.pdf';
+		}
+
+		return $hide;
+	}
+
 }
