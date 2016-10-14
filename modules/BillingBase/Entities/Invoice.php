@@ -25,6 +25,7 @@ class Invoice {
 	 * @var string - Directory to store Inoice pdf - relativ to storage path; completed in constructor by contract id
 	 */
 	private $dir = 'data/billingbase/invoice/';
+	static private $dir_s = 'data/billingbase/invoice/';
 
 	/**
 	 * @var object - logger for Billing Module - instantiated in constructor
@@ -124,7 +125,28 @@ class Invoice {
 		$this->dir 		.= $contract->id.'/';
 
 		$this->logger = new BillingLogger;
+
+		$this->filename_invoice = self::_get_invoice_filename();
 	}
+
+
+	/**
+	 * @return String 	Invoice Filename without extension (like .pdf)
+	 */
+	private static function _get_invoice_filename()
+	{
+		return date('Y_m', strtotime('first day of last month'));
+	}
+
+	/**
+	 * @return String 	CDR Filename without extension (like .pdf)
+	 */
+	private static function _get_cdr_filename()
+	{
+		return date('Y_m', strtotime('-2 month')).'_cdr';
+	}
+
+
 
 	public function add_item($item) 
 	{
@@ -263,6 +285,8 @@ class Invoice {
 	}
 
 
+
+
 	/**
 	 * Create Invoice files
 	 *
@@ -273,8 +297,7 @@ class Invoice {
 		$dir = storage_path('app/'.$this->dir);
 
 		if (!is_dir($dir))
-			system('mkdir -p '.$dir.' -m 0700'); // system call because php mkdir creates weird permissions - umask couldnt solve it !?
-			// mkdir($dir, 0700, true); -- this should work! permissions not as string!
+			mkdir($dir, 0700, true);
 
 		// Keep this order -> another invoice item is build in this function - TODO: move to separate function
 		if ($this->cdrs)
@@ -317,10 +340,7 @@ class Invoice {
 			$template = str_replace('{'.$key.'}', $value, $template);
 
 		// Create tex file(s)
-		// $this->filename_invoice = ((date('m')+11)%12).'_'.str_replace(['/', ' '], '_', $this->data['invoice_nr']);
-		$this->filename_invoice = date('Y_m', strtotime('first day of last month'));
 		Storage::put($this->dir.$this->filename_invoice, $template);
-		// echo 'Stored tex file in '.storage_path('app/'.$this->dir.$this->filename_invoice)."\n";
 	}
 
 
@@ -329,8 +349,10 @@ class Invoice {
 	 */
 	private function _make_cdr_tex()
 	{
-		$month = date('m', strtotime($this->cdrs[0][1]));
-		$this->data['cdr_month'] = date("$month/Y");
+		$time = strtotime($this->cdrs[0][1]);
+
+		$this->data['cdr_month'] = date('m/Y', $time);
+		$this->filename_cdr = date('Y_m', $time).'_cdr'; 
 
 		// Create tex table
 		$sum = $count = 0;
@@ -355,13 +377,14 @@ class Invoice {
 		foreach ($this->data as $key => $value)
 			$template = str_replace('{'.$key.'}', $value, $template);
 
-		$this->filename_cdr = date("Y_$month").'_cdr';
 		Storage::put($this->dir.$this->filename_cdr, $template);
 	}
 
 
 	/**
 	 * Creates the pdfs out of the prepared tex files - Note: this function is very time consuming
+	 *
+	 * TODO: Performance Improvements necessary!!
 	 */
 	private function _create_pdfs()
 	{
@@ -373,7 +396,7 @@ class Invoice {
 		// if ($this->data['contract_id'] == 500027)
 		// dd($file_paths);
 
-		// TODO: execute in background to speed this up by multiprocessing - but what is with the temporary files then?
+		// TODO: execute in background to speed this up by multiprocessing - but what is with the temporary files and return value then?
 		foreach ($file_paths as $key => $file)
 		{
 			if (is_file($file))
@@ -404,9 +427,26 @@ class Invoice {
 			}
 		}
 
-		// add hash for security  (files are not downloadable through script that easy)
-		// rename("$filename.pdf", $filename.'_'.hash('crc32b', $this->data['contract_id'].time()).'.pdf');
-
 	}
 
+
+	/**
+	 * Deletes currently created invoices
+	 * is used to remove files before settlement run is repeatedly created (accountingCommand executed again)
+	 * NOTE: Use Carefully!!
+	 */
+	public static function delete_current_invoices()
+	{
+		$invoices = self::_get_invoice_filename().'.pdf';
+		$cdrs 	  = self::_get_cdr_filename().'.pdf';
+
+		$dir_abs_path_invoice_files = storage_path('app/'.self::$dir_s);
+
+		$files = array_merge(glob($invoices), glob($cdrs));
+		$tmp = exec("find $dir_abs_path_invoice_files -type f -name $invoices -o -name $cdrs | sort", $files);
+		foreach ($files as $f)
+			unlink($f);
+	}
+
+	// TODO: add delete function for temporary files after performance improvements
 }
