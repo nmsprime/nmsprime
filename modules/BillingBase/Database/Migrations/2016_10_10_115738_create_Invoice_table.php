@@ -19,6 +19,7 @@ class CreateInvoiceTable extends BaseMigration {
 			$this->up_table_generic($table);
 
 			$table->integer('contract_id');
+			$table->integer('settlementrun_id');
 			$table->smallInteger('year');
 			$table->tinyInteger('month');
 			$table->string('filename');
@@ -92,6 +93,9 @@ class CreateInvoiceTable extends BaseMigration {
 
 				if (!isset($recs[0]))
 					continue;
+
+				$settlementrun = \Modules\BillingBase\Entities\SettlementRun::whereBetween('created_at', [$start, $end])->get();
+				$data['settlementrun_id'] = $settlementrun[0]->id;
 
 				$data['number'] = $fname[0].'/'.$recs[0]->sepa_account_id.'/'.$recs[0]->invoice_nr;
 				$data['charge'] = 0;

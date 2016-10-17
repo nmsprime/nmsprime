@@ -427,6 +427,7 @@ class Invoice extends \BaseModel{
 
 		$data = array(
 			'contract_id' 	=> $this->data['contract_id'],
+			'settlementrun_id' 	=> $this->settlementrun_id,
 			'year' 			=> date('Y', $time),
 			'month' 		=> date('m', $time),
 			'filename' 		=> $type ? $this->filename_invoice.'.pdf' :  $this->filename_cdr.'.pdf',
