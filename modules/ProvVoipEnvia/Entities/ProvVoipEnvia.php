@@ -2654,7 +2654,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @author Patrick Reichel
 	 * @todo: This has to be testet – currently there are no accounts we could terminate
 	 */
-	protected function _process_voip_account_termination_response($xml, $data, $out) {
+	protected function _process_voip_account_terminate_response($xml, $data, $out) {
 
 		// update phonenumbermanagement
 		$this->phonenumbermanagement->voipaccount_ext_termination_date = date('Y-m-d H:i:s');
