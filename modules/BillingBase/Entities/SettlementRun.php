@@ -17,6 +17,18 @@ class SettlementRun extends \BaseModel {
 
 
 	/**
+	 * Init Observer
+	 */
+	public static function boot()
+	{
+		parent::boot();
+
+		// SettlementRun::observe(new SettlementRunObserver);
+	}
+
+
+
+	/**
 	 * View related stuff
 	 */
 

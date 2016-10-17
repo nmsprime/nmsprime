@@ -26,7 +26,7 @@ class InvoiceController extends \BaseController {
 	public function edit($id)
 	{
 		$invoice = Invoice::find($id);
-		$file = storage_path('app/'.$invoice->get_rel_invoice_dir_path().$invoice->contract_id.'/'.$invoice->filename);
+		$file = $invoice->get_invoice_dir_path().$invoice->filename;
 
 		return response()->download($file);
 	}

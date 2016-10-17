@@ -55,9 +55,9 @@ class SettlementRunController extends \BaseController {
 	 */
 	public function store($redirect = true)
 	{
-		$ret = \Artisan::call('billing:accounting');
-
 		SettlementRun::where('month', '=', (date('m') + 11) % 12)->delete();
+
+		$ret = \Artisan::call('billing:accounting');
 
 		return parent::store();
 	}

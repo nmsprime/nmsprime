@@ -58,13 +58,20 @@ class CreateInvoiceTable extends BaseMigration {
 	{
 		$bool = true;
 
-		foreach (\Modules\ProvBase\Entities\Contract::all() as $contract)
+		$contracts  = \Modules\ProvBase\Entities\Contract::all();
+		$num 		= count($contracts);
+		$i 			= 0;
+
+		foreach ($contracts as $contract)
 		{
 			if ($bool)
 			{
 				echo "Import data for adapted Invoice Model - Ensure that all Settlement Runs are verified!!! Rollback BillingBase module otherwise and migrate after verification again\n";
 				$bool = false;
 			}
+
+			$i++;
+			echo "Contract: create Invoice database entry: $i/$num \r";
 
 			$invoices = \Modules\Ccc\Http\Controllers\CccAuthuserController::get_customer_invoices($contract->id);
 
@@ -105,8 +112,8 @@ class CreateInvoiceTable extends BaseMigration {
 
 				\Modules\BillingBase\Entities\Invoice::create($data);
 			}
-
 		}
 
+		echo "\n";
 	}
 }

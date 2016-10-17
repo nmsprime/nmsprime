@@ -372,7 +372,8 @@ class accountingCommand extends Command {
 		foreach (Storage::files($this->dir) as $f)
 		{
 			// keep cdr
-			if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
+			// if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
+			if (basename($f) != $this->_get_cdr_filename())
 				Storage::delete($f);
 		}
 
@@ -403,6 +404,15 @@ class accountingCommand extends Command {
 
 
 	/**
+	 * TODO: implement with cdr to invoice offset field in global config
+	 */
+	private function _get_cdr_filename()
+	{
+		return \App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'_'.date('Y_m', strtotime('-2 month')).'.csv';
+	}
+
+
+	/**
 	 * Calls cdrCommand to get Call data records from Provider and formats relevant data to structured array
 	 *
 	 * @return array 	[contract_id => [phonr_nr, time, duration, ...], 
@@ -412,7 +422,7 @@ class accountingCommand extends Command {
 	 */
 	private function _get_cdr_data()
 	{
-		$filename = \App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'_'.date('Y_m', strtotime('-2 month')).'.csv';
+		$filename = $this->_get_cdr_filename();
 		$dir_path = storage_path('app/'.$this->dir.'/');
 		$filepath = $dir_path.$filename;
 

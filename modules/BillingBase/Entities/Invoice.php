@@ -53,24 +53,35 @@ class Invoice extends \BaseModel{
 	}
 
 
+	/**
+	 * Init Observer
+	 */
+	public static function boot()
+	{
+		parent::boot();
+
+		Invoice::observe(new InvoiceObserver);
+	}
 
 
 	/**
-	 * @var strings  - template file paths relativ to Storage app path
+	 * @var strings  - template directory paths relativ to Storage app path and temporary filename variables
 	 */
 	private $rel_template_dir_path 	= 'config/billingbase/template/';
 	private $template_invoice_fname = '';
 	private $template_cdr_fname		= '';
 	private $rel_logo_dir_path 		= 'config/billingbase/logo/';
 
+
+	/**
+	 * @var string - invoice directory path relativ to Storage app path and temporary filename variables
+	 */
+	private $rel_storage_invoice_dir = 'data/billingbase/invoice/';
+
 	// without .pdf extension
 	private $filename_invoice 	= '';
 	private $filename_cdr 		= '';
 
-	/**
-	 * @var string - Directory to store Invoice pdf - relativ to storage path
-	 */
-	private $rel_storage_invoice_dir = 'data/billingbase/invoice/';
 
 	/**
 	 * @var object - logger for Billing Module - instantiated in constructor
@@ -140,6 +151,7 @@ class Invoice extends \BaseModel{
 
 		// Charges
 		'item_table_positions'  => '', 			// tex table of all items to be charged for this invoice
+		'cdr_charge' 			=> '', 			// Integer with costs resulted from telephone calls
 		'cdr_table_positions'	=> '',			// tex table of all call data records
 		'table_summary' 		=> '', 			// preformatted table - use following three keys to set table by yourself
 		'table_sum_charge_net'  => '', 			// net charge - without tax
@@ -159,16 +171,11 @@ class Invoice extends \BaseModel{
 	}
 
 
-	private function _get_invoice_dir_path()
+	public function get_invoice_dir_path()
 	{
-		return storage_path('app/'.$this->rel_storage_invoice_dir.$this->data['contract_id'].'/');
+		return storage_path('app/'.$this->rel_storage_invoice_dir.$this->contract_id.'/');
 	}
 
-
-	public function get_rel_invoice_dir_path()
-	{
-		return $this->rel_storage_invoice_dir;
-	}
 
 	/**
 	 * @param 	String 		$type 		invoice or cdr
@@ -189,6 +196,8 @@ class Invoice extends \BaseModel{
 
 	/**
 	 * @return String 	CDR Filename without extension (like .pdf)
+	 *
+	 * TODO: implement with offset from global config
 	 */
 	private static function _get_cdr_filename()
 	{
@@ -199,6 +208,7 @@ class Invoice extends \BaseModel{
 	public function add_contract_data($contract, $config, $invoice_nr)
 	{
 		$this->data['contract_id'] 			= $contract->id;
+		$this->contract_id 		 			= $contract->id;
 		$this->data['contract_nr'] 			= $contract->number;
 		$this->data['contract_firstname'] 	= $contract->firstname;
 		$this->data['contract_lastname'] 	= $contract->lastname;
@@ -353,6 +363,7 @@ class Invoice extends \BaseModel{
 		return true;
 	}
 
+
 	/**
 	 * @param 	Array 	$cdrs 		Call Data Record array designated for this Invoice formatted by parse_cdr_data in accountingCommand
 	 */
@@ -369,6 +380,7 @@ class Invoice extends \BaseModel{
 			$sum += $entry[5];
 			$count++;
 		}
+		$this->data['cdr_charge'] = $sum;
 		$this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'. $sum . '}\\\\';
 		$plural = $count > 1 ? 'en' : '';
 		$this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural." & ".round($sum, 2).$this->currency.' & '.round($sum, 2).$this->currency.'\\\\';
@@ -379,7 +391,6 @@ class Invoice extends \BaseModel{
 
 
 
-
 	/**
 	 * Create Invoice files and Database Entries
 	 *
@@ -387,7 +398,7 @@ class Invoice extends \BaseModel{
 	 */
 	public function make_invoice()
 	{
-		$dir = $this->_get_invoice_dir_path();
+		$dir = $this->get_invoice_dir_path();
 
 		if (!is_dir($dir))
 			mkdir($dir, 0700, true);
@@ -433,8 +444,7 @@ class Invoice extends \BaseModel{
 			'filename' 		=> $type ? $this->filename_invoice.'.pdf' :  $this->filename_cdr.'.pdf',
 			'type'  		=> $type ? 'Invoice' : 'CDR',
 			'number' 		=> $this->data['invoice_nr'],
-			// TODO: calculate cdr costs in add_cdr_data function - write to variable and get data from it
-			'charge' 		=> $type ? $this->data['table_sum_charge_net'] : 0
+			'charge' 		=> $type ? $this->data['table_sum_charge_net'] : $this->data['cdr_charge']
 		);
 
 		self::create($data);
@@ -514,10 +524,10 @@ class Invoice extends \BaseModel{
 	 */
 	private function _create_pdfs()
 	{
-		chdir($this->_get_invoice_dir_path());
+		chdir($this->get_invoice_dir_path());
 
-		$file_paths['Invoice']  = $this->_get_invoice_dir_path().$this->filename_invoice;
-		$file_paths['CDR'] 		= $this->_get_invoice_dir_path().$this->filename_cdr;
+		$file_paths['Invoice']  = $this->get_invoice_dir_path().$this->filename_invoice;
+		$file_paths['CDR'] 		= $this->get_invoice_dir_path().$this->filename_cdr;
 
 		// if ($this->data['contract_id'] == 500027)
 		// dd($file_paths);
@@ -577,7 +587,7 @@ class Invoice extends \BaseModel{
 		// TODO: replace by get path function for easy adaption
 		$dir_abs_path_invoice_files = storage_path('app/data/billingbase/invoice/');
 
-		$files = array_merge(glob($invoices), glob($cdrs));
+		// $files = array_merge(glob($invoices), glob($cdrs));
 		$tmp = exec("find $dir_abs_path_invoice_files -type f -name $invoices -o -name $cdrs | sort", $files);
 		foreach ($files as $f)
 			unlink($f);
@@ -595,4 +605,17 @@ class Invoice extends \BaseModel{
 	}
 
 
+}
+
+
+class InvoiceObserver
+{
+	public function deleted($invoice)
+	{
+		// Delete PDF from Storage
+		Storage::delete($invoice->rel_storage_invoice_dir.$invoice->filename);
+		// $file = $invoice->get_invoice_dir_path().$invoice->filename;
+		// if (is_file($file))
+		// 	unlink($file);
+	}
 }
