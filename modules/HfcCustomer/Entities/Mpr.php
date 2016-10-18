@@ -1,6 +1,7 @@
 <?php namespace Modules\Hfccustomer\Entities;
 
 use Illuminate\Database\Eloquent\Model;
+use Modules\ProvBase\Entities\Modem;
 
 
 /*
@@ -108,6 +109,9 @@ class Mpr extends \BaseModel {
 			\Log::info('mps: perform mps rule matching for a single modem');
 		} else {
 			\Log::info('mps: perform mps rule matching');
+			// reset all tree_ids if all modems are being matched,
+			// because we don't know if old matches are still valid
+			Modem::where('id', '>', '0')->update(['tree_id' => 0]);
 		}
 
 		// Foreach MPR
@@ -146,10 +150,10 @@ class Mpr extends \BaseModel {
 
 				// the selected modems to use for update
 				if ($single_modem)
-					$tmp = \Modules\ProvBase\Entities\Modem::where('id','=', $modem);
+					$tmp = Modem::where('id', '=', $modem);
 				else
 					// if no modem is set in parameters -> means: select all modems
-					$tmp = \Modules\ProvBase\Entities\Modem::where('id', '>', '0');
+					$tmp = Modem::where('id', '>', '0');
 
 				$select = $tmp->where('x', '>', $x1)->where('x', '<', $x2)->where('y', '>', $y1)->where('y', '<', $y2);
 
@@ -174,5 +178,35 @@ class Mpr extends \BaseModel {
 		}
 
 		return $return;
+	}
+
+	/**
+	 * BOOT:
+	 * - init Mpr Observer
+	 */
+	public static function boot()
+	{
+		parent::boot();
+
+		Mpr::observe(new MprObserver);
+	}
+}
+
+
+/**
+ * Mpr Observer Class
+ * Handles changes on MprGeopos, can handle:
+ *
+ * 'creating', 'created', 'updating', 'updated',
+ * 'deleting', 'deleted', 'saving', 'saved',
+ * 'restoring', 'restored',
+ */
+class MprObserver
+{
+	// unlike MprGeoposObserver we only hook into 'updated' here, as Mpr::refresh will already
+	// be called in MprGeoposObserver if MPRs (including their geopos) are created or deleted
+	public function updated($modem)
+	{
+		Mpr::refresh();
 	}
 }
