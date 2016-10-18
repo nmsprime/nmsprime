@@ -30,6 +30,12 @@ class EnviaOrder extends \BaseModel {
 				'phonenumber_related' => True,
 			),
 			array(
+				'ordertype' => 'Kündigung einer Rufnummer',
+				'ordertype_id' => 23,
+				'method' => 'voip_account/terminate',
+				'phonenumber_related' => True,
+			),
+			array(
 				'ordertype' => 'Sprachtarif wird geändert',
 				'ordertype_id' => null,
 				'method' => 'contract/change_tariff',
