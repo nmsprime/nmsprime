@@ -35,7 +35,7 @@ class MprController extends \BaseController {
 	{
 		$mpr_id = parent::store(false);
 
-		if (\Input::all()['value'])
+		if (\Input::get('value'))
 		{
 			$pos = explode (';', \Input::all()['value']);
 
