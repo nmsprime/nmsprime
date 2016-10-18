@@ -15,6 +15,8 @@ use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Salesman;
+use Modules\BillingBase\Entities\Invoice;
+
 
 class accountingCommand extends Command {
 
@@ -81,9 +83,9 @@ class accountingCommand extends Command {
 
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
-		$contracts  = Contract::with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
-		$salesmen 	= Salesman::all();
 
+		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
+		$salesmen 	= Salesman::all();
 
 		if (!isset($sepa_accs[0]))
 		{
@@ -96,13 +98,14 @@ class accountingCommand extends Command {
 		if ($ret)
 			$logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 
-
 		// init product types of salesmen and invoice nr counters for each sepa account, date of last run
 		$this->_init($sepa_accs, $salesmen, $conf);
 
-		// get call data records ordered
-		$cdrs = $this->_parse_cdr_file();
-		
+		// get call data records as ordered structure (array)
+		$cdrs = $this->_get_cdr_data();
+		if (!$cdrs)
+			$logger->addAlert('No Call Data Records available for this Run!');
+
 		/*
 		 * Loop over all Contracts
 		 */
@@ -111,9 +114,8 @@ class accountingCommand extends Command {
 			// debugging output
 			var_dump($c->id); //, round(microtime(true) - $start, 4));
 
-
 			// Skip invalid contracts
-			if (!$c->check_validity())
+			if (!$c->check_validity() && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number])))
 			{
 				$logger->addNotice('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
 				continue;				
@@ -148,7 +150,7 @@ class accountingCommand extends Command {
 				}
 
 				// skip invalid items
-				if (!$item->check_validity($item->get_billing_cycle() == 'Yearly' ? 'year' : 'month'))
+				if (!$item->check_validity($item->get_billing_cycle() == 'Yearly' ? 'year' : 'month', $item->is_tariff()))
 				{
 					$logger->addDebug('Item '.$item->product->name.' is outdated', [$c->id]);
 					continue;
@@ -219,16 +221,10 @@ class accountingCommand extends Command {
 					$calls++;
 				}
 
-				// accounting record
 				$acc = $sepa_accs->find($c->costcenter->sepaaccount_id);
-				$rec = new AccountingRecord;
-				$rec->add_cdr($c, $acc, $charge, $calls);
-				$acc->add_cdr_accounting_record($c, $charge, $calls);
-
-				// invoice
-				$acc->add_invoice_cdr($c, $cdrs[$id], $conf);
 
 				// increase charge for booking record
+				// Keep this order in case we need to increment the invoice nr if only cdrs are charged for this contract
 				if (isset($c->charge[$acc->id]))
 				{
 					$c->charge[$acc->id]['net'] += $charge;
@@ -242,6 +238,15 @@ class accountingCommand extends Command {
 					$c->charge[$acc->id]['tax'] = $charge * $conf->tax/100;
 					$acc->invoice_nr += 1;
 				}
+
+				// accounting record
+				$rec = new AccountingRecord;
+				$rec->add_cdr($c, $acc, $charge, $calls);
+				$acc->add_cdr_accounting_record($c, $charge, $calls);
+
+				// invoice
+				$acc->add_invoice_cdr($c, $cdrs[$id], $conf);
+
 
 			}
 
@@ -275,31 +280,36 @@ class accountingCommand extends Command {
 	}
 
 
-
 	/**
-	 * Initialise models for this billing cycle (could also be done during runtime but with performance degradation)
+	 * (1) Clear/Create (Prepare) Directories
+	 *
+	 * (2) Initialise models for this billing cycle (could also be done during runtime but with performance degradation)
 	 	* invoice number counter
 	 	* storage directories
+	 * Set Language for Billing
+	 * Remove already created Invoice Database Entries
 	 */
 	private function _init($sepa_accs, $salesmen, $conf)
 	{
+		// set language for this run
+		\App::setLocale($conf->userlang);
+
 		// create directory structure
-		if (!is_dir(storage_path('app/'.$this->dir)))
-		{
-			// mkdir(storage_path('app/'.$this->dir, '0700', true)); does not work?
-			system('mkdir -p 0700 '.storage_path('app/'.$this->dir)); // system call because php mkdir creates weird permissions - umask couldnt solve it !?
-		}
+		if (is_dir(storage_path('app/'.$this->dir)))
+			$this->_directory_cleanup();
+		else
+			mkdir(storage_path('app/'.$this->dir, 0700, true));
 
 		// Salesmen
 		$prod_types = Product::getPossibleEnumValues('type');
 		unset($prod_types['Credit']);
 
 		foreach ($salesmen as $key => $sm)
-		{
 			$sm->all_prod_types = $prod_types;
-			// directory to save file
-			$sm->dir = $this->dir;
-		}
+
+		// directory to save file - is actually only needed for first salesmen
+		if (isset($salesmen[0])) $salesmen[0]->dir = $this->dir;
+
 
 		// SepaAccount
 		foreach ($sepa_accs as $acc)
@@ -307,6 +317,9 @@ class accountingCommand extends Command {
 			$acc->dir = $this->dir;
 			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+5 days'));
 		}
+
+		// Invoices
+		Invoice::delete_current_invoices();
 
 		// actual invoice nr counters
 		$last_run = AccountingRecord::orderBy('created_at', 'desc')->select('created_at')->first();
@@ -339,11 +352,36 @@ class accountingCommand extends Command {
 					$acc->invoice_nr = $conf->invoice_nr_start - 1;
 			}
 		}
+
+	}
+
+
+	/**
+	 * This function removes all "old" files created by the previous called Command
+	 * This is necessary because otherwise e.g. after deleting contracts the invoice would be kept and is still shown
+	 * in customer control centre
+	 */
+	private function _directory_cleanup()
+	{
+		// Delete all invoices
+		Invoice::delete_current_invoices();
+
+		// everything in accounting directory - SepaAccount specific
+		foreach (Storage::files($this->dir) as $f)
+		{
+			// keep cdr
+			if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
+				Storage::delete($f);
+		}
+
+		foreach (Storage::directories($this->dir) as $d)
+			Storage::deleteDirectory($d);
+			
 	}
 
 
 	/*
-	 * stores all billing files besides invoices in the directory defined as property of this class
+	 * Stores all billing files besides invoices in the directory defined as property of this class
 	 */
 	private function _make_billing_files($sepa_accs, $salesmen)
 	{
@@ -363,62 +401,127 @@ class accountingCommand extends Command {
 
 
 	/**
-	 * Calls cdrCommand to get Call data records from Envia and formats relevant data to array
+	 * Calls cdrCommand to get Call data records from Provider and formats relevant data to structured array
 	 *
-	 * @return array 	[contract_id => [phonr_nr, time, duration, ...], next_id => [...], ...]
+	 * @return array 	[contract_id => [phonr_nr, time, duration, ...], 
+	 *					 next_contract_id => [...],
+	 * 					 ...]
+	 *					on success, else 2 dimensional empty array
 	 */
-	private function _parse_cdr_file()
+	private function _get_cdr_data()
 	{
-		$data  = [];
-		$csv   = [];
-		$files = Storage::files($this->dir);
-		$bool  = true;
+		$filename = \App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'_'.date('Y_m', strtotime('-2 month')).'.csv';
+		$dir_path = storage_path('app/'.$this->dir.'/');
+		$filepath = $dir_path.$filename;
 
-		// check if file is already loaded
-		foreach ($files as $file)
+		if (!is_file($filepath))
 		{
-			if (strpos(basename($file), 'xxxxxxx') !== false)
-    		{
-    			$csv = file(storage_path('app/'.$file));
-    			break;
-    		}
-    	}
-
-    	if (!$csv)
-    	{
 			// get call data records
 			$ret = $this->call('billing:cdr');
 
 			if ($ret)
 				return array(array());
+		}
 
-			$files = Storage::files($this->dir);
 
-			foreach ($files as $file)
-			{
-				if (strpos(basename($file), 'xxxxxxx') !== false)
-	    		{
-	    			$csv = file(storage_path('app/'.$file));
-	    			break;
-	    		}
-	    	}
-    	}
+		// NOTE: Add new Providers here!
+		if (isset($_ENV['PROVVOIPENVIA__RESELLER_USERNAME']))
+		{
+			return $this->_parse_envia_csv($filepath);
+		}
+
+		else if (isset($_ENV['HLKOMM_RESELLER_USERNAME']))
+		{
+			return $this->_parse_hlkomm_csv($filepath);
+		}
+
+		else
+			// we could throw an redundant exception here as well - is already thrown in cdrCommand
+			return array(array());
+
+	}
+
+
+
+	/**
+	 * Parse Envia CSV
+	 *
+	 * @return array  [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
+	 */
+	protected function _parse_envia_csv($filepath)
+	{
+		$csv = is_file($filepath) ? file($filepath) : array(array());
+
+		// skip first line (column description)
+		if ($csv[0])
+			unset($csv[0]);
+		else
+			return $csv;
 
 		foreach ($csv as $line)
 		{
-			// skip first line
-			if ($bool)
-			{
-				$bool = false;
-				continue;
-			}
-
 			$line = str_getcsv($line, ';');
 			$data[intval($line[0])][] = array($line[3], substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $line[7], str_replace(',', '.', $line[10]));
 		}
 
 		return $data;
-    }
+	}
+
+
+	/**
+	 * Parse HLKomm CSV
+	 *
+	 * @return array 	[contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
+	 */
+	protected function _parse_hlkomm_csv($filepath)
+	{
+		$csv = is_file($filepath) ? file($filepath) : array(array());
+
+		// skip first 5 lines (descriptions)
+		if ($csv[0])
+			unset($csv[0], $csv[1], $csv[2], $csv[3], $csv[4]);
+		else
+			return $csv;
+
+		// get phonenr to contract_id listing - needed because only phonenr is mentioned in csv
+		// select m.contract_id, a.username from phonenumber a, mta b, modem m where a.mta_id=b.id AND b.modem_id=m.id order by m.contract_id;
+		$phonenumbers_o = \DB::table('phonenumber')
+			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
+			->join('modem', 'modem.id', '=', 'mta.modem_id')
+			->select('modem.contract_id', 'phonenumber.username')
+			->orderBy('modem.contract_id')->get();
+
+        foreach ($phonenumbers_o as $value)
+			$phonenrs[$value->username] = $value->contract_id;
+
+
+		// create structured array
+		foreach ($csv as $line)
+		{
+			$line = str_getcsv($line, '\t');
+			$phonenr1 = $line[4].$line[5].$line[6];			// calling nr
+			$phonenr2 = $line[7].$line[8].$line[9];			// called nr
+
+			// TODO: simplify after checking 2nd case!
+			if (isset($phonenrs[$phonenr1]))
+				$data[$phonenrs[$phonenr1]][] = array($phonenr1, $line[0], $line[1], $line[10], $phonenr2, $line[13]);
+			else if (isset($phonenrs[$phonenr2]))
+				// our phonenr is the called nr - TODO: proof if this case can actually happen - normally this shouldnt be the case
+				$data[$phonenrs[$phonenr2]][] = array($phonenr1, $line[0], $line[1], $line[10], $phonenr2, $line[13]);
+			else
+			{
+				// there is a phonenr entry in csv that doesnt exist in our db - this case should never happen
+				$logger = new BillingLogger;
+				$logger->addError('Parse CDR.csv: Call Data Record with Phonenr that doesnt exist in the Database - Phonenr deleted?');
+			}
+
+		}
+
+		return $data;
+	}	
+
+
+
 
 
 	/**

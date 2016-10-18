@@ -7,7 +7,7 @@
 
 			@if ($rerun_button)
 				{{ Form::open(array('route' => ['SettlementRun.store', 0], 'method' => 'post')) }}
-					{{ Form::submit('Rerun Accounting Command for current Month', ['style' => 'simple']) }}
+					{{ Form::submit( \App\Http\Controllers\BaseViewController::translate_view('Rerun Accounting Command for current Month', 'Button') , ['style' => 'simple']) }}
 				{{ Form::close() }}
 			@endif
 
@@ -23,7 +23,7 @@
 						<?php $header = $file->getRelativePath() ?>
 						
 						@if (!$header && !$i)
-							<tr><td><b> General </b></td></tr>
+							<tr><td><b> {{ \App\Http\Controllers\BaseViewController::translate_label('General') }} </b></td></tr>
 							<?php $i++ ?>
 						@else
 							<tr><td><b> {{ $header }} </b></td></tr>
