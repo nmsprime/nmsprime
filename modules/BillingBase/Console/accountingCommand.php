@@ -404,11 +404,14 @@ class accountingCommand extends Command {
 
 
 	/**
-	 * TODO: implement with cdr to invoice offset field in global config
+	 * @return String 	Filename   e.g.: 'Call Data Record_2016_08.csv' or if app language is german 'Einzelverbindungsnachweis_2015_01.csv'
 	 */
 	private function _get_cdr_filename()
 	{
-		return \App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'_'.date('Y_m', strtotime('-2 month')).'.csv';
+		$offset = BillingBase::first()->cdr_offset;
+		$time = $offset ? strtotime('-'.($offset+1).' month') : strtotime('first day of last month');
+
+		return \App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'_'.date('Y_m', $time).'.csv';
 	}
 
 

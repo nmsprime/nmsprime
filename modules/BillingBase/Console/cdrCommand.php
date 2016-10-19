@@ -9,6 +9,7 @@ use \Chumper\Zipper\Zipper;
 use Storage;
 use File;
 use Modules\BillingBase\Entities\BillingLogger;
+use Modules\BillingBase\Entities\BillingBase;
 
 class cdrCommand extends Command {
 
@@ -18,7 +19,7 @@ class cdrCommand extends Command {
 	 * @var string
 	 */
 	protected $name 		= 'billing:cdr';
-	protected $description 	= 'Get Call Data Records from Envia/HLKomm (dependent of Array keys in Environment file)';
+	protected $description 	= 'Get Call Data Records from Envia/HLKomm (dependent of Array keys in Environment file) - optional argument: month (integer - load file up to 12 months in past)';
 	protected $signature 	= 'billing:cdr {month? : 1 (Jan) to 12 (Dec)}';
 
 
@@ -91,11 +92,21 @@ class cdrCommand extends Command {
 	 */
 	private function _init()
 	{
-		$this->month = $this->argument('month') >= 1 && $this->argument('month') <= 12 ? sprintf('%02d', $this->argument('month')) : date('m', strtotime('-2 month'));
-		$this->year  = $this->month > date('m') ? string(int(date('Y')) - 1) : date('Y');
+		$offset = BillingBase::first()->cdr_offset;
+		$month_sec = 31*24*60*60;
+
+		if ($this->argument('month') >= 1 && $this->argument('month') <= 12)
+			// argument is specified
+			$this->month = sprintf('%02d', $this->argument('month'));
+		else
+			$this->month = $offset ? date('m', strtotime('-'.($offset+1).' month')) : date('m', strtotime('first day of last month'));
+
+		// $this->month = $this->argument('month') >= 1 && $this->argument('month') <= 12 ? sprintf('%02d', $this->argument('month')) : ( $offset == 0 ? date('m', strtotime('first day of last month')) : date('m', strtotime('-'.($offset+1).' month')));
+		$this->year  = $this->month >= date('m') ? date('Y') - 1 : date('Y');
 
 		$this->tmp_dir 		= storage_path('app/tmp/');
-		$this->target_dir   = storage_path("app/data/billingbase/accounting/".$this->year."-".sprintf('%02d', ($this->month == 12 ? 1 : $this->month+1)).'/');
+		$this->target_dir   = storage_path("app/data/billingbase/accounting/");
+		$this->target_dir 	.= $offset ? date('Y-m', $offset * $month_sec + strtotime('01.'.$this->month.'.'.$this->year)) : $this->year.'-'.$this->month;
 		$this->target_file  = \App\Http\Controllers\BaseViewController::translate_label('Call Data Record')."_".$this->year.'_'.$this->month.'.csv';
 	}
 

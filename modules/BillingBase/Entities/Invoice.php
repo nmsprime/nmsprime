@@ -89,9 +89,13 @@ class Invoice extends \BaseModel{
 	private $logger;
 
 	/**
-	 * @var Bool 	1 - Invoice has Call Data Records, 0 - Only Invoice
+	 * Temporary CDR Variables
+	 *
+	 * @var Bool 		$has_cdr 	1 - Invoice has Call Data Records, 0 - Only Invoice
+	 * @var Integer 	$time_cdr 	Unix Timestamp of month of the telefone calls - set in add_cdr_data()
 	 */
 	public $has_cdr = 0;
+	private $time_cdr;
 
 	/**
 	 * @var bool 	Error Flag - if set then invoice cant be created
@@ -196,12 +200,12 @@ class Invoice extends \BaseModel{
 
 	/**
 	 * @return String 	CDR Filename without extension (like .pdf)
-	 *
-	 * TODO: implement with offset from global config
 	 */
 	private static function _get_cdr_filename()
 	{
-		return date('Y_m', strtotime('-2 month')).'_cdr';
+		$offset = BillingBase::first()->cdr_offset;
+
+		return $offset ? date('Y_m', strtotime('-'.($offset+1).' month')).'_cdr' : date('Y_m', strtotime('first day of last month')).'_cdr';
 	}
 
 
@@ -370,7 +374,7 @@ class Invoice extends \BaseModel{
 	public function add_cdr_data($cdrs)
 	{
 		$this->has_cdr = 1;
-		$time_cdr = strtotime($cdrs[0][1]);
+		$this->time_cdr = $time_cdr = strtotime($cdrs[0][1]);
 		$this->data['cdr_month'] = date('m/Y', $time_cdr);
 
 		$sum = $count = 0;
@@ -434,7 +438,7 @@ class Invoice extends \BaseModel{
 	private function _create_db_entry($type = 1)
 	{
 		// TODO: implement time of cdr as generic, variable way
-		$time = $type ? strtotime('first day of last month') : strtotime('-2 month');
+		$time = $type ? strtotime('first day of last month') : $this->time_cdr; // strtotime('-2 month');
 
 		$data = array(
 			'contract_id' 	=> $this->data['contract_id'],
