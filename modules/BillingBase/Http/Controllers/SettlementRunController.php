@@ -57,7 +57,13 @@ class SettlementRunController extends \BaseController {
 	{
 		SettlementRun::where('month', '=', (date('m') + 11) % 12)->delete();
 
+		// this is a workaround to redirect output - laravel 3rd variable in call function disregards it
+		// output is buffered in internal storage and later discarded with ob_end_clean()
+		ob_start();
+
 		$ret = \Artisan::call('billing:accounting');
+
+		ob_end_clean();
 
 		return parent::store();
 	}
