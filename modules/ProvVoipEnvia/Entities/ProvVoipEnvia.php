@@ -15,6 +15,7 @@ use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
 use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
+use Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
 
 // Model not found? execute composer dump-autoload in lara root dir
 class ProvVoipEnvia extends \BaseModel {
@@ -2796,4 +2797,29 @@ class ProvVoipEnvia extends \BaseModel {
 		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Use returned data to create new or update existing phonebookentry</h2><h2>Returned XML is:</h2>";
 		d($xml);
 	}
+
+
+	public static function get_free_numbers_for_view() {
+
+		// manipulate \Input to perform action against Envia without confirmation
+		\Input::merge(array('really' => 'true'));
+		// manipulate \Input to return flat html instead of a view
+		\Input::merge(array('return_type' => 'html'));
+		$c = new ProvVoipEnviaController();
+		$ret = $c->request('misc_get_free_numbers');
+
+		// get rid of (here senseless) debug information
+		if (substr_count($ret, '<h4>Success ') > 0) {
+			$ret = explode('<hr><h4>DEBUG', $ret)[0];
+		}
+
+		//extract numbers if any
+		/* $pattern = '#[0-9]+/[0-9]+#'; */
+		/* preg_match_all($pattern, $ret, $free_numbers); */
+		/* $ret = $free_numbers[0]; */
+
+		return $ret;
+
+	}
+
 }

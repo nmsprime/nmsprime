@@ -624,6 +624,14 @@ class ProvVoipEnviaController extends \BaseController {
 		// check if user has the right to perform actions against Envia API
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
+		// check if a non standard return type is wanted
+		// usable: view (default), html
+		$return_type = \Input::get('return_type', 'view');
+		$allowed_return_types = ['view', 'html'];
+		if (!in_array($return_type, $allowed_return_types)) {
+			throw new \InvalidArgumentException('Allowed return_type has to be in ['.implode(', ', $allowed_return_types).'] but “'.$return_type.'” given.');
+		}
+
 		$this->check_api_version('request');
 
 		$base_url = $this->base_url;
@@ -747,6 +755,12 @@ class ProvVoipEnviaController extends \BaseController {
 			}
 		}
 
+		// use this e.g. to get the result directly in your view
+		if ($return_type == 'html') {
+			return $view_var['plain_html'];
+		}
+
+		// default: returne a view
 		return View::make($view_path, $this->compact_prep_view(compact('model_name', 'view_header', 'view_var')));
 	}
 
