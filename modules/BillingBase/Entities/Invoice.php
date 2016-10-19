@@ -523,8 +523,6 @@ class Invoice extends \BaseModel{
 
 	/**
 	 * Creates the pdfs out of the prepared tex files - Note: this function is very time consuming
-	 *
-	 * TODO: Performance Improvements necessary!!
 	 */
 	private function _create_pdfs()
 	{
@@ -536,12 +534,11 @@ class Invoice extends \BaseModel{
 		// if ($this->data['contract_id'] == 500027)
 		// dd($file_paths);
 
-		// TODO: execute in background to speed this up by multiprocessing - but what is with the temporary files and return value then?
 		foreach ($file_paths as $key => $file)
 		{
 			if (is_file($file))
 			{
-				system("pdflatex $file &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
+				system("pdflatex $file &>/dev/null &", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
 
 				switch ($ret)
 				{
@@ -560,13 +557,32 @@ class Invoice extends \BaseModel{
 				echo "Successfully created $key in $file\n";
 				$this->logger->addDebug("Successfully created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
 
-				// remove temporary files
+				// Deprecated: remove temporary files - This is done by remove_templatex_files() now after all pdfs were created simultaniously by multiple threads
+				// unlink($file);
+				// unlink($file.'.aux');
+				// unlink($file.'.log');
+			}
+		}
+
+	}
+
+	/**
+	 * Removes the temporary latex files after all pdfs were created simultaniously by multiple threads
+	 */
+	public static function remove_templatex_files()
+	{
+		$invoices = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))])->get();
+
+		foreach ($invoices as $invoice)
+		{
+			$file = $invoice->get_invoice_dir_path().str_replace('.pdf', '', $invoice->filename);
+			if (is_file($file))
+			{
 				unlink($file);
 				unlink($file.'.aux');
 				unlink($file.'.log');
 			}
 		}
-
 	}
 
 

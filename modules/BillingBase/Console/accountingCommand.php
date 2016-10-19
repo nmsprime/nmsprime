@@ -266,7 +266,7 @@ class accountingCommand extends Command {
 				$acc->add_booking_record($c, $mandate, $value, $conf);
 				$acc->add_invoice_data($c, $mandate, $value);
 
-				// make bill already
+				// create invoice pdf already - this task is the most timeconsuming and therefore threaded!
 				$acc['invoices'][$c->id]->make_invoice();
 
 				// skip sepa part if contract has no valid mandate
@@ -278,11 +278,15 @@ class accountingCommand extends Command {
 
 		} // end of loop over contracts
 
-		
+		// avoid deleting temporary latex files before last invoice was built (multiple threads are used)
+		// and wait for all invoice pdfs to be created for concatenate them in zip command in _make_billing_files()
+		usleep(200000);
+
 		$this->_make_billing_files($sepa_accs, $salesmen);
+		Invoice::remove_templatex_files();
 
 		// performance analysis debugging output
-		echo "time needed: ".round(microtime(true) - $start, 4)."\n";
+		// echo "time needed: ".round(microtime(true) - $start, 4)."\n";
 	}
 
 
