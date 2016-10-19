@@ -277,7 +277,7 @@ class CccAuthuserController extends \BaseController {
 	 */
 	public function download($contract_id, $filename)
 	{
-		$dir = storage_path('app/'.$this->rel_dir_path_invoices.$contract_id.'/');
+		$dir = storage_path('app/'.self::$rel_dir_path_invoices.$contract_id.'/');
 
 		return response()->download($dir.$filename);
 	}
