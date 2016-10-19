@@ -11,13 +11,11 @@ use Modules\ProvVoip\Entities\PhonebookEntry;
 use Modules\ProvVoip\Entities\CarrierCode;
 use Modules\ProvVoip\Entities\EkpCode;
 use Modules\ProvVoip\Entities\Mta;
-use Modules\ProvVoip\Entities\TRCClass;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
 use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
 use Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
-use App\Exceptions\NotImplementedException;
 
 // Model not found? execute composer dump-autoload in lara root dir
 class ProvVoipEnvia extends \BaseModel {
@@ -2158,7 +2156,7 @@ class ProvVoipEnvia extends \BaseModel {
 			// get phonenumber_id and contract_id, add to model instance
 			$phonenumber = Phonenumber::whereRaw('prefix_number = '.$result['localareacode'].' AND number = '.$result['baseno'])->first();
 			if (is_null($phonenumber)) {
-				$tmp = '<span style="color: red">Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id.'</span>';
+				$tmp = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
 				\Log::warning($tmp);
 				$out .= '<br>'.$tmp;
 				continue;
@@ -2171,11 +2169,8 @@ class ProvVoipEnvia extends \BaseModel {
 			$order = EnviaOrder::create($result);
 
 			$out .= '<br>Order '.$order_id.' created.';
-
-			// if we end up here we have an order that not existed yet – so we have to check if
-			// contract, modem and/or phonenumbermanagement need updates, too
-			$out = $this->_update_phonenumber_related_data($result, $out);
 		}
+
 
 		// return different output on cron jobs.
 		if ($data['entry_method'] == 'cron') {
@@ -2185,239 +2180,6 @@ class ProvVoipEnvia extends \BaseModel {
 			$out .= "<br><br><pre>".$csv."</pre>";
 			return $out;
 		}
-	}
-
-
-	/**
-	 * This is used to update several inforamtion in contract, modem and phonenumbermanagement.
-	 * Has to be done on misc_get_orders_csv and contract_get_reference because this values can be missing (e.g. voip_account has been created before activation of envia module)
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _update_phonenumber_related_data($data, $out='') {
-
-		if (isset($data['contract_id'])) {
-			$out = $this->_update_contract_with_envia_data($data, $out);
-		}
-
-		if (isset($data['modem_id'])) {
-			$out = $this->_update_modem_with_envia_data($data, $out);
-		}
-
-		if (isset($data['phonenumber_id']) || isset($data['phonenumbermanagement_id'])) {
-			$out = $this->_update_phonenumbermanagement_with_envia_data($data, $out);
-		}
-
-		return $out;
-	}
-
-
-	/**
-	 * Updates contract with order's data.
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _update_contract_with_envia_data($data, $out='') {
-
-		if (!isset($data['contract_id'])) {
-			$out .= '<br> ⇒ Warning: No contract_id given';
-			return $out;
-		}
-
-		$contract = Contract::findOrFail($data['contract_id']);
-
-		if (!isset($data['customerreference'])) {
-			return $out;
-		}
-
-		// set customerreference or check for integrity (this reference should never change!)
-		if (is_null($contract->customer_external_id)) {
-			$contract->customer_external_id = $data['customerreference'];
-			$contract->save();
-			$out .= '<br> ⇒ Contract->customer_external_id set to '.$data['customerreference'];
-		}
-		elseif ($contract->customer_external_id != $data['customerreference']) {
-			$out .= '<br> ⇒ <span style="color: red">error: contract->customer_external_id ('.$contract->customer_external_id.') != enviaorder->customerreference ('.$data['customerreference'].')!!</span>';
-		}
-
-		return $out;
-	}
-
-
-	/**
-	 * Updates modem with order's data.
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _update_modem_with_envia_data($data, $out='') {
-
-		if (!isset($data['modem_id'])) {
-			$out .= '<br> ⇒ Warning: No modem_id given';
-			return $out;
-		}
-
-		$modem = Modem::findOrFail($data['modem_id']);
-
-		// try to get related contract (if id not given) and update it
-		if (!isset($data['contract_id'])) {
-			$data['contract_id'] = $modem->contract->id;
-			$out = _update_contract_with_envia_data($data, $out);
-		}
-
-		$modem_changed = false;
-
-		if (isset($data['contractreference'])) {
-
-			// set contractreference and check for integrity
-			if (is_null($modem->contract_external_id)) {
-				$modem->contract_external_id = $data['contractreference'];
-				$modem_changed = true;
-				$out .= '<br> ⇒ Modem->contract_external_id set to '.$data['contractreference'];
-			}
-			if ($modem->contract_external_id != $data['contractreference']) {
-				$out .= '<br> ⇒ <span style="color: red">ERROR: Modem->contract_external_id ('.$modem->contract_external_id.') != EnviaOrder->contractreference ('.$data['contractreference'].')!!</span>';
-			}
-
-			// if there is a contract reference at Envia we can be sure that this contract has been created :-)
-			if (is_null($modem->contract_ext_creation_date)) {
-
-				// prepare the date
-				if (isset($data['orderdate'])) {
-					$date_to_set = min(date('Y-m-d'), $data['orderdate']);
-				}
-				else {
-					$date_to_set = date('Y-m-d');
-				}
-
-				// set the date
-				$modem->contract_ext_creation_date = $date_to_set;
-				$modem_changed = true;
-				$out .= '<br> ⇒ Modem->contract_ext_creation_date set to '.$date_to_set;
-			}
-			// if we got an orderdate: we also can update modem if orderdate is less than the currently stored date
-			elseif (
-				isset($data['orderdate']) &&
-				($modem->contract_ext_creation_date > $data['orderdate'])
-			) {
-				$modem->contract_ext_creation_date = $data['orderdate'];
-				$modem_changed = true;
-				$out .= '<br> ⇒ Modem->contract_ext_creation_date set to '.$data['orderdate'];
-			}
-		}
-
-		if ($modem_changed) {
-			$modem->save();
-		}
-
-		return $out;
-	}
-
-
-	/**
-	 * Updates phonenumbermanagement with order's data.
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _update_phonenumbermanagement_with_envia_data($data, $out='') {
-
-		$phonenumbermanagement_changed = False;
-
-		if (!isset($data['phonenumber_id']) && !isset($data['phonenumbermanagement_id'])) {
-			$out .= '<br> ⇒ Warning: No phonenumber_id or phonenumbermanagement_id given';
-			return $out;
-		}
-
-		if (isset($data['phonenumbermanagement_id'])) {
-			$phonenumbermanagement = PhonenumberManagement::findOrFail($data['phonenumbermanagement_id']);
-			$phonenumber = $phonenumbermanagement->phonenumber;
-		}
-		else {
-			$phonenumber = Phonenumber::findOrFail($data['phonenumber_id']);
-			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
-		}
-
-		if (!isset($data['contract_id'])) {
-			$data['contract_id'] = $phonenumber->mta->modem->contract->id;
-			$out = _update_contract_with_envia_data($data, $out);
-		}
-
-		if (!isset($data['modem_id'])) {
-			$data['modem_id'] = $phonenumber->mta->modem->id;
-			$out = _update_modem_with_envia_data($data, $out);
-		}
-
-		if (isset($data['orderid'])) {
-			$order = EnviaOrder::whereRaw('orderid='.intval($data['orderid']).' and deleted_at IS NULL')->firstOrFail();
-
-			// if there is no existing management: create and bundle with phonenumber
-			if (
-				(is_null($phonenumbermanagement))
-				&&
-				(
-					(EnviaOrder::order_creates_voip_account($order))
-					||
-					(EnviaOrder::order_terminates_voip_account($order))
-				)
-			) {
-				$phonenumbermanagement = new PhonenumberManagement();
-				$out .= '<br> ⇒ No PhonenumberManagement found. Creating new one – you have to set some values manually!';
-
-				// set the correlating phonenumber id
-				$phonenumbermanagement->phonenumber_id = $phonenumber->id;
-
-				// set some default values
-				$phonenumbermanagement->trcclass = 0;
-				$phonenumbermanagement->porting_in = 0;
-				$phonenumbermanagement->carrier_in = 0;
-				$phonenumbermanagement->ekp_in = 0;
-				$phonenumbermanagement->porting_out = 0;
-				$phonenumbermanagement->carrier_out = 0;
-				$phonenumbermanagement->ekp_out = 0;
-
-				$phonenumbermanagement_changed = True;
-			}
-
-			if (EnviaOrder::order_creates_voip_account($order)) {
-				if (is_null($phonenumbermanagement->voipaccount_ext_creation_date)) {
-					$phonenumbermanagement->voipaccount_ext_creation_date = $order->orderdate;
-					$out .= '<br> ⇒ PhonenumberManagement->voipaccount_ext_creation_date set to '.$order->orderdate;
-					$phonenumbermanagement_changed = True;
-				}
-				if (is_null($phonenumbermanagement->activation_date)) {
-					$phonenumbermanagement->activation_date = $order->orderdate;
-					$out .= '<br> ⇒ PhonenumberManagement->activation_date set to '.$order->orderdate;
-					$phonenumbermanagement_changed = True;
-				}
-				if (is_null($phonenumbermanagement->external_activation_date)) {
-					$phonenumbermanagement->external_activation_date = $order->orderdate;
-					$out .= '<br> ⇒ PhonenumberManagement->external_activation_date set to '.$order->orderdate;
-					$phonenumbermanagement_changed = True;
-				}
-			}
-			elseif (EnviaOrder::order_terminates_voip_account($order)) {
-				if (is_null($phonenumbermanagement->voipaccount_ext_termination_date)) {
-					$phonenumbermanagement->voipaccount_ext_termination_date = $order->orderdate;
-					$out .= '<br> ⇒ PhonenumberManagement->voipaccount_ext_termination_date set to '.$order->orderdate;
-					$phonenumbermanagement_changed = True;
-				}
-				if (is_null($phonenumbermanagement->deactivation_date)) {
-					$phonenumbermanagement->deactivation_date = $order->orderdate;
-					$out .= '<br> ⇒ PhonenumberManagement->deactivation_date set to '.$order->orderdate;
-					$phonenumbermanagement_changed = True;
-				}
-				if (is_null($phonenumbermanagement->external_deactivation_date)) {
-					$phonenumbermanagement->external_deactivation_date = $order->orderdate;
-					$out .= '<br> ⇒ PhonenumberManagement->external_deactivation_date set to '.$order->orderdate;
-					$phonenumbermanagement_changed = True;
-				}
-			}
-		}
-
-		if ($phonenumbermanagement_changed) {
-			$phonenumbermanagement->save();
-		}
-
-		return $out;
 	}
 
 
@@ -3037,32 +2799,21 @@ class ProvVoipEnvia extends \BaseModel {
 	}
 
 
-	/**
-	 * This function returns HTML containing free Envia phonenumbers.
-	 *
-	 * It uses the request() method in controller, which has been extended to return HTML instead of a view.
-	 *
-	 * @author Patrick Reichel
-	 */
 	public static function get_free_numbers_for_view() {
 
 		// manipulate \Input to perform action against Envia without confirmation
 		\Input::merge(array('really' => 'true'));
 		// manipulate \Input to return flat html instead of a view
 		\Input::merge(array('return_type' => 'html'));
-
-		// get a controller instance and execute the request
 		$c = new ProvVoipEnviaController();
 		$ret = $c->request('misc_get_free_numbers');
 
-		// get rid of (here senseless) debug information in case of success
+		// get rid of (here senseless) debug information
 		if (substr_count($ret, '<h4>Success ') > 0) {
 			$ret = explode('<hr><h4>DEBUG', $ret)[0];
 		}
 
-		// extract numbers if any and make $ret an array
-		// could later be used to make hyperlinks out of the numbers (in view);
-		// then we could fill the form using JavaScript…
+		//extract numbers if any
 		/* $pattern = '#[0-9]+/[0-9]+#'; */
 		/* preg_match_all($pattern, $ret, $free_numbers); */
 		/* $ret = $free_numbers[0]; */
