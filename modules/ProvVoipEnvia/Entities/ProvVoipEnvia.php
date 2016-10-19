@@ -2799,21 +2799,32 @@ class ProvVoipEnvia extends \BaseModel {
 	}
 
 
+	/**
+	 * This function returns HTML containing free Envia phonenumbers.
+	 *
+	 * It uses the request() method in controller, which has been extended to return HTML instead of a view.
+	 *
+	 * @author Patrick Reichel
+	 */
 	public static function get_free_numbers_for_view() {
 
 		// manipulate \Input to perform action against Envia without confirmation
 		\Input::merge(array('really' => 'true'));
 		// manipulate \Input to return flat html instead of a view
 		\Input::merge(array('return_type' => 'html'));
+
+		// get a controller instance and execute the request
 		$c = new ProvVoipEnviaController();
 		$ret = $c->request('misc_get_free_numbers');
 
-		// get rid of (here senseless) debug information
+		// get rid of (here senseless) debug information in case of success
 		if (substr_count($ret, '<h4>Success ') > 0) {
 			$ret = explode('<hr><h4>DEBUG', $ret)[0];
 		}
 
-		//extract numbers if any
+		// extract numbers if any and make $ret an array
+		// could later be used to make hyperlinks out of the numbers (in view);
+		// then we could fill the form using JavaScript…
 		/* $pattern = '#[0-9]+/[0-9]+#'; */
 		/* preg_match_all($pattern, $ret, $free_numbers); */
 		/* $ret = $free_numbers[0]; */
