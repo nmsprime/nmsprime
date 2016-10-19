@@ -79,6 +79,8 @@ class accountingCommand extends Command {
 	 */
 	public function fire()
 	{
+		// $start = microtime(true);
+
 		$logger = new BillingLogger;
 		$logger->addInfo(' #####    Start Accounting Command    #####');
 
@@ -279,6 +281,8 @@ class accountingCommand extends Command {
 		
 		$this->_make_billing_files($sepa_accs, $salesmen);
 
+		// performance analysis debugging output
+		echo "time needed: ".round(microtime(true) - $start, 4)."\n";
 	}
 
 
@@ -319,9 +323,6 @@ class accountingCommand extends Command {
 			$acc->dir = $this->dir;
 			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+5 days'));
 		}
-
-		// Invoices
-		Invoice::delete_current_invoices();
 
 		// actual invoice nr counters
 		$last_run = AccountingRecord::orderBy('created_at', 'desc')->select('created_at')->first();

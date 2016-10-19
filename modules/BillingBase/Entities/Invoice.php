@@ -56,12 +56,12 @@ class Invoice extends \BaseModel{
 	/**
 	 * Init Observer
 	 */
-	public static function boot()
-	{
-		parent::boot();
+	// public static function boot()
+	// {
+	// 	parent::boot();
 
-		Invoice::observe(new InvoiceObserver);
-	}
+	// 	Invoice::observe(new InvoiceObserver);
+	// }
 
 
 	/**
@@ -78,7 +78,7 @@ class Invoice extends \BaseModel{
 	 */
 	private $rel_storage_invoice_dir = 'data/billingbase/invoice/';
 
-	// without .pdf extension
+	// temporary variables for settlement run without .pdf extension
 	private $filename_invoice 	= '';
 	private $filename_cdr 		= '';
 
@@ -224,7 +224,7 @@ class Invoice extends \BaseModel{
 		$this->data['invoice_nr'] 	= $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
 		$this->data['date_invoice'] = date('d.m.Y', strtotime('last day of last month'));
 
-		// TODO: Add other currencies here
+		// Note: Add other currencies here
 		$this->currency	= strtolower($config->currency) == 'eur' ? '€' : $config->currency;
 		$this->tax		= $config->tax;
 	}
@@ -571,30 +571,34 @@ class Invoice extends \BaseModel{
 
 
 	/**
-	 * Deletes currently created invoices
+	 * Deletes currently created invoices (created in actual month)
 	 * Used to delete invoices created by previous settlement run in current month - executed in accountingCommand
 	 * is used to remove files before settlement run is repeatedly created (accountingCommand executed again)
 	 * NOTE: Use Carefully!!
-	 *
-	 * TODO: delete pdf files from filenames of eloquent model
 	 */
 	public static function delete_current_invoices()
 	{
-		$time = strtotime('first day of last month');
+		$invoice_fname  = self::_get_invoice_filename().'.pdf';
+		$cdr_fname 		= self::_get_cdr_filename().'.pdf';
 
-		Invoice::where('month', '=', (int) date('m', $time))->where('year', '=', (int) date('Y', $time))->forceDelete();
+		$query = Invoice::where('filename', '=', $invoice_fname)->orWhere('filename', '=', $cdr_fname)->whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
+		
+		// Delete PDFs
+		$invoices = $query->get();
 
+		foreach ($invoices as $invoice)
+		{
+			$filepath = $invoice->get_invoice_dir_path().$invoice->filename;
+			if (is_file($filepath))
+				unlink($filepath);
+		}
 
-		$invoices = self::_get_invoice_filename().'.pdf';
-		$cdrs 	  = self::_get_cdr_filename().'.pdf';
+		// Delete DB Entries - Note: keep this order
+		$query->forceDelete();
 
-		// TODO: replace by get path function for easy adaption
-		$dir_abs_path_invoice_files = storage_path('app/data/billingbase/invoice/');
-
-		// $files = array_merge(glob($invoices), glob($cdrs));
-		$tmp = exec("find $dir_abs_path_invoice_files -type f -name $invoices -o -name $cdrs | sort", $files);
-		foreach ($files as $f)
-			unlink($f);
+		// $tmp = exec("find $dir_abs_path_invoice_files -type f -name $invoice_fname -o -name $cdr_fname | sort", $files);
+		// foreach ($files as $f)
+		// 	unlink($f);
 	}
 
 
@@ -617,9 +621,6 @@ class InvoiceObserver
 	public function deleted($invoice)
 	{
 		// Delete PDF from Storage
-		Storage::delete($invoice->rel_storage_invoice_dir.$invoice->filename);
-		// $file = $invoice->get_invoice_dir_path().$invoice->filename;
-		// if (is_file($file))
-		// 	unlink($file);
+		// Storage::delete($invoice->rel_storage_invoice_dir.$invoice->contract_id.'/'.$invoice->filename);
 	}
 }
