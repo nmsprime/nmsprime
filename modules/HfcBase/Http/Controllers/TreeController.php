@@ -29,7 +29,7 @@ class TreeController extends HfcBaseController {
 			array('NET' => 'NET', 'CMTS' => 'CMTS', 'DATA' => 'DATA', 'CLUSTER' => 'CLUSTER', 'NODE' => 'NODE', 'AMP' => 'AMP')),
 			array('form_type' => 'text', 'name' => 'ip', 'description' => 'IP address'),
 			array('form_type' => 'text', 'name' => 'link', 'description' => 'HTML Link'),
-			array('form_type' => 'text', 'name' => 'pos', 'description' => 'Geoposition', 'init_value' => \Input::get('pos')),
+			array('form_type' => 'text', 'name' => 'pos', 'description' => 'Geoposition'),
 			array('form_type' => 'select', 'name' => 'parent', 'description' => 'Parent Object', 'value' => $parents),
 			array('form_type' => 'select', 'name' => 'state', 'description' => 'State', 'value' =>
 				array('OK' => 'OK', 'YELLOW' => 'YELLOW', 'RED' => 'RED'), 'options' => ['readonly']),

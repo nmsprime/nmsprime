@@ -54,7 +54,7 @@
 				<cdef_id>0</cdef_id>
 				<value></value>
 				<gprint_id>hash_060025304a778405392f878a6db435afffc1e9</gprint_id>
-				<text_format>DS Power (dBmv)</text_format>
+				<text_format>DS Power (dBmV)</text_format>
 				<hard_return></hard_return>
 				<sequence>1</sequence>
 			</hash_100025b0807ac7be9764bb12e286bc7ca092d7>
@@ -119,7 +119,7 @@
 				<cdef_id>0</cdef_id>
 				<value></value>
 				<gprint_id>hash_060025304a778405392f878a6db435afffc1e9</gprint_id>
-				<text_format>US Power (dBmv)</text_format>
+				<text_format>US Power (dBmV)</text_format>
 				<hard_return></hard_return>
 				<sequence>6</sequence>
 			</hash_100025605915f6a1b1fb554029b29bd8e11f75>
