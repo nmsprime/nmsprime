@@ -360,6 +360,10 @@ class accountingCommand extends Command {
 			}
 		}
 
+		// reset yearly payed items payed_month column
+		if ($this->dates('m') == '01')
+			Item::where('payed_month', '!=', '0')->update(['payed_month', '0']);
+
 	}
 
 

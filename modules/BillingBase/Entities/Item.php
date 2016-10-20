@@ -278,6 +278,7 @@ class Item extends \BaseModel {
 				if ($ratio)
 				{
 					$this->payed_month = $dates['m'] - 1;				// is set to 0 every new year
+					$this->observer_enabled = false;
 					$this->save();
 				}
 
