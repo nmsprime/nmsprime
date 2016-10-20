@@ -49,7 +49,8 @@ class Item extends \BaseModel {
 		$end_fixed = !boolval($this->valid_to_fixed) ? '(!)' : '';
 
 		// Evaluate Colours
-		$billing_valid = $this->check_validity('month', $this->is_tariff());
+		$time = isset($this->product) && $this->product->billing_cycle == 'Yearly' ? 'year' : 'month';
+		$billing_valid = $this->check_validity($time, $this->is_tariff());
 
 		// green colour means it will be considered for next accounting cycle, blue is a new item and not yet considered
 		// red means item is outdated/expired and will not be charged this month
