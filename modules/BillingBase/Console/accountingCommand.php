@@ -85,7 +85,7 @@ class accountingCommand extends Command {
 		$logger->addInfo(' #####    Start Accounting Command    #####');
 
 		$conf 		= BillingBase::first();
-		$last_settlementrun = SettlementRun::withTrashed()->orderBy('id', 'desc')->get()->first();
+		$last_settlementrun_id = SettlementRun::withTrashed()->orderBy('id', 'desc')->get()->first()->id + 1;
 		$sepa_accs  = SepaAccount::all();
 
 		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
@@ -195,7 +195,7 @@ class accountingCommand extends Command {
 
 				// add item to accounting records of account, invoice and salesman
 				$acc->add_accounting_record($item);
-				$acc->add_invoice_item($item, $conf, $last_settlementrun->id);
+				$acc->add_invoice_item($item, $conf, $last_settlementrun_id);
 				if ($c->salesman_id)
 					$salesmen->find($c->salesman_id)->add_item($item);
 
@@ -249,7 +249,7 @@ class accountingCommand extends Command {
 				$acc->add_cdr_accounting_record($c, $charge, $calls);
 
 				// invoice
-				$acc->add_invoice_cdr($c, $cdrs[$id], $conf, $last_settlementrun->id);
+				$acc->add_invoice_cdr($c, $cdrs[$id], $conf, $last_settlementrun_id);
 
 
 			}
@@ -361,7 +361,7 @@ class accountingCommand extends Command {
 		}
 
 		// reset yearly payed items payed_month column
-		if ($this->dates('m') == '01')
+		if ($this->dates['m'] == '01')
 			Item::where('payed_month', '!=', '0')->update(['payed_month', '0']);
 
 	}
