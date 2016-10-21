@@ -396,77 +396,47 @@ class SepaAccount extends \BaseModel {
 
 	/**
 	 * Creates the Accounting Record Files (Item/Tariff)
+	 * and Booking Record Files (Sepa/No Sepa)
+	 *
 	 * @author Nino Ryschavy, Christian Schramm
 	 * edit: filenames are language specific
 	 */
-	private function make_accounting_record_files()
+	private function make_billing_record_files()
 	{
-		foreach ($this->acc_recs as $key => $records)
+		$files['accounting'] = $this->acc_recs;
+		$files['booking'] 	 = $this->book_recs;
+
+		foreach ($files as $key1 => $file)
 		{
-			if (!$records)
-				continue;
+			foreach ($file as $key => $records)
+			{
+				if (!$records)
+					continue;
 
-			$accounting = BaseViewController::translate_label('accounting');
-			$rec 		= $this->_get_billing_lang() == 'de' ? '' : '_records';
+				$accounting = BaseViewController::translate_label('accounting');
+				$rec 		= $this->_get_billing_lang() == 'de' ? '' : '_records';
 
-			$file = $this->dir.$this->name.'/'.$accounting.'_'.BaseViewController::translate_label($key).$rec.'.txt';
-			$file = SepaAccount::str_sanitize($file);
+				$file = $this->dir.$this->name.'/'.$accounting.'_'.BaseViewController::translate_label($key).$rec.'.txt';
+				$file = SepaAccount::str_sanitize($file);
 
-			// initialise record files with Column names as first line
-			foreach (array_keys($records[0]) as $key)
-				$keys[] = BaseViewController::translate_label($key);
-			Storage::put($file, implode("\t", $keys));
+				// initialise record files with Column names as first line
+				foreach (array_keys($records[0]) as $key)
+					$keys[] = BaseViewController::translate_label($key);
+				Storage::put($file, implode("\t", $keys));
 
-			$data = [];
-			foreach ($records as $value)
-				array_push($data, implode("\t", $value)."\n");
+				$data = [];
+				foreach ($records as $value)
+					array_push($data, implode("\t", $value)."\n");
 
-			Storage::append($file, implode($data));
+				Storage::append($file, implode($data));
 
-			$this->_log("accounting $key records", $file);
+				$this->_log("$key1 $key records", $file);
+			}
 		}
 
 		return;
 	}
 
-
-
-	/**
-	 * Creates the Booking Record Files (Sepa/No Sepa)
-	 */
-	private function make_booking_record_files()
-	{
-		foreach ($this->book_recs as $key => $records)
-		{
-			if (!$records)
-				continue;
-
-			$booking = BaseViewController::translate_label('booking');
-
-			if ($this->_get_billing_lang() == 'de')
-				$rec = '';
-			else
-				$rec = '_records';
-
-			$file = $this->dir.$this->name.'/'.$booking.'_'.BaseViewController::translate_label($key).$rec.'.txt';
-			$file = SepaAccount::str_sanitize($file);
-
-			// initialise record files with Column names as first line
-			foreach (array_keys($records[0]) as $key)
-				$keys[] = BaseViewController::translate_label($key);
-			Storage::put($file, implode("\t", $keys));
-
-			$data = [];
-			foreach ($records as $value)
-				array_push($data, implode("\t", $value)."\n");
-
-			Storage::append($file, implode($data));
-
-			$this->_log("booking $key records", $file);
-		}
-
-		return;
-	}
 
 	/*
 	 * Writes Paths of stored files to Logfiles and Console
@@ -599,11 +569,7 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function make_billing_files()
 	{
-		if ($this->acc_recs['tariff'] || $this->acc_recs['item'])
-			$this->make_accounting_record_files();
-
-		if ($this->book_recs['sepa'] || $this->book_recs['no_sepa'])
-			$this->make_booking_record_files();
+		$this->make_billing_record_files();
 
 		if ($this->sepa_xml['debits'])
 			$this->make_debit_file();

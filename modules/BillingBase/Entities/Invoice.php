@@ -409,13 +409,13 @@ class Invoice extends \BaseModel{
 
 		if ($this->has_cdr)
 		{
-			$this->_make_cdr_tex();
+			$this->_make_tex('cdr');
 			$this->_create_db_entry(0);
 		}
 
 		if ($this->data['item_table_positions'])
 		{
-			$this->_make_invoice_tex();
+			$this->_make_tex('invoice');
 			$this->_create_db_entry();
 		}
 		else
@@ -456,19 +456,22 @@ class Invoice extends \BaseModel{
 
 
 	/**
-	 * Creates Tex File of Invoice - replaces all '\_' and all fields of data array that are set
+	 * Creates Tex File of Invoice or CDR
+	 * replaces all '\_' and all fields of data array that are set by it's value
+	 *
+	 * @param String	$type 	'invoice'/'cdr'
 	 */
-	private function _make_invoice_tex()
+	private function _make_tex($type = 'invoice')
 	{
 		if ($this->error_flag)
 		{
-			$this->logger->addError("Missing Data from SepaAccount or Company to Create Invoice", [$this->data['contract_id']]);
+			$this->logger->addError("Missing Data from SepaAccount or Company to Create $type", [$this->data['contract_id']]);
 			return -2;			
 		}
 
-		if (!$template = file_get_contents($this->_get_abs_template_path('invoice')))
+		if (!$template = file_get_contents($this->_get_abs_template_path($type)))
 		{
-			$this->logger->addError("Failed to Create Invoice: Could not read template ".$this->_get_abs_template_path('invoice'), [$this->data['contract_id']]);
+			$this->logger->addError("Failed to Create Invoice: Could not read template ".$this->_get_abs_template_path($type), [$this->data['contract_id']]);
 			return -3;
 		}
 
@@ -477,29 +480,8 @@ class Invoice extends \BaseModel{
 
 
 		// Create tex file(s)
-		Storage::put($this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->filename_invoice, $template);
+		Storage::put($this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"}, $template);
 		// echo 'Stored tex file in '.storage_path('app/'.$this->rel_storage_invoice_dir.$this->filename_invoice)."\n";
-	}
-
-
-
-	/**
-	 * Creates Tex File of Call Data Records - replaces all '\_' and all fields of data array that are set
-	 *
-	 * TODO: merge make_tex-Functions together
-	 */
-	private function _make_cdr_tex()
-	{
-		if (!$template = file_get_contents($this->_get_abs_template_path('cdr')))
-		{
-			$this->logger->addError("Failed to Create Call Data Record: Could not read template ".$this->_get_abs_template_path('cdr'), [$this->data['contract_id']]);
-			return -3;
-		}
-
-		// Replace placeholder by value
-		$template = $this->_replace_placeholder($template);
-
-		Storage::put($this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->filename_cdr, $template);
 	}
 
 
