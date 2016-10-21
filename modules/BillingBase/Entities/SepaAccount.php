@@ -55,11 +55,6 @@ class SepaAccount extends \BaseModel {
 		return $this->name;
 	}
 
-	// Return a pre-formated index list
-	public function index_list ()
-	{
-		return $this->orderBy('id')->get();
-	}
 
 	// View Relation.
 	public function view_has_many()

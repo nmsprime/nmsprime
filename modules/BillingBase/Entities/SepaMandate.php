@@ -49,11 +49,6 @@ class SepaMandate extends \BaseModel {
 		        'header' => $this->sepa_valid_from.$valid_to];
 	}
 
-	// Return a pre-formated index list
-	public function index_list ()
-	{
-		return $this->orderBy('id')->get();
-	}
 
 	public function view_belongs_to ()
 	{

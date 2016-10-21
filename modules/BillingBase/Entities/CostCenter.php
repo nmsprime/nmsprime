@@ -36,12 +36,6 @@ class CostCenter extends \BaseModel {
 		return $this->name;
 	}
 
-	// Return a pre-formated index list
-	public function index_list ()
-	{
-		return $this->orderBy('id')->get();
-	}
-
 
 
 	/**

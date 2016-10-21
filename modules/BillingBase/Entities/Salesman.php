@@ -47,11 +47,6 @@ class Salesman extends \BaseModel {
 		return $this->firstname.' '.$this->lastname;
 	}
 
-	// Return a pre-formated index list
-	public function index_list ()
-	{
-		return $this->orderBy('id')->get();
-	}
 
 	// View Relation.
 	public function view_has_many()
