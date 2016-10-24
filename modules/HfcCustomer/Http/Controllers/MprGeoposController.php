@@ -1,6 +1,7 @@
 <?php namespace Modules\Hfccustomer\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
+use Modules\Hfccustomer\Entities\Mpr;
 
 class MprGeoposController extends \BaseController {
 
@@ -14,7 +15,7 @@ class MprGeoposController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name'),
 			array('form_type' => 'text', 'name' => 'x', 'description' => 'X'),
 			array('form_type' => 'text', 'name' => 'y', 'description' => 'Y'),
-			array('form_type' => 'select', 'name' => 'mpr_id', 'description' => 'Tree', 'hidden' => '1'),
+			array('form_type' => 'select', 'name' => 'mpr_id', 'description' => 'Mpr', 'hidden' => '0', 'value' => $model->html_list(Mpr::all(), 'name')),
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description')
 		);
 	}
