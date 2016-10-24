@@ -55,7 +55,7 @@ class TreeTopographyController extends HfcBaseController {
 			$s = 'id>2';
 
 		// Generate SVG file
-		$file = $this->kml_generate (Tree::whereRaw($s));
+		$file = $this->kml_generate (Tree::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' '));
 
 		if(!$file)
 			return \View::make('errors.generic');
