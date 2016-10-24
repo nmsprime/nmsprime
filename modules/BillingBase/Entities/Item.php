@@ -20,8 +20,8 @@ class Item extends \BaseModel {
 
 		return array(
 			// 'name' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
-			'valid_from'	=> 'dateornull',	//|in_future ??
-			'valid_to'		=> 'dateornull',
+			'valid_from'	=> 'date',	//|in_future ??
+			'valid_to'		=> 'date',
 			'credit_amount' => 'required_if:product_id,'.$credit_ids,
 			'count'			=> 'null_if:product_id,'.$tariff_ids.','.$credit_ids,
 		);
@@ -41,22 +41,20 @@ class Item extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		$bsclass = '';
 		// TODO: simplify when it's secure that 0000-00-00 doesn't occure
 		$start = $this->valid_from && $this->valid_from != '0000-00-00' ? ' - '.$this->valid_from : '';
 		$end   = $this->valid_to && $this->valid_to != '0000-00-00' ? ' - '.$this->valid_to : '';
 
-		$start_fixed = boolval($this->valid_from_fixed) ? '(!)' : '';
-		$end_fixed = boolval($this->valid_to_fixed) ? '(!)' : '';
+		$start_fixed = !boolval($this->valid_from_fixed) ? '(!)' : '';
+		$end_fixed = !boolval($this->valid_to_fixed) ? '(!)' : '';
 
-		$billing_valid = $this->check_validity();
+		// Evaluate Colours
+		$time = isset($this->product) && $this->product->billing_cycle == 'Yearly' ? 'year' : 'month';
+		$billing_valid = $this->check_validity($time, $this->is_tariff());
 
-		// green colour means it will be considered for next accounting cycle, blue is a new item
-		$bsclass = $billing_valid ? 'success' : 'info';
-
-		// red means item is outdated
-		if (($this->get_start_time() < strtotime(date('Y-m-01'))) && !$billing_valid)
-			$bsclass = 'danger';
+		// green colour means it will be considered for next accounting cycle, blue is a new item and not yet considered
+		// red means item is outdated/expired and will not be charged this month
+		$bsclass = $billing_valid ? 'success' : ($this->get_start_time() < strtotime(date('Y-m-01')) ? 'danger' : 'info');
 
 		$name = isset($this->product) ? $this->product->name : $this->accounting_text;
 
@@ -64,8 +62,6 @@ class Item extends \BaseModel {
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
 		        'header' => $name.$start.$start_fixed.$end];
-
-		// return $this->product->name.$start.$end;
 	}
 
 	public function view_belongs_to ()
@@ -73,10 +69,10 @@ class Item extends \BaseModel {
 		return $this->contract;
 	}
 
+
 	/**
 	 * Relationships:
 	 */
-
 	public function product ()
 	{
 		return $this->belongsTo('Modules\BillingBase\Entities\Product');
@@ -180,6 +176,17 @@ class Item extends \BaseModel {
 
 
 	/**
+	 * Check if item is of type Tariff or not
+	 *
+	 * @return 	Integer 	1 - yes is Tariff, 0 - no it's another type
+	 */
+	public function is_tariff()
+	{
+		return in_array($this->product->type, ['Internet', 'Voip', 'TV']) ? 1 : 0;
+	}
+
+
+	/**
 	 * Calculate Price for actual month of an item with valid dates - writes it to temporary billing variables of this model
 	 *
 	 * @param 	array  $dates 	of often used billing dates
@@ -272,6 +279,7 @@ class Item extends \BaseModel {
 				if ($ratio)
 				{
 					$this->payed_month = $dates['m'] - 1;				// is set to 0 every new year
+					$this->observer_enabled = false;
 					$this->save();
 				}
 
@@ -388,6 +396,7 @@ class Item extends \BaseModel {
 		$this->charge = $this->product->type == 'Credit' ?  (-1) * $this->credit_amount : $this->product->price * $ratio * $this->count;
 		$this->ratio  = $ratio ? $ratio : 1;
 		$this->invoice_description = $this->product->name.' '.$text;
+		$this->invoice_description .= $this->accounting_text ? ' - '.$this->accounting_text : '';
 
 		return true;
 	}
@@ -424,26 +433,42 @@ class ItemObserver
 		$item->valid_to = $item->valid_to ? : null;
 		$tariff = $item->contract->get_valid_tariff($item->product->type);
 
+		// \Log::debug('creating item');
+
 		// set end date of old tariff to starting date of new tariff
 		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
 			if ($tariff)
 			{
 				$tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
-				$tariff->save();
+				$tariff->valid_to_fixed = $item->valid_from_fixed || $tariff->valid_to_fixed ? true : false;
+				// do not call observer and daily conversion multiple times
+				$tariff->observer_enabled = false;
+				$tariff->save(); 								// calls updating & updated observer methods
 			}
 		}
 
-		$item->contract->update_product_related_data([$item, $tariff]);
+		// $item->contract->update_product_related_data([$item, $tariff]);
 
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);
 
 	}
 
+	public function created($item)
+	{
+		// \Log::debug('created item', [$item->id]);
+
+		// this is ab(used) here for easily setting the correct values
+		$item->contract->daily_conversion();
+	}
+
 
 	public function updating($item)
 	{
+		if(!$item->observer_enabled)
+			return;
+
 		// this doesnt work in prepare_input() !!
 		$item->valid_to = $item->valid_to ? : null;
 
@@ -459,25 +484,47 @@ class ItemObserver
 				// before adding this was caused by daily_conversion
 				($tariff->valid_from < $item->valid_from)
 				&&
-				// obsoleted by the above – but left here to keep the original condition
+				// do not consider updated items
 				($tariff->id != $item->id)
 			) {
+				\Log::debug('update old tariff', [$item->id]);
 				$tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
+				$tariff->valid_to_fixed = $item->valid_from_fixed || $tariff->valid_to_fixed ? true : false;
+				// Maybe implement this as DB-Update-Statement to not call observer and daily conversion multiple times ??
+				$tariff->observer_enabled = false;
 				$tariff->save();
-			}
-			else {
-				$tariff = null;
 			}
 
 			// check if we have to update product related data (qos, voip tariff, etc.) in contract
-			// this has to be done for both objects
-			$item->contract->update_product_related_data([$item, $tariff]);
+			// this has to be done for both objects - why? - is done for both in daily conversion after
+			// $item->contract->update_product_related_data([$item, $tariff]);
 		}
 
+		// \Log::debug('updating item', [$item->id]);
 
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);
 
+	}
+
+	public function updated($item)
+	{
+		if(!$item->observer_enabled)
+			return;
+
+		// \Log::debug('updated item', [$item->id]);
+
+		// this is ab(used) here for easily setting the correct values
+		$item->contract->daily_conversion();
+	}
+
+
+	public function deleted($item)
+	{
+		// \Log::debug('deleted item', [$item->id]);
+
+		// this is ab(used) here for easily setting the correct values
+		$item->contract->daily_conversion();
 	}
 
 

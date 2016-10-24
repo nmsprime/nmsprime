@@ -17,6 +17,18 @@ class SettlementRun extends \BaseModel {
 
 
 	/**
+	 * Init Observer
+	 */
+	public static function boot()
+	{
+		parent::boot();
+
+		// SettlementRun::observe(new SettlementRunObserver);
+	}
+
+
+
+	/**
 	 * View related stuff
 	 */
 
@@ -63,12 +75,23 @@ class SettlementRun extends \BaseModel {
 
 
 	/**
+	 * Relations
+	 */
+	public function invoices()
+	{
+		return $this->hasMany('Modules\BillingBase\Entities\Invoice');
+	}
+
+
+	/**
 	 * Return all Billing Files the corresponding directory contains
 	 *
 	 * @return array 	containing all files ordered for view
 	 */
 	public function accounting_files()
 	{
+		$a = $b = [];
+
 		if (is_dir($this->get_files_dir()))
 		{
 			$files = \File::allFiles($this->get_files_dir());
@@ -88,4 +111,56 @@ class SettlementRun extends \BaseModel {
 		return [];
 	}
 
+
+	/**
+	 * Get a list of all Invoice & CDR - Filenames from Settlement Runs that are not verified yet
+	 * This list is used to hide these files until they & the Settlement Run are verified
+	 *
+	 * @return 	Array 	Filenames, empty array if all is verified
+	 */
+	public static function unverified_files()
+	{
+		$runs = Settlementrun::where('verified', '=', 0)->get(['year', 'month']);
+		$hide = [];
+
+		foreach ($runs as $run)
+		{
+			$hide[] = $run->year.'_'.sprintf("%'.02d", $run->month).'.pdf';
+			$hide[] = ($run->month == 1 ? $run->year - 1 : $run->year).'_'.sprintf("%'.02d", $run->month == 1 ? 12 : $run->month - 1).'_cdr.pdf';
+		}
+
+		return $hide;
+	}
+
+
+	public function delete_related_files()
+	{
+		// Delete invoices - this deletes db entry and pdf file via observer
+		foreach ($this->invoices as $invoice)
+			$invoice->delete();
+		
+		// Delete accounting record files and directories
+		$rel_dir = 'data/billingbase/accounting/'.$this->year.'-'.sprintf("%'.02d", $this->month).'/';
+		$files 	 = Storage::allFiles($rel_dir);
+		$dirs 	 = Storage::allDirectories($rel_dir);
+
+		foreach ($files as $f)
+			unlink($f);
+
+		foreach ($dirs as $d)
+			rmdir($d);
+
+		// $dir = storage_path('app/data/billingbase/accounting/'.$this->year.'-'.sprintf("%'.02d", $this->month).'/');
+	}
+
+}
+
+
+class SettlementRunObserver
+{
+	public function deleted($settlementrun)
+	{
+		// Delete all corresponding/related files in Storage and all Invoices from Database
+		// $settlementrun->delete_related_files();
+	}
 }

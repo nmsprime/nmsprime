@@ -15,10 +15,12 @@ BaseRoute::group([], function() {
 // CCC internal stuff, with CCC authentication checking
 Route::group(['middleware' => 'ccc.base', 'prefix' => 'customer'], function () {
 
-	Route::get ('home', ['as' => 'HomeCcc', 'uses' => 'Modules\Ccc\Http\Controllers\HomeController@show']);
+	Route::get ('home', ['as' => 'HomeCcc', 'uses' => 'Modules\Ccc\Http\Controllers\CccAuthuserController@show']);
+	Route::get ('password', ['as' => 'CustomerPsw', 'uses' => 'Modules\Ccc\Http\Controllers\CccAuthuserController@psw_update']);
+	Route::post ('password', ['as' => 'CustomerPsw', 'uses' => 'Modules\Ccc\Http\Controllers\CccAuthuserController@psw_update']);
 
 	// Download Invoice
-	Route::get('home/download/{id}/{filename}', array('as' => 'Customer.Download', 'uses' => 'Modules\Ccc\Http\Controllers\HomeController@download'));
+	Route::get('home/download/{id}/{filename}', array('as' => 'Customer.Download', 'uses' => 'Modules\Ccc\Http\Controllers\CccAuthuserController@download'));
 
 	// TODO: add CCC internal required routing stuff
 
@@ -26,7 +28,7 @@ Route::group(['middleware' => 'ccc.base', 'prefix' => 'customer'], function () {
 
 
 // Home Route, This will redirect depending on valid Login
-Route::get('customer', array('as' => 'Home', 'uses' => 'Modules\Ccc\Http\Controllers\AuthController@home'));
+Route::get('customer', array('as' => 'CHome', 'uses' => 'Modules\Ccc\Http\Controllers\AuthController@home'));
 
 // Auth => login form
 Route::get('customer/auth/login', array('as' => 'CustomerAuth.login', 'uses' => 'Modules\Ccc\Http\Controllers\AuthController@showLoginForm'));

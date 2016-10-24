@@ -2,13 +2,23 @@
 
 namespace Modules\BillingBase\Entities;
 use Modules\ProvBase\Entities\Contract;
+use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\BillingLogger;
 
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
 use Digitick\Sepa\PaymentInformation;
 use Storage;
 use IBAN;
+use \App\Http\Controllers\BaseViewController;
 
+
+/**
+ * Contains the functionality for Creating the SEPA-XML-Files of a SettlementRun
+ *
+ * TODO: implement translations with trans() instead of translate_label()-Function
+ *
+ * @author Nino Ryschawy
+ */
 class SepaAccount extends \BaseModel {
 
 	// The associated SQL table for this Model
@@ -45,11 +55,6 @@ class SepaAccount extends \BaseModel {
 		return $this->name;
 	}
 
-	// Return a pre-formated index list
-	public function index_list ()
-	{
-		return $this->orderBy('id')->get();
-	}
 
 	// View Relation.
 	public function view_has_many()
@@ -123,6 +128,17 @@ class SepaAccount extends \BaseModel {
 
 
 	/**
+	 * get billing user language
+	 * returns language letters selected in Billing Base Config
+	 * @author Christian Schramm
+	 */
+	private function _get_billing_lang()
+	{
+		return \App::getLocale();
+	}
+
+
+	/**
 	 * Accounting Records
 		* resulting in 2 files for items and tariffs
 	 	* Filestructure is defined in add_accounting_record()-function
@@ -164,7 +180,7 @@ class SepaAccount extends \BaseModel {
 	 *
 	 * @return String
 	 */
-	private function get_invoice_nr_formatted()
+	private function _get_invoice_nr_formatted()
 	{
 		return $this->invoice_nr_prefix.$this->id.'/'.$this->invoice_nr;
 	}
@@ -177,27 +193,23 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function add_accounting_record($item)
 	{
-		// if ($item->contract_id = 500006 && $item->product->type == 'Device')
-		// 	dd($item->count, $count, $item->charge);
+		$time = strtotime('last day of last month');
 
 		$data = array(
-			
 			'Contractnr' 	=> $item->contract->number,
-			'Invoicenr' 	=> $this->get_invoice_nr_formatted(),
-			'Target Month' 	=> date('m'),
-			'Date' 			=> date('Y-m-d'),
-			'Cost Center'  	=> isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
+			'Invoicenr' 	=> $this->_get_invoice_nr_formatted(),
+			'Target Month'  => date('m', $time),
+			'Date'			=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y', $time) : date('Y-m-d', $time),
+			'Cost Center'   => isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
 			'Count'			=> $item->count,
-			'Description'  	=> $item->invoice_description,
-			'Price' 		=> $item->charge,
+			'Description' 	=> $item->invoice_description,
+			'Price'			=> ($this->_get_billing_lang() == 'de') ? number_format($item->charge, 2 , ',' , '.' ) : number_format($item->charge, 2 , '.' , ',' ),
 			'Firstname'		=> $item->contract->firstname,
 			'Lastname' 		=> $item->contract->lastname,
 			'Street' 		=> $item->contract->street,
 			'Zip' 			=> $item->contract->zip,
 			'City' 			=> $item->contract->city,
-
 		);
-
 
 		switch ($item->product->type)
 		{
@@ -224,23 +236,21 @@ class SepaAccount extends \BaseModel {
 	public function add_booking_record($contract, $mandate, $charge, $conf)
 	{
 		$data = array(
-
-			'Contractnr' 	=> $contract->number,
-			'Invoicenr' 	=> $this->get_invoice_nr_formatted(),
-			'Date' 			=> date('Y-m-d'),
+			'Contractnr'	=> $contract->number,
+			'Invoicenr' 	=> $this->_get_invoice_nr_formatted(),
+			'Date' 			=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
 			'RCD' 			=> $this->rcd,
-			'Cost Center'	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
+			'Cost Center' 	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
 			'Description' 	=> '',
-			'Net' 			=> $charge['net'],
-			'Tax' 			=> $charge['tax'],
-			'Gross' 		=> $charge['net'] + $charge['tax'],
+			'Net' 			=> ($this->_get_billing_lang() == 'de') ? number_format($charge['net'], 2 , ',' , '.' ) : number_format($charge['net'], 2 , '.' , ',' ),
+			'Tax' 			=> $charge['tax']." %",
+			'Gross' 		=> ($this->_get_billing_lang() == 'de') ? number_format($charge['net'] + $charge['tax'], 2 , ',' , '.' ) : number_format($charge['net'] + $charge['tax'], 2 , '.' , ',' ),
 			'Currency' 		=> $conf->currency ? $conf->currency : 'EUR',
 			'Firstname' 	=> $contract->firstname,
 			'Lastname' 		=> $contract->lastname,
 			'Street' 		=> $contract->street,
-			'Zip' 			=> $contract->zip,
+			'Zip'			=> $contract->zip,
 			'City' 			=> $contract->city,
-
 			);
 
 		if ($mandate)
@@ -268,13 +278,13 @@ class SepaAccount extends \BaseModel {
 	{
 		$this->acc_recs['tariff'][] = array(
 			'Contractnr' 	=> $contract->number,
-			'Invoicenr' 	=> $this->get_invoice_nr_formatted(),
-			'Target Month' 	=> date('m'),
-			'Date' 			=> date('Y-m-d'),
-			'Cost Center'  	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
+			'Invoicenr' 	=> $this->_get_invoice_nr_formatted(),
+			'Target Month'  => date('m'),
+			'Date' 			=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
+			'Cost Center'   => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
 			'Count'			=> $count,
-			'Description'  	=> 'Telephone Calls',
-			'Price' 		=> $charge,
+			'Description'   => 'Telephone Calls',
+			'Price' 		=> $this->_get_billing_lang() == 'de' ? number_format($charge, 2, ',', '.') : $charge,
 			'Firstname'		=> $contract->firstname,
 			'Lastname' 		=> $contract->lastname,
 			'Street' 		=> $contract->street,
@@ -284,20 +294,28 @@ class SepaAccount extends \BaseModel {
 	}
 
 
-	public function add_invoice_item($item, $conf)
+	public function add_invoice_item($item, $conf, $settlementrun_id)
 	{
 		if (!isset($this->invoices[$item->contract->id]))
-			$this->invoices[$item->contract->id] = new Invoice($item->contract, $conf, $this->get_invoice_nr_formatted());
+		{
+			$this->invoices[$item->contract->id] = new Invoice;
+			$this->invoices[$item->contract->id]->settlementrun_id = $settlementrun_id;
+			$this->invoices[$item->contract->id]->add_contract_data($item->contract, $conf, $this->_get_invoice_nr_formatted());
+		}
 
 		$this->invoices[$item->contract->id]->add_item($item);
 	}
 
-	public function add_invoice_cdr($contract, $cdrs, $conf)
+	public function add_invoice_cdr($contract, $cdrs, $conf, $settlementrun_id)
 	{
 		if (!isset($this->invoices[$contract->id]))
-			$this->invoices[$contract->id] = new Invoice($contract, $conf, '');
+		{
+			$this->invoices[$contract->id] = new Invoice;
+			$this->invoices[$item->contract->id]->settlementrun_id = $settlementrun_id;
+			$this->invoices[$contract->id]->add_contract_data($contract, $conf, $this->_get_invoice_nr_formatted());
+		}
 
-		$this->invoices[$contract->id]->cdrs = $cdrs;
+		$this->invoices[$contract->id]->add_cdr_data($cdrs);
 	}
 
 
@@ -318,14 +336,15 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function add_sepa_transfer($mandate, $charge, $dates)
 	{
-		// $info = trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
-		$info = 'Monat '.date('m/Y', strtotime('first day of last month'));
+		if ($charge == 0)
+			return;
 
-		// Note: Charge == 0 is automatically excluded
+		$info = trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
+
+		// Credits
 		if ($charge < 0)
 		{
 			$data = array(
-
 				'amount'                => $charge * (-1),
 				'creditorIban'          => $mandate->sepa_iban,
 				'creditorBic'           => $mandate->sepa_bic,
@@ -338,6 +357,7 @@ class SepaAccount extends \BaseModel {
 			return;
 		}
 
+		// Debits
 		// determine transaction type: first/recurring/final
 		$type  = PaymentInformation::S_RECURRING;
 		$start = strtotime($mandate->sepa_valid_from);
@@ -352,48 +372,9 @@ class SepaAccount extends \BaseModel {
 		else if ($mandate->contract->expires || ($end > 0 && $end < strtotime('+1 month')))
 			$type = PaymentInformation::S_FINAL;
 
-		// if ($mandate->sepa_valid_from == '2016-03-01')
-		// 	dd($mandate->sepa_holder, $type, strtotime('2016-01-01') > 0);
-
-		// NOTE: also possible with state field of mandate table - dis~/advantage: more complex code / no last run timestamp needed
-		// switch ($mandate->state)
-		// {
-		// 	case null:
-
-		// 		if (!$mandate->recurring)
-		// 		{
-		// 			$type = PaymentInformation::S_FIRST;
-		// 			$mandate->state = 'FIRST';
-		// 		}
-		// 		else
-		// 		{
-		// 			$type = PaymentInformation::S_RECURRING;
-		// 			$mandate->state = 'RECUR';
-		// 		}
-
-		// 		$mandate->save();
-		// 		break;
-
-		// 	case 'FIRST':
-		// 		$mandate->state = 'RECUR';
-		// 		$mandate->save();
-
-		// 	case 'RECUR':
-		// 		$type = PaymentInformation::S_RECURRING;
-
-		// 	default: break;
-		// }
-
-		// if ($mandate->contract->expires || $end < strtotime('+1 month'))
-		// {
-		// 	$type = PaymentInformation::S_FINAL;
-		// 	$mandate->state = 'FINAL';
-		// 	$mandate->save();
-		// }
-
 
 		$data = array(
-			'endToEndId'			=> 'RG '.$this->get_invoice_nr_formatted(),
+			'endToEndId'			=> 'RG '.$this->_get_invoice_nr_formatted(),
 			'amount'                => $charge,
 			'debtorIban'            => $mandate->sepa_iban,
 			'debtorBic'             => $mandate->sepa_bic,
@@ -410,61 +391,47 @@ class SepaAccount extends \BaseModel {
 
 	/**
 	 * Creates the Accounting Record Files (Item/Tariff)
+	 * and Booking Record Files (Sepa/No Sepa)
+	 *
+	 * @author Nino Ryschavy, Christian Schramm
+	 * edit: filenames are language specific
 	 */
-	private function make_accounting_record_files()
+	private function make_billing_record_files()
 	{
-		foreach ($this->acc_recs as $key => $records)
+		$files['accounting'] = $this->acc_recs;
+		$files['booking'] 	 = $this->book_recs;
+
+		foreach ($files as $key1 => $file)
 		{
-			if (!$records)
-				continue;
+			foreach ($file as $key => $records)
+			{
+				if (!$records)
+					continue;
 
-			$file = $this->dir.$this->name.'/accounting_'.$key.'_records.txt';
-			$file = SepaAccount::str_sanitize($file);
+				$accounting = BaseViewController::translate_label('accounting');
+				$rec 		= $this->_get_billing_lang() == 'de' ? '' : '_records';
 
-			// initialise record files with Column names as first line
-			Storage::put($file, implode("\t", array_keys($records[0])));
+				$file = $this->dir.$this->name.'/'.$accounting.'_'.BaseViewController::translate_label($key).$rec.'.txt';
+				$file = SepaAccount::str_sanitize($file);
 
-			$data = [];
-			foreach ($records as $value)
-				array_push($data, implode("\t", $value)."\n");
+				// initialise record files with Column names as first line
+				foreach (array_keys($records[0]) as $key)
+					$keys[] = BaseViewController::translate_label($key);
+				Storage::put($file, implode("\t", $keys));
 
-			Storage::append($file, implode($data));
+				$data = [];
+				foreach ($records as $value)
+					array_push($data, implode("\t", $value)."\n");
 
-			$this->_log("accounting $key records", $file);
+				Storage::append($file, implode($data));
+
+				$this->_log("$key1 $key records", $file);
+			}
 		}
 
 		return;
 	}
 
-
-
-	/**
-	 * Creates the Booking Record Files (Sepa/No Sepa)
-	 */
-	private function make_booking_record_files()
-	{
-		foreach ($this->book_recs as $key => $records)
-		{
-			if (!$records)
-				continue;
-
-			$file = $this->dir.$this->name.'/booking_'.$key.'_records.txt';
-			$file = SepaAccount::str_sanitize($file);
-
-			// initialise record files with Column names as first line
-			Storage::put($file, implode("\t", array_keys($records[0])));
-
-			$data = [];
-			foreach ($records as $value)
-				array_push($data, implode("\t", $value)."\n");
-
-			Storage::append($file, implode($data));
-
-			$this->_log("booking $key records", $file);
-		}
-
-		return;
-	}
 
 	/*
 	 * Writes Paths of stored files to Logfiles and Console
@@ -550,7 +517,7 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Retrieve the resulting XML
-		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/DD.xml');
+		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DD').'.xml');
 		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
 		STORAGE::put($file, $data);
 
@@ -583,7 +550,7 @@ class SepaAccount extends \BaseModel {
 			$customerCredit->addTransfer($msg_id.'C', $r);
 
 		// Retrieve the resulting XML
-		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/DC.xml');
+		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DC').'.xml');
 		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $customerCredit->asXML());
 		STORAGE::put($file, $data);
 
@@ -597,11 +564,7 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function make_billing_files()
 	{
-		if ($this->acc_recs['tariff'] || $this->acc_recs['item'])
-			$this->make_accounting_record_files();
-
-		if ($this->book_recs['sepa'] || $this->book_recs['no_sepa'])
-			$this->make_booking_record_files();
+		$this->make_billing_record_files();
 
 		if ($this->sepa_xml['debits'])
 			$this->make_debit_file();

@@ -2,6 +2,7 @@
 
 namespace Modules\ProvVoipEnvia\Entities;
 use Modules\ProvBase\Entities\Contract;
+use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoip\Entities\Phonenumber;
 
 // Model not found? execute composer dump-autoload in lara root dir
@@ -177,6 +178,7 @@ class EnviaOrder extends \BaseModel {
 		'customerreference',
 		'contractreference',
 		'contract_id',
+		'modem_id',
 		'phonenumber_id',
 	];
 
@@ -445,6 +447,14 @@ class EnviaOrder extends \BaseModel {
 		$contract_nr = Contract::findOrFail($this->contract_id)->number;
 		$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract_nr.'</a>';
 
+		if (boolval($this->modem_id)) {
+			$modem = Modem::findOrFail($this->modem_id);
+			$modem_nr = '<a href="'.\URL::route('Modem.edit', array($this->modem_id)).'" target="_blank">'.$this->modem_id.'</a>';
+		}
+		else {
+			$modem_nr = '–';
+		}
+
 		if (boolval($this->phonenumber_id)) {
 			$phonenumber = Phonenumber::findOrFail($this->phonenumber_id);
 			$phonenumbermanagement_id = $phonenumber->phonenumbermanagement->id;
@@ -464,32 +474,23 @@ class EnviaOrder extends \BaseModel {
 			$solve_link = '<a href="'.\URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id)).'" target="_self">Mark solved</a>';
 		}
 
-        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $phonenumber_nr, $this->created_at, $this->updated_at, $current, $solve_link],
-                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Phonenumber', 'Created at', 'Updated at', 'Interaction needed?', ''],
+        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $modem_nr, $phonenumber_nr, $this->created_at, $this->updated_at, $current, $solve_link],
+                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Modem', 'Phonenumber', 'Created at', 'Updated at', 'Interaction needed?', ''],
                 'bsclass' => $bsclass,
 				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
 		];
 	}
 
 
-	/**
-	 * Prepare the list of orders to be shown on index page
-	 *
-	 * @author Patrick Reichel
-	 *
-	 * @todo check if there should be some filters (e.g. to show only open orders)
-	 */
-	public function index_list() {
 
-		return $this->orderBy('id')->get();
-	}
-
-
-	// belongs to a modem - see BaseModel for explanation
+	// belongs to phonenumber or modem or contract - see BaseModel for explanation
 	public function view_belongs_to ()
 	{
 		if (boolval($this->phonenumber_id)) {
 			return $this->phonenumber->phonenumbermanagement;
+		}
+		elseif (boolval($this->modem_id)) {
+			return $this->modem;
 		}
 		else {
 			return $this->contract;
@@ -516,6 +517,10 @@ class EnviaOrder extends \BaseModel {
 		return $this->belongsTo('Modules\ProvBase\Entities\Contract');
 	}
 
+	public function modem() {
+		return $this->belongsTo('Modules\ProvBase\Entities\Modem');
+	}
+
 	public function phonenumber() {
 		return $this->belongsTo('Modules\ProvVoip\Entities\Phonenumber');
 	}
@@ -526,44 +531,184 @@ class EnviaOrder extends \BaseModel {
 
 
 	/**
-	 * Create table containing information about related items
+	 * Build the table HTML for given data.
+	 *
+	 * @param $data array containing the rows of the table (first is used as header)
+	 *					each row has to be given as an array holding the cols of this row
+	 *
+	 * @return raw HTML string for direct use
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _get_user_action_information_items($items){
+	protected function _get_user_action_table($data) {
 
-		$th_style = "padding-right: 10px;";
-		$td_style = $th_style;
+		$replace_func = function($data) {
+			$placeholders = array(
+				'placeholder_yes' => '<span class="text-success">&#10004;</span>',
+				'placeholder_no' => '<span class="text-danger">&#10008;</span>',
+				'placeholder_unset' => '–',
+			);
+			foreach ($placeholders as $placeholder => $replacement) {
+				$data = str_replace($placeholder, $replacement, $data);
+			}
+			return $data;
+		};
 
+		$td_style = "padding-left: 5px; padding-right: 5px; vertical-align: top;";
+		$th_style = $td_style." padding-bottom: 2px; padding-top: 4px;";
+
+		$ret = "";
+
+		// the tables head
 		$ret = '<table class="table-hover">';
 		$ret .= '<tr>';
-		$ret .= '<th style="'.$th_style.'">Product</th>';
-		$ret .= '<th style="'.$th_style.'">Type</th>';
-		$ret .= '<th style="'.$th_style.'">Valid from</th>';
-		$ret .= '<th style="'.$th_style.'">Fix?</th>';
-		$ret .= '<th style="'.$th_style.'">Valid to</th>';
-		$ret .= '<th style="'.$th_style.'">Fix?</th>';
+		foreach (array_shift($data) as $col) {
+			$ret .= '<th style="'.$th_style.'">'.$col.'</th>';
+		}
 		$ret .= '</tr>';
 
-		foreach ($items as $item) {
+		// the tables body (row by row)
+		foreach ($data as $row) {
 			$ret .= '<tr>';
-			$ret .= '<td style="'.$td_style.'"><a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a></td>';
-			$ret .= '<td style="'.$td_style.'">'.$item->product->type.'</td>';
-			$ret .= '<td style="'.$td_style.'">'.$item->valid_from.'</td>';
-			$ret .= '<td style="'.$td_style.'">';
-				($item->valid_from_fixed > 0 ? $ret.="✔" : $ret.="");
-				$ret .'</td>';
-			$ret .= '<td style="'.$td_style.'">'.$item->valid_to.'</td>';
-			$ret .= '<td style="'.$td_style.'">';
-				($item->valid_to_fixed > 0 ? $ret.="✔" : $ret.="");
-				$ret .'</td>';
+			foreach ($row as $col) {
+				$ret .= '<td style="'.$td_style.'">';
+				$ret .= $replace_func($col);
+				$ret .= '</td>';
+			}
 			$ret .= '</tr>';
 		}
 
 		$ret .= '</table>';
+		return $ret;
+	}
 
-		/* echo $ret; */
-		/* d($item->product); */
+	/**
+	 * Create table containing information about the contract
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_user_action_information_contract($contract) {
+
+		$data = array();
+
+		$head = array(
+			'Number',
+			'Contract start',
+			'Contract end',
+			'Internet access?',
+		);
+		array_push($data, $head);
+
+		$row= array();
+
+		array_push($row, '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a>');
+		array_push($row, boolval($contract->contract_start) ? $contract->contract_start : 'placeholder_unset');
+		array_push($row, boolval($contract->contract_end) ? $contract->contract_end : 'placeholder_unset');
+		array_push($row, ($contract->network_access > 0 ? 'placeholder_yes' : 'placeholder_no'));
+
+		array_push($data, $row);
+
+		$ret = $this->_get_user_action_table($data);
+
+		return $ret;
+	}
+
+
+	/**
+	 * Create table containing information about related items
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_user_action_information_items($items) {
+
+		$data = array();
+
+		$head = array(
+			'Product',
+			'Type',
+			'Valid from',
+			'Fix?',
+			'Valid to',
+			'Fix?',
+		);
+		array_push($data, $head);
+
+		foreach ($items as $item) {
+
+			$row = array();
+
+			array_push($row, '<a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a>');
+			array_push($row, $item->product->type);
+			array_push($row, (boolval($item->valid_from) ? $item->valid_from : 'placeholder_unset'));
+			if ($item->valid_from_fixed > 0) {
+				array_push($row, 'placeholder_yes');
+			}
+			elseif ($item->valid_from) {
+				array_push($row, 'placeholder_no');
+			}
+			else {
+				array_push($row, '');
+			}
+			array_push($row, (boolval($item->valid_to) ? $item->valid_to : "placeholder_unset"));
+			if ($item->valid_to_fixed > 0) {
+				array_push($row, 'placeholder_yes');
+			}
+			elseif ($item->valid_to) {
+				array_push($row, 'placeholder_no');
+			}
+			else {
+				array_push($row, '');
+			}
+
+			array_push($data, $row);
+		}
+
+		$ret = $this->_get_user_action_table($data);
+		return $ret;
+	}
+
+
+	/**
+	 * Create table containing information about the modem
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_user_action_information_modem($modem) {
+
+		$data = array();
+
+		$head = array(
+			'MAC address',
+			'Hostname',
+			'Configfile',
+			'QoS',
+			'Network access?',
+		);
+		array_push($data, $head);
+
+		$row = array();
+
+		array_push($row, '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->mac.'</a>');
+		array_push($row, $modem->hostname);
+
+		if ($modem->configfile) {
+			array_push($row, $modem->configfile->name);
+		}
+		else {
+			array_push($row, '–');
+		}
+
+		if ($modem->qos) {
+			array_push($row, $modem->qos->name);
+		}
+		else {
+			array_push($row, '–');
+		}
+		array_push($row, ($modem->network_access > 0 ? 'placeholder_yes': 'placeholder_no'));
+
+		array_push($data, $row);
+
+		$ret = $this->_get_user_action_table($data);
 		return $ret;
 	}
 
@@ -573,35 +718,43 @@ class EnviaOrder extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _get_user_action_information_phonenumbers($phonenumbers){
+	protected function _get_user_action_information_phonenumbers($phonenumbers) {
 
-		$th_style = "padding-right: 10px;";
-		$td_style = $th_style;
+		$data = array();
 
-		$ret = '<table class="table-hover">';
-		$ret .= '<tr>';
-		$ret .= '<th style="'.$th_style.'">Phonenumber</th>';
-		$ret .= '<th style="'.$th_style.'">Activation target</th>';
-		$ret .= '<th style="'.$th_style.'">Activation confirmed</th>';
-		$ret .= '<th style="'.$th_style.'">Deactivation target</th>';
-		$ret .= '<th style="'.$th_style.'">Deactivation confirmed</th>';
-		$ret .= '</tr>';
+		$head = array(
+			'Phonenumber',
+			'Activation target',
+			'Activation confirmed',
+			'Deactivation target',
+			'Deactivation confirmed',
+		);
+		array_push($data, $head);
 
 		foreach ($phonenumbers as $phonenumber) {
+
+			$row = array();
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
-			$ret .= '<tr>';
-			$ret .= '<td style='.$td_style.'"><a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a></td>';
-			$ret .= '<td style="'.$td_style.'">'.$phonenumbermanagement->activation_date.'</td>';
-			$ret .= '<td style="'.$td_style.'">'.$phonenumbermanagement->external_activation_date.'</td>';
-			$ret .= '<td style="'.$td_style.'">'.$phonenumbermanagement->deactivation_date.'</td>';
-			$ret .= '<td style="'.$td_style.'">'.$phonenumbermanagement->external_deactivation_date.'</td>';
-			$ret .= '</tr>';
+
+			$tmp = '';
+			if ($this->phonenumber->id != $phonenumber->id) {
+				$tmp .= '<i>(';
+			}
+			$tmp .= '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number;
+			if ($this->phonenumber->id != $phonenumber->id) {
+				$tmp .= '</a>)</i>';
+			}
+			array_push($row, $tmp);
+
+			array_push($row, (boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"));
+			array_push($row, (boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "placeholder_unset"));
+			array_push($row, (boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "placeholder_unset"));
+			array_push($row, (boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "placeholder_unset"));
+
+			array_push($data, $row);
 		}
 
-		$ret .= '</table>';
-
-		/* echo $ret; */
-		/* d($item->product); */
+		$ret = $this->_get_user_action_table($data);
 		return $ret;
 	}
 
@@ -616,43 +769,53 @@ class EnviaOrder extends \BaseModel {
 	public function get_user_action_information() {
 
 		$user_actions = array();
+		$user_actions['head'] = "";
 		$user_actions['hints'] = array();
 		$user_actions['links'] = array();
 
 
-		if ($this->user_interaction_necessary()) {
+		$contract = $this->contract;
+		$user_actions['hints']['Contract (= Envia Customer)'] = $this->_get_user_action_information_contract($contract);
 
-			$contract = $this->contract;
+		$items = $contract->items;
+		if ($items) {
+			$user_actions['hints']['Items'] = $this->_get_user_action_information_items($items);
+		};
 
-			$user_actions['hints']['Contract'] = '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->id.'</a><br>';
+		$modem = $this->modem;
+		if ($modem) {
+			$user_actions['hints']['Modem (= Envia Contract)'] = $this->_get_user_action_information_modem($modem);
+		};
 
-			$items = $contract->items;
-			if ($items) {
-				$user_actions['hints']['Items'] = $this->_get_user_action_information_items($items);
-			};
-
-			$phonenumbers = array();
-			foreach ($contract->modems as $modem) {
-				if ($modem) {
-					$mtas = $modem->mtas;
-					if ($mtas) {
-						foreach ($mtas as $mta) {
-							foreach ($mta->phonenumbers as $phonenumber) {
-								if ($phonenumber) {
-									array_push($phonenumbers, $phonenumber);
-								}
-							}
+		$phonenumbers = array();
+		if ($modem) {
+			$mtas = $modem->mtas;
+			if ($mtas) {
+				foreach ($mtas as $mta) {
+					foreach ($mta->phonenumbers as $phonenumber) {
+						if ($phonenumber) {
+							array_push($phonenumbers, $phonenumber);
 						}
 					}
 				}
 			}
+		}
 
-			if ($phonenumbers) {
-				$user_actions['hints']['Phonenumbers'] = $this->_get_user_action_information_phonenumbers($phonenumbers);
-			}
+		if ($phonenumbers) {
+			$user_actions['hints']['Phonenumbers (= Envia VoipAccounts)'] = $this->_get_user_action_information_phonenumbers($phonenumbers);
+		}
+
+
+		// show headline and link to solve if order has changed since the last user interaction
+		if ($this->user_interaction_necessary()) {
+
+			// show that user interaction is necessary
+			$user_actions['head'] = '<h5 class="text-danger">EnviaOrder has been updated</h5>';
+			$user_actions['head'] .= 'Please check if user interaction is necessary.<br><br>';
 
 			// finally add link to mark open order as solved
 			$user_actions['links']['Mark as solved'] = \URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id));
+
 		}
 
 		return $user_actions;

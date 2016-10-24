@@ -47,11 +47,6 @@ class Salesman extends \BaseModel {
 		return $this->firstname.' '.$this->lastname;
 	}
 
-	// Return a pre-formated index list
-	public function index_list ()
-	{
-		return $this->orderBy('id')->get();
-	}
 
 	// View Relation.
 	public function view_has_many()
@@ -78,7 +73,7 @@ class Salesman extends \BaseModel {
 	public $all_prod_types = [];				// array (list) of all possible types of products -
 	protected $total_commission = 0;			// total commission amount during actual billing cycle
 	protected $item_names = [];					// all names of items he gets commission for (in actual billing cycle)
-	public $filename = 'salesmen_commission.txt';
+	public $filename = 'salesmen_commission';
 	public $dir;								// set during init of accounting command
 
 
@@ -126,7 +121,10 @@ add:
 
 	public function prepare_output_file()
 	{
-		Storage::put($this->dir.$this->filename, "ID\tName\tCommission in %\tTotal Fee\tCommission Amount\tItems\n");
+		$filename = \App\Http\Controllers\BaseViewController::translate_label($this->filename);
+
+
+		Storage::put($this->dir.$filename.'.txt', "ID\t".\App\Http\Controllers\BaseViewController::translate_label('Name')."\t".\App\Http\Controllers\BaseViewController::translate_label('Commission in %')."\t".\App\Http\Controllers\BaseViewController::translate_label('Total Fee')."\t".		\App\Http\Controllers\BaseViewController::translate_label('Commission Amount')."\t".\App\Http\Controllers\BaseViewController::translate_label('Items')."\n");
 	}
 
 
@@ -136,7 +134,7 @@ add:
 		if ($this->total_commission == 0)
 			return;
 
-		$file = $this->dir.$this->filename;
+		$file = $this->dir.\App\Http\Controllers\BaseViewController::translate_label($this->filename).'.txt';
 
 		Storage::append($file, $this->id."\t".$this->firstname.' '.$this->lastname."\t".$this->commission."\t".$this->total_commission."\t".round($this->total_commission * $this->commission / 100, 2)."\t".implode(', ', $this->item_names));
 		echo "stored salesmen commissions in $file\n";

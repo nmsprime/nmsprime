@@ -3,6 +3,7 @@
 namespace Modules\ProvBase\Entities;
 
 use Modules\ProvBase\Entities\Qos;
+use Modules\BillingBase\Entities\SettlementRun;
 
 class Contract extends \BaseModel {
 
@@ -24,6 +25,8 @@ class Contract extends \BaseModel {
 		return array(
 			'number' => 'integer|unique:contract,number,'.$id.',id,deleted_at,NULL',
 			'number2' => 'string|unique:contract,number2,'.$id.',id,deleted_at,NULL',
+			'number3' => 'string|unique:contract,number3,'.$id.',id,deleted_at,NULL',
+			'number4' => 'string|unique:contract,number4,'.$id.',id,deleted_at,NULL',
 			'firstname' => 'required',
 			'lastname' => 'required',
 			'street' => 'required',
@@ -54,14 +57,10 @@ class Contract extends \BaseModel {
 		if ($this->network_access == 0)
 			$bsclass = 'danger';
 
-		return ['index' => [$this->number, $this->firstname, $this->lastname, $this->zip, $this->city, $this->street.' '.$this->house_number],
-				'index_header' => ['Contract Number', 'Firstname', 'Lastname', 'Postcode', 'City', 'Street'],
+		return ['index' => [$this->number, $this->firstname, $this->lastname, $this->zip, $this->city, $this->street.' '.$this->house_number, $this->contract_start],
+				'index_header' => ['Contract Number', 'Firstname', 'Lastname', 'Postcode', 'City', 'Street', 'Contract Start'],
 				'bsclass' => $bsclass,
 				'header' => $this->number.' '.$this->firstname.' '.$this->lastname];
-
-		// deprecated ?
-		$old = $this->number2 ? ' - (Old Nr: '.$this->number2.')' : '';
-		return $this->number.' - '.$this->firstname.' '.$this->lastname.' - '.$this->city.$old;
 	}
 
 	// View Relation.
@@ -69,7 +68,7 @@ class Contract extends \BaseModel {
 	{
 		if (\PPModule::is_active('billingbase'))
 		{
-			$ret['Base']['Modem'] = $this->modems;
+			$ret['Base']['Modem'] 		= $this->modems;
 			$ret['Base']['Item']        = $this->items;
 			$ret['Base']['SepaMandate'] = $this->sepamandates;
 		}
@@ -78,8 +77,14 @@ class Contract extends \BaseModel {
 
 		if (\PPModule::is_active('billingbase'))
 		{
-			$ret['Billing']['Item']        = $this->items;
-			$ret['Billing']['SepaMandate'] = $this->sepamandates;
+			$ret['Billing']['Item']['class'] 	= 'Item';
+			$ret['Billing']['Item']['relation']	= $this->items;
+			$ret['Billing']['SepaMandate']['class'] 	= 'SepaMandate';
+			$ret['Billing']['SepaMandate']['relation']  = $this->sepamandates;
+			$ret['Billing']['Invoice']['class'] 	= 'Invoice';
+			$ret['Billing']['Invoice']['relation']  = $this->invoices;
+			$ret['Billing']['Invoice']['options']['hide_delete_button'] = 0;
+			$ret['Billing']['Invoice']['options']['hide_create_button'] = 0;
 		}
 
 		if (\PPModule::is_active('provvoipenvia'))
@@ -90,6 +95,10 @@ class Contract extends \BaseModel {
 			// TODO: auth - loading controller from model could be a security issue ?
 			$ret['Envia']['Envia API']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
 			$ret['Envia']['Envia API']['view']['vars']['extra_data'] = \Modules\ProvBase\Http\Controllers\ContractController::_get_envia_management_jobs($this);
+
+			// for better navigation: show modems also in Envia blade
+			$ret['Envia']['Modem']['class'] = 'Modem';
+			$ret['Envia']['Modem']['relation'] = $this->modems;
 		}
 
 		if (\PPModule::is_active('ccc'))
@@ -212,6 +221,16 @@ class Contract extends \BaseModel {
 	{
 		if (\PPModule::is_active('billingbase'))
 			return $this->belongsTo('Modules\BillingBase\Entities\Salesman');
+		return null;
+	}
+
+	public function invoices()
+	{
+		if (\PPModule::is_active('billingbase'))
+		{
+			$hide = SettlementRun::unverified_files();
+			return $this->hasMany('Modules\BillingBase\Entities\Invoice')->orderBy('year', 'desc')->orderBy('month', 'desc')->whereNotIn('filename', $hide);
+		}
 		return null;
 	}
 
@@ -345,6 +364,9 @@ class Contract extends \BaseModel {
 			// Task 3: Check and possibly update item's valid_from and valid_to dates
 			$this->_update_inet_voip_dates();
 
+			$this->load('items');
+			// $this->fresh();
+
 			// Task 4: Check and possibly change product related data (qos_id, voip, purchase_tariff)
 			// for this contract depending on the start/end times of its items
 			$this->update_product_related_data($this->items);
@@ -439,6 +461,7 @@ class Contract extends \BaseModel {
 		$active_item_internet = $active_tariff_info_internet['item'];
 		$active_item_voip = $active_tariff_info_voip['item'];
 
+
 		if ($active_count_sum == 0 || !$this->check_validity('now')) {
 			// if there is no active item of type internet or voip or contract is outdated: disable network_access (if not already done)
 			if (boolval($this->network_access)) {
@@ -454,22 +477,21 @@ class Contract extends \BaseModel {
 				// then we compare the startdate of the most current active internet/voip type item with today
 				// if the difference between the two dates is to big we assume that access has been disabled manually – we don't change the state in this case
 				// this follows the philosophy introduced by Torsten within method _update_network_access_from_contract (e.g. lack of payment)
-				$now = \Carbon\Carbon::now();
-				
-				$starts = array();
-				if ($active_item_internet) {
-					array_push($starts, $this->_date_to_carbon($active_item_internet->valid_from));
-				}
-				if ($active_item_voip) {
-					array_push($starts, $this->_date_to_carbon($active_item_voip->valid_from));
-				}
-				$start = max($starts);
+				// $now = \Carbon\Carbon::now();
+				// $starts = array();
+				// if ($active_item_internet) {
+				// 	array_push($starts, $this->_date_to_carbon($active_item_internet->valid_from));
+				// }
+				// if ($active_item_voip) {
+				// 	array_push($starts, $this->_date_to_carbon($active_item_voip->valid_from));
+				// }
+				// $start = max($starts);
 
-				if (($start->diff($now)->days) <= 1) {
+				// if (($start->diff($now)->days) <= 1) {
 					$this->network_access = 1;
 					$contract_changed = True;
 					\Log::Info('daily: contract: enabling network_access based on active internet/voip items for contract '.$this->id);
-				}
+				// }
 			}
 
 		}
@@ -518,6 +540,7 @@ class Contract extends \BaseModel {
 		// attention: update youngest valid_from items first (to avoid problems in relation with
 		// ItemObserver::update() which else set valid_to smaller than valid_from in some cases)!
 		// and to avoid “Multipe valid tariffs active” warning
+		
 		foreach ($this->items_sorted_by_valid_from_desc as $item) {
 
 			$type = isset($item->product) ? $item->product->type : '';
@@ -697,8 +720,8 @@ class Contract extends \BaseModel {
 
 	/**
 	 * Wrapper to call updater helper methods depending on product type of each given item
-	 * The called methods write product related data (qos, voip_id, etc.) from items to contract
-	 * depending on item's valid_* dates.
+	 * The called methods write product related data (qos_id, next_qos_id, voip_id, next_voip_id, purchase_tariff, next_purchase_tariff)
+	 * from items to contract depending on item's valid_from & valid_to dates.
 	 * So the data is available if billing is deactivated; also ProvVoipEnvia uses this data directly
 	 * (instead of extracting from items).
 	 *
@@ -713,18 +736,29 @@ class Contract extends \BaseModel {
 	 */
 	public function update_product_related_data($items) {
 
+		// set qos_id to zero - this is necessary because one could accidentially activate network access on modem page and the customer now has the old tariff activated however this tariff is not assigned anymore
+		//  (2) better extract voip & inet items directly!? - why iterate over all items? is call of get_valid_tariff() multiple times not very bad ??
+		// Better to set qos_id to the one with the lowest data rates ?
+		// $qos_id = Qos::orderBy('us_rate_max')->orderBy('ds_rate_max')->first()->id;
+		if (!count($items) && boolval($this->qos_id))
+		{
+			$this->qos_id = 0;
+			$this->save();
+			return;
+		}
+
+		$valid_tariff = false;
+
 		foreach ($items as $item) {
 
 			// a given item can be null – check and ignore
-			if (!$item) {
+			if (!$item) 
 				continue;
-			}
 
 			$type = isset($item->product) ? $item->product->type : '';
 			// process only particular product types
-			if (!in_array($type, ['Voip', 'Internet'])) {
+			if (!in_array($type, ['Voip', 'Internet']))
 				continue;
-			}
 
 			// check which month is affected by the currently investigated item
 			if (
@@ -744,6 +778,9 @@ class Contract extends \BaseModel {
 				// this can happen if one fixes thè start date of one and forgets to fix the end date
 				// of an other item
 				$valid_tariff_info = $this->_get_valid_tariff_item_and_count($type);
+
+				$valid_tariff = true;
+
 				if ($valid_tariff_info['count'] > 1) {
 					// this should never occur!!
 					if ($valid_tariff_info['item']->id != $item->id) {
@@ -769,6 +806,12 @@ class Contract extends \BaseModel {
 				continue;
 			}
 
+		}
+
+		if (!$valid_tariff)
+		{
+			$this->qos_id = 0;
+			$this->save();
 		}
 	}
 
@@ -1013,7 +1056,8 @@ class ContractObserver
 
 	public function updating($contract)
 	{
-		$contract->number = $contract->number ? $contract->number : $contract->id - $this->num;
+		// commented out by par: don't overwrite changes on contract numbers
+		/* $contract->number = $contract->number ? $contract->number : $contract->id - $this->num; */
 
 		$contract->sepa_iban = strtoupper($contract->sepa_iban);
 		$contract->sepa_bic  = strtoupper($contract->sepa_bic);

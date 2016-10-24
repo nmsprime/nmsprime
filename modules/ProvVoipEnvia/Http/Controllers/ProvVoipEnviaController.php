@@ -111,9 +111,6 @@ class ProvVoipEnviaController extends \BaseController {
 			exit(1);
 		}
 
-		// the requests payload (=XML), also
-		$payload = $this->model->get_xml($job);
-
 		// execute only if job is currently allowed
 		if (!$this->_job_allowed($job)) {
 			$view_var = $this->_show_job_not_allowed_info($job, $origin);
@@ -366,7 +363,7 @@ class ProvVoipEnviaController extends \BaseController {
 
 		// perform checks for the rest of the jobs
 		if ($job == "contract_create") {
-			$this->model->extract_environment($this->model->contract, 'contract');
+			$this->model->extract_environment($this->model->modem, 'modem');
 
 			// contract creation is only allowed once (you cannot re-create a contract)
 			if ($this->model->contract_created) {
@@ -377,7 +374,7 @@ class ProvVoipEnviaController extends \BaseController {
 		}
 
 		if ($job == "contract_get_voice_data") {
-			$this->model->extract_environment($this->model->contract, 'contract');
+			$this->model->extract_environment($this->model->modem, 'modem');
 
 			// only can get data for a contract that exists (or existed)
 			if (!$this->model->contract_created) {
@@ -388,7 +385,7 @@ class ProvVoipEnviaController extends \BaseController {
 		}
 
 		if ($job == 'contract_change_tariff') {
-			$this->model->extract_environment($this->model->contract, 'contract');
+			$this->model->extract_environment($this->model->modem, 'modem');
 
 			// only can get data for a contract that exists
 			if (!$this->model->contract_available) {
@@ -408,7 +405,7 @@ class ProvVoipEnviaController extends \BaseController {
 		}
 
 		if ($job == 'contract_change_variation') {
-			$this->model->extract_environment($this->model->contract, 'contract');
+			$this->model->extract_environment($this->model->modem, 'modem');
 
 			// only can get data for a contract that exists
 			if (!$this->model->contract_available) {
@@ -427,11 +424,23 @@ class ProvVoipEnviaController extends \BaseController {
 
 		}
 
+		if ($job == 'contract_relocate') {
+			$this->model->extract_environment($this->model->modem, 'modem');
+
+			// only can change data for a contract that exists
+			if (!$this->model->contract_available) {
+				return false;
+			}
+
+			return true;
+
+		}
+
 		if ($job == "customer_update") {
 			$this->model->extract_environment($this->model->contract, 'contract');
 
 			// Customer can only be updated if active contract exists
-			if (!$this->model->contract_available) {
+			if (!$this->model->at_least_one_contract_available) {
 				return false;
 			}
 
@@ -640,6 +649,7 @@ class ProvVoipEnviaController extends \BaseController {
 			'contract_get_reference' => $base_url.'____TODO____',
 			'contract_get_voice_data' => $base_url.'contract/get_voice_data',
 			'contract_lock' => $base_url.'____TODO____',
+			'contract_relocate' => $base_url.'contract/relocate',
 			'contract_terminate' => $base_url.'contract/terminate',
 			'contract_unlock' => $base_url.'____TODO____',
 
@@ -682,7 +692,10 @@ class ProvVoipEnviaController extends \BaseController {
 		// the requests payload (=XML)
 		$xml_creation_failed = True;
 		try {
-			$payload = $this->model->get_xml($job);
+			// check if data is going to be sent – don't store XML created to be shown for confirmation request
+			// if the XML to create is for sending against Envia there should be a …&really=True within the GET params
+			$store_xml = \Input::get('really', False);
+			$payload = $this->model->get_xml($job, $store_xml);
 			$xml_creation_failed = False;
 		}
 		catch (XmlCreationError $ex) {
@@ -773,9 +786,11 @@ class ProvVoipEnviaController extends \BaseController {
 			$view_var = $this->_handle_request_success($job, $data);
 		}
 		// a 404 on order_get_status is meaningful ⇒ we have to delete this order
+		// so let's handle this with the success logic
 		elseif (($job == "order_get_status") && ($data['status'] == 404)) {
 			$view_var = $this->_handle_request_success($job, $data);
 		}
+		// TODO: should we handle some of the errors in a special way?
 		/* // bad request */
 		/* elseif ($data['status'] == 400) { */
 		/* 	$view_var = $this->_handle_request_failed_400($job, $data); */
@@ -792,7 +807,7 @@ class ProvVoipEnviaController extends \BaseController {
 		/* elseif ($data['status'] == 404) { */
 		/* 	$view_var = $this->_handle_request_failed_404($job, $data); */
 		/* } */
-		// other => something went wrong
+		// none of the above (fallback) => use generic error handling
 		else {
 			$view_var = $this->_handle_request_failed($job, $data);
 		}
@@ -892,15 +907,21 @@ class ProvVoipEnviaController extends \BaseController {
 		$errors = $this->model->get_error_messages($data['xml']);
 
 		if ($this->entry_method == 'cron') {
-			echo "ERROR(S) occured:";
-			echo "Exiting…";
+			foreach ($errors as $error) {
+				if (boolval($error['status']) || boolval($error['message'])) {
+					echo 'Error '.$error['status'].' occured on job '.$job.': '.$error['message'];
+					Log::error('Error '.$error['status'].' occured on job '.$job.': '.$error['message']);
+				}
+			}
+			Log::error('Exiting cronjob because of the above errors.');
+			echo 'Exiting cronjob because of the above errors.';
 			exit(1);
 		}
 		else {
 			$ret = '';
 
-			$ret .= "<h4>The following errors occured:</h4>";
-			$ret .= "<table style=\"background-color: #faa;\">";
+			$ret .= "<h4>The following error(s) occured:</h4>";
+			$ret .= "<table style=\"background-color: #fcc; color: #000; font-size: 1.05em; font-family: monospace; font-weight: bold\">";
 			foreach ($errors as $error) {
 				if (boolval($error['status']) || boolval($error['message'])) {
 					$ret .= "<tr>";

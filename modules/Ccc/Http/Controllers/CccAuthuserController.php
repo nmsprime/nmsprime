@@ -5,8 +5,17 @@ use Modules\Ccc\Entities\Ccc;
 use Modules\ProvBase\Entities\Contract;
 use Log;
 use File;
+use Modules\BillingBase\Entities\SettlementRun;
+use Modules\BillingBase\Entities\Invoice;
 
 class CccAuthuserController extends \BaseController {
+
+	public function __construct()
+	{
+		// TODO: take from contract->country_id when it has usable values
+		\App::setLocale('de');
+	}
+
 
 	/**
 	 * @var Array 	Data to fill placeholder in Connection Info Template
@@ -117,6 +126,10 @@ class CccAuthuserController extends \BaseController {
 
 		// make target tex file
 		$dir_path = storage_path('app/tmp/');
+
+		if (!is_dir($dir_path))
+			mkdir($dir_path, 0733, true);
+
 		$filename = 'conn_info';
 
 		// Replace placeholder by value
@@ -208,5 +221,110 @@ class CccAuthuserController extends \BaseController {
 		$this->data['company_logo'] = storage_path('app/config/billingbase/logo/'.$this->data['company_logo']);
 
 	}
+
+
+
+	/**
+	 * Stuff for the CCC on Customer side
+	 */
+	private static $rel_dir_path_invoices = 'data/billingbase/invoice/';
+
+
+	/**
+	 * Shows the invoice history for the Customer
+	 */
+	public function show()
+	{
+		$contract_id = \Auth::guard('ccc')->user()['contract_id'];
+		// $invoices 	 = is_dir($dir) ? \Storage::files($this->rel_dir_path_invoices.$contract_id) : []; 	// returns file path strings
+
+		$invoices = self::get_customer_invoices($contract_id);
+
+		return \View::make('ccc::index', compact('invoices', 'contract_id'));
+	}
+
+	/**
+	 * Get the invoice Files for a specific contract id
+	 * ATTENTION: Handle with care !!! - invoices must not be available to strangers
+	 * This function is used also in Contract
+	 *
+	 * @return Array of FileObjects
+	 *
+	 * @author Nino Ryschawy
+	 *
+	 * TODO: uncomment already prepared eloquent way and remove the one with files after this version is deployed on old versions (hettstedt 24.10.16)
+	 */
+	public static function get_customer_invoices($contract_id)
+	{
+		$dir 		 = storage_path('app/'.self::$rel_dir_path_invoices.$contract_id);
+		$invoices 	 = is_dir($dir) ? \File::allFiles($dir) : [];		// returns file objects
+
+		// hide invoices from unverified Settlementruns
+		$hide = SettlementRun::unverified_files();
+
+		if ($hide)
+		{
+			foreach ($invoices as $key => $invoice)
+			{
+				if (in_array($invoice->getBasename(), $hide))
+					unset($invoices[$key]);
+			}
+		}
+
+		return $invoices;
+
+		// $hide = $pdfs = [];
+		// $srs = SettlementRun::where('verified', '=', '0')->get(['id']);
+		// foreach ($srs as $sr)
+		// 	$hide[] = $sr->id;
+
+		// $hide = $hide ? : 0;
+		// $invoices = Invoice::where('contract_id', '=', $contract_id)->where('settlementrun_id', '!=', [$hide])->get();
+
+		// foreach ($invoices as $invoice)
+		// 	$pdfs[] = new \SplFileInfo($invoice->get_invoice_dir_path().$invoice->filename);
+
+		// return $pdfs;
+
+	}
+
+
+	/**
+	 * Download an Invoice
+	 */
+	public function download($contract_id, $filename)
+	{
+		$dir = storage_path('app/'.self::$rel_dir_path_invoices.$contract_id.'/');
+
+		return response()->download($dir.$filename);
+	}
+
+
+	public function psw_update()
+	{
+		// dd(\Input::get(), \Input::get('password'));
+		if (\Input::has('password'))
+		{
+			// update psw
+			$customer = \Auth::guard('ccc')->user();
+			$rules = array('password' => 'required|confirmed|min:6');
+			$data = \Input::get();
+
+			$validator = \Validator::make($data, $rules);
+
+			if ($validator->fails())
+			{
+				return \Redirect::back()->withErrors($validator)->withInput()->with('message', 'please correct the following errors')->with('message_color', 'red');
+			}
+
+			$customer->password = \Hash::make(\Input::get('password'));
+			$customer->save();
+
+			return $this->show();
+		}
+
+		return \View::make('ccc::psw_update');		
+	}
+
 
 }

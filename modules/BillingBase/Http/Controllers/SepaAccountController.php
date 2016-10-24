@@ -20,8 +20,6 @@ class SepaAccountController extends \BaseController {
 		ksort($list);
 
 		$templates = $model->templates();
-		// TODO: Translation
-		$help = 'The Text of the separate four \'Invoice Text\'-Fields is automatically chosen dependent on the total charge and SEPA Mandate and is set in the appropriate Invoice for the Customer. It is possible to use all data field keys of the Invoice Class as placeholder in the form of {fieldname} to build a kind of template. These are replaced by the actual value of the Invoice.';
 
 		// label has to be the same like column in sql table
 		return array(
@@ -32,11 +30,11 @@ class SepaAccountController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'bic', 'description' => 'BIC'),
 			array('form_type' => 'text', 'name' => 'institute', 'description' => 'Institute'),
 			array('form_type' => 'select', 'name' => 'company_id', 'description' => 'Company', 'value' => $list),
-			array('form_type' => 'text', 'name' => 'invoice_headline', 'description' => 'Invoice Headline', 'help' => 'Replaces Headline in Invoices created for this Costcenter'),
-			array('form_type' => 'text', 'name' => 'invoice_text_sepa', 'description' => 'Invoice Text for positiv Amount with Sepa Mandate', 'help' => $help),
-			array('form_type' => 'text', 'name' => 'invoice_text_sepa_negativ', 'description' => 'Invoice Text for negativ Amount with Sepa Mandate'),
-			array('form_type' => 'text', 'name' => 'invoice_text', 'description' => 'Invoice Text for positiv Amount without Sepa Mandate'),
-			array('form_type' => 'text', 'name' => 'invoice_text_negativ', 'description' => 'Invoice Text for negativ Amount without Sepa Mandate'),
+			array('form_type' => 'text', 'name' => 'invoice_headline', 'description' => 'Invoice Headline', 'help' => trans('helper.SepaAccount_InvoiceHeadline')),
+			array('form_type' => 'text', 'name' => 'invoice_text_sepa', 'description' => 'Invoice Text for positive Amount with Sepa Mandate', 'help' => trans('helper.SepaAccount_InvoiceText')),
+			array('form_type' => 'text', 'name' => 'invoice_text_sepa_negativ', 'description' => 'Invoice Text for negative Amount with Sepa Mandate'),
+			array('form_type' => 'text', 'name' => 'invoice_text', 'description' => 'Invoice Text for positive Amount without Sepa Mandate'),
+			array('form_type' => 'text', 'name' => 'invoice_text_negativ', 'description' => 'Invoice Text for negative Amount without Sepa Mandate'),
 			array('form_type' => 'select', 'name' => 'template_invoice', 'description' => 'Choose invoice template file', 'value' => $templates),
 			array('form_type' => 'select', 'name' => 'template_cdr', 'description' => 'Choose Call Data Record template file', 'value' => $templates),
 			array('form_type' => 'file', 'name' => 'template_invoice_upload', 'description' => 'Upload invoice template'),

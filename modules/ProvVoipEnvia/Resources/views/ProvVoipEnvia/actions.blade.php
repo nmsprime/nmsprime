@@ -15,7 +15,18 @@
 			{{-- possible jobs --}}
 
 			@else
+
+				{{-- Check if help shall be shown --}}
+				@if (array_key_exists('help', $extra_content))
+					<span title="{{ $extra_content['help'] }}">
+				@else
+					<span>
+				@endif
+
 				<a href="{{ $extra_content['url'] }}">{{ $extra_content['linktext'] }}</a>
+
+				</span>
+
 				<br>
 
 			@endif

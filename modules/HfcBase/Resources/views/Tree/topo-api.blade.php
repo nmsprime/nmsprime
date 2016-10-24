@@ -77,10 +77,10 @@ function map_mps_init()
 			$y1  = $mpr[0][1];
 			$y2  = $mpr[1][1];
 
-			$pos = "$x1, $y1, $x2, $y2";
-
 			echo "
-				var bounds = new OpenLayers.Bounds($pos);
+				var bounds = new OpenLayers.Bounds();
+				bounds.extend(new OpenLayers.LonLat($x1,$y1));
+				bounds.extend(new OpenLayers.LonLat($x2,$y2));
 				box$i = new OpenLayers.Marker.Box(bounds.transform(new OpenLayers.Projection(\"EPSG:4326\"),map.getProjectionObject()));
 				box$i.events.register(\"click\", box$i, function (e) {
 					alert (\"Modem Positioning System - MPR id: $id\",
@@ -246,7 +246,7 @@ function clk_init_2()
 				alert('Modem Positioning System',
 				      'Lat: ' + minLat + ' to ' + maxLat+ '<br>Lng: ' + minLng + ' to ' + maxLng + '<br><br>' +
 				      '<li><a href="'+ global_url + 'CustomerRect/' + minLng + '/' + maxLng + '/' + minLat + '/' + maxLat + '">Show Customer in Rectangle</a><br>' +
-				      '</li><li><a href=' + global_url + 'Mpr/create?value=' + x1 + ';' + x2 + ';' + y1 + ';' +y2 + '">Add Modem Positioning Rule</a>' +
+				      '</li><li><a href="' + global_url + 'Mpr/create?value=' + x1 + ';' + x2 + ';' + y1 + ';' +y2 + '">Add Modem Positioning Rule</a>' +
 				      '</li><br>(x > ' + x1 + ' AND x <  ' + x2 + ') AND (y > ' + y1 + ' AND y < ' + y2 + ')', {width:500} );
 
             }

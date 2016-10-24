@@ -38,10 +38,11 @@ class BaseViewController extends Controller {
 
 	/**
      * Searches for a string in the language files under resources/lang/ and returns it for the active application language
-     *
-     * @author Nino Ryschawy
+     * Searches for a "*" (required field), deletes it for trans function and appends it at the end
+     * used in everything Form related (Labels, descriptions)
+     * @author Nino Ryschawy, Christian Schramm
      */
-    public static function translate($string)
+    public static function translate_label($string)
     {
         // cut the star at the end of value if there is one for the translate function and append it after translation
         $star = '';
@@ -55,12 +56,35 @@ class BaseViewController extends Controller {
         	return trans($string).$star;
 
         $translation = trans("messages.$string");
-        // dd($name, $string, $star, $translation, strpos($translation, "messages."));
+
         // found in lang/{}/messages.php
         if (strpos($translation, 'messages.') === false)
             return $translation.$star;
 
         return $string.$star;
+    }
+
+	/**
+     * Searches for a string in the language files under resources/lang/ and returns it for the active application language
+     * used in everything view related 
+     * @param string: 	string that is searched in resspurces/lang/{App-language}/view.php
+     * @param type: 	can be Header, Menu, Button, jQuery, Search
+     * @param count: 	standard at 1 , For plural translation - needs to be seperated with pipe "|""
+     *					example: Index Headers -> in view.php: 'Header_Mta'	=> 'MTA|MTAs',
+     * @author Christian Schramm
+     */
+    public static function translate_view($string, $type, $count = 1)
+    {
+        if (strpos($string, 'view.'.$type.'_'))
+        	return trans($string);
+
+   		$translation = trans_choice('view.'.$type.'_'.$string, $count);
+
+        // found in lang/{}/messages.php
+        if (strpos($translation, 'view.'.$type.'_') === false)
+            return $translation;
+
+        return $string;
     }
 
 
@@ -133,11 +157,16 @@ class BaseViewController extends Controller {
 			//    NOTE: this will not work in create context, because view_belongs_to() returns null !
 			//          Hiding in create context will only work with hard coded 'hidden' => 1 entry in view_form_fields()
 			if (is_object($model->view_belongs_to()) && 					// does a view relation exists
-				$model->view_belongs_to()->table.'_id' == $field['name'])	// view table name (+_id) == field name ?
-				$field['hidden'] = 1;									// hide
+				$model->view_belongs_to()->table.'_id' == $field['name'] &&	// view table name (+_id) == field name ?
+				!isset($field['hidden']))									// hidden was not explicitly set
+					$field['hidden'] = '1';
 
 			// 4. set all field_value's to SQL data
 			$field['field_value'] = $model[$field['name']];
+
+			// 4.(sub-task) auto-fill all field_value's with HTML Input
+			if (\Input::get($field['name']))
+				$field['field_value'] = \Input::get($field['name']);
 
 			// 4.(sub-task) auto-fill all field_value's with HTML POST array if supposed
 			if (isset($_POST[$field['name']]))
@@ -200,9 +229,11 @@ class BaseViewController extends Controller {
 			{
 				$hidden = $field['hidden'];
 
-				if (($context == 'edit' && strpos($hidden, 'E') !== false) || // hide edit context only?
-				   ($context == 'create' && strpos($hidden, 'C') !== false) || // hide create context only?
-				   ($hidden == 1 || $hidden == '1')) // hide globally?
+				if ($hidden =! 0 && ( // == 0 -> explicitly set to always show, no matter if other conditions are met
+					($context == 'edit' && strpos($hidden, 'E') !== false) || // hide edit context only?
+					($context == 'create' && strpos($hidden, 'C') !== false) || // hide create context only?
+					$hidden == 1) // hide globally?
+				)
 					{
 						$s .= \Form::hidden ($field["name"], $field['field_value']);
 						goto finish;
@@ -312,7 +343,7 @@ finish:
 			// array_push($ret, $lines);
 			foreach ($lines as $k => $line)
 			{
-				$key = BaseViewController::translate($k);
+				$key = \App\Http\Controllers\BaseViewController::translate_view($k, 'Menu');
 				$ret['Global'][$key] = $line;
 			}
 		}
@@ -334,7 +365,7 @@ finish:
 				{
 					foreach ($lines as $k => $line)
 					{
-						$key = BaseViewController::translate($k);
+						$key = \App\Http\Controllers\BaseViewController::translate_view($k, 'Menu');
 						$ret[$name][$key] = $line;
 					}
 				}
@@ -397,9 +428,8 @@ finish:
 					else
 						$name = $parent->view_index_label();
 
-					$s = \HTML::linkRoute($view.'.edit', $name, $parent->id).' > '.$s;
+					$s = \HTML::linkRoute($view.'.edit', BaseViewController::translate_view($name, 'Header'), $parent->id).' > '.$s;
 				}
-
 				// get view parent
 				$parent = $parent->view_belongs_to();
 			}
@@ -409,7 +439,7 @@ finish:
 
 		// Base Link to Index Table in front of all relations
 		if (in_array($route_name, BaseController::get_config_modules()))	// parse: Global Config requires own link
-			$s = \HTML::linkRoute('Config.index', 'Global Configurations').': '.$s;
+			$s = \HTML::linkRoute('Config.index', BaseViewController::translate_view('Global Configurations', 'Header')).': '.$s;
 		else
 			$s = \HTML::linkRoute($route_name.'.index', $view_header).': '.$s;
 
