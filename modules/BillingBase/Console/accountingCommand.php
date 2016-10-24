@@ -16,6 +16,7 @@ use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Entities\Invoice;
+use Modules\BillingBase\Entities\SettlementRun;
 
 
 class accountingCommand extends Command {
@@ -78,10 +79,13 @@ class accountingCommand extends Command {
 	 */
 	public function fire()
 	{
+		// $start = microtime(true);
+
 		$logger = new BillingLogger;
 		$logger->addInfo(' #####    Start Accounting Command    #####');
 
 		$conf 		= BillingBase::first();
+		$last_settlementrun_id = SettlementRun::withTrashed()->orderBy('id', 'desc')->get()->first()->id + 1;
 		$sepa_accs  = SepaAccount::all();
 
 		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
@@ -191,7 +195,7 @@ class accountingCommand extends Command {
 
 				// add item to accounting records of account, invoice and salesman
 				$acc->add_accounting_record($item);
-				$acc->add_invoice_item($item, $conf);
+				$acc->add_invoice_item($item, $conf, $last_settlementrun_id);
 				if ($c->salesman_id)
 					$salesmen->find($c->salesman_id)->add_item($item);
 
@@ -245,7 +249,7 @@ class accountingCommand extends Command {
 				$acc->add_cdr_accounting_record($c, $charge, $calls);
 
 				// invoice
-				$acc->add_invoice_cdr($c, $cdrs[$id], $conf);
+				$acc->add_invoice_cdr($c, $cdrs[$id], $conf, $last_settlementrun_id);
 
 
 			}
@@ -262,7 +266,7 @@ class accountingCommand extends Command {
 				$acc->add_booking_record($c, $mandate, $value, $conf);
 				$acc->add_invoice_data($c, $mandate, $value);
 
-				// make bill already
+				// create invoice pdf already - this task is the most timeconsuming and therefore threaded!
 				$acc['invoices'][$c->id]->make_invoice();
 
 				// skip sepa part if contract has no valid mandate
@@ -274,9 +278,15 @@ class accountingCommand extends Command {
 
 		} // end of loop over contracts
 
-		
-		$this->_make_billing_files($sepa_accs, $salesmen);
+		// avoid deleting temporary latex files before last invoice was built (multiple threads are used)
+		// and wait for all invoice pdfs to be created for concatenate them in zip command in _make_billing_files()
+		usleep(200000);
 
+		$this->_make_billing_files($sepa_accs, $salesmen);
+		Invoice::remove_templatex_files();
+
+		// performance analysis debugging output
+		// echo "time needed: ".round(microtime(true) - $start, 4)."\n";
 	}
 
 
@@ -318,9 +328,6 @@ class accountingCommand extends Command {
 			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+5 days'));
 		}
 
-		// Invoices
-		Invoice::delete_current_invoices();
-
 		// actual invoice nr counters
 		$last_run = AccountingRecord::orderBy('created_at', 'desc')->select('created_at')->first();
 		if (is_object($last_run))
@@ -353,6 +360,10 @@ class accountingCommand extends Command {
 			}
 		}
 
+		// reset yearly payed items payed_month column
+		if ($this->dates['m'] == '01')
+			Item::where('payed_month', '!=', '0')->update(['payed_month', '0']);
+
 	}
 
 
@@ -370,7 +381,8 @@ class accountingCommand extends Command {
 		foreach (Storage::files($this->dir) as $f)
 		{
 			// keep cdr
-			if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
+			// if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
+			if (basename($f) != $this->_get_cdr_filename())
 				Storage::delete($f);
 		}
 
@@ -401,6 +413,18 @@ class accountingCommand extends Command {
 
 
 	/**
+	 * @return String 	Filename   e.g.: 'Call Data Record_2016_08.csv' or if app language is german 'Einzelverbindungsnachweis_2015_01.csv'
+	 */
+	private function _get_cdr_filename()
+	{
+		$offset = BillingBase::first()->cdr_offset;
+		$time = $offset ? strtotime('-'.($offset+1).' month') : strtotime('first day of last month');
+
+		return \App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'_'.date('Y_m', $time).'.csv';
+	}
+
+
+	/**
 	 * Calls cdrCommand to get Call data records from Provider and formats relevant data to structured array
 	 *
 	 * @return array 	[contract_id => [phonr_nr, time, duration, ...], 
@@ -410,7 +434,7 @@ class accountingCommand extends Command {
 	 */
 	private function _get_cdr_data()
 	{
-		$filename = \App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'_'.date('Y_m', strtotime('-2 month')).'.csv';
+		$filename = $this->_get_cdr_filename();
 		$dir_path = storage_path('app/'.$this->dir.'/');
 		$filepath = $dir_path.$filename;
 

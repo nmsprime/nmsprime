@@ -49,7 +49,8 @@ class Item extends \BaseModel {
 		$end_fixed = !boolval($this->valid_to_fixed) ? '(!)' : '';
 
 		// Evaluate Colours
-		$billing_valid = $this->check_validity('month', $this->is_tariff());
+		$time = isset($this->product) && $this->product->billing_cycle == 'Yearly' ? 'year' : 'month';
+		$billing_valid = $this->check_validity($time, $this->is_tariff());
 
 		// green colour means it will be considered for next accounting cycle, blue is a new item and not yet considered
 		// red means item is outdated/expired and will not be charged this month
@@ -278,6 +279,7 @@ class Item extends \BaseModel {
 				if ($ratio)
 				{
 					$this->payed_month = $dates['m'] - 1;				// is set to 0 every new year
+					$this->observer_enabled = false;
 					$this->save();
 				}
 
@@ -431,26 +433,42 @@ class ItemObserver
 		$item->valid_to = $item->valid_to ? : null;
 		$tariff = $item->contract->get_valid_tariff($item->product->type);
 
+		// \Log::debug('creating item');
+
 		// set end date of old tariff to starting date of new tariff
 		if (in_array($item->product->type, array('Internet', 'Voip', 'TV')))
 		{
 			if ($tariff)
 			{
 				$tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
-				$tariff->save();
+				$tariff->valid_to_fixed = $item->valid_from_fixed || $tariff->valid_to_fixed ? true : false;
+				// do not call observer and daily conversion multiple times
+				$tariff->observer_enabled = false;
+				$tariff->save(); 								// calls updating & updated observer methods
 			}
 		}
 
-		$item->contract->update_product_related_data([$item, $tariff]);
+		// $item->contract->update_product_related_data([$item, $tariff]);
 
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);
 
 	}
 
+	public function created($item)
+	{
+		// \Log::debug('created item', [$item->id]);
+
+		// this is ab(used) here for easily setting the correct values
+		$item->contract->daily_conversion();
+	}
+
 
 	public function updating($item)
 	{
+		if(!$item->observer_enabled)
+			return;
+
 		// this doesnt work in prepare_input() !!
 		$item->valid_to = $item->valid_to ? : null;
 
@@ -466,25 +484,47 @@ class ItemObserver
 				// before adding this was caused by daily_conversion
 				($tariff->valid_from < $item->valid_from)
 				&&
-				// obsoleted by the above – but left here to keep the original condition
+				// do not consider updated items
 				($tariff->id != $item->id)
 			) {
+				\Log::debug('update old tariff', [$item->id]);
 				$tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
+				$tariff->valid_to_fixed = $item->valid_from_fixed || $tariff->valid_to_fixed ? true : false;
+				// Maybe implement this as DB-Update-Statement to not call observer and daily conversion multiple times ??
+				$tariff->observer_enabled = false;
 				$tariff->save();
-			}
-			else {
-				$tariff = null;
 			}
 
 			// check if we have to update product related data (qos, voip tariff, etc.) in contract
-			// this has to be done for both objects
-			$item->contract->update_product_related_data([$item, $tariff]);
+			// this has to be done for both objects - why? - is done for both in daily conversion after
+			// $item->contract->update_product_related_data([$item, $tariff]);
 		}
 
+		// \Log::debug('updating item', [$item->id]);
 
 		// set end date for products with fixed number of cycles
 		$this->handle_fixed_cycles($item);
 
+	}
+
+	public function updated($item)
+	{
+		if(!$item->observer_enabled)
+			return;
+
+		// \Log::debug('updated item', [$item->id]);
+
+		// this is ab(used) here for easily setting the correct values
+		$item->contract->daily_conversion();
+	}
+
+
+	public function deleted($item)
+	{
+		// \Log::debug('deleted item', [$item->id]);
+
+		// this is ab(used) here for easily setting the correct values
+		$item->contract->daily_conversion();
 	}
 
 

@@ -18,6 +18,8 @@ class CccController extends \BaseController {
 
 		// label has to be the same like column in sql table
 		return array(
+			array('form_type' => 'text', 'name' => 'headline1', 'description' => 'Headline 1'),
+			array('form_type' => 'text', 'name' => 'headline2', 'description' => 'Headline 2'),
 			array('form_type' => 'select', 'name' => 'template_filename', 'description' => 'Connection Info Template', 'value' => $files, 'help' => 'Tex Template used to Create Connection Information on the Contract Page for a Customer'),
 			array('form_type' => 'file', 'name' => 'template_filename_upload', 'description' => 'Upload Template'),
 		);

@@ -42,6 +42,7 @@ class BillingBaseController extends \BaseController {
 			array('form_type' => 'select', 'name' => 'userlang', 'description' => 'Language for Accounting command', 'value' => BillingBase::getPossibleEnumValues('userlang')),
 			array('form_type' => 'checkbox', 'name' => 'split', 'description' => 'Split Sepa Transfer-Types', 'help' => trans('helper.BillingBase_SplitSEPA')),
 			array('form_type' => 'checkbox', 'name' => 'termination_fix', 'description' => 'Item Termination only end of month', 'help' => trans('helper.BillingBase_ItemTermination')),
+			array('form_type' => 'text', 'name' => 'cdr_offset', 'description' => 'CDR to Invoice time difference in Months', 'help' => trans('helper.BillingBase_cdr_offset')),
 		];
 	}
 

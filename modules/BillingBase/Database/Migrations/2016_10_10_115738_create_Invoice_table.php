@@ -19,6 +19,7 @@ class CreateInvoiceTable extends BaseMigration {
 			$this->up_table_generic($table);
 
 			$table->integer('contract_id');
+			$table->integer('settlementrun_id');
 			$table->smallInteger('year');
 			$table->tinyInteger('month');
 			$table->string('filename');
@@ -57,13 +58,20 @@ class CreateInvoiceTable extends BaseMigration {
 	{
 		$bool = true;
 
-		foreach (\Modules\ProvBase\Entities\Contract::all() as $contract)
+		$contracts  = \Modules\ProvBase\Entities\Contract::all();
+		$num 		= count($contracts);
+		$i 			= 0;
+
+		foreach ($contracts as $contract)
 		{
 			if ($bool)
 			{
 				echo "Import data for adapted Invoice Model - Ensure that all Settlement Runs are verified!!! Rollback BillingBase module otherwise and migrate after verification again\n";
 				$bool = false;
 			}
+
+			$i++;
+			echo "Contract: create Invoice database entry: $i/$num \r";
 
 			$invoices = \Modules\Ccc\Http\Controllers\CccAuthuserController::get_customer_invoices($contract->id);
 
@@ -93,6 +101,9 @@ class CreateInvoiceTable extends BaseMigration {
 				if (!isset($recs[0]))
 					continue;
 
+				$settlementrun = \Modules\BillingBase\Entities\SettlementRun::whereBetween('created_at', [$start, $end])->get();
+				$data['settlementrun_id'] = $settlementrun[0]->id;
+
 				$data['number'] = $fname[0].'/'.$recs[0]->sepa_account_id.'/'.$recs[0]->invoice_nr;
 				$data['charge'] = 0;
 
@@ -101,8 +112,8 @@ class CreateInvoiceTable extends BaseMigration {
 
 				\Modules\BillingBase\Entities\Invoice::create($data);
 			}
-
 		}
 
+		echo "\n";
 	}
 }

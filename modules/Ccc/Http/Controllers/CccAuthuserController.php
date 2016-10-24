@@ -6,6 +6,7 @@ use Modules\ProvBase\Entities\Contract;
 use Log;
 use File;
 use Modules\BillingBase\Entities\SettlementRun;
+use Modules\BillingBase\Entities\Invoice;
 
 class CccAuthuserController extends \BaseController {
 
@@ -250,6 +251,8 @@ class CccAuthuserController extends \BaseController {
 	 * @return Array of FileObjects
 	 *
 	 * @author Nino Ryschawy
+	 *
+	 * TODO: uncomment already prepared eloquent way and remove the one with files after this version is deployed on old versions (hettstedt 24.10.16)
 	 */
 	public static function get_customer_invoices($contract_id)
 	{
@@ -269,6 +272,20 @@ class CccAuthuserController extends \BaseController {
 		}
 
 		return $invoices;
+
+		// $hide = $pdfs = [];
+		// $srs = SettlementRun::where('verified', '=', '0')->get(['id']);
+		// foreach ($srs as $sr)
+		// 	$hide[] = $sr->id;
+
+		// $hide = $hide ? : 0;
+		// $invoices = Invoice::where('contract_id', '=', $contract_id)->where('settlementrun_id', '!=', [$hide])->get();
+
+		// foreach ($invoices as $invoice)
+		// 	$pdfs[] = new \SplFileInfo($invoice->get_invoice_dir_path().$invoice->filename);
+
+		// return $pdfs;
+
 	}
 
 
@@ -277,7 +294,7 @@ class CccAuthuserController extends \BaseController {
 	 */
 	public function download($contract_id, $filename)
 	{
-		$dir = storage_path('app/'.$this->rel_dir_path_invoices.$contract_id.'/');
+		$dir = storage_path('app/'.self::$rel_dir_path_invoices.$contract_id.'/');
 
 		return response()->download($dir.$filename);
 	}

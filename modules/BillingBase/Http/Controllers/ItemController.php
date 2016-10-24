@@ -55,22 +55,35 @@ class ItemController extends \BaseController {
 	}
 
 
+	/**
+	 * Set default Input values for empty fields / Autofill empty fields
+	 */
 	public function prepare_input($data)
 	{
 		$data['credit_amount'] = $data['credit_amount'] ? abs($data['credit_amount']) : $data['credit_amount'];
-
 		$type = Product::findOrFail($data['product_id'])->type;
+
 		// set default valid from date to tomorrow for this product types
 		// specially for Voip: Has to be created externally – and this will not be done today…
-		if ($type == 'Voip') {
+		if ($type == 'Voip')
+		{
 			$data['valid_from'] = $data['valid_from'] ? : date('Y-m-d', strtotime('next day'));
 		}
-		// others: set today as start date
-		else {
-			$data['valid_from'] = $data['valid_from'] ? : date('Y-m-d');
+
+		// others: set today as start date when valid_from is fixed and not set, otherwise set to tomorrow - also if valid_from is in past
+		elseif ($type == 'Internet')
+		{
+			if (isset($data['valid_from_fixed']) && boolval($data['valid_from_fixed']))
+				$data['valid_from'] = $data['valid_from'] ? : date('Y-m-d');
+			else
+				$data['valid_from'] = $data['valid_from'] > date('Y-m-d') ? $data['valid_from'] : date('Y-m-d', strtotime('next day'));
 		}
 
-		// $data['valid_to'] = $data['valid_to'] ? : null;
+		else
+		{
+			$data['valid_from'] = $data['valid_from'] ? : date('Y-m-d');
+			$data['valid_from_fixed'] = 1;
+		}
 
 		return parent::prepare_input($data);
 	}
