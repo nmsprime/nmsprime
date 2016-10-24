@@ -251,38 +251,40 @@ class CccAuthuserController extends \BaseController {
 	 * @return Array of FileObjects
 	 *
 	 * @author Nino Ryschawy
+	 *
+	 * TODO: uncomment already prepared eloquent way and remove the one with files after this version is deployed on old versions (hettstedt 24.10.16)
 	 */
 	public static function get_customer_invoices($contract_id)
 	{
-		// $dir 		 = storage_path('app/'.self::$rel_dir_path_invoices.$contract_id);
-		// $invoices 	 = is_dir($dir) ? \File::allFiles($dir) : [];		// returns file objects
+		$dir 		 = storage_path('app/'.self::$rel_dir_path_invoices.$contract_id);
+		$invoices 	 = is_dir($dir) ? \File::allFiles($dir) : [];		// returns file objects
 
-		// // hide invoices from unverified Settlementruns
-		// $hide = SettlementRun::unverified_files();
+		// hide invoices from unverified Settlementruns
+		$hide = SettlementRun::unverified_files();
 
-		// if ($hide)
-		// {
-		// 	foreach ($invoices as $key => $invoice)
-		// 	{
-		// 		if (in_array($invoice->getBasename(), $hide))
-		// 			unset($invoices[$key]);
-		// 	}
-		// }
+		if ($hide)
+		{
+			foreach ($invoices as $key => $invoice)
+			{
+				if (in_array($invoice->getBasename(), $hide))
+					unset($invoices[$key]);
+			}
+		}
 
-		// return $invoices;
+		return $invoices;
 
-		$hide = [];
-		$srs = SettlementRun::where('verified', '=', '0')->get(['id']);
-		foreach ($srs as $sr)
-			$hide[] = $sr->id;
+		// $hide = $pdfs = [];
+		// $srs = SettlementRun::where('verified', '=', '0')->get(['id']);
+		// foreach ($srs as $sr)
+		// 	$hide[] = $sr->id;
 
-		$hide = $hide ? : 0;
-		$invoices = Invoice::where('contract_id', '=', $contract_id)->where('settlementrun_id', '!=', [$hide])->get();
+		// $hide = $hide ? : 0;
+		// $invoices = Invoice::where('contract_id', '=', $contract_id)->where('settlementrun_id', '!=', [$hide])->get();
 
-		foreach ($invoices as $invoice)
-			$pdfs[] = new \SplFileInfo($invoice->get_invoice_dir_path().$invoice->filename);
+		// foreach ($invoices as $invoice)
+		// 	$pdfs[] = new \SplFileInfo($invoice->get_invoice_dir_path().$invoice->filename);
 
-		return $pdfs;
+		// return $pdfs;
 
 	}
 
