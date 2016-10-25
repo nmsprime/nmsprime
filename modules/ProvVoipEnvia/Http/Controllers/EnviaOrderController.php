@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\View;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
 use Modules\ProvVoip\Entities\Phonenumber;
+use Modules\ProvBase\Entities\Modem;
 
 class EnviaOrderController extends \BaseController {
 
@@ -45,7 +46,7 @@ class EnviaOrderController extends \BaseController {
 			$modem_id = \Input::get('modem_id', null);
 			if (boolval($modem_id)) {
 				$init_values['modem_id'] = $modem_id;
-				$modem = modem::findOrFail($modem_id);
+				$modem = Modem::findOrFail($modem_id);
 				$init_values['contract_id'] = $modem->contract->id;
 			}
 
