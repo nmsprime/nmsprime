@@ -2169,6 +2169,8 @@ class ProvVoipEnvia extends \BaseModel {
 			$order = EnviaOrder::create($result);
 
 			$out .= '<br>Order '.$order_id.' created.';
+
+			$out = $this->_update_phonenumber_related_data($phonenumber, $result, $out);
 		}
 
 
@@ -2180,6 +2182,130 @@ class ProvVoipEnvia extends \BaseModel {
 			$out .= "<br><br><pre>".$csv."</pre>";
 			return $out;
 		}
+	}
+
+
+	/**
+	 * This is used to update several inforamtion in contract, modem and phonenumbermanagement.
+	 * Has to be done on misc_get_orders_csv and contract_get_reference because this values can be missing (e.g. voip_account has been created before activation of envia module)
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _update_phonenumber_related_data($data, $out='') {
+
+		if (isset($data['contract_id'])) {
+			$out = $this->_update_contract_with_envia_data($data, $out);
+		}
+
+		if (isset($data['modem_id'])) {
+			$out = $this->_update_modem_with_envia_data($data, $out);
+		}
+
+		if (isset($data['phonenumber_id']) || isset($data['phonenumbermanagement_id'])) {
+			$out = $this->_update_phonenumbermanagement_with_envia_data($data, $out);
+		}
+
+		return $out;
+	}
+
+
+	protected function _update_contract_with_envia_data($data, $out='') {
+
+			$contract = Contract::FindOrFail($data['contract_id']);
+
+			if (!isset($data['customerreference'])) {
+				return $out;
+			}
+
+			// set customerreference and check for integrity
+			if (is_null($contract->customer_external_id)) {
+				$contract->customer_external_id = $data['customerreference'];
+				$contract->save();
+				$out .= '<br> ⇒ Contract->customer_external_id set to '.$data['customerreference'];
+			}
+			if ($contract->customer_external_id != $data['customerreference']) {
+				$out .= '<br> ⇒ <b style="color: red">ERROR: Contract->customer_external_id ('.$contract->customer_external_id.') != EnviaOrder->customerreference ('.$data['customerreference'].')!!</b>';
+			}
+
+		return $out;
+	}
+
+
+	protected function _update_modem_with_envia_data($data, $out='') {
+
+		$modem = Modem::FindOrFail($data['modem_id']);
+
+		// try get related contract (if id not given) and update it
+		if (!isset($data['contract_id'])) {
+			$data['contract_id'] = $modem->contract->id;
+			$out .= _update_contract_with_envia_data($data, $out);
+		}
+
+		TODO: hier weiter
+			/* $modem_changed = false; */
+			/* // set contractreference and check for integrity */
+			/* if (is_null($modem->contract_external_id)) { */
+			/* 	$modem->contract_external_id = $result['contractreference']; */
+			/* 	$modem_changed = true; */
+			/* 	$out .= '<br> ⇒ Modem->contract_external_id set to '.$result['contractreference']; */
+			/* } */
+			/* if ($modem->contract_external_id != $result['contractreference']) { */
+			/* 	$out .= '<br> ⇒ <b style="color: red">ERROR: Modem->contract_external_id ('.$modem->contract_external_id.') != EnviaOrder->contractreference ('.$result['contractreference'].')!!</b>'; */
+			/* } */
+
+			/* // set external creation date (needed as indicator for available envia jobs!) */
+			/* TODO: on creation of voip accounts: check if contract start is set */
+			/* if (is_null($modem->contract_ext_creation_date)) { */
+			/* 	$modem->contract_ext_creation_date = $result['orderdate']; */
+			/* 	$modem_changed = true; */
+			/* 	$out .= '<br> ⇒ Modem->contract_ext_creation_date set to '.$result['orderdate']; */
+			/* } */
+			/* elseif ($modem->contract_ext_creation_date > $result['orderdate']) { */
+			/* 	$modem->contract_ext_creation_date = $result['orderdate']; */
+			/* 	$modem_changed = true; */
+			/* 	$out .= '<br> ⇒ Modem->contract_ext_creation_date set to '.$result['orderdate']; */
+			/* } */
+
+			/* if ($modem_changed) { */
+			/* 	$modem->save(); */
+			/* } */
+
+		return $out;
+	}
+
+
+	protected function _update_phonenumbermanagement_with_envia_data($data, $out='') {
+
+		if (isset($data['phonenumbermanagement_id'])) {
+			$phonenumbermanagement = PhonenumberManagement::FindOrFail($data['phonenumbermanagement_id']);
+			$phonenumber = $phonenumbermanagement->phonenumber;
+		}
+		else {
+			$phonenumber = Phonenumber::FindOrFail($data['phonenumber_id']);
+			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
+		}
+
+		if (!isset($data['contract_id'])) {
+			$data['contract_id'] = $phonenumber->mta-modem->contract->id;
+			$out = _update_contract_with_envia_data($data, $out);
+		}
+
+		if (!isset($data['modem_id'])) {
+			$data['modem_id'] = $phonenumber->mta-modem->id;
+			$out = _update_modem_with_envia_data($data, $out);
+		}
+
+			// set external activation date in phonenumbermanagement if exists
+			/* TODO: check if order activates/deactivates voip account and set the correct values */
+			/* $phonenumbermanagement = $phonenumber->phonenumbermanagement; */
+			/* if (is_null($phonenumbermanagement)) { */
+			/* 	$out .= '<br> ⇒ <b style="color: red">ERROR: There is no PhonenumberManagement – cannot write external creation date!</b>'; */
+			/* } */
+			/* else { */
+			/* 	if ($phonenumbermanagement-> */
+			/* } */
+
+		return $out;
 	}
 
 
