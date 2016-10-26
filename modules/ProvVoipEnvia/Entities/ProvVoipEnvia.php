@@ -2320,6 +2320,8 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _update_phonenumbermanagement_with_envia_data($data, $out='') {
 
+		$phonenumbermanagement_changed = False;
+
 		if (!isset($data['phonenumber_id']) && !isset($data['phonenumbermanagement_id'])) {
 			$out .= '<br> ⇒ Warning: No phonenumber_id or phonenumbermanagement_id given';
 			return $out;
@@ -2344,9 +2346,36 @@ class ProvVoipEnvia extends \BaseModel {
 			$out = _update_modem_with_envia_data($data, $out);
 		}
 
-		$phonenumbermanagement_changed = False;
 		if (isset($data['orderid'])) {
-			$order = EnviaOrder::where('orderid', '=', intval($data['orderid']))->firstOrFail();
+			$order = EnviaOrder::whereRaw('orderid='.intval($data['orderid']).' and deleted_at IS NULL')->firstOrFail();
+
+			// if there is no existing management: create and bundle with phonenumber
+			if (
+				(is_null($phonenumbermanagement))
+				&&
+				(
+					(EnviaOrder::order_creates_voip_account($order))
+					||
+					(EnviaOrder::order_terminates_voip_account($order))
+				)
+			) {
+				$phonenumbermanagement = new PhonenumberManagement();
+				$out .= '<br> ⇒ No PhonenumberManagement found. Creating new one – you have to set some values manually!';
+
+				// set the correlating phonenumber id
+				$phonenumbermanagement->phonenumber_id = $phonenumber->id;
+
+				// set some default values
+				$phonenumbermanagement->trcclass = 0;
+				$phonenumbermanagement->porting_in = 0;
+				$phonenumbermanagement->carrier_in = 0;
+				$phonenumbermanagement->ekp_in = 0;
+				$phonenumbermanagement->porting_out = 0;
+				$phonenumbermanagement->carrier_out = 0;
+				$phonenumbermanagement->ekp_out = 0;
+
+				$phonenumbermanagement_changed = True;
+			}
 
 			if (EnviaOrder::order_creates_voip_account($order)) {
 				if (is_null($phonenumbermanagement->voipaccount_ext_creation_date)) {
