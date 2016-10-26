@@ -1,4 +1,4 @@
-<?php namespace Modules\Hfccustomer\Entities;
+<?php namespace Modules\HfcCustomer\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Modules\ProvBase\Entities\Modem;
@@ -56,7 +56,7 @@ class Mpr extends \BaseModel {
 	// Relation to MPR Geopos
 	public function mprgeopos()
 	{
-		return $this->hasMany('Modules\Hfccustomer\Entities\MprGeopos');
+		return $this->hasMany('Modules\HfcCustomer\Entities\MprGeopos');
 	}
 
 
@@ -178,35 +178,5 @@ class Mpr extends \BaseModel {
 		}
 
 		return $return;
-	}
-
-	/**
-	 * BOOT:
-	 * - init Mpr Observer
-	 */
-	public static function boot()
-	{
-		parent::boot();
-
-		Mpr::observe(new MprObserver);
-	}
-}
-
-
-/**
- * Mpr Observer Class
- * Handles changes on MprGeopos, can handle:
- *
- * 'creating', 'created', 'updating', 'updated',
- * 'deleting', 'deleted', 'saving', 'saved',
- * 'restoring', 'restored',
- */
-class MprObserver
-{
-	// unlike MprGeoposObserver we only hook into 'updated' here, as Mpr::refresh will already
-	// be called in MprGeoposObserver if MPRs (including their geopos) are created or deleted
-	public function updated($modem)
-	{
-		Mpr::refresh();
 	}
 }
