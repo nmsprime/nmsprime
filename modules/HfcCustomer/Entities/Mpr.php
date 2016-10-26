@@ -1,7 +1,6 @@
-<?php namespace Modules\Hfccustomer\Entities;
+<?php namespace Modules\HfcCustomer\Entities;
 
 use Illuminate\Database\Eloquent\Model;
-use Modules\ProvBase\Entities\Modem;
 
 
 /*
@@ -56,7 +55,7 @@ class Mpr extends \BaseModel {
 	// Relation to MPR Geopos
 	public function mprgeopos()
 	{
-		return $this->hasMany('Modules\Hfccustomer\Entities\MprGeopos');
+		return $this->hasMany('Modules\HfcCustomer\Entities\MprGeopos');
 	}
 
 
@@ -102,17 +101,21 @@ class Mpr extends \BaseModel {
 		$single_modem = false;
 		$return = $r = 0;
 
+		// if no modem is set in parameters -> means: select all modems
+		if ($modem == null)
+			$modem = \Modules\ProvBase\Entities\Modem::where('id','>', '0');
+
 		// if param modem is integer select modem with this integer value (modem->id)
 		if (is_int($modem))
 		{
 			$single_modem = true;
+			$modem = \Modules\ProvBase\Entities\Modem::where('id','=', $modem);
 			\Log::info('mps: perform mps rule matching for a single modem');
-		} else {
-			\Log::info('mps: perform mps rule matching');
-			// reset all tree_ids if all modems are being matched,
-			// because we don't know if old matches are still valid
-			Modem::where('id', '>', '0')->update(['tree_id' => 0]);
 		}
+
+		// Log
+		if (!$single_modem)
+			\Log::info('mps: perform mps rule matching');
 
 		// Foreach MPR
 		// lower priority integers first
@@ -149,13 +152,7 @@ class Mpr extends \BaseModel {
 				$id = $mpr->tree_id;
 
 				// the selected modems to use for update
-				if ($single_modem)
-					$tmp = Modem::where('id', '=', $modem);
-				else
-					// if no modem is set in parameters -> means: select all modems
-					$tmp = Modem::where('id', '>', '0');
-
-				$select = $tmp->where('x', '>', $x1)->where('x', '<', $x2)->where('y', '>', $y1)->where('y', '<', $y2);
+				$select = $modem->whereRaw("(x > $x1) AND (x < $x2) AND (y > $y1) AND (y < $y2)");
 
 				// for a single modem do not perform a update() either return the tree_id
 				// Note: This is required because we can not call save() from observer context.
@@ -163,9 +160,7 @@ class Mpr extends \BaseModel {
 				if ($single_modem)
 				{
 					$r = $select->count();
-					// single_modem is within the current mpr area
-					if($r)
-						$return = $id;
+					$return = $id;
 				}
 				else
 					$r = $select->update(['tree_id' => $id]);
@@ -178,35 +173,5 @@ class Mpr extends \BaseModel {
 		}
 
 		return $return;
-	}
-
-	/**
-	 * BOOT:
-	 * - init Mpr Observer
-	 */
-	public static function boot()
-	{
-		parent::boot();
-
-		Mpr::observe(new MprObserver);
-	}
-}
-
-
-/**
- * Mpr Observer Class
- * Handles changes on MprGeopos, can handle:
- *
- * 'creating', 'created', 'updating', 'updated',
- * 'deleting', 'deleted', 'saving', 'saved',
- * 'restoring', 'restored',
- */
-class MprObserver
-{
-	// unlike MprGeoposObserver we only hook into 'updated' here, as Mpr::refresh will already
-	// be called in MprGeoposObserver if MPRs (including their geopos) are created or deleted
-	public function updated($modem)
-	{
-		Mpr::refresh();
 	}
 }
