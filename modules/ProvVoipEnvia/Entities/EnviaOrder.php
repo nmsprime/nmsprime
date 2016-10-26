@@ -42,6 +42,12 @@ class EnviaOrder extends \BaseModel {
 				'phonenumber_related' => False,
 			),
 			array(
+				'ordertype' => 'n/a',
+				'ordertype_id' => null,
+				'method' => 'contract/change_variation',
+				'phonenumber_related' => False,
+			),
+			array(
 				'ordertype' => 'Stornierung eines Auftrags',
 				'ordertype_id' => null,
 				'method' => 'order/cancel',
@@ -768,6 +774,7 @@ class EnviaOrder extends \BaseModel {
 			'Activation confirmed',
 			'Deactivation target',
 			'Deactivation confirmed',
+			'Active?',
 		);
 		array_push($data, $head);
 
@@ -788,6 +795,7 @@ class EnviaOrder extends \BaseModel {
 			array_push($row, (boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "placeholder_unset"));
 			array_push($row, (boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "placeholder_unset"));
 			array_push($row, (boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "placeholder_unset"));
+			array_push($row, ($phonenumber->active > 0 ? 'placeholder_yes': 'placeholder_no'));
 
 			array_push($data, $row);
 		}
