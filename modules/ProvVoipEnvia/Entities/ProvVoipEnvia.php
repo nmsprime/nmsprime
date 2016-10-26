@@ -11,6 +11,7 @@ use Modules\ProvVoip\Entities\PhonebookEntry;
 use Modules\ProvVoip\Entities\CarrierCode;
 use Modules\ProvVoip\Entities\EkpCode;
 use Modules\ProvVoip\Entities\Mta;
+use Modules\ProvVoip\Entities\TRCClass;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
