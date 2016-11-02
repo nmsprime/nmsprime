@@ -186,9 +186,9 @@ class Mpr extends \BaseModel {
 	 */
 	public static function boot()
 	{
-			parent::boot();
+		parent::boot();
 
-			Mpr::observe(new MprObserver);
+		Mpr::observe(new MprObserver);
 	}
 
 }
