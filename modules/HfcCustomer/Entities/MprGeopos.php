@@ -1,7 +1,7 @@
-<?php namespace Modules\Hfccustomer\Entities;
+<?php namespace Modules\HfcCustomer\Entities;
 
 use Illuminate\Database\Eloquent\Model;
-use Modules\Hfccustomer\Entities\Mpr;
+use Modules\HfcCustomer\Entities\Mpr;
 
 
 /*
@@ -25,7 +25,7 @@ class MprGeopos extends \BaseModel {
 	// Relation MPR
 	public function mprgeopos()
 	{
-		return $this->belongsTo('Modules\Hfccustomer\Entities\Mpr');
+		return $this->belongsTo('Modules\HfcCustomer\Entities\Mpr');
 	}
 
 	// Add your validation rules here
