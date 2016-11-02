@@ -3042,7 +3042,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * This function returns HTML containing free Envia phonenumbers.
+	 * This function returns HTML containing error message or array of free Envia phonenumbers.
 	 *
 	 * It uses the request() method in controller, which has been extended to return HTML instead of a view.
 	 *
@@ -3063,14 +3063,17 @@ class ProvVoipEnvia extends \BaseModel {
 		if (substr_count($ret, '<h4>Success ') > 0) {
 			$ret = explode('<hr><h4>DEBUG', $ret)[0];
 		}
+		else {
+			// error: return the html string as is
+			return $ret;
+		}
 
 		// extract numbers if any and make $ret an array
-		// could later be used to make hyperlinks out of the numbers (in view);
-		// then we could fill the form using JavaScript…
-		/* $pattern = '#[0-9]+/[0-9]+#'; */
-		/* preg_match_all($pattern, $ret, $free_numbers); */
-		/* $ret = $free_numbers[0]; */
+		$pattern = '#[0-9]+/[0-9]+#';
+		preg_match_all($pattern, $ret, $free_numbers);
+		$ret = $free_numbers[0];
 
+		// this now is an array containing all numbers
 		return $ret;
 
 	}
