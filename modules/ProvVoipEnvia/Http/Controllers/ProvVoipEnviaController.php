@@ -760,7 +760,7 @@ class ProvVoipEnviaController extends \BaseController {
 			return $view_var['plain_html'];
 		}
 
-		// default: returne a view
+		// default: return a view
 		return View::make($view_path, $this->compact_prep_view(compact('model_name', 'view_header', 'view_var')));
 	}
 
