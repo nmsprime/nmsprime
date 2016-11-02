@@ -2456,7 +2456,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$out = "";
 
 		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.").<h2>Returned csv is:</h2><pre>".$csv."</pre><h2>Extracted data is:</h2>";
-		dd($results);
+		d($results);
 
 	}
 

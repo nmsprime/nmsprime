@@ -498,16 +498,23 @@ class EnviaOrder extends \BaseModel {
 	 * Prepare the list of orders to be shown on index page
 	 *
 	 * @author Patrick Reichel
-	 *
-	 * @todo check if there should be some filters (e.g. to show only open orders)
 	 */
 	public function index_list() {
 
+		// array containing all implemented filters
+		// later used as whitelist for given show_filter param
+		$available_filters = array(
+			'all', // default and fallback: show all orders
+			'action_needed', // show only orders needing user interaction
+		);
+
+		// check if we have to filter the list of orders
 		$filter = \Input::get('show_filter', 'all');
-		if ($filter != 'action_needed') {
+		if (!in_array($filter, $available_filters)) {
 			$filter = 'all';
 		}
 
+		// sort them by their last change date, latest date first
 		$orders =  $this->orderBy('updated_at', 'desc')->get();
 
 		// all shall be shown: return as is
