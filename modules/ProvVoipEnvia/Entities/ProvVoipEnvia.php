@@ -1528,8 +1528,12 @@ class ProvVoipEnvia extends \BaseModel {
 		$inner_xml->addChild('orderdate', date("Y-m-d"));
 
 		// special handling of trc_class needed (comes from external table)
-		$trc_class = TRCClass::find($this->phonenumbermanagement->trcclass)->trc_id;
-		$inner_xml->addChild('trc_class', $trc_class);
+		$trc_class = TRCClass::find($this->phonenumbermanagement->trcclass);
+		if (is_null($trc_class)) {
+			throw new XmlCreationError("TRC class not set.<br>Set TRC class and save the PhonenumberManagement.");
+		}
+		$trc_id = $trc_class->trc_id;
+		$inner_xml->addChild('trc_class', $trc_id);
 
 		$this->_add_sip_data($inner_xml->addChild('method'));
 	}
