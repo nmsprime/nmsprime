@@ -243,7 +243,7 @@ class SepaAccount extends \BaseModel {
 			'Cost Center' 	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
 			'Description' 	=> '',
 			'Net' 			=> ($this->_get_billing_lang() == 'de') ? number_format($charge['net'], 2 , ',' , '.' ) : number_format($charge['net'], 2 , '.' , ',' ),
-			'Tax' 			=> $charge['tax']." %",
+			'Tax' 			=> $charge['tax'],
 			'Gross' 		=> ($this->_get_billing_lang() == 'de') ? number_format($charge['net'] + $charge['tax'], 2 , ',' , '.' ) : number_format($charge['net'] + $charge['tax'], 2 , '.' , ',' ),
 			'Currency' 		=> $conf->currency ? $conf->currency : 'EUR',
 			'Firstname' 	=> $contract->firstname,
@@ -408,15 +408,16 @@ class SepaAccount extends \BaseModel {
 				if (!$records)
 					continue;
 
-				$accounting = BaseViewController::translate_label('accounting');
+				$accounting = BaseViewController::translate_label($key1);
 				$rec 		= $this->_get_billing_lang() == 'de' ? '' : '_records';
 
 				$file = $this->dir.$this->name.'/'.$accounting.'_'.BaseViewController::translate_label($key).$rec.'.txt';
 				$file = SepaAccount::str_sanitize($file);
 
 				// initialise record files with Column names as first line
-				foreach (array_keys($records[0]) as $key)
-					$keys[] = BaseViewController::translate_label($key);
+				$keys = [];
+				foreach (array_keys($records[0]) as $col)
+					$keys[] = BaseViewController::translate_label($col);
 				Storage::put($file, implode("\t", $keys));
 
 				$data = [];
