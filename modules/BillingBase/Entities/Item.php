@@ -54,7 +54,7 @@ class Item extends \BaseModel {
 
 		// green colour means it will be considered for next accounting cycle, blue is a new item and not yet considered
 		// red means item is outdated/expired and will not be charged this month
-		$bsclass = $billing_valid ? 'success' : ($this->get_start_time() < strtotime(date('Y-m-01')) ? 'danger' : 'info');
+		$bsclass = $billing_valid ? 'success' : ($this->get_start_time() < strtotime('midnight first day of this month') ? 'danger' : 'info');
 
 		$name = isset($this->product) ? $this->product->name : $this->accounting_text;
 
