@@ -11,6 +11,7 @@ use Modules\ProvBase\Entities\Endpoint;
 use Modules\ProvBase\Entities\Configfile;
 use Modules\ProvBase\Entities\Qos;
 use Modules\ProvBase\Entities\ProvBase;
+use Modules\ProvVoip\Entities\ProvVoip;
 use Modules\ProvBase\Entities\IpPool;
 use Modules\ProvBase\Entities\Cmts;
 
@@ -205,6 +206,8 @@ class ProvMonController extends \BaseController {
 
 	/**
 	 * Returns view of mta analysis page
+	 *
+	 * Note: This is never called if ProvVoip Module is not active
 	 */
 	public function mta_analysis($id)
 	{
@@ -220,7 +223,10 @@ class ProvMonController extends \BaseController {
 			goto end;
 
 		// Ping
-		exec ('sudo ping -c3 -i0 -w1 '.$mta->hostname, $ping);
+		$domain   = ProvVoip::first()->mta_domain;
+		$hostname = $domain ? $mta->hostname.'.'.$domain : $mta->hostname.'.'.$this->domain_name;
+
+		exec ('sudo ping -c3 -i0 -w1 '.$hostname, $ping);
 		if (count(array_keys($ping)) <= 7)
 			$ping = null;
 
