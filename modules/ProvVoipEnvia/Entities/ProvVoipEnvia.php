@@ -2924,6 +2924,32 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Process data after successful voipaccount update
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_voip_account_update_response($xml, $data, $out) {
+
+		// create enviaorder
+		$order_data = array();
+
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['method'] = 'voip_account/update';
+		$order_data['contract_id'] = $this->contract->id;
+		$order_data['modem_id'] = $this->modem->id;
+		$order_data['phonenumber_id'] = $this->phonenumber->id;
+		$order_data['ordertype'] = 'voip_account/update';
+		$order_data['orderstatus'] = 'initializing';
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// view data
+		$out .= "<h5>VoIP account updated (order ID: ".$xml->orderid.")</h5>";
+
+		return $out;
+	}
+
+	/**
 	 * Process data after successful order cancel.
 	 *
 	 * @author Patrick Reichel
