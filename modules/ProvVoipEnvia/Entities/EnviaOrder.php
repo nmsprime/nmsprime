@@ -958,6 +958,11 @@ class EnviaOrder extends \BaseModel {
 			return false;
 		}
 
+		// currently created orders also don't need interaction
+		if ($this->orderstatus == 'initializing') {
+			return false;
+		}
+
 		// default (be pessimistic): we have to perform action…
 		return true;
 	}
