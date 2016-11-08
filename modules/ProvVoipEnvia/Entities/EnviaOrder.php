@@ -109,7 +109,7 @@ class EnviaOrder extends \BaseModel {
 				'orderstatus' => 'Schaltung bestätigt zum Zieltermin',
 				'view_class' => 'success',
 				'state_type' => 'success',
-				'final' => True,
+				'final' => False,
 			),
 			array(
 				'orderstatus_id' => 1017,
