@@ -586,7 +586,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @author Patrick Reichel
 	 *
 	 * @param $job job to do
-	 * @param store created XML (used to deactivate the function e.g. for XML created to be shown only)
+	 * @param store created XML (used to deactivate the method e.g. for XML created to be shown only)
 	 *
 	 * @return XML
 	 */
@@ -1954,8 +1954,9 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_contract_get_voice_data_response($xml, $data, $out) {
 
-		$out = "<h5>Voice data for contract</h5>";
-		$out = "<h5>UNTESTED: This needs to be tested when real data is available</h5>";
+		$out .= "<h5>Voice data for contract ".$this->contract->id."</h5>";
+		$out .= "<h5 style='color: red'>UNTESTED: This needs to be tested when <u>real data</u> is available<br>";
+		$out .= "IMPORTANT: Double check changes and new settings!!</h5>";
 
 		$out .= "Contained callnumber informations:<br>";
 		$out .= "<pre>";
@@ -1977,9 +1978,9 @@ class ProvVoipEnvia extends \BaseModel {
 				$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 
 				// update TRCClass
-				if (is_numeric($entry)) {
-					// remember: trcclass.id != trclass.trc_id (first is local key, second is Envia Id!)
-					$trcclass = TRCClass::where('trc_id', $entry['trc_class'])->first();
+				// remember: trcclass.id != trclass.trc_id (first is local key, second is Envia Id!)
+				$trcclass = TRCClass::where('trc_id', '=', intval($entry->trc_class))->first();
+				if ($phonenumbermanagement['trcclass'] != $trcclass->id) {
 					$phonenumbermanagement['trcclass'] = $trcclass->id;
 					$phonenumbermanagement->save();
 				}
@@ -1991,10 +1992,22 @@ class ProvVoipEnvia extends \BaseModel {
 					$sip_data = $method->sip_data;
 
 					// update database
-					$phonenumber['username'] = $sip_data->username;
-					$phonenumber['password'] = $sip_data->password;
-					$phonenumber['sipdomain'] = $sip_data->sipdomain;
-					$phonenumber->save();
+					$changed = False;
+					if ($phonenumber['username'] != $sip_data->username) {
+						$phonenumber['username'] = $sip_data->username;
+						$changed = True;
+					}
+					if ($phonenumber['password'] != $sip_data->password) {
+						$phonenumber['password'] = $sip_data->password;
+						$changed = True;
+					}
+					if ($phonenumber['sipdomain'] != $sip_data->sipdomain) {
+						$phonenumber['sipdomain'] = $sip_data->sipdomain;
+						$changed = True;
+					}
+					if ($changed) {
+						$phonenumber->save();
+					}
 				}
 				// process packet cable data
 				elseif (boolval($method->mgcp_data)) {
