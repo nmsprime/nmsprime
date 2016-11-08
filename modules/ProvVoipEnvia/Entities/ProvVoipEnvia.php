@@ -387,7 +387,7 @@ class ProvVoipEnvia extends \BaseModel {
 			// can get contract related information if contract is available
 			if ($this->contract_available) {
 				array_push($ret, array(
-					'linktext' => 'Get voice data',
+					'linktext' => 'Get voice data (EXPERIMENTAL – can have unexpected side effects)',
 					'url' => $base.'contract_get_voice_data'.$origin.'&amp;modem_id='.$modem_id.$really,
 					'help' => "Get all phonenumbers and sip data for this modem.",
 				));
@@ -472,9 +472,17 @@ class ProvVoipEnvia extends \BaseModel {
 
 				if ($view_level == 'phonebookentry') {
 					array_push($ret, array(
-						'linktext' => 'Create/change phonebook entry',
+						'linktext' => 'Create/change phonebook entry (EXPERIMENTAL)',
 						'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
 						'help' => "Creates a new or updates an existing phonebook entry for this phonenumber."
+					));
+				}
+
+				if ($view_level == 'phonebookentry') {
+					array_push($ret, array(
+						'linktext' => 'Delete phonebook entry (EXPERIMENTAL)',
+						'url' => $base.'phonebookentry_delete'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
+						'help' => "Deletes an existing phonebook entry for this phonenumber."
 					));
 				}
 			}
