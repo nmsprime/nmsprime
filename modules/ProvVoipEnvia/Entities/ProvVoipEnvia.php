@@ -2129,7 +2129,10 @@ class ProvVoipEnvia extends \BaseModel {
 	/**
 	 * Extract and process order csv.
 	 *
-	 * According to Envia's Wienecke this method is only for debugging – the answer will only contain voipaccount related orders. Nevertheless we should use this – e.g. for nightly cron checks to detect manually created orders (at least according to a phonenumber).
+	 * According to Envia's Wienecke this method is only for debugging – the answer will only contain
+	 * voipaccount related orders.
+	 * Nevertheless we should use this – e.g. for nightly cron checks to detect manually created
+	 * orders (at least according to a phonenumber).
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -2518,7 +2521,7 @@ class ProvVoipEnvia extends \BaseModel {
 			return $out;
 		}
 
-		$out = "<h5>Status for order ".$order_id.":</h5>";
+		$out .= "<h5>Status for order ".$order_id.":</h5>";
 
 		$out .= "<table>";
 
@@ -2654,6 +2657,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// actions to perform if order handles creation of voip account
 		if (EnviaOrder::order_creates_voip_account($order)) {
+
 			// we got a new target date
 // TODO: check if this should be re-enabled (if Envia sends correct dates in orderdate)
 // as Sebastian Wiencke told me the orderdate correlates with the activation_date – but in reality this seems not to be the case
