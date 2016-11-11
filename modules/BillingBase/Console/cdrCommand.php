@@ -186,8 +186,11 @@ class cdrCommand extends Command {
 		// find correct filename
 		foreach ($file_list as $fname)
 		{
-			if (strpos($fname, $this->year.$this->month) !== false && strpos($fname, '_EVN.TXT') !== false)
+			if (strpos($fname, date('Ym')) !== false && strpos($fname, '_EVN.txt') !== false)
+			{
 				$remote_fname = $fname;
+				break;
+			}
 		}
 
 		if (!isset($remote_fname))
@@ -210,7 +213,7 @@ class cdrCommand extends Command {
 			return -1;
 		}
 
-		ftp_close($conn_id);
+		ftp_close($ftp_conn);
 
 	}
 
