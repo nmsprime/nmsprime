@@ -33,16 +33,19 @@ class BillingBaseController extends \BaseController {
 		$cols = implode (', ', $cols);
 
 		return [
-			// array('form_type' => 'text', 'name' => 'rcd', 'description' => 'Day of Requested Collection Date'),
-			array('form_type' => 'select', 'name' => 'rcd', 'description' => 'Day of Requested Collection Date', 'value' => $days),
-			array('form_type' => 'select', 'name' => 'currency', 'description' => 'Currency', 'value' => BillingBase::getPossibleEnumValues('currency')),
-			array('form_type' => 'text', 'name' => 'tax', 'description' => 'Tax in %'),
-			array('form_type' => 'text', 'name' => 'mandate_ref_template', 'description' => 'Mandate Reference', 'help' => trans('helper.BillingBase_MandateRef').$cols , 'options' => ['placeholder' => \App\Http\Controllers\BaseViewController::translate_label('e.g.: String - {number}')]), 
 			array('form_type' => 'text', 'name' => 'invoice_nr_start', 'description' => 'Invoice Number Start', 'help' => trans('helper.BillingBase_InvoiceNrStart')),
 			array('form_type' => 'select', 'name' => 'userlang', 'description' => 'Language for Accounting command', 'value' => BillingBase::getPossibleEnumValues('userlang')),
-			array('form_type' => 'checkbox', 'name' => 'split', 'description' => 'Split Sepa Transfer-Types', 'help' => trans('helper.BillingBase_SplitSEPA')),
+			array('form_type' => 'select', 'name' => 'currency', 'description' => 'Currency', 'value' => BillingBase::getPossibleEnumValues('currency')),
+			array('form_type' => 'text', 'name' => 'tax', 'description' => 'Tax in %'),
+			array('form_type' => 'select', 'name' => 'rcd', 'description' => 'Day of Requested Collection Date', 'value' => $days),
+			array('form_type' => 'text', 'name' => 'mandate_ref_template', 'description' => 'Mandate Reference', 'help' => trans('helper.BillingBase_MandateRef').$cols , 'options' => ['placeholder' => \App\Http\Controllers\BaseViewController::translate_label('e.g.: String - {number}')]), 
+			array('form_type' => 'checkbox', 'name' => 'split', 'description' => 'Split Sepa Transfer-Types', 'help' => trans('helper.BillingBase_SplitSEPA'), 'space' => 1),
+
+			array('form_type' => 'text', 'name' => 'cdr_offset', 'description' => trans('messages.cdr_offset'), 'help' => trans('helper.BillingBase_cdr_offset')),
+			array('form_type' => 'text', 'name' => 'voip_extracharge_default', 'description' => trans('messages.voip_extracharge_default'), 'help' => trans('helper.BillingBase_extra_charge')),
+			array('form_type' => 'text', 'name' => 'voip_extracharge_mobile_national', 'description' => trans('messages.voip_extracharge_mobile_national'), 'space' => 1),
+
 			array('form_type' => 'checkbox', 'name' => 'termination_fix', 'description' => 'Item Termination only end of month', 'help' => trans('helper.BillingBase_ItemTermination')),
-			array('form_type' => 'text', 'name' => 'cdr_offset', 'description' => 'CDR to Invoice time difference in Months', 'help' => trans('helper.BillingBase_cdr_offset')),
 		];
 	}
 

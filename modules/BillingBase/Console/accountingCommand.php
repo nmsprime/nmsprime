@@ -500,12 +500,13 @@ class accountingCommand extends Command {
 	protected function _parse_hlkomm_csv($filepath)
 	{
 		$csv = is_file($filepath) ? file($filepath) : array(array());
-
 		// skip first 5 lines (descriptions)
 		if ($csv[0])
 			unset($csv[0], $csv[1], $csv[2], $csv[3], $csv[4]);
 		else
 			return $csv;
+
+		$config = BillingBase::first();
 
 		// get phonenr to contract_id listing - needed because only phonenr is mentioned in csv
 		// select m.contract_id, a.username from phonenumber a, mta b, modem m where a.mta_id=b.id AND b.modem_id=m.id order by m.contract_id;
@@ -516,22 +517,32 @@ class accountingCommand extends Command {
 			->orderBy('modem.contract_id')->get();
 
         foreach ($phonenumbers_o as $value)
-			$phonenrs[$value->username] = $value->contract_id;
-
+        {
+        	if ($value->username)
+        	{
+        		if (substr($value->username, 0, 4) == '0049')
+					$phonenrs[substr_replace($value->username, '49', 0, 4)] = $value->contract_id;
+        	}
+        }
 
 		// create structured array
 		foreach ($csv as $line)
 		{
-			$line = str_getcsv($line, '\t');
+			$line = str_getcsv($line, "\t");
 			$phonenr1 = $line[4].$line[5].$line[6];			// calling nr
 			$phonenr2 = $line[7].$line[8].$line[9];			// called nr
 
-			// TODO: simplify after checking 2nd case!
+			$a = array($phonenr1, $line[0], $line[1], $line[10], $phonenr2, str_replace(',', '.', $line[13]));
+
+			// calculate price with hlkomms distance zone
+			// $a[5] = strpos($line[3], 'Mobilfunk national') !== false ? $a[5] * ($config->voip_extracharge_mobile_national / 100 + 1) : $a[5] * ($config->voip_extracharge_default / 100 + 1);
+			$a[5] = $line[15] == '990711' ? $a[5] * ($config->voip_extracharge_mobile_national / 100 + 1) : $a[5] * ($config->voip_extracharge_default / 100 + 1);
+
 			if (isset($phonenrs[$phonenr1]))
-				$data[$phonenrs[$phonenr1]][] = array($phonenr1, $line[0], $line[1], $line[10], $phonenr2, $line[13]);
+				$data[$phonenrs[$phonenr1]][] = $a;
 			else if (isset($phonenrs[$phonenr2]))
 				// our phonenr is the called nr - TODO: proof if this case can actually happen - normally this shouldnt be the case
-				$data[$phonenrs[$phonenr2]][] = array($phonenr1, $line[0], $line[1], $line[10], $phonenr2, $line[13]);
+				$data[$phonenrs[$phonenr2]][] = $a;
 			else
 			{
 				// there is a phonenr entry in csv that doesnt exist in our db - this case should never happen
