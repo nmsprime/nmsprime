@@ -384,10 +384,13 @@ class Invoice extends \BaseModel{
 			$sum += $entry[5];
 			$count++;
 		}
+
+		$sum = sprintf("%01.2f", $sum); 	// round($sum, 2)
+
 		$this->data['cdr_charge'] = $sum;
 		$this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'. $sum . '}\\\\';
 		$plural = $count > 1 ? 'en' : '';
-		$this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural." & ".round($sum, 2).$this->currency.' & '.round($sum, 2).$this->currency.'\\\\';
+		$this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural." & ".$sum.$this->currency.' & '.$sum.$this->currency.'\\\\';
 
 		$this->filename_cdr = date('Y_m', $time_cdr).'_cdr';
 
@@ -520,6 +523,7 @@ class Invoice extends \BaseModel{
 		{
 			if (is_file($file))
 			{
+				// take care - when we start process in background we don't get the return value anymore
 				system("pdflatex $file &>/dev/null &", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
 
 				switch ($ret)
