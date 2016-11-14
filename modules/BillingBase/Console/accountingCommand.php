@@ -315,10 +315,12 @@ class accountingCommand extends Command {
 		unset($prod_types['Credit']);
 
 		foreach ($salesmen as $key => $sm)
+		{
 			$sm->all_prod_types = $prod_types;
-
+			$sm->dir = $this->dir;
+		}
 		// directory to save file - is actually only needed for first salesmen
-		if (isset($salesmen[0])) $salesmen[0]->dir = $this->dir;
+		// if (isset($salesmen[0])) $salesmen[0]->dir = $this->dir;
 
 
 		// SepaAccount
