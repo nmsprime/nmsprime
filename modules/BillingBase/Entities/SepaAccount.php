@@ -390,8 +390,9 @@ class SepaAccount extends \BaseModel {
 
 
 	/**
-	 * Creates the Accounting Record Files (Item/Tariff)
-	 * and Booking Record Files (Sepa/No Sepa)
+	 * Creates currently 4 files
+	 	* the Accounting Record Files (Item/Tariff)
+	 	* the Booking Record Files (Sepa/No Sepa)
 	 *
 	 * @author Nino Ryschavy, Christian Schramm
 	 * edit: filenames are language specific

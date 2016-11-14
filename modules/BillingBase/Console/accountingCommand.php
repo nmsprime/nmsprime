@@ -407,6 +407,10 @@ class accountingCommand extends Command {
 			$salesmen[0]->prepare_output_file();
 			foreach ($salesmen as $sm)
 				$sm->print_commission();
+
+			// delete file if there are no entries
+			if (Storage::size($salesmen[0]->get_storage_rel_filename()) <= 60)
+				Storage::delete($salesmen[0]->get_storage_rel_filename());
 		}
 
 		// create zip file

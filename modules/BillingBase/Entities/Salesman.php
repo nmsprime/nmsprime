@@ -75,7 +75,7 @@ class Salesman extends \BaseModel {
 	protected $total_commission = 0;			// total commission amount during actual billing cycle
 	protected $item_names = [];					// all names of items he gets commission for (in actual billing cycle)
 	public $filename = 'salesmen_commission';
-	public $dir;								// set during init of accounting command
+	public $dir;								// set during init of accounting command - relativ to storage/app/
 
 
 	// example - $item->product->name == 'Credit Device'
@@ -85,7 +85,7 @@ class Salesman extends \BaseModel {
 		foreach ($types as $key => $value)
 			$types[$key] = trim($value);
 
-		if ($item->product->type == 'Credit')
+		if ($item->product->type == 'Credit' && in_array('Credit', $types))
 		{
 			// get credit type from product name
 			$credit_type = '';
@@ -98,33 +98,39 @@ class Salesman extends \BaseModel {
 			// if type is assigned - only add amount if type is in salesmans product list
 			if ($credit_type)
 			{
-				if (in_array($credit_type, $types))
-					goto add;
-				return;
+				if (!in_array($credit_type, $types))
+					return;
 			}
-add:
+
 			// add all other credits - default
-			$this->total_commission -= $item->charge;
-			array_push($this->item_names, $item->product->name);
+			$this->total_commission += $item->charge;
+			isset($this->item_names[$item->product->name]) ? $this->item_names[$item->product->name] += 1 : $this->item_names[$item->product->name] = 1;
 			return;
 		}
 
 		// all other types that the salesman gets commission for
 		if (in_array($item->product->type, $types))
 		{
-			// $count = $item->count ? $item->count : 1;
+			// $count = $item->count ? $item->count : 1; 		// this is already done in item model
 			$this->total_commission += $item->charge;
-			array_push($this->item_names, $item->count.'x '.$item->product->name);
+			isset($this->item_names[$item->product->name]) ? $this->item_names[$item->product->name] += $item->count : $this->item_names[$item->product->name] = $item->count;
 		}
 
 		return;
 	}
 
+	/**
+	 * Return filename of Salesman Commissions with path relativ to storage/app/
+	 */
+	public function get_storage_rel_filename()
+	{
+		return $this->dir.BaseViewController::translate_label($this->filename).'.txt';
+	}
+
+
 	public function prepare_output_file()
 	{
-		$filename = BaseViewController::translate_label($this->filename);
-
-		Storage::put($this->dir.$filename.'.txt', "ID\t".BaseViewController::translate_label('Name')."\t".BaseViewController::translate_label('Commission in %')."\t".BaseViewController::translate_label('Total Fee')."\t".		BaseViewController::translate_label('Commission Amount')."\t".BaseViewController::translate_label('Items')."\n");
+		Storage::put($this->get_storage_rel_filename(), "ID\t".BaseViewController::translate_label('Name')."\t".BaseViewController::translate_label('Commission in %')."\t".BaseViewController::translate_label('Total Fee')."\t".BaseViewController::translate_label('Commission Amount')."\t".BaseViewController::translate_label('Items')."\n");
 	}
 
 
@@ -134,9 +140,10 @@ add:
 		if ($this->total_commission == 0)
 			return;
 
-		$file = $this->dir.BaseViewController::translate_label($this->filename).'.txt';
+		foreach ($this->item_names as $key => $value)
+			$items[] = $value.'x '.$key;
 
-		Storage::append($file, $this->id."\t".$this->firstname.' '.$this->lastname."\t".$this->commission."\t".$this->total_commission."\t".round($this->total_commission * $this->commission / 100, 2)."\t".implode(', ', $this->item_names));
+		Storage::append($this->get_storage_rel_filename(), $this->id."\t".$this->firstname.' '.$this->lastname."\t".$this->commission."\t".$this->total_commission."\t".round($this->total_commission * $this->commission / 100, 2)."\t".implode(', ', $items));
 		// echo "stored salesmen commissions in $file\n";
 	}
 
