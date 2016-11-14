@@ -4,6 +4,7 @@ namespace Modules\BillingBase\Entities;
 
 use Storage;
 use Modules\ProvBase\Entities\Contract;
+use \App\Http\Controllers\BaseViewController;
 
 class Salesman extends \BaseModel {
 
@@ -121,10 +122,9 @@ add:
 
 	public function prepare_output_file()
 	{
-		$filename = \App\Http\Controllers\BaseViewController::translate_label($this->filename);
+		$filename = BaseViewController::translate_label($this->filename);
 
-
-		Storage::put($this->dir.$filename.'.txt', "ID\t".\App\Http\Controllers\BaseViewController::translate_label('Name')."\t".\App\Http\Controllers\BaseViewController::translate_label('Commission in %')."\t".\App\Http\Controllers\BaseViewController::translate_label('Total Fee')."\t".		\App\Http\Controllers\BaseViewController::translate_label('Commission Amount')."\t".\App\Http\Controllers\BaseViewController::translate_label('Items')."\n");
+		Storage::put($this->dir.$filename.'.txt', "ID\t".BaseViewController::translate_label('Name')."\t".BaseViewController::translate_label('Commission in %')."\t".BaseViewController::translate_label('Total Fee')."\t".		BaseViewController::translate_label('Commission Amount')."\t".BaseViewController::translate_label('Items')."\n");
 	}
 
 
@@ -134,10 +134,10 @@ add:
 		if ($this->total_commission == 0)
 			return;
 
-		$file = $this->dir.\App\Http\Controllers\BaseViewController::translate_label($this->filename).'.txt';
+		$file = $this->dir.BaseViewController::translate_label($this->filename).'.txt';
 
 		Storage::append($file, $this->id."\t".$this->firstname.' '.$this->lastname."\t".$this->commission."\t".$this->total_commission."\t".round($this->total_commission * $this->commission / 100, 2)."\t".implode(', ', $this->item_names));
-		echo "stored salesmen commissions in $file\n";
+		// echo "stored salesmen commissions in $file\n";
 	}
 
 

@@ -382,7 +382,7 @@ class accountingCommand extends Command {
 		{
 			// keep cdr
 			// if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
-			if (basename($f) != $this->_get_cdr_filename())
+			if (basename($f) != self::_get_cdr_filename())
 				Storage::delete($f);
 		}
 
@@ -415,7 +415,7 @@ class accountingCommand extends Command {
 	/**
 	 * @return String 	Filename   e.g.: 'Call Data Record_2016_08.csv' or if app language is german 'Einzelverbindungsnachweis_2015_01.csv'
 	 */
-	private function _get_cdr_filename()
+	public static function _get_cdr_filename()
 	{
 		$offset = BillingBase::first()->cdr_offset;
 		$time = $offset ? strtotime('-'.($offset+1).' month') : strtotime('first day of last month');
@@ -434,7 +434,7 @@ class accountingCommand extends Command {
 	 */
 	private function _get_cdr_data()
 	{
-		$filename = $this->_get_cdr_filename();
+		$filename = self::_get_cdr_filename();
 		$dir_path = storage_path('app/'.$this->dir.'/');
 		$filepath = $dir_path.$filename;
 
