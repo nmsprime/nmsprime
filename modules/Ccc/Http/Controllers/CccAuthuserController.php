@@ -236,9 +236,7 @@ class CccAuthuserController extends \BaseController {
 	public function show()
 	{
 		$contract_id = \Auth::guard('ccc')->user()['contract_id'];
-		// $invoices 	 = is_dir($dir) ? \Storage::files($this->rel_dir_path_invoices.$contract_id) : []; 	// returns file path strings
-
-		$invoices = self::get_customer_invoices($contract_id);
+		$invoices 	 = self::get_customer_invoices($contract_id);
 
 		return \View::make('ccc::index', compact('invoices', 'contract_id'));
 	}
@@ -256,35 +254,35 @@ class CccAuthuserController extends \BaseController {
 	 */
 	public static function get_customer_invoices($contract_id)
 	{
-		$dir 		 = storage_path('app/'.self::$rel_dir_path_invoices.$contract_id);
-		$invoices 	 = is_dir($dir) ? \File::allFiles($dir) : [];		// returns file objects
+		// $dir 		 = storage_path('app/'.self::$rel_dir_path_invoices.$contract_id);
+		// $invoices 	 = is_dir($dir) ? \File::allFiles($dir) : [];		// returns file objects
 
-		// hide invoices from unverified Settlementruns
-		$hide = SettlementRun::unverified_files();
+		// // hide invoices from unverified Settlementruns
+		// $hide = SettlementRun::unverified_files();
 
-		if ($hide)
-		{
-			foreach ($invoices as $key => $invoice)
-			{
-				if (in_array($invoice->getBasename(), $hide))
-					unset($invoices[$key]);
-			}
-		}
+		// if ($hide)
+		// {
+		// 	foreach ($invoices as $key => $invoice)
+		// 	{
+		// 		if (in_array($invoice->getBasename(), $hide))
+		// 			unset($invoices[$key]);
+		// 	}
+		// }
 
-		return $invoices;
+		// return $invoices;
 
-		// $hide = $pdfs = [];
-		// $srs = SettlementRun::where('verified', '=', '0')->get(['id']);
 		// foreach ($srs as $sr)
 		// 	$hide[] = $sr->id;
 
-		// $hide = $hide ? : 0;
-		// $invoices = Invoice::where('contract_id', '=', $contract_id)->where('settlementrun_id', '!=', [$hide])->get();
+		$pdfs 	= [];
+		$srs 	= SettlementRun::where('verified', '=', '0')->get(['id'])->pluck('id')->all();
+		$hide 	= $srs ? : 0;
+		$invoices = Invoice::where('contract_id', '=', $contract_id)->where('settlementrun_id', '!=', [$hide])->get();
 
-		// foreach ($invoices as $invoice)
-		// 	$pdfs[] = new \SplFileInfo($invoice->get_invoice_dir_path().$invoice->filename);
+		foreach ($invoices as $invoice)
+			$pdfs[] = new \SplFileInfo($invoice->get_invoice_dir_path().$invoice->filename);
 
-		// return $pdfs;
+		return $pdfs;
 
 	}
 
