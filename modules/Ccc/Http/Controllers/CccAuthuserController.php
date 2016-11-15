@@ -26,6 +26,7 @@ class CccAuthuserController extends \BaseController {
 		'contract_firstname' 	=> '',
 		'contract_lastname' 	=> '',
 		'contract_street' 		=> '',
+		'contract_housenumber'	=> '',
 		'contract_zip' 			=> '',
 		'contract_city' 		=> '',
 		'login_name'  			=> '',
@@ -178,6 +179,7 @@ class CccAuthuserController extends \BaseController {
 		$this->data['contract_firstname'] = $contract->firstname;
 		$this->data['contract_lastname']  = $contract->lastname;
 		$this->data['contract_street'] 	  = $contract->street;
+		$this->data['contract_housenumber'] = $contract->house_number;
 		$this->data['contract_zip'] 	  = $contract->zip;
 		$this->data['contract_city'] 	  = $contract->city;
 		$this->data['login_name'] 		  = $login_data['login_name'];
