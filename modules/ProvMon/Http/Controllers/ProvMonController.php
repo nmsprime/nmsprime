@@ -283,7 +283,7 @@ end:
 	 */
 	private function validate_lease($lease, $type)
 	{
-		if ($lease['text'])
+		if ($lease['text'] && $lease['text'][0])
 		{
 			// calculate endtime
 			preg_match ('/ends [0-6] (.*?);/', $lease['text'][0], $endtime);
