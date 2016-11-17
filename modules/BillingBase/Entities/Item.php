@@ -294,10 +294,10 @@ class Item extends \BaseModel {
 				if ($dates['m'] % 3 != $billing_month % 3)
 					break;
 
-				$period_start = date('Y-m-01', strtotime('-2 month'));
+				$period_start = strtotime('midnight first day of -2 month');
 
 				// started in last 3 months
-				if ($start > strtotime($period_start))
+				if ($start > $period_start)
 				{
 					$days = date('z', strtotime('last day of this month')) - date('z', $start) + 1;
 					$total_days = date('t') + date('t', strtotime('first day of last month')) + date('t', $start);
@@ -307,11 +307,11 @@ class Item extends \BaseModel {
 				else
 				{
 					$ratio = 1;
-					$text  = $period_start;
+					$text  = date('Y-m-01', $period_start);
 				}
 
 				// ended in last 3 months
-				if ($end && ($end > strtotime($period_start)) && ($end < strtotime(date('Y-m-01', strtotime('next month')))))
+				if ($end && ($end > $period_start) && ($end < strtotime(date('Y-m-01', strtotime('next month')))))
 				{
 					$days = date('z', strtotime('last day of this month')) - date('z', $end);
 					$total_days = date('t') + date('t', strtotime('first day of last month')) + date('t', $start);
