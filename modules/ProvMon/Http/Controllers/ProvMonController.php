@@ -153,16 +153,26 @@ class ProvMonController extends \BaseController {
 		$modem 	  = $this->modem ? $this->modem : Modem::find($id);
 		$view_var = $modem; // for top header
 		$type 	  = 'CPE';
+		$modem_mac = strtolower($modem->mac);
+
+		// Lease
+		$lease['text'] = $this->search_lease('billing subclass', $modem_mac);
+		$lease = $this->validate_lease($lease, $type);
 
 		// get MAC of CPE first
-		exec ('grep -i '.$modem->mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+		exec ('grep -i '.$modem_mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
 		if ($str == [])
 		{
-			$mac = $modem->mac;
+			$mac = $modem_mac;
 			$mac[0] = ' ';
 			$mac = trim($mac);
 			$mac_bug = true;
 			exec ('grep -i '.$mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+
+			if (!$str && $lease['text'])
+				// get cpe mac addr from lease - first option tolerates small structural changes in dhcpd.leases and assures that it's a mac address
+				preg_match_all('/(?:[0-9a-fA-F]{2}[:]?){6}/', substr($lease['text'][0], strpos($lease['text'][0], 'hardware ethernet'), 40), $cpe_mac);
+				// $cpe_mac[0][0] = substr($lease['text'][0], strpos($lease['text'][0], 'hardware ethernet') + 18, 17);
 		}
 
 		if (isset($str[0]))
@@ -176,10 +186,6 @@ class ProvMonController extends \BaseController {
 		// Log
 		if (isset($cpe_mac[0][0]))
 			exec ('grep -i '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
-
-		// Lease
-		$lease['text'] = $this->search_lease('billing subclass', strtolower($modem->mac));
-		$lease = $this->validate_lease($lease, $type);
 
 		// Ping
 		if (isset($lease['text'][0]))
