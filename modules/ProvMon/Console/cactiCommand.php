@@ -7,6 +7,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
 use Modules\ProvBase\Entities\Modem;
+use Modules\ProvBase\Entities\Cmts;
 use Modules\ProvMon\Http\Controllers\ProvMonController;
 use Modules\ProvBase\Entities\ProvBase;
 
@@ -141,6 +142,34 @@ class cactiCommand extends Command {
 			// Info Message
 			echo "\ncacti: create diagrams for Modem: $name";
 			\Log::info("cacti: create diagrams for Modem: $name");
+		}
+
+		foreach (Cmts::all() as $cmts)
+		{
+			// Skip all $cmts's that already have cacti graphs
+			if (ProvMonController::monitoring_get_graph_ids($cmts))
+				continue;
+
+			$name      = $cmts->hostname;
+			$hostname  = $cmts->ip;
+			$community = ProvBase::first()->ro_community;
+
+			// Assumption: host template and graph tree are named e.g. '$company cmts' (case-insensitive)
+			$host_template_id = \DB::connection($this->connection)->table('host_template')
+				->where('name', '=', $cmts->company.' cmts')
+				->select('id')->first()->id;
+
+			$tree_id = \DB::connection($this->connection)->table('graph_tree')
+				->where('name', '=', 'cmts')
+				->select('id')->first()->id;
+
+			$out = system("php -q $path/add_device.php --description=$name --ip=$hostname --template=$host_template_id --community=$community --avail=snmp --version=2");
+			preg_match('/^Success - new device-id: \(([0-9]+)\)$/', $out, $matches);
+			if(count($matches) != 2)
+				continue;
+
+			// add host to cmts tree
+			system("php -q $path/add_tree.php --type=node --node-type=host --tree-id=$tree_id --host-id=$matches[1]");
 		}
 
 		echo "\n";
