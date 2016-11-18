@@ -3,8 +3,8 @@
 @section('content_left')
 
 	<table class="table">
-		@foreach($invoices as $key => $file)
-			<?php $link = HTML::linkRoute('Customer.Download', $file->getFilename(), ['contract_id' => $contract_id, 'filename' => $file->getFilename()]); ?>
+		@foreach($invoices as $key => $invoice)
+			<?php $link = HTML::linkRoute('Customer.Download', $invoice->filename, ['invoice' => $invoice->id]); ?>
 			@if ($key % 2)
 				<td> {{ $link }} </td></tr>
 			@else
