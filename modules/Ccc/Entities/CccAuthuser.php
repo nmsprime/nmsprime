@@ -90,7 +90,7 @@ class CccAuthuser extends \BaseModel implements AuthenticatableContract, CanRese
 				'last_name'   => $contract->lastname,
 				'email' 	  => $contract->email,
 				// 'active' 	  => 1 // TODO: deactivate non active customers for login
-				'active' 	  => $contract->check_validity('now') ? 1 : 0,
+				'active' 	  => $contract->check_validity('Now') ? 1 : 0,
 			);
 		}
 		else

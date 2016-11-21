@@ -154,8 +154,8 @@ class accountingCommand extends Command {
 					continue;
 				}
 
-				// skip invalid items
-				if (!$item->check_validity($item->get_billing_cycle() == 'Yearly' ? 'year' : 'month', $item->is_tariff()))
+				// skip invalid items - TODO: Think about relevance as it is a bit redundant to calculate_price_and_span
+				if (!$item->check_validity($item->get_billing_cycle()))
 				{
 					$logger->addDebug('Item '.$item->product->name.' is outdated', [$c->id]);
 					continue;
