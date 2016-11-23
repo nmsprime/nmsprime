@@ -20,7 +20,7 @@ class CccAuthuser extends \BaseModel implements AuthenticatableContract, CanRese
 	protected $connection = 'mysql-ccc';
 
 	// The associated SQL table for this Model
-	public $table = 'cccauthusers';
+	public $table = 'cccauthuser';
 
 
 	public function contract()
