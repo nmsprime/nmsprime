@@ -20,7 +20,7 @@ Route::group(['middleware' => 'ccc.base', 'prefix' => 'customer'], function () {
 	Route::post ('password', ['as' => 'CustomerPsw', 'uses' => 'Modules\Ccc\Http\Controllers\CccAuthuserController@psw_update']);
 
 	// Download Invoice
-	Route::get('home/download/{id}/{filename}', array('as' => 'Customer.Download', 'uses' => 'Modules\Ccc\Http\Controllers\CccAuthuserController@download'));
+	Route::get('home/download/{invoice}', array('as' => 'Customer.Download', 'uses' => 'Modules\Ccc\Http\Controllers\CccAuthuserController@download'));
 
 	// TODO: add CCC internal required routing stuff
 

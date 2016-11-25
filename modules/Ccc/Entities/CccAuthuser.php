@@ -20,43 +20,13 @@ class CccAuthuser extends \BaseModel implements AuthenticatableContract, CanRese
 	protected $connection = 'mysql-ccc';
 
 	// The associated SQL table for this Model
-	public $table = 'cccauthusers';
+	public $table = 'cccauthuser';
 
 
 	public function contract()
 	{
 		return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
 	}
-
-
-	/**
-	 * Create/Update Customer Control Information
-	 * Save the model to the database.
-	 *
-	 * @param  array  $options
-	 * @return array with [login, password, contract id)] or bool if no contract relation
-	 *
-	 * @author Torsten Schmidt
-	 */
-	// public function save(array $options = [])
-	// {
-	// 	$contract = $this->contract;
-
-	// 	if ($contract)
-	// 	{
-	// 		$psw = \Acme\php\Password::generate_password();
-	// 		$this->login_name = $contract->number;
-	// 		$this->password = \Hash::make($psw);
-	// 		$this->first_name = $contract->firstname;
-	// 		$this->last_name = $contract->lastname;
-	// 		$this->email = $contract->email;
-	// 		$this->active = 1; // TODO: deactivate non active customers for login
-	// 	}
-
-	// 	$ret = parent::save();
-
-	// 	return ($contract && $ret ? ['login' => $contract->number, 'password' => $psw, 'id' => $contract->id] : $ret);
-	// }
 
 
 	/**
@@ -120,7 +90,7 @@ class CccAuthuser extends \BaseModel implements AuthenticatableContract, CanRese
 				'last_name'   => $contract->lastname,
 				'email' 	  => $contract->email,
 				// 'active' 	  => 1 // TODO: deactivate non active customers for login
-				'active' 	  => $contract->check_validity('now') ? 1 : 0,
+				'active' 	  => $contract->check_validity('Now') ? 1 : 0,
 			);
 		}
 		else

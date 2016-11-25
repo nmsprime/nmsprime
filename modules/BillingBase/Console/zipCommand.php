@@ -6,6 +6,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
 use Modules\BillingBase\Entities\BillingLogger;
+use Modules\BillingBase\Entities\Billingbase;
 use Storage;
 
 class zipCommand extends Command {
@@ -44,6 +45,7 @@ class zipCommand extends Command {
 	public function fire()
 	{
 		$logger = new BillingLogger;
+		$offset = Billingbase::first()->cdr_offset;
 
 		$year  = $this->argument('year');
 		$month = $this->argument('month');
@@ -60,7 +62,8 @@ class zipCommand extends Command {
 
 		// find all invoices and concatenate them
 		$invoices 	= sprintf('%s.pdf', date('Y_m', $time));
-		$cdrs 		= sprintf('%s_cdr.pdf', date('Y_m', strtotime('-1 month', $time)));
+		$cdr_time 	= $offset ? strtotime('-1 month', $time) : $time;
+		$cdrs 		= sprintf('%s_cdr.pdf', date('Y_m', $cdr_time));
 		$tmp 		= exec("find $dir_abs_path_invoice_files -type f -name $invoices -o -name $cdrs | sort -r", $files, $ret);
 
 		$files = implode(' ', $files);
