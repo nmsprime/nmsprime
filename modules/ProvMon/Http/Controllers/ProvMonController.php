@@ -647,8 +647,7 @@ end:
 
 		// parse dhcpd.lease file
 		$file   = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
-		$string = preg_replace( "/\r|\n/", "", $file );
-		preg_match_all('/lease(.*?)}/', $string, $section);
+		preg_match_all('/^lease(.*?)}/ms', $file, $section);
 
 		$ret = array();
 		$i   = 0;
@@ -665,7 +664,7 @@ end:
 				}
 
 				// push matching results
-				array_push($ret, str_replace('{', '{<br>', str_replace(';', ';<br>', $s)));
+				array_push($ret, $s);
 			}
 		}
 
@@ -675,12 +674,10 @@ end:
 		if (sizeof($ret) > 1)
 		{
 			$key = preg_grep ('/(.*?)binding state active(.*?)/', $ret);
-
 			if ($key)
-				// this is just a simple key re-indexing, from 1=>.. to 0=>..
-				// NOTE: this assumes that there is only one active lease available(?).
-				// TODO: Testing required ..
-				return [0 => array_pop($key)];
+				// return the most recent active lease
+				natsort($key);
+				return [ preg_replace('/\r|\n/', '<br />', array_pop($key)) ];
 		}
 
 		return $ret;
@@ -744,7 +741,7 @@ end:
 			$cacti = \DB::connection('mysql-cacti');
 
 			// Get Cacti Host ID to $modem
-			$host  = $cacti->table('host')->where('description', '=', 'cm-'.$modem->id)->get();
+			$host  = $cacti->table('host')->where('description', '=', $modem->hostname)->get();
 			if (!isset($host[0]))
 					return false;
 
@@ -870,7 +867,7 @@ end:
 
 			// if valid image
 			if ($img)
-				$ret['graphs'][$id] = 'data:application/octet-stream;base64,'.$img;
+				$ret['graphs'][$id] = 'data:image/svg+xml;base64,'.$img;
 		}
 
 		// No result checking

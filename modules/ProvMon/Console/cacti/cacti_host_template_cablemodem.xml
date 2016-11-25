@@ -10,7 +10,7 @@
 			<t_title></t_title>
 			<title>|host_description| - DOCSIS Overview</title>
 			<t_image_format_id></t_image_format_id>
-			<image_format_id>1</image_format_id>
+			<image_format_id>3</image_format_id>
 			<t_height></t_height>
 			<height>120</height>
 			<t_width></t_width>
@@ -339,7 +339,7 @@
 			<t_title></t_title>
 			<title>|host_description| - DOCSIS Downstream</title>
 			<t_image_format_id></t_image_format_id>
-			<image_format_id>1</image_format_id>
+			<image_format_id>3</image_format_id>
 			<t_height></t_height>
 			<height>120</height>
 			<t_width></t_width>
@@ -602,7 +602,7 @@
 			<t_title></t_title>
 			<title>|host_description| - DOCSIS Upstream</title>
 			<t_image_format_id></t_image_format_id>
-			<image_format_id>1</image_format_id>
+			<image_format_id>3</image_format_id>
 			<t_height></t_height>
 			<height>120</height>
 			<t_width></t_width>
@@ -756,7 +756,7 @@
 			<t_title></t_title>
 			<title>|host_description| - DOCSIS Traffic</title>
 			<t_image_format_id></t_image_format_id>
-			<image_format_id>1</image_format_id>
+			<image_format_id>3</image_format_id>
 			<t_height></t_height>
 			<height>120</height>
 			<t_width></t_width>
@@ -943,7 +943,7 @@
 			<t_title></t_title>
 			<title>|host_description| - DOCSIS Errors</title>
 			<t_image_format_id></t_image_format_id>
-			<image_format_id>1</image_format_id>
+			<image_format_id>3</image_format_id>
 			<t_height></t_height>
 			<height>120</height>
 			<t_width></t_width>
@@ -1201,7 +1201,7 @@
 			<t_title></t_title>
 			<title>|host_description| - DOCSIS Channels</title>
 			<t_image_format_id></t_image_format_id>
-			<image_format_id>1</image_format_id>
+			<image_format_id>3</image_format_id>
 			<t_height></t_height>
 			<height>120</height>
 			<t_width></t_width>
