@@ -45,8 +45,16 @@ class Item extends \BaseModel {
 		$start = $this->valid_from && $this->valid_from != '0000-00-00' ? ' - '.$this->valid_from : '';
 		$end   = $this->valid_to && $this->valid_to != '0000-00-00' ? ' - '.$this->valid_to : '';
 
-		$start_fixed = !boolval($this->valid_from_fixed) ? '(!)' : '';
-		$end_fixed = !boolval($this->valid_to_fixed) ? '(!)' : '';
+		// for internet and voip items: mark not fixed dates (because they are possibly changed by daily conversion)
+		if (in_array(\Str::lower($this->product->type), ['voip', 'internet'])) {
+			$start_fixed = !boolval($this->valid_from_fixed) ? '(!)' : '';
+			$end_fixed = !boolval($this->valid_to_fixed) ? '(!)' : '';
+		}
+		// don't show this information on other product types
+		else {
+			$start_fixed = '';
+			$end_fixed = '';
+		}
 
 		// Evaluate Colours
 		// TODO: implement better error handling instead using 'Monthly' as default
@@ -62,7 +70,7 @@ class Item extends \BaseModel {
 		return ['index' => [$name, $start, $end],
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
-		        'header' => $name.$start.$start_fixed.$end];
+		        'header' => $name.$start.$start_fixed.$end.$end_fixed];
 	}
 
 	public function view_belongs_to ()
