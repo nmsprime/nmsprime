@@ -40,7 +40,7 @@ class SepaMandate extends \BaseModel {
 		$bsclass = 'info';
 		$valid_to = $this->sepa_valid_to ? ' - '.$this->sepa_valid_to : '';
 
-		if (($this->get_start_time() > strtotime(date('Y-m-d'))) && !$this->check_validity('now'))
+		if (($this->get_start_time() > strtotime(date('Y-m-d'))) && !$this->check_validity('Now'))
 			$bsclass = 'danger';
 
 		return ['index' => [$this->sepa_holder, $this->sepa_valid_from, $this->sepa_valid_to, $this->reference],
