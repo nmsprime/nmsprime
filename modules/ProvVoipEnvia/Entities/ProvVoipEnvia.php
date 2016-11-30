@@ -2148,19 +2148,40 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// array for converted data
 		$results = array();
+		$errors = array();
 
-		// process Envia CSV line by line; attach orders to $result array
+		// process Envia CSV line by line; attach orders to $results (or $errors) array
 		foreach ($lines as $result_csv) {
 			// check if current line contains data => empty lines will crash at array_combine
 			if (boolval($result_csv)) {
 				$result = str_getcsv($result_csv);
-				$entry = array_combine($csv_headers, $result);
-				array_push($results, $entry);
+
+				// check for invalid CSV lines
+				// e.g. Envia sent orderstatus: “Fehlgeschlagen, Details siehe Bemerkung” – without enclosing it
+				if (count($csv_headers) != count($result)) {
+					// we add the raw csv line for later error output/logging
+					array_push($errors, $result_csv);
+				}
+				else {
+					$entry = array_combine($csv_headers, $result);
+					array_push($results, $entry);
+				}
 			}
 		}
 
 		$out = "";
 
+		// show and log invalid CSV lines
+		if ($errors) {
+			$out .= "<h5>There are invalid lines in returned CSV:</h5>";
+			foreach ($errors as $e) {
+				$out .= $e."<br><br>";
+				\Log::error('Invalid CSV line processing misc_get_orders_csv_response: '.$e);
+			}
+			$out .= "<hr>";
+		}
+
+		// process the valid CSV lines
 		foreach ($results as $result) {
 
 			$order_id = $result['orderid'];
@@ -2186,9 +2207,9 @@ class ProvVoipEnvia extends \BaseModel {
 			// get phonenumber_id and contract_id, add to model instance
 			$phonenumber = Phonenumber::whereRaw('prefix_number = '.$result['localareacode'].' AND number = '.$result['baseno'])->first();
 			if (is_null($phonenumber)) {
-				$tmp = '<span style="color: red">Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id.'</span>';
+				$tmp = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
 				\Log::warning($tmp);
-				$out .= '<br>'.$tmp;
+				$out .= '<br><span style="color: red">'.$tmp.'</span>';
 				continue;
 			}
 			$result['phonenumber_id'] = $phonenumber->id;
