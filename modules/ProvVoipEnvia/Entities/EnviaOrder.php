@@ -469,9 +469,16 @@ class EnviaOrder extends \BaseModel {
 
 		if (boolval($this->phonenumber_id)) {
 			$phonenumber = Phonenumber::findOrFail($this->phonenumber_id);
-			$phonenumbermanagement_id = $phonenumber->phonenumbermanagement->id;
+			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 			$phonenumber_nr = $phonenumber->prefix_number.'/'.$phonenumber->number;
-			$phonenumber_nr = '<a href="'.\URL::route('PhonenumberManagement.edit', array($phonenumbermanagement_id)).'" target="_blank">'.$phonenumber_nr.'</a>';
+
+			if (!is_null($phonenumbermanagement)) {
+				$phonenumbermanagement_id = $phonenumber->phonenumbermanagement->id;
+				$phonenumber_nr = '<a href="'.\URL::route('PhonenumberManagement.edit', array($phonenumbermanagement_id)).'" target="_blank">'.$phonenumber_nr.'</a>';
+			}
+			else {
+				$phonenumber_nr = '<a href="'.\URL::route('Phonenumber.edit', array($phonenumber->id)).'" target="_blank">'.$phonenumber_nr.'</a>';
+			}
 		}
 		else {
 			$phonenumber_nr = '–';
@@ -790,7 +797,13 @@ class EnviaOrder extends \BaseModel {
 			$row = array();
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 
-			$tmp = '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a>';
+			if (!is_null($phonenumbermanagement)) {
+				$tmp = '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a>';
+			}
+			else {
+				$tmp = '<a href="'.\URL::route("Phonenumber.edit", array("phonenumber" => $phonenumber->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a>';
+			}
+
 			// if phonenumber is only related (not assigned to current order, but to assigned contract) mark with special markup
 			if (is_null($this->phonenumber) || ($this->phonenumber->id != $phonenumber->id)) {
 				$tmp = '<i>('.$tmp.')</i>';
@@ -798,10 +811,18 @@ class EnviaOrder extends \BaseModel {
 
 			array_push($row, $tmp);
 
-			array_push($row, (boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"));
-			array_push($row, (boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "placeholder_unset"));
-			array_push($row, (boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "placeholder_unset"));
-			array_push($row, (boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "placeholder_unset"));
+			if (!is_null($phonenumbermanagement)) {
+				array_push($row, (boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"));
+				array_push($row, (boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "placeholder_unset"));
+				array_push($row, (boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "placeholder_unset"));
+				array_push($row, (boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "placeholder_unset"));
+			}
+			else {
+				array_push($row, 'mgmt n/a');
+				array_push($row, 'mgmt n/a');
+				array_push($row, 'mgmt n/a');
+				array_push($row, 'mgmt n/a');
+			}
 			array_push($row, ($phonenumber->active > 0 ? 'placeholder_yes': 'placeholder_no'));
 
 			array_push($data, $row);
