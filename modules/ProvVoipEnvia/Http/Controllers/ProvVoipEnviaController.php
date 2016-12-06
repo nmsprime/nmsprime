@@ -137,8 +137,6 @@ class ProvVoipEnviaController extends \BaseController {
 		// check if user has the right to perform actions against Envia API
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
-		$base = "/lara/provvoipenvia/request";
-
 		$jobs = array(
 			['api' => 'selfcare', 'link' => 'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=in'],
 			['api' => 'selfcare', 'link' => 'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=out'],
@@ -189,7 +187,8 @@ class ProvVoipEnviaController extends \BaseController {
 				continue;
 			}
 			if ($job['api'] != "selfcare") {
-				echo '<a href="'.$base.'/'.$job['link'].'" target="_self">'.$job['api'].': '.$job['link'].'</a><br>';
+				$href = \URL::route('ProvVoipEnvia.request', $job['link']);
+				echo '<a href="'.$href.'" target="_self">'.$job['api'].': '.$job['link'].'</a><br>';
 			}
 		}
 	}
