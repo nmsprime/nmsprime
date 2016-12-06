@@ -2138,13 +2138,16 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_misc_get_orders_csv_response($xml, $data, $out) {
 
+		// Envia switched to “;” as delimiter to avoid problems with comma containing orderstatus
+		$csv_delimiter = ";";
+
 		// result is base64 encoded csv
 		$b64 = $xml->data;
 		$csv = base64_decode($b64);
 
 		// csv fieldnames are the first line
 		$lines = explode("\n", $csv);
-		$csv_headers = str_getcsv(array_shift($lines));
+		$csv_headers = str_getcsv(array_shift($lines), $csv_delimiter);
 
 		// array for converted data
 		$results = array();
@@ -2154,7 +2157,7 @@ class ProvVoipEnvia extends \BaseModel {
 		foreach ($lines as $result_csv) {
 			// check if current line contains data => empty lines will crash at array_combine
 			if (boolval($result_csv)) {
-				$result = str_getcsv($result_csv);
+				$result = str_getcsv($result_csv, $csv_delimiter);
 
 				// check for invalid CSV lines
 				// e.g. Envia sent orderstatus: “Fehlgeschlagen, Details siehe Bemerkung” – without enclosing it
@@ -2478,13 +2481,15 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_misc_get_usage_csv_response($xml, $data, $out) {
 
+		$csv_delimiter = ";";
+
 		// result is base64 encoded csv
 		$b64 = $xml->data;
 		$csv = base64_decode($b64);
 
 		// csv fieldnames are the first line
 		$lines = explode("\n", $csv);
-		$csv_headers = str_getcsv(array_shift($lines));
+		$csv_headers = str_getcsv(array_shift($lines), $csv_delimiter);
 
 		// array for converted data
 		$results = array();
@@ -2493,7 +2498,7 @@ class ProvVoipEnvia extends \BaseModel {
 		foreach ($lines as $result_csv) {
 			// check if current line contains data => empty lines will crash at array_combine
 			if (boolval($result_csv)) {
-				$result = str_getcsv($result_csv);
+				$result = str_getcsv($result_csv, $csv_delimiter);
 				$entry = array_combine($csv_headers, $result);
 				array_push($results, $entry);
 			}
