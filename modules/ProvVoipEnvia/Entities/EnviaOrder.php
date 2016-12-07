@@ -550,8 +550,12 @@ class EnviaOrder extends \BaseModel {
 	// belongs to phonenumber or modem or contract - see BaseModel for explanation
 	public function view_belongs_to ()
 	{
-		if (boolval($this->phonenumber_id)) {
-			return $this->phonenumber->phonenumbermanagement;
+		if (!$this->phonenumbers->isEmpty()) {
+			$phonenumbermanagements = [];
+			foreach ($this->phonenumbers as $phonenumber) {
+				array_push($phonenumbermanagements, $phonenumber->phonenumbermanagement);
+			}
+			return collect($phonenumbermanagements);
 		}
 		elseif (boolval($this->modem_id)) {
 			return $this->modem;
