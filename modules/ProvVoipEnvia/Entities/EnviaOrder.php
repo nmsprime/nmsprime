@@ -466,8 +466,9 @@ class EnviaOrder extends \BaseModel {
 			$modem_nr = '–';
 		}
 
-		if (boolval($this->phonenumber_id)) {
-			$phonenumber = Phonenumber::findOrFail($this->phonenumber_id);
+		// show all order related phonenumbers
+		$phonenumber_nrs = [];
+		foreach ($this->phonenumbers as $phonenumber) {
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 			$phonenumber_nr = $phonenumber->prefix_number.'/'.$phonenumber->number;
 
@@ -478,10 +479,14 @@ class EnviaOrder extends \BaseModel {
 			else {
 				$phonenumber_nr = '<a href="'.\URL::route('Phonenumber.edit', array($phonenumber->id)).'" target="_blank">'.$phonenumber_nr.'</a>';
 			}
+			array_push($phonenumber_nrs, $phonenumber_nr);
 		}
-		else {
-			$phonenumber_nr = '–';
+		if (!boolval($phonenumber_nrs)) {
+			array_push($phonenumber_nrs, '–');
 		}
+
+		// build HTML to insert
+		$phonenumber_nrs = implode('<br>', $phonenumber_nrs);
 
 		if (!$this->user_interaction_necessary()) {
 			$current = '-';
@@ -492,8 +497,8 @@ class EnviaOrder extends \BaseModel {
 			$solve_link = '<a href="'.\URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id)).'" target="_self">Mark solved</a>';
 		}
 
-        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $modem_nr, $phonenumber_nr, $this->created_at, $this->updated_at, $this->orderdate, $current, $solve_link],
-                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Modem', 'Phonenumber', 'Created at', 'Updated at', 'Orderdate', 'Interaction needed?', ''],
+        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $modem_nr, $phonenumber_nrs, $this->created_at, $this->updated_at, $this->orderdate, $current, $solve_link],
+                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Modem', 'Phonenumbers', 'Created at', 'Updated at', 'Orderdate', 'Interaction needed?', ''],
                 'bsclass' => $bsclass,
 				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
 		];
