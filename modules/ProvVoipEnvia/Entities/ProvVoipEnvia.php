@@ -512,9 +512,10 @@ class ProvVoipEnvia extends \BaseModel {
 						}
 					}
 
-					// if in view phonenumber*: don't show orders for other than the current phonenumber
+					// if in view phonenumber*: don't show phonenumber related orders for other than the current phonenumber
 					if (in_array($view_level, ['phonenumber', 'phonenumbermanagement'])) {
-						if (boolval($order->phonenumber_id) && $order->phonenumber_id != $phonenumber_id) {
+						$order_phonenumbers = $order->phonenumbers;
+						if (($order_phonenumbers->count() > 0) && (!$order_phonenumbers->contains($phonenumber_id))) {
 							continue;
 						}
 					}
