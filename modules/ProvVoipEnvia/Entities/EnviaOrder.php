@@ -191,7 +191,6 @@ class EnviaOrder extends \BaseModel {
 		'contractreference',
 		'contract_id',
 		'modem_id',
-		'phonenumber_id',
 	];
 
 
@@ -581,8 +580,8 @@ class EnviaOrder extends \BaseModel {
 		return $this->belongsTo('Modules\ProvBase\Entities\Modem');
 	}
 
-	public function phonenumber() {
-		return $this->belongsTo('Modules\ProvVoip\Entities\Phonenumber');
+	public function phonenumbers() {
+		return $this->belongsToMany('Modules\ProvVoip\Entities\Phonenumber', 'enviaorder_phonenumber', 'enviaorder_id', 'phonenumber_id');
 	}
 
 	public function enviaorderdocument() {
