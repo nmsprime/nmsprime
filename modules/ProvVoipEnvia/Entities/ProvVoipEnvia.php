@@ -2950,11 +2950,13 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['method'] = 'voip_account/create';
 		$order_data['contract_id'] = $this->contract->id;
 		$order_data['modem_id'] = $this->modem->id;
-		$order_data['phonenumber_id'] = $this->phonenumber->id;
 		$order_data['ordertype'] = 'voip_account/create';
 		$order_data['orderstatus'] = 'initializing';
 
 		$enviaOrder = EnviaOrder::create($order_data);
+
+		// add entry to pivot table – there can only be one for this method
+		$enviaOrder->phonenumbers()->attach($this->phonenumber->id);
 
 		// view data
 		$out .= "<h5>VoIP account created (order ID: ".$xml->orderid.")</h5>";
@@ -2983,11 +2985,13 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['method'] = 'voip_account/terminate';
 		$order_data['contract_id'] = $this->contract->id;
 		$order_data['modem_id'] = $this->modem->id;
-		$order_data['phonenumber_id'] = $this->phonenumber->id;
 		$order_data['ordertype'] = 'voip_account/terminate';
 		$order_data['orderstatus'] = 'initializing';
 
 		$enviaOrder = EnviaOrder::create($order_data);
+
+		// add entry to pivot table – there can only be one for this method
+		$enviaOrder->phonenumbers()->attach($this->phonenumber->id);
 
 		// view data
 		$out .= "<h5>VoIP account terminated (order ID: ".$xml->orderid.")</h5>";
@@ -3010,11 +3014,13 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['method'] = 'voip_account/update';
 		$order_data['contract_id'] = $this->contract->id;
 		$order_data['modem_id'] = $this->modem->id;
-		$order_data['phonenumber_id'] = $this->phonenumber->id;
 		$order_data['ordertype'] = 'voip_account/update';
 		$order_data['orderstatus'] = 'initializing';
 
 		$enviaOrder = EnviaOrder::create($order_data);
+
+		// add entry to pivot table
+		$enviaOrder->phonenumbers()->attach($this->phonenumber->id);
 
 		// view data
 		$out .= "<h5>VoIP account updated (order ID: ".$xml->orderid.")</h5>";
@@ -3040,7 +3046,6 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['orderid'] = $xml->orderid;
 		$order_data['method'] = 'order/cancel';
 		$order_data['contract_id'] = $canceled_enviaorder->contract_id;
-		$order_data['phonenumber_id'] = $canceled_enviaorder->phonenumber_id;
 		$order_data['ordertype'] = 'Stornierung eines Auftrags';
 		$order_data['orderstatus'] = 'in Bearbeitung';
 		$order_data['related_order_id'] = $canceled_enviaorder->id;
@@ -3048,6 +3053,12 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['contractreference'] = $canceled_enviaorder->contractreference;
 
 		$enviaOrder = EnviaOrder::create($order_data);
+
+		// add entries to pivot table
+		$affected_phonenumbers = $canceled_enviaorder->phonenumbers;
+		foreach ($affected_phonenumbers as $phonenumber) {
+			$enviaOrder->phonenumbers()->attach($phonenumber->id);
+		}
 
 		// delete canceled order
 		EnviaOrder::where('orderid', '=', $canceled_enviaorder_id)->delete();
@@ -3073,7 +3084,6 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['orderid'] = $xml->orderid;
 		$order_data['method'] = 'order/create_attachment';
 		$order_data['contract_id'] = $related_enviaorder->contract_id;
-		$order_data['phonenumber_id'] = $related_enviaorder->phonenumber_id;
 		$order_data['ordertype'] = 'order/create_attachment';
 		$order_data['orderstatus'] = 'successful';
 		$order_data['related_order_id'] = $related_order_id;
@@ -3081,6 +3091,12 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['contractreference'] = $related_enviaorder->contractreference;
 
 		$enviaOrder = EnviaOrder::create($order_data);
+
+		// add entry to pivot table
+		$affected_phonenumbers = $related_enviaorder->phonenumbers;
+		foreach ($affected_phonenumbers as $phonenumber) {
+			$enviaOrder->phonenumbers()->attach($phonenumber->id);
+		}
 
 		// and instantly (soft)delete this order – trying to get order/get_status for the current order results in a 404…
 		// I love this API!!
