@@ -4,9 +4,9 @@ namespace Modules\HfcBase\Database\Seeders;
 
 // Composer: "fzaninotto/faker": "v1.3.0"
 use Faker\Factory as Faker;
-use Modules\HfcBase\Entities\Tree;
+use Modules\HfcReq\Entities\NetElement;
 
-class TreeTableSeeder extends \BaseSeeder {
+class NetElementTableSeeder extends \BaseSeeder {
 
 	/*
 	 * TODO: These "helper" functions should be moved to Model context
@@ -69,19 +69,19 @@ class TreeTableSeeder extends \BaseSeeder {
 			$x = 13 + $faker->longitude() / 10;
 			$y = 50 + $faker->latitude() / 10;
 
-			Tree::create([
+			NetElement::create([
 				'name' => $faker->domainWord(),
 				'ip' => $faker->ipv4(),
 				'type' => $this->type(rand(1,20)),
 				'state' => $this->state(rand(0,10)),
-				'parent' => Tree::where('id', '>', '1')->get()->random(1)->id,
+				'parent' => NetElement::where('id', '>', '1')->get()->random(1)->id,
 				'descr' => $faker->sentence(),
 				'pos' => $x.','.$y,
 				'link' => $faker->url()
 			]);
 		}
 
-		$root = Tree::find(2);
+		$root = NetElement::find(2);
 
 		// Make top level elements of type NET, second level of type CLUSTER
 		foreach ($root->get_children() as $net) 
@@ -96,9 +96,9 @@ class TreeTableSeeder extends \BaseSeeder {
 			}
 		}
 
-		$this->pos_dumping (Tree::where('type', '=', 'NET')->get());
+		$this->pos_dumping (NetElement::where('type', '=', 'NET')->get());
 
-		Tree::relation_index_build_all(1);
+		NetElement::relation_index_build_all(1);
 	}
 
 }

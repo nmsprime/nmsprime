@@ -2,7 +2,7 @@
 
 namespace Modules\HfcBase\Http\Controllers;
 
-use Modules\HfcBase\Entities\Tree;
+use Modules\HfcReq\Entities\NetElement;
 
 use Acme\php\ArrayHelper;
 
@@ -55,7 +55,7 @@ class TreeTopographyController extends HfcBaseController {
 			$s = 'id>2';
 
 		// Generate SVG file
-		$file = $this->kml_generate (Tree::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' '));
+		$file = $this->kml_generate (NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' '));
 
 		if(!$file)
 			return \View::make('errors.generic');
@@ -71,7 +71,7 @@ class TreeTopographyController extends HfcBaseController {
 						['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]]];
 
 		// MPS: get all Modem Positioning Rules
-		$mpr = $this->mpr(Tree::whereRaw($s));
+		$mpr = $this->mpr(NetElement::whereRaw($s));
 
 		return \View::make('hfcbase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'panel_right', 'body_onload', 'field', 'search', 'mpr')));
 	}

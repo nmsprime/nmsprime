@@ -20,18 +20,18 @@ class CreateTreeTable extends BaseMigration {
 			$this->up_table_generic($table);
 
 			$table->string('name');
-			$table->string('type');
-			$table->integer('type_new')->unsigned();
-			$table->string('tp', 8);
-			$table->integer('tp_new');
+			// $table->string('type');
+			// $table->integer('type_new')->unsigned();
+			// $table->string('tp', 8);
+			// $table->integer('tp_new');
 			$table->integer('series');
 			$table->integer('options');
 			$table->string('ip');
 			$table->string('pos', 45);
 			$table->string('link');
-			$table->string('state');
-			$table->integer('state_new');
-			$table->integer('parent');
+			// $table->string('state');
+			// $table->integer('state_new');
+			// $table->integer('parent');
 			$table->integer('parent_id')->unsigned();
 			$table->integer('user');
 			$table->integer('access');

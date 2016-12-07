@@ -3,7 +3,7 @@
 namespace Modules\HfcBase\Http\Controllers;
 
 use Modules\HfcCustomer\Entities\ModemHelper;
-use Modules\HfcBase\Entities\Tree;
+use Modules\HfcReq\Entities\NetElement;
 
 use Acme\php\ArrayHelper;
 
@@ -70,7 +70,7 @@ class TreeErdController extends HfcBaseController {
 			$s = 'id>2';
 
 		// Generate SVG file
-		$file = $this->graph_generate (Tree::whereRaw($s));
+		$file = $this->graph_generate (NetElement::whereRaw($s));
 
 		if(!$file)
 			return \View::make('errors.generic');
@@ -235,17 +235,17 @@ class TreeErdController extends HfcBaseController {
 		        $idtree = $tree->id;
 		        $id = $tree->id;
 		        $type = $tree->type;
-				$url  = \BaseRoute::get_base_url()."/Customer/tree_id/$idtree";
+				$url  = \BaseRoute::get_base_url()."/Customer/netelement_id/$idtree";
 		        $n++;
 
-				$state = ModemHelper::ms_state ("tree_id = $idtree");
+				$state = ModemHelper::ms_state ("netelement_id = $idtree");
 				if ($state != -1)
 				{
 					$color = ModemHelper::ms_state_to_color ($state);
-					$num   = ModemHelper::ms_num("tree_id = $idtree");
-					$numa  = ModemHelper::ms_num_all("tree_id = $idtree");
-					$cri   = ModemHelper::ms_cri("tree_id = $idtree");
-					$avg   = ModemHelper::ms_avg("tree_id = $idtree");
+					$num   = ModemHelper::ms_num("netelement_id = $idtree");
+					$numa  = ModemHelper::ms_num_all("netelement_id = $idtree");
+					$cri   = ModemHelper::ms_cri("netelement_id = $idtree");
+					$avg   = ModemHelper::ms_avg("netelement_id = $idtree");
 
 					$file .= "\n node [label = \"$numa\\n$num/$cri\\n$avg\", shape = circle, style = filled, color=$color, URL=\"$url\", target=\"".$this->html_target."\"];";
 					$file .= " \"C$idtree\"";

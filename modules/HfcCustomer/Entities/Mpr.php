@@ -1,4 +1,5 @@
-<?php namespace Modules\Hfccustomer\Entities;
+<?php 
+namespace Modules\Hfccustomer\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Modules\ProvBase\Entities\Modem;
@@ -10,8 +11,8 @@ use Modules\ProvBase\Entities\Modem;
  * This Model will hold all rules for Entity Relation and
  * Topograhpy Card Bubbles. See MprGeopos for more brief view.
  *
- * Relations: Tree <- Mpr <- MprGeopos
- * Relations: Modem <- Tree
+ * Relations: NetElement <- Mpr <- MprGeopos
+ * Relations: Modem <- Device
  */
 class Mpr extends \BaseModel {
 
@@ -39,18 +40,17 @@ class Mpr extends \BaseModel {
 		return $this->id.' : '.$this->name;
 	}
 
-	// Relation to Tree
-	// NOTE: HfcBase Module is required !
-	public function tree()
+	// Relation to NetElement
+	// NOTE: HfcReq Module is required !
+	public function netelement()
 	{
-		return $this->belongsTo('Modules\HfcBase\Entities\Tree');
+		return $this->belongsTo('Modules\HfcReq\Entities\NetElement');
 	}
 
-	// Relation to Tree
-	// NOTE: HfcBase Module is required !
+	// NOTE: HfcReq Module is required !
 	public function trees()
 	{
-		return \Modules\HfcBase\Entities\Tree::all();
+		return \Modules\HfcReq\Entities\NetElement::all();
 	}
 
 	// Relation to MPR Geopos
@@ -65,7 +65,7 @@ class Mpr extends \BaseModel {
 	 */
 	public function view_belongs_to ()
 	{
-		return $this->tree;
+		return $this->netelement;
 	}
 
 

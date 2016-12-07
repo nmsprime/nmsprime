@@ -1,11 +1,11 @@
 <?php
 
-namespace Modules\HfcBase\Entities;
+namespace Modules\HfcReq\Entities;
 
-class Tree extends \BaseModel {
+class NetElement extends \BaseModel {
 
 	// The associated SQL table for this Model
-	public $table = 'tree';
+	public $table = 'netelement';
 
 
 	public $kml_path = 'app/data/hfcbase/kml/static';
@@ -15,16 +15,19 @@ class Tree extends \BaseModel {
 	public static function rules($id = null)
 	{
 		return array(
-			'name' => 'required|string',
-			'ip' => 'ip',
-			'pos' => 'geopos'
+			'name' 			=> 'required|string',
+			'ip' 			=> 'ip',
+			'pos' 			=> 'geopos',
+			'community_ro' 	=> 'regex:/(^[A-Za-z0-9]+$)+/',
+			'community_rw' 	=> 'regex:/(^[A-Za-z0-9]+$)+/',
+			'devicetype_id'	=> 'required|exists:devicetype,id|min:1'
 		);
 	}
 
 	// Name of View
 	public static function view_headline()
 	{
-		return 'Tree Table';
+		return 'NetElement';
 	}
 
 	// link title in index view
@@ -37,8 +40,9 @@ class Tree extends \BaseModel {
 		if ($this->state == 'RED')
 			$bsclass = 'danger';
 
-		return ['index' => [$this->id, $this->type, $this->name, $this->state, $this->pos, $this->descr],
-		        'index_header' => ['ID', 'Type', 'Name', 'State', 'Position', 'Description'],
+		// TODO: complete list
+		return ['index' => [$this->id, $this->type, $this->name, $this->ip, $this->state, $this->pos],
+		        'index_header' => ['ID', 'Type', 'Name', 'IP', 'State', 'Position'],
 		        'bsclass' => $bsclass,
 		        'header' => $this->id.':'.$this->type.':'.$this->name];
 	}
@@ -55,7 +59,7 @@ class Tree extends \BaseModel {
 	public function mprs()
 	{
 		if (\PPModule::is_active('HfcCustomer'))
-			return $this->hasMany('Modules\HfcCustomer\Entities\Mpr');
+			return $this->hasMany('Modules\HfcCustomer\Entities\Mpr', 'netelement_id');
 
 		return null;
 	}
@@ -74,6 +78,16 @@ class Tree extends \BaseModel {
 		return array();
 	}
 
+	public function devicetype()
+	{
+		return $this->belongsTo('Modules\HfcSnmp\Entities\DeviceType');
+	}
+
+	public function view_belongs_to ()
+	{
+		return $this->devicetype;
+	}
+
 	/**
 	 * TODO: make one function
 	 * returns a list of possible parent configfiles
@@ -82,7 +96,7 @@ class Tree extends \BaseModel {
 	public function parents_list ()
 	{
 		$parents = array('0' => 'Null');
-		foreach (Tree::all() as $p)
+		foreach (NetElement::all() as $p)
 		{
 			if ($p->id != $this->id)
 				$parents[$p->id] = $p->name;
@@ -93,7 +107,7 @@ class Tree extends \BaseModel {
 	public function parents_list_all ()
 	{
 		$parents = array('0' => 'Null');
-		foreach (Tree::all() as $p)
+		foreach (NetElement::all() as $p)
 		{
 			$parents[$p->id] = $p->name;
 		}
@@ -105,7 +119,7 @@ class Tree extends \BaseModel {
         if (!isset($this->parent) || $this->parent < 1)
             return 0;
 
-		return Tree::find($this->parent);
+		return NetElement::find($this->parent);
 	}
 
 
@@ -125,18 +139,19 @@ class Tree extends \BaseModel {
 
     public function get_children ()
     {
-        return Tree::whereRaw('parent = '.$this->id)->get();
+        return NetElement::whereRaw('parent = '.$this->id)->get();
     }
 
 
     public static function get_all_net ()
     {
-    	return Tree::where('type', '=', 'NET')->get();
+    	return [];
+    	return NetElement::where('type', '=', 'NET')->get();
     }
 
     public function get_all_cluster_to_net ()
     {
-    	return Tree::where('type', '=', 'CLUSTER')->where('net','=',$this->id)->get();
+    	return NetElement::where('type', '=', 'CLUSTER')->where('net','=',$this->id)->get();
     }
 
 	/**
@@ -198,7 +213,7 @@ class Tree extends \BaseModel {
 
 
 	/**
-	 * Build net and cluster index for $this Tree Objects
+	 * Build net and cluster index for $this NetElement Objects
 	 */
     public function relation_index_build ()
     {
@@ -208,13 +223,13 @@ class Tree extends \BaseModel {
 
 
 	/**
-	 * Build net and cluster index for all Tree Objects
+	 * Build net and cluster index for all NetElement Objects
 	 *
 	 * @params call_from_cmd: set if called from artisan cmd for state info
 	 */
     public static function relation_index_build_all ($call_from_cmd = 0)
     {
-    	$trees = Tree::all();
+    	$trees = NetElement::all();
 
 		\Log::info('nms: build net and cluster index of all tree objects');
 

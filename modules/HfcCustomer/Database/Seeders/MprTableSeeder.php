@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
 use Modules\HfcCustomer\Entities\Mpr;
-use Modules\HfcBase\Entities\Tree;
+use Modules\HfcReq\Entities\NetElement;
 
 
 class MprTableSeeder extends \BaseSeeder {
@@ -25,7 +25,7 @@ class MprTableSeeder extends \BaseSeeder {
 			Mpr::create([
 				'name' => 'Rule'.$faker->colorName(),
 				'type' => 1, // pos rectangle
-				'tree_id' => Tree::all()->random(1)->id,
+				'tree_id' => NetElement::all()->random(1)->id,
 			]);
 		}
 	}
