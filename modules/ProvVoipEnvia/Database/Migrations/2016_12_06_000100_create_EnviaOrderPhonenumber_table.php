@@ -33,10 +33,11 @@ class CreateEnviaOrderPhonenumberTable extends BaseMigration {
 
 		// if there are currently existing relations between enviaorders and phonenumbers:
 		// write those to the freshly created table
-		foreach(\DB::table('enviaorder')->whereNotNull('phonenumber_id')->orderBy('id')->get() as $entry) {
-			$enviaorder_id = $entry->id;
-			$phonenumber_id = $entry->phonenumber_id;
-			DB::update("INSERT INTO ".$this->tablename." (created_at, enviaorder_id, phonenumber_id) VALUES (NOW(), ".$enviaorder_id.", ".$phonenumber_id.");");
+		foreach(\DB::table('enviaorder')->whereNotNull('phonenumber_id')->orderBy('id')->get() as $enviaorder) {
+			$created_at = $enviaorder->created_at;
+			$enviaorder_id = $enviaorder->id;
+			$phonenumber_id = $enviaorder->phonenumber_id;
+			DB::update("INSERT INTO ".$this->tablename." (created_at, enviaorder_id, phonenumber_id) VALUES ('".$created_at."', ".$enviaorder_id.", ".$phonenumber_id.");");
 		}
 
 		return parent::up();
