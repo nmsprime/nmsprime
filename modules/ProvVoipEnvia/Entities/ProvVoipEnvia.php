@@ -2673,67 +2673,71 @@ class ProvVoipEnvia extends \BaseModel {
 	protected function _process_order_get_status_response_for_phonenumbermanagement($order, $out) {
 
 		// phonenumber entry can be missing on order (e.g. on manually created orders); this information will be added by the nightly cron job – so we can stop here
-		if (!boolval($order->phonenumber_id)) {
+		$order_phonenumbers = $order->phonenumbers;
+		if ($order_phonenumbers->count() == 0) {
 			Log::debug('Order '.$order->id.' has no related phonenumber');
 			return $out;
 		}
 
-		$phonenumbermanagement_changed = False;
+		foreach ($order_phonenumbers as $phonenumber) {
 
-		$phonenumber = Phonenumber::findOrFail($order->phonenumber_id);
-		$phonenumbermanagement = $phonenumber->PhonenumberManagement;
+			$phonenumbermanagement_changed = False;
 
-		// actions to perform if order handles creation of voip account
-		if (EnviaOrder::order_creates_voip_account($order)) {
+			$phonenumbermanagement = $phonenumber->PhonenumberManagement;
 
-			// we got a new target date
-// TODO: check if this should be re-enabled (if Envia sends correct dates in orderdate)
-// as Sebastian Wiencke told me the orderdate correlates with the activation_date – but in reality this seems not to be the case
-// I think the orderdate holds the date of the last status change of the order ⇒ so for now we have to update activation_date manually…
-			/* if (!\Str::startsWith($phonenumbermanagement->activation_date, $order->orderdate)) { */
-			/* 	$phonenumbermanagement->activation_date = $order->orderdate; */
-			/* 	Log::info('New target date for activation ('.$order->orderdate.') set in phonenumbermanagement with id '.$phonenumbermanagement->id); */
-			/* 	$phonenumbermanagement_changed = True; */
-			/* } */
-			// all is fine: fix the activation date
-			if (EnviaOrder::order_successful($order)) {
-				if (!\Str::startsWith($phonenumbermanagement->external_activation_date, $order->orderdate)) {
-					$phonenumbermanagement->external_activation_date = $order->orderdate;
-					/* Log::info('Creation of voip account successful; will be activated on '.$order->orderdate.' (phonenumbermanagement with id '.$phonenumbermanagement->id.')'); */
-					Log::info('Creation of voip account successful (phonenumbermanagement with id '.$phonenumbermanagement->id.')');
-					$phonenumbermanagement_changed = True;
+			// actions to perform if order handles creation of voip account
+			if (EnviaOrder::order_creates_voip_account($order)) {
+
+				// we got a new target date
+	// TODO: check if this should be re-enabled (if Envia sends correct dates in orderdate)
+	// as Sebastian Wiencke told me the orderdate correlates with the activation_date – but in reality this seems not to be the case
+	// I think the orderdate holds the date of the last status change of the order ⇒ so for now we have to update activation_date manually…
+				/* if (!\Str::startsWith($phonenumbermanagement->activation_date, $order->orderdate)) { */
+				/* 	$phonenumbermanagement->activation_date = $order->orderdate; */
+				/* 	Log::info('New target date for activation ('.$order->orderdate.') set in phonenumbermanagement with id '.$phonenumbermanagement->id); */
+				/* 	$phonenumbermanagement_changed = True; */
+				/* } */
+				// all is fine: fix the activation date
+				if (EnviaOrder::order_successful($order)) {
+					if (!\Str::startsWith($phonenumbermanagement->external_activation_date, $order->orderdate)) {
+						$phonenumbermanagement->external_activation_date = $order->orderdate;
+						/* Log::info('Creation of voip account successful; will be activated on '.$order->orderdate.' (phonenumbermanagement with id '.$phonenumbermanagement->id.')'); */
+						Log::info('Creation of voip account successful (phonenumbermanagement with id '.$phonenumbermanagement->id.')');
+						$phonenumbermanagement_changed = True;
+					}
 				}
 			}
-		}
 
-		// actions to perform if order handles termination of voip account
-		if (EnviaOrder::order_terminates_voip_account($order)) {
-			// we got a new target date
-// TODO: check if this should be re-enabled (if Envia sends correct dates in orderdate)
-// as Sebastian Wiencke told me the orderdate correlates with the deactivation_date – but in reality this seems not to be the case
-// I think the orderdate holds the date of the last status change of the order ⇒ so for now we have to update deactivation_date manually…
-			/* if (!\Str::startsWith($phonenumbermanagement->deactivation_date, $order->orderdate)) { */
-			/* 	$phonenumbermanagement->deactivation_date = $order->orderdate; */
-			/* 	Log::info('New target date for deactivation ('.$order->orderdate.') set in phonenumbermanagement with id '.$phonenumbermanagement->id); */
-			/* 	$phonenumbermanagement_changed = True; */
-			/* } */
+			// actions to perform if order handles termination of voip account
+			if (EnviaOrder::order_terminates_voip_account($order)) {
+				// we got a new target date
+	// TODO: check if this should be re-enabled (if Envia sends correct dates in orderdate)
+	// as Sebastian Wiencke told me the orderdate correlates with the deactivation_date – but in reality this seems not to be the case
+	// I think the orderdate holds the date of the last status change of the order ⇒ so for now we have to update deactivation_date manually…
+				/* if (!\Str::startsWith($phonenumbermanagement->deactivation_date, $order->orderdate)) { */
+				/* 	$phonenumbermanagement->deactivation_date = $order->orderdate; */
+				/* 	Log::info('New target date for deactivation ('.$order->orderdate.') set in phonenumbermanagement with id '.$phonenumbermanagement->id); */
+				/* 	$phonenumbermanagement_changed = True; */
+				/* } */
 
-			// all is fine: fix the deactivation date
-			if (EnviaOrder::order_successful($order)) {
-				if (!\Str::startsWith($phonenumbermanagement->external_deactivation_date, $order->orderdate)) {
-					$phonenumbermanagement->external_deactivation_date = $order->orderdate;
-					/* Log::info('Termination of voip account successful; will be deactivated on '.$order->orderdate.' (phonenumbermanagement with id '.$phonenumbermanagement->id.')'); */
-					Log::info('Termination of voip account successful (phonenumbermanagement with id '.$phonenumbermanagement->id.')');
-					$phonenumbermanagement_changed = True;
+				// all is fine: fix the deactivation date
+				if (EnviaOrder::order_successful($order)) {
+					if (!\Str::startsWith($phonenumbermanagement->external_deactivation_date, $order->orderdate)) {
+						$phonenumbermanagement->external_deactivation_date = $order->orderdate;
+						/* Log::info('Termination of voip account successful; will be deactivated on '.$order->orderdate.' (phonenumbermanagement with id '.$phonenumbermanagement->id.')'); */
+						Log::info('Termination of voip account successful (phonenumbermanagement with id '.$phonenumbermanagement->id.')');
+						$phonenumbermanagement_changed = True;
+					}
 				}
 			}
-		}
 
-		if ($phonenumbermanagement_changed) {
-			$phonenumbermanagement->save();
-			Log::info('Database table phonenumbermanagement updated for phonenumbermanagement with id '.$phonenumbermanagement->id);
-			$out .= "<br><b>PhonenumberManagement table updated</b>";
-		};
+			if ($phonenumbermanagement_changed) {
+				$phonenumbermanagement->save();
+				Log::info('Database table phonenumbermanagement updated for phonenumbermanagement with id '.$phonenumbermanagement->id);
+				$out .= "<br><b>PhonenumberManagement table updated for id ".$phonenumbermanagement->id."</b>";
+			};
+
+		}
 
 		return $out;
 	}
@@ -2857,6 +2861,25 @@ class ProvVoipEnvia extends \BaseModel {
 		Log::info($msg);
 		$out .= '<br><b>'.$msg.'</b>';
 
+		// lambda to clear phonenumbermanagement from creation data
+		$clean_phonenumbermanagement_creation_data = function($cancelled_order) {
+			$ret = '';
+			$order_phonenumbers = $cancelled_order->phonenumbers;
+			foreach ($order_phonenumbers as $phonenumber) {
+				$management = $phonenumber->phonenumbermanagement;
+
+				$management->voipaccount_ext_creation_date = null;
+				$management->external_activation_date = null;
+				$management->save();
+
+				$msg = 'Cleared data in phonenumbermanagement '.$management->id.'.';
+				Log::info($msg);
+				$ret .= '<br><b>'.$msg.'</b>';
+			}
+			return $ret;
+		};
+
+
 		// order cancelled creation of a contract
 		if ($cancelled_method == 'contract/create') {
 
@@ -2874,32 +2897,29 @@ class ProvVoipEnvia extends \BaseModel {
 			$msg = 'Cleared data in modem '.$modem->id.' and contract '.$contract->id.'.';
 			Log::info($msg);
 			$out .= '<br><b>'.$msg.'</b>';
+
+			// in orders created via web gui there can be phonenumbers in method contract/create
+			// we have to check this, too
+			$out .= $clean_phonenumbermanagement_creation_data($cancelled_order);
 		}
 		// order cancelled creation of a voip account
 		elseif ($cancelled_method == 'voip_account/create') {
-
-			$management = $cancelled_order->phonenumber->phonenumbermanagement;
-
-			$management->voipaccount_ext_creation_date = null;
-			$management->external_activation_date = null;
-			$management->save();
-
-			$msg = 'Cleared data in phonenumbermanagement '.$management->id.'.';
-			Log::info($msg);
-			$out .= '<br><b>'.$msg.'</b>';
+			$out .= $clean_phonenumbermanagement_creation_data($cancelled_order);
 		}
 		// order cancelled termination of a voip account
 		elseif ($cancelled_method == 'voip_account/terminate') {
 
-			$management = $cancelled_order->phonenumber->phonenumbermanagement;
+			$order_phonenumbers = $cancelled_order->phonenumbers;
+			foreach ($order_phonenumbers as $phonenumber) {
+				$management = $phonenumber->phonenumbermanagement;
+				$management->voipaccount_ext_termination_date = null;
+				$management->external_deactivation_date = null;
+				$management->save();
 
-			$management->voipaccount_ext_termination_date = null;
-			$management->external_deactivation_date = null;
-			$management->save();
-
-			$msg = 'Cleared data in phonenumbermanagement '.$management->id.'.';
-			Log::info($msg);
-			$out .= '<br><b>'.$msg.'</b>';
+				$msg = 'Cleared data in phonenumbermanagement '.$management->id.'.';
+				Log::info($msg);
+				$out .= '<br><b>'.$msg.'</b>';
+			}
 		}
 		// fallback: At least warn the user!
 		else {
