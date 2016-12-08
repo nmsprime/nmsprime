@@ -76,7 +76,8 @@ class cactiCommand extends Command {
 			throw $e;
 		}
 
-		foreach (Modem::all() as $modem)
+		$modems = $this->option('modem-id') === false ? Modem::all() : Modem::where('id', '=', $this->option('modem-id'))->get();
+		foreach ($modems as $modem)
 		{
 			// Skip all $modem's that already have cacti graphs
 			if (ProvMonController::monitoring_get_graph_ids($modem))
@@ -144,7 +145,8 @@ class cactiCommand extends Command {
 			\Log::info("cacti: create diagrams for Modem: $name");
 		}
 
-		foreach (Cmts::all() as $cmts)
+		$cmtss = $this->option('cmts-id') === false ? Cmts::all() : Cmts::where('id', '=', $this->option('cmts-id'))->get();
+		foreach ($cmtss as $cmts)
 		{
 			// Skip all $cmts's that already have cacti graphs
 			if (ProvMonController::monitoring_get_graph_ids($cmts))
@@ -196,7 +198,8 @@ class cactiCommand extends Command {
 	protected function getOptions()
 	{
 		return array(
-			// array('example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null),
+			array('cmts-id', null, InputOption::VALUE_OPTIONAL, 'only consider modem identified by its id, otherwise all', false),
+			array('modem-id', null, InputOption::VALUE_OPTIONAL, 'only consider cmts identified by its id, otherwise all', false),
 		);
 	}
 
