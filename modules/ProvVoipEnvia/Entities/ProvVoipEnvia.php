@@ -1539,7 +1539,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// special handling of trc_class needed (comes from external table)
 		$trc_class = TRCClass::find($this->phonenumbermanagement->trcclass);
 		if (is_null($trc_class)) {
-			throw new XmlCreationError("TRC class not set.<br>Set TRC class and save the PhonenumberManagement.");
+			throw new XmlCreationError("TRCclass not set.<br>Set TRCclass and save the PhonenumberManagement.");
 		}
 		$trc_id = $trc_class->trc_id;
 		$inner_xml->addChild('trc_class', $trc_id);
@@ -3157,7 +3157,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * This function returns HTML containing error message or array of free Envia phonenumbers.
+	 * This method returns HTML containing error message or array of free Envia phonenumbers.
 	 *
 	 * It uses the request() method in controller, which has been extended to return HTML instead of a view.
 	 *
