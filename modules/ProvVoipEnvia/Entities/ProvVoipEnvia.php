@@ -2188,37 +2188,64 @@ class ProvVoipEnvia extends \BaseModel {
 		// process the valid CSV lines
 		foreach ($results as $result) {
 
+			$out .= "<br>";
+
+			$phonenumber = Phonenumber::whereRaw('prefix_number = '.$result['localareacode'].' AND number = '.$result['baseno'])->first();
 			$order_id = $result['orderid'];
+
+			// check if contained phonenumber exists in our database ⇒ it should!!
+			if (is_null($phonenumber)) {
+				$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
+				\Log::warning($msg);
+				$out .= '<br><span style="color: red">'.$msg.'</span>';
+				continue;
+			}
+
+			// get all relevant related ids
+			if (!is_null($phonenumber)) {
+				$result['phonenumber_id'] = $phonenumber->id;
+				$result['modem_id'] = $phonenumber->mta->modem->id;
+				$result['contract_id'] = $phonenumber->mta->modem->contract->id;
+			}
+
 			$order = EnviaOrder::where('orderid', $order_id)->first();
 
 			// check if this order already exists within the database
 			if (!is_null($order)) {
 
+				$order_changed = False;
+
 				// ordertype_id is not given by order_get_status: we have to set it here if there are any changes
 				if ($order->ordertype_id != $result['ordertype_id']) {
 					$order->ordertype_id = $result['ordertype_id'];
 					$order->save();
-					Log::info('Updated ordertype_id in table enviaorder for order '.$order_id);
-					$out .= '<br>Order '.$order_id.' already exists but updated ordertype_id.';
+					$msg = 'Updated ordertype_id in for existing order '.$order_id;
+					Log::info($msg);
+					$out .= '<br>'.$msg;
+					$order_changed = true;
 				}
-				else {
-					// do nothing (will be updated by order_get_status)
+
+				// as an order can be related to more than one phonenumber we
+				// have to check if the current relation exists
+				if (!$order->phonenumbers->contains($phonenumber->id)) {
+					$order->phonenumbers()->attach($phonenumber->id);
+					$msg = 'Added relation between existing enviaorder '.$order_id.' and phonenumber '.$phonenumber->id;
+					Log::info($msg);
+					$out .= '<br>'.$msg;
+					$order_changed = true;
+
+					// check if contract, modem and/or phonenumbermanagement need updates, too
+					$out = $this->_update_phonenumber_related_data($result, $out);
+				}
+
+				// if nothing happened related to the current order: inform the user
+				// updating other informations related to this order will be done in method order_get_status
+				if (!$order_changed) {
 					$out .= '<br>Order '.$order_id.' already exists in database. Skipping.';
 				}
-				continue;
-			}
 
-			// get phonenumber_id and contract_id, add to model instance
-			$phonenumber = Phonenumber::whereRaw('prefix_number = '.$result['localareacode'].' AND number = '.$result['baseno'])->first();
-			if (is_null($phonenumber)) {
-				$tmp = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
-				\Log::warning($tmp);
-				$out .= '<br><span style="color: red">'.$tmp.'</span>';
 				continue;
 			}
-			$result['phonenumber_id'] = $phonenumber->id;
-			$result['modem_id'] = $phonenumber->mta->modem->id;
-			$result['contract_id'] = $phonenumber->mta->modem->contract->id;
 
 			// create a new Order, add given data to model instance
 			$order = EnviaOrder::create($result);
@@ -2367,7 +2394,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Updates phonenumbermanagement with order's data.
+	 * Creates nonexisting and updates phonenumbermanagement with order's data.
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -2376,7 +2403,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$phonenumbermanagement_changed = False;
 
 		if (!isset($data['phonenumber_id']) && !isset($data['phonenumbermanagement_id'])) {
-			$out .= '<br> ⇒ Warning: No phonenumber_id or phonenumbermanagement_id given';
+			$out .= '<br> ⇒ Warning: Neither phonenumber_id nor phonenumbermanagement_id given';
 			return $out;
 		}
 
@@ -2409,7 +2436,11 @@ class ProvVoipEnvia extends \BaseModel {
 				(
 					(EnviaOrder::order_creates_voip_account($order))
 					||
+					(EnviaOrder::order_possibly_creates_voip_account($order) && boolval($data['baseno']))
+					||
 					(EnviaOrder::order_terminates_voip_account($order))
+					||
+					(EnviaOrder::order_possibly_terminates_voip_account($order) && boolval($data['baseno']))
 				)
 			) {
 				$phonenumbermanagement = new PhonenumberManagement();
@@ -2431,7 +2462,11 @@ class ProvVoipEnvia extends \BaseModel {
 				$phonenumbermanagement_changed = True;
 			}
 
-			if (EnviaOrder::order_creates_voip_account($order)) {
+			if (
+				(EnviaOrder::order_creates_voip_account($order))
+				||
+				(EnviaOrder::order_possibly_creates_voip_account($order) && boolval($data['baseno']))
+			) {
 				if (is_null($phonenumbermanagement->voipaccount_ext_creation_date)) {
 					$phonenumbermanagement->voipaccount_ext_creation_date = $order->orderdate;
 					$out .= '<br> ⇒ PhonenumberManagement->voipaccount_ext_creation_date set to '.$order->orderdate;
@@ -2448,7 +2483,11 @@ class ProvVoipEnvia extends \BaseModel {
 					$phonenumbermanagement_changed = True;
 				}
 			}
-			elseif (EnviaOrder::order_terminates_voip_account($order)) {
+			elseif (
+				(EnviaOrder::order_terminates_voip_account($order))
+				||
+				(EnviaOrder::order_possibly_terminates_voip_account($order) && boolval($data['baseno']))
+			) {
 				if (is_null($phonenumbermanagement->voipaccount_ext_termination_date)) {
 					$phonenumbermanagement->voipaccount_ext_termination_date = $order->orderdate;
 					$out .= '<br> ⇒ PhonenumberManagement->voipaccount_ext_termination_date set to '.$order->orderdate;
