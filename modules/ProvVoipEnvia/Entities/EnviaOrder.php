@@ -19,8 +19,20 @@ class EnviaOrder extends \BaseModel {
 		'orders' => array(
 			array(
 				'ordertype' => 'Neuschaltung envia TEL voip reselling',
-				'ordertype_id' => null,
+				'ordertype_id' => 1,
 				'method' => 'contract/create',
+				'phonenumber_related' => False,
+			),
+			array(	# I don't know why – but Envia has (at least) two IDs for this ordertype…
+				'ordertype' => 'Neuschaltung envia TEL voip reselling',
+				'ordertype_id' => 2,
+				'method' => 'contract/create',
+				'phonenumber_related' => False,
+			),
+			array(
+				'ordertype' => 'Kündigung envia TEL voip reselling',	# TODO: Add correct string given by Envia
+				'ordertype_id' => null,
+				'method' => 'contract/terminate',
 				'phonenumber_related' => False,
 			),
 			array(
@@ -395,7 +407,7 @@ class EnviaOrder extends \BaseModel {
 
 
 	/**
-	 * Checks if order is related to creation of a phonenumber
+	 * Checks if order is related to creation of a phonenumber in every case
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -405,12 +417,32 @@ class EnviaOrder extends \BaseModel {
 
 
 	/**
-	 * Checks if order is related to termination of a phonenumber
+	 * Checks if order can be used to create a phonenumber (but not in each case does)
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function order_possibly_creates_voip_account($order) {
+		return self::_order_mapped_to_method($order, 'contract/create');
+	}
+
+
+	/**
+	 * Checks if order is related to termination of a phonenumber in every case
 	 *
 	 * @author Patrick Reichel
 	 */
 	public static function order_terminates_voip_account($order) {
 		return self::_order_mapped_to_method($order, 'voip_account/terminate');
+	}
+
+
+	/**
+	 * Checks if order is related to termination of a phonenumber
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function order_possibly_terminates_voip_account($order) {
+		return self::_order_mapped_to_method($order, 'contract/terminate');
 	}
 
 
