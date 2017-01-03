@@ -2188,25 +2188,33 @@ class ProvVoipEnvia extends \BaseModel {
 		// process the valid CSV lines
 		foreach ($results as $result) {
 
-			$out .= "<br>";
-
-			$phonenumber = Phonenumber::whereRaw('prefix_number = '.$result['localareacode'].' AND number = '.$result['baseno'])->first();
 			$order_id = $result['orderid'];
 
-			// check if contained phonenumber exists in our database ⇒ it should!!
-			if (is_null($phonenumber)) {
+			$out .= "<br>";
+
+			$phonenumbers = Phonenumber::whereRaw('prefix_number = '.$result['localareacode'].' AND number = '.$result['baseno'])->get();
+
+			// check for edge cases (no number found, more than one number found)
+			// the number we look for should exist once and only once!
+			$phonenumber_count = $phonenumbers->count();
+			if ($phonenumber_count == 0) {
 				$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
 				\Log::warning($msg);
 				$out .= '<br><span style="color: red">'.$msg.'</span>';
 				continue;
 			}
-
-			// get all relevant related ids
-			if (!is_null($phonenumber)) {
-				$result['phonenumber_id'] = $phonenumber->id;
-				$result['modem_id'] = $phonenumber->mta->modem->id;
-				$result['contract_id'] = $phonenumber->mta->modem->contract->id;
+			elseif ($phonenumber_count > 1) {
+				$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' exists '.$phonenumber_count.' times. Clean your database! Skipping order '.$order_id;
+				\Log::warning($msg);
+				$out .= '<br><span style="color: red">'.$msg.'</span>';
+				continue;
 			}
+
+			$phonenumber = $phonenumbers->first();
+
+			$result['phonenumber_id'] = $phonenumber->id;
+			$result['modem_id'] = $phonenumber->mta->modem->id;
+			$result['contract_id'] = $phonenumber->mta->modem->contract->id;
 
 			$order = EnviaOrder::where('orderid', $order_id)->first();
 
@@ -2241,7 +2249,7 @@ class ProvVoipEnvia extends \BaseModel {
 				// if nothing happened related to the current order: inform the user
 				// updating other informations related to this order will be done in method order_get_status
 				if (!$order_changed) {
-					$out .= '<br>Order '.$order_id.' already exists in database. Skipping.';
+					$out .= '<br>Order '.$order_id.' already exists in database and nothing to do. Skipping.';
 				}
 
 				continue;
