@@ -958,7 +958,7 @@ class EnviaOrder extends \BaseModel {
 
 		// create the mail body
 		$body = "Sehr geehrte Damen und Herren,\n\n";
-		$body .= "zu folgender Order hätte ich eine Frage:\n\n";
+		$body .= "zu folgender Order habe ich eine Frage:\n\n";
 		$body .= "Order ID: ".$this->orderid."\n";
 		if ($this->customerreference)
 			$body .= "Customer reference: ".$this->customerreference."\n";
