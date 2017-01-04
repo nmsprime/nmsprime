@@ -38,7 +38,7 @@ class TreeTopographyController extends HfcBaseController {
 	}
 
 
-	/*
+	/**
 	* Show Cluster or Network Entity Relation Diagram
 	*
 	* @param field: search field name in tree table
@@ -56,9 +56,8 @@ class TreeTopographyController extends HfcBaseController {
 
 		// Generate SVG file
 		$file = $this->kml_generate (NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' '));
-
 		if(!$file)
-			return \View::make('errors.generic');
+			return \View::make('errors.generic')->with('message', 'No NetElements with Positions available!');
 
 		// Prepare and Topography Map
 		$target = $this->html_target;
@@ -193,13 +192,13 @@ class TreeTopographyController extends HfcBaseController {
 				$name     = $tree->name;
 				$pos_tree = $tree->pos;
 
-				$pos = $modem_helper::ms_avg_pos('tree_id='.$tree->id);
+				$pos = $modem_helper::ms_avg_pos('netelement_id='.$tree->id);
 
 				if ($pos['x'])
 				{
 					$xavg = $pos['x'];
 					$yavg = $pos['y'];
-					$icon = $modem_helper::ms_state_to_color($modem_helper::ms_state ("tree_id = $id"));
+					$icon = $modem_helper::ms_state_to_color($modem_helper::ms_state ("netelement_id = $id"));
 					$icon .= '-CUS';
 
 					# Draw Line - Customer - Amp
@@ -225,12 +224,12 @@ class TreeTopographyController extends HfcBaseController {
 						<name></name>
 						<description><![CDATA[";
 
-							$num  = $modem_helper::ms_num("tree_id = $id");
-							$numa = $modem_helper::ms_num_all("tree_id = $id");
+							$num  = $modem_helper::ms_num("netelement_id = $id");
+							$numa = $modem_helper::ms_num_all("netelement_id = $id");
 							$pro  = round(100 * $num / $numa,0);
-							$cri  = $modem_helper::ms_cri("tree_id = $id");
-							$avg  = $modem_helper::ms_avg("tree_id = $id");
-							$url  = \BaseRoute::get_base_url()."/Customer/tree_id/$id";
+							$cri  = $modem_helper::ms_cri("netelement_id = $id");
+							$avg  = $modem_helper::ms_avg("netelement_id = $id");
+							$url  = \BaseRoute::get_base_url()."/Customer/netelement_id/$id";
 
 							$file .= "Amp/Node: $name<br><br>Number All CM: $numa<br>Number Online CM: $num ($pro %)<br>Number Critical CM: $cri<br>US Level Average: $avg<br><br><a href=\"$url\" target=\"".$this->html_target."\" alt=\"\">Show all Customers</a>";
 
@@ -243,7 +242,6 @@ class TreeTopographyController extends HfcBaseController {
 				}
 			}
 		}
-
 
 		#
 		# Fetch unique Geo Positions ..
