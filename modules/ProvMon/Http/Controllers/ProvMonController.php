@@ -653,7 +653,7 @@ end:
 		$i   = 0;
 
 		// fetch all lines matching hw mac
-		foreach (array_reverse(array_unique($section[0])) as $s)
+		foreach (array_unique($section[0]) as $s)
 		{
 			if(strpos($s, $search))
 			{
@@ -664,7 +664,7 @@ end:
 				}
 
 				// push matching results
-				array_push($ret, $s);
+				array_push($ret, preg_replace('/\r|\n/', '<br />', $s));
 			}
 		}
 
@@ -677,7 +677,7 @@ end:
 			if ($key)
 				// return the most recent active lease
 				natsort($key);
-				return [ preg_replace('/\r|\n/', '<br />', array_pop($key)) ];
+				return [ array_pop($key) ];
 		}
 
 		return $ret;
