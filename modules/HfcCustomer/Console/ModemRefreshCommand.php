@@ -77,6 +77,9 @@ class ModemRefreshCommand extends Command {
 		// foreach modem
 		foreach (\Modules\ProvBase\Entities\Modem::all() as $modem)
 		{
+			if (!$modem->network_access)
+				continue;
+
 			// Refresh Modem State
 			// take last value from cacti (fast path)
 			$res = $modem->refresh_state_cacti();
@@ -100,8 +103,8 @@ class ModemRefreshCommand extends Command {
 
 		// Log
 		$after = microtime(true);
-		$this->info("\n".'modem state refresh finished after '.round($after-$before,2).' s');
-		\Log::info('modem state refresh finished after '.round($after-$before,2).' s');
+		$this->info("\n".'modem state refresh finished after '.round($after-$before,2).' ys');
+		\Log::info('modem state refresh finished after '.round($after-$before,2).' ys');
 	}
 
 	/**
