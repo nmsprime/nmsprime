@@ -16,6 +16,7 @@ use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Entities\Invoice;
+use Modules\BillingBase\Entities\Item;
 use Modules\BillingBase\Entities\SettlementRun;
 
 
@@ -364,8 +365,8 @@ class accountingCommand extends Command {
 		}
 
 		// reset yearly payed items payed_month column
-		if ($this->dates['m'] == '01')
-			Item::where('payed_month', '!=', '0')->update(['payed_month', '0']);
+		if ($this->dates['lastm'] == '01')
+			Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
 
 	}
 
