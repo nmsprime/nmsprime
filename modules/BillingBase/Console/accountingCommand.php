@@ -16,6 +16,7 @@ use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Entities\Invoice;
+use Modules\BillingBase\Entities\Item;
 use Modules\BillingBase\Entities\SettlementRun;
 
 
@@ -45,7 +46,7 @@ class accountingCommand extends Command {
 
 			'today' 		=> date('Y-m-d'),
 			'm' 			=> date('m'),
-			'Y' 			=> date('Y'),
+			'Y' 			=> date('Y', strtotime("first day of last month")),
 
 			'this_m'	 	=> date('Y-m'),
 			'thism_01'		=> date('Y-m-01'),
@@ -341,7 +342,7 @@ class accountingCommand extends Command {
 			foreach ($sepa_accs as $acc)
 			{
 				// restart counter every year
-				if ($this->dates['m'] == '01')
+				if ($this->dates['lastm'] == '01')
 				{
 					if ($conf->invoice_nr_start)
 						$acc->invoice_nr = $conf->invoice_nr_start - 1;
@@ -364,8 +365,8 @@ class accountingCommand extends Command {
 		}
 
 		// reset yearly payed items payed_month column
-		if ($this->dates['m'] == '01')
-			Item::where('payed_month', '!=', '0')->update(['payed_month', '0']);
+		if ($this->dates['lastm'] == '01')
+			Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
 
 	}
 
