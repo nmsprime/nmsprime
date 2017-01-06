@@ -111,7 +111,7 @@ class SepaAccount extends \BaseModel {
 	{
 		parent::__construct($attributes);
 
-		$this->invoice_nr_prefix = date('Y').'/';
+		$this->invoice_nr_prefix = date('Y', strtotime("first day of last month")).'/';
 		$this->logger = new BillingLogger;
 	}
 

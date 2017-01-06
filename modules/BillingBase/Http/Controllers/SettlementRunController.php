@@ -55,7 +55,8 @@ class SettlementRunController extends \BaseController {
 	 */
 	public function store($redirect = true)
 	{
-		SettlementRun::where('month', '=', (date('m') + 11) % 12)->delete();
+		$time = strtotime('first day of last month');
+		SettlementRun::where('month', '=', date('m', $time))->where('year', '=', date('Y', $time))->delete();
 
 		// this is a workaround to redirect output - laravel 3rd variable in call function disregards it
 		// output is buffered in internal storage and later discarded with ob_end_clean()
