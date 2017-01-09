@@ -77,9 +77,6 @@ class ModemRefreshCommand extends Command {
 		// foreach modem
 		foreach (\Modules\ProvBase\Entities\Modem::all() as $modem)
 		{
-			if (!$modem->network_access)
-				continue;
-
 			// Refresh Modem State
 			// take last value from cacti (fast path)
 			$res = $modem->refresh_state_cacti();
