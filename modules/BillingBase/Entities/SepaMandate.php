@@ -121,7 +121,7 @@ class SepaMandateObserver
 	public function creating($mandate)
 	{
 		// build mandate reference from template
-		$mandate->reference = $this->build_mandate_ref($mandate);
+		$mandate->reference = $mandate->reference ? : $this->build_mandate_ref($mandate);
 
 		// Set default values for empty fields - NOTE: prepare_input() functions fills data too
 		if (!$mandate->sepa_holder)
