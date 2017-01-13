@@ -500,6 +500,9 @@ end:
 	{
 		$rx_pwr = array();
 		foreach ($us['If Id'] as $i => $idx) {
+			// don't control non-functional channels
+			if($us['SNR dB'][$i] == 0)
+				continue;
 			// the reference SNR is 24 dB
 			$r = round($us['Rx Power dBmV'][$i] + 24 - $us['SNR dB'][$i]);
 			if ($r < 0)
