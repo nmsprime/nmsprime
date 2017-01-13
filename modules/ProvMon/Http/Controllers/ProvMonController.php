@@ -500,6 +500,9 @@ end:
 	{
 		$rx_pwr = array();
 		foreach ($us['If Id'] as $i => $idx) {
+			// don't control non-functional channels
+			if($us['SNR dB'][$i] == 0)
+				continue;
 			// the reference SNR is 24 dB
 			$r = round($us['Rx Power dBmV'][$i] + 24 - $us['SNR dB'][$i]);
 			if ($r < 0)
@@ -653,7 +656,7 @@ end:
 		$i   = 0;
 
 		// fetch all lines matching hw mac
-		foreach (array_reverse(array_unique($section[0])) as $s)
+		foreach (array_unique($section[0]) as $s)
 		{
 			if(strpos($s, $search))
 			{
@@ -664,7 +667,7 @@ end:
 				}
 
 				// push matching results
-				array_push($ret, $s);
+				array_push($ret, preg_replace('/\r|\n/', '<br />', $s));
 			}
 		}
 
@@ -677,7 +680,7 @@ end:
 			if ($key)
 				// return the most recent active lease
 				natsort($key);
-				return [ preg_replace('/\r|\n/', '<br />', array_pop($key)) ];
+				return [ array_pop($key) ];
 		}
 
 		return $ret;
