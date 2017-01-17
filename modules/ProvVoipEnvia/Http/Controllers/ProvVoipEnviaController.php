@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Provvoipenvia\Http\Controllers;
+namespace Modules\ProvVoipEnvia\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\View;
