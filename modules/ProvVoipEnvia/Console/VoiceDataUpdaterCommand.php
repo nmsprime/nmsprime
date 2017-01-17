@@ -1,4 +1,6 @@
-<?php namespace Modules\ProvvoipEnvia\Console;
+<?php
+
+namespace Modules\ProvVoipEnvia\Console;
 
 use Log;
 use Illuminate\Console\Command;
