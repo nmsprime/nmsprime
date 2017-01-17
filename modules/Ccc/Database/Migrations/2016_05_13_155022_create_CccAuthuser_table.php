@@ -14,7 +14,7 @@ class CreateCccAuthuserTable extends BaseMigration {
     /**
      * Run the migrations.
      *
-     * NOTE: this is a simple copy of Authuser Migration from @Patrick Reichel. See base app migrations.
+     * NOTE: this is a simple copy of Authuser Migration from Patrick Reichel. See base app migrations.
      *       This is/will/could be adapted to CCC requirements!
      *
      * @return void

@@ -245,8 +245,8 @@ class ProvVoipEnvia extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 *
-	 * @param $phonenumbermanagement phonenumberManagement object
-	 * @param $view_level depending on the view (contract, phonenumbermanagement) the result can be different
+	 * @param $model model instance to get jobs for
+	 * @param $view_level depending on the view (contract, phonenumbermanagement, etc.) the result can be different
 	 *
 	 * @return array containing data for view
 	 */
@@ -587,7 +587,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @author Patrick Reichel
 	 *
 	 * @param $job job to do
-	 * @param store created XML (used to deactivate the method e.g. for XML created to be shown only)
+	 * @param $store created XML (used to deactivate the method e.g. for XML created to be shown only)
 	 *
 	 * @return XML
 	 */
@@ -793,7 +793,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 *
-	 * @param $xml XML to extract error information from
+	 * @param $raw_xml XML to extract error information from
 	 * @return error codes and messages in array
 	 */
 	public function get_error_messages($raw_xml) {
@@ -857,7 +857,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 *
-	 * @param $job job to do
+	 * @param $topic job to do
 	 *
 	 * @return array with defaults for the current job
 	 */

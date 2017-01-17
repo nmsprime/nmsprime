@@ -10,7 +10,7 @@ use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
 
 class ProvVoipEnviaController extends \BaseController {
 
-	// TODO: @Patrick Reichel: is this field required ?
+	// TODO: Patrick Reichel: is this field required ?
 	public $name = 'VOIP';
 
 
@@ -333,7 +333,7 @@ class ProvVoipEnviaController extends \BaseController {
 
 	/**
 	 * Checks if a job is allowed to be done.
-	 * Use this before sending data to envia to prevent e.g. double creation of contracts (if user presses <F5> in success screen)
+	 * Use this before sending data to envia to prevent e.g. double creation of contracts (if user presses F5 in success screen)
 	 *
 	 * This defaults to false – so you have to whitelist all the methods you are going to use.
 	 *
@@ -555,6 +555,8 @@ class ProvVoipEnviaController extends \BaseController {
 	 *
 	 * @author Patrick Reichel
 	 * @param $payload generated XML
+	 * @param $url API-URL to send XML to
+	 * @param $origin previous URL (to be able to switch back)
 	 */
 	protected function _show_confirmation_request($payload, $url, $origin) {
 

@@ -213,10 +213,10 @@ class EnviaOrder extends \BaseModel {
 	 * @author Patrick Reichel
 	 *
 	 * @return array containing metadata for all order types:
-	 *			<str> ordertype
-	 *			<int> ordertype_id
-	 *			<str> method
-	 *			<bool> phonenumber_related
+	 *			ordertype (string),
+	 *			ordertype_id (int),
+	 *			method (str)
+	 *			phonenumber_related (bool)
 	 */
 	public static function get_orders_metadata() {
 		return self::$meta['orders'];
@@ -229,11 +229,11 @@ class EnviaOrder extends \BaseModel {
 	 * @author Patrick Reichel
 	 *
 	 * @return array containing metadata for all order states:
-	 *			<int> orderstatus_id
-	 *			<str> orderstatus
-	 *			<str> view_class
-	 *			<str> state_type
-	 *			<bool> final
+	 *			orderstatus_id (int),
+	 *			orderstatus (str),
+	 *			view_class (str),
+	 *			state_type (str),
+	 *			final (bool),
 	 */
 	public static function get_states_metadata() {
 		return self::$meta['states'];
@@ -278,7 +278,7 @@ class EnviaOrder extends \BaseModel {
 	/**
 	 * Checks if a given ordertype is phonenmumber related
 	 *
-	 * @param order to check
+	 * @param $order order to check
 	 *
 	 * @author Patrick Reichel
 	 */
