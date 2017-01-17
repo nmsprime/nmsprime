@@ -1,6 +1,7 @@
 <?php
 
 namespace Modules\ProvVoipEnvia\Entities;
+
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoip\Entities\Phonenumber;
@@ -23,14 +24,14 @@ class EnviaOrder extends \BaseModel {
 				'method' => 'contract/create',
 				'phonenumber_related' => False,
 			),
-			array(	# I don't know why – but Envia has (at least) two IDs for this ordertype…
+			array(	// I don't know why – but Envia has (at least) two IDs for this ordertype…
 				'ordertype' => 'Neuschaltung envia TEL voip reselling',
 				'ordertype_id' => 2,
 				'method' => 'contract/create',
 				'phonenumber_related' => False,
 			),
 			array(
-				'ordertype' => 'Kündigung envia TEL voip reselling',	# TODO: Add correct string given by Envia
+				'ordertype' => 'Kündigung envia TEL voip reselling',	// TODO: Add correct string given by Envia
 				'ordertype_id' => null,
 				'method' => 'contract/terminate',
 				'phonenumber_related' => False,
