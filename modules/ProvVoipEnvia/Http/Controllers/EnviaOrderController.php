@@ -77,6 +77,16 @@ class EnviaOrderController extends \BaseController {
 				}
 			}
 
+			// try to get related phonenumbers
+			$tmp_nr = $model->phonenumbers;
+			if (is_null($tmp_nr)) {
+				$phonenumber_ids = "";
+			}
+			else {
+				$phonenumber_ids = $tmp_nr->implode('id', ', ');
+			}
+			$init_values['phonenumber_id'] = $phonenumber_ids;
+
 			$order_id = array('form_type' => 'text', 'name' => 'orderid', 'description' => 'Order ID', 'options' => ['readonly']);
 		}
 
@@ -352,7 +362,6 @@ class EnviaOrderController extends \BaseController {
 			'customerreference',
 			'contractreference',
 			'contract_id',
-			'phonenumber_id',
 			'last_user_interaction',
 		);
 		$data = $this->_nullify_fields($data, $nullable_fields);
