@@ -282,6 +282,10 @@ class CccAuthuserController extends \BaseController {
 			$customer->password = \Hash::make(\Input::get('password'));
 			$customer->save();
 
+			// update the email passwords as well
+			foreach($customer->contract->emails as $email)
+				$email->psw_update(\Input::get('password'));
+
 			return $this->show();
 		}
 
