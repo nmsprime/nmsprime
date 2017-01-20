@@ -58,7 +58,7 @@ include_once('index.php');
 CODE
 rm /tmp/settings.txt
 
-php artisan view:clear
+php /var/www/lara/artisan view:clear
 # we call ProvMonController from cacti and thus need to be able to write to the following folder
 chmod o+w /var/www/lara/storage/framework/views
 
