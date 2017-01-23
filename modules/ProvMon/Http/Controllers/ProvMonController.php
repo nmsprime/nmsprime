@@ -511,7 +511,7 @@ end:
 			if ($r > 10)
 				// maximum actual power is 10 dB
 				$r = 10;
-			if ($cmts->company == 'CASA')
+			if ($cmts->company == 'Casa')
 				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
 			if ($cmts->company == 'Cisco')
 				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.9.9.116.1.4.1.1.6.$idx", 'i', 10 * $r);
@@ -563,7 +563,7 @@ end:
 
 		$us['SNR dB'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
 
-		if ($cmts->company == 'CASA')
+		if ($cmts->company == 'Casa')
 			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
 		if ($cmts->company == 'Cisco') {
 			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.9.9.116.1.4.1.1.6'));
@@ -573,7 +573,7 @@ end:
 		// unset unused interfaces, as we don't want to show them on the web gui
 		foreach ($us['Frequency MHz'] as $key => $freq)
 		{
-			if ($us['Frequency MHz'][$key] == 0 && $us['SNR dB'][$key] == 0)
+			if ($us['SNR dB'][$key] == 0)
 			{
 				foreach ($us as $entry => $arr)
 					unset($us[$entry][$key]);
