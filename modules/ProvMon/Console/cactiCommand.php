@@ -154,7 +154,7 @@ class cactiCommand extends Command {
 
 			$name      = $cmts->hostname;
 			$hostname  = $cmts->ip;
-			$community = ProvBase::first()->ro_community;
+			$community = $cmts->get_ro_community();
 
 			// Assumption: host template and graph tree are named e.g. '$company cmts' (case-insensitive)
 			$host_template = \DB::connection($this->connection)->table('host_template')
