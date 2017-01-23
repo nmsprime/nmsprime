@@ -36,6 +36,7 @@ cd /usr/share/cacti/cli
 su -s /bin/bash -c "php add_tree.php --type=tree --name='Cablemodem' --sort-method=natural" apache
 su -s /bin/bash -c "php add_tree.php --type=tree --name='CMTS' --sort-method=natural" apache
 su -s /bin/bash -c "php import_template.php --filename=/var/www/lara/modules/ProvMon/Console/cacti/cacti_host_template_cablemodem.xml --with-user-rras=1:2:3:4" apache
+su -s /bin/bash -c "php import_template.php --filename=/var/www/lara/modules/ProvMon/Console/cacti/cacti_host_template_casa_cmts.xml --with-user-rras=1:2:3:4" apache
 su -s /bin/bash -c "php import_template.php --filename=/var/www/lara/modules/ProvMon/Console/cacti/cacti_host_template_cisco_cmts.xml --with-user-rras=1:2:3:4" apache
 
 # replicate logging into the webGUI via the commandline to set the default values
