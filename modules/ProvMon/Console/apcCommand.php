@@ -47,7 +47,7 @@ class apcCommand extends Command {
 		foreach (Cmts::all() as $cmts)
 		{
 			$ctrl = new ProvMonController();
-			$ctrl->realtime_cmts($cmts, ProvBase::first()->ro_community, true);
+			$ctrl->realtime_cmts($cmts, $cmts->get_ro_community(), true);
 			unset($ctrl);
 		}
 		return true;

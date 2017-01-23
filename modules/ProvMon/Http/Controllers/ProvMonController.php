@@ -269,7 +269,7 @@ end:
 		// Realtime Measure
 		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
 		{
-			$realtime['measure']  = $this->realtime_cmts($modem, ProvBase::first()->ro_community);
+			$realtime['measure']  = $this->realtime_cmts($modem, $modem->get_ro_community());
 			$realtime['forecast'] = 'TODO';
 		}
 
@@ -511,7 +511,7 @@ end:
 			if ($r > 10)
 				// maximum actual power is 10 dB
 				$r = 10;
-			if ($cmts->company == 'CASA')
+			if ($cmts->company == 'Casa')
 				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
 			if ($cmts->company == 'Cisco')
 				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.9.9.116.1.4.1.1.6.$idx", 'i', 10 * $r);
@@ -563,7 +563,7 @@ end:
 
 		$us['SNR dB'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
 
-		if ($cmts->company == 'CASA')
+		if ($cmts->company == 'Casa')
 			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
 		if ($cmts->company == 'Cisco') {
 			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.9.9.116.1.4.1.1.6'));
@@ -573,7 +573,7 @@ end:
 		// unset unused interfaces, as we don't want to show them on the web gui
 		foreach ($us['Frequency MHz'] as $key => $freq)
 		{
-			if ($us['Frequency MHz'][$key] == 0 && $us['SNR dB'][$key] == 0)
+			if ($us['SNR dB'][$key] == 0)
 			{
 				foreach ($us as $entry => $arr)
 					unset($us[$entry][$key]);
@@ -581,7 +581,7 @@ end:
 		}
 
 		if($ctrl && isset($us['Rx Power dBmV']))
-			$us['Rx Power dBmV'] = $this->_set_new_rx_power($cmts, ProvBase::first()->rw_community, $us);
+			$us['Rx Power dBmV'] = $this->_set_new_rx_power($cmts, $cmts->get_rw_community(), $us);
 
 		// unset interface ID, as we don't want to show it on the web gui, we just needed them for setting the RX power
 		unset($us['If Id']);

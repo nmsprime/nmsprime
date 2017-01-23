@@ -154,18 +154,21 @@ class cactiCommand extends Command {
 
 			$name      = $cmts->hostname;
 			$hostname  = $cmts->ip;
-			$community = ProvBase::first()->ro_community;
+			$community = $cmts->get_ro_community();
 
 			// Assumption: host template and graph tree are named e.g. '$company cmts' (case-insensitive)
-			$host_template_id = \DB::connection($this->connection)->table('host_template')
+			$host_template = \DB::connection($this->connection)->table('host_template')
 				->where('name', '=', $cmts->company.' cmts')
-				->select('id')->first()->id;
+				->select('id')->first();
+			// we don't have a template for the company, skip adding the cmts
+			if(!$host_template)
+				continue;
 
 			$tree_id = \DB::connection($this->connection)->table('graph_tree')
 				->where('name', '=', 'cmts')
 				->select('id')->first()->id;
 
-			$out = system("php -q $path/add_device.php --description=\"$name\" --ip=$hostname --template=$host_template_id --community=\"$community\" --avail=snmp --version=2");
+			$out = system("php -q $path/add_device.php --description=\"$name\" --ip=$hostname --template=$host_template->id --community=\"$community\" --avail=snmp --version=2");
 			preg_match('/^Success - new device-id: \(([0-9]+)\)$/', $out, $matches);
 			if(count($matches) != 2)
 				continue;
