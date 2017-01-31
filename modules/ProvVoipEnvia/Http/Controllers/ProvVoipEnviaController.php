@@ -152,6 +152,7 @@ class ProvVoipEnviaController extends \BaseController {
 			['api' => 'order', 'link' => 'misc_get_free_numbers'],
 			['api' => 'order', 'link' => 'misc_get_free_numbers?localareacode=03735'],
 			['api' => 'order', 'link' => 'misc_get_free_numbers?localareacode=03735&amp;baseno=7696'],
+			['api' => 'order', 'link' => 'misc_get_keys?keyname=index'],
 			['api' => 'order', 'link' => 'misc_get_orders_csv'],
 			['api' => 'order', 'link' => 'misc_get_usage_csv'],
 			['api' => 'order', 'link' => 'order_cancel?order_id='],
@@ -348,6 +349,7 @@ class ProvVoipEnviaController extends \BaseController {
 		// these jobs are allowed in every case
 		$unrestricted_jobs = array(
 			'misc_ping',
+			'misc_get_keys',
 			'misc_get_free_numbers',
 			'misc_get_orders_csv',
 			'misc_get_usage_csv',
@@ -667,6 +669,7 @@ class ProvVoipEnviaController extends \BaseController {
 			'customer_update' => $base_url.'customer/update',
 
 			'misc_get_free_numbers' => $base_url.'misc/get_free_numbers',
+			'misc_get_keys' => $base_url.'misc/get_keys',
 			'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
 			'misc_get_usage_csv' => $base_url.'misc/get_usage_csv',
 			'misc_ping' => $base_url.'misc/ping',

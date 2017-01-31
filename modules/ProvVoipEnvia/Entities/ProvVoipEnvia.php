@@ -332,6 +332,11 @@ class ProvVoipEnvia extends \BaseModel {
 					'url' => $base.'misc_get_free_numbers'.$origin.$really,
 					'help' => "Gets all currently unused numbers from Envia.",
 				),
+				array(
+					'linktext' => 'Get values for use in other methods',
+					'url' => $base.'misc_get_keys'.$origin.'&amp;keyname=index'.$really,
+					'help' => "This method gets e.g. EKP codes, carrier codes, phonebook entry related data, …",
+				),
 			);
 		}
 
@@ -1024,6 +1029,11 @@ class ProvVoipEnvia extends \BaseModel {
 			'filter_data',
 		);
 
+		$second_level_nodes['misc_get_keys'] = array(
+			'reseller_identifier',
+			'key_data',
+		);
+
 		$second_level_nodes['misc_get_orders_csv'] = array(
 			'reseller_identifier',
 		);
@@ -1142,6 +1152,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 	}
 
+
 	/**
 	 * Method to add filter data.
 	 * This doesn't use method _add_fields – data comes only from $_GET
@@ -1184,6 +1195,23 @@ class ProvVoipEnvia extends \BaseModel {
 		// baseno is valid
 		$inner_xml->addChild('baseno', $baseno);
 
+	}
+
+
+	/**
+	 * Method to add key data.
+	 * This specifies the data to be caught from Envia.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_key_data() {
+
+		# the keyname for the data to catch; default is showing all available methods.
+		$keyname = \Input::get('keyname', 'index');
+
+		$inner_xml = $this->xml->addChild('key_data');
+
+		$inner_xml->addChild('keyname', $keyname);
 	}
 
 
@@ -1903,6 +1931,52 @@ class ProvVoipEnvia extends \BaseModel {
 		sort($free_numbers, SORT_NATURAL);
 
 		$out .= implode('<br>', $free_numbers);
+
+		return $out;
+	}
+
+
+	/**
+	 * Show the result for get_keys.
+	 *
+	 * TODO: Update our data with this response (database, files, etc.). This could then be run
+	 * as a cron job (e.g. weekly)
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_keys_response($xml, $data, $out) {
+
+
+		$keyname = \Input::get('keyname', 'index');
+
+		if ($keyname == 'index') {
+			$out .= '<h5>Available keys</h5>';
+			$out .= '<h5 style="color: red">Attention: Data for this keys should be downloaded max. once per day. This will later be done by a cron job</h5>';
+		}
+		else {
+			$out .= '<h4 style="color: red">Attention: ATM the following data is not used in database/files</h4>';
+			$out .= '<h5>Data send for key '.$keyname.'</h5>';
+		}
+
+		$out .= '<table class="table table-striped table-hover">';
+		$out .= '<thead><tr><th>ID</th><th>Description</th></tr></thead>';
+		$out .= '<tbody>';
+		foreach ($xml->keys->key as $key) {
+			$out .= '<tr>';
+			$out .= '<td>';
+			if ($keyname == 'index') {
+				$href = \URL::route('ProvVoipEnvia.request', array('job' => 'misc_get_keys', 'keyname' => ((string) $key->id), 'really' => 'True'));
+				$out .= '<a href="'.$href.'" target="_self">'.$key->id.'</a>';
+			}
+			else {
+				$out .= $key->id;
+			}
+			$out .= '</td><td>'.$key->description.'</td>';
+			$out .= '</tr>';
+		}
+		$out .= '</tbody>';
+		$out .= '</table>';
+
 
 		return $out;
 	}
