@@ -1954,7 +1954,14 @@ class ProvVoipEnvia extends \BaseModel {
 			$out .= '<h5 style="color: red">Attention: Data for this keys should be downloaded max. once per day. This will later be done by a cron job</h5>';
 		}
 		else {
-			$out .= '<h4 style="color: red">Attention: ATM the following data is not used in database/files</h4>';
+			// process the data according to the key
+			// TODO: implement the missing methods
+			if ($keyname == 'carriercode') {
+				$out = $this->_process_misc_get_keys_response_carriercode($xml, $data, $out);
+			}
+			else {
+				$out .= '<h4 style="color: red">Attention: ATM the following data is not used in database/files</h4>';
+			}
 			$out .= '<h5>Data send for key '.$keyname.'</h5>';
 		}
 
@@ -1977,6 +1984,83 @@ class ProvVoipEnvia extends \BaseModel {
 		$out .= '</tbody>';
 		$out .= '</table>';
 
+
+		return $out;
+	}
+
+
+	/**
+	 * Update the database table carriercode using data delivered by Envia API
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_keys_response_carriercode($xml, $data, $out) {
+
+		// first: get all currently existing ids – we need them later on to delete removed carriercodes
+		// in my opinion this should never be the case – but who knows…
+		$existing_carriercodes = CarrierCode::all();
+		$existing_ids = array();
+
+		foreach ($existing_carriercodes as $code) {
+			if ($code->carrier_code != '0') {
+				// add all but the dummy
+				$existing_ids[$code->id] = $code->carrier_code;
+			}
+		}
+
+		// go through the returned data
+		foreach ($xml->keys->key as $entry) {
+
+			$carriercode = CarrierCode::withTrashed()->firstOrNew(['carrier_code' => $entry->id]);
+			$changed = False;
+
+			$methods = array();
+
+			// restore soft deleted entry
+			if ($carriercode->trashed()) {
+				$carriercode->restore();
+				array_push($methods, 'Restoring');
+				$changed = True;
+			}
+
+			// new: add the carrier code
+			if (!$carriercode->carrier_code) {
+				$carriercode->carrier_code = $entry->id;
+				array_push($methods, 'Adding');
+				$changed = True;
+			}
+
+			// company changed? update database
+			if ($carriercode->company != $entry->description) {
+				$carriercode->company = $entry->description;
+				array_push($methods, 'Updating');
+				$changed = True;
+			}
+
+			// change the changes (if some)
+			if ($changed) {
+				$msg = implode('/', $methods).' '.$carriercode->carrier_code.' ('.$carriercode->company.')';
+				$out .= $msg.'<br>';
+				\Log::info($msg);
+				$carriercode->save();
+			}
+
+			// remove from existing array
+			$idx = array_search($entry->id, $existing_ids);
+			if ($idx !== False) {
+				unset($existing_ids[$idx]);
+			}
+
+		}
+
+		// remove the remaining carriercodes (those that are not within the Envia response) from database
+		foreach ($existing_ids as $id => $code) {
+			$cc = CarrierCode::find($id);
+			$msg = 'Deleting carriercode with ID '.$id.' ('.$code.': '.$cc->company.')';
+			$out .= $msg.'<br>';
+			\Log::warning($msg);
+			$cc->delete();
+		}
 
 		return $out;
 	}
@@ -2170,6 +2254,9 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['orderstatus'] = 'initializing';
 
 		$enviaOrder = EnviaOrder::create($order_data);
+
+		// TODO: in case of success: contractreference has changed
+		/* $contract_referen */
 
 		// view data
 		$out .= "<h5>Installation address change successful (order ID: ".$xml->orderid.")</h5>";
