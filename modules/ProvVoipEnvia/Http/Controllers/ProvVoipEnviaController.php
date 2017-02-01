@@ -84,6 +84,7 @@ class ProvVoipEnviaController extends \BaseController {
 
 		// as this method is not protected by normal auth mechanism we will allow only a small number of jobs
 		$allowed_cron_jobs = array(
+			'misc_get_keys' => $base_url.'misc/get_keys',
 			'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
 			'order_get_status' => $base_url.'order/get_status',
 			'contract_get_voice_data' => $base_url.'contract/get_voice_data',
