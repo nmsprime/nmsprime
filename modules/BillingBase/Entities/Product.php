@@ -4,7 +4,7 @@ namespace Modules\BillingBase\Entities;
 
 use DB;
 use Modules\BillingBase\Entities\SepaAccount;
-use Modules\BillingBase\Entities\Product;
+//use Modules\BillingBase\Entities\Product;
 
 class Product extends \BaseModel {
 
@@ -147,4 +147,24 @@ make_list:
 		return $ids;
 	}
 
+    /**
+     * Returns an array of available product types
+     *
+     * @return array|null
+     * @throws \Exception
+     */
+	public static function get_product_types()
+    {
+        $ret_val = null;
+
+        try {
+            $products = DB::table('product')->groupBy('type')->get();
+            foreach ($products as $product) {
+                $ret_val[] = $product->type;
+            }
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage(), $e->getCode(), $e);
+        }
+        return $ret_val;
+    }
 }
