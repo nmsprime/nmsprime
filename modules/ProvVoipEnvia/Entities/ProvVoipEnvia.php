@@ -1959,6 +1959,9 @@ class ProvVoipEnvia extends \BaseModel {
 			if ($keyname == 'carriercode') {
 				$out = $this->_process_misc_get_keys_response_carriercode($xml, $data, $out);
 			}
+			elseif ($keyname == 'ekp_code') {
+				$out = $this->_process_misc_get_keys_response_ekp_code($xml, $data, $out);
+			}
 			else {
 				$out .= '<h4 style="color: red">Attention: ATM the following data is not used in database/files</h4>';
 			}
@@ -2066,6 +2069,94 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		return $out;
+	}
+
+
+	/**
+	 * Update the database table ekpekpcode using data delivered by Envia API
+	 *
+	 * @author Patrick Reichel
+	 */
+
+	protected function _process_misc_get_keys_response_ekp_code($xml, $data, $out) {
+
+		// first: get all currently existing ids – we need them later on to delete removed ekpcodes
+		// in my opinion this should never be the case – but who knows…
+		$existing_ekpcodes = EkpCode::all();
+		$existing_ids = array();
+
+		foreach ($existing_ekpcodes as $code) {
+			$existing_ids[$code->id] = $code->ekp_code;
+		}
+
+		// go through the returned data
+		foreach ($xml->keys->key as $entry) {
+
+			$id = $entry->id;
+			$description = trim($entry->description);
+
+			// „ID“ 00/000 is sent twice by the Envia API – we ignore one of the entries to prevent
+			// log pollution (this would change our database at least once per request)…
+			if (($id == '00/000') && ($description == 'Test-EKP')) {
+				$msg = 'Ignoring duplicate “ID” 00/000 (Test-EKP)';
+				$out .= $msg.'<br>';
+				\Log::info($msg);
+				continue;
+			}
+
+			$ekpcode = EkpCode::withTrashed()->firstOrNew(['ekp_code' => $id]);
+			$changed = False;
+
+			$methods = array();
+
+			// restore soft deleted entry
+			if ($ekpcode->trashed()) {
+				$ekpcode->restore();
+				array_push($methods, 'Restoring');
+				$changed = True;
+			}
+
+			// new: add the ekp code
+			if (!$ekpcode->ekp_code) {
+				$ekpcode->ekp_code = $id;
+				array_push($methods, 'Adding');
+				$changed = True;
+			}
+
+			// company changed? update database
+			if ($ekpcode->company != $description) {
+				$ekpcode->company = $description;
+				array_push($methods, 'Updating');
+				$changed = True;
+			}
+
+			// change the changes (if some)
+			if ($changed) {
+				$msg = implode('/', $methods).' '.$ekpcode->ekp_code.' ('.$ekpcode->company.')';
+				$out .= $msg.'<br>';
+				\Log::info($msg);
+				$ekpcode->save();
+			}
+
+			// remove from existing array
+			$idx = array_search($id, $existing_ids);
+			if ($idx !== False) {
+				unset($existing_ids[$idx]);
+			}
+
+		}
+
+		// remove the remaining ekpcodes (those that are not within the Envia response) from database
+		foreach ($existing_ids as $id => $code) {
+			$ec = EkpCode::find($id);
+			$msg = 'Deleting ekpcode with ID '.$id.' ('.$code.': '.$ec->company.')';
+			$out .= $msg.'<br>';
+			\Log::warning($msg);
+			$ec->delete();
+		}
+
+		return $out;
+
 	}
 
 
