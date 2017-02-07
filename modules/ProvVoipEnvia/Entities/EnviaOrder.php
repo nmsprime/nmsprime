@@ -501,25 +501,38 @@ class EnviaOrder extends \BaseModel {
 
 		// show all order related phonenumbers
 		$phonenumber_nrs = [];
+		$space_before_numbers = str_repeat('&nbsp', 3);
 		foreach ($this->phonenumbers as $phonenumber) {
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
-			$phonenumber_nr = $phonenumber->prefix_number.'/'.$phonenumber->number;
 
+			$prefix_number = $phonenumber->prefix_number;
+			// collect the prefix numbers (there should be only one per order – but who knows…)
+			if (!array_key_exists($prefix_number, $phonenumber_nrs)) {
+				$phonenumber_nrs[$prefix_number] = [];
+			}
+
+			$phonenumber_nr = $phonenumber->number;
 			if (!is_null($phonenumbermanagement)) {
 				$phonenumbermanagement_id = $phonenumber->phonenumbermanagement->id;
-				$phonenumber_nr = '<a href="'.\URL::route('PhonenumberManagement.edit', array($phonenumbermanagement_id)).'" target="_blank">'.$phonenumber_nr.'</a>';
+				$phonenumber_nr = $space_before_numbers.'<a href="'.\URL::route('PhonenumberManagement.edit', array($phonenumbermanagement_id)).'" target="_blank">'.$phonenumber_nr.'</a>';
 			}
 			else {
-				$phonenumber_nr = '<a href="'.\URL::route('Phonenumber.edit', array($phonenumber->id)).'" target="_blank">'.$phonenumber_nr.'</a>';
+				$phonenumber_nr = $space_before_numbers.'<a href="'.\URL::route('Phonenumber.edit', array($phonenumber->id)).'" target="_blank">'.$phonenumber_nr.'</a>';
 			}
-			array_push($phonenumber_nrs, $phonenumber_nr);
+			array_push($phonenumber_nrs[$prefix_number], $phonenumber_nr);
 		}
 		if (!boolval($phonenumber_nrs)) {
-			array_push($phonenumber_nrs, '–');
+			$phonenumber_nrs = '–';
 		}
-
-		// build HTML to insert
-		$phonenumber_nrs = implode('<br>', $phonenumber_nrs);
+		else {
+			$tmp_nrs = [];
+			foreach ($phonenumber_nrs as $prefix_number => $numbers) {
+				$tmp = $prefix_number.'/<br>';
+				$tmp .= implode('<br>', $numbers);
+				array_push($tmp_nrs, $tmp);
+			}
+			$phonenumber_nrs = implode('<br><br>', $tmp_nrs);
+		}
 
 		if (!$this->user_interaction_necessary()) {
 			$current = '-';
@@ -530,8 +543,16 @@ class EnviaOrder extends \BaseModel {
 			$solve_link = '<a href="'.\URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id)).'" target="_self">Mark solved</a>';
 		}
 
-        return ['index' => [$this->ordertype, $this->orderstatus, $escalation_level, $contract_nr, $modem_nr, $phonenumber_nrs, $this->created_at, $this->updated_at, $this->orderdate, $current, $solve_link],
-                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract&nbsp;Nr.', 'Modem', 'Phonenumbers', 'Created at', 'Updated at', 'Orderdate', 'Interaction needed?', ''],
+		// add line breaks to make stuff fit better into table
+		// for the use of &shy; read https://css-tricks.com/almanac/properties/h/hyphenate/#article-header-id-2
+		$ordertype = $this->ordertype;
+		$ordertype = str_replace('Rufnummernkonfiguration', 'Rufnummern&shy;konfiguration', $ordertype);
+
+		$orderstatus = $this->orderstatus;
+		$orderstatus = str_replace('Portierungserklärung', 'Portierungs&shy;erklärung', $orderstatus);
+
+        return ['index' => [$ordertype, $orderstatus, $escalation_level, $contract_nr, $modem_nr, $phonenumber_nrs, $this->created_at, $this->updated_at, $this->orderdate, $current, $solve_link],
+                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract', 'Modem', 'Numbers', 'Created at', 'Updated at', 'Orderdate', 'Needs action?', ''],
                 'bsclass' => $bsclass,
 				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
 		];
