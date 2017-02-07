@@ -1962,6 +1962,9 @@ class ProvVoipEnvia extends \BaseModel {
 			elseif ($keyname == 'ekp_code') {
 				$out = $this->_process_misc_get_keys_response_ekp_code($xml, $data, $out);
 			}
+			elseif ($keyname == 'trc_class') {
+				$out = $this->_process_misc_get_keys_response_trc_class($xml, $data, $out);
+			}
 			else {
 				$out .= '<h4 style="color: red">Attention: ATM the following data is not used in database/files</h4>';
 			}
@@ -2030,8 +2033,9 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 
 			// new: add the carrier code
-			if (!$carriercode->carrier_code) {
+			if (!$carriercode->exists) {
 				$carriercode->carrier_code = $id;
+				$carriercode->company = $description;
 				array_push($methods, 'Adding');
 				$changed = True;
 			}
@@ -2117,8 +2121,9 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 
 			// new: add the ekp code
-			if (!$ekpcode->ekp_code) {
+			if (!$ekpcode->exists) {
 				$ekpcode->ekp_code = $id;
+				$ekpcode->company = $description;
 				array_push($methods, 'Adding');
 				$changed = True;
 			}
@@ -2153,6 +2158,93 @@ class ProvVoipEnvia extends \BaseModel {
 			$out .= $msg.'<br>';
 			\Log::warning($msg);
 			$ec->delete();
+		}
+
+		return $out;
+
+	}
+
+
+	/**
+	 * Update the database table trc_code using data delivered by Envia API
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_keys_response_trc_class($xml, $data, $out) {
+
+		// first: get all currently existing ids – we need them later on to delete removed carriercodes
+		// in my opinion this should never be the case – but who knows…
+		$existing_trcclasses = TRCClass::all();
+		$existing_ids = array();
+
+		foreach ($existing_trcclasses as $class) {
+			$existing_ids[$class->id] = $class->trc_id;
+		}
+
+		// go through the returned data
+		foreach ($xml->keys->key as $entry) {
+
+			$id = $entry->id;
+			$tmp = explode(' ', trim($entry->description));
+			$short = trim($tmp[0]);
+			$description = trim(implode(' ', array_slice($tmp, 2)));
+
+			$trcclass = TRCClass::withTrashed()->firstOrNew(['trc_id' => $id]);
+			$changed = False;
+
+			$methods = array();
+
+			// restore soft deleted entry
+			if ($trcclass->trashed()) {
+				$trcclass->restore();
+				array_push($methods, 'Restoring');
+				$changed = True;
+			}
+
+			// new: add the trc class
+			if (!$trcclass->exists) {
+				$trcclass->trc_id = $id;
+				$trcclass->trc_short = $short;
+				$trcclass->trc_description = $description;
+				array_push($methods, 'Adding');
+				$changed = True;
+			}
+
+			// class changed? update database
+			if (
+				($trcclass->trc_short != $short)
+				||
+				($trcclass->trc_description != $description)
+			) {
+				$trcclass->trc_short = $short;
+				$trcclass->trc_description = $description;
+				array_push($methods, 'Updating');
+				$changed = True;
+			}
+
+			// change the changes (if some)
+			if ($changed) {
+				$msg = implode('/', $methods).' '.$trcclass->trc_id.' ('.$trcclass->trc_short.' – '.$trcclass->trc_description.')';
+				$out .= $msg.'<br>';
+				\Log::info($msg);
+				$trcclass->save();
+			}
+
+			// remove from existing array
+			$idx = array_search($id, $existing_ids);
+			if ($idx !== False) {
+				unset($existing_ids[$idx]);
+			}
+
+		}
+
+		// remove the remaining trc classes (those that are not within the Envia response) from database
+		foreach ($existing_ids as $id => $class) {
+			$tc = TRCClass::find($id);
+			$msg = 'Deleting trc class with ID '.$id.' ('.$tc->trc_id.': '.$tc->trc_short.' – '.$tc->trc_description.')'; 
+			$out .= $msg.'<br>';
+			\Log::warning($msg);
+			$tc->delete();
 		}
 
 		return $out;
