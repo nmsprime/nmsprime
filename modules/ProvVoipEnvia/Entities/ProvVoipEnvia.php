@@ -2011,7 +2011,10 @@ class ProvVoipEnvia extends \BaseModel {
 		// go through the returned data
 		foreach ($xml->keys->key as $entry) {
 
-			$carriercode = CarrierCode::withTrashed()->firstOrNew(['carrier_code' => $entry->id]);
+			$id = $entry->id;
+			$description = trim($entry->description);
+
+			$carriercode = CarrierCode::withTrashed()->firstOrNew(['carrier_code' => $id]);
 			$changed = False;
 
 			$methods = array();
@@ -2025,14 +2028,14 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// new: add the carrier code
 			if (!$carriercode->carrier_code) {
-				$carriercode->carrier_code = $entry->id;
+				$carriercode->carrier_code = $id;
 				array_push($methods, 'Adding');
 				$changed = True;
 			}
 
 			// company changed? update database
-			if ($carriercode->company != $entry->description) {
-				$carriercode->company = $entry->description;
+			if ($carriercode->company != $description) {
+				$carriercode->company = $description;
 				array_push($methods, 'Updating');
 				$changed = True;
 			}
@@ -2046,7 +2049,7 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 
 			// remove from existing array
-			$idx = array_search($entry->id, $existing_ids);
+			$idx = array_search($id, $existing_ids);
 			if ($idx !== False) {
 				unset($existing_ids[$idx]);
 			}
