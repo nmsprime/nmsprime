@@ -1966,7 +1966,7 @@ class ProvVoipEnvia extends \BaseModel {
 				$out = $this->_process_misc_get_keys_response_trc_class($xml, $data, $out);
 			}
 			else {
-				$out .= '<h4 style="color: red">Attention: ATM the following data is not used in database/files</h4>';
+				$out .= '<h4 style="color: red">Attention: ATM the following data is not used to update database/files!</h4>';
 			}
 			$out .= '<h5>Data send for key '.$keyname.'</h5>';
 		}
@@ -2004,9 +2004,9 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// first: get all currently existing ids – we need them later on to delete removed carriercodes
 		// in my opinion this should never be the case – but who knows…
+		// we also have to take care to prevent database ids from changing!
 		$existing_carriercodes = CarrierCode::all();
 		$existing_ids = array();
-
 		foreach ($existing_carriercodes as $code) {
 			if ($code->carrier_code != '0') {
 				// add all but the dummy
@@ -2241,7 +2241,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// remove the remaining trc classes (those that are not within the Envia response) from database
 		foreach ($existing_ids as $id => $class) {
 			$tc = TRCClass::find($id);
-			$msg = 'Deleting trc class with ID '.$id.' ('.$tc->trc_id.': '.$tc->trc_short.' – '.$tc->trc_description.')'; 
+			$msg = 'Deleting trc class with ID '.$id.' ('.$tc->trc_id.': '.$tc->trc_short.' – '.$tc->trc_description.')';
 			$out .= $msg.'<br>';
 			\Log::warning($msg);
 			$tc->delete();
