@@ -2014,11 +2014,12 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 		}
 
-		// go through the returned data and perform restore, add and change actions
+		// process the returned data and perform restore, add and change actions
 		foreach ($xml->keys->key as $entry) {
 
-			$id = $entry->id;
-			$description = trim($entry->description);
+			// Envia partially sends data with trailing 0xa0 (=NO-BREAK SPACE) – we have to trim this explicitely!
+			$id = trim($entry->id, " \t\n\r\0\x0B\xC2\xA0");
+			$description = trim($entry->description, " \t\n\r\0\x0B\xC2\xA0");
 
 			$carriercode = CarrierCode::withTrashed()->firstOrNew(['carrier_code' => $id]);
 			$changed = False;
@@ -2086,18 +2087,19 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// first: get all currently existing ids – we need them later on to delete removed ekpcodes
 		// in my opinion this should never be the case – but who knows…
+		// we also have to take care to prevent database ids from changing!
 		$existing_ekpcodes = EkpCode::all();
 		$existing_ids = array();
-
 		foreach ($existing_ekpcodes as $code) {
 			$existing_ids[$code->id] = $code->ekp_code;
 		}
 
-		// go through the returned data
+		// process the returned data
 		foreach ($xml->keys->key as $entry) {
 
-			$id = $entry->id;
-			$description = trim($entry->description);
+			// Envia partially sends data with trailing 0xa0 (=NO-BREAK SPACE) – we have to trim this explicitely!
+			$id = trim($entry->id, " \t\n\r\0\x0B\xC2\xA0");
+			$description = trim($entry->description, " \t\n\r\0\x0B\xC2\xA0");
 
 			// „ID“ 00/000 is sent twice by the Envia API – we ignore one of the entries to prevent
 			// log pollution (this would change our database at least once per request)…
@@ -2174,20 +2176,21 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// first: get all currently existing ids – we need them later on to delete removed carriercodes
 		// in my opinion this should never be the case – but who knows…
+		// we also have to take care to prevent database ids from changing!
 		$existing_trcclasses = TRCClass::all();
 		$existing_ids = array();
-
 		foreach ($existing_trcclasses as $class) {
 			$existing_ids[$class->id] = $class->trc_id;
 		}
 
-		// go through the returned data
+		// process the returned data
 		foreach ($xml->keys->key as $entry) {
 
-			$id = $entry->id;
-			$tmp = explode(' ', trim($entry->description));
+			// Envia partially sends data with trailing 0xa0 (=NO-BREAK SPACE) – we have to trim this explicitely!
+			$id = trim($entry->id, " \t\n\r\0\x0B\xC2\xA0");
+			$tmp = explode(' ', trim($entry->description, " \t\n\r\0\x0B\xC2\xA0"));
 			$short = trim($tmp[0]);
-			$description = trim(implode(' ', array_slice($tmp, 2)));
+			$description = trim(implode(' ', array_slice($tmp, 2)), " \t\n\r\0\x0B\xC2\xA0");
 
 			$trcclass = TRCClass::withTrashed()->firstOrNew(['trc_id' => $id]);
 			$changed = False;
