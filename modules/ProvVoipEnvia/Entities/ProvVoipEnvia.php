@@ -2445,7 +2445,8 @@ class ProvVoipEnvia extends \BaseModel {
 		$enviaOrder = EnviaOrder::create($order_data);
 
 		// TODO: in case of success: contractreference has changed
-		/* $contract_referen */
+		$old_contractreferenec = $this->modem->contract_external_id;
+		$new_contractreference = $xml->contractreference;
 
 		// view data
 		$out .= "<h5>Installation address change successful (order ID: ".$xml->orderid.")</h5>";
