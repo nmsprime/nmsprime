@@ -2014,7 +2014,7 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 		}
 
-		// go through the returned data
+		// go through the returned data and perform restore, add and change actions
 		foreach ($xml->keys->key as $entry) {
 
 			$id = $entry->id;
