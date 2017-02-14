@@ -64,6 +64,9 @@ class EnviaOrderUpdaterCommand extends Command {
 		$this->_update_orders();
 
 		echo "\n";
+		$this->_perform_actions();
+
+		echo "\n";
 
 	}
 
@@ -162,6 +165,28 @@ class EnviaOrderUpdaterCommand extends Command {
 
 		return false;
 
+	}
+
+
+	/**
+	 * Check if there are order related actions to perform
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _perform_actions() {
+
+		$this->_process_contract_relocate();
+	}
+
+
+	/**
+	 * Process orders which relocated contracts
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_contract_relocate() {
+
+		/* $orders = $this-orders->where('method', '=', 'contract/relocate'); */
 	}
 
 }
