@@ -1206,7 +1206,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _add_key_data() {
 
-		# the keyname for the data to catch; default is showing all available methods.
+		// the keyname for the data to catch; default is showing all available methods.
 		$keyname = \Input::get('keyname', 'index');
 
 		$inner_xml = $this->xml->addChild('key_data');
@@ -2302,7 +2302,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_contract_get_voice_data_response($xml, $data, $out) {
 
-		$out .= "<h5>Voice data for contract ".$this->contract->id."</h5>";
+		$out .= "<h5>Voice data for modem ".$this->modem->id."</h5>";
 		$out .= "<h5 style='color: red'>UNTESTED: This needs to be tested when <u>real data</u> is available<br>";
 		$out .= "IMPORTANT: Double check changes and new settings!!</h5>";
 
@@ -2320,8 +2320,7 @@ class ProvVoipEnvia extends \BaseModel {
 			if ($type == 'callnumber_single_data') {
 
 				// find phonenumber object for given phonenumber
-				$where_stmt = "prefix_number=".$entry->localareacode." AND number=".$entry->baseno;
-				$phonenumber = Phonenumber::whereRaw($where_stmt)->first();
+				$phonenumber = Phonenumber::where('prefix_number', '=', $entry->localareacode)->where('number', '=', $entry->baseno)->first();
 
 				$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 
@@ -2444,10 +2443,6 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$enviaOrder = EnviaOrder::create($order_data);
 
-		// TODO: in case of success: contractreference has changed
-		$old_contractreferenec = $this->modem->contract_external_id;
-		$new_contractreference = $xml->contractreference;
-
 		// view data
 		$out .= "<h5>Installation address change successful (order ID: ".$xml->orderid.")</h5>";
 
@@ -2543,7 +2538,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 			$out .= "<br>";
 
-			$phonenumbers = Phonenumber::whereRaw('prefix_number = '.$result['localareacode'].' AND number = '.$result['baseno'])->get();
+			$phonenumbers = Phonenumber::where('prefix_number', '=', $result['localareacode'])->where('number', '=', $result['baseno'])->get();
 
 			// check for edge cases (no number found, more than one number found)
 			// the number we look for should exist once and only once!
@@ -2786,7 +2781,7 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		if (isset($data['orderid'])) {
-			$order = EnviaOrder::whereRaw('orderid='.intval($data['orderid']).' and deleted_at IS NULL')->firstOrFail();
+			$order = EnviaOrder::where('orderid', '=', intval($data['orderid']))->firstOrFail();
 
 			// if there is no existing management: create and bundle with phonenumber
 			if (

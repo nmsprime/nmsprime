@@ -62,7 +62,6 @@ class EnviaOrderUpdaterCommand extends Command {
 
 		echo "\n";
 		$this->_update_orders();
-
 		echo "\n";
 		$this->_perform_actions();
 
@@ -119,15 +118,20 @@ class EnviaOrderUpdaterCommand extends Command {
 			if (!EnviaOrder::orderstate_is_final($order)) {
 				Log::debug('Updating order '.$order_id);
 
-				// get the relative URL to execute the cron job for updating the current order_id
-				$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'order_get_status', 'order_id' => $order_id, 'really' => 'True'), false);
+				try {
+					// get the relative URL to execute the cron job for updating the current order_id
+					$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'order_get_status', 'order_id' => $order_id, 'really' => 'True'), false);
 
-				$url = $this->base_url.$url_suffix;
+					$url = $this->base_url.$url_suffix;
 
-				$this->_perform_curl_request($url);
+					$this->_perform_curl_request($url);
 
-				if ($this->_updated($order_id)) {
-					Log::info("Updated Order id ".$order_id.".");
+					if ($this->_updated($order_id)) {
+						Log::info("Updated Order id ".$order_id.".");
+					}
+				}
+				catch (Exception $ex) {
+					Log::error("Exception updating order ".$order_id."): ".$ex->getMessage()." => ".$ex->getTraceAsString());
 				}
 			}
 
@@ -167,26 +171,5 @@ class EnviaOrderUpdaterCommand extends Command {
 
 	}
 
-
-	/**
-	 * Check if there are order related actions to perform
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _perform_actions() {
-
-		$this->_process_contract_relocate();
-	}
-
-
-	/**
-	 * Process orders which relocated contracts
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _process_contract_relocate() {
-
-		/* $orders = $this-orders->where('method', '=', 'contract/relocate'); */
-	}
 
 }
