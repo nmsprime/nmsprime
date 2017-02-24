@@ -3,9 +3,9 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class UpdateContractAddEmailcount extends BaseMigration {
+class UpdateProductAddEmail extends BaseMigration {
 
-	protected $tablename = 'contract';
+	protected $tablename = 'product';
 
 	/**
 	 * Run the migrations.
@@ -16,7 +16,7 @@ class UpdateContractAddEmailcount extends BaseMigration {
 	{
 		Schema::table($this->tablename, function(Blueprint $table)
 		{
-			$table->integer('emailcount')->unsigned();
+			$table->integer('email_count')->unsigned();
 		});
 
 	}
@@ -31,7 +31,7 @@ class UpdateContractAddEmailcount extends BaseMigration {
 		Schema::table($this->tablename, function(Blueprint $table)
 		{
 			$table->dropColumn([
-				'emailcount',
+				'email_count',
 			]);
 		});
 	}
