@@ -63,9 +63,6 @@ class EnviaOrderUpdaterCommand extends Command {
 		echo "\n";
 		$this->_update_orders();
 		echo "\n";
-		$this->_perform_actions();
-
-		echo "\n";
 
 	}
 
