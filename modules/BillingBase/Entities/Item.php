@@ -86,7 +86,7 @@ class Item extends \BaseModel {
 
 	public function costcenter ()
 	{
-		return $this->belongsTo('Modules\BillingBase\Entities\Costcenter');
+		return $this->belongsTo('Modules\BillingBase\Entities\CostCenter');
 	}
 
 
@@ -195,7 +195,7 @@ class Item extends \BaseModel {
 	 * @return 	null if no costs incurred, 1 otherwise
 	 * @author 	Nino Ryschawy
 	 */
-	public function calculate_price_and_span($dates)
+	public function calculate_price_and_span($dates, $return_array = false)
 	{
 		$ratio = 0;
 		$text  = '';			// only dates
@@ -389,7 +389,7 @@ class Item extends \BaseModel {
 				break;
 
 		}
-
+//d($ratio);
 		if (!$ratio)
 			return null;
 
@@ -400,6 +400,9 @@ class Item extends \BaseModel {
 		$this->invoice_description = $this->product->name.' '.$text;
 		$this->invoice_description .= $this->accounting_text ? ' - '.$this->accounting_text : '';
 
+		if ($return_array === true) {
+            return array('charge' => $this->charge, 'ratio' => $this->ratio, 'invoice_description' => $this->invoice_description);
+        }
 		return true;
 	}
 
