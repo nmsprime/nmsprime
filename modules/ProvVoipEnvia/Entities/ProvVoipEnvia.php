@@ -2095,20 +2095,25 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		// process the returned data
+		// as some “IDs” are sent more than once we first have to combine them
+		// to avoid incomplete database entries and log pollution
+		$prepared_envia_data = array();
 		foreach ($xml->keys->key as $entry) {
 
-			// Envia partially sends data with trailing 0xa0 (=NO-BREAK SPACE) – we have to trim this explicitely!
+			// Envia partially sends data with trailing “0xc2 0xa0” (=NO-BREAK SPACE) – we have to trim this explicitely!
 			$id = trim($entry->id, " \t\n\r\0\x0B\xC2\xA0");
 			$description = trim($entry->description, " \t\n\r\0\x0B\xC2\xA0");
 
-			// „ID“ 00/000 is sent twice by the Envia API – we ignore one of the entries to prevent
-			// log pollution (this would change our database at least once per request)…
-			if (($id == '00/000') && ($description == 'Test-EKP')) {
-				$msg = 'Ignoring duplicate “ID” 00/000 (Test-EKP)';
-				$out .= $msg.'<br>';
-				\Log::info($msg);
-				continue;
+			if (!array_key_exists($id, $prepared_envia_data)) {
+				$prepared_envia_data[$id] = $description;
 			}
+			else {
+				$prepared_envia_data[$id] .= ', '.$description;
+			}
+		}
+
+		// now check for changes and update database
+		foreach ($prepared_envia_data as $id => $description) {
 
 			$ekpcode = EkpCode::withTrashed()->firstOrNew(['ekp_code' => $id]);
 			$changed = False;
