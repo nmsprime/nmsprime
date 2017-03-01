@@ -24,7 +24,7 @@ class EnviaOrder extends \BaseModel {
 				'method' => 'contract/create',
 				'phonenumber_related' => False,
 			),
-			array(	// I don't know why – but Envia has (at least) two IDs for this ordertype…
+			array(	// I don't know why – but Envia has (at least) two IDs for this ordertype – maybe for creates with and without attached phonenumbers?
 				'ordertype' => 'Neuschaltung envia TEL voip reselling',
 				'ordertype_id' => 2,
 				'method' => 'contract/create',
