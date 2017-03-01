@@ -125,6 +125,13 @@ class EnviaOrder extends \BaseModel {
 				'final' => False,
 			),
 			array(
+				'orderstatus_id' => 1016,
+				'orderstatus' => 'Warte auf Bearbeitung',
+				'view_class' => 'warning',
+				'state_type' => 'pending',
+				'final' => False,
+			),
+			array(
 				'orderstatus_id' => 1017,
 				'orderstatus' => 'Stornierung bestätigt',
 				'view_class' => 'success',
