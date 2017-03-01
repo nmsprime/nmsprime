@@ -31,12 +31,13 @@ class ProvVoipEnvia extends \BaseModel {
 	public function __construct($attributes = array()) {
 
 		// if not available in .env: set to -1 to not break e.g. “php artisan” command ⇒ thas has to be caught later on
-		if (array_key_exists('PROVVOIPENVIA__REST_API_VERSION', $_ENV)) {
-			$v = $_ENV['PROVVOIPENVIA__REST_API_VERSION'];
+		$v = getenv('PROVVOIPENVIA__REST_API_VERSION');
+		if ($v === False) {
+			$v = "-1";
 		}
-		else {
-			$v = -1;
-		}
+
+		$this->api_version_string = $v;
+
 
 		// check if sent and received XML shall be stored
 		if (array_key_exists('PROVVOIPENVIA__STORE_XML', $_ENV)) {
@@ -50,11 +51,195 @@ class ProvVoipEnvia extends \BaseModel {
 		if (!is_numeric($v)) {
 			throw new \InvalidArgumentException('PROVVOIPENVIA__REST_API_VERSION in .env has to be a float value (e.g.: 1.4)');
 		};
-		$this->api_version = floatval($v);
+
+		$this->api_version = $this->_version_string_to_array($this->api_version_string);
 
 		// call \BaseModel's constructor
 		parent::__construct($attributes);
 
+	}
+
+	/**
+	 * Helper to convert a version string to array
+	 * Necessary to compare version numbers properly (e.g. "1.4" < "1.10")!
+	 *
+	 * @return array similar to Python's sys.version_info (containing three keys: major, minor, micro)
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _version_string_to_array($version) {
+
+		$version = explode('.', $version);
+		$version_major = intval($version[0]);
+
+		if (count($version) >= 2) {
+			$version_minor = intval($version[1]);
+		}
+		else {
+			$version_minor = 0;
+		}
+
+		// level micro is not used ATM ⇒ set to -1 if not given…
+		if (count($version) >= 3) {
+			$version_micro = intval($version[2]);
+		}
+		else {
+			$version_micro = 0;
+		}
+
+		return [
+			'major' => $version_major,
+			'minor' => $version_minor,
+			'micro' => $version_micro,
+			];
+	}
+
+	/**
+	 * Helper to determine the compare level for version numbers depending on the precision of the given param.
+	 *
+	 * @param $version string containing a version number
+	 *
+	 * @return 'major' for strings without dots, 'minor' for strings containing one dot, 'micro' else
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_api_version_compare_level($version) {
+
+		$dot_count = substr_count($version, ".");
+
+		if ($dot_count == 0) {
+			return 'major';
+		}
+
+		if ($dot_count == 1) {
+			return 'minor';
+		}
+
+		// fallback level – there can be no version like 1.4.3.1
+		return 'micro';
+	}
+
+
+	/**
+	 * Helper to compare a given integer, float or string to the currently used API version
+	 *
+	 * @return integer
+	 *			-1: given version is less than currently used one
+	 *			 0: given version equals currently used one
+	 *			-1: given version is greater than currently used one
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _compare_to_api_version($version) {
+
+		// cast to string expicitely – later logic expects strings!
+		$version = strval($version);
+
+		// get the level to which level we have to compare
+		$level = $this->_get_api_version_compare_level($version);
+
+		$version_to_compare = $this->_version_string_to_array($version);
+
+		// in each case compare the major number
+		if ($version_to_compare['major'] > $this->api_version['major']) {
+			return 1;
+		}
+		elseif ($version_to_compare['major'] < $this->api_version['major']) {
+			return -1;
+		}
+
+		// if level is less than major: compare minor number, too
+		if (($level == 'minor') || ($level == 'micro')) {
+			if ($version_to_compare['minor'] > $this->api_version['minor']) {
+				return 1;
+			}
+			elseif ($version_to_compare['minor'] < $this->api_version['minor']) {
+				return -1;
+			}
+		}
+
+		// if level is micro: compare the micro integers, too
+		if ($level == 'micro') {
+			if ($version_to_compare['micro'] > $this->api_version['micro']) {
+				return 1;
+			}
+			elseif ($version_to_compare['micro'] < $this->api_version['micro']) {
+				return -1;
+			}
+		}
+
+		// if we end up here we have a match (version numbers are equal to the given level)
+		return 0;
+	}
+
+
+	/**
+	 * Helper to check if API version equals a given value.
+	 *
+	 * @param $version number as integer, float or string (e.g. "1.4")
+	 * @return bool
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function api_version_equals($version) {
+
+		return ($this->_compare_to_api_version($version) == 0);
+	}
+
+
+	/**
+	 * Helper to check if API version equals a given value.
+	 *
+	 * @param $version number as integer, float or string (e.g. "1.4")
+	 * @return bool
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function api_version_less_than($version) {
+
+		return ($this->_compare_to_api_version($version) == 1);
+	}
+
+
+	/**
+	 * Helper to check if API version equals a given value.
+	 *
+	 * @param $version number as integer, float or string (e.g. "1.4")
+	 * @return bool
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function api_version_greater_than($version) {
+
+		return ($this->_compare_to_api_version($version) == -1);
+	}
+
+
+	/**
+	 * Helper to check if API version equals a given value.
+	 *
+	 * @param $version number as integer, float or string (e.g. "1.4")
+	 * @return bool
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function api_version_less_or_equal($version) {
+
+		return ($this->api_version_equals($version) || $this->api_version_less_than($version));
+	}
+
+
+	/**
+	 * Helper to check if API version equals a given value.
+	 *
+	 * @param $version number as integer, float or string (e.g. "1.4")
+	 * @return bool
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function api_version_greater_or_equal($version) {
+
+		return ($this->api_version_equals($version) || $this->api_version_greater_than($version));
 	}
 
 
@@ -331,13 +516,17 @@ class ProvVoipEnvia extends \BaseModel {
 					'linktext' => 'Get free numbers',
 					'url' => $base.'misc_get_free_numbers'.$origin.$really,
 					'help' => "Gets all currently unused numbers from Envia.",
-				),
-				array(
+				)
+			);
+
+			if ($this->api_version_greater_or_equal("1.7")) {
+				array_push($ret, array(
 					'linktext' => 'Get values for use in other methods',
 					'url' => $base.'misc_get_keys'.$origin.'&amp;keyname=index'.$really,
 					'help' => "This method gets e.g. EKP codes, carrier codes, phonebook entry related data, …",
-				),
-			);
+				));
+			}
+
 		}
 
 
@@ -370,9 +559,9 @@ class ProvVoipEnvia extends \BaseModel {
 				));
 			}
 
-			// contract can be created if created; available with Envia API version 1.4
+			// contract can be relocated if created; available with Envia API version 1.4
 			if ($this->contract_created) {
-				if ($this->api_version >= 1.4) {
+				if ($this->api_version_greater_or_equal("1.4")) {
 					array_push($ret, array(
 						'linktext' => 'Relocate contract',
 						'url' => $base.'contract_relocate'.$origin.'&amp;modem_id='.$modem_id,
@@ -978,7 +1167,7 @@ class ProvVoipEnvia extends \BaseModel {
 			// instead: create each phonenumber in separate step (voipaccount_create)
 			/* 'subscriber_data', */
 		);
-		if ($this->api_version >= 1.4) {
+		if ($this->api_version_greater_or_equal("1.4")) {
 			array_push($second_level_nodes['contract_create'], 'installation_address_data');
 		}
 
@@ -1529,18 +1718,16 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 		// if no porting (new number): CarrierIn has to be D057 (EnviaTEL) (API 1.4 and higher)
 		else {
-			if ($this->api_version >= 1.4) {
+			if ($this->api_version_greater_or_equal("1.4")) {
 				if ($carrier_in != 'D057') {
 					throw new XmlCreationError('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
 				}
-				$carrier_in = 'D057';
 				$inner_xml->addChild('carriercode', $carrier_in);
 			}
 		}
 
 		// in API 1.4 and higher we also need the EKP code for incoming porting
-		if ($this->api_version >= 1.4) {
-
+		if ($this->api_version_greater_or_equal("1.4")) {
 			if (boolval($this->phonenumbermanagement->porting_in)) {
 				$ekp_in = EkpCode::find($this->phonenumbermanagement->ekp_in)->ekp_code;
 				$inner_xml->addChild('ekp_code', $ekp_in);
@@ -1711,7 +1898,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->_add_installation_address_data();
 
 		// necessary in version 1.4, in 1.5 removed again
-		if ($this->api_version == 1.4) {
+		if ($this->api_version_equals("1.4")) {
 			$inner_xml->addChild('apply_to_customer', 0);
 		}
 
