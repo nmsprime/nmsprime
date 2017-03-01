@@ -3235,15 +3235,17 @@ class ProvVoipEnvia extends \BaseModel {
 				}
 			}
 
+			// only use data from not deleted orders
+			if (!$order->deleted_at) {
+				// update contract
+				$out = $this->_process_order_get_status_response_for_contract($order, $out);
 
-			// update contract
-			$out = $this->_process_order_get_status_response_for_contract($order, $out);
+				// update modem
+				$out = $this->_process_order_get_status_response_for_modem($order, $out);
 
-			// update modem
-			$out = $this->_process_order_get_status_response_for_modem($order, $out);
-
-			// update phonenumbermanagement
-			$out = $this->_process_order_get_status_response_for_phonenumbermanagement($order, $out);
+				// update phonenumbermanagement
+				$out = $this->_process_order_get_status_response_for_phonenumbermanagement($order, $out);
+			}
 		}
 
 		return $out;
@@ -3347,7 +3349,7 @@ class ProvVoipEnvia extends \BaseModel {
 			$contract_changed = True;
 		}
 		if ($order->customerreference != $contract->customer_external_id) {
-			$msg = 'Error: Customer reference in order '.$order->customerreference.' and contract '.$contract->customer_external_id.' are different!';
+			$msg = 'Error: Customer reference in order ('.$order->customerreference.') and contract ('.$contract->customer_external_id.') are different!';
 			$out .= '<h4>'.$msg.'</h4>';
 			Log::error($msg);
 		}
@@ -3396,7 +3398,7 @@ class ProvVoipEnvia extends \BaseModel {
 			$modem_changed = True;
 		}
 		if ($order->contractreference != $modem->contract_external_id) {
-			$msg = 'Error: Contract reference in order '.$order->contractreference.' and modem '.$modem->contract_external_id.' are different!';
+			$msg = 'Error: Contract reference in order ('.$order->contractreference.') and modem ('.$modem->contract_external_id.') are different!';
 			$out .= '<h4>'.$msg.'</h4>';
 			Log::error($msg);
 		}
