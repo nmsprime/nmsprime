@@ -56,7 +56,7 @@ class ProvVoipEnviaController extends \BaseController {
 	 */
 	public function check_api_version($job) {
 
-		if ($this->model->api_version < 0) {
+		if ($this->model->api_version['major'] < 0) {
 			throw new \InvalidArgumentException('Error performing '.$job.': PROVVOIPENVIA__REST_API_VERSION in .env has to be set to a positive float value (e.g.: 1.4) ⇒ ask your admin for proper values');
 		}
 
@@ -80,7 +80,7 @@ class ProvVoipEnviaController extends \BaseController {
 		$request_uri = \Request::getUri();
 		$origin = \URL::to('/');	// origin is not relevant in cron jobs; set only for compatibility reasons…
 
-		$this->check_api_version('cron job');
+		$this->check_api_version("cron job ($job)");
 
 		// as this method is not protected by normal auth mechanism we will allow only a small number of jobs
 		$allowed_cron_jobs = array(
@@ -568,7 +568,7 @@ class ProvVoipEnviaController extends \BaseController {
 		$ret['plain_html'] = '';
 		$ret['plain_html'] .= "<h4>Data to be sent to Envia</h4>";
 		$ret['plain_html'] .= "URL: ".$url."<br>";
-		$ret['plain_html'] .= "API version: ".$this->model->api_version."<br><br>";
+		$ret['plain_html'] .= "API version: ".$this->model->api_version_string."<br><br>";
 		$ret['plain_html'] .= "<pre>";
 		$ret['plain_html'] .= ProvVoipEnvia::prettify_xml($payload, True);
 		$ret['plain_html'] .= "</pre>";
@@ -636,7 +636,7 @@ class ProvVoipEnviaController extends \BaseController {
 			throw new \InvalidArgumentException('Allowed return_type has to be in ['.implode(', ', $allowed_return_types).'] but “'.$return_type.'” given.');
 		}
 
-		$this->check_api_version('request');
+		$this->check_api_version("request ($job)");
 
 		$base_url = $this->base_url;
 
