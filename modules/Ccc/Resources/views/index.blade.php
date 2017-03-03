@@ -15,8 +15,22 @@
 
 @stop
 
+@section('content_emails')
+
+	<table class="table">
+		@foreach($emails as $email)
+			<tr><td> {{ HTML::linkRoute('Email.edit', $email->view_index_label()['header'], ['id' => $email->id]) }} </td></tr>
+		@endforeach
+	</table>
+
+@stop
+
 @section('content')
 
 	@include ('bootstrap.panel', array ('content' => 'content_left', 'invoices' => $invoices, 'view_header' => trans('messages.Invoices'), 'md' => 4))
+
+	@if (!$emails->isEmpty())
+		@include ('bootstrap.panel', array ('content' => 'content_emails', 'emails' => $emails, 'view_header' => trans('messages.E-Mail Address'), 'md' => 4))
+	@endif
 
 @stop

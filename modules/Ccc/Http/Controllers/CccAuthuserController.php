@@ -238,8 +238,9 @@ class CccAuthuserController extends \BaseController {
 	public function show()
 	{
 		$invoices = \Auth::guard('ccc')->user()->contract->invoices;
+		$emails = \PPModule::is_active('mail') ? \Auth::guard('ccc')->user()->contract->emails : collect();
 
-		return \View::make('ccc::index', compact('invoices'));
+		return \View::make('ccc::index', compact('invoices','emails'));
 	}
 
 
