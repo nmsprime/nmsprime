@@ -19,7 +19,7 @@
 
 	<table class="table">
 		@foreach($emails as $email)
-			<tr><td> {{ HTML::linkRoute('Email.edit', $email->view_index_label()['header'], ['id' => $email->id]) }} </td></tr>
+			<tr><td> {{ HTML::linkRoute('CustomerPsw', $email->view_index_label()['header'], ['email_id' => $email->id]) }} </td><td>{{ $email->get_type() }}</td></tr>
 		@endforeach
 	</table>
 
