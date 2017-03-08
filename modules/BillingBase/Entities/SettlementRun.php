@@ -117,16 +117,21 @@ class SettlementRun extends \BaseModel {
 	 * This list is used to hide these files until they & the Settlement Run are verified
 	 *
 	 * @return 	Array 	Filenames, empty array if all is verified
+	 *
+	 * TODO: This function is deprecated - Remove when Contract@invoices & CccAuthuserController@get_customer_invoices run fine
 	 */
 	public static function unverified_files()
 	{
-		$runs = Settlementrun::where('verified', '=', 0)->get(['year', 'month']);
-		$hide = [];
+		$runs 	= Settlementrun::where('verified', '=', 0)->get(['year', 'month']);
+		$offset = \Modules\BillingBase\Entities\BillingBase::first()->cdr_offset;
+		$hide 	= [];
+
 
 		foreach ($runs as $run)
 		{
 			$hide[] = $run->year.'_'.sprintf("%'.02d", $run->month).'.pdf';
-			$hide[] = ($run->month == 1 ? $run->year - 1 : $run->year).'_'.sprintf("%'.02d", $run->month == 1 ? 12 : $run->month - 1).'_cdr.pdf';
+			$hide[] = $offset ? date('Y_m', strtotime("-$offset month", strtotime($run->year.'-'.$run->month))).'_cdr.pdf' : $run->year.'_'.sprintf("%'.02d", $run->month).'_cdr.pdf';
+			// $hide[] = ($run->month == 1 ? $run->year - 1 : $run->year).'_'.sprintf("%'.02d", $run->month == 1 ? 12 : $run->month - 1).'_cdr.pdf';
 		}
 
 		return $hide;

@@ -100,8 +100,8 @@ class ModemRefreshCommand extends Command {
 
 		// Log
 		$after = microtime(true);
-		$this->info("\n".'modem state refresh finished after '.round($after-$before,2).' s');
-		\Log::info('modem state refresh finished after '.round($after-$before,2).' s');
+		$this->info("\n".'modem state refresh finished after '.round($after-$before,2).' ys');
+		\Log::info('modem state refresh finished after '.round($after-$before,2).' ys');
 	}
 
 	/**

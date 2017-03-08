@@ -33,7 +33,7 @@
 @section('content_ping')
 
 	@if ($ping)
-		<font color="green"><b>Modem is Online</b></font><br>
+		<font color="green"><b>CMTS is Online</b></font><br>
 		@foreach ($ping as $line)
 				<table>
 				<tr>

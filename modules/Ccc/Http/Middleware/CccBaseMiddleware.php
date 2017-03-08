@@ -20,17 +20,6 @@ class CccBaseMiddleware {
 			if (is_null(\Auth::guard('ccc')->user())) {
 				throw new AuthExceptions('Login Required');
 			}
-
-			// different directory
-			if ($request->is('customer/home/download/*'))
-			{
-				$dir = explode('/', $request->path());
-				$id = $dir[3];
-
-				if ($id != \Auth::guard('ccc')->user()['contract_id'])
-			    	throw new AuthExceptions('Permission Denied');
-			}
-
 		}
 		catch (PermissionDeniedError $ex) {
 			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));

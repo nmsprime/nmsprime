@@ -11,6 +11,7 @@ use Modules\ProvBase\Entities\Endpoint;
 use Modules\ProvBase\Entities\Configfile;
 use Modules\ProvBase\Entities\Qos;
 use Modules\ProvBase\Entities\ProvBase;
+use Modules\ProvVoip\Entities\ProvVoip;
 use Modules\ProvBase\Entities\IpPool;
 use Modules\ProvBase\Entities\Cmts;
 
@@ -152,16 +153,26 @@ class ProvMonController extends \BaseController {
 		$modem 	  = $this->modem ? $this->modem : Modem::find($id);
 		$view_var = $modem; // for top header
 		$type 	  = 'CPE';
+		$modem_mac = strtolower($modem->mac);
+
+		// Lease
+		$lease['text'] = $this->search_lease('billing subclass', $modem_mac);
+		$lease = $this->validate_lease($lease, $type);
 
 		// get MAC of CPE first
-		exec ('grep -i '.$modem->mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+		exec ('grep -i '.$modem_mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
 		if ($str == [])
 		{
-			$mac = $modem->mac;
+			$mac = $modem_mac;
 			$mac[0] = ' ';
 			$mac = trim($mac);
 			$mac_bug = true;
 			exec ('grep -i '.$mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+
+			if (!$str && $lease['text'])
+				// get cpe mac addr from lease - first option tolerates small structural changes in dhcpd.leases and assures that it's a mac address
+				preg_match_all('/(?:[0-9a-fA-F]{2}[:]?){6}/', substr($lease['text'][0], strpos($lease['text'][0], 'hardware ethernet'), 40), $cpe_mac);
+				// $cpe_mac[0][0] = substr($lease['text'][0], strpos($lease['text'][0], 'hardware ethernet') + 18, 17);
 		}
 
 		if (isset($str[0]))
@@ -175,10 +186,6 @@ class ProvMonController extends \BaseController {
 		// Log
 		if (isset($cpe_mac[0][0]))
 			exec ('grep -i '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
-
-		// Lease
-		$lease['text'] = $this->search_lease('billing subclass', strtolower($modem->mac));
-		$lease = $this->validate_lease($lease, $type);
 
 		// Ping
 		if (isset($lease['text'][0]))
@@ -205,6 +212,8 @@ class ProvMonController extends \BaseController {
 
 	/**
 	 * Returns view of mta analysis page
+	 *
+	 * Note: This is never called if ProvVoip Module is not active
 	 */
 	public function mta_analysis($id)
 	{
@@ -220,7 +229,10 @@ class ProvMonController extends \BaseController {
 			goto end;
 
 		// Ping
-		exec ('sudo ping -c3 -i0 -w1 '.$mta->hostname, $ping);
+		$domain   = ProvVoip::first()->mta_domain;
+		$hostname = $domain ? $mta->hostname.'.'.$domain : $mta->hostname.'.'.$this->domain_name;
+
+		exec ('sudo ping -c3 -i0 -w1 '.$hostname, $ping);
 		if (count(array_keys($ping)) <= 7)
 			$ping = null;
 
@@ -257,7 +269,7 @@ end:
 		// Realtime Measure
 		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
 		{
-			$realtime['measure']  = $this->realtime_cmts($modem, ProvBase::first()->ro_community);
+			$realtime['measure']  = $this->realtime_cmts($modem, $modem->get_ro_community());
 			$realtime['forecast'] = 'TODO';
 		}
 
@@ -277,7 +289,7 @@ end:
 	 */
 	private function validate_lease($lease, $type)
 	{
-		if ($lease['text'])
+		if ($lease['text'] && $lease['text'][0])
 		{
 			// calculate endtime
 			preg_match ('/ends [0-6] (.*?);/', $lease['text'][0], $endtime);
@@ -488,6 +500,9 @@ end:
 	{
 		$rx_pwr = array();
 		foreach ($us['If Id'] as $i => $idx) {
+			// don't control non-functional channels
+			if($us['SNR dB'][$i] == 0)
+				continue;
 			// the reference SNR is 24 dB
 			$r = round($us['Rx Power dBmV'][$i] + 24 - $us['SNR dB'][$i]);
 			if ($r < 0)
@@ -496,7 +511,7 @@ end:
 			if ($r > 10)
 				// maximum actual power is 10 dB
 				$r = 10;
-			if ($cmts->company == 'CASA')
+			if ($cmts->company == 'Casa')
 				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
 			if ($cmts->company == 'Cisco')
 				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.9.9.116.1.4.1.1.6.$idx", 'i', 10 * $r);
@@ -548,7 +563,7 @@ end:
 
 		$us['SNR dB'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
 
-		if ($cmts->company == 'CASA')
+		if ($cmts->company == 'Casa')
 			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
 		if ($cmts->company == 'Cisco') {
 			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.9.9.116.1.4.1.1.6'));
@@ -558,7 +573,7 @@ end:
 		// unset unused interfaces, as we don't want to show them on the web gui
 		foreach ($us['Frequency MHz'] as $key => $freq)
 		{
-			if ($us['Frequency MHz'][$key] == 0 && $us['SNR dB'][$key] == 0)
+			if ($us['SNR dB'][$key] == 0)
 			{
 				foreach ($us as $entry => $arr)
 					unset($us[$entry][$key]);
@@ -566,7 +581,7 @@ end:
 		}
 
 		if($ctrl && isset($us['Rx Power dBmV']))
-			$us['Rx Power dBmV'] = $this->_set_new_rx_power($cmts, ProvBase::first()->rw_community, $us);
+			$us['Rx Power dBmV'] = $this->_set_new_rx_power($cmts, $cmts->get_rw_community(), $us);
 
 		// unset interface ID, as we don't want to show it on the web gui, we just needed them for setting the RX power
 		unset($us['If Id']);
@@ -635,14 +650,13 @@ end:
 
 		// parse dhcpd.lease file
 		$file   = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
-		$string = preg_replace( "/\r|\n/", "", $file );
-		preg_match_all('/lease(.*?)}/', $string, $section);
+		preg_match_all('/^lease(.*?)}/ms', $file, $section);
 
 		$ret = array();
 		$i   = 0;
 
 		// fetch all lines matching hw mac
-		foreach (array_reverse(array_unique($section[0])) as $s)
+		foreach (array_unique($section[0]) as $s)
 		{
 			if(strpos($s, $search))
 			{
@@ -653,7 +667,7 @@ end:
 				}
 
 				// push matching results
-				array_push($ret, str_replace('{', '{<br>', str_replace(';', ';<br>', $s)));
+				array_push($ret, preg_replace('/\r|\n/', '<br />', $s));
 			}
 		}
 
@@ -663,12 +677,10 @@ end:
 		if (sizeof($ret) > 1)
 		{
 			$key = preg_grep ('/(.*?)binding state active(.*?)/', $ret);
-
 			if ($key)
-				// this is just a simple key re-indexing, from 1=>.. to 0=>..
-				// NOTE: this assumes that there is only one active lease available(?).
-				// TODO: Testing required ..
-				return [0 => array_pop($key)];
+				// return the most recent active lease
+				natsort($key);
+				return [ array_pop($key) ];
 		}
 
 		return $ret;
@@ -732,7 +744,7 @@ end:
 			$cacti = \DB::connection('mysql-cacti');
 
 			// Get Cacti Host ID to $modem
-			$host  = $cacti->table('host')->where('description', '=', 'cm-'.$modem->id)->get();
+			$host  = $cacti->table('host')->where('description', '=', $modem->hostname)->get();
 			if (!isset($host[0]))
 					return false;
 
@@ -858,7 +870,7 @@ end:
 
 			// if valid image
 			if ($img)
-				$ret['graphs'][$id] = 'data:application/octet-stream;base64,'.$img;
+				$ret['graphs'][$id] = 'data:image/svg+xml;base64,'.$img;
 		}
 
 		// No result checking

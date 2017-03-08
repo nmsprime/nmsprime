@@ -60,12 +60,13 @@ class Item extends \BaseModel {
 		}
 
 		// Evaluate Colours
-		$time = isset($this->product) && $this->product->billing_cycle == 'Yearly' ? 'year' : 'month';
-		$billing_valid = $this->check_validity($time, $this->is_tariff());
+		// TODO: implement better error handling instead using 'Monthly' as default
+		$time = isset($this->product) ? $this->product->billing_cycle : 'Monthly';
+		$billing_valid = $this->check_validity($time);
 
 		// green colour means it will be considered for next accounting cycle, blue is a new item and not yet considered
 		// red means item is outdated/expired and will not be charged this month
-		$bsclass = $billing_valid ? 'success' : ($this->get_start_time() < strtotime(date('Y-m-01')) ? 'danger' : 'info');
+		$bsclass = $billing_valid ? 'success' : ($this->get_start_time() < strtotime('midnight first day of this month') ? 'danger' : 'info');
 
 		$name = isset($this->product) ? $this->product->name : $this->accounting_text;
 
@@ -172,6 +173,7 @@ class Item extends \BaseModel {
 	 */
 	public function get_billing_cycle()
 	{
+		return $this->product->billing_cycle;
 		return $this->billing_cycle ? $this->billing_cycle : $this->product->billing_cycle;
 	}
 
@@ -305,10 +307,10 @@ class Item extends \BaseModel {
 				if ($dates['m'] % 3 != $billing_month % 3)
 					break;
 
-				$period_start = date('Y-m-01', strtotime('-2 month'));
+				$period_start = strtotime('midnight first day of -2 month');
 
 				// started in last 3 months
-				if ($start > strtotime($period_start))
+				if ($start > $period_start)
 				{
 					$days = date('z', strtotime('last day of this month')) - date('z', $start) + 1;
 					$total_days = date('t') + date('t', strtotime('first day of last month')) + date('t', $start);
@@ -318,11 +320,11 @@ class Item extends \BaseModel {
 				else
 				{
 					$ratio = 1;
-					$text  = $period_start;
+					$text  = date('Y-m-01', $period_start);
 				}
 
 				// ended in last 3 months
-				if ($end && ($end > strtotime($period_start)) && ($end < strtotime(date('Y-m-01', strtotime('next month')))))
+				if ($end && ($end > $period_start) && ($end < strtotime(date('Y-m-01', strtotime('next month')))))
 				{
 					$days = date('z', strtotime('last day of this month')) - date('z', $end);
 					$total_days = date('t') + date('t', strtotime('first day of last month')) + date('t', $start);

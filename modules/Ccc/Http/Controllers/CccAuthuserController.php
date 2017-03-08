@@ -26,6 +26,7 @@ class CccAuthuserController extends \BaseController {
 		'contract_firstname' 	=> '',
 		'contract_lastname' 	=> '',
 		'contract_street' 		=> '',
+		'contract_housenumber'	=> '',
 		'contract_zip' 			=> '',
 		'contract_city' 		=> '',
 		'login_name'  			=> '',
@@ -178,6 +179,7 @@ class CccAuthuserController extends \BaseController {
 		$this->data['contract_firstname'] = $contract->firstname;
 		$this->data['contract_lastname']  = $contract->lastname;
 		$this->data['contract_street'] 	  = $contract->street;
+		$this->data['contract_housenumber'] = $contract->house_number;
 		$this->data['contract_zip'] 	  = $contract->zip;
 		$this->data['contract_city'] 	  = $contract->city;
 		$this->data['login_name'] 		  = $login_data['login_name'];
@@ -235,68 +237,28 @@ class CccAuthuserController extends \BaseController {
 	 */
 	public function show()
 	{
-		$contract_id = \Auth::guard('ccc')->user()['contract_id'];
-		// $invoices 	 = is_dir($dir) ? \Storage::files($this->rel_dir_path_invoices.$contract_id) : []; 	// returns file path strings
+		$invoices = \Auth::guard('ccc')->user()->contract->invoices;
 
-		$invoices = self::get_customer_invoices($contract_id);
-
-		return \View::make('ccc::index', compact('invoices', 'contract_id'));
+		return \View::make('ccc::index', compact('invoices'));
 	}
 
-	/**
-	 * Get the invoice Files for a specific contract id
-	 * ATTENTION: Handle with care !!! - invoices must not be available to strangers
-	 * This function is used also in Contract
-	 *
-	 * @return Array of FileObjects
-	 *
-	 * @author Nino Ryschawy
-	 *
-	 * TODO: uncomment already prepared eloquent way and remove the one with files after this version is deployed on old versions (hettstedt 24.10.16)
-	 */
-	public static function get_customer_invoices($contract_id)
-	{
-		$dir 		 = storage_path('app/'.self::$rel_dir_path_invoices.$contract_id);
-		$invoices 	 = is_dir($dir) ? \File::allFiles($dir) : [];		// returns file objects
-
-		// hide invoices from unverified Settlementruns
-		$hide = SettlementRun::unverified_files();
-
-		if ($hide)
-		{
-			foreach ($invoices as $key => $invoice)
-			{
-				if (in_array($invoice->getBasename(), $hide))
-					unset($invoices[$key]);
-			}
-		}
-
-		return $invoices;
-
-		// $hide = $pdfs = [];
-		// $srs = SettlementRun::where('verified', '=', '0')->get(['id']);
-		// foreach ($srs as $sr)
-		// 	$hide[] = $sr->id;
-
-		// $hide = $hide ? : 0;
-		// $invoices = Invoice::where('contract_id', '=', $contract_id)->where('settlementrun_id', '!=', [$hide])->get();
-
-		// foreach ($invoices as $invoice)
-		// 	$pdfs[] = new \SplFileInfo($invoice->get_invoice_dir_path().$invoice->filename);
-
-		// return $pdfs;
-
-	}
 
 
 	/**
 	 * Download an Invoice
+	 *
+	 * Note: This function is a bit redundant to InvoiceController@edit
+	 * but here we need to make sure that no one is allowed to download invoices of strangers
 	 */
-	public function download($contract_id, $filename)
+	public function download($id)
 	{
-		$dir = storage_path('app/'.self::$rel_dir_path_invoices.$contract_id.'/');
+		$invoice = Invoice::find($id);
 
-		return response()->download($dir.$filename);
+		// check that only allowed files are downloadable - invoice must belong to customer and settlmentrun must be verified
+		if (!$invoice || $invoice->contract_id != \Auth::guard('ccc')->user()->contract_id || !SettlementRun::find($invoice->settlementrun_id)->verified)
+			throw new \App\Exceptions\AuthExceptions('Permission Denied');
+
+		return response()->download($invoice->get_invoice_dir_path().$invoice->filename);
 	}
 
 
@@ -319,6 +281,10 @@ class CccAuthuserController extends \BaseController {
 
 			$customer->password = \Hash::make(\Input::get('password'));
 			$customer->save();
+
+			// update the email passwords as well
+			foreach($customer->contract->emails as $email)
+				$email->psw_update(\Input::get('password'));
 
 			return $this->show();
 		}

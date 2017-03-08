@@ -80,6 +80,7 @@ class cdrCommand extends Command {
 
 		// chown in case command was called from commandline as root
 		system('chown -R apache '.storage_path('app/data/billingbase/'));
+		system('chown -R apache '.storage_path('app/tmp/'));
 
 	}
 
@@ -143,7 +144,7 @@ class cdrCommand extends Command {
 		$files = Storage::files('tmp');
 		foreach ($files as $name)
 		{
-			if (strpos($name, $this->month.'.'.$this->year) !== false && strpos($name, 'AsciiEVN.txt') !== false)
+			if (strpos($name, $this->month.'.'.$this->year) !== false && strpos($name, 'AsciiEVN.txt') !== false && strpos($name, 'xxxxxxx') !== false)
 			{
 				$target_file = $this->target_dir.'/'.$this->target_file;
 				rename(storage_path('app/'.$name), $target_file);
@@ -186,8 +187,11 @@ class cdrCommand extends Command {
 		// find correct filename
 		foreach ($file_list as $fname)
 		{
-			if (strpos($fname, $this->year.$this->month) !== false && strpos($fname, '_EVN.TXT') !== false)
+			if (strpos($fname, date('Ym')) !== false && strpos($fname, '_EVN.txt') !== false)
+			{
 				$remote_fname = $fname;
+				break;
+			}
 		}
 
 		if (!isset($remote_fname))
@@ -210,7 +214,7 @@ class cdrCommand extends Command {
 			return -1;
 		}
 
-		ftp_close($conn_id);
+		ftp_close($ftp_conn);
 
 	}
 
