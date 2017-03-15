@@ -1,4 +1,4 @@
-<?php namespace Modules\Hfccustomer\Console;
+<?php namespace Modules\HfcCustomer\Console;
 
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;

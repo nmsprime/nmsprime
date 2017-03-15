@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Provvoipenvia\Http\Controllers;
+namespace Modules\ProvVoipEnvia\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\View;
@@ -10,7 +10,7 @@ use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
 
 class ProvVoipEnviaController extends \BaseController {
 
-	// TODO: @Patrick Reichel: is this field required ?
+	// TODO: Patrick Reichel: is this field required ?
 	public $name = 'VOIP';
 
 
@@ -56,7 +56,7 @@ class ProvVoipEnviaController extends \BaseController {
 	 */
 	public function check_api_version($job) {
 
-		if ($this->model->api_version < 0) {
+		if ($this->model->api_version['major'] < 0) {
 			throw new \InvalidArgumentException('Error performing '.$job.': PROVVOIPENVIA__REST_API_VERSION in .env has to be set to a positive float value (e.g.: 1.4) ⇒ ask your admin for proper values');
 		}
 
@@ -80,10 +80,11 @@ class ProvVoipEnviaController extends \BaseController {
 		$request_uri = \Request::getUri();
 		$origin = \URL::to('/');	// origin is not relevant in cron jobs; set only for compatibility reasons…
 
-		$this->check_api_version('cron job');
+		$this->check_api_version("cron job ($job)");
 
 		// as this method is not protected by normal auth mechanism we will allow only a small number of jobs
 		$allowed_cron_jobs = array(
+			'misc_get_keys' => $base_url.'misc/get_keys',
 			'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
 			'order_get_status' => $base_url.'order/get_status',
 			'contract_get_voice_data' => $base_url.'contract/get_voice_data',
@@ -137,8 +138,6 @@ class ProvVoipEnviaController extends \BaseController {
 		// check if user has the right to perform actions against Envia API
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
-		$base = "/lara/provvoipenvia/request";
-
 		$jobs = array(
 			['api' => 'selfcare', 'link' => 'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=in'],
 			['api' => 'selfcare', 'link' => 'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=out'],
@@ -154,6 +153,7 @@ class ProvVoipEnviaController extends \BaseController {
 			['api' => 'order', 'link' => 'misc_get_free_numbers'],
 			['api' => 'order', 'link' => 'misc_get_free_numbers?localareacode=03735'],
 			['api' => 'order', 'link' => 'misc_get_free_numbers?localareacode=03735&amp;baseno=7696'],
+			['api' => 'order', 'link' => 'misc_get_keys?keyname=index'],
 			['api' => 'order', 'link' => 'misc_get_orders_csv'],
 			['api' => 'order', 'link' => 'misc_get_usage_csv'],
 			['api' => 'order', 'link' => 'order_cancel?order_id='],
@@ -189,7 +189,8 @@ class ProvVoipEnviaController extends \BaseController {
 				continue;
 			}
 			if ($job['api'] != "selfcare") {
-				echo '<a href="'.$base.'/'.$job['link'].'" target="_self">'.$job['api'].': '.$job['link'].'</a><br>';
+				$href = \URL::route('ProvVoipEnvia.request', $job['link']);
+				echo '<a href="'.$href.'" target="_self">'.$job['api'].': '.$job['link'].'</a><br>';
 			}
 		}
 	}
@@ -334,7 +335,7 @@ class ProvVoipEnviaController extends \BaseController {
 
 	/**
 	 * Checks if a job is allowed to be done.
-	 * Use this before sending data to envia to prevent e.g. double creation of contracts (if user presses <F5> in success screen)
+	 * Use this before sending data to envia to prevent e.g. double creation of contracts (if user presses F5 in success screen)
 	 *
 	 * This defaults to false – so you have to whitelist all the methods you are going to use.
 	 *
@@ -349,6 +350,7 @@ class ProvVoipEnviaController extends \BaseController {
 		// these jobs are allowed in every case
 		$unrestricted_jobs = array(
 			'misc_ping',
+			'misc_get_keys',
 			'misc_get_free_numbers',
 			'misc_get_orders_csv',
 			'misc_get_usage_csv',
@@ -556,6 +558,8 @@ class ProvVoipEnviaController extends \BaseController {
 	 *
 	 * @author Patrick Reichel
 	 * @param $payload generated XML
+	 * @param $url API-URL to send XML to
+	 * @param $origin previous URL (to be able to switch back)
 	 */
 	protected function _show_confirmation_request($payload, $url, $origin) {
 
@@ -563,7 +567,8 @@ class ProvVoipEnviaController extends \BaseController {
 
 		$ret['plain_html'] = '';
 		$ret['plain_html'] .= "<h4>Data to be sent to Envia</h4>";
-		$ret['plain_html'] .= "URL: ".$url."<br><br>";
+		$ret['plain_html'] .= "URL: ".$url."<br>";
+		$ret['plain_html'] .= "API version: ".$this->model->api_version_string."<br><br>";
 		$ret['plain_html'] .= "<pre>";
 		$ret['plain_html'] .= ProvVoipEnvia::prettify_xml($payload, True);
 		$ret['plain_html'] .= "</pre>";
@@ -623,7 +628,15 @@ class ProvVoipEnviaController extends \BaseController {
 		// check if user has the right to perform actions against Envia API
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
-		$this->check_api_version('request');
+		// check if a non standard return type is wanted
+		// usable: view (default), html
+		$return_type = \Input::get('return_type', 'view');
+		$allowed_return_types = ['view', 'html'];
+		if (!in_array($return_type, $allowed_return_types)) {
+			throw new \InvalidArgumentException('Allowed return_type has to be in ['.implode(', ', $allowed_return_types).'] but “'.$return_type.'” given.');
+		}
+
+		$this->check_api_version("request ($job)");
 
 		$base_url = $this->base_url;
 
@@ -657,6 +670,7 @@ class ProvVoipEnviaController extends \BaseController {
 			'customer_update' => $base_url.'customer/update',
 
 			'misc_get_free_numbers' => $base_url.'misc/get_free_numbers',
+			'misc_get_keys' => $base_url.'misc/get_keys',
 			'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
 			'misc_get_usage_csv' => $base_url.'misc/get_usage_csv',
 			'misc_ping' => $base_url.'misc/ping',
@@ -746,6 +760,12 @@ class ProvVoipEnviaController extends \BaseController {
 			}
 		}
 
+		// use this e.g. to get the result directly in your view
+		if ($return_type == 'html') {
+			return $view_var['plain_html'];
+		}
+
+		// default: return a view
 		return View::make($view_path, $this->compact_prep_view(compact('model_name', 'view_header', 'view_var')));
 	}
 
@@ -903,6 +923,10 @@ class ProvVoipEnviaController extends \BaseController {
 	 * @return data for view (currently plain HTML)
 	 */
 	protected function _handle_request_failed($job, $data) {
+
+		// check if we want to store the xml
+		$xml = new \SimpleXMLElement($data['xml']);
+		$this->model->store_xml($job.'_response', $xml);
 
 		$errors = $this->model->get_error_messages($data['xml']);
 
