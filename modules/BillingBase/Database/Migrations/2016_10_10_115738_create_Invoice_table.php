@@ -29,9 +29,6 @@ class CreateInvoiceTable extends BaseMigration {
 		});
 
 		$this->set_fim_fields(['number']);
-
-		// import missing data - TODO: Remove on new Systems
-		self::_invoice_data_import();
 	}
 
 	/**

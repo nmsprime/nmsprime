@@ -1,4 +1,4 @@
-<?php namespace Modules\Hfccustomer\Console;
+<?php namespace Modules\HfcCustomer\Console;
 
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
@@ -38,7 +38,7 @@ class mpsCommand extends Command {
 	public function fire()
 	{
 		// Refresh all MPS rules
-		\Modules\Hfccustomer\Entities\Mpr::refresh();
+		\Modules\HfcCustomer\Entities\Mpr::refresh();
 	}
 
 	/**

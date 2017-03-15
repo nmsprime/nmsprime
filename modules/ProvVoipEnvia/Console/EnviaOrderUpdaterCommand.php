@@ -1,4 +1,6 @@
-<?php namespace Modules\ProvvoipEnvia\Console;
+<?php
+
+namespace Modules\ProvVoipEnvia\Console;
 
 use Log;
 use Illuminate\Console\Command;
@@ -12,17 +14,16 @@ use \Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
  */
 class EnviaOrderUpdaterCommand extends Command {
 
+	// get some methods used by several updaters
+	use \App\Console\Commands\DatabaseUpdaterTrait;
+
 	/**
 	 * The console command name.
-	 *
-	 * @var string
 	 */
 	protected $name = 'provvoipenvia:update_envia_orders';
 
 	/**
 	 * The console command description.
-	 *
-	 * @var string
 	 */
 	protected $description = 'Update Envia orders database';
 
@@ -61,7 +62,6 @@ class EnviaOrderUpdaterCommand extends Command {
 
 		echo "\n";
 		$this->_update_orders();
-
 		echo "\n";
 
 	}
@@ -115,15 +115,20 @@ class EnviaOrderUpdaterCommand extends Command {
 			if (!EnviaOrder::orderstate_is_final($order)) {
 				Log::debug('Updating order '.$order_id);
 
-				// get the relative URL to execute the cron job for updating the current order_id
-				$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'order_get_status', 'order_id' => $order_id, 'really' => 'True'), false);
+				try {
+					// get the relative URL to execute the cron job for updating the current order_id
+					$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'order_get_status', 'order_id' => $order_id, 'really' => 'True'), false);
 
-				$url = $this->base_url.$url_suffix;
+					$url = $this->base_url.$url_suffix;
 
-				$this->_perform_curl_request($url);
+					$this->_perform_curl_request($url);
 
-				if ($this->_updated($order_id)) {
-					Log::info("Updated Order id ".$order_id.".");
+					if ($this->_updated($order_id)) {
+						Log::info("Updated Order id ".$order_id.".");
+					}
+				}
+				catch (Exception $ex) {
+					Log::error("Exception updating order ".$order_id."): ".$ex->getMessage()." => ".$ex->getTraceAsString());
 				}
 			}
 
@@ -131,39 +136,6 @@ class EnviaOrderUpdaterCommand extends Command {
 
 	}
 
-	/**
-	 * Update an order (using a curl request against the given URL.
-	 * Since updating uses the same functionality as updating via frontend we accessing the cron method in ProvVoipEnviaController using cURL.
-	 *
-	 * This may be not the best way – but the one without bigger refactoring of the sources…
-	 * TODO: Evaluate other solutions…
-	 *
-	 * @author Patrick Reichel
-	 *
-	 * @param $url URL to be accessed by cURL
-	 */
-	protected function _perform_curl_request($url) {
-
-		$ch = curl_init();
-
-		$opts = array(
-			CURLOPT_URL => $url,
-			CURLOPT_HEADER => false,
-			CURLOPT_SSL_VERIFYPEER => false,	// no valid cert for “localhost” – so we don't check
-			CURLOPT_RETURNTRANSFER => TRUE,		// return result instead of instantly printing to screen
-		);
-
-		curl_setopt_array($ch, $opts);
-
-		$res = curl_exec($ch);
-		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-		if ($http_code != 200) {
-			Log::error("HTTP error ".$http_code." occured in scheduled updating of envia orders");
-		}
-
-		curl_close($ch);
-	}
 
 	/**
 	 * Check if the given order id has been updated.
@@ -195,5 +167,6 @@ class EnviaOrderUpdaterCommand extends Command {
 		return false;
 
 	}
+
 
 }
