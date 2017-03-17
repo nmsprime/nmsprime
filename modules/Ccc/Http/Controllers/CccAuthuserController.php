@@ -7,6 +7,7 @@ use Log;
 use File;
 use Modules\BillingBase\Entities\SettlementRun;
 use Modules\BillingBase\Entities\Invoice;
+use Modules\Mail\Entities\Email;
 
 class CccAuthuserController extends \BaseController {
 
@@ -238,8 +239,9 @@ class CccAuthuserController extends \BaseController {
 	public function show()
 	{
 		$invoices = \Auth::guard('ccc')->user()->contract->invoices;
+		$emails = \PPModule::is_active('mail') ? \Auth::guard('ccc')->user()->contract->emails : collect();
 
-		return \View::make('ccc::index', compact('invoices'));
+		return \View::make('ccc::index', compact('invoices','emails'));
 	}
 
 
@@ -264,6 +266,15 @@ class CccAuthuserController extends \BaseController {
 
 	public function psw_update()
 	{
+		if (\PPModule::is_active('mail') && \Input::has('email_id'))
+		{
+			$email = Email::findorFail(\Input::get('email_id'));
+			// customer requested email object, which does not belong to him
+			// (by manually changing the email_id in the url)
+			if ($email->contract != \Auth::guard('ccc')->user()->contract)
+				return abort(404);
+		}
+
 		// dd(\Input::get(), \Input::get('password'));
 		if (\Input::has('password'))
 		{
@@ -279,17 +290,18 @@ class CccAuthuserController extends \BaseController {
 				return \Redirect::back()->withErrors($validator)->withInput()->with('message', 'please correct the following errors')->with('message_color', 'red');
 			}
 
-			$customer->password = \Hash::make(\Input::get('password'));
-			$customer->save();
-
-			// update the email passwords as well
-			foreach($customer->contract->emails as $email)
+			if (isset($email))
 				$email->psw_update(\Input::get('password'));
+			else
+			{
+				$customer->password = \Hash::make(\Input::get('password'));
+				$customer->save();
+			}
 
 			return $this->show();
 		}
 
-		return \View::make('ccc::psw_update');		
+		return \View::make('ccc::psw_update', $this->compact_prep_view(compact('email')));
 	}
 
 
