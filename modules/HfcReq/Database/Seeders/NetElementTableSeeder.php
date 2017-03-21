@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\HfcBase\Database\Seeders;
+namespace Modules\HfcReq\Database\Seeders;
 
 // Composer: "fzaninotto/faker": "v1.3.0"
 use Faker\Factory as Faker;
@@ -11,20 +11,20 @@ class NetElementTableSeeder extends \BaseSeeder {
 	/*
 	 * TODO: These "helper" functions should be moved to Model context
 	 */
-	private function type ($t)
-	{
-		switch ($t) {
-			case '1': return 'NET';
-			case '2': return 'CMTS';
-			case '3': return 'DATA';
-			case '4': return 'CLUSTER';
-			case '5': return 'NODE';
-			case '6': return 'AMP';
+	// private function type ($t)
+	// {
+	// 	switch ($t) {
+	// 		case '1': return 'NET';
+	// 		case '2': return 'CMTS';
+	// 		case '3': return 'DATA';
+	// 		case '4': return 'CLUSTER';
+	// 		case '5': return 'NODE';
+	// 		case '6': return 'AMP';
 			
-			default:
-				return 'AMP';
-		}
-	}
+	// 		default:
+	// 			return 'AMP';
+	// 	}
+	// }
 
 	private function state ($s)
 	{
@@ -39,22 +39,22 @@ class NetElementTableSeeder extends \BaseSeeder {
 	}
 
 
-	private function pos_dumping($trees)
+	private function pos_dumping($netelements)
 	{
-		foreach ($trees as $tree) 
+		foreach ($netelements as $elem) 
 		{
-			$children = $tree->get_children();
+			$children = $elem->get_children();
 			$this->pos_dumping($children);
 
 			if (isset($pos) && rand(0,10) > 7)
 			{
-				$tree->pos = $pos;
-				$tree->save();
+				$elem->pos = $pos;
+				$elem->save();
 
-				echo "\r\n change pos of tree with id ".$tree->id;
+				echo "\r\n change pos of elem with id ".$elem->id;
 			}
 
-			$pos = $tree->pos;
+			$pos = $elem->pos;
 		}
 	}
 
@@ -72,9 +72,9 @@ class NetElementTableSeeder extends \BaseSeeder {
 			NetElement::create([
 				'name' => $faker->domainWord(),
 				'ip' => $faker->ipv4(),
-				'type' => $this->type(rand(1,20)),
+				'netelementtype_id' => rand(1,10) > 3 ? 1 : (rand(1,10) > 3 ? 2 : rand(3,6)),
 				'state' => $this->state(rand(0,10)),
-				'parent' => NetElement::where('id', '>', '1')->get()->random(1)->id,
+				'parent_id' => $index == 1 ? 0 : NetElement::where('id', '>', '1')->get()->random(1)->id,
 				'descr' => $faker->sentence(),
 				'pos' => $x.','.$y,
 				'link' => $faker->url()
@@ -86,17 +86,17 @@ class NetElementTableSeeder extends \BaseSeeder {
 		// Make top level elements of type NET, second level of type CLUSTER
 		foreach ($root->get_children() as $net) 
 		{
-			$net->type = 'NET';
+			$net->netelementtype_id = 1;
 			$net->save();
 
 			foreach ($net->get_children() as $cluster) 
 			{
-				$cluster->type = 'CLUSTER';
+				$cluster->netelementtype_id = 2;
 				$cluster->save();
 			}
 		}
 
-		$this->pos_dumping (NetElement::where('type', '=', 'NET')->get());
+		$this->pos_dumping (NetElement::where('netelementtype_id', '=', 1)->get());
 
 		NetElement::relation_index_build_all(1);
 	}
