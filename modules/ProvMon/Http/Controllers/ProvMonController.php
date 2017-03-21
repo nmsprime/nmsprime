@@ -674,13 +674,17 @@ end:
 		// handle multiple lease entries
 		// actual strategy: if possible grep active lease, otherwise return all entries
 		//                  in reverse ordered format from dhcpd.leases
-		if (sizeof($ret) > 1)
-		{
-			$key = preg_grep ('/(.*?)binding state active(.*?)/', $ret);
-			if ($key)
+		if (sizeof($ret) > 1) {
+			foreach(preg_grep ('/(.*?)binding state active(.*?)/', $ret) as $str)
+				if(preg_match('/starts \d ([^;]+);/', $str, $s))
+					$start[] = $s[1];
+
+			if ($start) {
 				// return the most recent active lease
-				natsort($key);
-				return [ array_pop($key) ];
+				natsort($start);
+				end($start);
+				return [ $ret[each($start)[0]] ];
+			}
 		}
 
 		return $ret;
