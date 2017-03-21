@@ -25,7 +25,7 @@ class MprTableSeeder extends \BaseSeeder {
 			Mpr::create([
 				'name' => 'Rule'.$faker->colorName(),
 				'type' => 1, // pos rectangle
-				'tree_id' => NetElement::all()->random(1)->id,
+				'netelement_id' => NetElement::all()->random(1)->id,
 			]);
 		}
 	}
