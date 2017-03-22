@@ -16,7 +16,7 @@ class MprController extends \BaseController {
 		return array(
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name'),
 			array('form_type' => 'text', 'name' => 'value', 'description' => 'Value (deprecated)', 'options' => ['readonly']),
-			array('form_type' => 'select', 'name' => 'tree_id', 'description' => 'Tree', 'hidden' => '0', 'value' => $model->html_list($model->trees(), 'name')),
+			array('form_type' => 'select', 'name' => 'netelement_id', 'description' => 'NetElement', 'hidden' => '0', 'value' => $model->html_list($model->trees(), 'name')),
 			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' =>
 				array(1 => 'position rectangle', 2 => 'position polygon', 3 => 'nearest amp/node object', 4 => 'assosicated upstream interface', 5 => 'cluster (deprecated)')),
 			array('form_type' => 'text', 'name' => 'prio', 'description' => 'Priority', 'help' => "1) lower priority values are runs first\n2) later runs will overwrite former runs\ni.e. highest priority value will take precedence"),

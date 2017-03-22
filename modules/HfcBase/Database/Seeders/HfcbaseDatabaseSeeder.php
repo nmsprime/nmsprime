@@ -1,11 +1,11 @@
 <?php 
 
-namespace Modules\Hfcbase\Database\Seeders;
+namespace Modules\HfcBase\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
-class HfcbaseDatabaseSeeder extends Seeder {
+class HfcBaseDatabaseSeeder extends Seeder {
 
 	/**
 	 * Run the database seeds.
@@ -16,7 +16,6 @@ class HfcbaseDatabaseSeeder extends Seeder {
 	{
 		Model::unguard();
 		
-		$this->call("Modules\HfcBase\Database\Seeders\TreeTableSeeder");
 		$this->call("Modules\HfcBase\Database\Seeders\HfcBaseConfigTableSeeder");
 	}
 

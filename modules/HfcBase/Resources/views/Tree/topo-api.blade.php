@@ -192,7 +192,7 @@ function clk_init_2()
 			ll.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
 			var lon = ll.lon.toFixed(6);
 			var lat = ll.lat.toFixed(6);
-			var tree = '<?php switch(\NamespaceController::get_route_name()) { case 'CustomerTopo': $r='Modem'; break; case 'TreeTopography': $r='Tree'; break; } echo(route($r.'.create')) ?>';
+			var tree = '<?php switch(\NamespaceController::get_route_name()) { case 'CustomerTopo': $r='Modem'; break; case 'TreeTopography': $r='NetElement'; break; } echo(route($r.'.create')) ?>';
 			var kml = '<?php $kml = isset ($_GET['kml']) ? $_GET['kml'] : ''; echo $kml ?>';
 			var pos = lon + ',' + lat;
 			// populate yor box/field with lat, lng

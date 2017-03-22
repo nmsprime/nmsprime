@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-use Modules\HfcBase\Entities\Tree;
+use Modules\HfcReq\Entities\NetElement;
 
 use Modules\HfcCustomer\Entities\ModemHelper;
 
@@ -46,7 +46,7 @@ class TreeBuildCommand extends Command {
 		if ($this->option('debug'))
 			dd("debug");
 
-		Tree::relation_index_build_all(2);
+		NetElement::relation_index_build_all(2);
 
 		return;
 	}

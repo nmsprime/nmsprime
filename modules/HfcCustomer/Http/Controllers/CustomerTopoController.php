@@ -3,9 +3,8 @@
 namespace Modules\HfcCustomer\Http\Controllers;
 
 use Modules\HfcCustomer\Entities\ModemHelper;
-use Modules\HfcBase\Http\Controllers\TreeController;
+use Modules\HfcReq\Http\Controllers\NetElementController;
 
-use Modules\HfcBase\Entities\Tree;
 use Modules\ProvBase\Entities\Modem;
 
 
@@ -26,7 +25,7 @@ use Modules\ProvBase\Entities\Modem;
  *
  * @author: Torsten Schmidt
  */
-class CustomerTopoController extends TreeController {
+class CustomerTopoController extends NetElementController {
 
 	/*
 	 * Local tmp folder required for generating the images

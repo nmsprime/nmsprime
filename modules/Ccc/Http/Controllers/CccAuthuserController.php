@@ -99,6 +99,8 @@ class CccAuthuserController extends \BaseController {
 		// TODO: try - catch exceptions that this function shall throw
 		$ret = $this->make_conn_info_pdf();
 
+		Log::info('Download Connection Information for CccAuthuser: '.$customer->first_name.' '.$customer->last_name.' ('.$customer->id.')');
+
 		if ($ret)
 			return response()->download($ret);
 
@@ -255,10 +257,13 @@ class CccAuthuserController extends \BaseController {
 	public function download($id)
 	{
 		$invoice = Invoice::find($id);
+		$user 	 = \Auth::guard('ccc')->user();
 
 		// check that only allowed files are downloadable - invoice must belong to customer and settlmentrun must be verified
-		if (!$invoice || $invoice->contract_id != \Auth::guard('ccc')->user()->contract_id || !SettlementRun::find($invoice->settlementrun_id)->verified)
+		if (!$invoice || $invoice->contract_id != $user->contract_id || !SettlementRun::find($invoice->settlementrun_id)->verified)
 			throw new \App\Exceptions\AuthExceptions('Permission Denied');
+
+		Log::info($user->first_name.' '.$user->last_name.' downloaded invoice '.$invoice->filename.' - id: '.$invoice->id);
 
 		return response()->download($invoice->get_invoice_dir_path().$invoice->filename);
 	}
@@ -297,6 +302,8 @@ class CccAuthuserController extends \BaseController {
 				$customer->password = \Hash::make(\Input::get('password'));
 				$customer->save();
 			}
+
+			Log::info($customer->first_name.' '.$customer->last_name.' ['.$customer->id.']'.' changed his/her password');
 
 			return $this->show();
 		}

@@ -65,6 +65,7 @@ class cdrCommand extends Command {
 
 		// Choose Provider from specified array key in environment file
 		// NOTE: Add new Providers here!!!
+		// TODO - use getenv() to parse all super global variables for this key here as this super global variable is consciously not set in cronjobs
 		if (isset($_ENV['PROVVOIPENVIA__RESELLER_USERNAME']))
 		{
 			$this->_get_envia_cdr();
