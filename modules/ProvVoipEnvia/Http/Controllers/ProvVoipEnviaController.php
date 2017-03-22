@@ -552,6 +552,47 @@ class ProvVoipEnviaController extends \BaseController {
 		return $ret;
 	}
 
+
+	/**
+	 * To do the job there is some extra information needed – here we try to get it…
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _ask_for_phonenumbers_to_be_created_with_contract($url, $origin) {
+
+		$html = '';
+		$html .= '<h4>Please choose at least one phonenumber to be created with this contract</h4>';
+
+		$phonenumbers_on_modem = $this->model->get_numbers_related_to_modem_for_contract_create();
+
+		$html .= "<form method='GET'>\n";
+		foreach ($phonenumbers_on_modem as $porting_group => $phonenumbers_by_date) {
+			$html .= "<fieldset>\n";
+			foreach ($phonenumbers_by_date as $activation_date => $phonenumbers) {
+				$html .= "<legend>$porting_group ($activation_date)</legend>\n";
+				foreach ($phonenumbers as $phonenumber) {
+					$html .= "<label><input type='checkbox' name='phonenumbers_to_create[]' value='$phonenumber->id'/>&nbsp;&nbsp;$phonenumber->prefix_number/$phonenumber->number</label><br>\n";
+				}
+			}
+			$html .= "</fieldset>\n\n";
+		}
+
+		// add the original GET params as hidden inputs
+		foreach (\Input::get() as $name => $value) {
+			if ($name != 'phonenumbers_to_create') {
+				$html .= "<input type='hidden' name='$name' value='$value' />\n";
+			}
+		}
+
+		$html .= "<input class='btn btn-primary' style='simple' type='submit' value='Create contract with chosen numbers'/>\n";
+
+		$html .= '</form>';
+
+		$ret = ['plain_html' => $html];
+		return $ret;
+	}
+
+
 	/**
 	 * Get confirmation to continue with chosen action.
 	 * Used for every job that changes data at Envia.
@@ -734,6 +775,16 @@ class ProvVoipEnviaController extends \BaseController {
 			// e.g. to prevent double contract creation on pressing <F5>
 			if (!$this->_job_allowed($job)) {
 				$view_var = $this->_show_job_not_allowed_info($job, $origin);
+			}
+			// creation of contracts without phonenumbers will not longer possible (from autumn 2017 on)
+			// so: if there is a request to create a contract but no phonenumbers to be co-created are given:
+			// get this information from user
+			elseif (
+				($job == "contract_create")
+				&&
+				(empty(\Input::get('phonenumbers_to_create', '')))
+			) {
+				$view_var = $this->_ask_for_phonenumbers_to_be_created_with_contract($url, $origin);
 			}
 			// on jobs changing data at Envia: Ask if job shall be performed
 			elseif (!\Input::get('really', False)) {
