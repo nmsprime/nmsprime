@@ -552,9 +552,10 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// contract can be created if not yet created
 			if (!$this->contract_created) {
+				$phonenumbers_to_create = '&amp;phonenumbers_to_create=';
 				array_push($ret, array(
 					'linktext' => 'Create contract',
-					'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id,
+					'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id.$phonenumbers_to_create,
 					'help' => "Creates a Envia contract (= telephone connection)",
 				));
 			}
@@ -1025,6 +1026,67 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Generates array containing all numbers related to current modem.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function get_numbers_related_to_modem_for_contract_create() {
+
+		$key_no_mgmt = 'No PhonenumberManagement';
+		$key_new_number = 'New number';
+
+		$phonenumbers_on_modem = array(
+			$key_no_mgmt => array(),
+			$key_new_number => array(),
+		);
+		foreach ($this->modem->mtas as $mta) {
+			foreach ($mta->phonenumbers as $phonenumber) {
+
+				$phonenumbermanagement = $phonenumber->phonenumbermanagement;
+
+				// handle missing management
+				if (!$phonenumbermanagement) {
+					if (!array_key_exists('–', $phonenumbers_on_modem[$key_no_mgmt])) {
+						$phonenumbers_on_modem[$key_no_mgmt]['–'] = array();
+					}
+					array_push($phonenumbers_on_modem[$key_no_mgmt]['–'], $phonenumber);
+					continue;
+				}
+
+				$activation_date = $phonenumbermanagement->activation_date ? : "n/a";
+
+				// handle numbers not to be ported (= new number from Envia pool)
+				if (!$phonenumbermanagement->porting_in) {
+					if (!array_key_exists($activation_date, $phonenumbers_on_modem[$key_new_number])) {
+						$phonenumbers_on_modem[$key_new_number][$activation_date] = array();
+					}
+					array_push($phonenumbers_on_modem[$key_new_number][$activation_date], $phonenumber);
+					continue;
+				}
+
+				// handle numbers to be ported
+				$ekp_code = EkpCode::findOrFail($phonenumbermanagement->ekp_in);
+				$ekp_code = 'From '.$ekp_code->company;
+
+				if (!array_key_exists($ekp_code, $phonenumbers_on_modem)) {
+					$phonenumbers_on_modem[$ekp_code] = array();
+				}
+
+				if (!array_key_exists($activation_date, $phonenumbers_on_modem[$ekp_code])) {
+					$phonenumbers_on_modem[$ekp_code][$activation_date] = array();
+				}
+				array_push($phonenumbers_on_modem[$ekp_code][$activation_date], $phonenumber);
+			}
+		}
+
+		// bring array in wanted order for display
+		$phonenumbers_on_modem = array_reverse($phonenumbers_on_modem);
+
+		return $phonenumbers_on_modem;
+	}
+
+
+	/**
 	 * Create a xml object containing only the top level element
 	 * This is the skeleton for the final XML
 	 *
@@ -1430,7 +1492,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add customer data
 	 *
 	 * This data is attached on:
-	 *	– contract/create for now customers
+	 *	– contract/create for new customers
 	 *	– customer/update
 	 *
 	 * @author Patrick Reichel
