@@ -1,5 +1,5 @@
-<?php 
-namespace Modules\Hfccustomer\Entities;
+<?php
+namespace Modules\HfcCustomer\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Modules\ProvBase\Entities\Modem;
@@ -56,7 +56,7 @@ class Mpr extends \BaseModel {
 	// Relation to MPR Geopos
 	public function mprgeopos()
 	{
-		return $this->hasMany('Modules\Hfccustomer\Entities\MprGeopos');
+		return $this->hasMany('Modules\HfcCustomer\Entities\MprGeopos');
 	}
 
 
@@ -190,6 +190,7 @@ class Mpr extends \BaseModel {
 
 		Mpr::observe(new MprObserver);
 	}
+
 }
 
 

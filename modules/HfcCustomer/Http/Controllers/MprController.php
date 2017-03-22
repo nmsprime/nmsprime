@@ -1,7 +1,7 @@
-<?php namespace Modules\Hfccustomer\Http\Controllers;
+<?php namespace Modules\HfcCustomer\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
-use Modules\Hfccustomer\Entities\MprGeopos;
+use Modules\HfcCustomer\Entities\MprGeopos;
 use Illuminate\Http\RedirectResponse;
 
 

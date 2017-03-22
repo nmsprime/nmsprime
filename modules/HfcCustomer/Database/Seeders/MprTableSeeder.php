@@ -1,4 +1,4 @@
-<?php namespace Modules\Hfccustomer\Database\Seeders;
+<?php namespace Modules\HfcCustomer\Database\Seeders;
 
 use Faker\Factory as Faker;
 

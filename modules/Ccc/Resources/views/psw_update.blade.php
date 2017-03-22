@@ -1,12 +1,13 @@
 @extends('ccc::layouts.master')
 
 @section('content_left')
-
-	{{ Form::open([\Route::getCurrentRoute()->getUri(), 'method' => 'post']) }}
+	{{ Form::open(['url' => \Request::fullUrl()]) }}
 
 		@DivOpen(12)
 			<h5 style='color:{{ Session::get('message_color') }}' id='success_msg'>{{ Session::get('message') }}</h5>
 		@DivClose()
+		{{ Form::label('account', trans('messages.Account Name')) }}
+		{{ Form::text('account', isset($email) ? $email->view_index_label()['header'] : trans('messages.ccc'), ['readonly']) }}
 		{{ Form::label('password', 'Password') }}
 		{{ Form::password('password') }}
 		{{ Form::label('password_confirm', trans('messages.password_confirm')) }}

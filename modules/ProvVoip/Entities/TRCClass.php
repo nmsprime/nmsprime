@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\ProvVoipEnvia\Entities;
+namespace Modules\ProvVoip\Entities;
 
 // Model not found? execute composer dump-autoload in lara root dir
 class TRCClass extends \BaseModel {
