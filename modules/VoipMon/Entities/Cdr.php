@@ -15,6 +15,12 @@ class Cdr extends \BaseModel {
 		return 'VoipMonitor Call Data Records';
 	}
 
+	public static function view_no_entries()
+	{
+		return 'No CDRs found: 1. Is VoipMonitor running? 2. Does remote VoipMonitor have access to local DB? 3. Is MySQL port open to remote VoipMonitor?';
+	}
+
+
 	// There are no validation rules
 	public static function rules($id=null)
 	{
