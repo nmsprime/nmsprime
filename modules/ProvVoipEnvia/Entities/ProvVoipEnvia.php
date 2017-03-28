@@ -1569,11 +1569,6 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _add_contract_data() {
 
-		$inner_xml = $this->xml->addChild('contract_data');
-
-		// add startdate for contract (default: today – there are no costs without phone numbers)
-		$inner_xml->addChild('orderdate', date('Y-m-d'));
-
 		// check if there are missing values (e.g. they are missing if billing is enabled but man forgot to add voip item before calling this
 		$value_missing = False;
 
@@ -1599,9 +1594,50 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 		}
 
+		// check if at least one phonenumber is given
+		$phonenumbers_to_create = \Input::get('phonenumbers_to_create', []);
+		if (!$phonenumbers_to_create) {
+			$msg = 'Can only create contract with at least one phonenumber, but none given';
+			$value_missing = True;
+		}
+		else {
+			$numbers_on_modem = $this->get_numbers_related_to_modem_for_contract_create();
+			$numbers_on_modem_rearranged = array();
+			foreach ($numbers_on_modem as $nr_origin => $tmp_outer) {
+				foreach ($tmp_outer as $nr_date => $tmp_inner) {
+					foreach ($tmp_inner as $nr) {
+						$numbers_on_modem_rearranged[$nr->id] = $nr_origin."  ".$nr_date;
+					}
+				}
+			}
+			// check if all given numbers belong to the same type (this means: same origin, same activation date
+			$last_type = '';
+			foreach ($phonenumbers_to_create as $nr_id) {
+				if (!array_key_exists($nr_id, $numbers_on_modem_rearranged)) {
+					$msg = "Phonenumber $nr_id does not belong to modem";
+					$value_missing = True;
+					break;
+				}
+
+				$cur_type = $numbers_on_modem_rearranged[$nr_id];
+
+				if ($last_type && ($last_type != $cur_type)) {
+					$msg = "All phonenenumbers to be created with contract have to have the same origin and activation date";
+					$value_missing = True;
+					break;
+				}
+			}
+		}
+
 		if ($value_missing) {
 			throw new XmlCreationError($msg);
 		}
+
+		// begin to build the xml
+		$inner_xml = $this->xml->addChild('contract_data');
+
+		// add startdate for contract (default: today – there are no costs without phone numbers)
+		$inner_xml->addChild('orderdate', $orderdate);
 
 		// the data exists: now we can safely get the external identifiers without raising an Exception
 		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
