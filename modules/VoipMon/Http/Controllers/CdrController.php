@@ -1,6 +1,10 @@
 <?php namespace Modules\Voipmon\Http\Controllers;
 
 class CdrController extends \BaseController {
+
+	protected $index_create_allowed = false;
+	protected $index_delete_allowed = false;
+
 	/*
 	public function index()
 	{
