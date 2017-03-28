@@ -116,29 +116,7 @@ class cactiCommand extends Command {
 
 			// create all graphs belonging to host template cablemodem
 			foreach ($graph_template_ids as $id)
-			{
 				system("php -q $path/add_graphs.php --host-id=$matches[1] --graph-type=cg --graph-template-id=$id");
-			}
-
-			// get first RRD belonging to newly created host
-			$first = \DB::connection($this->connection)->table('host AS h')
-				->join('data_local AS l', 'h.id', '=', 'l.host_id')
-				->join('data_template_data AS t', 'l.id', '=', 't.local_data_id')
-				->where('h.id', '=', $matches[1])
-				->orderBy('t.id')
-				->select('t.id', 't.data_source_path')
-				->first();
-
-			// disable updating all RRDs except for first and use first RRD for all graphs
-			\DB::connection($this->connection)->table('host AS h')
-				->join('data_local AS l', 'h.id', '=', 'l.host_id')
-				->join('data_template_data AS t', 'l.id', '=', 't.local_data_id')
-				->where('h.id', '=', $matches[1])
-				->where('t.id', '!=', $first->id)
-				->update(['t.active' => '', 't.data_source_path' => $first->data_source_path]);
-
-			// rebuild poller cache, since we changed the database manually
-			system("php -q $path/rebuild_poller_cache.php --host-id=$matches[1]");
 
 			// Info Message
 			echo "\ncacti: create diagrams for Modem: $name";
