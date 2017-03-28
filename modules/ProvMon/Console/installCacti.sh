@@ -9,6 +9,10 @@ read -e -p "Enter Cacti web admin psw:" admin_psw
 yum -y install cacti
 # avoid excessive DB access, seen in all 0.8.8 versions of cacti
 rpm -qi cacti | grep Version | grep -q '0.8.8' && sed -i 's/usleep(500)/sleep(1)/' /usr/share/cacti/poller.php
+# fix bug in 1.0.4
+cd /var/lib/cacti
+md5sum cli/add_graphs.php | grep -q '1416f1ddae7fb14a4acc64008c146524' && wget -qO- https://github.com/Cacti/cacti/commit/2609d5892cb9b8d284fe090538f023664c06c24c.patch | head -n -13 | patch -p1
+
 # create DB accessed by cactiuser
 mysqladmin -u root --password="$mysql_root_psw" create cacti
 echo "GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY '$mysql_cacti_psw';" | mysql -u root --password="$mysql_root_psw"
