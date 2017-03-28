@@ -5,13 +5,6 @@ class CdrController extends \BaseController {
 	protected $index_create_allowed = false;
 	protected $index_delete_allowed = false;
 
-	/*
-	public function index()
-	{
-		return view('voipmon::index');
-	}
-	*/
-
 	public function view_form_fields($model = null)
 	{
 		if (!$model)
@@ -22,24 +15,24 @@ class CdrController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'calldate', 'description' => 'Call Start', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'callend', 'description' => 'Call End', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'duration', 'description' => 'Call Duration/s', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'mos_min_mult10', 'description' => 'min. MOS', 'help' => trans('helper.mos_min_mult10'), 'eval' => '$var/10', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'packet_loss_perc_mult1000', 'description' => 'Packet loss/%', 'eval' => '$var/1000', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'jitter_mult10', 'description' => 'Jitter/ms', 'eval' => '$var/10', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'delay_avg_mult100', 'description' => 'avg. Delay/ms', 'eval' => '$var/100', 'options' => ['readonly'], 'space' => '1'),
+			array('form_type' => 'text', 'name' => 'mos_min_mult10', 'description' => 'min. MOS', 'help' => trans('helper.mos_min_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'packet_loss_perc_mult1000', 'description' => 'Packet loss/%', 'eval' => '$name/1000', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'jitter_mult10', 'description' => 'Jitter/ms', 'eval' => '$name/10', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'delay_avg_mult100', 'description' => 'avg. Delay/ms', 'eval' => '$name/100', 'options' => ['readonly'], 'space' => '1'),
 			/* monitoring quality indicators caller -> callee */
 			array('form_type' => 'text', 'name' => 'caller', 'description' => 'Caller (-> Callee)', 'help' => trans('helper.caller'), 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'caller_domain', 'description' => '@Domain', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'a_mos_f1_min_mult10', 'description' => 'min. MOS 50ms', 'help' => trans('helper.a_mos_f1_min_mult10'), 'eval' => '$var/10', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'a_mos_f2_min_mult10', 'description' => 'min. MOS 200ms', 'help' => trans('helper.a_mos_f2_min_mult10'), 'eval' => '$var/10', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'a_mos_adapt_min_mult10', 'description' => 'min. MOS adaptive 500ms', 'help' => trans('helper.a_mos_adapt_min_mult10'), 'eval' => '$var/10', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'a_mos_f1_mult10', 'description' => 'avg. MOS 50ms', 'help' => trans('helper.a_mos_f1_mult10') , 'eval' => '$var/10', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'a_mos_f2_mult10', 'description' => 'avg. MOS 200ms', 'help' => trans('helper.a_mos_f2_mult10') , 'eval' => '$var/10', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'a_mos_adapt_mult10', 'description' => 'avg. MOS adaptive 500ms', 'help' => trans('helper.a_mos_adapt_mult10') , 'eval' => '$var/10', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'a_mos_f1_min_mult10', 'description' => 'min. MOS 50ms', 'help' => trans('helper.a_mos_f1_min_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'a_mos_f2_min_mult10', 'description' => 'min. MOS 200ms', 'help' => trans('helper.a_mos_f1_min_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'a_mos_adapt_min_mult10', 'description' => 'min. MOS adaptive 500ms', 'help' => trans('helper.a_mos_adapt_min_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'a_mos_f1_mult10', 'description' => 'avg. MOS 50ms', 'help' => 'help' => trans('helper.a_mos_f1_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'a_mos_f2_mult10', 'description' => 'avg. MOS 200ms', 'help' => trans('helper.a_mos_f2_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'a_mos_adapt_mult10', 'description' => 'avg. MOS adaptive 500ms', 'help' => trans('helper.a_mos_f2_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'a_received', 'description' => 'Received Packets', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'a_lost', 'description' => 'Lost Packets', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'a_packet_loss_perc_mult1000', 'description' => 'Packet loss/%', 'eval' => '$var/1000', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'a_delay_avg_mult100', 'description' => 'avg. Delay/ms', 'eval' => '$var/100', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'a_avgjitter_mult10', 'description' => 'avg. Jitter/ms', 'eval' => '$var/10', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'a_packet_loss_perc_mult1000', 'description' => 'Packet loss/%', 'eval' => '$name/1000', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'a_delay_avg_mult100', 'description' => 'avg. Delay/ms', 'eval' => '$name/100', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'a_avgjitter_mult10', 'description' => 'avg. Jitter/ms', 'eval' => '$name/10', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'a_maxjitter', 'description' => 'max. Jitter/ms', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'a_sl1', 'description' => '1 loss in a row', 'help' => trans('helper.a_sl1') , 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'a_sl2', 'description' => '2 losses in a row', 'options' => ['readonly']),
