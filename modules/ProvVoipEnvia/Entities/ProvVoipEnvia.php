@@ -336,7 +336,7 @@ class ProvVoipEnvia extends \BaseModel {
 			return array();
 		}
 
-		$this->_get_model_data($view_level, $model);
+		$this->set_model_data($view_level, $model);
 
 		$phonenumber_id = $this->phonenumber->id;
 
@@ -788,8 +788,6 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	public function get_xml($job, $store=True) {
 
-		$this->_get_model_data();
-
 		$this->_create_base_xml_by_topic($job);
 		$this->_create_final_xml_by_topic($job);
 
@@ -849,7 +847,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @param $level current level to work from
 	 * @param $model the model to get related models from ($model is of type $level)
 	 */
-	protected function _get_model_data($level='', $model=null) {
+	public function set_model_data($level='', $model=null) {
 
 		// defaults => can be overwritten if there are “real” models in this context
 		$this->contract = null;
@@ -1039,6 +1037,7 @@ class ProvVoipEnvia extends \BaseModel {
 			$key_no_mgmt => array(),
 			$key_new_number => array(),
 		);
+
 		foreach ($this->modem->mtas as $mta) {
 			foreach ($mta->phonenumbers as $phonenumber) {
 

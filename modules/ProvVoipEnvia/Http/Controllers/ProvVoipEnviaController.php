@@ -121,6 +121,9 @@ class ProvVoipEnviaController extends \BaseController {
 			// the API URL to use for the request
 			$url = $allowed_cron_jobs[$job];
 
+			// prepare the model
+			$this->model->set_model_data();
+
 			// the requests payload (=XML)
 			$payload = $this->model->get_xml($job);
 
@@ -659,6 +662,65 @@ class ProvVoipEnviaController extends \BaseController {
 	}
 
 	/**
+	 * Create array with jobs as keys and correlating API URL as values.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_envia_job_to_url_mappings () {
+
+		// the URLs to use for the jobs to do
+		$urls = array(
+			/* 'blacklist_create_entry' => $this->base_url.'____TODO____', */
+			/* 'blacklist_delete_entry' => $this->base_url.'____TODO____', */
+			/* 'blacklist_get' => $this->base_url.'selfcare/blacklist/get', */
+
+			/* 'calllog_delete' => $this->base_url.'____TODO____', */
+			/* 'calllog_delete_entry' => $this->base_url.'____TODO____', */
+			/* 'calllog_get' => $this->base_url.'____TODO____', */
+			/* 'calllog_get_status' => $this->base_url.'selfcare/calllog/get_status', */
+
+			/* 'configuration_get' => $this->base_url.'selfcare/configuration/get', */
+			/* 'configuration_update' => $this->base_url.'____TODO____', */
+
+			'contract_change_method' => $this->base_url.'____TODO____',
+			'contract_change_sla' => $this->base_url.'____TODO____',
+			'contract_change_tariff' => $this->base_url.'contract/change_tariff',
+			'contract_change_variation' => $this->base_url.'contract/change_variation',
+			'contract_create' => $this->base_url.'contract/create',
+			'contract_get_reference' => $this->base_url.'____TODO____',
+			'contract_get_voice_data' => $this->base_url.'contract/get_voice_data',
+			'contract_lock' => $this->base_url.'____TODO____',
+			'contract_relocate' => $this->base_url.'contract/relocate',
+			'contract_terminate' => $this->base_url.'contract/terminate',
+			'contract_unlock' => $this->base_url.'____TODO____',
+
+			'customer_get_reference' => $this->base_url.'____TODO____',
+			'customer_update' => $this->base_url.'customer/update',
+
+			'misc_get_free_numbers' => $this->base_url.'misc/get_free_numbers',
+			'misc_get_keys' => $this->base_url.'misc/get_keys',
+			'misc_get_orders_csv' => $this->base_url.'misc/get_orders_csv',
+			'misc_get_usage_csv' => $this->base_url.'misc/get_usage_csv',
+			'misc_ping' => $this->base_url.'misc/ping',
+
+			'order_add_mgcp_details' => $this->base_url.'____TODO____',
+			'order_cancel' => $this->base_url.'order/cancel',
+			'order_create_attachment' => $this->base_url.'order/create_attachment',
+			'order_get_status' => $this->base_url.'order/get_status',
+
+			'phonebookentry_create' => $this->base_url.'phonebookentry/create',
+			'phonebookentry_delete' => $this->base_url.'phonebookentry/delete',
+			'phonebookentry_get' => $this->base_url.'phonebookentry/get',
+
+			'voip_account_create' => $this->base_url.'voip_account/create',
+			'voip_account_terminate' => $this->base_url.'voip_account/terminate',
+			'voip_account_update' => $this->base_url.'voip_account/update',
+		);
+
+		return $urls;
+	}
+
+	/**
 	 * Method to perform a request the envia API.
 	 *
 	 * @author Patrick Reichel
@@ -681,56 +743,7 @@ class ProvVoipEnviaController extends \BaseController {
 
 		$this->check_api_version("request ($job)");
 
-		$base_url = $this->base_url;
-
-		// the URLs to use for the jobs to do
-		$urls = array(
-			/* 'blacklist_create_entry' => $base_url.'____TODO____', */
-			/* 'blacklist_delete_entry' => $base_url.'____TODO____', */
-			/* 'blacklist_get' => $base_url.'selfcare/blacklist/get', */
-
-			/* 'calllog_delete' => $base_url.'____TODO____', */
-			/* 'calllog_delete_entry' => $base_url.'____TODO____', */
-			/* 'calllog_get' => $base_url.'____TODO____', */
-			/* 'calllog_get_status' => $base_url.'selfcare/calllog/get_status', */
-
-			/* 'configuration_get' => $base_url.'selfcare/configuration/get', */
-			/* 'configuration_update' => $base_url.'____TODO____', */
-
-			'contract_change_method' => $base_url.'____TODO____',
-			'contract_change_sla' => $base_url.'____TODO____',
-			'contract_change_tariff' => $base_url.'contract/change_tariff',
-			'contract_change_variation' => $base_url.'contract/change_variation',
-			'contract_create' => $base_url.'contract/create',
-			'contract_get_reference' => $base_url.'____TODO____',
-			'contract_get_voice_data' => $base_url.'contract/get_voice_data',
-			'contract_lock' => $base_url.'____TODO____',
-			'contract_relocate' => $base_url.'contract/relocate',
-			'contract_terminate' => $base_url.'contract/terminate',
-			'contract_unlock' => $base_url.'____TODO____',
-
-			'customer_get_reference' => $base_url.'____TODO____',
-			'customer_update' => $base_url.'customer/update',
-
-			'misc_get_free_numbers' => $base_url.'misc/get_free_numbers',
-			'misc_get_keys' => $base_url.'misc/get_keys',
-			'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
-			'misc_get_usage_csv' => $base_url.'misc/get_usage_csv',
-			'misc_ping' => $base_url.'misc/ping',
-
-			'order_add_mgcp_details' => $base_url.'____TODO____',
-			'order_cancel' => $base_url.'order/cancel',
-			'order_create_attachment' => $base_url.'order/create_attachment',
-			'order_get_status' => $base_url.'order/get_status',
-
-			'phonebookentry_create' => $base_url.'phonebookentry/create',
-			'phonebookentry_delete' => $base_url.'phonebookentry/delete',
-			'phonebookentry_get' => $base_url.'phonebookentry/get',
-
-			'voip_account_create' => $base_url.'voip_account/create',
-			'voip_account_terminate' => $base_url.'voip_account/terminate',
-			'voip_account_update' => $base_url.'voip_account/update',
-		);
+		$urls = $this->_get_envia_job_to_url_mappings();
 
 		// TODO: improve error handling: Throwing an exception is a bit hard :-)
 		if (!array_key_exists($job, $urls)) {
@@ -746,71 +759,85 @@ class ProvVoipEnviaController extends \BaseController {
 			throw new \Exception("Missing url: ".$url);
 		}
 
-		// the requests payload (=XML)
-		$xml_creation_failed = True;
-		try {
-			// check if data is going to be sent – don't store XML created to be shown for confirmation request
-			// if the XML to create is for sending against Envia there should be a …&really=True within the GET params
-			$store_xml = \Input::get('really', False);
-			$payload = $this->model->get_xml($job, $store_xml);
-			$xml_creation_failed = False;
-		}
-		catch (XmlCreationError $ex) {
-			$payload = $ex->getMessage();
-		}
-		catch (\Exception $ex) {
-			throw $ex;
-		}
-
-		// extract origin
+		// set some environmental vars
 		$origin = \Input::get('origin', \URL::to('/'));
-
 		$view_header = 'Request Envia';
-
 		$view_path = \NamespaceController::get_view_name().'.request';
 
-		if ($xml_creation_failed) {
-			$view_var = $this->_show_xml_creation_error($payload, $origin);
+		// check if there should be an instant redirect – if so do so :-)
+		if (\Input::get('instant_redirect', false)) {
+			// we have to add the GET param manually as Redirect::to()->with('recentlty_updated', true) is not running
+			// this param is used to break out of the endless redirect loop :-)
+			return \Redirect::to(urldecode($origin).'?recently_updated=1');
 		}
-		else {
-			// check if job to do is allowed
-			// e.g. to prevent double contract creation on pressing <F5>
-			if (!$this->_job_allowed($job)) {
-				$view_var = $this->_show_job_not_allowed_info($job, $origin);
+
+		// prepare the model
+		$this->model->set_model_data();
+
+		// build the view
+		$view_var = null;
+		// first we have to check for special cases
+		// check if job to do is allowed
+		// e.g. to prevent double contract creation on pressing <F5>
+		if (!$this->_job_allowed($job)) {
+			$view_var = $this->_show_job_not_allowed_info($job, $origin);
+		}
+		// creation of contracts without phonenumbers will not longer be possible (from autumn 2017 on)
+		// so: if there is a request to create a contract but no phonenumbers to be co-created are given:
+		// collect this information from user
+		elseif (
+			($job == "contract_create")
+			&&
+			(!\Input::get('phonenumbers_to_create', []))
+		) {
+			$view_var = $this->_ask_for_phonenumbers_to_be_created_with_contract($url, $origin);
+		}
+
+		// in all other cases we will need XML for communication  (and building $view_var)
+		if (is_null($view_var)) {
+			// the requests payload (=XML)
+			$xml_creation_failed = True;
+			try {
+				// check if data is going to be sent – don't store XML created to be shown for confirmation request
+				// if the XML to create is for sending against Envia there should be a …&really=True within the GET params
+				$store_xml = \Input::get('really', False);
+				$payload = $this->model->get_xml($job, $store_xml);
+				$xml_creation_failed = False;
 			}
-			// creation of contracts without phonenumbers will not longer possible (from autumn 2017 on)
-			// so: if there is a request to create a contract but no phonenumbers to be co-created are given:
-			// get this information from user
-			elseif (
-				($job == "contract_create")
-				&&
-				(empty(\Input::get('phonenumbers_to_create', '')))
-			) {
-				$view_var = $this->_ask_for_phonenumbers_to_be_created_with_contract($url, $origin);
+			catch (XmlCreationError $ex) {
+				$payload = $ex->getMessage();
 			}
-			// on jobs changing data at Envia: Ask if job shall be performed
-			elseif (!\Input::get('really', False)) {
-				$view_var = $this->_show_confirmation_request($payload, $url, $origin);
+			catch (\Exception $ex) {
+				// this should never happen :-)
+				throw $ex;
+			}
+
+			if ($xml_creation_failed) {
+				$view_var = $this->_show_xml_creation_error($payload, $origin);
 			}
 			else {
+				// on jobs changing data at Envia: Ask if job shall be performed
+				if (!\Input::get('really', False)) {
+					$view_var = $this->_show_confirmation_request($payload, $url, $origin);
+				}
+				else {
 
-				$view_var = $this->_perform_request($url, $payload, $job);
+					// this is the default case – we perform a request against envia API…
+					$view_var = $this->_perform_request($url, $payload, $job);
 
-				// add link to original page
-				$origin_link = '<hr>';
-				$origin_name = urldecode($origin);
-				$origin_name = explode($_SERVER['CONTEXT_PREFIX'], $origin_name);
-				$origin_name = array_pop($origin_name);
-				$origin_link .= '<h5><b><a href="'.urldecode($origin).'" target="_self">Back to '.$origin_name.'</a></b></h5>';
-				$view_var['plain_html'] .= $origin_link;
+					// add link to original page
+					$origin_link = '<hr>';
+					$origin_name = urldecode($origin);
+					$origin_name = explode($_SERVER['CONTEXT_PREFIX'], $origin_name);
+					$origin_name = array_pop($origin_name);
+					$origin_link .= '<h5><b><a href="'.urldecode($origin).'" target="_self">Back to '.$origin_name.'</a></b></h5>';
+					$view_var['plain_html'] .= $origin_link;
+				}
 			}
+		}
 
-			// check if there should be an instant redirect – if so do so :-)
-			if (\Input::get('instant_redirect', false)) {
-				// we have to add the GET param manually as Redirect::to()->with('recentlty_updated', true) is not running
-				// this param is used to break out of the endless redirect loop :-)
-				return \Redirect::to(urldecode($origin).'?recently_updated=1');
-			}
+		if (is_null($view_var)) {
+			throw new \Exception('$view_var empty!!');
 		}
 
 		// use this e.g. to get the result directly in your view
