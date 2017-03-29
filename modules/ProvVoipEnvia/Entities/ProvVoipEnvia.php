@@ -1223,10 +1223,6 @@ class ProvVoipEnvia extends \BaseModel {
 			'customer_identifier',
 			'customer_data',
 			'contract_data',
-			// in this first step we do not create phonenumbers within
-			// the contract
-			// instead: create each phonenumber in separate step (voipaccount_create)
-			/* 'subscriber_data', */
 		);
 		if ($this->api_version_greater_or_equal("1.4")) {
 			array_push($second_level_nodes['contract_create'], 'installation_address_data');
@@ -1605,26 +1601,98 @@ class ProvVoipEnvia extends \BaseModel {
 			foreach ($numbers_on_modem as $nr_origin => $tmp_outer) {
 				foreach ($tmp_outer as $nr_date => $tmp_inner) {
 					foreach ($tmp_inner as $nr) {
-						$numbers_on_modem_rearranged[$nr->id] = $nr_origin."  ".$nr_date;
+						$numbers_on_modem_rearranged[$nr->id] = ['type' => $nr_origin."  ".$nr_date, 'nr' => $nr];
 					}
 				}
 			}
-			// check if all given numbers belong to the same type (this means: same origin, same activation date
-			$last_type = '';
+
+			// check all given numbers for validity
+			$porting = null;
+			$ekp_in = null;
+			$orderdate = null;
+			$last_mgmt = null;
+
+			$subscriber_data_keys = [
+				'subscriber_company',
+				'subscriber_department',
+				'subscriber_salutation',
+				'subscriber_firstname',
+				'subscriber_lastname',
+				'subscriber_street',
+				'subscriber_house_number',
+				'subscriber_zip',
+				'subscriber_city',
+				'subscriber_district',
+				];
+
 			foreach ($phonenumbers_to_create as $nr_id) {
+
+				// check if number belongs to current modem
 				if (!array_key_exists($nr_id, $numbers_on_modem_rearranged)) {
 					$msg = "Phonenumber $nr_id does not belong to modem";
 					$value_missing = True;
 					break;
 				}
 
-				$cur_type = $numbers_on_modem_rearranged[$nr_id];
+				$mgmt = $numbers_on_modem_rearranged[$nr_id]['nr']->phonenumbermanagement;
 
-				if ($last_type && ($last_type != $cur_type)) {
-					$msg = "All phonenenumbers to be created with contract have to have the same origin and activation date";
+				// check if cur number has management
+				if (is_null($mgmt)) {
+					$msg = "Chosen phonenumber $nr_id has no management.";
 					$value_missing = True;
 					break;
 				}
+
+				// check if activation date set
+				if (is_null($mgmt->activation_date)) {
+					$msg = "No activation date set for number $nr_id";
+					$value_missing = True;
+					break;
+				}
+
+				// check if activation  dates of all numbers are identical
+				$orderdate = $mgmt->activation_date;
+				if (!is_null($last_mgmt) && ($last_mgmt->activation_date != $orderdate)) {
+					$msg = "Given numbers have different activation dates ($orderdate, $mgmt->activation_date)";
+					$value_missing = True;
+					break;
+				}
+
+				// check if all numbers have identical porting information
+				$porting = $mgmt->porting_in;
+				if (!is_null($last_mgmt) && ($last_mgmt->porting_in != $porting)) {
+					$msg = "Either all given numbers have to be ported or none – mixing is not allowed";
+					$value_missing = True;
+					break;
+				}
+
+				if ($porting) {
+
+					// if number has to be ported: check if incoming EKP codes are identical
+					$ekp_in = $mgmt->ekp_in;
+					if (!is_null($last_mgmt) && ($last_mgmt->ekp_in != $ekp_in)) {
+						$msg = "All numbers to be created have to have the same incoming EKP code";
+						$value_missing = True;
+						break;
+					}
+
+					// compare subscriber data
+					if (!is_null($last_mgmt)) {
+						foreach ($subscriber_data_keys as $key) {
+							if (trim($last_mgmt->{$key}) != trim($mgmt->{$key})) {
+								$value_missing = True;
+								$msg = "Differences in subscriber data ($last_mgmt->{$key} != $mgmt->{$key})";
+								break; // the inner foreach
+							}
+						}
+						if ($value_missing) {
+							break;	// the outer foreach
+						}
+					}
+				}
+
+				// store currend management for comparing values with next number
+				$last_mgmt = $mgmt;
 			}
 		}
 
@@ -1635,6 +1703,11 @@ class ProvVoipEnvia extends \BaseModel {
 		// begin to build the xml
 		$inner_xml = $this->xml->addChild('contract_data');
 
+		// set porting flag if numbers have to be ported
+		if ($porting) {
+			$inner_xml->addChild('porting', 1);
+		}
+
 		// add startdate for contract (default: today – there are no costs without phone numbers)
 		$inner_xml->addChild('orderdate', $orderdate);
 
@@ -1642,10 +1715,23 @@ class ProvVoipEnvia extends \BaseModel {
 		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
 		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale_next->external_identifier);
 
+		// add the phonenumbers
+		// before adding: build array containing instances of all phonenumbers to be created
+		$phonenumbers_to_create = array_flip($phonenumbers_to_create);
+		foreach ($phonenumbers_to_create as $id => $_) {
+			$phonenumbers_to_create[$id] = $numbers_on_modem_rearranged[$id]['nr'];
+		}
+		$this->_add_callnumbers($inner_xml, $phonenumbers_to_create);
+
 		// add the default values
 		$defaults = $this->_get_defaults_by_topic('contract_data');
 		foreach ($defaults as $xml_field => $payload) {
 			$inner_xml->addChild($xml_field, $payload);
+		}
+
+		// if number(s) have to be ported: add subscriber data
+		if ($porting) {
+			$this->_add_subscriber_data($mgmt);
 		}
 
 	}
@@ -1716,12 +1802,18 @@ class ProvVoipEnvia extends \BaseModel {
 	/**
 	 * Method to add subscriber data
 	 *
+	 * @param: $phonenumbermanagement; if not given: use $this->phonenumbermanagement
+	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _add_subscriber_data() {
+	protected function _add_subscriber_data($phonenumbermanagement=null) {
+
+		if (is_null($phonenumbermanagement)) {
+			$phonenumbermanagement = $this->phonenumbermanagement;
+		}
 
 		// subscriber data contains the current “owner” of the number ⇒ this tag is only needed if a phonenumber shall be ported
-		$porting = boolval($this->phonenumbermanagement->porting_in);
+		$porting = boolval($phonenumbermanagement->porting_in);
 		if (!$porting) {
 			return;
 		}
@@ -1742,7 +1834,7 @@ class ProvVoipEnvia extends \BaseModel {
 			'district' => 'subscriber_district',
 		);
 
-		$this->_add_fields($inner_xml, $fields_subscriber, $this->phonenumbermanagement);
+		$this->_add_fields($inner_xml, $fields_subscriber, $phonenumbermanagement);
 
 	}
 
@@ -1773,13 +1865,20 @@ class ProvVoipEnvia extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _add_callnumbers($xml) {
+	protected function _add_callnumbers($xml, $phonenumbers=[]) {
 
 		$inner_xml = $xml->addChild('callnumbers');
 
 		// TODO: this contains callnumber_single_data, callnumber_range_data or callnumber_new_data objects
 		// in this first step we only implement callnumber_single_data
-		$this->_add_callnumber_single_data($inner_xml);
+		if (!$phonenumbers) {
+			$this->_add_callnumber_single_data($inner_xml);
+		}
+		else {
+			foreach ($phonenumbers as $nr) {
+				$this->_add_callnumber_single_data($inner_xml, $nr);
+			}
+		}
 
 	}
 
@@ -1787,9 +1886,16 @@ class ProvVoipEnvia extends \BaseModel {
 	/**
 	 * Method to add data for a single callnumber
 	 *
+	 * @param phonenumber: if not given use $this->phonenumber
+	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _add_callnumber_single_data($xml) {
+	protected function _add_callnumber_single_data($xml, $phonenumber=null) {
+
+		if (is_null($phonenumber)) {
+			$phonenumber = $this->phonenumber;
+		}
+		$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 
 		$inner_xml = $xml->addChild('callnumber_single_data');
 
@@ -1798,40 +1904,44 @@ class ProvVoipEnvia extends \BaseModel {
 			'baseno' => 'number',
 		);
 
-		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
+		$this->_add_fields($inner_xml, $fields, $phonenumber);
 
 		// special handling of trc_class needed (comes from external table)
-		$trc_class = TRCClass::find($this->phonenumbermanagement->trcclass)->trc_id;
+		$trc_class = TRCClass::find($phonenumbermanagement->trcclass)->trc_id;
 		$inner_xml->addChild('trc_class', $trc_class);
 
-		// special handling for incoming porting needed (comes from external table)
-		$carrier_in = CarrierCode::find($this->phonenumbermanagement->carrier_in)->carrier_code;
-		// on porting: check if valid CarrierIn chosen
-		if (boolval($this->phonenumbermanagement->porting_in)) {
-			if (!CarrierCode::is_valid($carrier_in)) {
-				throw new XmlCreationError('ERROR: '.$carrier_code.' is not a valid carrier_code');
-			}
-			$inner_xml->addChild('carriercode', $carrier_in);
-		}
-		// if no porting (new number): CarrierIn has to be D057 (EnviaTEL) (API 1.4 and higher)
-		else {
-			if ($this->api_version_greater_or_equal("1.4")) {
-				if ($carrier_in != 'D057') {
-					throw new XmlCreationError('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
+		// carrier code not needed in version 1.10 and above
+		if ($this->api_version_less_than("1.10")) {
+			// special handling for incoming porting needed (comes from external table)
+			$carrier_in = CarrierCode::find($phonenumbermanagement->carrier_in)->carrier_code;
+
+			// on porting: check if valid CarrierIn chosen
+			if (boolval($phonenumbermanagement->porting_in)) {
+				if (!CarrierCode::is_valid($carrier_in)) {
+					throw new XmlCreationError('ERROR: '.$carrier_code.' is not a valid carrier_code');
 				}
 				$inner_xml->addChild('carriercode', $carrier_in);
+			}
+			// if no porting (new number): CarrierIn has to be D057 (EnviaTEL) (API 1.4 and higher)
+			else {
+				if ($this->api_version_greater_or_equal("1.4")) {
+					if ($carrier_in != 'D057') {
+						throw new XmlCreationError('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
+					}
+					$inner_xml->addChild('carriercode', $carrier_in);
+				}
 			}
 		}
 
 		// in API 1.4 and higher we also need the EKP code for incoming porting
 		if ($this->api_version_greater_or_equal("1.4")) {
-			if (boolval($this->phonenumbermanagement->porting_in)) {
-				$ekp_in = EkpCode::find($this->phonenumbermanagement->ekp_in)->ekp_code;
+			if (boolval($phonenumbermanagement->porting_in)) {
+				$ekp_in = EkpCode::find($phonenumbermanagement->ekp_in)->ekp_code;
 				$inner_xml->addChild('ekp_code', $ekp_in);
 			}
 		}
 
-		$this->_add_sip_data($inner_xml->addChild('method'));
+		$this->_add_sip_data($inner_xml->addChild('method'), $phonenumber);
 	}
 
 
@@ -1864,7 +1974,11 @@ class ProvVoipEnvia extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _add_sip_data($xml) {
+	protected function _add_sip_data($xml, $phonenumber=null) {
+
+		if (is_null($phonenumber)) {
+			$phonenumber = $this->phonenumber;
+		}
 
 		$inner_xml = $xml->addChild('sip_data');
 
@@ -1874,11 +1988,11 @@ class ProvVoipEnvia extends \BaseModel {
 		);
 
 		// Envia API throws error if <sipdomain nil="true" /> is given…
-		if (boolval($this->phonenumber->sipdomain)) {
+		if (boolval($phonenumber->sipdomain)) {
 			$fields['sipdomain'] = 'sipdomain';
 		}
 
-		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
+		$this->_add_fields($inner_xml, $fields, $phonenumber);
 	}
 
 
@@ -2560,7 +2674,6 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->modem->contract_ext_creation_date = date('Y-m-d H:i:s');
 		$this->modem->save();
 
-
 		// create enviaorder
 		$order_data = array();
 		$order_data['orderid'] = $xml->orderid;
@@ -2573,6 +2686,21 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['orderstatus'] = 'initializing';
 
 		$enviaOrder = EnviaOrder::create($order_data);
+
+		// check if there are also phonenumbers created
+		$created_phonenumbers = \Input::get('phonenumbers_to_create', []);
+
+		foreach ($created_phonenumbers as $phonenumber_id) {
+			$phonenumber = Phonenumber::findOrFail($phonenumber_id);
+
+			// add entry to pivot table – there can only be one for this method
+			$enviaOrder->phonenumbers()->attach($phonenumber_id);
+
+			// set current timestamp as external creation date
+			$mgmt = $phonenumber->phonenumbermanagement;
+			$mgmt->voipaccount_ext_creation_date = date('Y-m-d H:i:s');
+			$mgmt->save();
+		}
 
 		// view data
 		$out .= "<h5>Contract created (order ID: ".$xml->orderid.")</h5>";

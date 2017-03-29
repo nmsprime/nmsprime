@@ -550,7 +550,7 @@ class ProvVoipEnviaController extends \BaseController {
 		$ret['plain_html'] .= "<h4>There was error creating XML to be sent to Envia:</h4>";
 		$ret['plain_html'] .= "<h5>".$msg."</h5><br><br>";
 
-		$ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">Bring me back…</a>';
+		$ret['plain_html'] .= '<h5><b><a href="javascript:history.back()">Bring me back…</a>';
 
 		return $ret;
 	}
@@ -774,6 +774,8 @@ class ProvVoipEnviaController extends \BaseController {
 		// prepare the model
 		$this->model->set_model_data();
 
+		d("CHECK: On creation of contract containing phonenumbers: Is ext_creation_date and relation to order properly set in ProvVoipEnvia::_process_contract_create_reponse()??");
+
 		// build the view
 		$view_var = null;
 		// first we have to check for special cases
@@ -817,6 +819,7 @@ class ProvVoipEnviaController extends \BaseController {
 			}
 			else {
 				// on jobs changing data at Envia: Ask if job shall be performed
+				// therefore show the generated XML
 				if (!\Input::get('really', False)) {
 					$view_var = $this->_show_confirmation_request($payload, $url, $origin);
 				}
@@ -825,7 +828,7 @@ class ProvVoipEnviaController extends \BaseController {
 					// this is the default case – we perform a request against envia API…
 					$view_var = $this->_perform_request($url, $payload, $job);
 
-					// add link to original page
+					// add link to previous page
 					$origin_link = '<hr>';
 					$origin_name = urldecode($origin);
 					$origin_name = explode($_SERVER['CONTEXT_PREFIX'], $origin_name);
