@@ -50,6 +50,7 @@ class CreateCccAuthuserTable extends BaseMigration {
             'login_name' => 'root',
             'password' => Hash::make($this->initial_superuser_password),
             'description' => 'Superuser to do base config. Initial password is “'.$this->initial_superuser_password.'” – change this ASAP or delete this user!!',
+            'contract_id' => 500000,
         ]);
 
     }

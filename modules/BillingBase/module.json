@@ -8,7 +8,7 @@
     "providers": [
         "Modules\\BillingBase\\Providers\\BillingBaseServiceProvider"
     ],
-    "aliases":{},
+    "aliases": [],
     "files": [
         "start.php"
     ]
