@@ -2690,7 +2690,12 @@ class ProvVoipEnvia extends \BaseModel {
 		// check if there are also phonenumbers created
 		$created_phonenumbers = \Input::get('phonenumbers_to_create', []);
 
+		// create some implicite data:
+		//   - relation between Envia order and phonenumber
+		//   - current timestamp as external creation date in managements
 		foreach ($created_phonenumbers as $phonenumber_id) {
+
+			// each given number should exist – if not there is a major problem!
 			$phonenumber = Phonenumber::findOrFail($phonenumber_id);
 
 			// add entry to pivot table – there can only be one for this method

@@ -684,7 +684,7 @@ class EnviaOrder extends \BaseModel {
 		};
 
 		$td_style = "padding-left: 5px; padding-right: 5px; vertical-align: top;";
-		$th_style = $td_style." padding-bottom: 2px; padding-top: 4px;";
+		$th_style = $td_style." padding-bottom: 4px; padding-top: 4px;";
 
 		$ret = "";
 
@@ -861,7 +861,21 @@ class EnviaOrder extends \BaseModel {
 		);
 		array_push($data, $head);
 
+		$closely_related = array();
+		$distantly_related = array();
 		foreach ($phonenumbers as $phonenumber) {
+
+			$direct_related = $this->phonenumbers->contains($phonenumber)? : false;
+
+			// helper to wrap weak related informations
+			$wrap = function ($content, $direct_related) {
+
+				if (!$direct_related) {
+					$content = "<i>$content</i>";
+				}
+
+				return $content;
+			};
 
 			$row = array();
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
@@ -873,29 +887,45 @@ class EnviaOrder extends \BaseModel {
 				$tmp = '<a href="'.\URL::route("Phonenumber.edit", array("phonenumber" => $phonenumber->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a>';
 			}
 
-			// if phonenumber is only related (not assigned to current order, but to assigned contract) mark with special markup
-			if (!$this->phonenumbers->contains($phonenumber)) {
-				$tmp = '<i>('.$tmp.')</i>';
-			}
-
-			array_push($row, $tmp);
+			array_push($row, $wrap($tmp, $direct_related));
 
 			if (!is_null($phonenumbermanagement)) {
-				array_push($row, (boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"));
-				array_push($row, (boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "placeholder_unset"));
-				array_push($row, (boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "placeholder_unset"));
-				array_push($row, (boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "placeholder_unset"));
+				array_push($row, $wrap((boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"), $direct_related));
+				array_push($row, $wrap((boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "placeholder_unset"), $direct_related));
+				array_push($row, $wrap((boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "placeholder_unset"), $direct_related));
+				array_push($row, $wrap((boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "placeholder_unset"), $direct_related));
 			}
 			else {
-				array_push($row, 'mgmt n/a');
-				array_push($row, 'mgmt n/a');
-				array_push($row, 'mgmt n/a');
-				array_push($row, 'mgmt n/a');
+				array_push($row, $wrap('mgmt n/a', $direct_related));
+				array_push($row, $wrap('mgmt n/a', $direct_related));
+				array_push($row, $wrap('mgmt n/a', $direct_related));
+				array_push($row, $wrap('mgmt n/a', $direct_related));
 			}
-			array_push($row, ($phonenumber->active > 0 ? 'placeholder_yes': 'placeholder_no'));
 
-			array_push($data, $row);
+			array_push($row, $wrap(($phonenumber->active > 0 ? 'placeholder_yes': 'placeholder_no'), $direct_related));
+
+			if ($direct_related) {
+				array_push($closely_related, $row);
+			}
+			else {
+				array_push($distantly_related, $row);
+			}
 		}
+
+		$relation_placeholder = array();
+
+		// create the placeholder if there are closely and distantly related phonenumbers
+		if ($closely_related && $distantly_related) {
+			// for every col in last row: add a col to our placeholder
+			$placeholder_row = array();
+			foreach ($row as $_) {
+				/* array_push($placeholder_row, "<div style='font-size: 8px;'>&nbsp;</div>"); */
+				array_push($placeholder_row, "<hr style='margin: 4px 0'>");
+			}
+			array_push($relation_placeholder, $placeholder_row);
+		}
+
+		$data = array_merge($data, $closely_related, $relation_placeholder, $distantly_related);
 
 		$ret = $this->_get_user_action_table($data);
 		return $ret;
