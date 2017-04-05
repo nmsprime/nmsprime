@@ -874,7 +874,7 @@ class EnviaOrder extends \BaseModel {
 			}
 
 			// if phonenumber is only related (not assigned to current order, but to assigned contract) mark with special markup
-			if (is_null($this->phonenumber) || ($this->phonenumber->id != $phonenumber->id)) {
+			if (!$this->phonenumbers->contains($phonenumber)) {
 				$tmp = '<i>('.$tmp.')</i>';
 			}
 
