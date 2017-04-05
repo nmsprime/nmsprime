@@ -2666,8 +2666,19 @@ class ProvVoipEnvia extends \BaseModel {
 	protected function _process_contract_create_response($xml, $data, $out) {
 
 		// update contract
-		$this->contract->customer_external_id = $xml->customerreference;
-		$this->contract->save();
+		if (
+			($this->contract->customer_external_id)
+			&&
+			($this->contract->customer_external_id != $xml->customerreference)
+		) {
+			$msg = "Error in processing contract_create response (order ID: ".$xml->orderid."): Existing customer_external_id (".$this->contract->customer_external_id.") different from received one (".$xml->customerreference.")";
+			$out .= "<h5>$msg</h5>";
+			\Log::error(msg);
+		}
+		else {
+			$this->contract->customer_external_id = $xml->customerreference;
+			$this->contract->save();
+		}
 
 		// update modem
 		$this->modem->contract_external_id = $xml->contractreference;
