@@ -651,7 +651,7 @@ class EnviaOrder extends \BaseModel {
 	}
 
 	public function phonenumbers() {
-		return $this->belongsToMany('Modules\ProvVoip\Entities\Phonenumber', 'enviaorder_phonenumber', 'enviaorder_id', 'phonenumber_id');
+		return $this->belongsToMany('Modules\ProvVoip\Entities\Phonenumber', 'enviaorder_phonenumber', 'enviaorder_id', 'phonenumber_id')->withTimestamps();
 	}
 
 	public function enviaorderdocument() {

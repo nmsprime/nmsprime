@@ -774,8 +774,6 @@ class ProvVoipEnviaController extends \BaseController {
 		// prepare the model
 		$this->model->set_model_data();
 
-		d("CHECK: On creation of contract containing phonenumbers: Is ext_creation_date and relation to order properly set in ProvVoipEnvia::_process_contract_create_reponse()??");
-
 		// build the view
 		$view_var = null;
 		// first we have to check for special cases
