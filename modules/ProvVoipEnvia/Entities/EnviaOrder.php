@@ -776,6 +776,10 @@ class EnviaOrder extends \BaseModel {
 
 		foreach ($items as $item) {
 
+			if (!in_array(\Str::lower($item->product->type), ['internet', 'voip'])) {
+				continue;
+			}
+
 			$row = array();
 
 			array_push($row, '<a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a>');
@@ -975,7 +979,7 @@ class EnviaOrder extends \BaseModel {
 
 		$items = $contract->items;
 		if ($items) {
-			$user_actions['hints']['Items'] = $this->_get_user_action_information_items($items);
+			$user_actions['hints']['Items (Internet and VoIP only)'] = $this->_get_user_action_information_items($items);
 		};
 
 		$modem = $this->modem;
