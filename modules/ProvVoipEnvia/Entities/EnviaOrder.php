@@ -722,6 +722,7 @@ class EnviaOrder extends \BaseModel {
 
 		$head = array(
 			'Number',
+			'Address',
 			'Contract start',
 			'Contract end',
 			'Internet access?',
@@ -731,6 +732,17 @@ class EnviaOrder extends \BaseModel {
 		$row= array();
 
 		array_push($row, '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a>');
+
+		$tmp_address = "";
+		$tmp_address .= (boolval($contract->company) ? $contract->company.",<br>" : "");
+		$tmp_address .= (boolval($contract->firstname) ? $contract->firstname." " : "");
+		$tmp_address .= (boolval($contract->lastname) ? $contract->lastname : "");
+		$tmp_address .= ((boolval($contract->firstname) || boolval($contract->lastname)) ? ",<br>" : "");
+		$tmp_address .= $contract->street.(boolval($contract->house_number) ? "&nbsp;".$contract->house_number : "").",<br>";
+		$tmp_address .= $contract->city;
+		$tmp_address .= (boolval($contract->district) ? " OT ".$contract->district : "");
+		array_push($row, $tmp_address);
+
 		array_push($row, boolval($contract->contract_start) ? $contract->contract_start : 'placeholder_unset');
 		array_push($row, boolval($contract->contract_end) ? $contract->contract_end : 'placeholder_unset');
 		array_push($row, ($contract->network_access > 0 ? 'placeholder_yes' : 'placeholder_no'));
@@ -809,6 +821,7 @@ class EnviaOrder extends \BaseModel {
 		$head = array(
 			'MAC address',
 			'Hostname',
+			'Installation address',
 			'Configfile',
 			'QoS',
 			'Network access?',
@@ -819,6 +832,16 @@ class EnviaOrder extends \BaseModel {
 
 		array_push($row, '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->mac.'</a>');
 		array_push($row, $modem->hostname);
+
+		$tmp_address = "";
+		$tmp_address .= (boolval($modem->company) ? $modem->company.",<br>" : "");
+		$tmp_address .= (boolval($modem->firstname) ? $modem->firstname." " : "");
+		$tmp_address .= (boolval($modem->lastname) ? $modem->lastname : "");
+		$tmp_address .= ((boolval($modem->firstname) || boolval($modem->lastname)) ? ",<br>" : "");
+		$tmp_address .= $modem->street.(boolval($modem->house_number) ? "&nbsp;".$modem->house_number : "").",<br>";
+		$tmp_address .= $modem->city;
+		$tmp_address .= (boolval($modem->district) ? " OT ".$modem->district : "");
+		array_push($row, $tmp_address);
 
 		if ($modem->configfile) {
 			array_push($row, $modem->configfile->name);
