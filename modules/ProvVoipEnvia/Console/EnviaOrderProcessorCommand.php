@@ -61,7 +61,7 @@ class EnviaOrderProcessorCommand extends Command {
 	 *
 	 * The problem is that Envia does not change the currently active contract – they remove the old and create a new one.
 	 * The contractreference changes – but at the orderdate. Changes before this date (e.g. the TRC class) have
-	 * to be sent using the OLD reference. So, on orderdate we have to change the contract references…references
+	 * to be sent using the OLD reference. So, on orderdate we have to change the contract references…
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -87,7 +87,7 @@ class EnviaOrderProcessorCommand extends Command {
 			if ($modem->contract_external_id != $order->contractreference) {
 
 				Log::info("Changing contract_external_id for $modem->id from $modem->contract_external_id to $order->contractreference");
-				// we have to set the contract reference to the new value 
+				// we have to set the contract reference to the new value
 				// we also could delete $modem->the installation_address_change_date – but I wouldn't do so
 				//	⇒ we would lose a bit of our history – and the data is not of any harm
 				$modem->contract_external_id = $order->contractreference;

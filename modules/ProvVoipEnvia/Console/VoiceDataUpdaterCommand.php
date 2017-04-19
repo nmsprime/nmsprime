@@ -59,6 +59,7 @@ class VoiceDataUpdaterCommand extends Command {
 	 */
 	public function fire()
 	{
+		Log::debug(__METHOD__." started");
 		Log::info($this->description);
 
 		echo "\n";
@@ -81,6 +82,8 @@ class VoiceDataUpdaterCommand extends Command {
 	 * @author Patrick Reichel
 	 */
 	protected function _get_affected_sip_orders() {
+
+		Log::debug(__METHOD__." started");
 
 		$where_stmt = "
 			username IS NULL OR username LIKE '' OR
@@ -137,6 +140,8 @@ class VoiceDataUpdaterCommand extends Command {
 	 * @author Patrick Reichel
 	 */
 	protected function _update_voice_data() {
+
+		Log::debug(__METHOD__." started");
 
 		foreach ($this->affected_contracts as $contract_id) {
 

@@ -2261,6 +2261,8 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	public function process_envia_data($job, $data) {
 
+		Log::debug(__METHOD__." started for job ".$job);
+
 		// special header for order_get_status 404 response
 		if (($job == 'order_get_status') && ($data['status'] == 404)) {
 			$out = '<h4>Error (HTTP status is '.$data['status'].')</h4>';
@@ -3063,6 +3065,8 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _update_phonenumber_related_data($data, $out='') {
 
+		Log::debug(__METHOD__." started");
+
 		if (isset($data['contract_id'])) {
 			$out = $this->_update_contract_with_envia_data($data, $out);
 		}
@@ -3086,11 +3090,15 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _update_contract_with_envia_data($data, $out='') {
 
+		Log::debug(__METHOD__." started");
+
 		if (!isset($data['contract_id'])) {
+			Log::warning("No contract_id given");
 			$out .= '<br> ⇒ Warning: No contract_id given';
 			return $out;
 		}
 
+		Log::debug("contract_id is ".$data['contract_id']);
 		$contract = Contract::findOrFail($data['contract_id']);
 
 		if (!isset($data['customerreference'])) {
@@ -3118,11 +3126,15 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _update_modem_with_envia_data($data, $out='') {
 
+		Log::debug(__METHOD__." started");
+
 		if (!isset($data['modem_id'])) {
+			Log::warning("No modem_id given");
 			$out .= '<br> ⇒ Warning: No modem_id given';
 			return $out;
 		}
 
+		Log::debug("modem_id is ".$data['modem_id']);
 		$modem = Modem::findOrFail($data['modem_id']);
 
 		// try to get related contract (if id not given) and update it
@@ -3187,9 +3199,12 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _update_phonenumbermanagement_with_envia_data($data, $out='') {
 
+		Log::debug(__METHOD__." started");
+
 		$phonenumbermanagement_changed = False;
 
 		if (!isset($data['phonenumber_id']) && !isset($data['phonenumbermanagement_id'])) {
+			Log::warning('Neither phonenumber_id nor phonenumbermanagement_id given');
 			$out .= '<br> ⇒ Warning: Neither phonenumber_id nor phonenumbermanagement_id given';
 			return $out;
 		}
