@@ -352,6 +352,7 @@ class ProvVoipEnviaController extends \BaseController {
 
 		// these jobs are allowed in every case
 		$unrestricted_jobs = array(
+			'contract_get_reference',
 			'misc_ping',
 			'misc_get_keys',
 			'misc_get_free_numbers',
@@ -687,7 +688,7 @@ class ProvVoipEnviaController extends \BaseController {
 			'contract_change_tariff' => $this->base_url.'contract/change_tariff',
 			'contract_change_variation' => $this->base_url.'contract/change_variation',
 			'contract_create' => $this->base_url.'contract/create',
-			'contract_get_reference' => $this->base_url.'____TODO____',
+			'contract_get_reference' => $this->base_url.'contract/get_reference',
 			'contract_get_voice_data' => $this->base_url.'contract/get_voice_data',
 			'contract_lock' => $this->base_url.'____TODO____',
 			'contract_relocate' => $this->base_url.'contract/relocate',
