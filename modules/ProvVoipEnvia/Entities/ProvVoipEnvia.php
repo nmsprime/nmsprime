@@ -993,6 +993,58 @@ class ProvVoipEnvia extends \BaseModel {
 	}
 
 	/**
+	 * To be sure we extract all error messages from returned error XML we have to visit each node.
+	 * There can be nested_errors in nested_errors in …
+	 *
+	 * Will change the given $errors array in place
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_error_messages_recurse($xml, &$errors) {
+
+		// if current node is an error: process data
+		if (
+			($xml->getName() == 'response_error')
+			||
+			($xml->getName() == 'nested_error')
+		) {
+			$error = array(
+				'status' => (string) $xml->status?((string) $xml->status):'n/a',
+				'message' => (string) $xml->message?((string) $xml->message):'n/a'
+			);
+			array_push($errors, $error);
+		}
+
+		// Workaround for malformed error xml (<hash><[status|error]></hash>)
+		if ($xml->getName() == 'hash') {
+			$error = array(
+				'status' => (string) $xml->status?((string) $xml->status):'n/a',
+				'message' => '',
+			);
+			if ($xml->message) {
+				$error['message'] .= (string) $xml->message;
+			}
+			if ($xml->error) {
+				$error['message'] .= (string) $xml->error;
+			}
+			if (!$error['message']) {
+				$error['message'] == 'n/a';
+			}
+			array_push($data, $error);
+		}
+
+		// stop condition: no more children == leaf node
+		if (!$xml->count()) {
+			return;
+		}
+
+		// call this method for all children
+		foreach ($xml as $child) {
+			$this->_get_error_messages_recurse($child, $errors);
+		}
+	}
+
+	/**
 	 * Used to extract error messages from returned XML.
 	 *
 	 * @author Patrick Reichel
@@ -1006,29 +1058,8 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$xml = new \SimpleXMLElement($raw_xml);
 
-		foreach ($xml->response_error as $response_error) {
-			$error = array(
-				'status' => (string) $response_error->status,
-				'message' => (string) $response_error->message,
-			);
-			array_push($data, $error);
-			foreach ($response_error->nested_errors as $nested_error) {
-				$error = array(
-					'status' => (string) $nested_error->status,
-					'message' => (string) $nested_error->message
-				);
-				array_push($data, $error);
-			}
-		}
-
-		// Workaround for malformed error xml (<hash><[status|error]></hash
-		if (strpos($raw_xml, '<hash') !== False) {
-			$error = array(
-				'status' => $xml->status,
-				'message' => $xml->error,
-			);
-			array_push($data, $error);
-		}
+		// get all error messages from xml
+		$this->_get_error_messages_recurse($xml, $data);
 
 		return $data;
 	}
