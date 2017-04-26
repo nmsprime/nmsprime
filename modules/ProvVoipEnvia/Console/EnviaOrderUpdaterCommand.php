@@ -153,10 +153,9 @@ class EnviaOrderUpdaterCommand extends Command {
 
 		Log::debug(__METHOD__." started");
 
-		// not older than 1 hours (this is relatively long; but there are some timing issues and
+		// not older than 1 hour (this is relatively long; but there are some timing issues and
 		// the script is run late at night…)
-		$timedelta_max = 60 * 60 * 1;
-		$compare_time = date('Y-m-d H:i:s', time() - $timedelta_max);
+		$compare_time = date('Y-m-d H:i:s', strtotime("-1 hour"));
 
 		$order = EnviaOrder::withTrashed()->where('orderid', '=', $order_id)->first();
 

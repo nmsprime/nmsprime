@@ -999,6 +999,9 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Will change the given $errors array in place
 	 *
 	 * @author Patrick Reichel
+	 *
+	 * @param $xml SimpleXMLElement to be investigated
+	 * @param &$errors container array to collect all extracted errors in
 	 */
 	protected function _get_error_messages_recurse($xml, &$errors) {
 
@@ -1055,10 +1058,9 @@ class ProvVoipEnvia extends \BaseModel {
 	public function get_error_messages($raw_xml) {
 
 		$data = array();
-
 		$xml = new \SimpleXMLElement($raw_xml);
 
-		// get all error messages from xml
+		// extract all error messages from XML
 		$this->_get_error_messages_recurse($xml, $data);
 
 		return $data;
