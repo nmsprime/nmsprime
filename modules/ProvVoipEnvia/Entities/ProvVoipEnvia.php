@@ -2872,6 +2872,47 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Sets or overwrites envia contract reference in phonenumber table
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _update_envia_contract_reference_on_phonenumber($phonenumber, $contractreference) {
+
+		// if there is no phonenumber something went wrong
+		if (is_null($phonenumber)) {
+
+			$msg = "Phonenumber does not exist";
+			\Log::error($msg);
+			$msg = "ERROR: $msg";
+			return $msg;
+		}
+
+		// (over)write contract reference to phonenumber
+		$changed = False;
+		if (is_null($phonenumber->contract_external_id)) {
+			$phonenumber->contract_external_id = $contractreference;
+			$changed = True;
+			$msg = "Envia contract reference not set at phonenumber ".$phonenumber->id." – set to ".$contractreference;
+			\Log::info($msg);
+		}
+		elseif ($phonenumber->contract_external_id != $contractreference) {
+			$phonenumber->contract_external_id = $contractreference;
+			$changed = True;
+			$msg = "Stored Envia contract reference in ".$phonenumber->id." (".$phonenumber->contract_external_id.") does not match returned value ".$contractreference.". Overwriting.";
+			\Log::warning($msg);
+		}
+		else {
+			$msg = "Envia contract reference for phonenumber ".$phonenumber->id." is ".$contractreference;
+		}
+
+		if ($changed) {
+			$phonenumber->save();
+		}
+
+		return $msg;
+	}
+
+	/**
 	 * Process data after requesting a contract reference by phonenumber
 	 *
 	 * @author Patrick Reichel
@@ -2883,40 +2924,11 @@ class ProvVoipEnvia extends \BaseModel {
 		if (is_null($phonenumber_id)) {
 			$phonenumber = null;
 			$msg = "No phonenumber given";
+			\Log::error($msg);
 		}
 		else {
 			$phonenumber = Phonenumber::find($phonenumber_id);
-		}
-
-		// if there is no phonenumber something went wrong
-		if (is_null($phonenumber)) {
-
-			$msg = "Phonenumber does not exist";
-			\Log::error($msg);
-			$out .= "<h5>ERROR: $msg</h5>";
-			return $out;
-		}
-
-		// (over)write contract reference to phonenumber
-		$changed = False;
-		if (is_null($phonenumber->contract_external_id)) {
-			$phonenumber->contract_external_id = $xml->contractreference;
-			$changed = True;
-			$msg = "Envia contract reference not set at phonenumber ".$phonenumber->id." – set to ".$xml->contractreference;
-			\Log::info($msg);
-		}
-		elseif ($phonenumber->contract_external_id != $xml->contractreference) {
-			$phonenumber->contract_external_id = $xml->contractreference;
-			$changed = True;
-			$msg = "Stored Envia contract reference in ".$phonenumber->id." (".$phonenumber->contract_external_id.") does not match returned value ".$xml->contractreference.". Overwriting.";
-			\Log::warning($msg);
-		}
-		else {
-			$msg = "Returned Envia contract reference for phonenumber ".$phonenumber->id." is ".$xml->contractreference;
-		}
-
-		if ($changed) {
-			$phonenumber->save();
+			$msg = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $xml->contractreference);
 		}
 
 		$out .= "<h5>$msg</h5>";

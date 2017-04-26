@@ -87,6 +87,7 @@ class ProvVoipEnviaController extends \BaseController {
 			'misc_get_keys' => $base_url.'misc/get_keys',
 			'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
 			'order_get_status' => $base_url.'order/get_status',
+			'contract_get_reference' => $base_url.'contract/get_reference',
 			'contract_get_voice_data' => $base_url.'contract/get_voice_data',
 		);
 
@@ -1016,10 +1017,10 @@ class ProvVoipEnviaController extends \BaseController {
 			foreach ($errors as $error) {
 				if (boolval($error['status']) || boolval($error['message'])) {
 					echo 'Error '.$error['status'].' occured on job '.$job.': '.$error['message'];
-					Log::error('Error '.$error['status'].' occured on job '.$job.': '.$error['message']);
+					\Log::error('Error '.$error['status'].' occured on job '.$job.': '.$error['message']);
 				}
 			}
-			Log::error('Exiting cronjob because of the above errors.');
+			\Log::error('Exiting cronjob because of the above errors.');
 			echo 'Exiting cronjob because of the above errors.';
 			exit(1);
 		}
