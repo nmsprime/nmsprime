@@ -538,6 +538,11 @@ class ProvVoipEnvia extends \BaseModel {
 			// customer data change possible if there is an active contract for this user
 			if ($this->at_least_one_contract_available) {
 				array_push($ret, array(
+					'linktext' => 'Get Envia customer reference',
+					'url' => $base.'customer_get_reference'.$origin.'&amp;contract_id='.$contract_id,
+					'help' => "Tries to get the Envia ID for this customer"
+				));
+				array_push($ret, array(
 					'linktext' => 'Update customer',
 					'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id,
 					'help' => "Pushes changes on customer data to Envia.\nChanges of modem installation address have to be sent separately (using “Relocate contract”)!"
@@ -1304,9 +1309,10 @@ class ProvVoipEnvia extends \BaseModel {
 		/* ), */
 
 
-		/* 'customer_get_reference' => array( */
-		/* 	'reseller_identifier', */
-		/* ), */
+		$second_level_nodes['customer_get_reference'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+		);
 
 		$second_level_nodes['customer_update'] = array(
 			'reseller_identifier',
@@ -1513,16 +1519,33 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _add_customer_identifier() {
 
-		// needed: our customer number
-		$customerno = $this->contract->customer_number();
-
 		$inner_xml = $this->xml->addChild('customer_identifier');
-		$inner_xml->addChild('customerno', $customerno);
 
+		// if set: use customerreference (prefered by Envia)
+		// but not in getting the customer's reference – here in each case we have to use the contract number
 		$customerreference = $this->contract->customer_external_id;
-		// optional: envia customer reference
-		if (!is_null($customerreference) && ($customerreference != '') && ($customerreference != 'n/a')) {
+		if (
+			($this->job != 'customer_get_reference')
+			&&
+			boolval($customerreference)
+			&&
+			($customerreference != 'n/a')
+		) {
 			$inner_xml->addChild('customerreference', $customerreference);
+		}
+		// else – e.g. on contract_create – use customernumber
+		else {
+
+			// if we have a legacy customer number: use this
+			$customerno_legacy = $this->contract->customer_number_legacy();
+			if (boolval($customerno_legacy) && ($customerno_legacy != 'n/a')) {
+				$inner_xml->addChild('customerno', $customerno_legacy);
+			}
+			// else choose the customer number
+			else {
+				$customerno = $this->contract->customer_number();
+				$inner_xml->addChild('customerno', $customerno);
+			}
 		}
 
 	}
@@ -3011,6 +3034,34 @@ class ProvVoipEnvia extends \BaseModel {
 
 		return $out;
 	}
+
+
+	/**
+	 * Process data after requesting customer reference.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_customer_get_reference_response($xml, $data, $out) {
+
+		if(!boolval($this->contract->customer_external_id)) {
+			$this->contract->customer_external_id = $xml->customerreference;
+			$this->contract->save();
+			$msg = "Setting external customer id for contract ".$this->contract->id." to ".$xml->customerreference;
+			$out .= "<b>$msg</b>";
+			Log::info($msg);
+		}
+		elseif ($this->contract->customer_external_id == $xml->customerreference) {
+			$out .= "<b>Envia customer ID is ".$xml->customerreference."</b>";
+		}
+		else {
+			$msg = "Returned Envia customer reference for contract ".$this->contract->id." (".$xml->customerreference.") does not match our database entry (".$this->contract->customer_external_id.")";
+			Log::error($msg);
+			$out .= "<b>ERROR: $msg</b>";
+		}
+
+		return $out;
+	}
+
 
 	/**
 	 * Process data after successful customer update
