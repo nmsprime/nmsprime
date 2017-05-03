@@ -388,7 +388,7 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 		}
 
-		if (is_null($this->phonenumbermanagement->voipaccount_ext_creation_date)) {
+		if (is_null($this->phonenumber->contract_external_id)) {
 			$this->voipaccount_created = False;
 		}
 		else {
@@ -2158,7 +2158,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 	/**
 	 * Method to add contract identifier.
-	 * In Envia speech a contract is phone connection (“Anschluss”) and so equals with our modems.
+	 * In Envia speech a contract is phone connection (“Anschluss”). There can be multiple ones per modem.
 	 * This is especially important to support different installation addresses on multiple modems per user.
 	 *
 	 * @author Patrick Reichel
@@ -2172,7 +2172,7 @@ class ProvVoipEnvia extends \BaseModel {
 			'contractreference' => 'contract_external_id',
 		);
 
-		$this->_add_fields($inner_xml, $fields_contract_identifier, $this->modem);
+		$this->_add_fields($inner_xml, $fields_contract_identifier, $this->phonenumber);
 	}
 
 
@@ -2768,7 +2768,7 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		// update modem
-		$this->modem->contract_external_id = $xml->contractreference;
+		/* $this->modem->contract_external_id = $xml->contractreference; */
 		$this->modem->contract_ext_creation_date = date('Y-m-d H:i:s');
 		$this->modem->save();
 
@@ -2798,6 +2798,12 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// add entry to pivot table – there can only be one for this method
 			$enviaOrder->phonenumbers()->attach($phonenumber_id);
+
+			// we create a new contract here – so it is save to overwrite potentially exsting data in phonenumbers
+			$ret = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $xml->contractreference, True, False);
+			if ($ret) {
+				$out .= "<br>$ret";
+			}
 
 			// set current timestamp as external creation date
 			$mgmt = $phonenumber->phonenumbermanagement;
@@ -2897,11 +2903,16 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Sets or overwrites envia contract reference in phonenumber table
+	 * Sets (or possibly) overwrites envia contract reference in phonenumber table
+	 *
+	 * @param $phonenumber to be updated
+	 * @param $contractreference Envia contract ID
+	 * @param $overwrite Flag to allow changing of existing IDs (Default: Do not change)
+	 * @param $verbose Flag to return debug messages (Default: False)
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _update_envia_contract_reference_on_phonenumber($phonenumber, $contractreference) {
+	protected function _update_envia_contract_reference_on_phonenumber($phonenumber, $contractreference, $overwrite=False, $verbose=False) {
 
 		// if there is no phonenumber something went wrong
 		if (is_null($phonenumber)) {
@@ -2912,22 +2923,29 @@ class ProvVoipEnvia extends \BaseModel {
 			return $msg;
 		}
 
-		// (over)write contract reference to phonenumber
 		$changed = False;
 		if (is_null($phonenumber->contract_external_id)) {
+			// store the given Envia contract reference
 			$phonenumber->contract_external_id = $contractreference;
 			$changed = True;
 			$msg = "Envia contract reference not set at phonenumber ".$phonenumber->id." – set to ".$contractreference;
 			\Log::info($msg);
 		}
 		elseif ($phonenumber->contract_external_id != $contractreference) {
-			$phonenumber->contract_external_id = $contractreference;
-			$changed = True;
-			$msg = "Stored Envia contract reference in ".$phonenumber->id." (".$phonenumber->contract_external_id.") does not match returned value ".$contractreference.". Overwriting.";
-			\Log::warning($msg);
+			if ($overwrite) {
+				// update Envia contract reference in phonenumber
+				$phonenumber->contract_external_id = $contractreference;
+				$changed = True;
+				$msg = "Stored Envia contract reference in ".$phonenumber->id." (".$phonenumber->contract_external_id.") does not match returned value ".$contractreference.". Overwriting.";
+				\Log::warning($msg);
+			}
 		}
 		else {
 			$msg = "Envia contract reference for phonenumber ".$phonenumber->id." is ".$contractreference;
+			\Log::debug($msg);
+			if (!$verbose) {
+				$msg = '';
+			}
 		}
 
 		if ($changed) {
@@ -2953,7 +2971,9 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 		else {
 			$phonenumber = Phonenumber::find($phonenumber_id);
-			$msg = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $xml->contractreference);
+			// response of method contract/get_reference contains the currently used Envia contract reference
+			// so it is save to overwrite the data in phonenumber
+			$msg = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $xml->contractreference, True, True);
 		}
 
 		$out .= "<h5>$msg</h5>";
@@ -3255,8 +3275,11 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		if (isset($data['phonenumber_id']) || isset($data['phonenumbermanagement_id'])) {
+			$out = $this->_update_phonenumber_with_envia_data($data, $out);
 			$out = $this->_update_phonenumbermanagement_with_envia_data($data, $out);
 		}
+
+		$out .= "<br><pre>".print_r($data)."</pre>";
 
 		return $out;
 	}
@@ -3326,15 +3349,17 @@ class ProvVoipEnvia extends \BaseModel {
 
 		if (isset($data['contractreference'])) {
 
-			// set contractreference and check for integrity
-			if (is_null($modem->contract_external_id)) {
-				$modem->contract_external_id = $data['contractreference'];
-				$modem_changed = true;
-				$out .= '<br> ⇒ Modem->contract_external_id set to '.$data['contractreference'];
-			}
-			if ($modem->contract_external_id != $data['contractreference']) {
-				$out .= '<br> ⇒ <span style="color: red">ERROR: Modem->contract_external_id ('.$modem->contract_external_id.') != EnviaOrder->contractreference ('.$data['contractreference'].')!!</span>';
-			}
+			// TODO: check if we want to use this field in future
+			// Commented out by par – there can be more than one Envia contract at a modem.
+			/* // set contractreference and check for integrity */
+			/* if (is_null($modem->contract_external_id)) { */
+			/* 	$modem->contract_external_id = $data['contractreference']; */
+			/* 	$modem_changed = true; */
+			/* 	$out .= '<br> ⇒ Modem->contract_external_id set to '.$data['contractreference']; */
+			/* } */
+			/* if ($modem->contract_external_id != $data['contractreference']) { */
+			/* 	$out .= '<br> ⇒ <span style="color: red">ERROR: Modem->contract_external_id ('.$modem->contract_external_id.') != EnviaOrder->contractreference ('.$data['contractreference'].')!!</span>'; */
+			/* } */
 
 			// if there is a contract reference at Envia we can be sure that this contract has been created :-)
 			if (is_null($modem->contract_ext_creation_date)) {
@@ -3365,6 +3390,35 @@ class ProvVoipEnvia extends \BaseModel {
 
 		if ($modem_changed) {
 			$modem->save();
+		}
+
+		return $out;
+	}
+
+
+	/**
+	 * Writes external contract reference to phonenumbers.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _update_phonenumber_with_envia_data($data, $out='') {
+
+		Log::debug(__METHOD__." started");
+
+		if (!isset($data['phonenumber_id'])) {
+			Log::warning("No phonenumber_id given");
+			$out .= '<br> ⇒ Warning: No phonenumber_id given';
+			return $out;
+		}
+
+		Log::debug("phonenumber_id is ".$data['phonenumber_id']);
+		$phonenumber = Phonenumber::findOrFail($data['phonenumber_id']);
+
+		if (isset($data['contractreference'])) {
+			$ret = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $data['contractreference'], False, False);
+			if ($ret) {
+				$out .= "<br>$msg";
+			}
 		}
 
 		return $out;
@@ -3678,12 +3732,45 @@ class ProvVoipEnvia extends \BaseModel {
 				// update modem
 				$out = $this->_process_order_get_status_response_for_modem($order, $out);
 
+				// update phonenumber
+				$out = $this->_process_order_get_status_response_for_phonenumber($order, $out);
+
 				// update phonenumbermanagement
 				$out = $this->_process_order_get_status_response_for_phonenumbermanagement($order, $out);
 			}
 		}
 
 		return $out;
+	}
+
+
+	/**
+	 * Apply order changes to phonenumber.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_get_status_response_for_phonenumber($order, $out) {
+
+		$order_phonenumbers = $order->phonenumbers;
+		if ($order_phonenumbers->count() == 0) {
+			Log::debug('Order '.$order->id.' has no related phonenumber');
+			return $out;
+		}
+
+		foreach ($order_phonenumbers as $phonenumber) {
+			if ($order->contractreference) {
+				// check if envia contract reference has to be set
+				// do not change an existing entry – this should only be happening on contract/relocate
+				// which is processed using console command provvoipenvia:process_envia_orders
+				$ret = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $order->contractreference, False, False);
+				if ($ret) {
+					$out .= '<br>'.$ret;
+				}
+			}
+		}
+
+		return $out;
+
 	}
 
 

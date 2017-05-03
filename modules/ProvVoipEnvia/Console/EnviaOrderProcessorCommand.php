@@ -23,7 +23,7 @@ class EnviaOrderProcessorCommand extends Command {
 	/**
 	 * The console command description.
 	 */
-	protected $description = 'Process Envia orders depending on type';
+	protected $description = 'Process Envia orders of some special types';
 
 	/**
 	 * Create a new command instance.
@@ -38,9 +38,6 @@ class EnviaOrderProcessorCommand extends Command {
 
 	/**
 	 * Execute the console command.
-	 * Basically this does two jobs:
-	 *   - first get csv containing all (phonenumber related) orders from envia and update database using ProvVoipEnvia model ⇒ this will get possible orders that has been manually created
-	 *   - second get status for each single order ⇒ this will update contract/customer related orders as well
 	 *
 	 * @return null
 	 */
@@ -59,7 +56,7 @@ class EnviaOrderProcessorCommand extends Command {
 	/**
 	 * Process orders which relocated contracts
 	 *
-	 * The problem is that Envia does not change the currently active contract – they remove the old and create a new one.
+	 * The problem is that Envia does not change the currently active (Envia) contract – they remove the old and create a new one.
 	 * The contractreference changes – but at the orderdate. Changes before this date (e.g. the TRC class) have
 	 * to be sent using the OLD reference. So, on orderdate we have to change the contract references…
 	 *
@@ -67,7 +64,7 @@ class EnviaOrderProcessorCommand extends Command {
 	 */
 	protected function _process_contract_relocate() {
 
-		Log::info('Procssing contract/relocate orders');
+		Log::info('Processing contract/relocate orders');
 
 		// as there can be some delays in status change of orders we have to look back in history a little bit…
 		$date_threshold = date('c', strtotime("-2 weeks"));
@@ -75,24 +72,24 @@ class EnviaOrderProcessorCommand extends Command {
 
 		foreach ($orders as $order) {
 
-			$modem_id = $order->modem_id;
+			$order_phonenumbers = $order->phonenumbers;
 
-			if (!EnviaOrder::order_successful($order)) {
-				Log::warning("Order $order->id seems to be pending – will NOT change the contract reference on modem $modem_id");
-				continue;
-			}
+			foreach ($order_phonenumbers as $phonenumber) {
 
-			$modem = Modem::find($modem_id);
+				if (!EnviaOrder::order_successful($order)) {
+					Log::warning("Order $order->id seems to be pending – will NOT change the contract reference on modem ".$phonenumber->id);
+					continue;
+				}
 
-			if ($modem->contract_external_id != $order->contractreference) {
+				if ($phonenumber->contract_external_id != $order->contractreference) {
 
-				Log::info("Changing contract_external_id for $modem->id from $modem->contract_external_id to $order->contractreference");
-				// we have to set the contract reference to the new value
-				// we also could delete $modem->the installation_address_change_date – but I wouldn't do so
-				//	⇒ we would lose a bit of our history – and the data is not of any harm
-				$modem->contract_external_id = $order->contractreference;
-
-				$modem->save();
+					Log::info("Changing contract_external_id for phonenumber ".$phonenumber->id." from ".$phonenumber->contract_external_id." to ".$order->contractreference);
+					// we have to set the contract reference to the new value
+					// we also could delete $modem->the installation_address_change_date – but I wouldn't do so
+					//	⇒ we would lose a bit of our history – and the data is not of any harm
+					$phonenumber->contract_external_id = $order->contractreference;
+					$phonenumber->save();
+				}
 			}
 		}
 	}
