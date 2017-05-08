@@ -679,7 +679,7 @@ end:
 				if(preg_match('/starts \d ([^;]+);/', $str, $s))
 					$start[] = $s[1];
 
-			if ($start) {
+			if (isset($start)) {
 				// return the most recent active lease
 				natsort($start);
 				end($start);
@@ -831,20 +831,10 @@ end:
 		$ret['from_t'] = $from_t;
 		$ret['to_t']   = $to_t;
 
-
 		/*
 		 * Images
 		 */
-		// Base URL: Should be always available (?)
-		$url_base = "https://localhost/cacti/graph_image.php";
-
-		// SSL Array for disabling SSL verification
-		$ssl=array(
-			"ssl"=>array(
-				"verify_peer"=>false,
-				"verify_peer_name"=>false,
-			),
-		);
+		$url_base = 'https://'.\Request::getHost()."/cacti/graph_image.php?rra_id=0&graph_start=$from_t&graph_end=$to_t";
 
 		// TODO: should be auto adapted to screen resolution. Note that we still use width=100% setting
 		// in the image view. This could lead to diffuse (unscharf) fonts.
@@ -852,30 +842,7 @@ end:
 
 		// Fetch Cacti DB for images of $modem and request the Image from Cacti
 		foreach ($ids as $id)
-		{
-			// The final URL to parse from
-			$url = "$url_base?local_graph_id=$id&rra_id=0&graph_width=$graph_width&graph_start=$from_t&graph_end=$to_t";
-
-			// Log: Prepare Load Time Measurement
-			$before = microtime(true);
-
-			// Load the image
-			//
-			// TODO: error handling (for example: no valid login)
-			//
-			// Consider that we use guest login in Cacti.
-			// See: https://numpanglewat.wordpress.com/2009/07/27/how-to-view-cacti-graphics-without-login/
-			$img = base64_encode(file_get_contents($url, false, stream_context_create($ssl)));
-
-			// Log: Time Measurement
-			$after = microtime(true);
-			\Log::info ('cacti: laod '.$url);
-			\Log::info ('cacti: load takes '.($after-$before).' s - result: '.($img ? 'true' : 'false'));
-
-			// if valid image
-			if ($img)
-				$ret['graphs'][$id] = 'data:image/svg+xml;base64,'.$img;
-		}
+			$ret['graphs'][$id] = $url_base."&graph_width=$graph_width&local_graph_id=$id";
 
 		// No result checking
 		if (!isset($ret['graphs']))
