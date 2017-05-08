@@ -202,7 +202,7 @@ class CustomerTopoController extends NetElementController {
 		foreach ($modems->orderBy('city', 'street')->get() as $modem)
 		{
 			// load per modem diagrams
-			$dia = $provmon->monitoring($modem, [37,38]);
+			$dia = $provmon->monitoring($modem, [35]);
 
 			// valid diagram's ?
 			if ($dia != false)
