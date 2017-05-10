@@ -151,6 +151,7 @@ class ProvVoipEnviaController extends \BaseController {
 			['api' => 'order', 'link' => 'contract_change_tariff?contract_id=500010'],
 			['api' => 'order', 'link' => 'contract_change_variation?contract_id=500010'],
 			['api' => 'order', 'link' => 'contract_create?contract_id=500000'],
+			['api' => 'order', 'link' => 'contract_get_reference?phonenumber_id=300012'],
 			['api' => 'order', 'link' => 'contract_get_voice_data?contract_id=500000'],
 			['api' => 'order', 'link' => 'contract_terminate?contract_id=500000'],
 			['api' => 'order', 'link' => 'customer_update?contract_id=500000'],
