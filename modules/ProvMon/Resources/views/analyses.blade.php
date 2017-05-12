@@ -121,27 +121,49 @@
 
 @section('content_realtime')
 	@if ($realtime)
+	
+	<font color="green"><b>{{$realtime['forecast']}}</b></font><br>
 
-		<font color="green"><b>{{$realtime['forecast']}}</b></font><br>
-
-		@foreach ($realtime['measure'] as $tablename => $table)
-			<h5>{{$tablename}}</h5>
-			<table width="100%">
-				@foreach ($table as $rowname => $row)
+	@foreach ($realtime['measure'] as $tablename => $table)
+		<h5>{{$tablename}}</h5>
+		<table class="table datatable table-bordered table-striped responsive" width="100%">
+			@if ($tablename == "Downstream" || $tablename == "Upstream"  )
+			<tr>
+				<th>
+					#
+				</th>
+				@foreach ($table as $colheader => $colarray)
+				<th width="120px">
+					{{$colheader}}
+				</th>
+			@endforeach
+			</tr>
+				<?php $max = count(current($table)); ?>
+				@for ($i = 0; $i < $max ; $i++)
 					<tr>
-						<th width="120px">
-							{{$rowname}}
-						</th>
-
-						@foreach ($row as $linename => $line)
-							<td>
-								 <font color="grey">{{htmlspecialchars($line)}}</font>
-							</td>
+						<td> {{ $i }}</td>
+						@foreach ($table as $colheader => $colarray)
+							<td> <font color="grey"> {{ htmlspecialchars( $colarray[$i] ) }} </font> </td>
 						@endforeach
 					</tr>
-				@endforeach
-			</table>
-		@endforeach
+				@endfor
+			@else
+			@foreach ($table as $rowname => $row)
+				<tr>
+					<th width="120px">
+						{{$rowname}}
+					</th>
+
+					@foreach ($row as $linename => $line)
+						<td>
+							<font color="grey">{{htmlspecialchars($line)}}</font>
+						</td>
+					@endforeach
+				</tr>
+			@endforeach
+			@endif
+		</table>
+	@endforeach
 
 	@else
 		<font color="red">{{trans('messages.modem_offline')}}</font>
