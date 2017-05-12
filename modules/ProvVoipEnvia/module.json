@@ -2,6 +2,7 @@
     "name": "ProvVoipEnvia",
     "alias": "provvoipenvia",
     "description": "",
+    "icon": "fa-institution",
     "keywords": [],
     "active": 0,
     "order": 22,
