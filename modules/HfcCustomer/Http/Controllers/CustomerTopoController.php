@@ -132,6 +132,16 @@ class CustomerTopoController extends NetElementController {
 	}
 
 
+	/**
+	* Show all customers in proximity (radius in meters)
+	*
+	* @author: Ole Ernst
+	*/
+	public function show_prox()
+	{
+		return $this->show_topo(Modem::whereRaw(Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))));
+	}
+
 	/*
 	* Show Modems om Topography
 	*
@@ -192,13 +202,13 @@ class CustomerTopoController extends NetElementController {
 		foreach ($modems->orderBy('city', 'street')->get() as $modem)
 		{
 			// load per modem diagrams
-			$dia = $provmon->monitoring($modem, [37,38]);
+			$dia = $provmon->monitoring($modem, [35]);
 
 			// valid diagram's ?
 			if ($dia != false)
 			{
 				// Description Line per Modem
-				$descr = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' - '.$modem->mac;
+				$descr = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' '.$modem->house_number.' - '.$modem->mac;
 				$dia['descr']  = \HTML::linkRoute('Modem.edit', $descr, $modem->id);
 
 				// Add diagrams to monitoring array (goes directly to view)
