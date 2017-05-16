@@ -598,7 +598,7 @@ end:
 	 *
 	 * @author Nino Ryschawy
 	 */
-	public function get_cmts($ip)
+	static public function get_cmts($ip)
 	{
 		$validator = new \Acme\Validators\ExtendedValidator;
 		foreach(IpPool::all() as $pool)
