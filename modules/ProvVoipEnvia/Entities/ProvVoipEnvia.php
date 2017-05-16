@@ -2128,7 +2128,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
-	 * Method to add  callnumber identifier
+	 * Method to add callnumber identifier
 	 *
 	 * @author Patrick Reichel
 	 * @version 2017-05-10
@@ -2189,7 +2189,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @author Patrick Reichel
 	 * @version 2017-05-10
 	 *
-	 * @throws UnexpectedValueException if GET param envia_blacklist_get_direction is not in [in|out]
+	 * @throws XmlCreationError if GET param envia_blacklist_get_direction is not in [in|out]
 	 */
 	protected function _add_blacklist_data() {
 
@@ -2211,18 +2211,64 @@ class ProvVoipEnvia extends \BaseModel {
 	 * This is especially important to support different installation addresses on multiple modems per user.
 	 *
 	 * @author Patrick Reichel
-	 * @version 2017-05-10
+	 * @version 2017-05-16
 	 */
 	protected function _add_contract_identifier() {
 
 		$inner_xml = $this->xml->addChild('contract_identifier');
 
-		// mapping xml to database
-		$fields_contract_identifier = array(
-			'contractreference' => 'contract_external_id',
-		);
+		$external_contract_references = [];
 
-		$this->_add_fields($inner_xml, $fields_contract_identifier, $this->phonenumber);
+		// depending on the job to do we have to get the EnviaContract references
+		// especially we have to distinct jobs related to modems (e.g. contract_relocate) from those related to phonenumbers
+		if (in_array(
+				$this->job,
+				[
+					'contract_change_tariff',
+					'contract_change_variation',
+					'contract_get_voice_data',
+					'contract_relocate',
+				])
+		) {
+			// this are the cases where more than one external contract can exist and we have to decide which to use (or to use all)
+			//
+			// get all contract references attached to this modem
+			foreach ($this->modem->mtas as $mta) {
+				foreach ($mta->phonenumbers as $phonenumber) {
+					if (
+						($phonenumber->contract_external_id)
+						&&
+						(!in_array($phonenumber->contract_external_id, $external_contract_references))
+					) {
+						array_push($external_contract_references, $phonenumber->contract_external_id);
+					}
+				}
+			}
+
+			// no reference found
+			if (!$external_contract_references) {
+				throw new XmlCreationError('No EnviaOrder ID (contract_external_id) found. Cannot proceed.');
+			}
+
+			// TODO: implement logic to relocate more than one contract attached to the current modem!!
+			if (count($external_contract_references) > 1) {
+				throw new XmlCreationError('There is more than one EnviaContract used on this modem ('.(implode(', ', $external_contract_references)).'. Processing this is not yet implemented – please use the Envia Web API and inform Patrick.');
+			}
+			else {
+				$external_contract_reference = $external_contract_references[0];
+			}
+		}
+		else {
+			// default: taking external contract reference from phonenumber
+			$external_contract_reference = $this->phonenumber->contract_external_id;
+		}
+
+		if (!$external_contract_reference) {
+			throw new XmlCreationError('No EnviaOrder ID (contract_external_id) found. Cannot proceed.');
+		}
+
+		$inner_xml->addChild('contractreference', $external_contract_reference);
+
 	}
 
 
@@ -3325,12 +3371,12 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// check if there is an Envia contract for the returned contract_reference
 			// this is save here because within the CSV there are only phonenumber related orders (and e.g. no contract/relocate)
-			$enviacontract = EnviaContract::where("envia_contract_reference", "=", $result->contractreference)->first();
+			$enviacontract = EnviaContract::where("envia_contract_reference", "=", $result['contractreference'])->first();
 			if (!$enviacontract) {
 				// if not: create
 				$data = [
-					'envia_customer_reference' => $result->customerreference,
-					'envia_contract_reference' => $result->contractreference,
+					'envia_customer_reference' => $result['customerreference'],
+					'envia_contract_reference' => $result['contractreference'],
 					'modem_id' => $phonenumber->mta->modem->id,
 					'contract_id' => $phonenumber->mta->modem->contract->id,
 				];

@@ -1079,7 +1079,7 @@ class EnviaOrder extends \BaseModel {
 	 */
 	public static function get_user_interaction_needing_enviaorder_count() {
 
-		$count = EnviaOrder::whereRaw('(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND orderstatus_id != 1000')->count();
+		$count = EnviaOrder::whereRaw('(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND ((orderstatus_id != 1000) OR ((orderstatus_id IS NULL) AND (orderstatus NOT LIKE "in Bearbeitung")))')->count();
 
 		return $count;
 	}
@@ -1101,7 +1101,7 @@ class EnviaOrder extends \BaseModel {
 
 		// if current state is “in Bearbeitung” then we have to do nothing
 		// next action is to perform by Envia
-		if ($this->orderstatus_id == 1000) {
+		if ($this->orderstatus == 'in Bearbeitung' || $this->orderstatus_id == 1000) {
 			return false;
 		}
 
