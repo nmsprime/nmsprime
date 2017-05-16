@@ -151,6 +151,8 @@ class cactiCommand extends Command {
 			if(count($matches) != 2)
 				continue;
 
+			// add "SNMP - Interface Statistics" query
+			system("php -q $path/add_data_query.php --host-id=$matches[1] --data-query-id=1 --reindex-method=1");
 			// add host to cmts tree
 			system("php -q $path/add_tree.php --type=node --node-type=host --tree-id=$tree_id --host-id=$matches[1]");
 		}
