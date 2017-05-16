@@ -81,16 +81,18 @@
 
 @stop
 
-@section('content_proximity_search')
+@if (\PPModule::is_active('HfcCustomer'))
+	@section('content_proximity_search')
 
-	{{ Form::open(array('route' => 'CustomerTopo.show_prox')) }}
-	{{ Form::label('radius', 'Radius / m', ['class' => 'col-md-2 control-label']) }}
-	{{ Form::hidden('id', $modem->id); }}
-	{{ Form::number('radius', '1000') }}
-	<input type="submit" value="Search...">
-	{{ Form::close() }}
+		{{ Form::open(array('route' => 'CustomerTopo.show_prox')) }}
+		{{ Form::label('radius', 'Radius / m', ['class' => 'col-md-2 control-label']) }}
+		{{ Form::hidden('id', $modem->id); }}
+		{{ Form::number('radius', '1000') }}
+		<input type="submit" value="Search...">
+		{{ Form::close() }}
 
-@stop
+	@stop
+@endif
 
 
 @section('content_lease')
