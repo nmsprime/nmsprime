@@ -359,12 +359,46 @@ class ProvVoipEnvia extends \BaseModel {
 		$modem_id = $this->modem->id;
 		$contract_id = $this->contract->id;
 
+		// get all phonenumbers related to $this
+		if ($this->phonenumber->exists) {
+			$phonenumbers = [$this->phonenumber];
+		}
+		elseif ($this->modem->exists) {
+			$phonenumbers = $this->modem->related_phonenumbers();
+		}
+		elseif ($this->contract->exists) {
+			$phonenumbers = $this->contract->related_phonenumbers();
+		}
+		else {
+			// should never happen
+			$phonenumbers = [];
+		}
+
+		// count the contracts created/terminated
+		$contracts_created = [];
+		$contracts_terminated = [];
+		foreach ($phonenumbers as $_phonenumber) {
+			$_ = $_phonenumber->envia_contract_created();
+			if ($_) {
+				array_push($contracts_created, $_);
+			}
+			$_ = $_phonenumber->envia_contract_terminated();
+			if ($_) {
+				array_push($contracts_terminated, $_);
+			}
+		}
+		$contracts_created = array_unique($contracts_created);
+		$contracts_terminated = array_unique($contracts_terminated);
+
+		/* d($contracts_created, $contracts_terminated, $phonenumbers); */
 		// set the variables
-		if (is_null($this->modem->contract_ext_creation_date)) {
+		if (empty($contracts_created)) {
 			$this->contract_created = False;
+			$this->at_least_one_contract_created = False;
 		}
 		else {
 			$this->contract_created = True;
+			$this->at_least_one_contract_created = True;
 		}
 
 		if (is_null($this->modem->contract_ext_termination_date)) {
@@ -374,30 +408,13 @@ class ProvVoipEnvia extends \BaseModel {
 			$this->contract_terminated = True;
 		}
 
-		if ($this->contract_created && !$this->contract_terminated) {
+		if (count($contracts_created) > count($contracts_terminated)) {
 			$this->contract_available = True;
-		}
-		else {
-			$this->contract_available = False;
-		}
-
-		// check if at least one active envia contract is assigned to contract
-		$this->at_least_one_contract_created = False;
-		$this->at_least_one_contract_available = False;
-		if ($this->contract_available) {
-			$this->at_least_one_contract_created = True;
 			$this->at_least_one_contract_available = True;
 		}
 		else {
-			foreach ($this->contract->modems as $modem) {
-				if (!is_null($modem->contract_ext_creation_date)) {
-					$this->at_least_one_contract_created = True;
-
-					if (is_null($modem->contract_ext_termination_date)) {
-						$this->at_least_one_contract_available = True;
-					}
-				}
-			}
+			$this->contract_available = False;
+			$this->at_least_one_contract_available = False;
 		}
 
 		if (is_null($this->phonenumber->contract_external_id)) {
@@ -578,15 +595,12 @@ class ProvVoipEnvia extends \BaseModel {
 			};
 
 			// “normal“ jobs
-			// contract can be created if not yet created
-			if (!$this->contract_created) {
-				$phonenumbers_to_create = '&amp;phonenumbers_to_create=';
-				array_push($ret, array(
-					'linktext' => 'Create contract',
-					'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id.$phonenumbers_to_create,
-					'help' => "Creates a Envia contract (= telephone connection)",
-				));
-			}
+			$phonenumbers_to_create = '&amp;phonenumbers_to_create=';
+			array_push($ret, array(
+				'linktext' => 'Create contract',
+				'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id.$phonenumbers_to_create,
+				'help' => "Creates a Envia contract (= telephone connection)",
+			));
 
 			// contract can be relocated if created; available with Envia API version 1.4
 			if ($this->contract_created) {
@@ -1114,6 +1128,11 @@ class ProvVoipEnvia extends \BaseModel {
 
 		foreach ($this->modem->mtas as $mta) {
 			foreach ($mta->phonenumbers as $phonenumber) {
+
+				// exclude numbers with contract_external_id ⇒ they are already created
+				if (!is_null($phonenumber->contract_external_id)) {
+					continue;
+				}
 
 				$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 
@@ -4203,6 +4222,10 @@ class ProvVoipEnvia extends \BaseModel {
 			$ret = '';
 			$order_phonenumbers = $cancelled_order->phonenumbers;
 			foreach ($order_phonenumbers as $phonenumber) {
+
+				$phonenumber->contract_external_id = null;
+				$phonenumber->save();
+
 				$management = $phonenumber->phonenumbermanagement;
 
 				$management->voipaccount_ext_creation_date = null;
@@ -4235,7 +4258,7 @@ class ProvVoipEnvia extends \BaseModel {
 			Log::info($msg);
 			$out .= '<br><b>'.$msg.'</b>';
 
-			// in orders created via web gui there can be phonenumbers in method contract/create
+			// creating contracts contains phonenumbers
 			// we have to check this, too
 			$out .= $clean_phonenumbermanagement_creation_data($cancelled_order);
 		}

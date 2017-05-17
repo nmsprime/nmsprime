@@ -373,12 +373,6 @@ class ProvVoipEnviaController extends \BaseController {
 
 		// perform checks for the rest of the jobs
 		if ($job == "contract_create") {
-			$this->model->extract_environment($this->model->modem, 'modem');
-
-			// contract creation is only allowed once (you cannot re-create a contract)
-			if ($this->model->contract_created) {
-				return false;
-			}
 
 			return true;
 		}
