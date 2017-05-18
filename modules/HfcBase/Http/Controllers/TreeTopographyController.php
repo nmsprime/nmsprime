@@ -90,6 +90,8 @@ class TreeTopographyController extends HfcBaseController {
 	public function mpr($trees)
 	{
 		$ret = [];
+		if (!\PPModule::is_active('HfcCustomer'))
+			return $ret;
 
 		foreach ($trees->get() as $tree)
 		{

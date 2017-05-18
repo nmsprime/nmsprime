@@ -20,6 +20,7 @@
 	</div>
 
 	<div class="col-md-5 ui-sortable">
+
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_ping', 'view_header' => '<ul class="nav nav-pills" id="ping-tab">
 						<li role="presentation"><a href="#ping-test" data-toggle="pill">Default Ping</a></li>
 						<li role="presentation"><a href="#flood-ping" data-toggle="pill">Flood-Ping</a></li>
@@ -28,6 +29,9 @@
 						<li role="presentation"><a href="#log" data-toggle="pill">Log</a></li>
 						<li role="presentation"><a href="#lease" data-toggle="pill">Lease</a></li>
 					</ul>', 'md' => 4))
+		@if (\PPModule::is_active('HfcCustomer'))
+			@include ('bootstrap.panel-no-div', array ('content' => 'content_proximity_search', 'view_header' => 'Proximity Search', 'md' => 4))
+		@endif
 	</div>
 
 </div>
