@@ -344,8 +344,8 @@ class accountingCommand extends Command {
 				// restart counter every year
 				if ($this->dates['lastm'] == '01')
 				{
-					if ($conf->invoice_nr_start)
-						$acc->invoice_nr = $conf->invoice_nr_start - 1;
+					if ($acc->invoice_nr_start)
+						$acc->invoice_nr = $acc->invoice_nr_start - 1;
 					continue;
 				}
 
