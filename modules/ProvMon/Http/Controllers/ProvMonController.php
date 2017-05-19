@@ -415,11 +415,14 @@ end:
 			return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
 		}
 
+		$cmts = $this->get_cmts($ip);
+
 		// System
 		$sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')];
 		$sys['Firmware'] = [snmpget($host, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
 		$sys['Uptime']   = [$this->_secondsToTime(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
 		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
+		$sys['CMTS'] = [$cmts->hostname];
 
 		// Downstream
 		$ds['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2');		// DOCS-IF-MIB
@@ -443,11 +446,7 @@ end:
 			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.5'), 'us');
 		else
 			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.4'), 'us');
-		$cmts = $this->get_cmts($ip);
 		$us['SNR dB'] = $cmts->get_us_snr($ip);
-
-		// CMTS
-		$c['Hostname'] = [$cmts->hostname];
 
 		// remove all inactive channels (no range success)
 		$tmp = count($ds['Frequency MHz']);
@@ -482,7 +481,6 @@ end:
 		$ret['System']      = $sys;
 		$ret['Downstream']  = $ds;
 		$ret['Upstream']    = $us;
-		$ret['CMTS']		= $c;
 
 		// Return
 		return $ret;
