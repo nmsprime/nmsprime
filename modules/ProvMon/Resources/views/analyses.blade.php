@@ -132,36 +132,7 @@
 
 
 @section('content_realtime')
-	<?php $realtime=array(
-		"measure" => [ "System" =>
-					[ "SysDescr"	=> [0 => "Thomson PacketCable E-MTA <<HW_REV: 1.0.; VENDOR: Thomson; BOOTR: 2.1.7dm; SW_REV: ST8B.01.45; MODEL: THG540>>"],
-      				"Firmware"		=> [0 => "ST8B.01.45"],
-      				"Uptime"		=> [0 => "116 Days 1 Hours 24 Min 13 Sec"],
-      				"DOCSIS"		=> [0 => "DOCSIS 2.0"]
-      				],
-      			"Downstream" =>
-      				["Frequency MHz" => [0 => 338, 			1 => 339, 		2 => 340],
-      				"Modulation" 	=> [0 => "QAM256", 		1 => "QAM256", 	2 => "QAM256"],
-      				"Power dBmV"	=> [0 => 5.90, 			1 => 5.9, 		2 => 5.9 ],
-      				"MER dB" 		=> [0 => 39.8, 			1 => 39.8, 		2 => 40.9 ],
-      				"Microreflection -dBc" =>  [0 => "30", 	1 => "30", 		2 => "30"],
-      				"Operational CHs %" => [0 => 100, 		1 => 100, 		2 => 100]
-    				],
-  				"Upstream" =>
-  					["Frequency MHz" => [0 => 25.4, 			1 => 25.6 ],
-  					"Power dBmV" 	=> [0 => 35.2, 				1 => 35.1 ],
-      				"Width MHz" 	=> [0 => 6.4, 				1 => 6.5 ],
-      				"Modulation Profile" => [0 => "0",			1 => "0"],
-      				"SNR dB" 		=> [0 => 36.1,				1 => 30.1],
-      				"Operational CHs %" => [0 => 100,			1 => 100]
-    				],
-    			"CMTS" =>
-    				[ "Hostname" 	=> [0 => "dev-cable-gw01"]
-    				]
-  				],
-  		"forecast" => "TODO"
-	); ?>
-
+	@if ($realtime)
 	@foreach ($realtime['measure'] as $tablename => $table)
 		<h4>{{$tablename}}</h4>
 			@if ($tablename == "Downstream" || $tablename == "Upstream"  )
@@ -211,4 +182,7 @@
 			</table>
 			@endif
 	@endforeach
+	@else
+		<font color="red">{{trans('messages.modem_offline')}}</font>
+	@endif
 @stop
