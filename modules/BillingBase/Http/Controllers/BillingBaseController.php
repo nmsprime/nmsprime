@@ -33,7 +33,6 @@ class BillingBaseController extends \BaseController {
 		$cols = implode (', ', $cols);
 
 		return [
-			array('form_type' => 'text', 'name' => 'invoice_nr_start', 'description' => 'Invoice Number Start', 'help' => trans('helper.BillingBase_InvoiceNrStart')),
 			array('form_type' => 'select', 'name' => 'userlang', 'description' => 'Language for Accounting command', 'value' => BillingBase::getPossibleEnumValues('userlang')),
 			array('form_type' => 'select', 'name' => 'currency', 'description' => 'Currency', 'value' => BillingBase::getPossibleEnumValues('currency')),
 			array('form_type' => 'text', 'name' => 'tax', 'description' => 'Tax in %'),
