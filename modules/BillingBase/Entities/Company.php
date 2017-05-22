@@ -38,7 +38,9 @@ class Company extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		return $this->name;
+		return ['index' => [$this->name],
+				'index_header' => ['Name'],
+				'header' => $this->name];
 	}
 
 	public function view_has_many ()
