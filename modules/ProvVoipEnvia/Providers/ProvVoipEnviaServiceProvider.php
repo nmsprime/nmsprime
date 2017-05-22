@@ -1,4 +1,6 @@
-<?php namespace Modules\provvoipenvia\Providers;
+<?php
+
+namespace Modules\ProvVoipEnvia\Providers;
 
 use Illuminate\Support\ServiceProvider;
 

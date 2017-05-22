@@ -3,10 +3,10 @@
 namespace Modules\HfcCustomer\Http\Controllers;
 
 use Modules\HfcCustomer\Entities\ModemHelper;
-use Modules\HfcBase\Http\Controllers\TreeController;
+use Modules\HfcReq\Http\Controllers\NetElementController;
 
-use Modules\HfcBase\Entities\Tree;
 use Modules\ProvBase\Entities\Modem;
+use App\Http\Controllers\BaseViewController;
 
 
 /*
@@ -26,7 +26,7 @@ use Modules\ProvBase\Entities\Modem;
  *
  * @author: Torsten Schmidt
  */
-class CustomerTopoController extends TreeController {
+class CustomerTopoController extends NetElementController {
 
 	/*
 	 * Local tmp folder required for generating the images
@@ -44,7 +44,7 @@ class CustomerTopoController extends TreeController {
 		  <description><![CDATA[]]></description>
 
 
-		  <Style id='styleokay'>
+		  <Style id='style0'>
 			<IconStyle>
 			  <Icon>
 				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/green-dot.png</href>
@@ -52,7 +52,7 @@ class CustomerTopoController extends TreeController {
 			</IconStyle>
 		  </Style>
 
-		  <Style id='stylecritical'>
+		  <Style id='style1'>
 			<IconStyle>
 			  <Icon>
 				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/yellow-dot.png</href>
@@ -60,7 +60,7 @@ class CustomerTopoController extends TreeController {
 			</IconStyle>
 		  </Style>
 
-		  <Style id='styleoffline'>
+		  <Style id='style2'>
 			<IconStyle>
 			  <Icon>
 				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/red-dot.png</href>
@@ -127,11 +127,21 @@ class CustomerTopoController extends TreeController {
 	*
 	* @author: Torsten Schmidt
 	*/
-	public function show_rect($x1, $x2, $y1, $y2)
+	public function show_rect($x1, $x2, $y1, $y2, $row = 'us_pwr')
 	{
-		return $this->show_topo(Modem::whereRaw("(($x1 < x) AND (x < $x2) AND ($y1 < y) AND (y < $y2))"));
+		return $this->show_topo(Modem::whereRaw("(($x1 < x) AND (x < $x2) AND ($y1 < y) AND (y < $y2))"), $row);
 	}
 
+
+	/**
+	* Show all customers in proximity (radius in meters)
+	*
+	* @author: Ole Ernst
+	*/
+	public function show_prox()
+	{
+		return $this->show_topo(Modem::whereRaw(Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))));
+	}
 
 	/*
 	* Show Modems om Topography
@@ -143,13 +153,13 @@ class CustomerTopoController extends TreeController {
 	*
 	* @author: Torsten Schmidt
 	*/
-	public function show_topo($modems)
+	public function show_topo($modems, $row = 'us_pwr')
 	{
 		if (!$modems->count())
 			return \View::make('errors.generic')->with('message', 'No Modem Entry found');
 
 		// Generate SVG file
-		$file = $this->kml_generate ($modems);
+		$file = $this->kml_generate ($modems, $row);
 
 		if(!$file)
 			return \View::make('errors.generic')->with('message', 'Failed to generate SVG file');
@@ -193,13 +203,13 @@ class CustomerTopoController extends TreeController {
 		foreach ($modems->orderBy('city', 'street')->get() as $modem)
 		{
 			// load per modem diagrams
-			$dia = $provmon->monitoring($modem, [37,38]);
+			$dia = $provmon->monitoring($modem, [35]);
 
 			// valid diagram's ?
 			if ($dia != false)
 			{
 				// Description Line per Modem
-				$descr = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' - '.$modem->mac;
+				$descr = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' '.$modem->house_number.' - '.$modem->mac;
 				$dia['descr']  = \HTML::linkRoute('Modem.edit', $descr, $modem->id);
 
 				// Add diagrams to monitoring array (goes directly to view)
@@ -273,14 +283,15 @@ class CustomerTopoController extends TreeController {
 	 *
 	 * @author: Torsten Schmidt
 	 */
-	public function kml_generate($modems)
+	public function kml_generate($modems, $row)
 	{
 		$x = 0;
 		$y = 0;
 		$num = 0;
-		$hf    = '';
+		$clr = '';
 		$str   = '';
 		$descr = '';
+		$states = ['okay', 'critical', 'offline'];
 		$file  = $this->file_pre;
 
 		foreach ($modems->where('contract_id', '>', '0')->orderByRaw('10000000*x+y')->get() as $modem)
@@ -291,10 +302,10 @@ class CustomerTopoController extends TreeController {
 			if ($x != $modem->x || $y != $modem->y)
 			{
 				# Print Marker
-				$style = "#style$hf"; # green, yellow, red
+				$style = "#style$clr"; # green, yellow, red
 
 				# Reset Vars
-				$hf = '';
+				$clr = 0;
 				$pos ="$x, $y, 0.000000";
 
 
@@ -320,22 +331,11 @@ class CustomerTopoController extends TreeController {
 			# modem
 			$mid    = $modem->id;
 			$mac    = $modem->mac;
-			$status = $modem->status;
 
-			if ($modem->status == 0)
-				$status = 'offline';
-			else if ($modem->status < 550)
-				$status = 'okay';
-			else
-				$status = 'critical';
-
-			# marker status
-			if ($modem->status == 0 && $hf != 'critical' && $hf != 'okay')
-				$hf = 'offline';
-			else if ($modem->status < 550 && $hf != 'critical')
-				$hf = 'okay';
-			else
-				$hf = 'critical';
+			$row_val = $modem->{$row};
+			$cur_clr = BaseViewController::get_quality_color(explode('_',$row)[0], explode('_',$row)[1], [$row_val])[0];
+			if ($cur_clr > $clr)
+				$clr = $cur_clr;
 
 			#
 			# Contract
@@ -354,7 +354,7 @@ class CustomerTopoController extends TreeController {
 			}
 
 			# add descr line
-			$descr .= "<a target=\"".$this->html_target."\" href='".\BaseRoute::get_base_url()."/Modem/$mid/edit'>$mac</a>, $contractid, $lastname, $hf<br>";
+			$descr .= "<a target=\"".$this->html_target."\" href='".\BaseRoute::get_base_url()."/Modem/$mid/edit'>$mac</a>, $contractid, $lastname, $states[$cur_clr] ($row_val)<br>";
 			$num += 1;
 		}
 
@@ -362,7 +362,7 @@ class CustomerTopoController extends TreeController {
 		#
 		# Print Last Marker
 		#
-		$style = "#style$hf"; # green, yellow, red
+		$style = "#style$clr"; # green, yellow, red
 		$pos ="$x, $y, 0.000000";
 		if ($x)
 		{

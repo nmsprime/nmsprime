@@ -3,7 +3,7 @@
 namespace Modules\HfcBase\Http\Controllers;
 
 use Modules\HfcCustomer\Entities\ModemHelper;
-use Modules\HfcBase\Entities\Tree;
+use Modules\HfcReq\Entities\NetElement;
 
 use Acme\php\ArrayHelper;
 
@@ -53,25 +53,24 @@ class TreeErdController extends HfcBaseController {
     }
 
 
-	/*
+	/**
 	 * Show Cluster or Network Entity Relation Diagram
 	 *
-	 * @param field: search field name in tree table
-	 * @param search: the search value to look in tree table $field
+	 * @param field: search field name in netelement table
+	 * @param search: the search value to look in netelement table $field
 	 * @return view with SVG image
+	 *
+	 * Note: called from sidebar.blade.php
 	 *
 	 * @author: Torsten Schmidt
 	 */
 	public function show($field, $search)
 	{
-		// prepare search
-		$s = "$field='$search'";
-		if($field == 'all')
-			$s = 'id>2';
+		// prepare search query
+		$s = $field == 'all' ? 'id>2' : "$field='$search'";
 
 		// Generate SVG file
-		$file = $this->graph_generate (Tree::whereRaw($s));
-
+		$file = $this->graph_generate (NetElement::whereRaw($s));
 		if(!$file)
 			return \View::make('errors.generic');
 
@@ -100,18 +99,17 @@ class TreeErdController extends HfcBaseController {
 	}
 
 
-	/*
+	/**
 	 * Generate the SVG and HTML Map File
 	 *
-	 * @param _trees: The Tree Objects to be displayed, without ->get() call
+	 * @param query: The Query to get the Tree Objects to be displayed
 	 * @return the path of the generated file(s) without ending
 	 *         this files could be included via asset ()
 	 *
 	 * @author: Torsten Schmidt
 	 */
-	public function graph_generate($_trees)
+	public function graph_generate($query)
 	{
-
 		#
 		# INIT
 		#
@@ -128,40 +126,36 @@ class TreeErdController extends HfcBaseController {
 		$n  = 0;
 		$p1 = '';
 
-		$trees = $_trees->where('id', '>', '2')->orderBy('pos')->get();
-
-		if (!$trees->count())
+		$netelements = $query->where('id', '>', '2')->orderBy('pos')->get();
+		if (!$netelements->count())
 			return null;
 
 		#
 		# Node
 		#
-		foreach ($trees as $tree)
+		foreach ($netelements as $netelem)
 		{
-			$id = $tree->id;
-			$name = $tree->name.' - '.$tree->id;
-			$type = $tree->type;
-			$state = $tree->state;
-			$ip   = $tree->ip;
-			$p2   = $tree->pos;
-			$parent = $tree->get_parent();
+			$id 	= $netelem->id;
+			$name 	= $netelem->name.' - '.$netelem->id;
+			$type 	= $netelem->netelementtype->name;
+			$state  = $netelem->state;
+			$ip   	= $netelem->ip;
+			$p2   	= $netelem->pos;
+			$parent = $netelem->get_parent();
 			$n++;
 
 			if ($p1 != $p2)
 				$file .= "\n}\nsubgraph cluster_$n {\n style=filled;color=lightgrey;fillcolor=lightgrey;";
 
-			if ($tree->link == '')
-				$url  = 'http://'.$tree->ip;
-			else
-				$url  = $tree->link;
+			$url = $netelem->link ? : 'http://'.$netelem->ip;
 
 			#
-			# Amplifier
+			# Amplifier - what?? - all types are considered here
 			#
-			if ($ip == '')
+			// if ($ip == '')
 				$color = 'green';
-			if ($state == 'OK' || $state == '')
-				$color = 'green';
+			// if ($state == 'OK' || $state == '')
+				// $color = 'green';
 			if ($state == 'YELLOW')
 				$color = 'yellow';
 			if ($state == 'RED')
@@ -169,15 +163,16 @@ class TreeErdController extends HfcBaseController {
 			if ($state == 'BLUE')
 				$color = 'blue';
 
+			// why are elements with parent->id == 1 blue ?? - what is distinction made for?
 			if ($parent == NULL || $parent->id == 1)
 				$file .= "\n node [id = \"$id\" label = \"$id - $name\", shape = rectangle, style = filled, fillcolor=blue, color=darkgrey, URL=\"$url\", target=\"".$this->html_target."\"];";
 			else
 			{
-				if ($type == 'NET')
+				if ($type == 'Net')
 					$file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=lightblue, color=black URL=\"$url\", target=\"".$this->html_target."\"];";
-				else if ($type == 'CLUSTER')
+				else if ($type == 'Cluster')
 					$file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=white, color=$color, URL=\"$url\", target=\"".$this->html_target."\"];";
-				else if ($type == 'CMTS')
+				else if ($type == 'C')
 					$file .= "\n node [id = \"$id\" label = \"CMTS\\n$name\", shape = hexagon, style = filled, fillcolor=grey, color=$color, URL=\"$url\", target=\"".$this->html_target."\"];";
 				else if ($type == 'DATA')
 					$file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=$color, color=darkgrey, URL=\"$url\", target=\"".$this->html_target."\"];";
@@ -196,15 +191,15 @@ class TreeErdController extends HfcBaseController {
 		#
 		# Parent - Child Relations
 		#
-		foreach ($trees as $tree)
+		foreach ($netelements as $netelem)
 		{
-			$_parent = $tree->get_parent();
+			$_parent = $netelem->get_parent();
 			$parent = 0;
 			if ($_parent)
 				$parent = $_parent->id;
 
-			$type = $tree->type;
-			$tp   = $tree->tp;
+			$type = $netelem->netelementtype->name;
+			$tp   = $netelem->tp;
 			$color = 'black';
 			$style = "style=bold";
 			if ($type == 'NODE')
@@ -218,8 +213,8 @@ class TreeErdController extends HfcBaseController {
 				$style='';
 			}
 
-			if ($parent > 2 && ArrayHelper::objArraySearch($trees, 'id', $parent))
-				$file .= "\n  \"$parent\" -> \"$tree->id\" [color = $color,$style]";
+			if ($parent > 2 && ArrayHelper::objArraySearch($netelements, 'id', $parent))
+				$file .= "\n  \"$parent\" -> \"$netelem->id\" [color = $color,$style]";
 
 		}
 
@@ -230,22 +225,22 @@ class TreeErdController extends HfcBaseController {
 		if (\PPModule::is_active ('HfcCustomer'))
 		{
 		    $n = 0;
-			foreach ($trees as $tree)
+			foreach ($netelements as $netelem)
 			{
-		        $idtree = $tree->id;
-		        $id = $tree->id;
-		        $type = $tree->type;
-				$url  = \BaseRoute::get_base_url()."/Customer/tree_id/$idtree";
+		        $idtree = $netelem->id;
+		        $id = $netelem->id;
+		        $type = $netelem->type;
+				$url  = \BaseRoute::get_base_url()."/Customer/netelement_id/$idtree";
 		        $n++;
 
-				$state = ModemHelper::ms_state ("tree_id = $idtree");
+				$state = ModemHelper::ms_state ("netelement_id = $idtree");
 				if ($state != -1)
 				{
 					$color = ModemHelper::ms_state_to_color ($state);
-					$num   = ModemHelper::ms_num("tree_id = $idtree");
-					$numa  = ModemHelper::ms_num_all("tree_id = $idtree");
-					$cri   = ModemHelper::ms_cri("tree_id = $idtree");
-					$avg   = ModemHelper::ms_avg("tree_id = $idtree");
+					$num   = ModemHelper::ms_num("netelement_id = $idtree");
+					$numa  = ModemHelper::ms_num_all("netelement_id = $idtree");
+					$cri   = ModemHelper::ms_cri("netelement_id = $idtree");
+					$avg   = ModemHelper::ms_avg("netelement_id = $idtree");
 
 					$file .= "\n node [label = \"$numa\\n$num/$cri\\n$avg\", shape = circle, style = filled, color=$color, URL=\"$url\", target=\"".$this->html_target."\"];";
 					$file .= " \"C$idtree\"";

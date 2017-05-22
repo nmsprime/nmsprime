@@ -1,4 +1,5 @@
-<?php namespace Modules\Hfccustomer\Entities;
+<?php
+namespace Modules\HfcCustomer\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Modules\ProvBase\Entities\Modem;
@@ -10,8 +11,8 @@ use Modules\ProvBase\Entities\Modem;
  * This Model will hold all rules for Entity Relation and
  * Topograhpy Card Bubbles. See MprGeopos for more brief view.
  *
- * Relations: Tree <- Mpr <- MprGeopos
- * Relations: Modem <- Tree
+ * Relations: NetElement <- Mpr <- MprGeopos
+ * Relations: Modem <- Device
  */
 class Mpr extends \BaseModel {
 
@@ -39,24 +40,23 @@ class Mpr extends \BaseModel {
 		return $this->id.' : '.$this->name;
 	}
 
-	// Relation to Tree
-	// NOTE: HfcBase Module is required !
-	public function tree()
+	// Relation to NetElement
+	// NOTE: HfcReq Module is required !
+	public function netelement()
 	{
-		return $this->belongsTo('Modules\HfcBase\Entities\Tree');
+		return $this->belongsTo('Modules\HfcReq\Entities\NetElement');
 	}
 
-	// Relation to Tree
-	// NOTE: HfcBase Module is required !
+	// NOTE: HfcReq Module is required !
 	public function trees()
 	{
-		return \Modules\HfcBase\Entities\Tree::all();
+		return \Modules\HfcReq\Entities\NetElement::all();
 	}
 
 	// Relation to MPR Geopos
 	public function mprgeopos()
 	{
-		return $this->hasMany('Modules\Hfccustomer\Entities\MprGeopos');
+		return $this->hasMany('Modules\HfcCustomer\Entities\MprGeopos');
 	}
 
 
@@ -65,7 +65,7 @@ class Mpr extends \BaseModel {
 	 */
 	public function view_belongs_to ()
 	{
-		return $this->tree;
+		return $this->netelement;
 	}
 
 
@@ -83,7 +83,7 @@ class Mpr extends \BaseModel {
 
 	/*
 	 * MPR: refresh all bubbles on Entity Relation Diagram and Topography Card
-	 * This will perform an updated on all matched Modems tree_id value, based
+	 * This will perform an updated on all matched Modems netelement_id value, based
 	 * on the added rules in Modem Positioning System: Mpr, MprGeopos. This function
 	 * will be used by artisan command nms:mps
 	 *
@@ -93,7 +93,7 @@ class Mpr extends \BaseModel {
 	 * TODO: use a better (more complex) priority algorithm
 	 *
 	 * @param modem: could be a modem->id or a set of pre-selected modem models filtered with Modem::where() or false for all modems
-	 * @return: if param modem is a id the function returns the id of the matched mpr tree_id, in all other cases 0
+	 * @return: if param modem is a id the function returns the id of the matched mpr netelement_id, in all other cases 0
 	 * @author: Torsten Schmidt
 	 */
 	public static function refresh ($modem = null)
@@ -111,7 +111,7 @@ class Mpr extends \BaseModel {
 			\Log::info('mps: perform mps rule matching');
 			// reset all tree_ids if all modems are being matched,
 			// because we don't know if old matches are still valid
-			Modem::where('id', '>', '0')->update(['tree_id' => 0]);
+			Modem::where('id', '>', '0')->update(['netelement_id' => 0]);
 		}
 
 		// Foreach MPR
@@ -145,8 +145,8 @@ class Mpr extends \BaseModel {
 					$y2 = $mpr->mprgeopos[0]->y;
 				}
 
-				// the tree_id for the actual rule
-				$id = $mpr->tree_id;
+				// the netelement_id for the actual rule
+				$id = $mpr->netelement_id;
 
 				// the selected modems to use for update
 				if ($single_modem)
@@ -157,7 +157,7 @@ class Mpr extends \BaseModel {
 
 				$select = $tmp->where('x', '>', $x1)->where('x', '<', $x2)->where('y', '>', $y1)->where('y', '<', $y2);
 
-				// for a single modem do not perform a update() either return the tree_id
+				// for a single modem do not perform a update() either return the netelement_id
 				// Note: This is required because we can not call save() from observer context.
 				//       this will re-call all oberservs and could lead to a potential hazard
 				if ($single_modem)
@@ -168,7 +168,7 @@ class Mpr extends \BaseModel {
 						$return = $id;
 				}
 				else
-					$r = $select->update(['tree_id' => $id]);
+					$r = $select->update(['netelement_id' => $id]);
 
 				// Log
 				$log = 'mps: UPDATE: '.$id.', '.$mpr->name.' - updated modems: '.$r;
@@ -190,6 +190,7 @@ class Mpr extends \BaseModel {
 
 		Mpr::observe(new MprObserver);
 	}
+
 }
 
 

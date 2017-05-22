@@ -5,10 +5,11 @@
     "keywords": [],
     "active": 1,
     "order": 23,
+    "icon" : "fa-line-chart",
     "providers": [
         "Modules\\BillingBase\\Providers\\BillingBaseServiceProvider"
     ],
-    "aliases":{},
+    "aliases": [],
     "files": [
         "start.php"
     ]

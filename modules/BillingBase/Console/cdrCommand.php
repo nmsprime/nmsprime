@@ -53,11 +53,11 @@ class cdrCommand extends Command {
 	public function fire()
 	{
 		$this->_init();
+		$logger = new BillingLogger;
 
 		// skip if file is already loaded
 		if (is_file($this->target_dir.$this->target_file))
 		{
-			$logger = new BillingLogger;
 			$logger->addDebug('CDR already loaded');
 			return;
 		}
@@ -65,13 +65,16 @@ class cdrCommand extends Command {
 
 		// Choose Provider from specified array key in environment file
 		// NOTE: Add new Providers here!!!
+		// TODO - use getenv() to parse all super global variables for this key here as this super global variable is consciously not set in cronjobs
 		if (isset($_ENV['PROVVOIPENVIA__RESELLER_USERNAME']))
 		{
+			$logger->addDebug('GET Envia Call Data Records');
 			$this->_get_envia_cdr();
 		}
 
 		else if (isset($_ENV['HLKOMM_RESELLER_USERNAME']))
 		{
+			$logger->addDebug('GET HL Komm Call Data Records');
 			$this->_get_hlkomm_cdr();
 		}
 
@@ -142,6 +145,7 @@ class cdrCommand extends Command {
 		
 		// TODO: Rename File
 		$files = Storage::files('tmp');
+
 		foreach ($files as $name)
 		{
 			if (strpos($name, $this->month.'.'.$this->year) !== false && strpos($name, 'AsciiEVN.txt') !== false && strpos($name, 'xxxxxxx') !== false)

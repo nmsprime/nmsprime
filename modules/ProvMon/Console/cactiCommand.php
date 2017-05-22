@@ -76,7 +76,8 @@ class cactiCommand extends Command {
 			throw $e;
 		}
 
-		foreach (Modem::all() as $modem)
+		$modems = $this->option('modem-id') === false ? Modem::all() : Modem::where('id', '=', $this->option('modem-id'))->get();
+		foreach ($modems as $modem)
 		{
 			// Skip all $modem's that already have cacti graphs
 			if (ProvMonController::monitoring_get_graph_ids($modem))
@@ -115,36 +116,15 @@ class cactiCommand extends Command {
 
 			// create all graphs belonging to host template cablemodem
 			foreach ($graph_template_ids as $id)
-			{
 				system("php -q $path/add_graphs.php --host-id=$matches[1] --graph-type=cg --graph-template-id=$id");
-			}
-
-			// get first RRD belonging to newly created host
-			$first = \DB::connection($this->connection)->table('host AS h')
-				->join('data_local AS l', 'h.id', '=', 'l.host_id')
-				->join('data_template_data AS t', 'l.id', '=', 't.local_data_id')
-				->where('h.id', '=', $matches[1])
-				->orderBy('t.id')
-				->select('t.id', 't.data_source_path')
-				->first();
-
-			// disable updating all RRDs except for first and use first RRD for all graphs
-			\DB::connection($this->connection)->table('host AS h')
-				->join('data_local AS l', 'h.id', '=', 'l.host_id')
-				->join('data_template_data AS t', 'l.id', '=', 't.local_data_id')
-				->where('h.id', '=', $matches[1])
-				->where('t.id', '!=', $first->id)
-				->update(['t.active' => '', 't.data_source_path' => $first->data_source_path]);
-
-			// rebuild poller cache, since we changed the database manually
-			system("php -q $path/rebuild_poller_cache.php --host-id=$matches[1]");
 
 			// Info Message
 			echo "\ncacti: create diagrams for Modem: $name";
 			\Log::info("cacti: create diagrams for Modem: $name");
 		}
 
-		foreach (Cmts::all() as $cmts)
+		$cmtss = $this->option('cmts-id') === false ? Cmts::all() : Cmts::where('id', '=', $this->option('cmts-id'))->get();
+		foreach ($cmtss as $cmts)
 		{
 			// Skip all $cmts's that already have cacti graphs
 			if (ProvMonController::monitoring_get_graph_ids($cmts))
@@ -152,22 +132,27 @@ class cactiCommand extends Command {
 
 			$name      = $cmts->hostname;
 			$hostname  = $cmts->ip;
-			$community = ProvBase::first()->ro_community;
+			$community = $cmts->get_ro_community();
 
 			// Assumption: host template and graph tree are named e.g. '$company cmts' (case-insensitive)
-			$host_template_id = \DB::connection($this->connection)->table('host_template')
+			$host_template = \DB::connection($this->connection)->table('host_template')
 				->where('name', '=', $cmts->company.' cmts')
-				->select('id')->first()->id;
+				->select('id')->first();
+			// we don't have a template for the company, skip adding the cmts
+			if(!$host_template)
+				continue;
 
 			$tree_id = \DB::connection($this->connection)->table('graph_tree')
 				->where('name', '=', 'cmts')
 				->select('id')->first()->id;
 
-			$out = system("php -q $path/add_device.php --description=$name --ip=$hostname --template=$host_template_id --community=$community --avail=snmp --version=2");
+			$out = system("php -q $path/add_device.php --description=\"$name\" --ip=$hostname --template=$host_template->id --community=\"$community\" --avail=snmp --version=2");
 			preg_match('/^Success - new device-id: \(([0-9]+)\)$/', $out, $matches);
 			if(count($matches) != 2)
 				continue;
 
+			// add "SNMP - Interface Statistics" query
+			system("php -q $path/add_data_query.php --host-id=$matches[1] --data-query-id=1 --reindex-method=1");
 			// add host to cmts tree
 			system("php -q $path/add_tree.php --type=node --node-type=host --tree-id=$tree_id --host-id=$matches[1]");
 		}
@@ -196,7 +181,8 @@ class cactiCommand extends Command {
 	protected function getOptions()
 	{
 		return array(
-			// array('example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null),
+			array('cmts-id', null, InputOption::VALUE_OPTIONAL, 'only consider modem identified by its id, otherwise all', false),
+			array('modem-id', null, InputOption::VALUE_OPTIONAL, 'only consider cmts identified by its id, otherwise all', false),
 		);
 	}
 

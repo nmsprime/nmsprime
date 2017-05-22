@@ -1,3 +1,8 @@
 <?php
 
-return [['CDRs' => 'Cdr.index']];
+return array(
+    ['CDRs' =>
+        ['link' => 'Cdr.index',
+        'icon'  => 'fa-adress-card-o']
+    ]
+);

@@ -49,6 +49,7 @@ class ItemTableSeeder extends \BaseSeeder {
 					'product_id' 	=> $product_id,
 					'count' 		=> $count,
 					'valid_from' 	=> $valid_from,
+					'valid_from_fixed' => 1,
 					'valid_to' 		=> $valid_to,
 					'credit_amount' => $credit_amount,
 					'costcenter_id' => $costcenter_id,

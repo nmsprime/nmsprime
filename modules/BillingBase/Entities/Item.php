@@ -45,8 +45,19 @@ class Item extends \BaseModel {
 		$start = $this->valid_from && $this->valid_from != '0000-00-00' ? ' - '.$this->valid_from : '';
 		$end   = $this->valid_to && $this->valid_to != '0000-00-00' ? ' - '.$this->valid_to : '';
 
-		$start_fixed = !boolval($this->valid_from_fixed) ? '(!)' : '';
-		$end_fixed = !boolval($this->valid_to_fixed) ? '(!)' : '';
+		// default value for fixed dates indicator – empty in most cases
+		$start_fixed = '';
+		$end_fixed = '';
+
+		// for internet and voip items: mark not fixed dates (because they are possibly changed by daily conversion)
+		if (in_array(\Str::lower($this->product->type), ['voip', 'internet'])) {
+			if ($start) {
+				$start_fixed = !boolval($this->valid_from_fixed) ? '(!)' : '';
+			}
+			if ($end) {
+				$end_fixed = !boolval($this->valid_to_fixed) ? '(!)' : '';
+			}
+		}
 
 		// Evaluate Colours
 		// TODO: implement better error handling instead using 'Monthly' as default
@@ -62,7 +73,7 @@ class Item extends \BaseModel {
 		return ['index' => [$name, $start, $end],
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
-		        'header' => $name.$start.$start_fixed.$end];
+		        'header' => $name.$start.$start_fixed.$end.$end_fixed];
 	}
 
 	public function view_belongs_to ()
@@ -86,7 +97,7 @@ class Item extends \BaseModel {
 
 	public function costcenter ()
 	{
-		return $this->belongsTo('Modules\BillingBase\Entities\Costcenter');
+		return $this->belongsTo('Modules\BillingBase\Entities\CostCenter');
 	}
 
 
@@ -195,7 +206,7 @@ class Item extends \BaseModel {
 	 * @return 	null if no costs incurred, 1 otherwise
 	 * @author 	Nino Ryschawy
 	 */
-	public function calculate_price_and_span($dates)
+	public function calculate_price_and_span($dates, $return_array = false)
 	{
 		$ratio = 0;
 		$text  = '';			// only dates
@@ -389,7 +400,7 @@ class Item extends \BaseModel {
 				break;
 
 		}
-
+//d($ratio);
 		if (!$ratio)
 			return null;
 
@@ -400,6 +411,9 @@ class Item extends \BaseModel {
 		$this->invoice_description = $this->product->name.' '.$text;
 		$this->invoice_description .= $this->accounting_text ? ' - '.$this->accounting_text : '';
 
+		if ($return_array === true) {
+            return array('charge' => $this->charge, 'ratio' => $this->ratio, 'invoice_description' => $this->invoice_description);
+        }
 		return true;
 	}
 

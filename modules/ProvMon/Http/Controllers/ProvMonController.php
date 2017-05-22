@@ -269,7 +269,7 @@ end:
 		// Realtime Measure
 		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
 		{
-			$realtime['measure']  = $this->realtime_cmts($modem, ProvBase::first()->ro_community);
+			$realtime['measure']  = $this->realtime_cmts($modem, $modem->get_ro_community());
 			$realtime['forecast'] = 'TODO';
 		}
 
@@ -415,11 +415,14 @@ end:
 			return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
 		}
 
+		$cmts = $this->get_cmts($ip);
+
 		// System
 		$sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')];
 		$sys['Firmware'] = [snmpget($host, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
 		$sys['Uptime']   = [$this->_secondsToTime(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
 		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
+		$sys['CMTS'] = [$cmts->hostname];
 
 		// Downstream
 		$ds['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2');		// DOCS-IF-MIB
@@ -443,11 +446,7 @@ end:
 			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.5'), 'us');
 		else
 			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.4'), 'us');
-		$cmts = $this->get_cmts($ip);
 		$us['SNR dB'] = $cmts->get_us_snr($ip);
-
-		// CMTS
-		$c['Hostname'] = [$cmts->hostname];
 
 		// remove all inactive channels (no range success)
 		$tmp = count($ds['Frequency MHz']);
@@ -482,7 +481,6 @@ end:
 		$ret['System']      = $sys;
 		$ret['Downstream']  = $ds;
 		$ret['Upstream']    = $us;
-		$ret['CMTS']		= $c;
 
 		// Return
 		return $ret;
@@ -500,6 +498,9 @@ end:
 	{
 		$rx_pwr = array();
 		foreach ($us['If Id'] as $i => $idx) {
+			// don't control non-functional channels
+			if($us['SNR dB'][$i] == 0)
+				continue;
 			// the reference SNR is 24 dB
 			$r = round($us['Rx Power dBmV'][$i] + 24 - $us['SNR dB'][$i]);
 			if ($r < 0)
@@ -508,7 +509,7 @@ end:
 			if ($r > 10)
 				// maximum actual power is 10 dB
 				$r = 10;
-			if ($cmts->company == 'CASA')
+			if ($cmts->company == 'Casa')
 				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
 			if ($cmts->company == 'Cisco')
 				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.9.9.116.1.4.1.1.6.$idx", 'i', 10 * $r);
@@ -560,7 +561,7 @@ end:
 
 		$us['SNR dB'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
 
-		if ($cmts->company == 'CASA')
+		if ($cmts->company == 'Casa')
 			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
 		if ($cmts->company == 'Cisco') {
 			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.9.9.116.1.4.1.1.6'));
@@ -570,7 +571,7 @@ end:
 		// unset unused interfaces, as we don't want to show them on the web gui
 		foreach ($us['Frequency MHz'] as $key => $freq)
 		{
-			if ($us['Frequency MHz'][$key] == 0 && $us['SNR dB'][$key] == 0)
+			if ($us['SNR dB'][$key] == 0)
 			{
 				foreach ($us as $entry => $arr)
 					unset($us[$entry][$key]);
@@ -578,7 +579,7 @@ end:
 		}
 
 		if($ctrl && isset($us['Rx Power dBmV']))
-			$us['Rx Power dBmV'] = $this->_set_new_rx_power($cmts, ProvBase::first()->rw_community, $us);
+			$us['Rx Power dBmV'] = $this->_set_new_rx_power($cmts, $cmts->get_rw_community(), $us);
 
 		// unset interface ID, as we don't want to show it on the web gui, we just needed them for setting the RX power
 		unset($us['If Id']);
@@ -595,7 +596,7 @@ end:
 	 *
 	 * @author Nino Ryschawy
 	 */
-	public function get_cmts($ip)
+	static public function get_cmts($ip)
 	{
 		$validator = new \Acme\Validators\ExtendedValidator;
 		foreach(IpPool::all() as $pool)
@@ -653,7 +654,7 @@ end:
 		$i   = 0;
 
 		// fetch all lines matching hw mac
-		foreach (array_reverse(array_unique($section[0])) as $s)
+		foreach (array_unique($section[0]) as $s)
 		{
 			if(strpos($s, $search))
 			{
@@ -664,20 +665,24 @@ end:
 				}
 
 				// push matching results
-				array_push($ret, $s);
+				array_push($ret, preg_replace('/\r|\n/', '<br />', $s));
 			}
 		}
 
 		// handle multiple lease entries
 		// actual strategy: if possible grep active lease, otherwise return all entries
 		//                  in reverse ordered format from dhcpd.leases
-		if (sizeof($ret) > 1)
-		{
-			$key = preg_grep ('/(.*?)binding state active(.*?)/', $ret);
-			if ($key)
+		if (sizeof($ret) > 1) {
+			foreach(preg_grep ('/(.*?)binding state active(.*?)/', $ret) as $str)
+				if(preg_match('/starts \d ([^;]+);/', $str, $s))
+					$start[] = $s[1];
+
+			if (isset($start)) {
 				// return the most recent active lease
-				natsort($key);
-				return [ preg_replace('/\r|\n/', '<br />', array_pop($key)) ];
+				natsort($start);
+				end($start);
+				return [ $ret[each($start)[0]] ];
+			}
 		}
 
 		return $ret;
@@ -824,20 +829,10 @@ end:
 		$ret['from_t'] = $from_t;
 		$ret['to_t']   = $to_t;
 
-
 		/*
 		 * Images
 		 */
-		// Base URL: Should be always available (?)
-		$url_base = "https://localhost/cacti/graph_image.php";
-
-		// SSL Array for disabling SSL verification
-		$ssl=array(
-			"ssl"=>array(
-				"verify_peer"=>false,
-				"verify_peer_name"=>false,
-			),
-		);
+		$url_base = 'https://'.\Request::getHost()."/cacti/graph_image.php?rra_id=0&graph_start=$from_t&graph_end=$to_t";
 
 		// TODO: should be auto adapted to screen resolution. Note that we still use width=100% setting
 		// in the image view. This could lead to diffuse (unscharf) fonts.
@@ -845,30 +840,7 @@ end:
 
 		// Fetch Cacti DB for images of $modem and request the Image from Cacti
 		foreach ($ids as $id)
-		{
-			// The final URL to parse from
-			$url = "$url_base?local_graph_id=$id&rra_id=0&graph_width=$graph_width&graph_start=$from_t&graph_end=$to_t";
-
-			// Log: Prepare Load Time Measurement
-			$before = microtime(true);
-
-			// Load the image
-			//
-			// TODO: error handling (for example: no valid login)
-			//
-			// Consider that we use guest login in Cacti.
-			// See: https://numpanglewat.wordpress.com/2009/07/27/how-to-view-cacti-graphics-without-login/
-			$img = base64_encode(file_get_contents($url, false, stream_context_create($ssl)));
-
-			// Log: Time Measurement
-			$after = microtime(true);
-			\Log::info ('cacti: laod '.$url);
-			\Log::info ('cacti: load takes '.($after-$before).' s - result: '.($img ? 'true' : 'false'));
-
-			// if valid image
-			if ($img)
-				$ret['graphs'][$id] = 'data:image/svg+xml;base64,'.$img;
-		}
+			$ret['graphs'][$id] = $url_base."&graph_width=$graph_width&local_graph_id=$id";
 
 		// No result checking
 		if (!isset($ret['graphs']))

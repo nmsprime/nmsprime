@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\View;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
 use Modules\ProvVoip\Entities\Phonenumber;
+use Modules\ProvBase\Entities\Modem;
 
 class EnviaOrderController extends \BaseController {
 
@@ -45,7 +46,7 @@ class EnviaOrderController extends \BaseController {
 			$modem_id = \Input::get('modem_id', null);
 			if (boolval($modem_id)) {
 				$init_values['modem_id'] = $modem_id;
-				$modem = modem::findOrFail($modem_id);
+				$modem = Modem::findOrFail($modem_id);
 				$init_values['contract_id'] = $modem->contract->id;
 			}
 
@@ -66,8 +67,8 @@ class EnviaOrderController extends \BaseController {
 			// this can also be deleted!
 			$related_id = $model->related_order_id;
 			if (boolval($related_id)) {
-				$init_values['related_order_id_show'] = $related_id;
-				$order_related = EnviaOrder::withTrashed()->where('orderid', $related_id)->first();
+				$order_related = EnviaOrder::withTrashed()->find($related_id);
+				$init_values['related_order_id_show'] = $order_related->orderid.' <i>(DB ID: '.$order_related->id.')</i>';
 				$init_values['related_order_type'] = $order_related->ordertype;
 				$init_values['related_order_created_at'] = $order_related->created_at;
 				$init_values['related_order_updated_at'] = $order_related->updated_at;
@@ -75,6 +76,16 @@ class EnviaOrderController extends \BaseController {
 					$init_values['related_order_deleted_at'] = $order_related->deleted_at;
 				}
 			}
+
+			// try to get related phonenumbers
+			$tmp_nr = $model->phonenumbers;
+			if (is_null($tmp_nr)) {
+				$phonenumber_ids = "";
+			}
+			else {
+				$phonenumber_ids = $tmp_nr->implode('id', ', ');
+			}
+			$init_values['phonenumber_id'] = $phonenumber_ids;
 
 			$order_id = array('form_type' => 'text', 'name' => 'orderid', 'description' => 'Order ID', 'options' => ['readonly']);
 		}
@@ -351,7 +362,6 @@ class EnviaOrderController extends \BaseController {
 			'customerreference',
 			'contractreference',
 			'contract_id',
-			'phonenumber_id',
 			'last_user_interaction',
 		);
 		$data = $this->_nullify_fields($data, $nullable_fields);

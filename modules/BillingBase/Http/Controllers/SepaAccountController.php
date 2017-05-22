@@ -28,17 +28,22 @@ class SepaAccountController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'creditorid', 'description' => 'Creditor ID'),
 			array('form_type' => 'text', 'name' => 'iban', 'description' => 'IBAN'),
 			array('form_type' => 'text', 'name' => 'bic', 'description' => 'BIC'),
-			array('form_type' => 'text', 'name' => 'institute', 'description' => 'Institute'),
+			array('form_type' => 'text', 'name' => 'institute', 'description' => 'Institute', 'space' => 1),
+
 			array('form_type' => 'select', 'name' => 'company_id', 'description' => 'Company', 'value' => $list),
+			array('form_type' => 'text', 'name' => 'invoice_nr_start', 'description' => 'Invoice Number Start', 'help' => trans('helper.BillingBase_InvoiceNrStart'), 'space' => 1),
+
 			array('form_type' => 'text', 'name' => 'invoice_headline', 'description' => 'Invoice Headline', 'help' => trans('helper.SepaAccount_InvoiceHeadline')),
 			array('form_type' => 'text', 'name' => 'invoice_text_sepa', 'description' => 'Invoice Text for positive Amount with Sepa Mandate', 'help' => trans('helper.SepaAccount_InvoiceText')),
 			array('form_type' => 'text', 'name' => 'invoice_text_sepa_negativ', 'description' => 'Invoice Text for negative Amount with Sepa Mandate'),
 			array('form_type' => 'text', 'name' => 'invoice_text', 'description' => 'Invoice Text for positive Amount without Sepa Mandate'),
-			array('form_type' => 'text', 'name' => 'invoice_text_negativ', 'description' => 'Invoice Text for negative Amount without Sepa Mandate'),
+			array('form_type' => 'text', 'name' => 'invoice_text_negativ', 'description' => 'Invoice Text for negative Amount without Sepa Mandate', 'space' => 1),
+
 			array('form_type' => 'select', 'name' => 'template_invoice', 'description' => 'Choose invoice template file', 'value' => $templates),
 			array('form_type' => 'select', 'name' => 'template_cdr', 'description' => 'Choose Call Data Record template file', 'value' => $templates),
 			array('form_type' => 'file', 'name' => 'template_invoice_upload', 'description' => 'Upload invoice template'),
-			array('form_type' => 'file', 'name' => 'template_cdr_upload', 'description' => 'Upload CDR template'),
+			array('form_type' => 'file', 'name' => 'template_cdr_upload', 'description' => 'Upload CDR template', 'space' => 1),
+
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
 		);
 	}
