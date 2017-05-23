@@ -623,9 +623,17 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// can get contract related information if contract is available
 			if ($this->contract_available) {
+				// here we have to distinct between origin modem and phonenumber
+				// ATM we only can handle one contract_id per request – to update multiple contracts per modem we have to be at least in level phonenumber
+				if ($this->phonenumber->exists) {
+					$id = "phonenumber_id=$phonenumber_id";
+				}
+				else {
+					$id = "modem_id=$modem_id";
+				}
 				array_push($ret, array(
 					'linktext' => 'Get voice data (EXPERIMENTAL – can have unexpected side effects)',
-					'url' => $base.'contract_get_voice_data'.$origin.'&amp;modem_id='.$modem_id.$really,
+					'url' => $base.'contract_get_voice_data'.$origin.'&amp;'.$id.$really,
 					'help' => "Get all phonenumbers and sip data for this modem.",
 				));
 			}
@@ -2245,9 +2253,17 @@ class ProvVoipEnvia extends \BaseModel {
 				[
 					'contract_change_tariff',
 					'contract_change_variation',
-					'contract_get_voice_data',
 					'contract_relocate',
 				])
+				||
+				(
+					// check if contract/get_voice_data has been called from modem level
+					// in this case we use the modem as source for external contract id
+					// else we use the phonenumber
+					($this->job == 'contract_get_voice_data')
+					&&
+					(!$this->phonenumber->exists)
+				)
 		) {
 			// this are the cases where more than one external contract can exist and we have to decide which to use (or to use all)
 			//

@@ -378,6 +378,7 @@ class ProvVoipEnviaController extends \BaseController {
 		}
 
 		if ($job == "contract_get_voice_data") {
+
 			$this->model->extract_environment($this->model->modem, 'modem');
 
 			// only can get data for a contract that exists (or existed)
