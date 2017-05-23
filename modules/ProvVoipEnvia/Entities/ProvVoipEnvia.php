@@ -2990,10 +2990,20 @@ class ProvVoipEnvia extends \BaseModel {
 
 				// update TRCClass
 				// remember: trcclass.id != trclass.trc_id (first is local key, second is Envia Id!)
-				$trcclass = TRCClass::where('trc_id', '=', intval($entry->trc_class))->first();
-				if ($phonenumbermanagement['trcclass'] != $trcclass->id) {
-					$phonenumbermanagement['trcclass'] = $trcclass->id;
-					$phonenumbermanagement->save();
+				if (!$phonenumbermanagement) {
+					$msg = "No phonenumbermanagement found for phonenumber $phonenumber->id. Cannot set TRC class";
+					$out .= "<b>$msg</b><br>";
+					Log::warning($msg);
+				}
+				else {
+					$trcclass = TRCClass::where('trc_id', '=', intval($entry->trc_class))->first();
+					if ($phonenumbermanagement['trcclass'] != $trcclass->id) {
+						$phonenumbermanagement['trcclass'] = $trcclass->id;
+						$phonenumbermanagement->save();
+						$msg = "Changed TRC class for phonenumber $phonenumber->id.";
+						$out .= "$msg<br>";
+						Log::info($msg);
+					}
 				}
 
 				$method = $entry->method;
@@ -3018,19 +3028,26 @@ class ProvVoipEnvia extends \BaseModel {
 					}
 					if ($changed) {
 						$phonenumber->save();
+						$msg = "Changed SIP data for phonenumber $phonenumber->id";
+						$out .= "$msg<br>";
+						Log::info($msg);
 					}
 				}
 				// process packet cable data
 				elseif (boolval($method->mgcp_data)) {
 
 					// TODO: process data for packet cable
-					$out .= "<b>TODO: packet cable not yet implemented</b>";
+					$msg .= "TODO: packet cable not yet implemented";
+					$out .= "<b>$msg</b><br>";
+					Log::error($msg);
 				}
 			}
 			elseif ($type == 'callnumber_range_data') {
 
 				// TODO: not yet implemented
-				$out .= "<b>TODO: handling of callnumber_range_data not yet implemented</b>";
+				$msg .= "TODO: handling of callnumber_range_data not yet implemented";
+				$out .= "<b>$msg</b><br>";
+				Log::error($msg);
 			}
 		}
 
