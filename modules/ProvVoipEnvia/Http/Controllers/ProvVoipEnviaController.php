@@ -148,6 +148,7 @@ class ProvVoipEnviaController extends \BaseController {
 			['api' => 'selfcare', 'link' => 'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=out'],
 			['api' => 'selfcare', 'link' => 'calllog_get_status?contract_id=500000'],
 			['api' => 'selfcare', 'link' => 'configuration_get?phonenumber_id=300001'],
+			['api' => 'order', 'link' => 'contract_change_method?phonenumber_id=300014'],
 			['api' => 'order', 'link' => 'contract_change_tariff?contract_id=500010'],
 			['api' => 'order', 'link' => 'contract_change_variation?contract_id=500010'],
 			['api' => 'order', 'link' => 'contract_create?contract_id=500000'],
@@ -174,9 +175,7 @@ class ProvVoipEnviaController extends \BaseController {
 			['api' => 'selfcare', 'link' => 'calllog_delete_entry'],
 			['api' => 'selfcare', 'link' => 'calllog_get'],
 			['api' => 'selfcare', 'link' => 'configuration_update'],
-			['api' => 'order', 'link' => 'contract_change_method'],
 			['api' => 'order', 'link' => 'contract_change_sla'],
-			['api' => 'order', 'link' => 'contract_get_reference'],
 			['api' => 'order', 'link' => 'contract_lock'],
 			['api' => 'order', 'link' => 'contract_unlock'],
 			['api' => 'order', 'link' => 'customer_get_reference'],
@@ -375,6 +374,24 @@ class ProvVoipEnviaController extends \BaseController {
 		if ($job == "contract_create") {
 
 			return true;
+		}
+
+		if ($job == "contract_change_method") {
+
+			if ($this->model->phonenumber->exists) {
+				$this->model->extract_environment($this->model->phonenumber, 'phonenumber');
+			}
+			else {
+				$this->model->extract_environment($this->model->modem, 'modem');
+			}
+
+			// only can change method for existing contract
+			if (!$this->model->contract_available) {
+				return false;
+			}
+
+			return true;
+
 		}
 
 		if ($job == "contract_get_voice_data") {
@@ -682,7 +699,7 @@ class ProvVoipEnviaController extends \BaseController {
 			/* 'configuration_get' => $this->base_url.'selfcare/configuration/get', */
 			/* 'configuration_update' => $this->base_url.'____TODO____', */
 
-			'contract_change_method' => $this->base_url.'____TODO____',
+			'contract_change_method' => $this->base_url.'contract/change_method',
 			'contract_change_sla' => $this->base_url.'____TODO____',
 			'contract_change_tariff' => $this->base_url.'contract/change_tariff',
 			'contract_change_variation' => $this->base_url.'contract/change_variation',

@@ -5,9 +5,10 @@ namespace Modules\ProvVoipEnvia\Entities;
 use Log;
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvBase\Entities\VoipRelatedDataUpdaterByEnvia;
+use Modules\ProvVoip\Entities\PhonebookEntry;
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
-use Modules\ProvVoip\Entities\PhonebookEntry;
+use Modules\ProvVoip\Entities\PhoneTariff;
 use Modules\ProvVoip\Entities\CarrierCode;
 use Modules\ProvVoip\Entities\EkpCode;
 use Modules\ProvVoip\Entities\Mta;
@@ -653,6 +654,34 @@ class ProvVoipEnvia extends \BaseModel {
 				}
 			}
 
+			// changes method from MGCP to SIP and vice versa
+			// ATM we don't create MGCP accounts – so this method is only usable to change imported old contracts
+			if ($this->contract_available) {
+				if (boolval($this->contract->next_purchase_tariff) && boolval($this->contract->purchase_tariff)) {
+					if ($this->contract->purchase_tariff != $this->contract->next_purchase_tariff) {
+
+						$old_proto = $this->contract->phonetariff_purchase->voip_protocol;
+						$new_proto = $this->contract->phonetariff_purchase_next->voip_protocol;
+
+						if ($old_proto != $new_proto) {
+							// here we have to distinct between origin modem and phonenumber
+							// ATM we only can handle one contract_id per request – to update multiple contracts per modem we have to be at least in level phonenumber
+							if ($this->phonenumber->exists) {
+								$id = "phonenumber_id=$phonenumber_id";
+							}
+							else {
+								$id = "modem_id=$modem_id";
+							}
+							array_push($ret, array(
+								'linktext' => 'Change method (MGCP⇔SIP) (EXPERIMENTAL).',
+								'url' => $base.'contract_change_method'.$origin.'&amp;'.$id,
+								'help' => "Changes method of an Envia contract depending on values of the future VoIP item.",
+							));
+						}
+					}
+				}
+			}
+
 			// variation can only be changed if contract exists and a variation change is wanted
 			// TODO: implement checks for current change state; otherwise we get an error from Envia (change into the same variation is not possible)
 			// TODO: this has to be done for each envia contract – this needs to be implemented
@@ -660,9 +689,9 @@ class ProvVoipEnvia extends \BaseModel {
 				if (boolval($this->contract->next_purchase_tariff) && boolval($this->contract->purchase_tariff)) {
 					if ($this->contract->purchase_tariff != $this->contract->next_purchase_tariff) {
 						array_push($ret, array(
-							'linktext' => 'Change variation (EXPERIMENTAL)',
+							'linktext' => 'Change purchase tariff (EXPERIMENTAL)',
 							'url' => $base.'contract_change_variation'.$origin.'&amp;modem_id='.$modem_id,
-							'help' => "Changes the VoIP purchase tariff for this modem (=Envia contract).\n\nATTENTION: Has also to be changed for all other modems related to this customer!",
+							'help' => "Changes the VoIP purchase tariff for this Envia contract.\n\nATTENTION: Has also to be changed for all other Envia contracts related to this customer!",
 						));
 					}
 				}
@@ -1303,9 +1332,20 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			/* 'contract_change_method' => array( */
+		$second_level_nodes['contract_change_method'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'method_data',
+		);
+
+			/* 'contract_change_sla' => array( */
 			/* 	'reseller_identifier', */
 			/* ), */
+
+		$second_level_nodes['contract_change_tariff'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+		);
 
 			/* 'contract_change_sla' => array( */
 			/* 	'reseller_identifier', */
@@ -1870,6 +1910,68 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Method to add method data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_method_data() {
+
+		$inner_xml = $this->xml->addChild('method_data');
+
+		// external reference to use has already been defined in $this->_add_contract_identifier()
+		// we can safely use this here
+		$external_contract_reference = sprintf($this->xml->contract_identifier->contractreference);
+
+		// Envia variation id to comes from the next-to-use phonetariff
+		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
+
+		// orderdate is starting date of next item having (via product) the same Envia variation ID as the next-to-use
+		// phonetariff
+		$orderdate = '9999-99-99';
+		$today = date('Y-m-d', strtotime('today'));
+		foreach ($this->contract->items as $item) {
+			if ($item->product->voip_purchase_tariff_id == $this->contract->next_purchase_tariff) {
+				if ($item->valid_from >= $today) {
+					$orderdate = min($orderdate, $item->valid_from);
+				}
+			}
+		}
+		$inner_xml->addChild('orderdate', $orderdate);
+
+		// now we have to add the phonenumber data
+		$method_changes_xml = $inner_xml->addChild('callnumber_method_changes');
+
+		// next get all the phonenumbers belonging to the currently processed Envia contract
+		$phonenumbers_to_change = PhoneNumber::where('contract_external_id', '=', $external_contract_reference)->get();
+
+		if ($phonenumbers_to_change->count() == 0) {
+			throw new XmlCreationError("No phonenumbers found for Envia contract $external_contract_reference");
+		}
+		if ($phonenumbers_to_change->count() > 2) {
+			throw new XmlCreationError("Envia allows use of this method only for contracts with max. 2 phonenumbers (".$phonenumbers_to_change->count()." numbers found for Envia contract $external_contract_reference).");
+		}
+
+		// and add the needed data for each of this numbers
+		foreach ($phonenumbers_to_change as $phonenumber) {
+
+			$callnumber_xml = $method_changes_xml->addChild('callnumber_method_change_data');
+
+			$callnumber_id_xml = $callnumber_xml->addChild('callnumber_identifier');
+			$fields = array(
+				'localareacode' => 'prefix_number',
+				'baseno' => 'number',
+			);
+			$this->_add_fields($callnumber_id_xml, $fields, $phonenumber);
+
+			$this->_add_sip_data($callnumber_xml->addChild('method'), $phonenumber);
+		}
+
+
+
+	}
+
+
+	/**
 	 * Method to add tariff data
 	 *
 	 * @author Patrick Reichel
@@ -2249,18 +2351,18 @@ class ProvVoipEnvia extends \BaseModel {
 		// depending on the job to do we have to get the EnviaContract references
 		// especially we have to distinct jobs related to modems (e.g. contract_relocate) from those related to phonenumbers
 		if (in_array(
-				$this->job,
-				[
+				$this->job, [
 					'contract_change_tariff',
 					'contract_change_variation',
 					'contract_relocate',
-				])
+					]
+				)
 				||
 				(
 					// check if contract/get_voice_data has been called from modem level
 					// in this case we use the modem as source for external contract id
 					// else we use the phonenumber
-					($this->job == 'contract_get_voice_data')
+					(in_array($this->job, ['contract_get_voice_data', 'contract_change_method']))
 					&&
 					(!$this->phonenumber->exists)
 				)
@@ -3179,6 +3281,33 @@ class ProvVoipEnvia extends \BaseModel {
 		return $out;
 
 	}
+
+
+	/**
+	 * Process data after successful method change
+	 *
+	 * @author Patrick Reichel
+	 * @todo: updating data in enviacontract has to be done in daily conversion!!
+	 */
+	protected function _process_contract_change_method_response($xml, $data, $out) {
+
+		// create enviaorder
+		$order_data = array();
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['method'] = 'contract/change_method';
+		$order_data['contract_id'] = $this->contract->id;
+		$order_data['modem_id'] = $this->modem->id;
+		$order_data['ordertype'] = 'contract/change_method';
+		$order_data['orderstatus'] = 'initializing';
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// view data
+		$out .= "<h5>Method	change successful (order ID: ".$xml->orderid.")</h5>";
+
+		return $out;
+	}
+
 
 	/**
 	 * Process data after successful tariff change
