@@ -946,6 +946,8 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->phonenumbermanagement = null;
 		$this->phonebookentry = null;
 
+		$this->view_level = $level;
+
 		// level is irrelevant (e.g. for creating XML for a given contract_id)
 		// this means: the initial model comes from a database search using IDs given by GET/POST/WHATEVER
 		// depending on the found model we try to get all clearly related (so to say “parental”) model instances
@@ -3159,6 +3161,36 @@ class ProvVoipEnvia extends \BaseModel {
 					$out .= "<b>$msg</b><br>";
 					Log::error($msg);
 				}
+
+				// update Envia contracts
+				if ($phonenumber->contract_external_id) {
+					$enviacontract = EnviaContract::firstOrCreate(array('envia_contract_reference' => $phonenumber->contract_external_id));
+					$changed = False;
+					if ($enviacontract->envia_contract_reference != $phonenumber->contract_external_id) {
+						$enviacontract->envia_contract_reference = $phonenumber->contract_external_id;
+						$changed = True;
+					}
+					if ($enviacontract->envia_customer_reference != $phonenumber->mta->modem->contract->customer_external_id) {
+						$enviacontract->envia_customer_reference = $phonenumber->mta->modem->contract->customer_external_id;
+						$changed = True;
+					}
+					if ($enviacontract->method != $entry->method) {
+						$enviacontract->method = $entry->method;
+						$changed = True;
+					}
+					if ($enviacontract->modem_id != $phonenumber->mta->modem->id) {
+						$enviacontract->modem_id = $phonenumber->mta->modem->id;
+						$changed = True;
+					}
+					if ($enviacontract->contract_id != $phonenumber->mta->modem->contract->id) {
+						$enviacontract->contract_id = $phonenumber->mta->modem->contract->id;
+						$changed = True;
+					}
+					if ($changed) {
+						$enviacontract->save();
+					}
+				}
+
 			}
 			elseif ($type == 'callnumber_range_data') {
 
@@ -3550,7 +3582,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 			$order = EnviaOrder::where('orderid', $order_id)->first();
 
-			// check if there is an Envia contract for the returned contract_reference
+			// check if there exists an Envia contract for the returned contract_reference
 			// this is save here because within the CSV there are only phonenumber related orders (and e.g. no contract/relocate)
 			$enviacontract = EnviaContract::where("envia_contract_reference", "=", $result['contractreference'])->first();
 			if (!$enviacontract) {
@@ -4078,6 +4110,13 @@ class ProvVoipEnvia extends \BaseModel {
 		if (boolval(sprintf($xml->contractreference))) {
 			if ($order->contractreference != $xml->contractreference) {
 				$order->contractreference = $xml->contractreference;
+
+				// check relations to phonenumbers
+				foreach (PhoneNumber::where('contract_external_id', '=', $xml->contractreference)->get() as $phonenumber) {
+					if (!$envia->phonenumbers->contains($phonenumber->id)) {
+						$envia->phonenumbers()->attach($phonenumber->id);
+					}
+				}
 				$order_changed = True;
 			}
 			$out .= "<tr><td>Contractreference: </td><td>".$xml->contractreference."</td></tr>";
