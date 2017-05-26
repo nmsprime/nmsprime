@@ -5,7 +5,7 @@
 	@if ($dash)
 		<font color="grey">{{$dash}}</font>
 	@else
-		<font color="green"><b>TODO</b></font>
+		<b>Dashboard could not be loaded</b>
 	@endif
 @stop
 
@@ -132,19 +132,22 @@
 
 
 @section('content_realtime')
-	@if ($realtime)
+@if ($realtime)
 	@foreach ($realtime['measure'] as $tablename => $table)
 		<h4>{{$tablename}}</h4>
 			@if ($tablename == "Downstream" || $tablename == "Upstream"  )
 			<div class="table-responsive">
-				<table class="table streamtable table-bordered table-hover" width="100%">
+				<table class="table streamtable table-bordered" width="100%">
 					<thead>
 						<tr class="active">
 							<th> </th>
 							<th>#</th>
 							@foreach ($table as $colheader => $colarray)
-								@if ($colheader != "Operational CHs %")
-								<th class="text-center">{{$colheader}}</th>
+								@if ($colheader == "Modulation Profile")
+									<th class="text-center">Modulation</th>
+								@endif
+								@if ($colheader != "Operational CHs %" && $colheader != "Modulation Profile")
+									<th class="text-center">{{$colheader}}</th>
 								@endif
 							@endforeach
 						</tr>
@@ -157,7 +160,23 @@
 							<td width="20"> {{ $i+1 }}</td>
 							@foreach ($table as $colheader => $colarray)
 								@if ($colheader != "Operational CHs %")
-								<td class="text-center"> <font color="grey"> {{ htmlspecialchars( $colarray[$i] ) }} </font> </td>
+									<?php
+										$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "Modulation Profile";
+										switch ( \App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), Str::lower($table[$mod][$i]) ,Str::lower($colheader),htmlspecialchars($colarray[$i])) ){
+										case 0:
+												$color = "success";
+												break;
+										case 1:
+												$color = "warning";
+												break;
+										case 2:
+												$color = "danger";
+												break;
+										default:
+												$color = "";
+										}
+									?>
+								<td class="text-center {{ $color }}"> <font color="grey"> {{ htmlspecialchars( $colarray[$i] ) }} </font> </td>
 								@endif
 							@endforeach
 						</tr>
@@ -182,7 +201,7 @@
 			</table>
 			@endif
 	@endforeach
-	@else
-		<font color="red">{{trans('messages.modem_offline')}}</font>
-	@endif
+@else
+  <font color="red">{{trans('messages.modem_offline')}}</font>
+@endif
 @stop
