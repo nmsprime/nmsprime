@@ -27,6 +27,12 @@ class Ccc extends \BaseModel {
 		return 'Ccc Config';
 	}
 
+	// View Icon
+	public static function view_icon()
+	{
+		return '<i class="fa fa-users"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{

@@ -35,10 +35,18 @@ class Company extends \BaseModel {
 		return 'Company';
 	}
 
+	// View Icon
+	public static function view_icon()
+	{
+		return '<i class="fa fa-industry"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{
-		return $this->name;
+		return ['index' => [$this->name],
+				'index_header' => ['Name'],
+				'header' => $this->name];
 	}
 
 	public function view_has_many ()

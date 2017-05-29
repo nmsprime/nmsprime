@@ -38,6 +38,11 @@ class SettlementRun extends \BaseModel {
 		return 'Settlement Run';
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-file-pdf-o"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{
