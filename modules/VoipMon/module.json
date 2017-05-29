@@ -2,6 +2,7 @@
     "name": "VoipMon",
     "alias": "voipmon",
     "description": "",
+    "icon": "fa-phone",
     "keywords": [],
     "active": 0,
     "order": 0,

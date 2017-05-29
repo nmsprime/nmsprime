@@ -25,7 +25,7 @@ class CdrController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'a_mos_f1_min_mult10', 'description' => 'min. MOS 50ms', 'help' => trans('helper.a_mos_f1_min_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'a_mos_f2_min_mult10', 'description' => 'min. MOS 200ms', 'help' => trans('helper.a_mos_f1_min_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'a_mos_adapt_min_mult10', 'description' => 'min. MOS adaptive 500ms', 'help' => trans('helper.a_mos_adapt_min_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'a_mos_f1_mult10', 'description' => 'avg. MOS 50ms', 'help' => 'help' => trans('helper.a_mos_f1_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'a_mos_f1_mult10', 'description' => 'avg. MOS 50ms', 'help' => trans('helper.a_mos_f1_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'a_mos_f2_mult10', 'description' => 'avg. MOS 200ms', 'help' => trans('helper.a_mos_f2_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'a_mos_adapt_mult10', 'description' => 'avg. MOS adaptive 500ms', 'help' => trans('helper.a_mos_f2_mult10'), 'eval' => '$name/10', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'a_received', 'description' => 'Received Packets', 'options' => ['readonly']),
