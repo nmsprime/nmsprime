@@ -14,8 +14,11 @@
 				// Need to be tested !
 				$tmp = explode('\\',get_class($parent));
 				$view = end($tmp);
-				$lbl = is_array($parent->view_index_label()) ? $parent->view_index_label()['header'] : $parent->view_index_label();
-				$s = "<li><a href='".$view.".edit'>".$parent->view_icon().$lbl."</a></li>".$s;
+				$s = "<li>".HTML::decode(HTML::linkRoute($view.'.edit',
+					is_array($parent->view_index_label()) ?
+						$parent->view_icon().$parent->view_index_label()['header'] :
+						$parent->view_icon().$parent->view_index_label(),
+					$parent->id)).'</li>'.$s;
 			}
 
 
