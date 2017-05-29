@@ -154,14 +154,19 @@
 					</thead>
 					<tbody>
 						<?php $max = count(current($table)); ?>
-						@for ($i = 0; $i < $max ; $i++)
+						@foreach(current($table) as $i => $dummy)
 						<tr>
 							<td width="20"></td>
 							<td width="20"> {{ $i+1 }}</td>
 							@foreach ($table as $colheader => $colarray)
 								@if ($colheader != "Operational CHs %")
 									<?php
+//TODO Christian, please clean up
+										if(!isset($colarray[$i]))
+											continue;
 										$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "Modulation Profile";
+										if(!isset($table[$mod][$i]))
+										        continue;
 										switch ( \App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), Str::lower($table[$mod][$i]) ,Str::lower($colheader),htmlspecialchars($colarray[$i])) ){
 										case 0:
 												$color = "success";
@@ -180,7 +185,7 @@
 								@endif
 							@endforeach
 						</tr>
-						@endfor
+						@endforeach
 					</tbody>
 				</table>
 			</div>
