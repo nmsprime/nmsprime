@@ -5,7 +5,7 @@
 	@if ($dash)
 		<font color="grey">{{$dash}}</font>
 	@else
-		<b>Dashboard could not be loaded</b>
+		<b>TODO</b>
 	@endif
 @stop
 
