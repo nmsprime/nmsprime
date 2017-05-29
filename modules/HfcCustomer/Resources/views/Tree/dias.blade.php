@@ -7,9 +7,8 @@
         Diagrams - Modems
 @stop
 
+{{ $view_header = 'Diagrams' }}
 @section('content_left')
-
-        <h1>Diagrams</h1>
 
         @if ($monitoring)
 
