@@ -3580,10 +3580,11 @@ class ProvVoipEnvia extends \BaseModel {
 			$result['modem_id'] = $phonenumber->mta->modem->id;
 			$result['contract_id'] = $phonenumber->mta->modem->contract->id;
 
-			$order = EnviaOrder::where('orderid', $order_id)->first();
+			$order = EnviaOrder::withTrashed()->where('orderid', $order_id)->first();
 
 			// check if there exists an Envia contract for the returned contract_reference
 			// this is save here because within the CSV there are only phonenumber related orders (and e.g. no contract/relocate)
+			// attention: there can be orders within the CSV that has been soft deleted in our database (via order/cancel)
 			$enviacontract = EnviaContract::where("envia_contract_reference", "=", $result['contractreference'])->first();
 			if (!$enviacontract) {
 				// if not: create
@@ -3602,8 +3603,6 @@ class ProvVoipEnvia extends \BaseModel {
 			// add envia contract id to result array ⇒ used to check relation between phonenumbermanagement and envia
 			// contract in _update_phonenumbermanagement_with_envia_data() (called later via _update_phonenumber_related_data()
 			$result['enviacontract_id'] = $enviacontract->id;
-
-
 
 			// check if this order already exists within the database
 			if (!is_null($order)) {
