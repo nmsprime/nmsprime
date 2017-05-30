@@ -743,14 +743,14 @@ class ProvVoipEnvia extends \BaseModel {
 				array_push($ret, array(
 					'linktext' => 'Get phonebook entry',
 					'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id,
-					'help' => "Gets the current phonebook entry for this phonenumber.",
+					'help' => "Gets the current phonebook entry for this phonenumber (EXPERIMENTAL).",
 				));
 
 				if ($view_level == 'phonebookentry') {
 					array_push($ret, array(
 						'linktext' => 'Create/change phonebook entry (EXPERIMENTAL)',
 						'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
-						'help' => "Creates a new or updates an existing phonebook entry for this phonenumber."
+						'help' => "Creates a new or updates an existing phonebook entry for this phonenumber (EXPERIMENTAL)."
 					));
 				}
 
@@ -758,7 +758,7 @@ class ProvVoipEnvia extends \BaseModel {
 					array_push($ret, array(
 						'linktext' => 'Delete phonebook entry (EXPERIMENTAL)',
 						'url' => $base.'phonebookentry_delete'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
-						'help' => "Deletes an existing phonebook entry for this phonenumber."
+						'help' => "Deletes an existing phonebook entry for this phonenumber (EXPERIMENTAL)."
 					));
 				}
 			}
@@ -4681,10 +4681,22 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_phonebookentry_create_response($xml, $data, $out) {
 
-		$out = "";
+		if (is_null($this->phonebookentry->external_creation_date)) {
+			$this->phonebookentry->external_creation_date = date('Y-m-d');
+			$method = "Created";
+		}
+		else {
+			$this->phonebookentry->external_update_date = date('Y-m-d');
+			$method = "Updated";
+		}
+		$this->phonebookentry->save();
 
-		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Returned XML is:</h2>";
-		d($xml);
+		$msg = "$method PhonebookEntry ".$this->phonebookentry->id." at Telekom";
+
+		$out .= $msg;
+		Log::info($msg);
+
+		return $out;
 	}
 
 
@@ -4695,10 +4707,16 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_phonebookentry_delete_response($xml, $data, $out) {
 
-		$out = "";
+		// if we end up here the entry should be deleted at Telekom
 
-		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Returned XML is:</h2>";
-		d($xml);
+		$this->phonebookentry->delete();
+
+		$msg = "PhonebookEntry ".$this->phonebookentry->id." deleted";
+
+		$out .= $msg;
+		Log::info($msg);
+
+		return $out;
 	}
 
 
@@ -4709,10 +4727,44 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_phonebookentry_get_response($xml, $data, $out) {
 
-		$out = "";
+		$changed = false;
 
-		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Use returned data to create new or update existing phonebookentry</h2><h2>Returned XML is:</h2>";
-		d($xml);
+		if (is_null($this->phonebookentry)) {
+			$this->phonebookentry = new PhonebookEntry();
+			$changed = true;
+		}
+
+		foreach ($xml->children() as $child) {
+
+			$col = $child->getName();
+			$value = (string) $child;
+
+			if ($this->phonebookentry->$col != $value) {
+				$this->phonebookentry->$col = $value;
+				$changed = True;
+			}
+		}
+
+		// add a dummy creation date (indicates an entry not created using the API)
+		// this is used to guess if a phonebookentry really exists at Telekom
+		if (!$this->phonebookentry->external_creation_date) {
+			$this->phonebookentry->external_creation_date = '1900-01-01';
+			$this->phonebookentry->phonenumbermanagement_id = $this->phonenumbermanagement->id;
+		}
+
+		if ($changed) {
+			if ($this->phonebookentry->wasRecentlyCreated) {
+				$msg = "Created new PhonebookEntry for phonenumber ".$this->phonenumber->id." with data delivered by Telekom";
+			}
+			else {
+				$msg = "Updated PhonebookEntry for phonenumber ".$this->phonenumber-id." with data delivered by Telekom";
+			}
+			$this->phonebookentry->save();
+			$out .= $msg;
+			Log::info($msg);
+		}
+
+		return $out;
 	}
 
 
