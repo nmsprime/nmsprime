@@ -1,9 +1,23 @@
 <?php
 
-return 	[['Product List' => 'Product.index'],
-	['SEPA Accounts' => 'SepaAccount.index', 
-	'Settlement Run' => 'SettlementRun.index',
-	'Cost Center' => 'CostCenter.index',
-	'Companies' => 'Company.index',
-	'Salesmen' => 'Salesman.index']
-	];
+return array(
+	['Product List' =>
+		['link'	=> 'Product.index',
+		'icon'	=> 'fa-th-list'],
+	'SEPA Accounts' =>
+		['link'	=> 'SepaAccount.index',
+		'icon'	=> 'fa-credit-card'],
+	'Settlement Run' =>
+		['link'	=> 'SettlementRun.index',
+		'icon'	=> 'fa-file-pdf-o'],
+	'Cost Center' =>
+		['link'	=> 'CostCenter.index',
+		'icon'	=> 'fa-creative-commons'],
+	'Companies' =>
+		['link'	=> 'Company.index',
+		'icon'	=> 'fa-industry'],
+	'Salesmen' =>
+		['link'	=> 'Salesman.index',
+		'icon' => 'fa-vcard']
+	]
+);

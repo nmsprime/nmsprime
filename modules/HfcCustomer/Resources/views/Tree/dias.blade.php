@@ -7,16 +7,15 @@
         Diagrams - Modems
 @stop
 
+{{ $view_header = 'Diagrams' }}
 @section('content_left')
-
-        <h1>Diagrams</h1>
 
         @if ($monitoring)
 
                 <table>
                 @foreach ($monitoring as $mon)
 
-                        @if (!isset($headline))
+                        @if ($mon === reset($monitoring))
                                 <tr><td>
                                 <form action="" method="GET">
                                         From:<input type="text" name="from" value={{$mon['from']}}>
@@ -24,8 +23,6 @@
                                         <input type="submit" value="Submit">
                                 </form>
                                 </td></tr>
-
-                                <?php $headline = 1; ?>
                         @endif
 
                         <tr><td><h4>{{$mon['descr']}}</h4></td></tr>

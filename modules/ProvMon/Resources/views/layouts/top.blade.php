@@ -3,7 +3,7 @@
 		 * Shows the html links of the related objects recursivly
 		 * TODO: should be placed in a global concept and not on module base
 		 */
-		$s = "";
+		$s = '';
 
 		$parent = $view_var;
 		do
@@ -14,8 +14,13 @@
 				// Need to be tested !
 				$tmp = explode('\\',get_class($parent));
 				$view = end($tmp);
-				$s = HTML::linkRoute($view.'.edit', is_array($parent->view_index_label()) ? $parent->view_index_label()['header'] : $parent->view_index_label(), $parent->id).' / '.$s;
+				$s = "<li>".HTML::decode(HTML::linkRoute($view.'.edit',
+					is_array($parent->view_index_label()) ?
+						$parent->view_icon().$parent->view_index_label()['header'] :
+						$parent->view_icon().$parent->view_index_label(),
+					$parent->id)).'</li>'.$s;
 			}
+
 
 			$parent = $parent->view_belongs_to();
 		}
@@ -23,11 +28,11 @@
 
 		// Show link to actual site. This depends on if we are in Modem Analyses or CPE Analyses context
 		if (!isset($type))
-			$s .= HTML::linkRoute('Provmon.index', 'Analyses', $view_var->id);
+			$s .= "<li class='nav-tabs'>".HTML::linkRoute('Provmon.index', 'Analyses', $view_var->id).'</li>';
 		elseif ($type == 'CPE')
-			$s .= HTML::linkRoute('Provmon.cpe', 'CPE Analysis', $view_var->id);
+			$s .= "<li class='nav-tabs'>".HTML::linkRoute('Provmon.cpe', 'CPE Analysis', $view_var->id).'</li>';
 		elseif ($type == 'MTA')
-			$s .= HTML::linkRoute('Provmon.mta', 'MTA Analysis', $view_var->id);
+			$s .= "<li class='nav-tabs'>".HTML::linkRoute('Provmon.mta', 'MTA Analysis', $view_var->id).'</li>';
 
-		echo HTML::linkRoute('Modem.index', 'Modems').': '.$s;
+		echo "<li class='active'><a href='Modem.index'><i class='fa fa-hdd-o'></i>Modem</a></li>".$s;
 	?>

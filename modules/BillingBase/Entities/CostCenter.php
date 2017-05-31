@@ -30,10 +30,17 @@ class CostCenter extends \BaseModel {
 		return 'Cost Center';
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-creative-commons"></i>'; 
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{
-		return $this->name;
+		return ['index' => [$this->name],
+				'index_header' => ['Name'],
+				'header' =>$this->name];
 	}
 
 
