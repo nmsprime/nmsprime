@@ -8,8 +8,8 @@ class Company extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'company';
 
-    // public $guarded = ['upload'];
-    public $guarded = ['logo_upload'];
+    // All HTML Input Fields that are discarded during Database Update
+    public $guarded = ['logo_upload', 'conn_info_template_fn_upload'];
 
 
 	// Add your validation rules here
@@ -73,52 +73,6 @@ class Company extends \BaseModel {
 		parent::boot();
 	}
 
-
-	/**
-	 * Returns all available logo files (via directory listing)
-	 * @author Nino Ryschawy
-	 */
-	public function logos() 
-	{
-		// get all available files
-		// $files_raw  = glob("/tftpboot/bill/logo/*");
-		$files_raw  = Storage::files('config/billingbase/logo/');
-		$files 		= array(null => "None");
-
-		// $files_raw = glob("/tftpboot/bill/*");
-		// $pic = ['png', 'eps', 'pdf', 'jpg'];
-		// $doc = ['tex', 'odt', 'sxw'];
-
-		// extract filename
-		// foreach ($files_raw as $file)
-		// {		
-		// 	if (is_file($file))
-		// 	{
-		// 		$parts = explode("/", $file);
-		// 		$filename = array_pop($parts);
-		// 		$ending = explode('.', $filename);
-		// 		$end = end($ending);
-		
-		// 		if (in_array($end, $pic))
-		// 			$files['logo'][$filename] = $filename;
-		// 		else if (in_array($end, $doc))
-		// 			$files['template'][$filename] = $filename;
-		// 	}
-		// }
-
-		// extract filename
-		foreach ($files_raw as $file) 
-		{
-			if (is_file(storage_path('app/'.$file)))
-			{
-				$parts = explode("/", $file);
-				$filename = array_pop($parts);
-				$files[$filename] = $filename;
-			}
-		}
-
-		return $files;
-	}
 
 
 	/**

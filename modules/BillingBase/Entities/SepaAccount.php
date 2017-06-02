@@ -71,6 +71,10 @@ class SepaAccount extends \BaseModel {
 			);
 	}
 
+	public function view_belongs_to ()
+	{
+		return $this->company;
+	}
 
 	/**
 	 * Relationships:

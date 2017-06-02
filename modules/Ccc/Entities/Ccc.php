@@ -39,24 +39,4 @@ class Ccc extends \BaseModel {
 		return $this->view_headline();
 	}
 
-
-	/**
-	 * Return file list for global config view - select field
-	 * @return array 	filenames
-	 */
-	public static function template_files()
-	{
-		$files_raw = \Storage::files('config/ccc/template/');
-		$files[null] = null;
-
-		foreach ($files_raw as $file)
-		{
-			$name = explode('/', $file);
-			$name = array_pop($name);
-			$files[$name] = $name;
-		}
-
-		return $files;
-	}
-
 }
