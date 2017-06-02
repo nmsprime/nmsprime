@@ -44,11 +44,12 @@ class ProvMonController extends \BaseController {
 		$a = array(['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]],
 						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
 						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]],
-						['name' => 'Logging', 'route' => 'GuiLog.filter', 'link' => ['model_id' => $modem->id, 'model' => 'Modem']],
 				);
 
 		if (isset($modem->mtas[0]))
 			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'Provmon.mta', 'link' => [$id]]);
+
+		array_push($a, ['name' => 'Logging', 'route' => 'GuiLog.filter', 'link' => ['model_id' => $modem->id, 'model' => 'Modem']]);
 
 		return $a;
 	}
