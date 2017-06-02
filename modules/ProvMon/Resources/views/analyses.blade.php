@@ -113,6 +113,22 @@
 			<font color="red">{{ trans('messages.modem_lease_error')}}</font>
 		@endif
 	</div>
+	<div class="tab-pane fade in" id="configfile">
+		@if ($configfile)
+			<font color="green"><b>Modem Configfile</b></font><br>
+			@foreach ($configfile as $line)
+				<table>
+					<tr>
+						<td>
+						 <font color="grey">{{$line}}</font>
+						</td>
+					</tr>
+				</table>
+			@endforeach
+		@else
+			<font color="red">{{ trans('messages.modem_configfile_error')}}</font>
+		@endif
+	</div>
 </div>
 
 @stop
