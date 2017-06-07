@@ -3220,6 +3220,8 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _update_envia_contract_reference_on_phonenumber($phonenumber, $contractreference, $overwrite=False, $verbose=False) {
 
+		$msg = '';
+
 		// if there is no phonenumber something went wrong
 		if (is_null($phonenumber)) {
 
@@ -3604,11 +3606,15 @@ class ProvVoipEnvia extends \BaseModel {
 			// contract in _update_phonenumbermanagement_with_envia_data() (called later via _update_phonenumber_related_data()
 			$result['enviacontract_id'] = $enviacontract->id;
 
-			// check if this order already exists within the database
-			if (!is_null($order)) {
+			if (is_null($order)) {
+				// order does not exist in our database: create it
 
-				$order_changed = False;
+				// create a new Order, add given data to model instance
+				$order = EnviaOrder::create($result);
+				$out .= '<br>Order '.$order_id.' created.';
 
+			}
+			else {
 				// ordertype_id is not given by order_get_status: we have to set it here if there are any changes
 				if ($order->ordertype_id != $result['ordertype_id']) {
 					$order->ordertype_id = $result['ordertype_id'];
@@ -3616,54 +3622,35 @@ class ProvVoipEnvia extends \BaseModel {
 					$msg = 'Updated ordertype_id in for existing order '.$order_id;
 					Log::info($msg);
 					$out .= '<br>'.$msg;
-					$order_changed = true;
 				}
-
-				// as an order can be related to more than one phonenumber we
-				// have to check if the current relation exists
-				if (!$order->phonenumbers->contains($phonenumber->id)) {
-					$order->phonenumbers()->attach($phonenumber->id);
-					$msg = 'Added relation between existing enviaorder '.$order_id.' and phonenumber '.$phonenumber->id;
-					Log::info($msg);
-					$out .= '<br>'.$msg;
-					$order_changed = true;
-
-					// check if contract, modem and/or phonenumbermanagement need updates, too
-					$out = $this->_update_phonenumber_related_data($result, $out);
-				}
-
-				// if nothing happened related to the current order: inform the user
-				// updating other informations related to this order will be done in method order_get_status
-				if (!$order_changed) {
-					$out .= '<br>Order '.$order_id.' already exists in database and nothing to do. Skipping.';
-				}
-
-				continue;
 			}
 
-			// create a new Order, add given data to model instance
-			$order = EnviaOrder::create($result);
+			// as an order can be related to more than one phonenumber we
+			// have to check if the current relation exists
+			if (!$order->phonenumbers->contains($phonenumber->id)) {
+				$order->phonenumbers()->attach($phonenumber->id);
+				$msg = 'Added relation between existing enviaorder '.$order_id.' and phonenumber '.$phonenumber->id;
+				Log::info($msg);
+				$out .= '<br>'.$msg;
+			}
 
-			$out .= '<br>Order '.$order_id.' created.';
+			// check if contract, modem and/or phonenumbermanagement need updates, too
+			// don't perform action for successfully cancelled orders here
+			if (!EnviaOrder::order_successfully_cancelled($order)) {
+				if (!EnviaOrder::order_failed($order)) {
+					$out = $this->_update_phonenumber_related_data($result, $out);
+				}
+			}
 
-			// if we end up here we have an order that not existed yet – so we have to check if
-			// contract, modem and/or phonenumbermanagement need updates, too
-			$out = $this->_update_phonenumber_related_data($result, $out);
 		}
 
-		// return different output on cron jobs.
-		if ($data['entry_method'] == 'cron') {
-			return 'Database updated.';
-		}
-		else {
-			$out .= "<br><br><pre>".$csv."</pre>";
-			return $out;
-		}
+		$out .= "<br><br><pre>".$csv."</pre>";
+		return $out;
 	}
 
 
 	/**
-	 * This is used to update several inforamtion in contract, modem and phonenumbermanagement.
+	 * This is used to update several information in contract, modem and phonenumbermanagement.
 	 * Has to be done on misc_get_orders_csv and contract_get_reference because this values can be missing (e.g. voip_account has been created before activation of envia module)
 	 *
 	 * @author Patrick Reichel
@@ -3685,7 +3672,7 @@ class ProvVoipEnvia extends \BaseModel {
 			$out = $this->_update_phonenumbermanagement_with_envia_data($data, $out);
 		}
 
-		$out .= "<br><pre>".print_r($data)."</pre>";
+		/* $out .= "<br><pre>".print_r($data)."</pre>"; */
 
 		return $out;
 	}
@@ -3795,6 +3782,12 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		if ($modem_changed) {
+
+			// disable modem's observer to prevent multiple creation of DHCP files for all modems
+			// we don't touch any DHCP related data within this method
+			$modem->observer_enabled = False;
+
+			// save the changes
 			$modem->save();
 		}
 
@@ -3823,7 +3816,7 @@ class ProvVoipEnvia extends \BaseModel {
 		if (isset($data['contractreference'])) {
 			$ret = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $data['contractreference'], False, False);
 			if ($ret) {
-				$out .= "<br>$msg";
+				$out .= "<br>$ret";
 			}
 		}
 
@@ -3950,14 +3943,13 @@ class ProvVoipEnvia extends \BaseModel {
 		if (isset($data['enviacontract_id'])) {
 
 			// check if phonenumber is related to given envia contract
-			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
-			if (($phonenumbermanagement)
+			if ((!is_null($phonenumbermanagement))
 				&&
-				($phonenumbermanagement->enviacontract_id != $enviacontract->id)
+				($phonenumbermanagement->enviacontract_id != $data['enviacontract_id'])
 			) {
-				$phonenumbermanagement->enviacontract_id = $enviacontract->id;
+				$phonenumbermanagement->enviacontract_id = $data['enviacontract_id'];
 				$phonenumbermanagement_changed = True;
-				$out .= '<br>'.$msg;
+				$out .= '<br> ⇒ PhonenumberManagement->enviacontract_id set to '.$data['enviacontract_id'];
 			}
 		}
 

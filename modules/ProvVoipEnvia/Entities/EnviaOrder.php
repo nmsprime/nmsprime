@@ -211,6 +211,7 @@ class EnviaOrder extends \BaseModel {
 		'contractreference',
 		'contract_id',
 		'modem_id',
+		'enviacontract_id',
 	];
 
 
@@ -381,6 +382,29 @@ class EnviaOrder extends \BaseModel {
 		);
 
 		return $mapped_to_state_type;
+	}
+
+
+	/**
+	 * Check if order has successfully been cancelled
+	 * We assume this if the orderstate indicates it and the ordertype is not order/cancel.
+	 *
+	 * TODO: check what happens if we try to cancel an order that cancelled another order…
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function order_successfully_cancelled($order) {
+
+		if (
+			(($order->orderstatus_id == 1017) || ($order->orderstatus == 'Stornierung bestätigt'))
+			&&
+			($order->ordertype != 'Stornierung eines Auftrags')
+		) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 
 
