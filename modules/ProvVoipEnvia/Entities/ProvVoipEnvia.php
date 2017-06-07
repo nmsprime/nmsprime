@@ -4374,7 +4374,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		if ($modem_changed) {
 			$modem->save();
-			Log::info('Database table modem updated for modem with id '.$modem_id);
+			Log::info('Database table modem updated for modem with id '.$modem->id);
 			$out .= "<br><b>Modem table updated</b>";
 		};
 
