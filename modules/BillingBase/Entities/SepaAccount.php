@@ -57,8 +57,8 @@ class SepaAccount extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		return ['index' => [$this->name],
-		        'index_header' => ['Name'],
+		return ['index' => [$this->name, $this->institute],
+		        'index_header' => ['Name', 'Institute'],
 				'header' => $this->name];
 	}
 

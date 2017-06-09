@@ -44,8 +44,8 @@ class Company extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		return ['index' => [$this->name],
-				'index_header' => ['Name'],
+		return ['index' => [$this->name, $this->city, $this->phone, $this->mail],
+				'index_header' => ['Name', 'City', 'Phonenumber', 'Mail'],
 				'header' => $this->name];
 	}
 

@@ -48,8 +48,8 @@ class SettlementRun extends \BaseModel {
 	{
 		$bsclass = $this->verified ? 'info' : 'warning';
 
-		return ['index' => [$this->year, $this->month, $this->created_at->__get('day')],
-		        'index_header' => ['Year', 'Month', 'Day'],
+		return ['index' => [$this->year, $this->month, $this->created_at->toDateString(), $this->verified ? 'Yes' : 'No'], //$this->created_at->__get('day')],
+		        'index_header' => ['Year', 'Month', 'Created At', 'Verified'],
 		        'bsclass' => $bsclass,
 		        'header' => $this->year.' - '.$this->month.' - '.$this->created_at->__get('day')];
 	}

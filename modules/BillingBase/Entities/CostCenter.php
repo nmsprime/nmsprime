@@ -38,9 +38,9 @@ class CostCenter extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		return ['index' => [$this->name],
-				'index_header' => ['Name'],
-				'header' =>$this->name];
+		return ['index' => [$this->name, $this->number, $this->sepa_account ? $this->sepa_account->name : ''],
+				'index_header' => ['Name', 'Number', 'SEPA Account'],
+				'header' => $this->name];
 	}
 
 
