@@ -3,6 +3,6 @@
 return array(
 	['Envia orders' =>
 		['link'	=> 'EnviaOrder.index',
-		'icon'	=> 'fa-suitcase']
+		'icon'	=> 'fa-shopping-cart']
 	]
 );
