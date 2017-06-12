@@ -56,7 +56,15 @@ class SettlementRun extends \BaseModel {
 
 	public function index_list()
 	{
-		return $this->orderBy('id', 'desc')->get();
+		$srs = $this->orderBy('id', 'desc')->get();
+
+		foreach ($srs as $key => $sr)
+		{
+			if ($sr->verified)
+				$sr->index_delete_disabled = true;
+		}
+
+		return $srs;
 	}
 
 	public function view_has_many()
