@@ -323,7 +323,8 @@ class SepaAccount extends \BaseModel {
 		if ($charge == 0)
 			return;
 
-		$info = trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
+		$info = $this->company->name.' - ';
+		$info .= trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
 
 		// Credits
 		if ($charge < 0)
