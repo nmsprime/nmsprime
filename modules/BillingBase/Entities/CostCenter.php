@@ -43,6 +43,11 @@ class CostCenter extends \BaseModel {
 				'header' => $this->name];
 	}
 
+	public function view_belongs_to ()
+	{
+		return $this->sepa_account;
+	}
+
 
 
 	/**
