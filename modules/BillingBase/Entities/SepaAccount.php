@@ -91,33 +91,6 @@ class SepaAccount extends \BaseModel {
 
 
 
-	/**
-	 * Returns all available template files (via directory listing)
-	 * @author Nino Ryschawy
-	 * @return array 	filenames
-	 */
-	public function templates()
-	{
-		// $files_raw  = glob("/tftpboot/bill/template/*");
-		$files_raw = Storage::files('config/billingbase/template');
-		$templates 	= array(null => "None");
-
-		// extract filename
-		foreach ($files_raw as $file) 
-		{
-			if (is_file(storage_path('app/'.$file)))
-			{
-				$parts = explode("/", $file);
-				$filename = array_pop($parts);
-				$templates[$filename] = $filename;
-			}
-		}
-
-		return $templates;
-	}
-
-
-
 	public function __construct($attributes = array())
 	{
 		parent::__construct($attributes);

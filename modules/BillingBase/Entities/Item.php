@@ -334,41 +334,6 @@ class Item extends \BaseModel {
 				else
 					$text .= date('Y-m-31');
 
-
-				// always in second of three months (1 -> 2,5,8,11 2->3,6,9,12 3->4,7,10,1)
-				// if (date('m', strtotime('+1 month', $start)) % 3 != $dates['m'] % 3)
-				// 	break;
-
-				// $ratio = 1;
-				// $end_m = date('m', $end);
-				// $n = strtotime('last day of next month');
-				// $l = strtotime('first day of last month');
-
-				// // started last month
-				// if (date('Y-m', $start) == $dates['lastm_Y'])
-				// {
-				// 	$days  = date('z', $n) - date('z', $start) + 1;
-				// 	$total_days = date('t', $l) + date('t') + date('t', $n);
-				// 	$ratio = $days / $total_days;
-				// 	$text  = date('Y-m-d', $start);
-				// }
-				// // started before
-				// else
-				// 	$text = date('Y-m-01', $l);
-
-				// $text .= ' ';
-
-				// // consider end date - if is during this 3 months
-				// if ($end_m == $dates['m'] || $end_m == date('m', $n) || $end_m == date('m', $l))
-				// {
-				// 	$days  = date('z', $l) - date('z', $end) - 1;
-				// 	$total_days = date('t', $l) + date('t') + date('t', $n);
-				// 	$ratio -= $days / $total_days;
-				// 	$text  .= date('Y-m-d', $end);
-				// }
-				// else
-				// 	$text .= date('Y-m-d', $n);
-
 				break;
 
 
@@ -400,7 +365,7 @@ class Item extends \BaseModel {
 				break;
 
 		}
-//d($ratio);
+
 		if (!$ratio)
 			return null;
 

@@ -329,12 +329,34 @@ class Invoice extends \BaseModel{
 	 	* creditor bank account data
 	 	* invoice footer data
 	 	* invoice template path
+	 *
+	 * @param 	Obj 	SepaAccount
+	 * @return 	Bool 	false - error (missing required data), true - success
 	 */
 	public function set_company_data($account)
 	{
+		$err_msg = '';
+
 		if (!$account)
+			$err_msg .= 'Missing account data for Invoice ('.$this->data['contract_id'].')';
+
+		if (!$account->template_invoice || !$account->template_cdr)
 		{
-			$this->logger->addError('Missing account data for Invoice', [$this->data['contract_id']]);
+			$err_msg .= $err_msg ? '; ' : '';
+			$err_msg .= 'Missing SepaAccount specific templates for Invoice or CDR';
+		}
+
+		$company = $account->company;
+
+		if (!$company || !$company->logo)
+		{
+			$err_msg .= $err_msg ? '; ' : '';
+			$err_msg = $company ? "Missing Company's Logo ($company->name)" : 'No Company assigned to Account '.$account->name;
+		}
+
+		if ($err_msg)
+		{
+			$this->logger->addError($err_mgs);
 			$this->error_flag = true;
 			return false;
 		}
@@ -344,15 +366,6 @@ class Invoice extends \BaseModel{
 		$this->data['company_account_bic']  = $account->bic;
 		$this->data['company_creditor_id']  = $account->creditorid;
 		$this->data['invoice_headline'] 	= $account->invoice_headline ? $account->invoice_headline : trans('messages.invoice');
-
-		$company = $account->company;
-
-		if (!$company)
-		{
-			$this->logger->addError('No Company assigned to Account '.$account->name);
-			$this->error_flag = true;
-			return false;
-		}
 
 		$this->data = array_merge($this->data, $company->template_data());
 
