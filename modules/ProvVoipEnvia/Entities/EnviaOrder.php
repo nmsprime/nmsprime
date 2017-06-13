@@ -636,11 +636,16 @@ class EnviaOrder extends \BaseModel {
 	public function view_belongs_to ()
 	{
 		if (!$this->phonenumbers->isEmpty()) {
-			$phonenumbermanagements = [];
+			$ret = [];
 			foreach ($this->phonenumbers as $phonenumber) {
-				array_push($phonenumbermanagements, $phonenumber->phonenumbermanagement);
+				if (is_null($phonenumber->phonenumbermanagement)) {
+					array_push($ret, $phonenumber);
+				}
+				else {
+					array_push($ret, $phonenumber->phonenumbermanagement);
+				}
 			}
-			return collect($phonenumbermanagements);
+			return collect($ret);
 		}
 		elseif (boolval($this->modem_id)) {
 			return $this->modem;
