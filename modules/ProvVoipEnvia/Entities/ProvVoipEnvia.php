@@ -633,9 +633,9 @@ class ProvVoipEnvia extends \BaseModel {
 					$id = "modem_id=$modem_id";
 				}
 				array_push($ret, array(
-					'linktext' => 'Get voice data (EXPERIMENTAL – can have unexpected side effects)',
+					'linktext' => 'Get voice data',
 					'url' => $base.'contract_get_voice_data'.$origin.'&amp;'.$id.$really,
-					'help' => "Get all phonenumbers and sip data for this modem.",
+					'help' => "Get SIP and TRC data for all phonenumbers on this Envia contract.",
 				));
 			}
 
@@ -3087,8 +3087,6 @@ class ProvVoipEnvia extends \BaseModel {
 	protected function _process_contract_get_voice_data_response($xml, $data, $out) {
 
 		$out .= "<h5>Voice data for modem ".$this->modem->id."</h5>";
-		$out .= "<h5 style='color: red'>UNTESTED: This needs to be tested when <u>real data</u> is available<br>";
-		$out .= "IMPORTANT: Double check changes and new settings!!</h5>";
 
 		$out .= "Contained callnumber informations:<br>";
 		$out .= "<pre>";
@@ -3106,14 +3104,26 @@ class ProvVoipEnvia extends \BaseModel {
 				// find phonenumber object for given phonenumber
 				$phonenumber = Phonenumber::where('prefix_number', '=', $entry->localareacode)->where('number', '=', $entry->baseno)->first();
 
+				// if there is data for a number not existing in our database: create
+				if (is_null($phonenumber)) {
+					$_ = "Phonenumber ".$entry->localareacode."/".$entry->baseno." does not exist – creating it. Set proper MTA and port!!";
+					$out .= "<b>$_</b><br>";
+					Log::warning($_);
+					$phonenumber = new Phonenumber();
+					$phonenumber->prefix_number = $entry->localareacode;
+					$phoneunmber->number = $entry->baseno;
+					$phonenumber->save();
+
+				}
+
 				$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 
 				// update TRCClass
 				// remember: trcclass.id != trclass.trc_id (first is local key, second is Envia Id!)
 				if (!$phonenumbermanagement) {
-					$msg = "No phonenumbermanagement found for phonenumber $phonenumber->id. Cannot set TRC class";
-					$out .= "<b>$msg</b><br>";
-					Log::warning($msg);
+					$_ = "No phonenumbermanagement found for phonenumber $phonenumber->id. Cannot set TRC class";
+					$out .= "<b>$_</b><br>";
+					Log::warning($_);
 				}
 				else {
 					$trcclass = TRCClass::where('trc_id', '=', intval($entry->trc_class))->first();
