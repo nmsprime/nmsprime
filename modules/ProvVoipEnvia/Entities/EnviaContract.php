@@ -53,4 +53,49 @@ class EnviaContract extends \BaseModel {
 		return $this->hasManyThrough('Modules\ProvVoip\Entities\Phonenumber', 'Modules\ProvVoip\Entities\PhonenumberManagement');
 	}
 
+	/**
+	 * Gets all phonenumbers with:
+	 *		- existing phoneunmbermanagement
+	 *		- activation date less or equal than today
+	 *		- deactivation date null or bigger than today
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function phonenumbers_active_through_phonenumbermanagent() {
+
+		$phonenumbers = $this->phonenumbers();
+
+		$isodate = substr(date('c'), 0, 10);
+
+		$ret = [];
+		foreach ($phonenumbers as $phonenumber) {
+
+			$mgmt = $phonenumber->phonenumbermanagement;
+
+			// activation date not set
+			if (is_null($mgmt->activation_date)) {
+				continue;
+			}
+
+			// not yet activated
+			if ($mgmt->activation_date > $isodate) {
+				continue;
+			}
+
+			// deactivation date set and today or in the past
+			if (
+				(!is_null($mgmt->deactivation_date))
+				&&
+				($mgmt->deactivation_date <= $isodate)
+			) {
+				continue;
+			}
+
+			// number seems to be active
+			array_push($ret, $phonenumber);
+		}
+
+		return $ret;
+	}
+
 }
