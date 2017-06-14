@@ -168,6 +168,7 @@ class ProvVoipEnviaController extends \BaseController {
 			['api' => 'order', 'link' => 'voip_account_create?phonenumber_id=300001'],
 			['api' => 'order', 'link' => 'voip_account_terminate?phonenumber_id=300001'],
 			['api' => 'order', 'link' => 'voip_account_update?phonenumber_id=300001'],
+			['api' => 'order', 'link' => 'availability_check?contract_id=500000'],
 			['api' => '', 'link' => ''],
 			['api' => 'selfcare', 'link' => 'blacklist_create_entry'],
 			['api' => 'selfcare', 'link' => 'blacklist_delete_entry'],
@@ -354,6 +355,7 @@ class ProvVoipEnviaController extends \BaseController {
 
 		// these jobs are allowed in every case
 		$unrestricted_jobs = array(
+			'availability_check',
 			'contract_get_reference',
 			'customer_get_reference',
 			'misc_ping',
@@ -698,6 +700,8 @@ class ProvVoipEnviaController extends \BaseController {
 
 			/* 'configuration_get' => $this->base_url.'selfcare/configuration/get', */
 			/* 'configuration_update' => $this->base_url.'____TODO____', */
+
+			'availability_check' => $this->base_url.'availability/check',
 
 			'contract_change_method' => $this->base_url.'contract/change_method',
 			'contract_change_sla' => $this->base_url.'____TODO____',

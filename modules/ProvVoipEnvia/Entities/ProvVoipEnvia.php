@@ -1293,6 +1293,11 @@ class ProvVoipEnvia extends \BaseModel {
 		// authentication against the API
 		$second_level_nodes = array();
 
+		$second_level_nodes['availability_check'] = array(
+			'reseller_identifier',
+			'availability_address_data',
+		);
+
 			/* 'blacklist_create_entry' => array( */
 			/* 	'reseller_identifier', */
 			/* ), */
@@ -1693,6 +1698,28 @@ class ProvVoipEnvia extends \BaseModel {
 		);
 
 		$this->_add_fields($inner_xml, $fields, $this->contract);
+	}
+
+	/**
+	 * Method to add address to get availability informations
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_availability_address_data() {
+
+		$inner_xml = $this->xml->addChild('availability_address_data');
+
+		// mapping xml to database
+		$fields = array(
+			'street' => 'street',
+			'houseno' => 'house_number',
+			'zipcode' => 'zip',
+			'city' => 'city',
+			'district' => 'district',
+		);
+
+		$this->_add_fields($inner_xml, $fields, $this->contract);
+		$inner_xml->addChild('data_source', 'enviatel');
 	}
 
 
