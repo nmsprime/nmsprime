@@ -101,10 +101,11 @@ class CccAuthuserController extends \BaseController {
 
 		Log::info('Download Connection Information for CccAuthuser: '.$customer->first_name.' '.$customer->last_name.' ('.$customer->id.')');
 
-		if ($ret)
+		if (is_string($ret))
 			return response()->download($ret);
 
-		return \Redirect::back()->with('error_msg', 'Error Creating PDF - See Logfiles or ask Admin!');
+		$err_msg = is_int($ret) ? trans('messages.conn_info_err_template') : trans('messages.conn_info_err_create');
+		return \Redirect::back()->with('error_msg', $err_msg);
 	}
 
 
@@ -124,7 +125,7 @@ class CccAuthuserController extends \BaseController {
 		if (!$template = file_get_contents($template_dir.$template_filename))
 		{
 			Log::error("ConnectionInfo: Could not read template", [$template_dir.$template_filename]);
-			return null;
+			return -1;
 		}
 
 
@@ -134,7 +135,7 @@ class CccAuthuserController extends \BaseController {
 		if (!is_dir($dir_path))
 			mkdir($dir_path, 0733, true);
 
-		$filename = 'conn_info';
+		$filename = $contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info';
 
 		// Replace placeholder by value
 		$template = str_replace('\\_', '_', $template);
