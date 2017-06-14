@@ -73,7 +73,7 @@ class EnviaCustomerReferenceGetterCommand extends Command {
 		// get all contracts without envia reference
 		$contracts_without_customer_reference = Contract::whereNull('customer_external_id')->get();
 
-		// keep only those with existing
+		// keep only those with related phonenumbers having an external contract id
 		foreach ($contracts_without_customer_reference as $contract) {
 
 			foreach ($contract->related_phonenumbers() as $phonenumber) {
