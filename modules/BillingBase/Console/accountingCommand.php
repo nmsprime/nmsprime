@@ -353,6 +353,8 @@ class accountingCommand extends Command {
 				$nr = AccountingRecord::where('sepa_account_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
 				if (is_object($nr))
 					$acc->invoice_nr = $nr->invoice_nr;
+				else
+					$acc->invoice_nr = $acc->invoice_nr_start;
 			}
 		}
 		// first run for this system
@@ -360,8 +362,8 @@ class accountingCommand extends Command {
 		{
 			foreach ($sepa_accs as $acc)
 			{
-				if ($conf->invoice_nr_start)
-					$acc->invoice_nr = $conf->invoice_nr_start - 1;
+				if ($acc->invoice_nr_start)
+					$acc->invoice_nr = $acc->invoice_nr_start - 1;
 			}
 		}
 
