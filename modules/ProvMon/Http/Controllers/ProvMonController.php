@@ -44,11 +44,12 @@ class ProvMonController extends \BaseController {
 		$a = array(['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]],
 						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
 						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]],
-						['name' => 'Logging', 'route' => 'GuiLog.filter', 'link' => ['model_id' => $modem->id, 'model' => 'Modem']],
 				);
 
 		if (isset($modem->mtas[0]))
 			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'Provmon.mta', 'link' => [$id]]);
+
+		array_push($a, ['name' => 'Logging', 'route' => 'GuiLog.filter', 'link' => ['model_id' => $modem->id, 'model' => 'Modem']]);
 
 		return $a;
 	}
@@ -79,7 +80,7 @@ class ProvMonController extends \BaseController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// Log - TODO: grep tftp requests of specific modem - not all!
-		exec ('egrep -i "('.$mac.'|'.$hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
+		exec ('egrep -i "('.$mac.'|'.$modem->hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
 
 		// Configfile
 		$configfile = file("/tftpboot/cm/$modem->hostname.conf");
@@ -244,7 +245,7 @@ class ProvMonController extends \BaseController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// log
-		exec ('grep -i "'.$mta->mac.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
+		exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
 
 end:

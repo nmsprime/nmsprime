@@ -14,13 +14,10 @@ class CompanyController extends \BaseController {
 	 */
 	public function view_form_fields($model = null)
 	{
-		if (!$model)
-			$model = new Company;
-
-		$logos = $model->logos();
+		$logos = self::get_storage_file_list('billingbase/logo/');
 
 		// label has to be the same like column in sql table
-		return array(
+		$a = array(
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name'),
 			array('form_type' => 'text', 'name' => 'street', 'description' => 'Street'),
 			array('form_type' => 'text', 'name' => 'zip', 'description' => 'Zip'),
@@ -45,8 +42,22 @@ class CompanyController extends \BaseController {
 
 			array('form_type' => 'select', 'name' => 'logo', 'description' => 'Choose logo', 'value' => $logos),
 			array('form_type' => 'file', 'name' => 'logo_upload', 'description' => 'Upload logo'),
-
 		);
+
+		$b = [];
+		if (\PPModule::is_active('ccc'))
+		{
+			$files = self::get_storage_file_list('ccc/template/');
+
+			$b = array(
+				array('form_type' => 'select', 'name' => 'conn_info_template_fn', 'description' => 'Connection Info Template', 'value' => $files, 'help' => 'Tex Template used to Create Connection Information on the Contract Page for a Customer'),
+				array('form_type' => 'file', 'name' => 'conn_info_template_fn_upload', 'description' => 'Upload Template'),
+				);
+
+		}
+
+		return array_merge($a, $b);
+
 	}
 
 	/**
@@ -57,6 +68,11 @@ class CompanyController extends \BaseController {
 		// check and handle uploaded firmware files
 		$this->handle_file_upload('logo', storage_path('/app/config/billingbase/logo/'));
 
+		if (\PPModule::is_active('ccc'))
+		{
+			$this->handle_file_upload('logo', storage_path('/app/config/ccc/template/'));
+		}
+
 		// finally: call base method
 		return parent::store();
 	}
@@ -64,6 +80,11 @@ class CompanyController extends \BaseController {
 	public function update($id)
 	{
 		$this->handle_file_upload('logo', storage_path('/app/config/billingbase/logo/'));
+
+		if (\PPModule::is_active('ccc'))
+		{
+			$this->handle_file_upload('conn_info_template_fn', storage_path('/app/config/ccc/template/'));
+		}
 
 		return parent::update($id);
 	}

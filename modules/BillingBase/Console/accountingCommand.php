@@ -123,7 +123,7 @@ class accountingCommand extends Command {
 			// Skip invalid contracts
 			if (!$c->check_validity() && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number])))
 			{
-				$logger->addNotice('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
+				$logger->addInfo('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
 				continue;				
 			}
 
@@ -139,6 +139,7 @@ class accountingCommand extends Command {
 				continue;
 			}
 
+			// init contract temp variables
 			$charge 	= []; 					// total costs for this month for current contract
 			$c->expires = date('Y-m-01', strtotime($c->contract_end)) == $this->dates['lastm_01'];
 
@@ -151,7 +152,7 @@ class accountingCommand extends Command {
 				// skip items that are related to a deleted product
 				if (!isset($item->product))
 				{
-					$logger->addDebug('Product '.$item->accounting_text.' was deleted', [$c->id]);
+					$logger->addError('Product '.$item->accounting_text.' was deleted', [$c->id]);
 					continue;
 				}
 
@@ -352,6 +353,8 @@ class accountingCommand extends Command {
 				$nr = AccountingRecord::where('sepa_account_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
 				if (is_object($nr))
 					$acc->invoice_nr = $nr->invoice_nr;
+				else
+					$acc->invoice_nr = $acc->invoice_nr_start;
 			}
 		}
 		// first run for this system
@@ -359,8 +362,8 @@ class accountingCommand extends Command {
 		{
 			foreach ($sepa_accs as $acc)
 			{
-				if ($conf->invoice_nr_start)
-					$acc->invoice_nr = $conf->invoice_nr_start - 1;
+				if ($acc->invoice_nr_start)
+					$acc->invoice_nr = $acc->invoice_nr_start - 1;
 			}
 		}
 

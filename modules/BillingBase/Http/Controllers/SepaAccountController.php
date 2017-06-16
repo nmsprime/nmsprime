@@ -19,7 +19,7 @@ class SepaAccountController extends \BaseController {
 		$list[null] = null;
 		ksort($list);
 
-		$templates = $model->templates();
+		$templates = self::get_storage_file_list('billingbase/template');
 
 		// label has to be the same like column in sql table
 		return array(
