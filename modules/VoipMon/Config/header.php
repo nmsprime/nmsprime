@@ -3,6 +3,6 @@
 return array(
     ['CDRs' =>
         ['link' => 'Cdr.index',
-        'icon'  => 'fa-adress-card-o']
+        'icon'  => 'fa-address-card-o']
     ]
 );
