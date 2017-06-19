@@ -30,10 +30,22 @@ class CostCenter extends \BaseModel {
 		return 'Cost Center';
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-creative-commons"></i>'; 
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{
-		return $this->name;
+		return ['index' => [$this->name, $this->number, $this->sepa_account ? $this->sepa_account->name : ''],
+				'index_header' => ['Name', 'Number', 'SEPA Account'],
+				'header' => $this->name];
+	}
+
+	public function view_belongs_to ()
+	{
+		return $this->sepa_account;
 	}
 
 

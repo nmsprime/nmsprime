@@ -31,6 +31,12 @@ class BillingBase extends \BaseModel {
 		return 'Billing Config';
 	}
 
+	// View Icon
+	public static function view_icon()
+	{
+		return '<i class="fa fa-line-chart"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{

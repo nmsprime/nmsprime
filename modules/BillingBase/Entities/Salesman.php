@@ -42,10 +42,19 @@ class Salesman extends \BaseModel {
 		return 'Salesman';
 	}
 
+	// View Icon
+	public static function view_icon()
+	{
+		return '<i class="fa fa-vcard"></i>'; 
+	}
+
+
 	// link title in index view
 	public function view_index_label()
 	{
-		return $this->firstname.' '.$this->lastname;
+		return ['index' => [$this->id, $this->lastname, $this->firstname],
+		        'index_header' => ['ID', 'Lastname', 'Firstname'],
+				'header' => $this->lastname." ".$this->firstname];
 	}
 
 

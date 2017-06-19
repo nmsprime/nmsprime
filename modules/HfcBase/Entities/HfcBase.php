@@ -29,5 +29,10 @@ class HfcBase extends \BaseModel {
 		return "HfcBase";
 	}
 
+	// View Icon
+	public static function view_icon()
+	{
+		return '<i class="fa fa-random"></i>';
+	}
 
 }

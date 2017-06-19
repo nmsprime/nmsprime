@@ -63,16 +63,15 @@ class cdrCommand extends Command {
 		}
 
 
-		// Choose Provider from specified array key in environment file
-		// NOTE: Add new Providers here!!!
-		// TODO - use getenv() to parse all super global variables for this key here as this super global variable is consciously not set in cronjobs
-		if (isset($_ENV['PROVVOIPENVIA__RESELLER_USERNAME']))
+		// Choose Provider via array key in environment file - Add new Providers here!!!
+		// NOTE: - use env() to parse all super global variables for this key here as this super global variable is consciously not set in cronjobs
+		if (env('PROVVOIPENVIA__RESELLER_USERNAME'))
 		{
 			$logger->addDebug('GET Envia Call Data Records');
 			$this->_get_envia_cdr();
 		}
 
-		else if (isset($_ENV['HLKOMM_RESELLER_USERNAME']))
+		else if (env('HLKOMM_RESELLER_USERNAME'))
 		{
 			$logger->addDebug('GET HL Komm Call Data Records');
 			$this->_get_hlkomm_cdr();
@@ -122,8 +121,8 @@ class cdrCommand extends Command {
 	 */
 	private function _get_envia_cdr()
 	{
-		$user 	  = $_ENV['PROVVOIPENVIA__RESELLER_USERNAME'];
-		$password = $_ENV['PROVVOIPENVIA__RESELLER_PASSWORD'];
+		$user 	  = env('PROVVOIPENVIA__RESELLER_USERNAME');
+		$password = env('PROVVOIPENVIA__RESELLER_PASSWORD');
 		$logger = new BillingLogger;
 
 		// TODO: proof if file is already available
@@ -169,8 +168,8 @@ class cdrCommand extends Command {
 	 */
 	private function _get_hlkomm_cdr()
 	{
-		$user 	  = $_ENV['HLKOMM_RESELLER_USERNAME'];
-		$password = $_ENV['HLKOMM_RESELLER_PASSWORD'];
+		$user 	  = env('HLKOMM_RESELLER_USERNAME');
+		$password = env('HLKOMM_RESELLER_PASSWORD');
 		$logger = new BillingLogger;
 		// establish ftp connection and login
 		$ftp_server = "ftp.hlkomm.net";

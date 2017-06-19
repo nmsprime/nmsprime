@@ -38,20 +38,33 @@ class SettlementRun extends \BaseModel {
 		return 'Settlement Run';
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-file-pdf-o"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{
 		$bsclass = $this->verified ? 'info' : 'warning';
 
-		return ['index' => [$this->year, $this->month, $this->created_at->__get('day')],
-		        'index_header' => ['Year', 'Month', 'Day'],
+		return ['index' => [$this->year, $this->month, $this->created_at->toDateString(), $this->verified ? 'Yes' : 'No'], //$this->created_at->__get('day')],
+		        'index_header' => ['Year', 'Month', 'Created At', 'Verified'],
 		        'bsclass' => $bsclass,
 		        'header' => $this->year.' - '.$this->month.' - '.$this->created_at->__get('day')];
 	}
 
 	public function index_list()
 	{
-		return $this->orderBy('id', 'desc')->get();
+		$srs = $this->orderBy('id', 'desc')->get();
+
+		foreach ($srs as $key => $sr)
+		{
+			if ($sr->verified)
+				$sr->index_delete_disabled = true;
+		}
+
+		return $srs;
 	}
 
 	public function view_has_many()

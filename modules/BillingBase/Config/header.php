@@ -3,7 +3,7 @@
 return array(
 	['Product List' =>
 		['link'	=> 'Product.index',
-		'icon'	=> 'fa-tasks'],
+		'icon'	=> 'fa-th-list'],
 	'SEPA Accounts' =>
 		['link'	=> 'SepaAccount.index',
 		'icon'	=> 'fa-credit-card'],

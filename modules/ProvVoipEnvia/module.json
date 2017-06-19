@@ -2,7 +2,7 @@
     "name": "ProvVoipEnvia",
     "alias": "provvoipenvia",
     "description": "",
-    "icon": "fa-institution",
+    "icon": "fa-volume-control-phone",
     "keywords": [],
     "active": 0,
     "order": 22,

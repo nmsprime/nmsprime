@@ -49,6 +49,8 @@ class ProvMonController extends \BaseController {
 		if (isset($modem->mtas[0]))
 			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'Provmon.mta', 'link' => [$id]]);
 
+		array_push($a, ['name' => 'Logging', 'route' => 'GuiLog.filter', 'link' => ['model_id' => $modem->id, 'model' => 'Modem']]);
+
 		return $a;
 	}
 
@@ -59,7 +61,7 @@ class ProvMonController extends \BaseController {
 	 */
 	public function analyses($id)
 	{
-		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = null;
+		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = null;
 		$modem 	  = $this->modem ? $this->modem : Modem::find($id);
 		$view_var = $modem; // for top header
 		$hostname = $modem->hostname.'.'.$this->domain_name;
@@ -78,8 +80,10 @@ class ProvMonController extends \BaseController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// Log - TODO: grep tftp requests of specific modem - not all!
-		exec ('egrep -i "('.$mac.'|'.$hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
+		exec ('egrep -i "('.$mac.'|'.$modem->hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
 
+		// Configfile
+		$configfile = file("/tftpboot/cm/$modem->hostname.conf");
 
 		// Realtime Measure
 		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
@@ -98,7 +102,7 @@ class ProvMonController extends \BaseController {
 		$panel_right = $this->prep_sidebar($id);
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var', 'flood_ping')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'monitoring', 'view_var', 'flood_ping')));
 	}
 
 
@@ -241,7 +245,7 @@ class ProvMonController extends \BaseController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// log
-		exec ('grep -i "'.$mta->mac.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
+		exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
 
 end:

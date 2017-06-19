@@ -334,7 +334,7 @@ class CustomerTopoController extends NetElementController {
 			$mac    = $modem->mac;
 
 			$row_val = $modem->{$row};
-			$cur_clr = BaseViewController::get_quality_color(explode('_',$row)[0], explode('_',$row)[1], [$row_val])[0];
+			$cur_clr = BaseViewController::get_quality_color_orig(explode('_',$row)[0], explode('_',$row)[1], [$row_val])[0];
 			if ($cur_clr > $clr)
 				$clr = $cur_clr;
 

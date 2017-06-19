@@ -37,7 +37,10 @@ class Mpr extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		return $this->id.' : '.$this->name;
+		return ['index' => [$this->name, $this->netelement ? $this->netelement->name : 'unknown'],
+				'index_header' => ['Name', 'Belongs To'],
+				'header' => $this->name];
+
 	}
 
 	// Relation to NetElement
