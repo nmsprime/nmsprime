@@ -33,7 +33,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	public function __construct($attributes = array()) {
 
-		// if not available in .env: set to -1 to not break e.g. “php artisan” command ⇒ thas has to be caught later on
+		// if not available in .env: set to -1 to not break e.g. “php artisan” command ⇒ that has to be caught later on
 		$v = getenv('PROVVOIPENVIA__REST_API_VERSION');
 		if ($v === False) {
 			$v = "-1";
@@ -4094,7 +4094,23 @@ class ProvVoipEnvia extends \BaseModel {
 					// customer number
 
 					if (!array_key_exists($r, $contracts)) {
-						$contract = Contract::where('number', '=', $r)->first();
+
+						// try to find a contract for the given customer number
+						// remember:
+						//		number3 ⇒ customer number
+						//		number4 ⇒ legacy customer number
+						//		number ⇒ contract number; used as customer number if number3 is not set
+						//		number2 ⇒ lecacy contract number; used as legacy customer number if number4 is not set
+						$contract = null;
+						$numbers = ['number3', 'number4', 'number', 'number2'];
+						while (is_null($contract)) {
+							if ($numbers) {
+								$contract = Contract::where(array_pop($numbers), '=', $r)->first();
+							}
+							else {
+								break;
+							}
+						}
 						if (is_null($contract)) {
 							// number not found ⇒ use dummy data
 							$contracts[$r] = [
