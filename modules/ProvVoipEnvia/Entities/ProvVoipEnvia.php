@@ -557,6 +557,12 @@ class ProvVoipEnvia extends \BaseModel {
 				));
 			}
 
+			array_push($ret, array(
+				'linktext' => 'Get (current) usage CSV',
+				'url' => $base.'misc_get_usage_csv'.$origin.$really,
+				'help' => "This method gets CSV containing usage statistic for the current month",
+			));
+
 		}
 
 
@@ -4068,10 +4074,70 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 		}
 
-		$out = "";
+		$out .= '<h5>Usage data</h5>';
+		$out .= 'Informational data only – nothing is going to be processed<br><br>';
+		$out .= '<table class="table table-striped table-hover">';
+		$out .= "<thead><tr>";
+		foreach ($csv_headers as $h) {
+			$out .= "<th>$h</th>";
+		}
+		$out .= "</tr></thead><tbody>";
 
-		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.").<h2>Returned csv is:</h2><pre>".$csv."</pre><h2>Extracted data is:</h2>";
-		d($results);
+		foreach ($results as $result) {
+			$out .= "<tr>";
+			$pos = 0;
+			// helper to cache customer data ⇒ there can be multiple entries per customer number in returned csv
+			$contracts = array();
+			foreach ($result as $r) {
+				$out .= "<td>";
+				if ($pos == 1) {
+					// customer number
+
+					if (!array_key_exists($r, $contracts)) {
+						$contract = Contract::where('number', '=', $r)->first();
+						if (is_null($contract)) {
+							// number not found ⇒ use dummy data
+							$contracts[$r] = [
+								'id' => null,
+								'name' => 'n/a',
+								'firstname' => 'n/a',
+								'city' => 'n/a',
+							];
+						}
+						else {
+							// fill cache with database data
+							$contracts[$r] = [
+								'id' => $contract->id,
+								'name' => $contract->lastname,
+								'firstname' => $contract->firstname,
+								'city' => $contract->city,
+							];
+						}
+
+						// extend customer number and add link to Contract.edit if entry exists
+						$customer = $r." ⇒ ".$contracts[$r]['name'].", ".$contracts[$r]['firstname']." (".$contracts[$r]['city'].")";
+						if (!is_null($contracts[$r]['id'])) {
+							$customer = "<a href=".\URL::route('Contract.edit', [$contracts[$r]['id']])." target='_self'>$customer</a>";
+						}
+					}
+					$out .= $customer;
+
+				}
+				else {
+					// show other data as sent by Envia
+					$out .= $r;
+				}
+				$out .= "</td>";
+				$pos++;
+			}
+			$out .= "</tr>";
+		}
+		$out .= "</tbody></table>";
+
+		/* echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.").<h2>Returned csv is:</h2><pre>".$csv."</pre><h2>Extracted data is:</h2>"; */
+		/* d($results); */
+
+		return $out;
 
 	}
 
