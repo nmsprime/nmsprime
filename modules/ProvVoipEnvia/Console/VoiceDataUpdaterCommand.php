@@ -102,9 +102,9 @@ class VoiceDataUpdaterCommand extends Command {
 		if ($mode == 'default') {
 		$where_stmt = "
 			active != 0 AND (
+			sipdomain IS NULL OR sipdomain LIKE '' OR
 			username IS NULL OR username LIKE '' OR
-			password IS NULL OR password LIKE '' OR
-			sipdomain IS NULL OR sipdomain LIKE ''
+			password IS NULL OR password LIKE ''
 			)
 			";
 			$phonenumbers = Phonenumber::whereRaw($where_stmt)->get();

@@ -1013,7 +1013,7 @@ class EnviaOrder extends \BaseModel {
 
 		$modem = $this->modem;
 		if ($modem) {
-			$user_actions['hints']['Modem (= Envia Contract)'] = $this->_get_user_action_information_modem($modem);
+			$user_actions['hints']['Modem (can hold multiple Envia contracts)'] = $this->_get_user_action_information_modem($modem);
 		};
 
 		$phonenumbers = array();
