@@ -56,10 +56,13 @@ class EnviaContractReferenceGetterCommand extends Command {
 	 */
 	public function fire() {
 
+		Log::error("Foooooooooooooooooooooooooo");
 		Log::info($this->description);
 
 		if (!in_array($this->argument('mode'), ['default', 'complete'])) {
-			echo "Usage: ".$this->argument('command')." {default|complete}\n";
+			$_ = "Usage: ".$this->argument('command')." {default|complete}";
+			\Log::error($_);
+			echo "$_\n";
 			exit(1);
 		}
 

@@ -75,6 +75,7 @@ class ProvVoipEnviaController extends \BaseController {
 	 */
 	public function cron($job) {
 
+		\Log::debug("Starting ProvVoipEnviaController::cron('$job')");
 		$base_url = $this->base_url;
 		$client_ip = \Request::getClientIp();
 		$request_uri = \Request::getUri();
@@ -552,6 +553,7 @@ class ProvVoipEnviaController extends \BaseController {
 	 */
 	protected function _show_job_not_allowed_info($job, $origin) {
 
+		\Log::error("ProvVoipEnviaController: Execution of $job is not allowed");
 		$ret = array();
 		$ret['plain_html'] = '';
 		$ret['plain_html'] .= '<h4>Error</h4>';

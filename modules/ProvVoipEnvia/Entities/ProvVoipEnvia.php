@@ -989,7 +989,12 @@ class ProvVoipEnvia extends \BaseModel {
 				$this->modem = $this->mta->modem;
 				$this->contract = $this->modem->contract;
 				$this->phonenumbermanagement = $this->phonenumber->phonenumbermanagement;
-				$this->phonebookentry = $this->phonenumbermanagement->phonebookentry;
+				if (!is_null($this->phonenumbermanagement)) {
+					$this->phonebookentry = $this->phonenumbermanagement->phonebookentry;
+				}
+				else {
+					$this->phonebookentry = null;
+				}
 			}
 
 			// entry point is phonenumbermanagement
@@ -3217,8 +3222,8 @@ class ProvVoipEnvia extends \BaseModel {
 						$enviacontract->envia_customer_reference = $phonenumber->mta->modem->contract->customer_external_id;
 						$changed = True;
 					}
-					if ($enviacontract->method != $entry->method) {
-						$enviacontract->method = $entry->method;
+					if ($enviacontract->method != $protocol) {
+						$enviacontract->method = $protocol;
 						$changed = True;
 					}
 					if ($enviacontract->modem_id != $phonenumber->mta->modem->id) {
@@ -3338,12 +3343,12 @@ class ProvVoipEnvia extends \BaseModel {
 					'start_date' => '1900-01-01',
 				];
 				$enviacontract = EnviaContract::create($data);
-				$_ .= "Created EnviaContract $enviacontract->id";
+				$_ = "Created EnviaContract $enviacontract->id";
 				\Log::info($_);
 				$msg .= "<br> $_";
 			}
 
-			// update management if existing; else show warning
+			// update management if existing; else create a new one
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 
 			if (!$phonenumbermanagement) {
@@ -3351,7 +3356,7 @@ class ProvVoipEnvia extends \BaseModel {
 				// if number is active: create PhonenumberManagement
 				if ($phonenumber->active) {
 					$phonenumbermanagement = new PhonenumberManagement();
-					$_ .= 'No PhonenumberManagement for number '.$phonenumber->id.' found. Creating new one – you have to set some values manually!';
+					$_ = 'No PhonenumberManagement for number '.$phonenumber->id.' found. Creating new one – you have to set some values manually!';
 					$msg .= '<br> ⇒ '.$_;
 					\Log::warning($_);
 
