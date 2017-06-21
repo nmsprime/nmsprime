@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use \Modules\ProvVoip\Entities\PhonenumberManagement;
 use \Modules\ProvVoip\Entities\Phonenumber;
 use \Modules\ProvVoip\Entities\Mta;
+use \Modules\ProvVoip\Entities\TRCClass;
 use \Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
 
 /**
@@ -115,6 +116,15 @@ class VoiceDataUpdaterCommand extends Command {
 			return;
 		}
 
+		// get all phonenumbermanagements having TRCClass not set
+		$trc_null = TRCClass::whereRaw('trc_id IS NULL')->first();
+		$trc_null_id = $trc_null->id;
+		$phonenumbermanagements = PhonenumberManagement::where('trcclass', '=', $trc_null_id);
+		foreach ($phonenumbermanagements as $phonenumbermanagent) {
+			$phonenumbers->push($phonenumbermanagement->phonenumber);
+		}
+
+		// process numbers and check if update has to be done
 		foreach ($phonenumbers as $phonenumber) {
 
 			// check if phonenumber is SIP (this can be determined from mta type)
