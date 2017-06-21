@@ -358,6 +358,7 @@ class ProvVoipEnviaController extends \BaseController {
 		$unrestricted_jobs = array(
 			'availability_check',
 			'contract_get_reference',
+			'contract_get_voice_data',
 			'customer_get_reference',
 			'misc_ping',
 			'misc_get_keys',
@@ -395,18 +396,6 @@ class ProvVoipEnviaController extends \BaseController {
 
 			return true;
 
-		}
-
-		if ($job == "contract_get_voice_data") {
-
-			$this->model->extract_environment($this->model->modem, 'modem');
-
-			// only can get data for a contract that exists (or existed)
-			if (!$this->model->contract_created) {
-				return false;
-			}
-
-			return true;
 		}
 
 		if ($job == 'contract_change_tariff') {

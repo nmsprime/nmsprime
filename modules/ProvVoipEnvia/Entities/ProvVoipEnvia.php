@@ -3180,6 +3180,8 @@ class ProvVoipEnvia extends \BaseModel {
 				if (boolval($method->sip_data)) {
 					$sip_data = $method->sip_data;
 
+					$protocol = "SIP";
+
 					// update database
 					$changed = False;
 					if ($phonenumber['username'] != $sip_data->username) {
@@ -3204,6 +3206,7 @@ class ProvVoipEnvia extends \BaseModel {
 				// process packet cable data
 				elseif (boolval($method->mgcp_data)) {
 
+					$protocol = "MGCP";
 					// TODO: process data for packet cable
 					$msg .= "TODO: packet cable not yet implemented";
 					$out .= "<b>$msg</b><br>";
