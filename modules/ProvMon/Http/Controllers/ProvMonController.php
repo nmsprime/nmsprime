@@ -855,6 +855,28 @@ end:
 	}
 
 
+	/**
+	 * Get the cacti graph template ids, which correspond to a given graph template name
+	 *
+	 * @param name: The cacti graph template name
+	 * @return: An array of the matching cacti graph template ids
+	 *
+	 * @author: Ole Ernst
+	 */
+	public static function monitoring_get_graph_template_id($name)
+	{
+		// Connect to Cacti DB
+		$cacti = \DB::connection('mysql-cacti');
+
+		// Get Cacti Host ID to $modem
+		$template  = $cacti->table('graph_templates')->where('name', '=', $name)->select('id')->first();
+		if (!isset($template))
+			return null;
+
+		return [$template->id];
+	}
+
+
 	/*
 	 * Functions for Feature single Windows Stuff
 	 * This stuff is at the time not in production

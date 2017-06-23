@@ -203,8 +203,8 @@ class CustomerTopoController extends NetElementController {
 		foreach ($modems->orderBy('city', 'street')->get() as $modem)
 		{
 			// load per modem diagrams
-			// TODO: only load a subset of (most important) diagrams, like DS power, DS SNR, US power
-			$dia = $provmon->monitoring($modem);
+			$dia_ids = $provmon->monitoring_get_graph_template_id('DOCSIS Overview');
+			$dia = $provmon->monitoring($modem, $dia_ids);
 
 			// valid diagram's ?
 			if ($dia != false)
