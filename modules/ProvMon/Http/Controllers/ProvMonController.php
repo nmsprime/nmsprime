@@ -836,7 +836,7 @@ end:
 		/*
 		 * Images
 		 */
-		$url_base = 'https://'.\Request::getHost()."/cacti/graph_image.php?rra_id=0&graph_start=$from_t&graph_end=$to_t";
+		$url_base = "/cacti/graph_image.php?rra_id=0&graph_start=$from_t&graph_end=$to_t";
 
 		// TODO: should be auto adapted to screen resolution. Note that we still use width=100% setting
 		// in the image view. This could lead to diffuse (unscharf) fonts.
