@@ -94,15 +94,14 @@ class ProvMonController extends \BaseController {
 			$realtime['forecast'] = 'TODO';
 		}
 
-		// Monitoring
-		$monitoring = $this->monitoring($modem);
+		$host_id = $this->monitoring_get_host_id($modem);
 
 		// TODO: Dash / Forecast
 
 		$panel_right = $this->prep_sidebar($id);
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'monitoring', 'view_var', 'flood_ping')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping')));
 	}
 
 
@@ -277,15 +276,14 @@ end:
 			$realtime['forecast'] = 'TODO';
 		}
 
-		// Monitoring
-		$monitoring = $this->monitoring($modem);
+		$host_id = $this->monitoring_get_host_id($modem);
 
 		$panel_right =  [
 			['name' => 'Edit', 'route' => 'Cmts.edit', 'link' => [$id]],
 			['name' => 'Analysis', 'route' => 'Provmon.cmts', 'link' => [$id]]
 		];
 
-		return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var')));
+		return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var')));
 	}
 
 	/**
@@ -852,6 +850,28 @@ end:
 
 		// default return
 		return $ret;
+	}
+
+
+	/**
+	 * Get the cacti host id, which corresponds to a given hostname of the modem object
+	 *
+	 * @param modem: The modem object
+	 * @return: The cacti host id
+	 *
+	 * @author: Ole Ernst
+	 */
+	public static function monitoring_get_host_id($modem)
+	{
+		// Connect to Cacti DB
+		$cacti = \DB::connection('mysql-cacti');
+
+		// Get Cacti Host ID to $modem
+		$host  = $cacti->table('host')->where('description', '=', $modem->hostname)->select('id')->first();
+		if (!isset($host))
+			return false;
+
+		return $host->id;
 	}
 
 
