@@ -83,7 +83,8 @@ class ProvMonController extends \BaseController {
 		exec ('egrep -i "('.$mac.'|'.$modem->hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
 
 		// Configfile
-		$configfile = file("/tftpboot/cm/$modem->hostname.conf");
+		$cf_path = "/tftpboot/cm/$modem->hostname.conf";
+		$configfile = is_file($cf_path) ? file($cf_path) : ['Error: Missing Configfile!'];
 
 		// Realtime Measure
 		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
@@ -652,7 +653,8 @@ end:
 
 		// parse dhcpd.lease file
 		$file   = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
-		preg_match_all('/^lease(.*?)}/ms', $file, $section);
+		// start each lease with a line that begins with "lease" and end with a line that begins with "{"
+		preg_match_all('/^lease(.*?)(^})/ms', $file, $section);
 
 		$ret = array();
 		$i   = 0;
