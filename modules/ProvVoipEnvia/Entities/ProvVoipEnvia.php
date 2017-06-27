@@ -3666,36 +3666,59 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// process the valid CSV lines
 		foreach ($results as $result) {
+			$out .= "<br><br>";
 
 			$order_id = $result['orderid'];
+			$msg = "Processing order ".$result['orderid'];
+			\Log::debug($msg);
+			$out .= $msg;
 
-			$out .= "<br>";
+			if (!$result['localareacode'] || !$result['baseno']) {
+				$msg = "No phonenumber given on order ".$result['orderid'].". Getting related numbers by envia_contract_id ".$result['contractreference'];
+				\Log::info($msg);
+				$out .= "<br>$msg";
 
-			$phonenumbers = Phonenumber::where('prefix_number', '=', $result['localareacode'])->where('number', '=', $result['baseno'])->get();
+				$phonenumbers = Phonenumber::where('contract_external_id', '=', $result['contractreference'])->get();
 
-			// check for edge cases (no number found, more than one number found)
-			// the number we look for should exist once and only once!
-			$phonenumber_count = $phonenumbers->count();
-			if ($phonenumber_count == 0) {
-				$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
-				\Log::warning($msg);
-				$out .= '<br><span style="color: red">'.$msg.'</span>';
-				continue;
+				// check if there are related phonenumbers
+				if ($phonenumbers->count() == 0) {
+					$msg = 'Error processing get_orders_csv_response: No phonenumber found for Envia contract reference '.$result['contractreference'].'. Skipping order '.$order_id;
+					\Log::warning($msg);
+					$out .= '<br><span style="color: red">'.$msg.'</span>';
+					continue;
+				}
 			}
-			elseif ($phonenumber_count > 1) {
-				$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' exists '.$phonenumber_count.' times. Clean your database! Skipping order '.$order_id;
-				\Log::warning($msg);
-				$out .= '<br><span style="color: red">'.$msg.'</span>';
-				continue;
+			else {
+				$phonenumbers = Phonenumber::where('prefix_number', '=', $result['localareacode'])->where('number', '=', $result['baseno'])->get();
+
+				// check for edge cases (no number found, more than one number found)
+				// the number we look for should exist once and only once!
+				$phonenumber_count = $phonenumbers->count();
+				if ($phonenumber_count == 0) {
+					$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
+					\Log::warning($msg);
+					$out .= '<br><span style="color: red">'.$msg.'</span>';
+					continue;
+				}
+				if ($phonenumber_count > 1) {
+					$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' exists '.$phonenumber_count.' times. Clean your database! Skipping order '.$order_id;
+					\Log::warning($msg);
+					$out .= '<br><span style="color: red">'.$msg.'</span>';
+					continue;
+				}
 			}
 
-			$phonenumber = $phonenumbers->first();
+			$first_phonenumber = $phonenumbers->first();
 
-			$result['phonenumber_id'] = $phonenumber->id;
-			$result['modem_id'] = $phonenumber->mta->modem->id;
-			$result['contract_id'] = $phonenumber->mta->modem->contract->id;
 
 			$order = EnviaOrder::withTrashed()->where('orderid', $order_id)->first();
+
+			if (EnviaOrder::orderstate_is_final($order)) {
+				$msg = "Order is in final state. Skipping.";
+				\Log::info($msg);
+				$out .= "<br>$msg";
+				continue;
+			}
 
 			// check if there exists an Envia contract for the returned contract_reference
 			// this is save here because within the CSV there are only phonenumber related orders (and e.g. no contract/relocate)
@@ -3706,8 +3729,8 @@ class ProvVoipEnvia extends \BaseModel {
 				$data = [
 					'envia_customer_reference' => $result['customerreference'],
 					'envia_contract_reference' => $result['contractreference'],
-					'modem_id' => $phonenumber->mta->modem->id,
-					'contract_id' => $phonenumber->mta->modem->contract->id,
+					'modem_id' => $first_phonenumber->mta->modem->id,
+					'contract_id' => $first_phonenumber->mta->modem->contract->id,
 				];
 				$enviacontract = EnviaContract::create($data);
 				$msg = "Created EnviaContract $enviacontract->id";
@@ -3738,20 +3761,34 @@ class ProvVoipEnvia extends \BaseModel {
 				}
 			}
 
+			if ($order->ordertype == 'Umzug') {
+				$msg = "Ordertype is “Umzug”. Will not update phoneumber related data in this method";
+				\Log::warning($msg);
+				$out .= "<br>$msg";
+				continue;
+			}
+
 			// as an order can be related to more than one phonenumber we
 			// have to check if the current relation exists
-			if (!$order->phonenumbers->contains($phonenumber->id)) {
-				$order->phonenumbers()->attach($phonenumber->id);
-				$msg = 'Added relation between existing enviaorder '.$order_id.' and phonenumber '.$phonenumber->id;
-				Log::info($msg);
-				$out .= '<br>'.$msg;
+			foreach ($phonenumbers as $phonenumber) {
+				if (!$order->phonenumbers->contains($phonenumber->id)) {
+					$order->phonenumbers()->attach($phonenumber->id);
+					$msg = 'Added relation between existing enviaorder '.$order_id.' and phonenumber '.$phonenumber->id;
+					Log::info($msg);
+					$out .= '<br>'.$msg;
+				}
 			}
 
 			// check if contract, modem and/or phonenumbermanagement need updates, too
 			// don't perform action for successfully cancelled orders here
 			if (!EnviaOrder::order_successfully_cancelled($order)) {
 				if (!EnviaOrder::order_failed($order)) {
-					$out = $this->_update_phonenumber_related_data($result, $out);
+					foreach ($phonenumbers as $phonenumber) {
+						$result['phonenumber_id'] = $phonenumber->id;
+						$result['modem_id'] = $phonenumber->mta->modem->id;
+						$result['contract_id'] = $phonenumber->mta->modem->contract->id;
+						$out = $this->_update_phonenumber_related_data($result, $out);
+					}
 				}
 			}
 
@@ -3974,7 +4011,10 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		if (isset($data['orderid'])) {
-			$order = EnviaOrder::where('orderid', '=', intval($data['orderid']))->firstOrFail();
+			\Log::debug('orderid is '.$data['orderid']);
+			$order = EnviaOrder::where('orderid', '=', intval($data['orderid']))->first();
+		}
+		if (!is_null($order)) {
 
 			// if there is no existing management: create and bundle with phonenumber
 			if (
@@ -4064,7 +4104,7 @@ class ProvVoipEnvia extends \BaseModel {
 			) {
 				$phonenumbermanagement->enviacontract_id = $data['enviacontract_id'];
 				$phonenumbermanagement_changed = True;
-				$out .= '<br> ⇒ PhonenumberManagement->enviacontract_id set to '.$data['enviacontract_id'];
+				$out .= '<br> ⇒ PhonenumberManagement ('.$phonenumbermanagement->id.') ->enviacontract_id set to '.$data['enviacontract_id'];
 			}
 		}
 
