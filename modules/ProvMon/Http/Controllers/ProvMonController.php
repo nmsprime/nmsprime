@@ -68,9 +68,11 @@ class ProvMonController extends \BaseController {
 		$mac 	  = strtolower($modem->mac);
 
 		// Ping: Send 5 request's at once with max timeout of 1 second
-		exec ('sudo ping -c5 -i0 -w1 '.$hostname, $ping);
-		if (count(array_keys($ping)) <= 9)
-			$ping = null;
+		$ip = gethostbyname($hostname);
+		if ($ip != $hostname)
+			exec ('sudo ping -c5 -i0 -w1 '.$hostname, $ping);
+		else
+			$ip = null;
 
 		// Flood Ping
 		$flood_ping = $this->flood_ping ($hostname);
@@ -79,21 +81,21 @@ class ProvMonController extends \BaseController {
 		$lease['text'] = $this->search_lease('hardware ethernet '.$mac);
 		$lease = $this->validate_lease($lease, $type);
 
-		// Log - TODO: grep tftp requests of specific modem - not all!
-		exec ('egrep -i "('.$mac.'|'.$modem->hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
-
 		// Configfile
 		$cf_path = "/tftpboot/cm/$modem->hostname.conf";
 		$configfile = is_file($cf_path) ? file($cf_path) : ['Error: Missing Configfile!'];
 
-		// Realtime Measure
-		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
+		// Realtime Measure - only fetch realtime values if all pings are successfull
+		if (count($ping) == 10)
 		{
-			// ip is needed for upstream values of modem
-			preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
-			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip[0][0]);
+			// preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
+			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip);
 			$realtime['forecast'] = 'TODO';
 		}
+
+		// Log dhcp (discover, ...), tftp (configfile or firmware)
+		$search = $ip ? "$mac|$modem->hostname|$ip" : "$mac|$modem->hostname";
+		exec ('egrep -i "('.$search.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
 
 		// Monitoring
 		$monitoring = $this->monitoring($modem);
