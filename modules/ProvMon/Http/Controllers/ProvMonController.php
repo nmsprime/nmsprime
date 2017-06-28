@@ -121,30 +121,29 @@ class ProvMonController extends \BaseController {
 	 */
 	public function flood_ping ($hostname)
 	{
-		if (array_key_exists('flood_ping', \Input::all()))
-		{
-			switch (\Input::all()['flood_ping'])
-			{
-				case "1":
-					exec("sudo ping -c100 -f $hostname 2>&1", $fp, $ret);
-					break;
-				case "2":
-					exec("sudo ping -c300 -s300 -f $hostname 2>&1", $fp, $ret);
-					break;
-				case "3":
-					exec("sudo ping -c500 -s1472 -f $hostname 2>&1", $fp, $ret);
-					break;
-				case "4":
-					exec("sudo ping -c1000 -f $hostname 2>&1", $fp, $ret);
-					break;
-			}
-
-			// remove the flood ping line "....." from result
-			if ($ret == 0)
-				unset ($fp[1]);
-		}
-		if (!isset($fp))
+		if (!\Input::has('flood_ping'))
 			return null;
+
+		switch (\Input::get('flood_ping'))
+		{
+			case "1":
+				exec("sudo ping -c500 -f $hostname 2>&1", $fp, $ret);
+				break;
+			case "2":
+				exec("sudo ping -c1000 -s736 -f $hostname 2>&1", $fp, $ret);
+				break;
+			case "3":
+				exec("sudo ping -c2500 -f $hostname 2>&1", $fp, $ret);
+				break;
+			case "4":
+				exec("sudo ping -c2500 -s1472 -f $hostname 2>&1", $fp, $ret);
+				break;
+		}
+
+		// remove the flood ping line "....." from result
+		if ($ret == 0)
+			unset ($fp[1]);
+
 		return $fp;
 	}
 
