@@ -3722,135 +3722,401 @@ class ProvVoipEnvia extends \BaseModel {
 		foreach ($results as $result) {
 			$out .= "<br><br>";
 
-			$order_id = $result['orderid'];
 			$msg = "Processing order ".$result['orderid'];
-			\Log::debug($msg);
+			\Log::info($msg);
 			$out .= $msg;
 
-			if (!$result['localareacode'] || !$result['baseno']) {
-				$msg = "No phonenumber given on order ".$result['orderid'].". Getting related numbers by envia_contract_id ".$result['contractreference'];
-				\Log::info($msg);
-				$out .= "<br>$msg";
+			// check what the order is related to ⇒ after silently changing the API behavior
+			// there now are orders not related to phonenumbers, too
+			if ($result['localareacode'] && $result['baseno']) {
+				// assume that order is related to a phonenumber
 
-				$phonenumbers = Phonenumber::where('contract_external_id', '=', $result['contractreference'])->get();
+				$msg = "<br>Order seems to be phonenumber related";
+				\Log::debug($msg);
+				$out .= $msg;
 
-				// check if there are related phonenumbers
-				if ($phonenumbers->count() == 0) {
-					$msg = 'Error processing get_orders_csv_response: No phonenumber found for Envia contract reference '.$result['contractreference'].'. Skipping order '.$order_id;
-					\Log::warning($msg);
-					$out .= '<br><span style="color: red">'.$msg.'</span>';
-					continue;
-				}
+				// start processing
+				$out .= $this->_process_misc_get_orders_csv_response__phonenumber_related($result);
+			}
+			elseif ($result['contractreference']) {
+				// order seems to be related to a contract
+
+				$msg = "<br>Order seems to be contract related";
+				\Log::debug($msg);
+				$out .= $msg;
+
+				// start processing
+				$out .= $this->_process_misc_get_orders_csv_response__contract_related($result);
+			}
+			elseif ($result['customerreference']) {
+				// order seems to be related to a contract
+
+				$msg = "<br>Order seems to be customer related";
+				\Log::debug($msg);
+				$out .= $msg;
+
+				// start processing
+				$out .= $this->_process_misc_get_orders_csv_response__customer_related($result);
 			}
 			else {
-				$phonenumbers = Phonenumber::where('prefix_number', '=', $result['localareacode'])->where('number', '=', $result['baseno'])->get();
+				// no relation
 
-				// check for edge cases (no number found, more than one number found)
-				// the number we look for should exist once and only once!
-				$phonenumber_count = $phonenumbers->count();
-				if ($phonenumber_count == 0) {
-					$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
-					\Log::warning($msg);
-					$out .= '<br><span style="color: red">'.$msg.'</span>';
-					continue;
-				}
-				if ($phonenumber_count > 1) {
-					$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' exists '.$phonenumber_count.' times. Clean your database! Skipping order '.$order_id;
-					\Log::warning($msg);
-					$out .= '<br><span style="color: red">'.$msg.'</span>';
-					continue;
-				}
-			}
+				$msg = "<br>Order seems to be standalone – no relation found";
+				\Log::debug($msg);
+				$out .= $msg;
 
-			$first_phonenumber = $phonenumbers->first();
-
-
-			$order = EnviaOrder::withTrashed()->where('orderid', $order_id)->first();
-
-			if (EnviaOrder::orderstate_is_final($order)) {
-				$msg = "Order is in final state. Skipping.";
-				\Log::info($msg);
-				$out .= "<br>$msg";
-				continue;
+				// start processing
+				$out .= $this->_process_misc_get_orders_csv_response__not_related($result);
 			}
 
 			// check if there exists an Envia contract for the returned contract_reference
 			// this is save here because within the CSV there are only phonenumber related orders (and e.g. no contract/relocate)
 			// attention: there can be orders within the CSV that has been soft deleted in our database (via order/cancel)
-			$enviacontract = EnviaContract::where("envia_contract_reference", "=", $result['contractreference'])->first();
-			if (!$enviacontract) {
-				// if not: create
-				$data = [
-					'envia_customer_reference' => $result['customerreference'],
-					'envia_contract_reference' => $result['contractreference'],
-					'modem_id' => $first_phonenumber->mta->modem->id,
-					'contract_id' => $first_phonenumber->mta->modem->contract->id,
-				];
-				$enviacontract = EnviaContract::create($data);
-				$msg = "Created EnviaContract $enviacontract->id";
-				Log::info($msg);
-				$out .= '<br>'.$msg;
-			}
+			/* $enviacontract = EnviaContract::where("envia_contract_reference", "=", $result['contractreference'])->first(); */
+			/* if (!$enviacontract) { */
+			/* 	// if not: create */
+			/* 	$data = [ */
+			/* 		'envia_customer_reference' => $result['customerreference'], */
+			/* 		'envia_contract_reference' => $result['contractreference'], */
+			/* 		'modem_id' => $first_phonenumber->mta->modem->id, */
+			/* 		'contract_id' => $first_phonenumber->mta->modem->contract->id, */
+			/* 	]; */
+			/* 	$enviacontract = EnviaContract::create($data); */
+			/* 	$msg = "Created EnviaContract $enviacontract->id"; */
+			/* 	Log::info($msg); */
+			/* 	$out .= '<br>'.$msg; */
+			/* } */
 
-			// add envia contract id to result array ⇒ used to check relation between phonenumbermanagement and envia
-			// contract in _update_phonenumbermanagement_with_envia_data() (called later via _update_phonenumber_related_data()
-			$result['enviacontract_id'] = $enviacontract->id;
+			/* // add envia contract id to result array ⇒ used to check relation between phonenumbermanagement and envia */
+			/* // contract in _update_phonenumbermanagement_with_envia_data() (called later via _update_phonenumber_related_data() */
+			/* $result['enviacontract_id'] = $enviacontract->id; */
 
-			if (is_null($order)) {
-				// order does not exist in our database: create it
+			/* if (is_null($order)) { */
+			/* 	// order does not exist in our database: create it */
 
-				// create a new Order, add given data to model instance
-				$order = EnviaOrder::create($result);
-				$out .= '<br>Order '.$order_id.' created.';
+			/* 	// create a new Order, add given data to model instance */
+			/* 	$order = EnviaOrder::create($result); */
+			/* 	$out .= '<br>Order '.$order_id.' created.'; */
 
-			}
-			else {
-				// ordertype_id is not given by order_get_status: we have to set it here if there are any changes
-				if ($order->ordertype_id != $result['ordertype_id']) {
-					$order->ordertype_id = $result['ordertype_id'];
-					$order->save();
-					$msg = 'Updated ordertype_id in for existing order '.$order_id;
-					Log::info($msg);
-					$out .= '<br>'.$msg;
-				}
-			}
+			/* } */
+			/* else { */
+			/* 	// ordertype_id is not given by order_get_status: we have to set it here if there are any changes */
+			/* 	if ($order->ordertype_id != $result['ordertype_id']) { */
+			/* 		$order->ordertype_id = $result['ordertype_id']; */
+			/* 		$order->save(); */
+			/* 		$msg = 'Updated ordertype_id in for existing order '.$order_id; */
+			/* 		Log::info($msg); */
+			/* 		$out .= '<br>'.$msg; */
+			/* 	} */
+			/* } */
 
-			if ($order->ordertype == 'Umzug') {
-				$msg = "Ordertype is “Umzug”. Will not update phoneumber related data in this method";
-				\Log::warning($msg);
-				$out .= "<br>$msg";
-				continue;
-			}
+			/* if ($order->ordertype == 'Umzug') { */
+			/* 	$msg = "Ordertype is “Umzug”. Will not update phoneumber related data in this method"; */
+			/* 	\Log::warning($msg); */
+			/* 	$out .= "<br>$msg"; */
+			/* 	continue; */
+			/* } */
 
 			// as an order can be related to more than one phonenumber we
 			// have to check if the current relation exists
-			foreach ($phonenumbers as $phonenumber) {
-				if (!$order->phonenumbers->contains($phonenumber->id)) {
-					$order->phonenumbers()->attach($phonenumber->id);
-					$msg = 'Added relation between existing enviaorder '.$order_id.' and phonenumber '.$phonenumber->id;
-					Log::info($msg);
-					$out .= '<br>'.$msg;
-				}
-			}
+			/* foreach ($phonenumbers as $phonenumber) { */
+			/* 	if (!$order->phonenumbers->contains($phonenumber->id)) { */
+			/* 		$order->phonenumbers()->attach($phonenumber->id); */
+			/* 		$msg = 'Added relation between existing enviaorder '.$order_id.' and phonenumber '.$phonenumber->id; */
+			/* 		Log::info($msg); */
+			/* 		$out .= '<br>'.$msg; */
+			/* 	} */
+			/* } */
 
-			// check if contract, modem and/or phonenumbermanagement need updates, too
-			// don't perform action for successfully cancelled orders here
-			if (!EnviaOrder::order_successfully_cancelled($order)) {
-				if (!EnviaOrder::order_failed($order)) {
-					foreach ($phonenumbers as $phonenumber) {
-						$result['phonenumber_id'] = $phonenumber->id;
-						$result['modem_id'] = $phonenumber->mta->modem->id;
-						$result['contract_id'] = $phonenumber->mta->modem->contract->id;
-						$out = $this->_update_phonenumber_related_data($result, $out);
-					}
-				}
-			}
+			/* // check if contract, modem and/or phonenumbermanagement need updates, too */
+			/* // don't perform action for successfully cancelled orders here */
+			/* if (!EnviaOrder::order_successfully_cancelled($order)) { */
+			/* 	if (!EnviaOrder::order_failed($order)) { */
+			/* 		foreach ($phonenumbers as $phonenumber) { */
+			/* 			$result['phonenumber_id'] = $phonenumber->id; */
+			/* 			$result['modem_id'] = $phonenumber->mta->modem->id; */
+			/* 			$result['contract_id'] = $phonenumber->mta->modem->contract->id; */
+			/* 			$out = $this->_update_phonenumber_related_data($result, $out); */
+			/* 		} */
+			/* 	} */
+			/* } */
 
 		}
 
 		$out .= "<br><br><pre>".$csv."</pre>";
 		return $out;
 	}
+
+
+	/**
+	 * Process phonenumber related order from orders CSV.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response__phonenumber_related($result) {
+
+		$out = '';
+		$order_id = $result['orderid'];
+
+		// check if there are related phonenumbers
+		$phonenumbers = Phonenumber::where('prefix_number', '=', $result['localareacode'])->where('number', '=', $result['baseno'])->get();
+
+		// check for edge cases (no number found, more than one number found)
+		// the number we look for should exist once and only once!
+		$phonenumber_count = $phonenumbers->count();
+		if ($phonenumber_count == 0) {
+			$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
+			\Log::warning($msg);
+			$out .= '<br><span style="color: red">'.$msg.'</span>';
+			return $out;
+		}
+		if ($phonenumber_count > 1) {
+			$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' exists '.$phonenumber_count.' times. Clean your database! Skipping order '.$order_id;
+			\Log::warning($msg);
+			$out .= '<br><span style="color: red">'.$msg.'</span>';
+			return $out;
+		}
+
+		// and here is the number we have to work with
+		$phonenumber = $phonenumbers->first();
+		$result['phonenumber_id'] = $phonenumber->id;
+
+		// enrich result array and get enviacontract and order
+		// add modem and contract ids
+		$result['modem_id'] = $phonenumber->mta->modem->id;
+		$result['contract_id'] = $phonenumber->mta->modem->contract->id;
+		// get envia contract
+		$_ = $this->_process_misc_get_orders_csv_response__update_or_create_enviacontract($result, $out);
+		$enviacontract = $_['enviacontract'];
+		$out .= $_['out'];
+		$result['enviacontract_id'] = (is_null($enviacontract) ? NULL : $enviacontract->id);
+		// get envia order
+		$_ = $this->_process_misc_get_orders_csv_response__update_or_create_order($result, $out);
+		$order = $_['order'];
+		$out .= $_['out'];
+
+		// check if relation between order and phonenumber exists
+		if (!$order->phonenumbers->contains($phonenumber->id)) {
+			$order->phonenumbers()->attach($phonenumber->id);
+			$msg = 'Added relation between existing enviaorder '.$order_id.' and phonenumber '.$phonenumber->id;
+			Log::info($msg);
+			$out .= '<br>'.$msg;
+		}
+
+		// check if contract, modem and/or phonenumbermanagement need updates, too
+		// don't perform action for successfully cancelled orders here
+		if (!EnviaOrder::order_successfully_cancelled($order)) {
+			if (!EnviaOrder::order_failed($order)) {
+				$out .= $this->_update_phonenumber_related_data($result, $out);
+			}
+		}
+
+		return $out;
+	}
+
+
+	/**
+	 * Process contract related order from orders CSV.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response__contract_related($result) {
+
+		$out = '';
+
+		// try to find the modem this order is related to
+		$modem = null;
+		$phonenumbers = Phonenumber::where('contract_external_id', '=', $result['contractreference'])->get();
+		foreach ($phonenumbers as $phonenumber) {
+			// check if all numbers belong to the same modem – if not there is inconistent data
+			if (is_null($modem)) {
+				$modem = $phonenumber->modem;
+			}
+			else {
+				if ($modem != $phonenumber->modem) {
+					$msg = "Phonenumbers related to Envia contract ".$result['contractreference']." do belong to different modems. Skipping.";
+					\Log::error($msg);
+					$out .= '<br><span style="color: red">Error: '.$msg.'</span>';
+					return $out;
+				}
+			}
+		}
+
+		if (is_null($modem)) {
+			$msg = "No modem found for Envia contract ".$result['contractreference'].". Skipping.";
+			\Log::warning($msg);
+			$out .= '<br><span style="color: red">'.$msg.'</span>';
+			return $out;
+		}
+
+		$result['modem_id'] = $modem->id;
+		$result['contract_id'] = $modem->contract->id;
+
+		// get envia contract
+		$_ = $this->_process_misc_get_orders_csv_response__update_or_create_enviacontract($result, $out);
+		$enviacontract = $_['enviacontract'];
+		$out .= $_['out'];
+		$result['enviacontract_id'] = (is_null($enviacontract) ? NULL : $enviacontract->id);
+		// get envia order
+		$_ = $this->_process_misc_get_orders_csv_response__update_or_create_order($result, $out);
+		$order = $_['order'];
+		$out .= $_['out'];
+
+		// check if contract and/or modem need updates, too
+		// don't perform action for successfully cancelled orders here
+		if (!EnviaOrder::order_successfully_cancelled($order)) {
+			if (!EnviaOrder::order_failed($order)) {
+				$out .= $this->_update_modem_with_envia_data($result, $out);
+				$out .= $this->_update_contract_with_envia_data($result, $out);
+			}
+		}
+
+		return $out;
+	}
+
+
+	/**
+	 * Process customer related order from orders CSV.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response__customer_related($result) {
+
+		$out = '';
+
+		$contract = Contract::where('customer_external_id', '=', $result['customerreference'])->first();
+
+		if (is_null($contract)) {
+			$msg = "No contract found for Envia customer ".$result['customerreference'].". Skipping.";
+			\Log::warning($msg);
+			$out .= '<br><span style="color: red">'.$msg.'</span>';
+			return $out;
+		}
+
+		$result['modem_id'] = null;
+		$result['contract_id'] = $contract->id;
+		$result['enviacontract_id'] = null;
+
+		// get envia order
+		$_ = $this->_process_misc_get_orders_csv_response__update_or_create_order($result, $out);
+		$order = $_['order'];
+		$out .= $_['out'];
+
+		// check if contract and/or modem need updates, too
+		// don't perform action for successfully cancelled orders here
+		if (!EnviaOrder::order_successfully_cancelled($order)) {
+			if (!EnviaOrder::order_failed($order)) {
+				$out .= $this->_update_contract_with_envia_data($result, $out);
+			}
+		}
+
+		return $out;
+	}
+
+
+	/**
+	 * Process order from orders CSV related to nothing.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response__not_related($result) {
+
+		$out = '<br>TODO: check if we have to do something…';
+
+		return $out;
+	}
+
+
+	/**
+	 * Get enviacontract or create a new one.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response__update_or_create_enviacontract($result) {
+
+		$out = '';
+
+		// cannot create envia contract if no reference is given
+		if (!$result['contractreference']) {
+			return ['enviacontract' => null, 'out' => $out];
+		}
+
+		// check if there exists an Envia contract for the returned contract_reference
+		// attention: there can be orders within the CSV that has been soft deleted in our database (via order/cancel)
+		$enviacontract = EnviaContract::where("envia_contract_reference", "=", $result['contractreference'])->first();
+		if (!$enviacontract) {
+			// if not: create
+			$data = [
+				'envia_customer_reference' => $result['customerreference'],
+				'envia_contract_reference' => $result['contractreference'],
+				'modem_id' => $result['modem_id'],
+				'contract_id' => $result['contract_id'],
+			];
+			$enviacontract = EnviaContract::create($data);
+			$msg = "Created EnviaContract $enviacontract->id";
+			Log::info($msg);
+			$out .= '<br>'.$msg;
+		}
+
+		return ['enviacontract' => $enviacontract, 'out' => $out];
+	}
+
+
+	/**
+	 * Get order or create a new one.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response__update_or_create_order($result) {
+
+		$out = '';
+
+		$order = EnviaOrder::withTrashed()->where('orderid', '=', $result['orderid'])->first();
+
+		// create order if not existing
+		if (is_null($order)) {
+			$msg = "Order ".$result['orderid']." not existing – creating";
+			$out .= "<br>$msg";
+			\Log::info($msg);
+
+			$order = EnviaOrder::create($result);
+		}
+		else {
+			// update order data
+			$changed = False;
+			$fields = [
+				"ordertype_id",
+				"ordertype",
+				"orderstatus_id",
+				"orderstatus",
+				"orderdate",
+				"ordercomment",
+				"customerreference",
+				"contractreference",
+				"modem_id",
+				"contract_id",
+				"enviacontract_id",
+			];
+			foreach ($fields as $field) {
+				if ($order->{$field} != $result[$field]) {
+					$order->{$field} = $result[$field];
+					$changed = True;
+				}
+			}
+
+			if ($changed) {
+				if ($order->exists()) {
+					$msg = "Updating order ".$result['orderid'];
+					$out .= "<br>$msg";
+					\Log::info($msg);
+				}
+				$order->save();
+			}
+		}
+
+		return ['order' => $order, 'out' => $out];
+	}
+
 
 
 	/**

@@ -56,7 +56,7 @@ class EnviaCustomerReferenceGetterCommand extends Command {
 
 		$runs = ['current', 'legacy'];
 		foreach ($runs as $run) {
-			
+
 			$this->contracts_to_get_customer_reference_for = array();
 
 			echo "\n";
