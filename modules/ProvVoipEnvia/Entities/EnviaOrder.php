@@ -31,9 +31,9 @@ class EnviaOrder extends \BaseModel {
 				'phonenumber_related' => False,
 			),
 			array(
-				'ordertype' => 'Kündigung envia TEL voip reselling',	// TODO: Add correct string given by Envia
-				'ordertype_id' => null,
-				'method' => 'contract/terminate',
+				'ordertype' => 'Sprachtarif wird geändert',
+				'ordertype_id' => 12,
+				'method' => 'contract/change_tariff',
 				'phonenumber_related' => False,
 			),
 			array(
@@ -43,29 +43,53 @@ class EnviaOrder extends \BaseModel {
 				'phonenumber_related' => True,
 			),
 			array(
+				'ordertype' => 'Stornierung eines Auftrags',
+				'ordertype_id' => 20,
+				'method' => 'order/cancel',
+				'phonenumber_related' => False,
+			),
+			array(
+				'ordertype' => 'Änderung der Rufnummernkonfiguration',
+				'ordertype_id' => 21,
+				'method' => 'voip_account/update',
+				'phonenumber_related' => True,
+			),
+			array(
+				'ordertype' => 'Änderung des Einkaufstarifs',
+				'ordertype_id' => 22,
+				'method' => 'contract/change_variation',
+				'phonenumber_related' => False,
+			),
+			array(
 				'ordertype' => 'Kündigung einer Rufnummer',
 				'ordertype_id' => 23,
 				'method' => 'voip_account/terminate',
 				'phonenumber_related' => True,
 			),
 			array(
-				'ordertype' => 'Sprachtarif wird geändert',
-				'ordertype_id' => null,
-				'method' => 'contract/change_tariff',
+				'ordertype' => 'Änderung der Kundendaten',
+				'ordertype_id' => 27,
+				'method' => 'customer/update',
 				'phonenumber_related' => False,
 			),
 			array(
-				'ordertype' => 'n/a',
-				'ordertype_id' => null,
-				'method' => 'contract/change_variation',
+				'ordertype' => 'Umzug',
+				'ordertype_id' => 70,
+				'method' => 'contract/relocate',
 				'phonenumber_related' => False,
 			),
 			array(
-				'ordertype' => 'Stornierung eines Auftrags',
+				'ordertype' => 'Kündigung envia TEL voip reselling',	// TODO: Add correct string given by Envia
 				'ordertype_id' => null,
-				'method' => 'order/cancel',
+				'method' => 'contract/terminate',
 				'phonenumber_related' => False,
 			),
+			/* array( */
+			/* 	'ordertype' => '', */
+			/* 	'ordertype_id' => , */
+			/* 	'method' => '', */
+			/* 	'phonenumber_related' => , */
+			/* ), */
 		),
 		'states' => array(
 			array(

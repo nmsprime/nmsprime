@@ -69,7 +69,7 @@ class EnviaOrderProcessorCommand extends Command {
 
 		// as there can be some delays in status change of orders we have to look back in history a little bit…
 		$date_threshold = date('c', strtotime("-2 weeks"));
-		$orders = EnviaOrder::where('method', '=', 'contract/relocate')->where('orderdate', '>=', $date_threshold)->get();
+		$orders = EnviaOrder::whereRaw('method=contract/relocate OR ordertype=Umzug')->where('orderdate', '>=', $date_threshold)->get();
 
 		foreach ($orders as $order) {
 
