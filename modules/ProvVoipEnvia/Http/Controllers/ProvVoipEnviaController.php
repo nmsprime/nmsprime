@@ -159,6 +159,7 @@ class ProvVoipEnviaController extends \BaseController {
 			['api' => 'order', 'link' => 'contract_get_voice_data?contract_id=500000'],
 			['api' => 'order', 'link' => 'contract_terminate?contract_id=500000'],
 			['api' => 'order', 'link' => 'customer_update?contract_id=500000'],
+			['api' => 'order', 'link' => 'customer_get_contracts?contract_id=500000'],
 			['api' => 'order', 'link' => 'misc_ping'],
 			['api' => 'order', 'link' => 'misc_get_free_numbers'],
 			['api' => 'order', 'link' => 'misc_get_free_numbers?localareacode=03735'],
