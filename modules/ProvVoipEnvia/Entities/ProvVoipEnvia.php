@@ -3906,7 +3906,9 @@ class ProvVoipEnvia extends \BaseModel {
 			$out .= '<br> ⇒ Contract->customer_external_id set to '.$data['customerreference'];
 		}
 		elseif ($contract->customer_external_id != $data['customerreference']) {
-			$out .= '<br> ⇒ <span style="color: red">error: contract->customer_external_id ('.$contract->customer_external_id.') != enviaorder->customerreference ('.$data['customerreference'].')!!</span>';
+			$msg = 'contract->customer_external_id ('.$contract->customer_external_id.') != enviaorder->customerreference ('.$data['customerreference'].')!!';
+			\Log::error($msg);
+			$out .= "<br> ⇒ <span style='color: red'>$msg</span>";
 		}
 
 		return $out;

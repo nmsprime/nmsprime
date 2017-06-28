@@ -543,8 +543,13 @@ class EnviaOrder extends \BaseModel {
 		}
 		$escalation_level = $escalations[$bsclass].' – '.$bsclass;
 
-		$contract_nr = Contract::findOrFail($this->contract_id)->number;
-		$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract_nr.'</a>';
+		if (boolval($this->contract_id)) {
+			$contract_nr = Contract::findOrFail($this->contract_id)->number;
+			$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract_nr.'</a>';
+		}
+		else {
+			$contract_nr = '–';
+		}
 
 		if (boolval($this->modem_id)) {
 			$modem = Modem::findOrFail($this->modem_id);

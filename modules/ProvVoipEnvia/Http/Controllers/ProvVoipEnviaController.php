@@ -552,7 +552,7 @@ class ProvVoipEnviaController extends \BaseController {
 		$ret['plain_html'] = '';
 		$ret['plain_html'] .= '<h4>Error</h4>';
 		$ret['plain_html'] .= 'Job '.$job.' is currently not allowed';
-		$ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">Bring me back </h5>';
+		$ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">Bring me back…</h5>';
 		return $ret;
 	}
 
@@ -564,8 +564,7 @@ class ProvVoipEnviaController extends \BaseController {
 		$ret['plain_html'] = '';
 		$ret['plain_html'] .= "<h4>There was error creating XML to be sent to Envia:</h4>";
 		$ret['plain_html'] .= "<h5>".$msg."</h5><br><br>";
-
-		$ret['plain_html'] .= '<h5><b><a href="javascript:history.back()">Bring me back…</a>';
+		$ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">Bring me back…</h5>';
 
 		return $ret;
 	}
