@@ -579,6 +579,11 @@ class ProvVoipEnvia extends \BaseModel {
 					'help' => "Tries to get the Envia ID for this customer"
 				));
 				array_push($ret, array(
+					'linktext' => 'Get Envia customer reference by lecacy customer number',
+					'url' => $base.'customer_get_reference_by_legacy_number'.$origin.'&amp;contract_id='.$contract_id,
+					'help' => "Tries to get the Envia ID for this customer"
+				));
+				array_push($ret, array(
 					'linktext' => 'Update customer',
 					'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id,
 					'help' => "Pushes changes on customer data to Envia.\nChanges of modem installation address have to be sent separately (using “Relocate contract”)!"
@@ -1242,7 +1247,15 @@ class ProvVoipEnvia extends \BaseModel {
 		// also the prolog should be given; otherwise SimpleXML will not put the
 		// attribute “encoding” in…
 		$xml_prolog = '<?xml version="1.0" encoding="UTF-8"?>';
-		$xml_root = '<'.$job.' />';
+
+		// add the root element; in most cases this is the given job
+		if ($job == 'customer_get_reference_by_legacy_number') {
+			$xml_root = '<customer_get_reference/>';
+		}
+		else {
+			$xml_root = '<'.$job.' />';
+		}
+
 		$initial_xml = $xml_prolog.$xml_root;
 
 		// this is the basic xml object which will be extended by other methods
@@ -1423,7 +1436,17 @@ class ProvVoipEnvia extends \BaseModel {
 		/* ), */
 
 
+		$second_level_nodes['customer_get_contracts'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+		);
+
 		$second_level_nodes['customer_get_reference'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+		);
+
+		$second_level_nodes['customer_get_reference_by_legacy_number'] = array(
 			'reseller_identifier',
 			'customer_identifier',
 		);
@@ -1640,29 +1663,29 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$inner_xml = $this->xml->addChild('customer_identifier');
 
-		// if set: use customerreference (prefered by Envia)
-		// but not in getting the customer's reference – here in each case we have to use the contract number
-		$customerreference = $this->contract->customer_external_id;
-		if (
-			($this->job != 'customer_get_reference')
-			&&
-			boolval($customerreference)
-			&&
-			($customerreference != 'n/a')
-		) {
-			$inner_xml->addChild('customerreference', $customerreference);
-		}
-		// else – e.g. on the first contract_create for a customer – use customernumber
-		else {
-
-			// if we have a legacy customer number: use this
-			$customerno_legacy = $this->contract->customer_number_legacy();
-			if (boolval($customerno_legacy) && ($customerno_legacy != 'n/a')) {
-				$inner_xml->addChild('customerno', $customerno_legacy);
+		if ($this->job == 'customer_get_reference') {
+			$customerno = $this->contract->customer_number();
+			if (!$customerno) {
+				throw new XmlCreationError("Customernumber does not exist – try using legacy version.");
 			}
-			// else choose the customer number
-			else {
-				$customerno = $this->contract->customer_number();
+			$inner_xml->addChild('customerno', $customerno);
+		}
+		elseif ($this->job == 'customer_get_reference_by_legacy_number') {
+			$customerno_legacy = $this->contract->customer_number_legacy();
+			if ((!boolval($customerno_legacy)) || ($customerno_legacy == 'n/a')) {
+				throw new XmlCreationError("Legacy customernumber does not exist – try using normal version.");
+			}
+			$inner_xml->addChild('customerno', $customerno_legacy);
+		}
+		else {
+			// if set: use customerreference (prefered by Envia)
+			// but not in getting the customer's reference – here in each case we have to use the contract number
+			$customerreference = $this->contract->customer_external_id;
+			$customerno = $this->contract->customer_number();
+			if ((!boolval($customerreference)) || ($customerreference == 'n/a')) {
+				$inner_xml->addChild('customerreference', $customerreference);
+			}
+			elseif ((!boolval($customerno)) || ($customerno == 'n/a')) {
 				$inner_xml->addChild('customerno', $customerno);
 			}
 		}
@@ -3531,6 +3554,32 @@ class ProvVoipEnvia extends \BaseModel {
 		$out .= "<h5>Installation address change successful (order ID: ".$xml->orderid.")</h5>";
 
 		return $out;
+	}
+
+
+	/**
+	 * Process data after requesting customer reference.
+	 *
+	 * @author Patrick Reichel
+	 * @version 2017-05-10
+	 */
+	protected function _process_customer_get_contracts_response($xml, $data, $out) {
+
+		$out .= "<h3 style='color: red'>Changing database using returned data is not yet implemented in ".__METHOD__.".</h3>";
+
+		return $out;
+	}
+
+
+	/**
+	 * Process data after requesting customer reference by lecacy number.
+	 * This is simply a wrapper
+	 *
+	 * @author Patrick Reichel
+	 * @version 2017-05-10
+	 */
+	protected function _process_customer_get_reference_by_legacy_number_response($xml, $data, $out) {
+		return $this->_process_customer_get_reference_response($xml, $data, $out);
 	}
 
 

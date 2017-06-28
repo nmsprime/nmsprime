@@ -90,7 +90,9 @@ class ProvVoipEnviaController extends \BaseController {
 			'order_get_status' => $base_url.'order/get_status',
 			'contract_get_reference' => $base_url.'contract/get_reference',
 			'contract_get_voice_data' => $base_url.'contract/get_voice_data',
+			'customer_get_contracts' => $base_url.'customer/get_contracts',
 			'customer_get_reference' => $base_url.'customer/get_reference',
+			'customer_get_reference_by_legacy_number' => $base_url.'customer/get_reference',
 		);
 
 		// allowed client IPs – currently restricted to localhost
@@ -181,6 +183,7 @@ class ProvVoipEnviaController extends \BaseController {
 			['api' => 'order', 'link' => 'contract_lock'],
 			['api' => 'order', 'link' => 'contract_unlock'],
 			['api' => 'order', 'link' => 'customer_get_reference'],
+			['api' => 'order', 'link' => 'customer_get_reference_by_legacy_number'],
 			['api' => 'order', 'link' => 'order_add_mgcp_details'],
 			['api' => 'order', 'link' => 'order_create_attachment?order_id=73013&amp;enviaorderdocument_id=7'],
 			['api' => 'order', 'link' => 'order_get_status'],
@@ -359,7 +362,9 @@ class ProvVoipEnviaController extends \BaseController {
 			'availability_check',
 			'contract_get_reference',
 			'contract_get_voice_data',
+			'customer_get_contracts',
 			'customer_get_reference',
+			'customer_get_reference_by_legacy_number',
 			'misc_ping',
 			'misc_get_keys',
 			'misc_get_free_numbers',
@@ -706,7 +711,9 @@ class ProvVoipEnviaController extends \BaseController {
 			'contract_terminate' => $this->base_url.'contract/terminate',
 			'contract_unlock' => $this->base_url.'____TODO____',
 
+			'customer_get_contracts' => $this->base_url.'customer/get_contracts',
 			'customer_get_reference' => $this->base_url.'customer/get_reference',
+			'customer_get_reference_by_legacy_number' => $this->base_url.'customer/get_reference',
 			'customer_update' => $this->base_url.'customer/update',
 
 			'misc_get_free_numbers' => $this->base_url.'misc/get_free_numbers',

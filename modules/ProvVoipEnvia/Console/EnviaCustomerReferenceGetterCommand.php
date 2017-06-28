@@ -54,11 +54,17 @@ class EnviaCustomerReferenceGetterCommand extends Command {
 
 		Log::info($this->description);
 
-		echo "\n";
-		$this->_get_contracts();
+		$runs = ['current', 'legacy'];
+		foreach ($runs as $run) {
+			
+			$this->contracts_to_get_customer_reference_for = array();
 
-		echo "\n";
-		$this->_get_envia_customer_references();
+			echo "\n";
+			$this->_get_contracts($run);
+
+			echo "\n";
+			$this->_get_envia_customer_references($run);
+		}
 	}
 
 	/**
@@ -66,9 +72,9 @@ class EnviaCustomerReferenceGetterCommand extends Command {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _get_contracts() {
+	protected function _get_contracts($run) {
 
-		Log::debug(__METHOD__." started");
+		Log::debug(__METHOD__." started for $run customer numbers");
 
 		// get all contracts without envia reference
 		$contracts_without_customer_reference = Contract::whereNull('customer_external_id')->get();
@@ -84,8 +90,20 @@ class EnviaCustomerReferenceGetterCommand extends Command {
 				}
 
 				// add contract and stop investigation (we don't want to get the customer reference multiple times)
-				array_push($this->contracts_to_get_customer_reference_for, $contract);
-				break;
+				if ($run == 'current') {
+					$number = $contract->customer_number();
+					if (boolval($number) && ($number != 'n/a')) {
+						array_push($this->contracts_to_get_customer_reference_for, $contract);
+					}
+					break;
+				}
+				elseif ($run == 'legacy') {
+					$number = $contract->customer_number_legacy();
+					if (boolval($number) && ($number != 'n/a')) {
+						array_push($this->contracts_to_get_customer_reference_for, $contract);
+					}
+					break;
+				}
 			}
 		}
 	}
@@ -95,9 +113,9 @@ class EnviaCustomerReferenceGetterCommand extends Command {
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _get_envia_customer_references() {
+	protected function _get_envia_customer_references($run) {
 
-		Log::debug(__METHOD__." started");
+		Log::debug(__METHOD__." for $run customer numbers started");
 
 		foreach ($this->contracts_to_get_customer_reference_for as $contract) {
 
@@ -106,7 +124,12 @@ class EnviaCustomerReferenceGetterCommand extends Command {
 
 			try {
 				// get the relative URL to execute the cron job for updating the current order_id
-				$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'customer_get_reference', 'contract_id' => $contract_id, 'really' => 'True'), false);
+				if ($run == 'current') {
+					$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'customer_get_reference', 'contract_id' => $contract_id, 'really' => 'True'), false);
+				}
+				elseif ($run == 'legacy') {
+					$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'customer_get_reference_by_legacy_number', 'contract_id' => $contract_id, 'really' => 'True'), false);
+				}
 
 				$url = $this->base_url.$url_suffix;
 
