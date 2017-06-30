@@ -92,6 +92,8 @@ class ProvMonController extends \BaseController {
 			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip);
 			$realtime['forecast'] = 'TODO';
 		}
+		else if (count($ping) <= 7)
+			$ping = null;
 
 		// Log dhcp (discover, ...), tftp (configfile or firmware)
 		$search = $ip ? "$mac|$modem->hostname|$ip" : "$mac|$modem->hostname";
