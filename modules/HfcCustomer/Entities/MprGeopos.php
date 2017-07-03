@@ -21,13 +21,6 @@ class MprGeopos extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'mprgeopos';
 
-
-	// Relation MPR
-	public function mprgeopos()
-	{
-		return $this->belongsTo('Modules\HfcCustomer\Entities\Mpr');
-	}
-
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
