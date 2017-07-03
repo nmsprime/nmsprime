@@ -138,9 +138,11 @@ class Invoice extends \BaseModel{
 		'contract_nr' 			=> '',
 		'contract_firstname' 	=> '',
 		'contract_lastname' 	=> '',
+		'contract_company' 		=> '',
 		'contract_street' 		=> '',
 		'contract_zip' 			=> '',
 		'contract_city' 		=> '',
+		'contract_address' 		=> '', 			// concatenated address for begin of letter
 
 		'contract_mandate_iban'	=> '', 			// iban of the customer
 		'contract_mandate_ref'	=> '', 			// mandate reference of the customer
@@ -216,9 +218,11 @@ class Invoice extends \BaseModel{
 		$this->data['contract_nr'] 			= $contract->number;
 		$this->data['contract_firstname'] 	= $contract->firstname;
 		$this->data['contract_lastname'] 	= $contract->lastname;
+		$this->data['contract_company'] 	= $contract->company;
 		$this->data['contract_street'] 		= $contract->street.' '.$contract->house_number;
 		$this->data['contract_zip'] 		= $contract->zip;
 		$this->data['contract_city'] 		= $contract->city;
+		$this->data['contract_address'] 	= $contract->company ? "$contract->firstname $contract->lastname\\\\$contract->company\\\\".$this->data['contract_street']."\\\\$contract->zip $contract->city" : "$contract->firstname $contract->lastname\\\\".$this->data['contract_street']."\\\\$contract->zip $contract->city";
 
 		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
