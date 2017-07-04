@@ -1,6 +1,7 @@
 <?php namespace Modules\HfcCustomer\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
+use Modules\HfcCustomer\Entities\Mpr;
 use Modules\HfcCustomer\Entities\MprGeopos;
 use Illuminate\Http\RedirectResponse;
 
@@ -62,10 +63,47 @@ class MprController extends \BaseController {
 					'x' => $pos[1],
 					'y' => $pos[3],
 				]);
+			} elseif (count($pos) > 4 && !(count($pos) % 2)) {
+				for($i = 0; $i < count($pos)/2; $i++)
+					MprGeopos::create(['name' => 'P'.$i, 'mpr_id' => $mpr_id, 'x' => $pos[2*$i], 'y' => $pos[2*$i+1]]);
 			}
 		}
 
 		return \Redirect::route(\NamespaceController::get_route_name().'.edit', $mpr_id)->with('message', 'Created!');
+	}
+
+	/**
+	 * An MPR-polygon was modified using openlayers, so updates its corresponding
+	 * mprgeoposes. This involves deleting superfluous mprgeoposes, updating them
+	 * and creating new ones if needed.
+	 *
+	 * @param id: MPR id
+	 * @param gp_new: new mprgeoposes separated by semicolons (string)
+	 * @return: redirect back
+	 * @author: Ole Ernst
+	 */
+	public function update_geopos ($id, $gp_new) {
+		$gp_new = explode(';', $gp_new);
+		// an odd number means a coordinate is incomplete
+		if(count($gp_new) % 2)
+			return back();
+
+		// delete superfluous mprgeopos
+		foreach(Mpr::find($id)->mprgeopos->slice(count($gp_new)/2) as $gp_del)
+			$gp_del->delete();
+
+		// update mprgeopos
+		foreach (Mpr::find($id)->mprgeopos as $gp) {
+			$gp->x = array_shift($gp_new);
+			$gp->y = array_shift($gp_new);
+			$gp->save();
+		}
+
+		// add new mprgeopos
+		while (count($gp_new))
+			MprGeopos::create(['mpr_id' => $id, 'x' => array_shift($gp_new), 'y' => array_shift($gp_new)]);
+
+		return back();
 	}
 
 }

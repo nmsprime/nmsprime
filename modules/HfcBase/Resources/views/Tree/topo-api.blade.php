@@ -40,9 +40,28 @@ function map_google_init ()
                         {type: google.maps.MapTypeId.SATELLITE, numZoomLevels: 22}
                         // used to be {type: G_SATELLITE_MAP, numZoomLevels: 22}
                 );
+                vectors = new OpenLayers.Layer.Vector(\"Modem Positioning Rules\", {projection: map.displayProjection});
+                map.addLayers([osm,gsat,gmap,gphy,ghyb,vectors]);
 
-                map.addLayers([osm,gsat,gmap,gphy,ghyb]);
-                ";
+                vectors.events.on({\"afterfeaturemodified\": onAfterFeatureModified})
+
+                drawControls = {polygon: new OpenLayers.Control.DrawFeature(vectors, OpenLayers.Handler.Polygon, {callbacks : {\"done\": savePolygonMPR}}),
+                                box: new OpenLayers.Control.DrawFeature(vectors,
+                                    OpenLayers.Handler.RegularPolygon, {
+                                        handlerOptions: {
+                                            sides: 4,
+                                            irregular: true
+                                        },
+                                        callbacks : {
+                                            \"done\": savePolygonMPR
+                                        }
+                                }),
+                                modify: new OpenLayers.Control.ModifyFeature(vectors)};
+
+                for(var key in drawControls)
+                    map.addControl(drawControls[key]);
+
+                document.getElementById('noneToggle').checked = true;";
         }
         else
                 echo "          map.addLayers([osm]);";
@@ -62,41 +81,29 @@ function map_mps_init()
 	if (!isset($mpr))
 		goto finish;
 
-	echo "\t\t\t\tvar boxes  = new OpenLayers.Layer.Boxes( \"Modem Positioning Rules\", {projection: map.displayProjection} );";
-
 	$i = 0;
 	$_mpr = $mpr;
 	foreach ($_mpr as $id => $mpr)
 	{
-		if (count($mpr) == 2)
-		{
-			$i++;
-
-			$x1  = $mpr[0][0];
-			$x2  = $mpr[1][0];
-			$y1  = $mpr[0][1];
-			$y2  = $mpr[1][1];
-
+		if (count($mpr) == 2) {
+			echo "bounds = new OpenLayers.Bounds();";
+			foreach($mpr as $coord)
+				echo "bounds.extend(new OpenLayers.LonLat($coord[0], $coord[1]));";
 			echo "
-				var bounds = new OpenLayers.Bounds();
-				bounds.extend(new OpenLayers.LonLat($x1,$y1));
-				bounds.extend(new OpenLayers.LonLat($x2,$y2));
-				box$i = new OpenLayers.Marker.Box(bounds.transform(new OpenLayers.Projection(\"EPSG:4326\"),map.getProjectionObject()));
-				box$i.events.register(\"click\", box$i, function (e) {
-					alert (\"Modem Positioning System - MPR id: $id\",
-					       '<li><a href=' + global_url + '/Mpr/$id/edit>Show Rule</a></li>',
-					       {width:150});
-				});
-				box$i.setBorder(\"brown\");
-				boxes.addMarker(box$i); ";
-		}
-		else
-		{
-			// TODO: Polygon
+				bounds.transform(new OpenLayers.Projection(\"EPSG:4326\"),map.getProjectionObject());
+				vectors.addFeatures([new OpenLayers.Feature.Vector(bounds.toGeometry(), {id: $id})]);";
+
+		} elseif (count($mpr) > 2) {
+			echo "
+				vectors.addFeatures([
+				new OpenLayers.Feature.Vector(new OpenLayers.Geometry.Polygon([
+				new OpenLayers.Geometry.LinearRing([";
+			foreach ($mpr as $coord)
+				echo "new OpenLayers.Geometry.Point($coord[0], $coord[1]),";
+			echo "]).transform(new OpenLayers.Projection(\"EPSG:4326\"), map.getProjectionObject())]), {id: $id})]);";
 		}
 	}
 
-	echo "\n\n\t\t\tmap.addLayers([boxes]);\n";
 
 finish:
 ?>
@@ -351,7 +358,40 @@ function map_kml_customer_load ()
 ?>
 }
 
+function toggleControl(element) {
+	for(key in drawControls) {
+		var control = drawControls[key];
+		if(element.value == key && element.checked)
+			control.activate();
+		else
+			control.deactivate();
+	}
+	if(element.value == 'none')
+		select.activate();
+	else
+		select.deactivate();
+}
 
+function getPolyStr(base, geo) {
+	var str = base;
+	var vertices = geo.transform(map.getProjectionObject(), new OpenLayers.Projection("EPSG:4326")).getVertices();
+	for (var i = 0; i < vertices.length; i++) {
+		if(i) str += ';';
+		str += vertices[i].x + ';' + vertices[i].y;
+	}
+	return str;
+}
+
+function savePolygonMPR(geo) {
+	str = getPolyStr('<li><a href="' + global_url + 'Mpr/create?value=', geo);
+	str += '">Add Modem Positioning Rule</a></li>';
+	alert('Modem Positioning System', str, {width:500});
+}
+
+function onAfterFeatureModified(event) {
+	str = getPolyStr('', event.feature.geometry);
+	<?php echo 'window.location = "' . route('Mpr.update_geopos', ['%id', '%str']) . "\".replace('%id', event.feature.attributes.id).replace('%str', str)"; ?>;
+}
 
 /*
  * MAP API Init
