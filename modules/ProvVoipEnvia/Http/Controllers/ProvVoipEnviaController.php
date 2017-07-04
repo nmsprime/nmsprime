@@ -54,11 +54,21 @@ class ProvVoipEnviaController extends \BaseController {
  	 *
 	 * @author Patrick Reichel
 	 */
-	public function check_api_version($job) {
+	public function check_api_version($type, $job) {
 
 		if ($this->model->api_version['major'] < 0) {
-			throw new \InvalidArgumentException('Error performing '.$job.': PROVVOIPENVIA__REST_API_VERSION in .env has to be set to a positive float value (e.g.: 1.4) ⇒ ask your admin for proper values');
+			throw new \InvalidArgumentException('Error performing '.$type.' ('.$job.'): PROVVOIPENVIA__REST_API_VERSION in .env has to be set to a positive float value (e.g.: 1.4) ⇒ ask your admin for proper values');
 		}
+
+		if (
+			($job == "customer_get_contracts")
+			&&
+			($this->model->api_version_less_than("2.2"))
+		) {
+			return False;
+		};
+
+		return True;
 
 	}
 
@@ -81,7 +91,12 @@ class ProvVoipEnviaController extends \BaseController {
 		$request_uri = \Request::getUri();
 		$origin = \URL::to('/');	// origin is not relevant in cron jobs; set only for compatibility reasons…
 
-		$this->check_api_version("cron job ($job)");
+		if (!$this->check_api_version("cron", $job)) {
+			$msg = "Job ".$job." not allowed in API version ".$this->model->api_version_string.".";
+			echo "Error: $msg";
+			\Log::error($msg);
+			exit(1);
+		}
 
 		// as this method is not protected by normal auth mechanism we will allow only a small number of jobs
 		$allowed_cron_jobs = array(
@@ -760,7 +775,12 @@ class ProvVoipEnviaController extends \BaseController {
 			throw new \InvalidArgumentException('Allowed return_type has to be in ['.implode(', ', $allowed_return_types).'] but “'.$return_type.'” given.');
 		}
 
-		$this->check_api_version("request ($job)");
+		if (!$this->check_api_version("request", $job)) {
+			$msg = "Job ".$job." not allowed in API version ".$this->model->api_version_string.".";
+			echo "Error: $msg";
+			\Log::error($msg);
+			exit(1);
+		}
 
 		$urls = $this->_get_envia_job_to_url_mappings();
 

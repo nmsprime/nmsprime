@@ -571,11 +571,14 @@ class ProvVoipEnvia extends \BaseModel {
 		if (in_array($view_level, ['contract', 'modem', 'phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Customer'));
 
-			array_push($ret, array(
-				'linktext' => 'Get Envia contracts for this customer',
-				'url' => $base.'customer_get_contracts'.$origin.'&amp;contract_id='.$contract_id,
-				'help' => "Tries to get the Envia contracts for this customer"
-			));
+			if ($this->api_version_greater_or_equal("2.2")) {
+				array_push($ret, array(
+					'linktext' => 'Get Envia contracts for this customer',
+					'url' => $base.'customer_get_contracts'.$origin.'&amp;contract_id='.$contract_id,
+					'help' => "Tries to get the Envia contracts for this customer"
+				));
+			};
+
 			// customer data change possible if there is an active contract for this user
 			if ($this->at_least_one_contract_available) {
 				array_push($ret, array(
