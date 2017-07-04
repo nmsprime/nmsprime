@@ -11,18 +11,26 @@ class CccController extends \BaseController {
 	 */
 	public function view_form_fields($model = null)
 	{
-		if (!$model)
-			$model = new CCC;
-
-		$files = CCC::template_files();
 
 		// label has to be the same like column in sql table
-		return array(
+		$a = array(
 			array('form_type' => 'text', 'name' => 'headline1', 'description' => 'Headline 1'),
 			array('form_type' => 'text', 'name' => 'headline2', 'description' => 'Headline 2'),
-			array('form_type' => 'select', 'name' => 'template_filename', 'description' => 'Connection Info Template', 'value' => $files, 'help' => 'Tex Template used to Create Connection Information on the Contract Page for a Customer'),
-			array('form_type' => 'file', 'name' => 'template_filename_upload', 'description' => 'Upload Template'),
 		);
+
+		$b = [];
+		if (!\PPModule::is_active('billingbase'))
+		{
+			// See CompanyController in Case BillingBase is active
+			$files = self::get_storage_file_list('ccc/template/');
+
+			$b = array(
+				array('form_type' => 'select', 'name' => 'template_filename', 'description' => 'Connection Info Template', 'value' => $files, 'help' => 'Tex Template used to Create Connection Information on the Contract Page for a Customer'),
+				array('form_type' => 'file', 'name' => 'template_filename_upload', 'description' => 'Upload Template'),
+				);
+		}
+
+		return array_merge($a,$b);
 	}
 
 

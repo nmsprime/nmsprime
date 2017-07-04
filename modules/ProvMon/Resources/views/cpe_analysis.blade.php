@@ -30,7 +30,7 @@
 
 @section('content_log')
 	@if ($log)
-		<font color="green"><b>{{$type}} Logfile</b></font><br>
+		<font color="green"><b>{{$type}} Logs</b></font><br>
 		@foreach ($log as $line)
 				<table>
 				<tr>

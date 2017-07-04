@@ -16,6 +16,33 @@ class EnviaContract extends \BaseModel {
     protected $fillable = [];
 
 
+	// Name of View
+	public static function view_headline()
+	{
+		return 'EnviaContract';
+	}
+
+
+	// link title in index view
+	public function view_index_label()
+	{
+
+		$envia_contract_reference = is_null($this->envia_contract_reference) ? 'n/a' : $this->envia_contract_reference;
+		$start_date = is_null($this->start_date) ? 'n/a' : $this->start_date;
+		$end_date = is_null($this->end_date) ? 'n/a' : $this->end_date;
+
+		$contract_id = is_null($this->contract_id) ? 'n/a' : $this->contract_id;
+		$modem_id = is_null($this->modem_id) ? 'n/a' : $this->modem_id;
+
+        return ['index' => [$envia_contract_reference, $start_date, $end_date, $contract_id, $modem_id],
+                'index_header' => ['Envia contract reference', 'Start date', 'End date', 'Contract', 'Modem'],
+                'bsclass' => 'success',
+				'header' => $envia_contract_reference,
+		];
+
+	}
+
+
 	// the relations
 
 	/**

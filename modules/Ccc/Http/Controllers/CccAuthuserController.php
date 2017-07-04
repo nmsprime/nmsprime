@@ -97,14 +97,15 @@ class CccAuthuserController extends \BaseController {
 
 		// create pdf
 		// TODO: try - catch exceptions that this function shall throw
-		$ret = $this->make_conn_info_pdf();
+		$ret = $this->make_conn_info_pdf($c);
 
 		Log::info('Download Connection Information for CccAuthuser: '.$customer->first_name.' '.$customer->last_name.' ('.$customer->id.')');
 
-		if ($ret)
+		if (is_string($ret))
 			return response()->download($ret);
 
-		return \Redirect::back()->with('error_msg', 'Error Creating PDF - See Logfiles or ask Admin!');
+		$err_msg = is_int($ret) ? trans('messages.conn_info_err_template') : trans('messages.conn_info_err_create');
+		return \Redirect::back()->with('error_msg', $err_msg);
 	}
 
 
@@ -115,16 +116,16 @@ class CccAuthuserController extends \BaseController {
 	 *
 	 * @author Nino Ryschawy
 	 */
-	private function make_conn_info_pdf()
+	private function make_conn_info_pdf($contract)
 	{
 		// load template
 		$template_dir = storage_path('app/config/ccc/template/');
-		$template_filename = Ccc::first()->template_filename;
+		$template_filename = \PPModule::is_active('billingbase') ? $contract->costcenter->sepa_account->company->conn_info_template_fn : Ccc::first()->template_filename;
 
 		if (!$template = file_get_contents($template_dir.$template_filename))
 		{
 			Log::error("ConnectionInfo: Could not read template", [$template_dir.$template_filename]);
-			return null;
+			return -1;
 		}
 
 
@@ -134,7 +135,7 @@ class CccAuthuserController extends \BaseController {
 		if (!is_dir($dir_path))
 			mkdir($dir_path, 0733, true);
 
-		$filename = 'conn_info';
+		$filename = $contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info';
 
 		// Replace placeholder by value
 		$template = str_replace('\\_', '_', $template);

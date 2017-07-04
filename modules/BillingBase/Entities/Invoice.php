@@ -138,9 +138,11 @@ class Invoice extends \BaseModel{
 		'contract_nr' 			=> '',
 		'contract_firstname' 	=> '',
 		'contract_lastname' 	=> '',
+		'contract_company' 		=> '',
 		'contract_street' 		=> '',
 		'contract_zip' 			=> '',
 		'contract_city' 		=> '',
+		'contract_address' 		=> '', 			// concatenated address for begin of letter
 
 		'contract_mandate_iban'	=> '', 			// iban of the customer
 		'contract_mandate_ref'	=> '', 			// mandate reference of the customer
@@ -216,9 +218,11 @@ class Invoice extends \BaseModel{
 		$this->data['contract_nr'] 			= $contract->number;
 		$this->data['contract_firstname'] 	= $contract->firstname;
 		$this->data['contract_lastname'] 	= $contract->lastname;
+		$this->data['contract_company'] 	= $contract->company;
 		$this->data['contract_street'] 		= $contract->street.' '.$contract->house_number;
 		$this->data['contract_zip'] 		= $contract->zip;
 		$this->data['contract_city'] 		= $contract->city;
+		$this->data['contract_address'] 	= $contract->company ? "$contract->firstname $contract->lastname\\\\$contract->company\\\\".$this->data['contract_street']."\\\\$contract->zip $contract->city" : "$contract->firstname $contract->lastname\\\\".$this->data['contract_street']."\\\\$contract->zip $contract->city";
 
 		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
@@ -329,12 +333,34 @@ class Invoice extends \BaseModel{
 	 	* creditor bank account data
 	 	* invoice footer data
 	 	* invoice template path
+	 *
+	 * @param 	Obj 	SepaAccount
+	 * @return 	Bool 	false - error (missing required data), true - success
 	 */
 	public function set_company_data($account)
 	{
+		$err_msg = '';
+
 		if (!$account)
+			$err_msg .= 'Missing account data for Invoice ('.$this->data['contract_id'].')';
+
+		if (!$account->template_invoice || !$account->template_cdr)
 		{
-			$this->logger->addError('Missing account data for Invoice', [$this->data['contract_id']]);
+			$err_msg .= $err_msg ? '; ' : '';
+			$err_msg .= 'Missing SepaAccount specific templates for Invoice or CDR';
+		}
+
+		$company = $account->company;
+
+		if (!$company || !$company->logo)
+		{
+			$err_msg .= $err_msg ? '; ' : '';
+			$err_msg = $company ? "Missing Company's Logo ($company->name)" : 'No Company assigned to Account '.$account->name;
+		}
+
+		if ($err_msg)
+		{
+			$this->logger->addError($err_mgs);
 			$this->error_flag = true;
 			return false;
 		}
@@ -344,15 +370,6 @@ class Invoice extends \BaseModel{
 		$this->data['company_account_bic']  = $account->bic;
 		$this->data['company_creditor_id']  = $account->creditorid;
 		$this->data['invoice_headline'] 	= $account->invoice_headline ? $account->invoice_headline : trans('messages.invoice');
-
-		$company = $account->company;
-
-		if (!$company)
-		{
-			$this->logger->addError('No Company assigned to Account '.$account->name);
-			$this->error_flag = true;
-			return false;
-		}
 
 		$this->data = array_merge($this->data, $company->template_data());
 
@@ -585,9 +602,9 @@ class Invoice extends \BaseModel{
 
 		$query = Invoice::where('filename', '=', $invoice_fname)->orWhere('filename', '=', $cdr_fname)->whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
 		
-		// Delete PDFs
 		$invoices = $query->get();
 
+		// Delete PDFs
 		foreach ($invoices as $invoice)
 		{
 			$filepath = $invoice->get_invoice_dir_path().$invoice->filename;
@@ -597,21 +614,38 @@ class Invoice extends \BaseModel{
 
 		// Delete DB Entries - Note: keep this order
 		$query->forceDelete();
-
-		// $tmp = exec("find $dir_abs_path_invoice_files -type f -name $invoice_fname -o -name $cdr_fname | sort", $files);
-		// foreach ($files as $f)
-		// 	unlink($f);
 	}
 
 
 	/**
 	 * Remove all old Invoice & CDR DB-Entries & Files as it's prescribed by law
+	 	* Germany: CDRs 6 Months (§97 TKG) - Invoices ?? - 
 	 *
-	 * TODO: implement - NOTE: This can be different from country to country
+	 * NOTE: This can be different from country to country
+	 * TODO: Remove old Invoices
 	 */
-	public static function clean_up()
+	public static function cleanup()
 	{
+		if (\Config::get('database.default') == 'mysql')
+			$query = Invoice::where('type', '=', 'CDR')->whereRaw("CONCAT_WS('', year, '-', LPAD(month, 2 ,0), '-', '01') < '".date('Y-m-01', strtotime('-6 month'))."'");
+		else
+		{
+			\Log::error('Missing Query in Modules\BillingBase\Entities\Invoice@cleanup for Database '.\Config::get('database.default'));
+			return;
+		}
 
+		$cdrs = $query->get();
+
+		\Log::info('Delete all CDRs older than 6 Months');
+
+		foreach ($cdrs as $cdr)
+		{
+			$filepath = $cdr->get_invoice_dir_path().$cdr->filename;
+			if (is_file($filepath))
+				unlink($filepath);
+		}
+
+		$query->delete();
 	}
 
 

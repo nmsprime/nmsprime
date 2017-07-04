@@ -34,5 +34,5 @@
 		elseif ($type == 'MTA')
 			$s .= "<li class='nav-tabs'>".HTML::linkRoute('Provmon.mta', 'MTA Analysis', $view_var->id).'</li>';
 
-		echo "<li class='active'><a href='Modem.index'><i class='fa fa-hdd-o'></i>Modem</a></li>".$s;
+		echo "<li class='active'><a href='".route('Modem.index')."'><i class='fa fa-hdd-o'></i>Modem</a></li>".$s;
 	?>

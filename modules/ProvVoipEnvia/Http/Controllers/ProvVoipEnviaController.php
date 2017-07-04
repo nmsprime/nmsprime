@@ -901,8 +901,9 @@ class ProvVoipEnviaController extends \BaseController {
 	protected function _handle_curl_error($job, $data) {
 
 		$ret = array();
-		$ret['plain_html'] = "ERROR! We got an ".$data['error_type'].": ".$data['error_msg']." executing job ".$job;
-
+		$msg = "We got an ".$data['error_type'].": ".$data['error_msg']." (Executing job $job)";
+		\Log::error($msg);
+		$ret['plain_html'] = "ERROR! $msg";
 		return $ret;
 	}
 

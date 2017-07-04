@@ -57,8 +57,8 @@ class SepaAccount extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		return ['index' => [$this->name],
-		        'index_header' => ['Name'],
+		return ['index' => [$this->name, $this->institute, $this->iban],
+		        'index_header' => ['Name', 'Institute', 'IBAN'],
 				'header' => $this->name];
 	}
 
@@ -71,6 +71,10 @@ class SepaAccount extends \BaseModel {
 			);
 	}
 
+	public function view_belongs_to ()
+	{
+		return $this->company;
+	}
 
 	/**
 	 * Relationships:
@@ -83,33 +87,6 @@ class SepaAccount extends \BaseModel {
 	public function company ()
 	{
 		return $this->belongsTo('Modules\BillingBase\Entities\Company');
-	}
-
-
-
-	/**
-	 * Returns all available template files (via directory listing)
-	 * @author Nino Ryschawy
-	 * @return array 	filenames
-	 */
-	public function templates()
-	{
-		// $files_raw  = glob("/tftpboot/bill/template/*");
-		$files_raw = Storage::files('config/billingbase/template');
-		$templates 	= array(null => "None");
-
-		// extract filename
-		foreach ($files_raw as $file) 
-		{
-			if (is_file(storage_path('app/'.$file)))
-			{
-				$parts = explode("/", $file);
-				$filename = array_pop($parts);
-				$templates[$filename] = $filename;
-			}
-		}
-
-		return $templates;
 	}
 
 
@@ -346,7 +323,8 @@ class SepaAccount extends \BaseModel {
 		if ($charge == 0)
 			return;
 
-		$info = trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
+		$info = $this->company->name.' - ';
+		$info .= trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
 
 		// Credits
 		if ($charge < 0)

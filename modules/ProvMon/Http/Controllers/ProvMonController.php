@@ -44,11 +44,12 @@ class ProvMonController extends \BaseController {
 		$a = array(['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]],
 						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
 						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]],
-						['name' => 'Logging', 'route' => 'GuiLog.filter', 'link' => ['model_id' => $modem->id, 'model' => 'Modem']],
 				);
 
 		if (isset($modem->mtas[0]))
 			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'Provmon.mta', 'link' => [$id]]);
+
+		array_push($a, ['name' => 'Logging', 'route' => 'GuiLog.filter', 'link' => ['model_id' => $modem->id, 'model' => 'Modem']]);
 
 		return $a;
 	}
@@ -60,16 +61,18 @@ class ProvMonController extends \BaseController {
 	 */
 	public function analyses($id)
 	{
-		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = null;
+		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = null;
 		$modem 	  = $this->modem ? $this->modem : Modem::find($id);
 		$view_var = $modem; // for top header
 		$hostname = $modem->hostname.'.'.$this->domain_name;
 		$mac 	  = strtolower($modem->mac);
 
 		// Ping: Send 5 request's at once with max timeout of 1 second
-		exec ('sudo ping -c5 -i0 -w1 '.$hostname, $ping);
-		if (count(array_keys($ping)) <= 9)
-			$ping = null;
+		$ip = gethostbyname($hostname);
+		if ($ip != $hostname)
+			exec ('sudo ping -c5 -i0 -w1 '.$hostname, $ping);
+		else
+			$ip = null;
 
 		// Flood Ping
 		$flood_ping = $this->flood_ping ($hostname);
@@ -78,18 +81,23 @@ class ProvMonController extends \BaseController {
 		$lease['text'] = $this->search_lease('hardware ethernet '.$mac);
 		$lease = $this->validate_lease($lease, $type);
 
-		// Log - TODO: grep tftp requests of specific modem - not all!
-		exec ('egrep -i "('.$mac.'|'.$hostname.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
+		// Configfile
+		$cf_path = "/tftpboot/cm/$modem->hostname.conf";
+		$configfile = is_file($cf_path) ? file($cf_path) : ['Error: Missing Configfile!'];
 
-
-		// Realtime Measure
-		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
+		// Realtime Measure - only fetch realtime values if all pings are successfull
+		if (count($ping) == 10)
 		{
-			// ip is needed for upstream values of modem
-			preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
-			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip[0][0]);
+			// preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
+			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip);
 			$realtime['forecast'] = 'TODO';
 		}
+		else if (count($ping) <= 7)
+			$ping = null;
+
+		// Log dhcp (discover, ...), tftp (configfile or firmware)
+		$search = $ip ? "$mac|$modem->hostname|$ip" : "$mac|$modem->hostname";
+		exec ('egrep -i "('.$search.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
 
 		// Monitoring
 		$monitoring = $this->monitoring($modem);
@@ -99,7 +107,7 @@ class ProvMonController extends \BaseController {
 		$panel_right = $this->prep_sidebar($id);
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var', 'flood_ping')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'monitoring', 'view_var', 'flood_ping')));
 	}
 
 
@@ -117,30 +125,29 @@ class ProvMonController extends \BaseController {
 	 */
 	public function flood_ping ($hostname)
 	{
-		if (array_key_exists('flood_ping', \Input::all()))
-		{
-			switch (\Input::all()['flood_ping'])
-			{
-				case "1":
-					exec("sudo ping -c100 -f $hostname 2>&1", $fp, $ret);
-					break;
-				case "2":
-					exec("sudo ping -c300 -s300 -f $hostname 2>&1", $fp, $ret);
-					break;
-				case "3":
-					exec("sudo ping -c500 -s1472 -f $hostname 2>&1", $fp, $ret);
-					break;
-				case "4":
-					exec("sudo ping -c1000 -f $hostname 2>&1", $fp, $ret);
-					break;
-			}
-
-			// remove the flood ping line "....." from result
-			if ($ret == 0)
-				unset ($fp[1]);
-		}
-		if (!isset($fp))
+		if (!\Input::has('flood_ping'))
 			return null;
+
+		switch (\Input::get('flood_ping'))
+		{
+			case "1":
+				exec("sudo ping -c500 -f $hostname 2>&1", $fp, $ret);
+				break;
+			case "2":
+				exec("sudo ping -c1000 -s736 -f $hostname 2>&1", $fp, $ret);
+				break;
+			case "3":
+				exec("sudo ping -c2500 -f $hostname 2>&1", $fp, $ret);
+				break;
+			case "4":
+				exec("sudo ping -c2500 -s1472 -f $hostname 2>&1", $fp, $ret);
+				break;
+		}
+
+		// remove the flood ping line "....." from result
+		if ($ret == 0)
+			unset ($fp[1]);
+
 		return $fp;
 	}
 
@@ -242,7 +249,7 @@ class ProvMonController extends \BaseController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// log
-		exec ('grep -i "'.$mta->mac.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
+		exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
 
 end:
@@ -649,7 +656,8 @@ end:
 
 		// parse dhcpd.lease file
 		$file   = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
-		preg_match_all('/^lease(.*?)}/ms', $file, $section);
+		// start each lease with a line that begins with "lease" and end with a line that begins with "{"
+		preg_match_all('/^lease(.*?)(^})/ms', $file, $section);
 
 		$ret = array();
 		$i   = 0;

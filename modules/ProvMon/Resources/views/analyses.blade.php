@@ -53,10 +53,10 @@
 					<form route="$route" method="POST">Type:
 						<input type="hidden" name="_token" value="{{ csrf_token() }}"></input>
 						<select class="select2 form-control m-b-20" name="flood_ping" style="width : 100 %">
-							<option value="1">lowest load: 100 packets of 56 Byte</option>
-							<option value="2">big load: 300 packets of 300 Byte</option>
-							<option value="3">huge load: 500 packets of 1472 Byte</option>
-							<option value="4">highest load: 1.000 packets of 56 Byte</option>
+							<option value="1">low load: 500 packets of 56 Byte</option> <!-- needs approximately 5 sec -->
+							<option value="2">average load: 1000 packets of 736 Byte</option> <!-- needs approximately 10 sec -->
+							<option value="3">big load: 2500 packets of 56 Byte</option> <!-- needs approximately 30 sec -->
+							<option value="4">huge load: 2500 packets of 1472 Byte</option> <!-- needs approximately 30 sec -->
 						</select>
 
 				<!-- {{ Form::open(['route' => ['Provmon.flood_ping', $view_var->id]]) }} -->
@@ -111,6 +111,22 @@
 			@endforeach
 		@else
 			<font color="red">{{ trans('messages.modem_lease_error')}}</font>
+		@endif
+	</div>
+	<div class="tab-pane fade in" id="configfile">
+		@if ($configfile)
+			<font color="green"><b>Modem Configfile</b></font><br>
+			@foreach ($configfile as $line)
+				<table>
+					<tr>
+						<td>
+						 <font color="grey">{{$line}}</font>
+						</td>
+					</tr>
+				</table>
+			@endforeach
+		@else
+			<font color="red">{{ trans('messages.modem_configfile_error')}}</font>
 		@endif
 	</div>
 </div>
