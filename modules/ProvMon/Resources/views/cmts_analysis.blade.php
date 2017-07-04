@@ -11,18 +11,8 @@
 
 @section('content_cacti')
 
-	@if ($monitoring)
-		<form action="" method="GET">
-			From:<input type="text" name="from" value={{$monitoring['from']}}>
-			To:<input type="text" name="to" value={{$monitoring['to']}}>
-			<input type="submit" value="Submit">
-		</form>
-		<br>
-
-		@foreach ($monitoring['graphs'] as $id => $graph)
-			<img width=100% src={{$graph}}></img>
-			<br><br>
-		@endforeach
+	@if ($host_id)
+		<iframe id="cacti-diagram" src="/cacti/graph_view.php?action=preview&columns=2&host_id={{$host_id}}" sandbox="allow-forms allow-scripts allow-pointer-lock allow-popups allow-same-origin" width="100%" height="100%" onload="resizeIframe(this)" scrolling="no" style="overflow:hidden; display:block; min-height: 100%; border: none; position: relative;"></iframe>
 	@else
 		<font color="red">{{trans('messages.modem_no_diag')}}</font><br>
 		{{ trans('messages.modem_monitoring_error') }}

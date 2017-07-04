@@ -99,15 +99,14 @@ class ProvMonController extends \BaseController {
 		$search = $ip ? "$mac|$modem->hostname|$ip" : "$mac|$modem->hostname";
 		exec ('egrep -i "('.$search.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
 
-		// Monitoring
-		$monitoring = $this->monitoring($modem);
+		$host_id = $this->monitoring_get_host_id($modem);
 
 		// TODO: Dash / Forecast
 
 		$panel_right = $this->prep_sidebar($id);
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'monitoring', 'view_var', 'flood_ping')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping')));
 	}
 
 
@@ -281,15 +280,14 @@ end:
 			$realtime['forecast'] = 'TODO';
 		}
 
-		// Monitoring
-		$monitoring = $this->monitoring($modem);
+		$host_id = $this->monitoring_get_host_id($modem);
 
 		$panel_right =  [
 			['name' => 'Edit', 'route' => 'Cmts.edit', 'link' => [$id]],
 			['name' => 'Analysis', 'route' => 'Provmon.cmts', 'link' => [$id]]
 		];
 
-		return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var')));
+		return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var')));
 	}
 
 	/**
@@ -841,7 +839,7 @@ end:
 		/*
 		 * Images
 		 */
-		$url_base = 'https://'.\Request::getHost()."/cacti/graph_image.php?rra_id=0&graph_start=$from_t&graph_end=$to_t";
+		$url_base = "/cacti/graph_image.php?rra_id=0&graph_start=$from_t&graph_end=$to_t";
 
 		// TODO: should be auto adapted to screen resolution. Note that we still use width=100% setting
 		// in the image view. This could lead to diffuse (unscharf) fonts.
@@ -857,6 +855,50 @@ end:
 
 		// default return
 		return $ret;
+	}
+
+
+	/**
+	 * Get the cacti host id, which corresponds to a given hostname of the modem object
+	 *
+	 * @param modem: The modem object
+	 * @return: The cacti host id
+	 *
+	 * @author: Ole Ernst
+	 */
+	public static function monitoring_get_host_id($modem)
+	{
+		// Connect to Cacti DB
+		$cacti = \DB::connection('mysql-cacti');
+
+		// Get Cacti Host ID to $modem
+		$host  = $cacti->table('host')->where('description', '=', $modem->hostname)->select('id')->first();
+		if (!isset($host))
+			return false;
+
+		return $host->id;
+	}
+
+
+	/**
+	 * Get the cacti graph template ids, which correspond to a given graph template name
+	 *
+	 * @param name: The cacti graph template name
+	 * @return: An array of the matching cacti graph template ids
+	 *
+	 * @author: Ole Ernst
+	 */
+	public static function monitoring_get_graph_template_id($name)
+	{
+		// Connect to Cacti DB
+		$cacti = \DB::connection('mysql-cacti');
+
+		// Get Cacti Host ID to $modem
+		$template  = $cacti->table('graph_templates')->where('name', '=', $name)->select('id')->first();
+		if (!isset($template))
+			return null;
+
+		return [$template->id];
 	}
 
 
