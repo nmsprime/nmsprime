@@ -266,6 +266,27 @@ class ProvVoipEnvia extends \BaseModel {
 		return new \SimpleXMLElement($xml_string);
 	}
 
+
+	public static function hide_envia_api_credentials($dom) {
+
+		$reseller_identifiers = $dom->getElementsByTagName('reseller_identifier');
+		foreach ($reseller_identifiers as $reseller_identifier) {
+
+			$users = $reseller_identifier->getElementsByTagName('username');
+			foreach ($users as $user) {
+				$user->nodeValue = "################";
+			}
+
+			$pws = $reseller_identifier->getElementsByTagName('password');
+			foreach ($pws as $pw) {
+				$pw->nodeValue = "################";
+			}
+		}
+
+		return $dom;
+
+	}
+
 	/**
 	 * Helper to prettify xml for output on screen.
 	 * Use e.g. for debugging.
@@ -288,19 +309,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// this replaces the former preg_replace variant which crashes on larger EnviaOrderDocument uploads.
 		// also this is more elegant and should also be faster
 		if ($hide_credentials) {
-		$reseller_identifiers = $dom->getElementsByTagName('reseller_identifier');
-			foreach ($reseller_identifiers as $reseller_identifier) {
-
-				$users = $reseller_identifier->getElementsByTagName('username');
-				foreach ($users as $user) {
-					$user->nodeValue = "################";
-				}
-
-				$pws = $reseller_identifier->getElementsByTagName('password');
-				foreach ($pws as $pw) {
-					$pw->nodeValue = "################";
-				}
-			}
+			$dom = static::hide_envia_api_credentials($dom);
 		}
 
 		$pretty = htmlentities($dom->saveXML());
@@ -924,6 +933,9 @@ class ProvVoipEnvia extends \BaseModel {
 		$dom->preserveWhiteSpace = false;
 		$dom->formatOutput = true;
 		$dom->loadXML($xml->asXML());
+
+		// replace login credentials by hashes
+		$dom = static::hide_envia_api_credentials($dom);
 		$filecontent = $dom->saveXML();
 
 
