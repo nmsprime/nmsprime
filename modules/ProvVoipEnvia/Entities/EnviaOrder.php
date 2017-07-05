@@ -31,9 +31,9 @@ class EnviaOrder extends \BaseModel {
 				'phonenumber_related' => False,
 			),
 			array(
-				'ordertype' => 'Kündigung envia TEL voip reselling',	// TODO: Add correct string given by Envia
-				'ordertype_id' => null,
-				'method' => 'contract/terminate',
+				'ordertype' => 'Sprachtarif wird geändert',
+				'ordertype_id' => 12,
+				'method' => 'contract/change_tariff',
 				'phonenumber_related' => False,
 			),
 			array(
@@ -43,29 +43,53 @@ class EnviaOrder extends \BaseModel {
 				'phonenumber_related' => True,
 			),
 			array(
+				'ordertype' => 'Stornierung eines Auftrags',
+				'ordertype_id' => 20,
+				'method' => 'order/cancel',
+				'phonenumber_related' => False,
+			),
+			array(
+				'ordertype' => 'Änderung der Rufnummernkonfiguration',
+				'ordertype_id' => 21,
+				'method' => 'voip_account/update',
+				'phonenumber_related' => True,
+			),
+			array(
+				'ordertype' => 'Änderung des Einkaufstarifs',
+				'ordertype_id' => 22,
+				'method' => 'contract/change_variation',
+				'phonenumber_related' => False,
+			),
+			array(
 				'ordertype' => 'Kündigung einer Rufnummer',
 				'ordertype_id' => 23,
 				'method' => 'voip_account/terminate',
 				'phonenumber_related' => True,
 			),
 			array(
-				'ordertype' => 'Sprachtarif wird geändert',
-				'ordertype_id' => null,
-				'method' => 'contract/change_tariff',
+				'ordertype' => 'Änderung der Kundendaten',
+				'ordertype_id' => 27,
+				'method' => 'customer/update',
 				'phonenumber_related' => False,
 			),
 			array(
-				'ordertype' => 'n/a',
-				'ordertype_id' => null,
-				'method' => 'contract/change_variation',
+				'ordertype' => 'Umzug',
+				'ordertype_id' => 70,
+				'method' => 'contract/relocate',
 				'phonenumber_related' => False,
 			),
 			array(
-				'ordertype' => 'Stornierung eines Auftrags',
+				'ordertype' => 'Kündigung envia TEL voip reselling',	// TODO: Add correct string given by Envia
 				'ordertype_id' => null,
-				'method' => 'order/cancel',
+				'method' => 'contract/terminate',
 				'phonenumber_related' => False,
 			),
+			/* array( */
+			/* 	'ordertype' => '', */
+			/* 	'ordertype_id' => , */
+			/* 	'method' => '', */
+			/* 	'phonenumber_related' => , */
+			/* ), */
 		),
 		'states' => array(
 			array(
@@ -211,6 +235,7 @@ class EnviaOrder extends \BaseModel {
 		'contractreference',
 		'contract_id',
 		'modem_id',
+		'enviacontract_id',
 	];
 
 
@@ -385,6 +410,29 @@ class EnviaOrder extends \BaseModel {
 
 
 	/**
+	 * Check if order has successfully been cancelled
+	 * We assume this if the orderstate indicates it and the ordertype is not order/cancel.
+	 *
+	 * TODO: check what happens if we try to cancel an order that cancelled another order…
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function order_successfully_cancelled($order) {
+
+		if (
+			(($order->orderstatus_id == 1017) || ($order->orderstatus == 'Stornierung bestätigt'))
+			&&
+			($order->ordertype != 'Stornierung eines Auftrags')
+		) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+
+	/**
 	 * Check if order is successfully processed.
 	 *
 	 * @author Patrick Reichel
@@ -495,8 +543,13 @@ class EnviaOrder extends \BaseModel {
 		}
 		$escalation_level = $escalations[$bsclass].' – '.$bsclass;
 
-		$contract_nr = Contract::findOrFail($this->contract_id)->number;
-		$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract_nr.'</a>';
+		if (boolval($this->contract_id)) {
+			$contract_nr = Contract::findOrFail($this->contract_id)->number;
+			$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract_nr.'</a>';
+		}
+		else {
+			$contract_nr = '–';
+		}
 
 		if (boolval($this->modem_id)) {
 			$modem = Modem::findOrFail($this->modem_id);
@@ -612,11 +665,16 @@ class EnviaOrder extends \BaseModel {
 	public function view_belongs_to ()
 	{
 		if (!$this->phonenumbers->isEmpty()) {
-			$phonenumbermanagements = [];
+			$ret = [];
 			foreach ($this->phonenumbers as $phonenumber) {
-				array_push($phonenumbermanagements, $phonenumber->phonenumbermanagement);
+				if (is_null($phonenumber->phonenumbermanagement)) {
+					array_push($ret, $phonenumber);
+				}
+				else {
+					array_push($ret, $phonenumber->phonenumbermanagement);
+				}
 			}
-			return collect($phonenumbermanagements);
+			return collect($ret);
 		}
 		elseif (boolval($this->modem_id)) {
 			return $this->modem;
@@ -651,7 +709,7 @@ class EnviaOrder extends \BaseModel {
 	}
 
 	public function phonenumbers() {
-		return $this->belongsToMany('Modules\ProvVoip\Entities\Phonenumber', 'enviaorder_phonenumber', 'enviaorder_id', 'phonenumber_id');
+		return $this->belongsToMany('Modules\ProvVoip\Entities\Phonenumber', 'enviaorder_phonenumber', 'enviaorder_id', 'phonenumber_id')->withTimestamps();
 	}
 
 	public function enviaorderdocument() {
@@ -684,17 +742,19 @@ class EnviaOrder extends \BaseModel {
 		};
 
 		$td_style = "padding-left: 5px; padding-right: 5px; vertical-align: top;";
-		$th_style = $td_style." padding-bottom: 2px; padding-top: 4px;";
+		$th_style = $td_style." padding-bottom: 4px; padding-top: 4px;";
 
 		$ret = "";
 
 		// the tables head
 		$ret = '<table class="table-hover">';
-		$ret .= '<tr>';
+		$ret .= '<thead><tr>';
 		foreach (array_shift($data) as $col) {
 			$ret .= '<th style="'.$th_style.'">'.$col.'</th>';
 		}
-		$ret .= '</tr>';
+		$ret .= '</tr></thead>';
+
+		$ret .= '<tbody>';
 
 		// the tables body (row by row)
 		foreach ($data as $row) {
@@ -706,6 +766,8 @@ class EnviaOrder extends \BaseModel {
 			}
 			$ret .= '</tr>';
 		}
+
+		$ret .= '</tbody>';
 
 		$ret .= '</table>';
 		return $ret;
@@ -722,6 +784,7 @@ class EnviaOrder extends \BaseModel {
 
 		$head = array(
 			'Number',
+			'Address',
 			'Contract start',
 			'Contract end',
 			'Internet access?',
@@ -731,6 +794,17 @@ class EnviaOrder extends \BaseModel {
 		$row= array();
 
 		array_push($row, '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a>');
+
+		$tmp_address = "";
+		$tmp_address .= (boolval($contract->company) ? $contract->company.",<br>" : "");
+		$tmp_address .= (boolval($contract->firstname) ? $contract->firstname." " : "");
+		$tmp_address .= (boolval($contract->lastname) ? $contract->lastname : "");
+		$tmp_address .= ((boolval($contract->firstname) || boolval($contract->lastname)) ? ",<br>" : "");
+		$tmp_address .= $contract->street.(boolval($contract->house_number) ? "&nbsp;".$contract->house_number : "").",<br>";
+		$tmp_address .= $contract->city;
+		$tmp_address .= (boolval($contract->district) ? " OT ".$contract->district : "");
+		array_push($row, $tmp_address);
+
 		array_push($row, boolval($contract->contract_start) ? $contract->contract_start : 'placeholder_unset');
 		array_push($row, boolval($contract->contract_end) ? $contract->contract_end : 'placeholder_unset');
 		array_push($row, ($contract->network_access > 0 ? 'placeholder_yes' : 'placeholder_no'));
@@ -763,6 +837,10 @@ class EnviaOrder extends \BaseModel {
 		array_push($data, $head);
 
 		foreach ($items as $item) {
+
+			if (!in_array(\Str::lower($item->product->type), ['internet', 'voip'])) {
+				continue;
+			}
 
 			$row = array();
 
@@ -809,6 +887,7 @@ class EnviaOrder extends \BaseModel {
 		$head = array(
 			'MAC address',
 			'Hostname',
+			'Installation address',
 			'Configfile',
 			'QoS',
 			'Network access?',
@@ -819,6 +898,16 @@ class EnviaOrder extends \BaseModel {
 
 		array_push($row, '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->mac.'</a>');
 		array_push($row, $modem->hostname);
+
+		$tmp_address = "";
+		$tmp_address .= (boolval($modem->company) ? $modem->company.",<br>" : "");
+		$tmp_address .= (boolval($modem->firstname) ? $modem->firstname." " : "");
+		$tmp_address .= (boolval($modem->lastname) ? $modem->lastname : "");
+		$tmp_address .= ((boolval($modem->firstname) || boolval($modem->lastname)) ? ",<br>" : "");
+		$tmp_address .= $modem->street.(boolval($modem->house_number) ? "&nbsp;".$modem->house_number : "").",<br>";
+		$tmp_address .= $modem->city;
+		$tmp_address .= (boolval($modem->district) ? " OT ".$modem->district : "");
+		array_push($row, $tmp_address);
 
 		if ($modem->configfile) {
 			array_push($row, $modem->configfile->name);
@@ -861,7 +950,21 @@ class EnviaOrder extends \BaseModel {
 		);
 		array_push($data, $head);
 
+		$closely_related = array();
+		$distantly_related = array();
 		foreach ($phonenumbers as $phonenumber) {
+
+			$direct_related = $this->phonenumbers->contains($phonenumber)? : false;
+
+			// helper to wrap weak related informations
+			$wrap = function ($content, $direct_related) {
+
+				if (!$direct_related) {
+					$content = "<i>$content</i>";
+				}
+
+				return $content;
+			};
 
 			$row = array();
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
@@ -873,29 +976,45 @@ class EnviaOrder extends \BaseModel {
 				$tmp = '<a href="'.\URL::route("Phonenumber.edit", array("phonenumber" => $phonenumber->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a>';
 			}
 
-			// if phonenumber is only related (not assigned to current order, but to assigned contract) mark with special markup
-			if (is_null($this->phonenumber) || ($this->phonenumber->id != $phonenumber->id)) {
-				$tmp = '<i>('.$tmp.')</i>';
-			}
-
-			array_push($row, $tmp);
+			array_push($row, $wrap($tmp, $direct_related));
 
 			if (!is_null($phonenumbermanagement)) {
-				array_push($row, (boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"));
-				array_push($row, (boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "placeholder_unset"));
-				array_push($row, (boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "placeholder_unset"));
-				array_push($row, (boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "placeholder_unset"));
+				array_push($row, $wrap((boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"), $direct_related));
+				array_push($row, $wrap((boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "placeholder_unset"), $direct_related));
+				array_push($row, $wrap((boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "placeholder_unset"), $direct_related));
+				array_push($row, $wrap((boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "placeholder_unset"), $direct_related));
 			}
 			else {
-				array_push($row, 'mgmt n/a');
-				array_push($row, 'mgmt n/a');
-				array_push($row, 'mgmt n/a');
-				array_push($row, 'mgmt n/a');
+				array_push($row, $wrap('mgmt n/a', $direct_related));
+				array_push($row, $wrap('mgmt n/a', $direct_related));
+				array_push($row, $wrap('mgmt n/a', $direct_related));
+				array_push($row, $wrap('mgmt n/a', $direct_related));
 			}
-			array_push($row, ($phonenumber->active > 0 ? 'placeholder_yes': 'placeholder_no'));
 
-			array_push($data, $row);
+			array_push($row, $wrap(($phonenumber->active > 0 ? 'placeholder_yes': 'placeholder_no'), $direct_related));
+
+			if ($direct_related) {
+				array_push($closely_related, $row);
+			}
+			else {
+				array_push($distantly_related, $row);
+			}
 		}
+
+		$relation_placeholder = array();
+
+		// create the placeholder if there are closely and distantly related phonenumbers
+		if ($closely_related && $distantly_related) {
+			// for every col in last row: add a col to our placeholder
+			$placeholder_row = array();
+			foreach ($row as $_) {
+				/* array_push($placeholder_row, "<div style='font-size: 8px;'>&nbsp;</div>"); */
+				array_push($placeholder_row, "<hr style='margin: 4px 0'>");
+			}
+			array_push($relation_placeholder, $placeholder_row);
+		}
+
+		$data = array_merge($data, $closely_related, $relation_placeholder, $distantly_related);
 
 		$ret = $this->_get_user_action_table($data);
 		return $ret;
@@ -922,12 +1041,12 @@ class EnviaOrder extends \BaseModel {
 
 		$items = $contract->items;
 		if ($items) {
-			$user_actions['hints']['Items'] = $this->_get_user_action_information_items($items);
+			$user_actions['hints']['Items (Internet and VoIP only)'] = $this->_get_user_action_information_items($items);
 		};
 
 		$modem = $this->modem;
 		if ($modem) {
-			$user_actions['hints']['Modem (= Envia Contract)'] = $this->_get_user_action_information_modem($modem);
+			$user_actions['hints']['Modem (can hold multiple Envia contracts)'] = $this->_get_user_action_information_modem($modem);
 		};
 
 		$phonenumbers = array();
@@ -1022,7 +1141,7 @@ class EnviaOrder extends \BaseModel {
 	 */
 	public static function get_user_interaction_needing_enviaorder_count() {
 
-		$count = EnviaOrder::whereRaw('(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND orderstatus_id != 1000')->count();
+		$count = EnviaOrder::whereRaw('(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND ((orderstatus_id != 1000) OR ((orderstatus_id IS NULL) AND (orderstatus NOT LIKE "in Bearbeitung")))')->count();
 
 		return $count;
 	}
@@ -1044,7 +1163,7 @@ class EnviaOrder extends \BaseModel {
 
 		// if current state is “in Bearbeitung” then we have to do nothing
 		// next action is to perform by Envia
-		if ($this->orderstatus_id == 1000) {
+		if ($this->orderstatus == 'in Bearbeitung' || $this->orderstatus_id == 1000) {
 			return false;
 		}
 

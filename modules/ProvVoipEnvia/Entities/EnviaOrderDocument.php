@@ -19,6 +19,9 @@ class EnviaOrderDocument extends \BaseModel {
 		'image/tif',
 	);
 
+	// API allows max. 3MB; give as string in kilobyte
+	public static $allowed_max_upload_filesize = 3072;
+
 	// Add your validation rules here
 	public static function rules($id=null) {
 
@@ -31,7 +34,7 @@ class EnviaOrderDocument extends \BaseModel {
 
 		return array(
 			'document_type' => 'required',
-			'document_upload' => 'required|mimes:'.$mimestring,
+			'document_upload' => 'required|mimes:'.$mimestring.'|max:'.self::$allowed_max_upload_filesize,
 			'enviaorder_id' => 'required|exists:enviaorder,id',
 			'mime_type' => 'required',
 		);

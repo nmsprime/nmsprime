@@ -74,7 +74,8 @@ class EnviaOrderUpdaterCommand extends Command {
 
 	protected function _get_all_orders_csv() {
 
-		Log::debug('Getting all orders csv');
+		Log::debug(__METHOD__." started");
+		Log::info('Getting all orders csv');
 
 		// create URL suffix
 		$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'misc_get_orders_csv', 'really' => 'True'), false);
@@ -95,7 +96,8 @@ class EnviaOrderUpdaterCommand extends Command {
 	 */
 	protected function _get_orders() {
 
-		Log::debug('Getting orders from database');
+		Log::debug(__METHOD__." started");
+		Log::info('Getting orders from database');
 		$this->orders = EnviaOrder::all();
 
 	}
@@ -106,6 +108,8 @@ class EnviaOrderUpdaterCommand extends Command {
 	 * @author Patrick Reichel
 	 */
 	protected function _update_orders() {
+
+		Log::debug(__METHOD__." started");
 
 		foreach ($this->orders as $order) {
 
@@ -147,10 +151,11 @@ class EnviaOrderUpdaterCommand extends Command {
 	 */
 	protected function _updated($order_id) {
 
-		// not older than 1 hours (this is relatively long; but there are some timing issues and
+		Log::debug(__METHOD__." started");
+
+		// not older than 1 hour (this is relatively long; but there are some timing issues and
 		// the script is run late at night…)
-		$timedelta_max = 60 * 60 * 1;
-		$compare_time = date('Y-m-d H:i:s', time() - $timedelta_max);
+		$compare_time = date('Y-m-d H:i:s', strtotime("-1 hour"));
 
 		$order = EnviaOrder::withTrashed()->where('orderid', '=', $order_id)->first();
 

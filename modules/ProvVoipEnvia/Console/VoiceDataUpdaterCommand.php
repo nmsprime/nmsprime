@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use \Modules\ProvVoip\Entities\PhonenumberManagement;
 use \Modules\ProvVoip\Entities\Phonenumber;
 use \Modules\ProvVoip\Entities\Mta;
+use \Modules\ProvVoip\Entities\TRCClass;
 use \Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
 
 /**
@@ -31,7 +32,13 @@ class VoiceDataUpdaterCommand extends Command {
 	 *
 	 * @var string
 	 */
-	protected $description = 'Update phonenumber/phonenumbermanagement data';
+	protected $description = 'Update phonenumber/phonenumbermanagement data {default|complete}';
+
+	/**
+	 * The signature (defining the optional argument)
+	 */
+	protected $signature = 'provvoipenvia:update_voice_data
+							{mode=default : The mode to run in; give argument “complete” to get Envia voice data for all phonenumbers (and not only for those with missing data}';
 
 	// store for contract ids for which we want to get voice data
 	protected $affected_contracts = array();
@@ -59,13 +66,21 @@ class VoiceDataUpdaterCommand extends Command {
 	 */
 	public function fire()
 	{
+		Log::debug(__METHOD__." started");
 		Log::info($this->description);
 
-		echo "\n";
-		$this->_get_affected_sip_orders();
+		if (!in_array($this->argument('mode'), ['default', 'complete'])) {
+			echo "Usage: ".$this->argument('command')." {default|complete}\n";
+			exit(1);
+		}
+
+		Log::info('Chosen mode is '.$this->argument('mode'));
 
 		echo "\n";
-		$this->_get_affected_mgcp_orders();
+		$this->_get_envia_sip_contracts($this->argument('mode'));
+
+		echo "\n";
+		$this->_get_envia_mcgp_contracts($this->argument('mode'));
 
 		echo "\n";
 		$this->_update_voice_data();
@@ -76,44 +91,63 @@ class VoiceDataUpdaterCommand extends Command {
 
 
 	/**
-	 * Get all order IDs for SIP numbers with missing data.
+	 * Get all Envia SIP contracts we want to get voice data for.
 	 *
 	 * @author Patrick Reichel
 	 */
-	protected function _get_affected_sip_orders() {
+	protected function _get_envia_sip_contracts($mode) {
 
-		$where_stmt = "
-			username IS NULL OR username LIKE '' OR
-			password IS NULL OR password LIKE '' OR
-			sipdomain IS NULL OR sipdomain LIKE ''
-		";
+		Log::debug(__METHOD__." started");
 
-		// get all phonenumbers containing empty fields
-		$phonenumbers = Phonenumber::whereRaw($where_stmt)->get();
+		if ($mode == 'default') {
+			$where_stmt = "
+				active != 0 AND (
+				sipdomain IS NULL OR sipdomain LIKE '' OR
+				username IS NULL OR username LIKE '' OR
+				password IS NULL OR password LIKE ''
+				)
+			";
+			$phonenumbers = Phonenumber::whereRaw($where_stmt)->get();
+		}
+		elseif ($mode == 'complete') {
+			$phonenumbers = Phonenumber::where('active', '!=', '0')->get();
+		}
+		else {
+			return;
+		}
 
+		// get all phonenumbermanagements having TRCClass not set
+		$trc_null = TRCClass::whereRaw('trc_id IS NULL')->first();
+		$trc_null_id = $trc_null->id;
+		$phonenumbermanagements = PhonenumberManagement::where('trcclass', '=', $trc_null_id);
+		foreach ($phonenumbermanagements as $phonenumbermanagent) {
+			$phonenumbers->push($phonenumbermanagement->phonenumber);
+		}
+
+		// process numbers and check if update has to be done
 		foreach ($phonenumbers as $phonenumber) {
 
 			// check if phonenumber is SIP (this can be determined from mta type)
 			$mta = $phonenumber->mta;
-			if (!is_null($mta) && ($mta->type == 'sip')) {
+			if (is_null($mta) || ($mta->type != 'sip')) {
+				continue;
+			}
 
-				// get modem
-				$modem = $mta->modem;
-				if (!is_null($modem)) {
+			// check if we have an Envia contract ID for this phonenumber
+			if (!$phonenumber->contract_external_id) {
+				continue;
+			}
 
-					// get contract
-					$contract = $modem->contract;
-					if (!is_null($contract)) {
+			// check if a phonenumbermanagement exists (there is data to be changed, to)
+			if (is_null($phonenumber->phonenumbermanagement)) {
+				continue;
+			}
 
-						// add to orders array
-						$contract_id = $contract->id;
-						if (boolval($contract->contract_external_id) && (!in_array($contract_id, $this->affected_contracts))) {
-							array_push($this->affected_contracts, $contract_id);
-						}
-					}
-				}
-			};
+			// add phonenumber to our contracts array
+			// we safely can overwrite existing numbers ⇒ method call is based on phonenumber and extracts Envia contract ID from this
+			$this->affected_contracts[$phonenumber->contract_external_id] = $phonenumber->id;
 		};
+
 
 	}
 
@@ -125,9 +159,10 @@ class VoiceDataUpdaterCommand extends Command {
 	 *
 	 * @todo: Currently there are only SIP numbers – so this is a placeholder. Implement if there are packet cable accounts.
 	 */
-	protected function _get_affected_mgcp_orders() {
+	protected function _get_envia_mcgp_contracts() {
 
 		// do nothing
+		return;
 	}
 
 
@@ -138,12 +173,14 @@ class VoiceDataUpdaterCommand extends Command {
 	 */
 	protected function _update_voice_data() {
 
-		foreach ($this->affected_contracts as $contract_id) {
+		Log::debug(__METHOD__." started");
 
-			Log::debug('Updating contract '.$contract_id);
+		foreach ($this->affected_contracts as $envia_contract_ref => $phonenumber_id) {
+
+			Log::debug('Updating voice data for envia contract '.$envia_contract_ref);
 
 			// get the relative URL to execute the cron job for updating the current contract_id
-			$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'contract_get_voice_data', 'contract_id' => $contract_id, 'really' => 'True'), false);
+			$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'contract_get_voice_data', 'phonenumber_id' => $phonenumber_id, 'really' => 'True'), false);
 
 			$url = $this->base_url.$url_suffix;
 

@@ -6,6 +6,7 @@ use Log;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
+use \Modules\ProvVoipEnvia\Entities\EnviaContract;
 use \Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use \Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
 use \Modules\ProvBase\Entities\Modem;
@@ -23,7 +24,7 @@ class EnviaOrderProcessorCommand extends Command {
 	/**
 	 * The console command description.
 	 */
-	protected $description = 'Process Envia orders depending on type';
+	protected $description = 'Process Envia orders of some special types';
 
 	/**
 	 * Create a new command instance.
@@ -38,9 +39,6 @@ class EnviaOrderProcessorCommand extends Command {
 
 	/**
 	 * Execute the console command.
-	 * Basically this does two jobs:
-	 *   - first get csv containing all (phonenumber related) orders from envia and update database using ProvVoipEnvia model ⇒ this will get possible orders that has been manually created
-	 *   - second get status for each single order ⇒ this will update contract/customer related orders as well
 	 *
 	 * @return null
 	 */
@@ -59,40 +57,77 @@ class EnviaOrderProcessorCommand extends Command {
 	/**
 	 * Process orders which relocated contracts
 	 *
-	 * The problem is that Envia does not change the currently active contract – they remove the old and create a new one.
+	 * The problem is that Envia does not change the currently active (Envia) contract – they remove the old and create a new one.
 	 * The contractreference changes – but at the orderdate. Changes before this date (e.g. the TRC class) have
-	 * to be sent using the OLD reference. So, on orderdate we have to change the contract references…references
+	 * to be sent using the OLD reference. So, on orderdate we have to change the contract references…
 	 *
 	 * @author Patrick Reichel
 	 */
 	protected function _process_contract_relocate() {
 
-		Log::info('Procssing contract/relocate orders');
+		Log::info('Processing contract/relocate orders');
 
 		// as there can be some delays in status change of orders we have to look back in history a little bit…
 		$date_threshold = date('c', strtotime("-2 weeks"));
-		$orders = EnviaOrder::where('method', '=', 'contract/relocate')->where('orderdate', '>=', $date_threshold)->get();
+		$orders = EnviaOrder::whereRaw('method=contract/relocate OR ordertype=Umzug')->where('orderdate', '>=', $date_threshold)->get();
 
 		foreach ($orders as $order) {
 
-			$modem_id = $order->modem_id;
+			$order_phonenumbers = $order->phonenumbers;
 
-			if (!EnviaOrder::order_successful($order)) {
-				Log::warning("Order $order->id seems to be pending – will NOT change the contract reference on modem $modem_id");
-				continue;
-			}
+			foreach ($order_phonenumbers as $phonenumber) {
 
-			$modem = Modem::find($modem_id);
+				if (!EnviaOrder::order_successful($order)) {
+					Log::warning("Order $order->id seems to be pending – will NOT change the contract reference on modem ".$phonenumber->id);
+					continue;
+				}
 
-			if ($modem->contract_external_id != $order->contractreference) {
+				if ($phonenumber->contract_external_id != $order->contractreference) {
 
-				Log::info("Changing contract_external_id for $modem->id from $modem->contract_external_id to $order->contractreference");
-				// we have to set the contract reference to the new value 
-				// we also could delete $modem->the installation_address_change_date – but I wouldn't do so
-				//	⇒ we would lose a bit of our history – and the data is not of any harm
-				$modem->contract_external_id = $order->contractreference;
+					// find old and new enviacontracts; create if not existing
+					$old_enviacontract = EnviaContract::firstOrCreate(array('envia_contract_reference' => $phonenumber->contract_external_id));
+					$new_enviacontract = EnviaContract::firstOrCreate(array('envia_contract_reference' => $order->contractreference));
 
-				$modem->save();
+					$old_enviacontract->envia_contract_reference = $phonenumber->contract_external_id;
+					$old_enviacontract->end_date = date('Y-m-d', strtotime($order->orderdate.' -1 day'));
+					$old_enviacontract->end_reason = "contract/relocate";
+					$old_enviacontract->next_id = $new_enviacontract->id;
+					$old_enviacontract->save();
+
+					$copy_fields = [
+						'lock_level',
+						'method',
+						'sla_id',
+						'tariff_id',
+						'variation_id',
+					];
+					foreach ($copy_fields as $field) {
+						if ($new_enviacontract->${field} != $old_enviacontract->${field}) {
+							$new_enviacontract->${field} = $old_enviacontract->${field};
+						}
+					}
+
+					$new_enviacontract->envia_contract_reference = $order->contractreference;
+					$new_enviacontract->start_date = $order->orderdate;
+					$new_enviacontract->prev_id = $old_enviacontract->id;
+					$new_enviacontract->contract_id = $phonenumber->mta->modem->contract->id;
+					$new_enviacontract->modem_id = $phonenumber->mta->modem->id;
+					$new_enviacontract->save();
+
+					Log::info("Changing contract_external_id for phonenumber ".$phonenumber->id." from ".$phonenumber->contract_external_id." to ".$order->contractreference);
+					// we have to set the contract reference to the new value
+					// we also could delete $modem->the installation_address_change_date – but I wouldn't do so
+					//	⇒ we would lose a bit of our history – and the data is not of any harm
+					$phonenumber->contract_external_id = $order->contractreference;
+					$phonenumber->save();
+
+					// add relation between phonenumber's management and the new envia contract
+					$mgmt = $phonenumber->PhonenumberManagement;
+					if ($mgmt) {
+						$mgmt->enviacontract_id = $new_enviacontract->id;
+						$mgmt->save();
+					}
+				}
 			}
 		}
 	}

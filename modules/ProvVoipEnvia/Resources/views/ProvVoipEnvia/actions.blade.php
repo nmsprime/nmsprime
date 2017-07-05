@@ -8,9 +8,9 @@
 				{{ $extra_content['class'] }}
 				</u></b><br>
 
-			{{-- job is done --}}
+			{{-- job is not possible ATM --}}
 			@elseif (!array_key_exists('url', $extra_content))
-				{{ $extra_content['linktext'] }} ✔
+				{{ $extra_content['linktext'] }} (not possible)
 				<br>
 			{{-- possible jobs --}}
 
