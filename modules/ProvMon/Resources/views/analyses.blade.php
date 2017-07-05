@@ -49,7 +49,7 @@
 							<option value="4">huge load: 2500 packets of 1472 Byte</option> <!-- needs approximately 30 sec -->
 						</select>
 
-				<!-- {{ Form::open(['route' => ['Provmon.flood_ping', $view_var->id]]) }} -->
+				{{-- Form::open(['route' => ['ProvMon.flood_ping', $view_var->id]]) --}}
 				@if (isset($flood_ping))
 					@foreach ($flood_ping as $line)
 							<table class="m-t-20">

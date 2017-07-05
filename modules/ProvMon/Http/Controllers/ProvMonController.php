@@ -42,12 +42,12 @@ class ProvMonController extends \BaseController {
 		$this->modem = $modem;
 
 		$a = array(['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]],
-						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
-						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]],
+						['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => [$id]],
+						['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => [$id]],
 				);
 
 		if (isset($modem->mtas[0]))
-			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'Provmon.mta', 'link' => [$id]]);
+			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => [$id]]);
 
 		array_push($a, ['name' => 'Logging', 'route' => 'GuiLog.filter', 'link' => ['model_id' => $modem->id, 'model' => 'Modem']]);
 
@@ -284,7 +284,7 @@ end:
 
 		$panel_right =  [
 			['name' => 'Edit', 'route' => 'Cmts.edit', 'link' => [$id]],
-			['name' => 'Analysis', 'route' => 'Provmon.cmts', 'link' => [$id]]
+			['name' => 'Analysis', 'route' => 'ProvMon.cmts', 'link' => [$id]]
 		];
 
 		return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var')));

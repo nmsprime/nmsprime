@@ -28,11 +28,11 @@
 
 		// Show link to actual site. This depends on if we are in Modem Analyses or CPE Analyses context
 		if (!isset($type))
-			$s .= "<li class='nav-tabs'>".HTML::linkRoute('Provmon.index', 'Analyses', $view_var->id).'</li>';
+			$s .= "<li class='nav-tabs'>".HTML::linkRoute('ProvMon.index', 'Analyses', $view_var->id).'</li>';
 		elseif ($type == 'CPE')
-			$s .= "<li class='nav-tabs'>".HTML::linkRoute('Provmon.cpe', 'CPE Analysis', $view_var->id).'</li>';
+			$s .= "<li class='nav-tabs'>".HTML::linkRoute('ProvMon.cpe', 'CPE Analysis', $view_var->id).'</li>';
 		elseif ($type == 'MTA')
-			$s .= "<li class='nav-tabs'>".HTML::linkRoute('Provmon.mta', 'MTA Analysis', $view_var->id).'</li>';
+			$s .= "<li class='nav-tabs'>".HTML::linkRoute('ProvMon.mta', 'MTA Analysis', $view_var->id).'</li>';
 
 		echo "<li class='active'><a href='".route('Modem.index')."'><i class='fa fa-hdd-o'></i>Modem</a></li>".$s;
 	?>

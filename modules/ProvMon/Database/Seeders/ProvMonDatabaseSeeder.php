@@ -1,4 +1,4 @@
-<?php namespace Modules\Provmon\Database\Seeders;
+<?php namespace Modules\ProvMon\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
