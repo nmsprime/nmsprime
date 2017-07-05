@@ -267,6 +267,13 @@ class ProvVoipEnvia extends \BaseModel {
 	}
 
 
+	/**
+	 * Replaces login credentials for Envia API by hash signs.
+	 * Used to safely show and store sent XML.
+	 *
+	 * @author Patrick Reichel
+	 *
+	 */
 	public static function hide_envia_api_credentials($dom) {
 
 		$reseller_identifiers = $dom->getElementsByTagName('reseller_identifier');
