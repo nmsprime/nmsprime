@@ -748,11 +748,13 @@ class EnviaOrder extends \BaseModel {
 
 		// the tables head
 		$ret = '<table class="table-hover">';
-		$ret .= '<tr>';
+		$ret .= '<thead><tr>';
 		foreach (array_shift($data) as $col) {
 			$ret .= '<th style="'.$th_style.'">'.$col.'</th>';
 		}
-		$ret .= '</tr>';
+		$ret .= '</tr></thead>';
+
+		$ret .= '<tbody>';
 
 		// the tables body (row by row)
 		foreach ($data as $row) {
@@ -764,6 +766,8 @@ class EnviaOrder extends \BaseModel {
 			}
 			$ret .= '</tr>';
 		}
+
+		$ret .= '</tbody>';
 
 		$ret .= '</table>';
 		return $ret;
