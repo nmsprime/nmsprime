@@ -96,7 +96,7 @@ class ProvMonController extends \BaseController {
 			$ping = null;
 
 		// Log dhcp (discover, ...), tftp (configfile or firmware)
-		$search = $ip ? "$mac|$modem->hostname|$ip" : "$mac|$modem->hostname";
+		$search = $ip ? "$mac|$modem->hostname|$ip " : "$mac|$modem->hostname";
 		exec ('egrep -i "('.$search.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
 
 		$host_id = $this->monitoring_get_host_id($modem);
