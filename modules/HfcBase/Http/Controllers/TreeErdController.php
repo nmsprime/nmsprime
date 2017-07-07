@@ -84,7 +84,19 @@ class TreeErdController extends HfcBaseController {
 		// NOTE: Do not load from url via asset() with file_get_contents().
 		//       file_get_contents() does not work with port forwarding or any kind of port option.
 		//       Also curl with port setting and ssl verify disabled does not work on port forwarding. Tested about 2 hours.
+
 		$usemap = str_replace ('alt', 'onContextMenu="return getEl(this.id)" alt', \Storage::get($this->file.'.map'));
+
+        // dd($usemap);
+        $usemap = str_replace('title=', 'data-content=', $usemap);
+        $usemap = str_replace('\n', "<br>", $usemap);
+        $usemap = str_replace('data-content="', 'data-content="'.\App\Http\Controllers\BaseViewController::translate_label('Total Number of Modems').': ', $usemap);
+        $usemap = substr_replace($usemap, '<br>'.\App\Http\Controllers\BaseViewController::translate_label('Number of Online').' Modems / '
+                        .\App\Http\Controllers\BaseViewController::translate_label('Number of Critical').' Modems'.': ', strpos($usemap, '<br>') , strlen('<br>'));
+
+        $usemap = str_replace('"circle"', '"circle" class="erd-popover" data-html="true" data-toggle="popover" data-container="body"
+                                data-trigger="hover" title="'.\App\Http\Controllers\BaseViewController::translate_label('Modem Summary').'"
+                                data-placement="auto right"', $usemap);
 
 		$view_header = "Entity Relation Diagram";
 		$route_name  = 'Tree';
@@ -136,7 +148,7 @@ class TreeErdController extends HfcBaseController {
 		foreach ($netelements as $netelem)
 		{
 			$id 	= $netelem->id;
-			$name 	= $netelem->name.' - '.$netelem->id;
+			$name 	= $netelem->name;
 			$type 	= $netelem->netelementtype->name;
 			$state  = $netelem->state;
 			$ip   	= $netelem->ip;
