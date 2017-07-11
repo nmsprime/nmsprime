@@ -4453,9 +4453,10 @@ class ProvVoipEnvia extends \BaseModel {
 				&&
 				($phonenumbermanagement->enviacontract_id != $data['enviacontract_id'])
 			) {
-				$phonenumbermanagement->enviacontract_id = $data['enviacontract_id'];
-				$phonenumbermanagement_changed = True;
-				$out .= '<br> ⇒ PhonenumberManagement ('.$phonenumbermanagement->id.') ->enviacontract_id set to '.$data['enviacontract_id'];
+				// don't update enviacontract_id based on orders – contract/relocate causes new envia contract; will be caught in other method
+				$msg = 'PhonenumberManagement ('.$phonenumbermanagement->id.'): different enviacontract_id in order and management. Will not update since this id changes on contract/relocate. Will be handled in own method, can be set to current value using contract/get_reference';
+				\Log::info($msg);
+				$out .= '<br> ⇒ '.$msg;
 			}
 		}
 
