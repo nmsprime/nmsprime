@@ -3742,6 +3742,13 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// process the valid CSV lines
 		foreach ($results as $result) {
+
+			// Envia changed API – now there are also times on “orderdate” which results in daily update of our database
+			// shorten this to date only – so we don't have to change in other methods
+			if (array_key_exists('orderdate', $result)) {
+				$result['orderdate'] = substr($result['orderdate'], 0, 10);
+			}
+
 			$out .= "<br><br>";
 
 			$msg = "Processing order ".$result['orderid'];
@@ -4689,7 +4696,7 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		if (boolval(sprintf($xml->orderdate))) {
-			if ($order->orderdate != \Str::limit($xml->orderdate, 10, '')) {
+			if ($order->orderdate != substr($xml->orderdate, 0, 10)) {
 				$order->orderdate = $xml->orderdate;
 				$order_changed = True;
 			}
