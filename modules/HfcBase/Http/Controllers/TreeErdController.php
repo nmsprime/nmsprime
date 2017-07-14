@@ -85,18 +85,26 @@ class TreeErdController extends HfcBaseController {
 		//       file_get_contents() does not work with port forwarding or any kind of port option.
 		//       Also curl with port setting and ssl verify disabled does not work on port forwarding. Tested about 2 hours.
 
+		// file -> html link area
 		$usemap = str_replace ('alt', 'onContextMenu="return getEl(this.id)" alt', \Storage::get($this->file.'.map'));
+		// add Popover
+        $usemap = str_replace('title=', 'class="erd-popover" data-html="true" data-toggle="popover" data-container="body" data-trigger="hover" data-placement="auto right" data-content=', $usemap);
+        // generate Array to manipulate string
+        $usemap = explode(PHP_EOL, $usemap);
 
-        // dd($usemap);
-        $usemap = str_replace('title=', 'data-content=', $usemap);
-        $usemap = str_replace('\n', "<br>", $usemap);
-        $usemap = str_replace('data-content="', 'data-content="'.\App\Http\Controllers\BaseViewController::translate_label('Total Number of Modems').': ', $usemap);
-        $usemap = substr_replace($usemap, '<br>'.\App\Http\Controllers\BaseViewController::translate_label('Number of Online').' Modems / '
-                        .\App\Http\Controllers\BaseViewController::translate_label('Number of Critical').' Modems'.': ', strpos($usemap, '<br>') , strlen('<br>'));
+        foreach ($usemap as $element => $html) {
+        	if ( str_contains($html, 'shape="circle"' ) ){
+        		$usemap[$element] = explode('\n', $html);
+        		$usemap[$element][0] = str_replace('data-content="', 'data-content="'.\App\Http\Controllers\BaseViewController::translate_label('Total Number of Modems').': ', $usemap[$element][0]);
+        		$usemap[$element][1] = \App\Http\Controllers\BaseViewController::translate_label('Number of Online').' Modems / '
+                        .\App\Http\Controllers\BaseViewController::translate_label('Number of Critical').' Modems : '.$usemap[$element][1];
+        		$usemap[$element][2] = \App\Http\Controllers\BaseViewController::translate_label('Avg. Upstream Power: ').$usemap[$element][2];
+        		$usemap[$element] = implode('<br>', $usemap[$element]);
+        	}
+        	
+        }
 
-        $usemap = str_replace('"circle"', '"circle" class="erd-popover" data-html="true" data-toggle="popover" data-container="body"
-                                data-trigger="hover" title="'.\App\Http\Controllers\BaseViewController::translate_label('Modem Summary').'"
-                                data-placement="auto right"', $usemap);
+        $usemap = implode(PHP_EOL, $usemap);
 
 		$view_header = "Entity Relation Diagram";
 		$route_name  = 'Tree';
