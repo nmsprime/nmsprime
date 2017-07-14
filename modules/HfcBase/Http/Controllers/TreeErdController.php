@@ -89,22 +89,22 @@ class TreeErdController extends HfcBaseController {
 		$usemap = str_replace ('alt', 'onContextMenu="return getEl(this.id)" alt', \Storage::get($this->file.'.map'));
 		// add Popover
         $usemap = str_replace('title=', 'class="erd-popover" data-html="true" data-toggle="popover" data-container="body" data-trigger="hover" data-placement="auto right" data-content=', $usemap);
-        // generate Array to manipulate string
-        $usemap = explode(PHP_EOL, $usemap);
 
-        foreach ($usemap as $element => $html) {
-        	if ( str_contains($html, 'shape="circle"' ) ){
-        		$usemap[$element] = explode('\n', $html);
-        		$usemap[$element][0] = str_replace('data-content="', 'data-content="'.\App\Http\Controllers\BaseViewController::translate_label('Total Number of Modems').': ', $usemap[$element][0]);
-        		$usemap[$element][1] = \App\Http\Controllers\BaseViewController::translate_label('Number of Online').' Modems / '
-                        .\App\Http\Controllers\BaseViewController::translate_label('Number of Critical').' Modems : '.$usemap[$element][1];
-        		$usemap[$element][2] = \App\Http\Controllers\BaseViewController::translate_label('Avg. Upstream Power: ').$usemap[$element][2];
-        		$usemap[$element] = implode('<br>', $usemap[$element]);
-        	}
-        	
-        }
+		// generate Array to manipulate string
+		$usemap = explode(PHP_EOL, $usemap);
 
-        $usemap = implode(PHP_EOL, $usemap);
+		foreach ($usemap as $element => $html) {
+			if ( str_contains($html, 'shape="circle"' ) ){
+				$usemap[$element] = explode('\n', $html);
+				$usemap[$element][0] = str_replace('data-content="', 'title="'.\App\Http\Controllers\BaseViewController::translate_label('Modem Summary').'" data-content="'.\App\Http\Controllers\BaseViewController::translate_label('Total Number of Modems').': ', $usemap[$element][0]);
+				$usemap[$element][1] = \App\Http\Controllers\BaseViewController::translate_label('Number of Online').' Modems / '.\App\Http\Controllers\BaseViewController::translate_label('Number of Critical').' Modems : '.$usemap[$element][1];
+				$usemap[$element][2] = \App\Http\Controllers\BaseViewController::translate_label('Avg. Upstream Power: ').$usemap[$element][2];
+				$usemap[$element] = implode('<br>', $usemap[$element]);
+			}
+
+		}
+
+		$usemap = implode(PHP_EOL, $usemap);
 
 		$view_header = "Entity Relation Diagram";
 		$route_name  = 'Tree';
