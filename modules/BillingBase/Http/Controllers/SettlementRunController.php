@@ -62,6 +62,25 @@ class SettlementRunController extends \BaseController {
 
 
 	/**
+	 * Extend BaseControllers update to call Artisan Command when Settlement run shall rerun
+	 */
+	public function update($id)
+	{
+		$obj = SettlementRun::find($id);
+
+		// used as workaround to not display output
+		ob_start();
+
+		if (\Input::has('rerun'))
+			\Artisan::call('billing:accounting');
+
+		ob_end_clean();
+
+		return parent::update($id);
+	}
+
+
+	/**
 	 * Download a billing file or all files as ZIP archive
 	 */
 	public function download($id, $key)

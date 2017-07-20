@@ -90,13 +90,13 @@ class accountingCommand extends Command {
 		if (\App::runningInConsole())
 		{
 			// create/update settlementrun model when we run from console
-			$sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->get()->all();
+			$sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->get()->all();
 
 			if (!$sr)
 			{
-				$new_data = ['year' => $this->dates['Y'], 'month' => $this->dates['lastm']];
-				$settlementrun_id = SettlementRun::create($new_data)->id;
-				$this->logger->addDebug('Add new SettlementRun');
+				$this->logger->addDebug('Add new SettlementRun and Return as Observer will call this Cmd again');
+				SettlementRun::create(['year' => $this->dates['Y'], 'month' => $this->dates['lastm']]);
+				return;
 			}
 			else
 			{
@@ -108,7 +108,8 @@ class accountingCommand extends Command {
 		}
 		else
 		{
-			$settlementrun_id = SettlementRun::withTrashed()->orderBy('id', 'desc')->get()->first()->id + 1;
+			// withTrashed()
+			$settlementrun_id = SettlementRun::orderBy('id', 'desc')->get()->first()->id;
 			$this->logger->addDebug('SettlementRun already created through GUI');
 		}
 
@@ -134,16 +135,18 @@ class accountingCommand extends Command {
 			$this->logger->addAlert('No Call Data Records available for this Run!');
 
 		echo "Create Invoices:\n";
-		$bar = $this->output->createProgressBar(count($contracts));
+		$num = count($contracts);
+		$bar = $this->output->createProgressBar($num);
 
 		/*
 		 * Loop over all Contracts
 		 */
-		foreach ($contracts as $c)
+		foreach ($contracts as $i => $c)
 		{
-			// debugging output
+			// debugging output - workaround as progress bar is not shown when cmd is called from observer
 			if ($this->option('debug'))
-				var_dump($c->id); //, round(microtime(true) - $start, 4));
+				echo ($i + 1)."/$num [$c->id]\r";
+				// var_dump($c->id); //, round(microtime(true) - $start, 4));
 
 			// progress bar
 			if (!$this->option('debug'))

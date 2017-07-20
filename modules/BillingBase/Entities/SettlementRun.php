@@ -7,6 +7,9 @@ class SettlementRun extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'settlementrun';
 
+	// don't try to add these Input fields to Database of this model
+    public $guarded = ['rerun'];
+
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
@@ -185,12 +188,11 @@ class SettlementRunObserver
 
 	public function created($settlementrun)
 	{
-		// these functions were used as workaround to not display output, when command was called in store method
-		// this problem doesnt exist when called in observer, kept here for reference
-		// 	ob_start();	ob_end_clean();
+		if (!$settlementrun->observer_enabled)
+			return;
 
 		// TODO: add to laravel queue to execute in background
-		\Artisan::call('billing:accounting');
+		\Artisan::call('billing:accounting', ['--debug' => 1]);
 	}
 
 	public function updated($settlementrun)
