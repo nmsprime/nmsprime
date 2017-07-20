@@ -361,7 +361,7 @@ class accountingCommand extends Command {
 		foreach ($sepa_accs as $acc)
 		{
 			$acc->dir = $this->dir;
-			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+5 days'));
+			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+1 day'));
 		}
 
 		// actual invoice nr counters

@@ -494,7 +494,7 @@ class SepaAccount extends \BaseModel {
 				'creditorAgentBIC'      => $this->bic,
 				'seqType'               => $type,
 				'creditorId'            => $this->creditorid,
-				// 'dueDate'				=> // requested collection date (Fälligkeits-/Ausführungsdatum) - from global config
+				'dueDate'				=> $this->rcd, // requested collection date (Fälligkeits-/Ausführungsdatum) - from global config
 			));
 
 			// Add Transactions to the named payment

@@ -37,7 +37,7 @@ class SepaMandate extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		$bsclass = 'info';
+		$bsclass = 'success';
 		$valid_to = $this->sepa_valid_to ? ' - '.$this->sepa_valid_to : '';
 
 		if (($this->get_start_time() > strtotime(date('Y-m-d'))) && !$this->check_validity('Now'))
