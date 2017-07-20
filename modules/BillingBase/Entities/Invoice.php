@@ -541,7 +541,7 @@ class Invoice extends \BaseModel{
 			if (is_file($file))
 			{
 				// take care - when we start process in background we don't get the return value anymore
-				system("pdflatex $file &>/dev/null &", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
+				system("pdflatex \"$file\" &>/dev/null &", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
 
 				switch ($ret)
 				{

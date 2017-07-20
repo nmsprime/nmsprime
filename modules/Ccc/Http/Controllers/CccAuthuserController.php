@@ -148,7 +148,7 @@ class CccAuthuserController extends \BaseController {
 		// create pdf from tex
 		chdir($dir_path);
 
-		system("pdflatex $filename &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
+		system("pdflatex \"$filename\" &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
 
 		// TODO: use exception handling to handle errors
 		switch ($ret)
