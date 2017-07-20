@@ -23,7 +23,7 @@ class SettlementRun extends \BaseModel {
 	{
 		parent::boot();
 
-		// SettlementRun::observe(new SettlementRunObserver);
+		SettlementRun::observe(new SettlementRunObserver);
 	}
 
 
@@ -176,9 +176,28 @@ class SettlementRun extends \BaseModel {
 
 class SettlementRunObserver
 {
+	public function creating($settlementrun)
+	{
+		// dont show every settlementrun that was created in one month
+		$time = strtotime('first day of last month');
+		SettlementRun::where('month', '=', date('m', $time))->where('year', '=', date('Y', $time))->delete();
+	}
+
+	public function created($settlementrun)
+	{
+		// these functions were used as workaround to not display output, when command was called in store method
+		// this problem doesnt exist when called in observer, kept here for reference
+		// 	ob_start();	ob_end_clean();
+
+		// TODO: add to laravel queue to execute in background
+		\Artisan::call('billing:accounting');
+	}
+
+	public function updated($settlementrun)
+	{
+	}
+
 	public function deleted($settlementrun)
 	{
-		// Delete all corresponding/related files in Storage and all Invoices from Database
-		// $settlementrun->delete_related_files();
 	}
 }

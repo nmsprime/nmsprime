@@ -557,7 +557,7 @@ class Invoice extends \BaseModel{
 						return null;
 				}
 
-				echo "Successfully created $key in $file\n";
+				// echo "Successfully created $key in $file\n";
 				$this->logger->addDebug("Successfully created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
 
 				// Deprecated: remove temporary files - This is done by remove_templatex_files() now after all pdfs were created simultaniously by multiple threads

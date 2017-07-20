@@ -49,27 +49,6 @@ class SettlementRunController extends \BaseController {
 	}
 
 
-	/**
-	 * Extension of generic Store function of BaseController 
-	 * Run Accounting Command, Delete current Model if already existent, Create new Model
-	 */
-	public function store($redirect = true)
-	{
-		$time = strtotime('first day of last month');
-		SettlementRun::where('month', '=', date('m', $time))->where('year', '=', date('Y', $time))->delete();
-
-		// this is a workaround to redirect output - laravel 3rd variable in call function disregards it
-		// output is buffered in internal storage and later discarded with ob_end_clean()
-		ob_start();
-
-		$ret = \Artisan::call('billing:accounting');
-
-		ob_end_clean();
-
-		return parent::store();
-	}
-
-
 	/*
 	 * Extends generic edit function from Basecontroller for own view - Removes Rerun Button when next month has begun
 	 */
