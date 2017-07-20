@@ -105,14 +105,16 @@ class ItemController extends \BaseController {
 		if ($data['valid_to'] && $data['valid_to'] != '0000-00-00')
 			$rules['valid_to'] .= '|after:'.$data['valid_from'];
 
-		// new tariff start date must be after old tariff start date if valid tariff exists - otherwise after end date of old tariff - does it?
-		$c = Contract::find($data['contract_id']);
-		$p = Product::find($data['product_id']);
-		$tariff = $c->get_valid_tariff($p->type);
-		if ($tariff)
+		// check only on creating: new tariff must start after old tariffs start date if valid tariff exists
+		// - otherwise after end date of old tariff - does it?
+		if (\Str::contains(\URL::previous(), '/Item/create'))
 		{
-			// check only on creating:
-			if (\Str::contains(\URL::previous(), '/Item/create')) {
+			$c = Contract::find($data['contract_id']);
+			$p = Product::find($data['product_id']);
+			$tariff = $c->get_valid_tariff($p->type);
+
+			if ($tariff)
+			{
 				// check if date is after today
 				$start = $tariff->get_start_time();
 				$rules['valid_from'] .= '|after:';
