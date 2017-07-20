@@ -63,7 +63,7 @@ class ProductController extends \BaseController {
 		switch ($data['type'])
 		{
 			case 'Credit':
-				$rules['billing_cycle'] = 'In:Once,Monthly';
+				// $rules['billing_cycle'] = 'In:Once,Monthly';
 				$rules['qos_id'] = 'In:0';
 				$rules['voip_sales_tariff_id'] = 'In:0';
 				$rules['voip_purchase_tariff_id'] = 'In:0';

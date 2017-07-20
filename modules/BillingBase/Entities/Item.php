@@ -256,18 +256,23 @@ class Item extends \BaseModel {
 
 			case 'Yearly':
 
-				if ($this->payed_month && $this->payed_month != $dates['m'] - 1)
+				// discard already payed items
+				if ($this->payed_month && ($this->payed_month != ((int) $dates['lastm'])))
 					break;
 
-				// calculate only for billing month
 				$costcenter    = $this->get_costcenter();
 				$billing_month = $costcenter->get_billing_month();		// June is default
 
-				if ($dates['m'] - 1 != $billing_month)
-					break;
+				// calculate only for billing month
+				if ($billing_month != $dates['lastm'])
+				{
+					// or tariff started after billing month - then only pay on first settlement run - break otherwise
+					if (!((date('m', $start) >= $billing_month) && (date('Y-m', $start) == $dates['lastm_Y'])))
+						break;
+				}
 
-				// started last yr
-				if (date('Y', $start) == ($dates['Y'] - 1))
+				// started this yr
+				if (date('Y', $start) == $dates['Y'])
 				{
 					$ratio = 1 - date('z', $start) / (366 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1 
 					$text  = date('Y-m-d', $start);
@@ -275,19 +280,19 @@ class Item extends \BaseModel {
 				else
 				{
 					$ratio = 1;
-					$text  = date('Y-01-01', strtotime('last year'));
+					$text  = date('Y-01-01');
 				}
 
 				$text .= ' - ';
 
-				// ended last yr
-				if ($end && (date('Y', $end) == ($dates['Y'] - 1)))
+				// ended this yr
+				if ($end && (date('Y', $end) == $dates['Y']))
 				{
 					$ratio += $ratio ? (date('z', $end) + 1)/(366 + date('L')) - 1 : 0;
 					$text  .= date('Y-m-d', $end);
 				}
 				else
-					$text .= date('Y-12-31', strtotime('last year'));
+					$text .= date('Y-12-31');
 
 				// set payed flag to avoid double payment in case of billing month is changed during year
 				if ($ratio)
