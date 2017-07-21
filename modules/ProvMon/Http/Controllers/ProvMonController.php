@@ -83,7 +83,7 @@ class ProvMonController extends \BaseController {
 
 		// Configfile
 		$cf_path = "/tftpboot/cm/$modem->hostname.conf";
-		$configfile = is_file($cf_path) ? file($cf_path) : ['Error: Missing Configfile!'];
+		$configfile = is_file($cf_path) ? file($cf_path) : null;
 
 		// Realtime Measure - only fetch realtime values if all pings are successfull
 		if (count($ping) == 10)
@@ -97,7 +97,7 @@ class ProvMonController extends \BaseController {
 
 		// Log dhcp (discover, ...), tftp (configfile or firmware)
 		$search = $ip ? "$mac|$modem->hostname|$ip " : "$mac|$modem->hostname";
-		exec ('egrep -i "('.$search.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
+		exec ('egrep -i "('.$search.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 30  | tac', $log);
 
 		$host_id = $this->monitoring_get_host_id($modem);
 

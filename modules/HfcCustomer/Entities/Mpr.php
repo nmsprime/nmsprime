@@ -109,9 +109,9 @@ class Mpr extends \BaseModel {
 		if (is_int($modem))
 		{
 			$single_modem = true;
-			\Log::info('mps: perform mps rule matching for a single modem');
+			\Log::info('MPS: perform mps rule matching for a single modem');
 		} else {
-			\Log::info('mps: perform mps rule matching');
+			\Log::info('MPS: perform mps rule matching');
 			// reset all tree_ids if all modems are being matched,
 			// because we don't know if old matches are still valid
 			Modem::where('id', '>', '0')->update(['netelement_id' => 0]);
@@ -174,8 +174,8 @@ class Mpr extends \BaseModel {
 					$r = $select->update(['netelement_id' => $id]);
 
 				// Log
-				$log = 'mps: UPDATE: '.$id.', '.$mpr->name.' - updated modems: '.$r;
-				\Log::info ($log);
+				$log = 'MPS: UPDATE: '.$id.', '.$mpr->name.' - updated modems: '.$r;
+				\Log::debug ($log);
 				echo $log."\n";
 			} elseif (count($mpr->mprgeopos) > 2) {
 
