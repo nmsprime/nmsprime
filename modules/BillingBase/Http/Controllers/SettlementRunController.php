@@ -59,10 +59,14 @@ class SettlementRunController extends \BaseController {
 	 */
 	public function edit($id)
 	{
+		$job = \DB::table('jobs')->find(\Session::get('job_id'));
+
+		$finished = $job ? false : true;
+
 		$obj = SettlementRun::find($id);
 		$bool = (date('m') == $obj->created_at->__get('month')) && !$obj->verified;
 
-		return parent::edit($id)->with('rerun_button', $bool);
+		return parent::edit($id)->with('rerun_button', $bool)->with('finished', $finished);
 	}
 
 
@@ -82,8 +86,11 @@ class SettlementRunController extends \BaseController {
 		// ob_start();
 
 		if (\Input::has('rerun'))
-			$this->dispatch(new \Modules\BillingBase\Console\accountingCommand);
+		{
+			$job_id = $this->dispatch(new \Modules\BillingBase\Console\accountingCommand);
 			// \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
+			\Session::put('job_id', $job_id);
+		}
 
 		// ob_end_clean();
 

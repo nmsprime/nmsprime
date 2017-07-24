@@ -170,8 +170,9 @@ class SettlementRunObserver
 		if (!$settlementrun->observer_enabled)
 			return;
 
-		\Queue::push(new \Modules\BillingBase\Console\accountingCommand());
+		$job_id = \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
 		// \Artisan::call('billing:accounting', ['--debug' => 1]);
+		\Session::put('job_id', $job_id);
 	}
 
 	public function updated($settlementrun)
