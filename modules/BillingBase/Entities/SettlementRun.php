@@ -153,27 +153,6 @@ class SettlementRun extends \BaseModel {
 		return $hide;
 	}
 
-
-	public function delete_related_files()
-	{
-		// Delete invoices - this deletes db entry and pdf file via observer
-		foreach ($this->invoices as $invoice)
-			$invoice->delete();
-		
-		// Delete accounting record files and directories
-		$rel_dir = 'data/billingbase/accounting/'.$this->year.'-'.sprintf("%'.02d", $this->month).'/';
-		$files 	 = Storage::allFiles($rel_dir);
-		$dirs 	 = Storage::allDirectories($rel_dir);
-
-		foreach ($files as $f)
-			unlink($f);
-
-		foreach ($dirs as $d)
-			rmdir($d);
-
-		// $dir = storage_path('app/data/billingbase/accounting/'.$this->year.'-'.sprintf("%'.02d", $this->month).'/');
-	}
-
 }
 
 
@@ -201,5 +180,10 @@ class SettlementRunObserver
 
 	public function deleted($settlementrun)
 	{
+		// delete all invoices & accounting record files - maybe use accountingCommand@_directory_cleanup
+		$date = $settlementrun->year.'-'.str_pad($settlementrun->month, 2, '0', STR_PAD_LEFT);
+		$dir = 'data/billingbase/accounting/'.$date;
+
+		\Modules\BillingBase\Http\Controllers\SettlementRunController::directory_cleanup($dir, $settlementrun);
 	}
 }

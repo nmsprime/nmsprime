@@ -1,6 +1,11 @@
 <?php 
 namespace Modules\Billingbase\Http\Controllers;
+
+use Modules\BillingBase\Entities\AccountingRecord;
+use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\SettlementRun;
+use Modules\BillingBase\Entities\Invoice;
+use Modules\BillingBase\Console\accountingCommand;
 
 class SettlementRunController extends \BaseController {
 
@@ -89,6 +94,50 @@ class SettlementRunController extends \BaseController {
 		$files  = $obj->accounting_files();
 
 		return response()->download($files[$key]->getRealPath());
+	}
+
+
+	/**
+	 * This function removes all "old" files and DB Entries created by the previous called accounting Command
+	 * This is necessary because otherwise e.g. after deleting contracts the invoice would be kept and is still
+	 * available in customer control center
+	 * Used in: SettlementRunObserver@deleted, accountingCommand
+	 *
+	 * USE WITH CARE!
+	 *
+	 * @param 	dir 			String 		Accounting Record Files Directory relative to storage/app/
+	 * @param 	settlementrun 	Object 		SettlementRun the directory should be cleared for
+	 */
+	public static function directory_cleanup($dir, $settlementrun = null)
+	{
+		$logger = new BillingLogger;
+
+		$start  = $settlementrun ? date('Y-m-01 00:00:00', strtotime($settlementrun->created_at)) : date('Y-m-01');
+		$end 	= $settlementrun ? date('Y-m-01 00:00:00', strtotime('+1 month', strtotime($settlementrun->created_at))) : date('Y-m-01', strtotime('+1 month'));
+
+		// remove all entries of this month permanently (if already created)
+		$ret = AccountingRecord::whereBetween('created_at', [$start, $end])->forceDelete();
+		if ($ret)
+			$logger->addInfo('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
+
+		// Delete all invoices
+		$logmsg = 'Remove all already created Invoices and Accounting Files for this month';
+		$logger->addDebug($logmsg);	echo "$logmsg\n";
+
+		if (!$settlementrun)
+			Invoice::delete_current_invoices();
+
+		// everything in accounting directory - SepaAccount specific
+		foreach (\Storage::files($dir) as $f)
+		{
+			// keep cdr
+			// if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
+			if (basename($f) != accountingCommand::_get_cdr_filename())
+				\Storage::delete($f);
+		}
+
+		foreach (\Storage::directories($dir) as $d)
+			\Storage::deleteDirectory($d);
 	}
 
 }

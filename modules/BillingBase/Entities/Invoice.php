@@ -56,12 +56,12 @@ class Invoice extends \BaseModel{
 	/**
 	 * Init Observer
 	 */
-	// public static function boot()
-	// {
-	// 	parent::boot();
+	public static function boot()
+	{
+		parent::boot();
 
-	// 	Invoice::observe(new InvoiceObserver);
-	// }
+		Invoice::observe(new InvoiceObserver);
+	}
 
 
 	/**
@@ -76,7 +76,7 @@ class Invoice extends \BaseModel{
 	/**
 	 * @var string - invoice directory path relativ to Storage app path and temporary filename variables
 	 */
-	private $rel_storage_invoice_dir = 'data/billingbase/invoice/';
+	public $rel_storage_invoice_dir = 'data/billingbase/invoice/';
 
 	// temporary variables for settlement run without .pdf extension
 	private $filename_invoice 	= '';
@@ -86,7 +86,7 @@ class Invoice extends \BaseModel{
 	/**
 	 * @var object - logger for Billing Module - instantiated in constructor
 	 */
-	private $logger;
+	public $logger;
 
 	/**
 	 * Temporary CDR Variables
@@ -657,6 +657,7 @@ class InvoiceObserver
 	public function deleted($invoice)
 	{
 		// Delete PDF from Storage
-		// Storage::delete($invoice->rel_storage_invoice_dir.$invoice->contract_id.'/'.$invoice->filename);
+		$ret = Storage::delete($invoice->rel_storage_invoice_dir.$invoice->contract_id.'/'.$invoice->filename);
+		$invoice->logger->addDebug('Removed Invoice from Storage', [$invoice->contract_id, $invoice->filename]);
 	}
 }

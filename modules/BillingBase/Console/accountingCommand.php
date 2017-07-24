@@ -343,7 +343,7 @@ class accountingCommand extends Command {
 
 		// create directory structure and remove old invoices
 		if (is_dir(storage_path('app/'.$this->dir)))
-			$this->_directory_cleanup();
+			SettlementRunController::directory_cleanup($this->dir);
 		else
 			mkdir(storage_path('app/'.$this->dir, 0700, true));
 
@@ -405,38 +405,6 @@ class accountingCommand extends Command {
 		if ($this->dates['lastm'] == '01')
 			Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
 
-	}
-
-
-	/**
-	 * This function removes all "old" files and DB Entries created by the previous called Command
-	 * This is necessary because otherwise e.g. after deleting contracts the invoice would be kept and is still shown
-	 * in customer control center
-	 */
-	private function _directory_cleanup()
-	{
-		// remove all entries of this month permanently (if already created)
-		$ret = AccountingRecord::whereBetween('created_at', [$this->dates['thism_01'], $this->dates['nextm_01']])->forceDelete();
-		if ($ret)
-			$this->logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
-
-		// Delete all invoices
-		$logmsg = 'Remove all already created Invoices and Accounting Files for this month';
-		$this->logger->addDebug($logmsg);
-		echo "$logmsg\n";
-		Invoice::delete_current_invoices();
-
-		// everything in accounting directory - SepaAccount specific
-		foreach (Storage::files($this->dir) as $f)
-		{
-			// keep cdr
-			// if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
-			if (basename($f) != self::_get_cdr_filename())
-				Storage::delete($f);
-		}
-
-		foreach (Storage::directories($this->dir) as $d)
-			Storage::deleteDirectory($d);
 	}
 
 
