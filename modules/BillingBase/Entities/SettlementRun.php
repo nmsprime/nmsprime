@@ -170,8 +170,8 @@ class SettlementRunObserver
 		if (!$settlementrun->observer_enabled)
 			return;
 
-		// TODO: add to laravel queue to execute in background
-		\Artisan::call('billing:accounting', ['--debug' => 1]);
+		\Queue::push(new \Modules\BillingBase\Console\accountingCommand());
+		// \Artisan::call('billing:accounting', ['--debug' => 1]);
 	}
 
 	public function updated($settlementrun)

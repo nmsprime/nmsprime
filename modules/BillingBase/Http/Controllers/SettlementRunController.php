@@ -66,20 +66,26 @@ class SettlementRunController extends \BaseController {
 	}
 
 
+	// public function store($redirect = true)
+	// {
+	// 	$this->dispatch(new \Modules\BillingBase\Console\accountingCommand());
+	// 	return parent::store();
+	// }
+
+
 	/**
 	 * Extend BaseControllers update to call Artisan Command when Settlement run shall rerun
 	 */
 	public function update($id)
 	{
-		$obj = SettlementRun::find($id);
-
 		// used as workaround to not display output
-		ob_start();
+		// ob_start();
 
 		if (\Input::has('rerun'))
-			\Artisan::call('billing:accounting');
+			$this->dispatch(new \Modules\BillingBase\Console\accountingCommand);
+			// \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
 
-		ob_end_clean();
+		// ob_end_clean();
 
 		return parent::update($id);
 	}

@@ -1,9 +1,14 @@
 <?php 
-namespace Modules\Billingbase\Console;
+namespace Modules\BillingBase\Console;
 
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
+
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Contracts\Bus\SelfHandling;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
 use Storage;
 use DB;
@@ -18,9 +23,13 @@ use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Entities\Item;
 use Modules\BillingBase\Entities\SettlementRun;
+use Modules\Billingbase\Http\Controllers\SettlementRunController;
 
 
-class accountingCommand extends Command {
+class accountingCommand extends Command implements SelfHandling, ShouldQueue {
+
+	use InteractsWithQueue, SerializesModels;
+
 
 	/**
 	 * The console command & table name, description, data arrays
@@ -33,6 +42,7 @@ class accountingCommand extends Command {
 	protected $dir 			= 'data/billingbase/accounting/'; 				// relative to storage/app/ - Note: completed by month in constructor!
 	
 	protected $dates;					// offen needed time strings for faster access - see constructor
+	protected $logger;
 
 
 	/**
@@ -69,7 +79,6 @@ class accountingCommand extends Command {
 
 		$this->logger = new BillingLogger;
 
-
 		parent::__construct();
 
 	}
@@ -81,14 +90,13 @@ class accountingCommand extends Command {
 	 *
 	 * TODO: add to app/Console/Kernel.php -> run monthly()->when(function(){ date('Y-m-d') == date('Y-m-10')}) for tenth day in month
 	 */
-	public function fire()
+	public function handle()
 	{
 		// $start = microtime(true);
 
-		$this->logger->addInfo(' #####    Start Accounting Command    #####');
-
 		if (\App::runningInConsole())
 		{
+			$this->logger->addInfo(' #####    Start Accounting Command from Console   #####');
 			// create/update settlementrun model when we run from console
 			$sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->get()->all();
 
@@ -108,6 +116,7 @@ class accountingCommand extends Command {
 		}
 		else
 		{
+			$this->logger->addInfo(' #####    Start Accounting Command via GUI   #####');
 			// withTrashed()
 			$settlementrun_id = SettlementRun::orderBy('id', 'desc')->get()->first()->id;
 			$this->logger->addDebug('SettlementRun already created through GUI');
@@ -136,20 +145,20 @@ class accountingCommand extends Command {
 
 		echo "Create Invoices:\n";
 		$num = count($contracts);
-		$bar = $this->output->createProgressBar($num);
+		// if not called silent via queues
+		if ($this->output)
+			$bar = $this->output->createProgressBar($num);
 
 		/*
 		 * Loop over all Contracts
 		 */
 		foreach ($contracts as $i => $c)
 		{
-			// debugging output - workaround as progress bar is not shown when cmd is called from observer
-			if ($this->option('debug'))
-				echo ($i + 1)."/$num [$c->id]\r";
-				// var_dump($c->id); //, round(microtime(true) - $start, 4));
-
-			// progress bar
-			if (!$this->option('debug'))
+			// progress bar - workaround as progress bar is not shown when cmd is called 
+			// from observer or throws exception when called via queue
+			echo ($i + 1)."/$num [$c->id]\r";
+			// if (!$this->option('debug'))
+			if ($this->output)
 				$bar->advance();
 
 			// Skip invalid contracts
@@ -462,7 +471,8 @@ class accountingCommand extends Command {
 		if (!is_file($filepath))
 		{
 			// get call data records
-			$ret = $this->call('billing:cdr');
+			// $ret = $this->call('billing:cdr');
+			$ret = \Artisan::call('billing:cdr');
 
 			if ($ret)
 				return array(array());
@@ -594,7 +604,7 @@ class accountingCommand extends Command {
 	protected function getOptions()
 	{
 		return [
-			array('debug', null, InputOption::VALUE_OPTIONAL, 'Print Debug Output to Commandline (1 - Yes, 0 - No (Default))', 0),
+			// array('debug', null, InputOption::VALUE_OPTIONAL, 'Print Debug Output to Commandline (1 - Yes, 0 - No (Default))', 0),
 		];
 	}
 
