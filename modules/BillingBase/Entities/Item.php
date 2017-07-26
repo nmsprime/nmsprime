@@ -12,8 +12,8 @@ class Item extends \BaseModel {
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
-		$tariff_prods = Product::whereIn('type', ['internet', 'tv', 'voip'])->lists('id')->all();
-		$tariff_ids   = implode(',', $tariff_prods);
+		// $tariff_prods = Product::whereIn('type', ['internet', 'tv', 'voip'])->lists('id')->all();
+		// $tariff_ids   = implode(',', $tariff_prods);
 		
 		$credit_prods = Product::where('type', '=', 'credit')->lists('id')->all();
 		$credit_ids   = implode(',', $credit_prods);
@@ -23,7 +23,7 @@ class Item extends \BaseModel {
 			'valid_from'	=> 'date',	//|in_future ??
 			'valid_to'		=> 'date',
 			'credit_amount' => 'required_if:product_id,'.$credit_ids,
-			'count'			=> 'null_if:product_id,'.$tariff_ids.','.$credit_ids,
+			// 'count'			=> 'null_if:product_id,'.$tariff_ids.','.$credit_ids,
 		);
 	}
 
