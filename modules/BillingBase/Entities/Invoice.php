@@ -222,7 +222,7 @@ class Invoice extends \BaseModel{
 		$this->data['contract_street'] 		= $contract->street.' '.$contract->house_number;
 		$this->data['contract_zip'] 		= $contract->zip;
 		$this->data['contract_city'] 		= $contract->city;
-		$this->data['contract_address'] 	= $contract->company ? "$contract->firstname $contract->lastname\\\\$contract->company\\\\".$this->data['contract_street']."\\\\$contract->zip $contract->city" : "$contract->firstname $contract->lastname\\\\".$this->data['contract_street']."\\\\$contract->zip $contract->city";
+		$this->data['contract_address'] 	= ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . ($contract->company ? "$contract->company\\\\" : '') . $this->data['contract_street'] . "\\\\$contract->zip $contract->city";
 
 		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
