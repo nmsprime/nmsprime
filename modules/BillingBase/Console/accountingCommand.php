@@ -52,28 +52,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 */
 	public function __construct()
 	{
-		$this->dates = array(
-
-			'today' 		=> date('Y-m-d'),
-			'm' 			=> date('m'),
-			'Y' 			=> date('Y', strtotime("first day of last month")),
-
-			'this_m'	 	=> date('Y-m'),
-			'thism_01'		=> date('Y-m-01'),
-			'thism_bill'	=> date('m/Y'),
-
-			'lastm'			=> date('m', strtotime("first day of last month")),			// written this way because of known bug ("-1 month" or "last month" is erroneous)
-			'lastm_01' 		=> date('Y-m-01', strtotime("first day of last month")),
-			'lastm_bill'	=> date('m/Y', strtotime("first day of last month")),
-			'lastm_Y'		=> date('Y-m', strtotime("first day of last month")),		// strtotime(first day of last month) is integer with actual timestamp!
-
-			'nextm_01' 		=> date('Y-m-01', strtotime("+1 month")),
-
-			'null' 			=> '0000-00-00',
-			'm_in_sec' 		=> 60*60*24*30,			// month in seconds
-			'last_run'		=> '0000-00-00', 					// filled on start of execution
-
-		);
+		$this->dates = self::create_dates_array();
 
 		$this->dir .= date('Y-m', strtotime('first day of last month')).'/';
 
@@ -162,26 +141,24 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$bar->advance();
 
 			// Skip invalid contracts
-			if (!$c->check_validity() && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number])))
-			{
+			if (!$c->check_validity() && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
 				$this->logger->addInfo('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
 				continue;				
 			}
 
-			if (!$c->create_invoice)
-			{
+			if (!$c->create_invoice) {
 				$this->logger->addInfo('Create invoice for Contract '.$c->number.' is off', [$c->id]);
 				continue;
 			}
 
-			if(!$c->costcenter)
-			{
+			if(!$c->costcenter) {
 				$this->logger->addAlert('Contract '.$c->number.' has no CostCenter assigned - Stop execution for this contract', [$c->id]);
 				continue;
 			}
 
 			// init contract temp variables
 			$charge 	= []; 					// total costs for this month for current contract
+			// expires is checked in Item & SepaAccount
 			$c->expires = date('Y-m-01', strtotime($c->contract_end)) == $this->dates['lastm_01'];
 
 
@@ -191,22 +168,19 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			foreach ($c->items as $item)
 			{
 				// skip items that are related to a deleted product
-				if (!isset($item->product))
-				{
+				if (!isset($item->product)) {
 					$this->logger->addError('Product '.$item->accounting_text.' was deleted', [$c->id]);
 					continue;
 				}
 
 				// skip invalid items - TODO: Think about relevance as it is a bit redundant to calculate_price_and_span
-				if (!$item->check_validity($item->get_billing_cycle()))
-				{
+				if (!$item->check_validity($item->get_billing_cycle())) {
 					$this->logger->addDebug('Item '.$item->product->name.' is outdated', [$c->id]);
 					continue;
 				}
 
 				// skip if price is 0
-				if (!($ret = $item->calculate_price_and_span($this->dates)))
-				{
+				if (!($ret = $item->calculate_price_and_span($this->dates))) {
 					$this->logger->addDebug('Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
 					continue;
 				}
@@ -263,8 +237,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 			if ($id)
 			{
-				foreach ($cdrs[$id] as $entry)
-				{
+				foreach ($cdrs[$id] as $entry) {
 					$charge += $entry[5];
 					$calls++;
 				}
@@ -586,6 +559,36 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	}	
 
 
+	/**
+	 * Instantiates an Array of all necessary date formats needed during execution of this Command
+	 *
+	 * Also needed in Item::calculate_price_and_span and in DashboardController!!
+	 */
+	public static function create_dates_array()
+	{
+		return array(
+
+			'today' 		=> date('Y-m-d'),
+			'm' 			=> date('m'),
+			'Y' 			=> date('Y', strtotime("first day of last month")),
+
+			'this_m'	 	=> date('Y-m'),
+			'thism_01'		=> date('Y-m-01'),
+			'thism_bill'	=> date('m/Y'),
+
+			'lastm'			=> date('m', strtotime("first day of last month")),			// written this way because of known bug ("-1 month" or "last month" is erroneous)
+			'lastm_01' 		=> date('Y-m-01', strtotime("first day of last month")),
+			'lastm_bill'	=> date('m/Y', strtotime("first day of last month")),
+			'lastm_Y'		=> date('Y-m', strtotime("first day of last month")),		// strtotime(first day of last month) is integer with actual timestamp!
+
+			'nextm_01' 		=> date('Y-m-01', strtotime("+1 month")),
+
+			'null' 			=> '0000-00-00',
+			'm_in_sec' 		=> 60*60*24*30,						// month in seconds
+			'last_run'		=> '0000-00-00', 					// filled on start of execution
+
+		);
+	}
 
 
 

@@ -175,7 +175,7 @@ class Item extends \BaseModel {
 	public function get_billing_cycle()
 	{
 		return $this->product->billing_cycle;
-		return $this->billing_cycle ? $this->billing_cycle : $this->product->billing_cycle;
+		// return $this->billing_cycle ? $this->billing_cycle : $this->product->billing_cycle;
 	}
 
 	/**
@@ -185,7 +185,7 @@ class Item extends \BaseModel {
 	 */
 	public function get_costcenter()
 	{
-		return $this->costcenter ? $this->costcenter : ($this->product->costcenter ? $this->product->costcenter : $this->contract->costcenter);
+		return $this->costcenter ? : ($this->product->costcenter ? : $this->contract->costcenter);
 	}
 
 
@@ -207,7 +207,7 @@ class Item extends \BaseModel {
 	 * @return 	null if no costs incurred, 1 otherwise
 	 * @author 	Nino Ryschawy
 	 */
-	public function calculate_price_and_span($dates, $return_array = false)
+	public function calculate_price_and_span($dates, $return_array = false, $update = true)
 	{
 		$ratio = 0;
 		$text  = '';			// only dates
@@ -250,18 +250,15 @@ class Item extends \BaseModel {
 
 				break;
 
-// if ($this->contract->id == 500003 && $this->product->type == 'Internet' && strpos($this->product->name, 'Flat 2 M') !== false)
-// 	dd($this->product->name, date('t', $start), $end, date('Y-m-d', $end), $ratio, $billing_cycle, $text);
-
 
 			case 'Yearly':
-
 				// discard already payed items
 				if ($this->payed_month && ($this->payed_month != ((int) $dates['lastm'])))
 					break;
 
 				$costcenter    = $this->get_costcenter();
 				$billing_month = $costcenter->get_billing_month();		// June is default
+
 
 				// calculate only for billing month
 				if ($billing_month != $dates['lastm'])
@@ -295,7 +292,7 @@ class Item extends \BaseModel {
 					$text .= date('Y-12-31');
 
 				// set payed flag to avoid double payment in case of billing month is changed during year
-				if ($ratio)
+				if ($ratio && $update)
 				{
 					$this->payed_month = $dates['m'] - 1;				// is set to 0 every new year
 					$this->observer_enabled = false;
