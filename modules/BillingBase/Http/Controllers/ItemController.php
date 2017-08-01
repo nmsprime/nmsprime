@@ -43,7 +43,7 @@ class ItemController extends \BaseController {
 		return array(
 			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'value' => $model->contract(), 'hidden' => '1'),
 			array('form_type' => 'select', 'name' => 'product_id', 'description' => 'Product', 'value' => $prods, 'select' => $types, 'help' => trans('helper.Item_ProductId')),
-			array('form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt, 'select' => 'Device Other'),
+			array('form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt, 'select' => 'Device Other TV'),
 			array('form_type' => 'text', 'name' => 'valid_from', 'description' => 'Valid from', 'options' => ['placeholder' => 'YYYY-MM-DD'], 'help' => trans('helper.Item_ValidFrom')),
 			array('form_type' => 'checkbox', 'name' => 'valid_from_fixed', 'description' => 'Valid from fixed', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidFromFixed')),
 			array('form_type' => 'text', 'name' => 'valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD']),
@@ -94,7 +94,7 @@ class ItemController extends \BaseController {
 	 */
 	public function prepare_rules($rules, $data)
 	{
-		$rules['count'] = str_replace('product_id', $data['product_id'], $rules['count']);
+		// $rules['count'] = str_replace('product_id', $data['product_id'], $rules['count']);
 
 		// termination only allowed on last day of month
 		$fix = BillingBase::select('termination_fix')->first()->termination_fix;
@@ -105,14 +105,16 @@ class ItemController extends \BaseController {
 		if ($data['valid_to'] && $data['valid_to'] != '0000-00-00')
 			$rules['valid_to'] .= '|after:'.$data['valid_from'];
 
-		// new tariff start date must be after old tariff start date if valid tariff exists - otherwise after end date of old tariff - does it?
-		$c = Contract::find($data['contract_id']);
-		$p = Product::find($data['product_id']);
-		$tariff = $c->get_valid_tariff($p->type);
-		if ($tariff)
+		// check only on creating: new tariff must start after old tariffs start date if valid tariff exists
+		// - otherwise after end date of old tariff - does it?
+		if (\Str::contains(\URL::previous(), '/Item/create'))
 		{
-			// check only on creating:
-			if (\Str::contains(\URL::previous(), '/Item/create')) {
+			$c = Contract::find($data['contract_id']);
+			$p = Product::find($data['product_id']);
+			$tariff = $c->get_valid_tariff($p->type);
+
+			if ($tariff)
+			{
 				// check if date is after today
 				$start = $tariff->get_start_time();
 				$rules['valid_from'] .= '|after:';

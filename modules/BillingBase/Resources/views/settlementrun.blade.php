@@ -5,35 +5,46 @@
 
 		@section('files')
 
-			@if ($rerun_button)
-				{{ Form::open(array('route' => ['SettlementRun.store', 0], 'method' => 'post')) }}
-					{{ Form::submit( \App\Http\Controllers\BaseViewController::translate_view('Rerun Accounting Command for current Month', 'Button') , ['style' => 'simple']) }}
-				{{ Form::close() }}
-			@endif
+			@if ($finished)
 
-			<br>
+				@if ($rerun_button)
+					{{ Form::open(array('route' => ['SettlementRun.update', $view_var->id], 'method' => 'put')) }}
+						{{ Form::hidden('rerun', true) }}
+						{{ Form::submit( \App\Http\Controllers\BaseViewController::translate_view('Rerun Accounting Command for current Month', 'Button') , ['style' => 'simple']) }}
+					{{ Form::close() }}
+				@endif
 
-			<?php $i=0; $header = 'axh3,'; ?>
+				<br>
 
-			<table class="table">
-				@foreach($relation['view']['vars'] as $key => $file)
+				<?php $i=0; $header = 'axh3,'; ?>
 
-					@if ($file->getRelativePath() != $header)
+				<table class="table">
+					@foreach($relation['view']['vars'] as $key => $file)
 
-						<?php $header = $file->getRelativePath() ?>
-						
-						@if (!$header && !$i)
-							<tr><td><b> {{ \App\Http\Controllers\BaseViewController::translate_label('General') }} </b></td></tr>
-							<?php $i++ ?>
-						@else
-							<tr><td><b> {{ $header }} </b></td></tr>
+						@if ($file->getRelativePath() != $header)
+
+							<?php $header = $file->getRelativePath() ?>
+
+							@if (!$header && !$i)
+								<tr><td><b> {{ \App\Http\Controllers\BaseViewController::translate_label('General') }} </b></td></tr>
+								<?php $i++ ?>
+							@else
+								<tr><td><b> {{ $header }} </b></td></tr>
+							@endif
+
 						@endif
+						<tr><td> {{ HTML::linkRoute('Settlement.download', $file->getFilename(), ['id' => $view_var->id, 'key' => $key]) }} </td></tr>
 
-					@endif
-					<tr><td> {{ HTML::linkRoute('Settlement.download', $file->getFilename(), ['id' => $view_var->id, 'key' => $key]) }} </td></tr>
+					@endforeach
+				<table>
 
-				@endforeach
-			<table>
+			@else
+				{{-- accountingCommand still running --}}
+				<div class="alert alert-warning fade in m-b-15">{{ trans('messages.accCmd_processing') }}</div>
+
+				{{-- Simply refresh every 10 sec - TODO: Replace by Events --}}
+				<META HTTP-EQUIV="refresh" CONTENT="10">
+			@endif
 
 		@stop
 
