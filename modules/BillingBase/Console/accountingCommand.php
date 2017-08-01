@@ -444,21 +444,19 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		if (!is_file($filepath))
 		{
 			// get call data records
-			// $ret = $this->call('billing:cdr');
 			$ret = \Artisan::call('billing:cdr');
 
 			if ($ret)
 				return array(array());
 		}
 
-
 		// NOTE: Add new Providers here!
-		if (isset($_ENV['PROVVOIPENVIA__RESELLER_USERNAME']))
+		if (env('PROVVOIPENVIA__RESELLER_USERNAME'))
 		{
 			return $this->_parse_envia_csv($filepath);
 		}
 
-		else if (isset($_ENV['HLKOMM_RESELLER_USERNAME']))
+		else if (env('HLKOMM_RESELLER_USERNAME'))
 		{
 			return $this->_parse_hlkomm_csv($filepath);
 		}
