@@ -23,21 +23,14 @@
 @section('content_ping')
 	<div class="tab-content">
 		<div class="tab-pane fade in" id="ping-test">
-			@if ($ping)
+			@if ($online)
 				<font color="green"><b>Modem is Online</b></font><br>
-				@foreach ($ping as $line)
-					<table>
-						<tr>
-							<td>
-						 		<font color="grey">{{$line}}</font>
-							</td>
-						</tr>
-					</table>
-				@endforeach
 			@else
 				<font color="red">{{trans('messages.modem_offline')}}</font>
 			@endif
+			<!-- pings are appended dynamically here by javascript -->
 		</div>
+
 		<div class="tab-pane fade in" id="flood-ping">
 			<?php $route = \Route::getCurrentRoute()->getUri(); ?>
 					<form route="$route" method="POST">Type:
@@ -215,4 +208,38 @@
 @else
   <font color="red">{{trans('messages.modem_offline')}}</font>
 @endif
+@stop
+
+
+@section ('javascript')
+
+	<script type="text/javascript">
+
+		<?php if ($ip) : ?>
+		{
+			$(document).ready(function() {
+
+				setTimeout(function() {
+
+					var source = new EventSource("<?php echo route('ProvMon.realtime_ping', $ip); ?>");
+
+					source.onmessage = function(e) {
+						console.log(e.data);
+
+						// close connection
+						if (e.data == 'finished')
+						{
+							source.close();
+							return;
+						}
+
+						document.getElementById('ping-test').innerHTML += e.data;
+					}
+
+				}, 500);
+			});
+		}
+		<?php endif; ?>
+	</script>
+
 @stop
