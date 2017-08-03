@@ -69,10 +69,11 @@ class ProvMonController extends \BaseController {
 
 		// Ping: Send 5 request's at once with max timeout of 1 second
 		$ip = gethostbyname($hostname);
-		if ($ip != $hostname)
-			exec ('sudo ping -c5 -i0 -w1 '.$hostname, $ping);
-		else
+		if ($ip == $hostname)
 			$ip = null;
+
+		exec ('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
+		$online = $ret ? false : true;
 
 		// Flood Ping
 		$flood_ping = $this->flood_ping ($hostname);
@@ -85,15 +86,14 @@ class ProvMonController extends \BaseController {
 		$cf_path = "/tftpboot/cm/$modem->hostname.conf";
 		$configfile = is_file($cf_path) ? file($cf_path) : null;
 
-		// Realtime Measure - only fetch realtime values if all pings are successfull
-		if (count($ping) == 10)
+		// Realtime Measure - this takes the most time
+		// TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
+		if ($online)
 		{
 			// preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
 			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip);
 			$realtime['forecast'] = 'TODO';
 		}
-		else if (count($ping) <= 7)
-			$ping = null;
 
 		// Log dhcp (discover, ...), tftp (configfile or firmware)
 		$search = $ip ? "$mac|$modem->hostname|$ip " : "$mac|$modem->hostname";
@@ -106,7 +106,56 @@ class ProvMonController extends \BaseController {
 		$panel_right = $this->prep_sidebar($id);
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip')));
+	}
+
+
+	/**
+	 * Send output of Ping in real-time to client browser as Stream with Server Sent Events
+	 * called in analyses.blade.php in javascript content
+	 *
+	 * @param 	ip 			String
+	 * @return 	response 	Stream
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public function realtime_ping($ip)
+	{
+		// \Log::debug(__FUNCTION__. "called with $ip");
+
+		$response = new \Symfony\Component\HttpFoundation\StreamedResponse(function() use ($ip) {
+
+			$cmd = "ping -c 5 ".escapeshellarg($ip);
+
+			$handle = popen($cmd, 'r');
+
+			if (!is_resource($handle))
+			{
+				echo "data: finished\n\n";
+				ob_flush(); flush();
+				return;
+			}
+
+			while(!feof($handle))
+			{
+				$line = fgets($handle);
+				$line = str_replace("\n", '', $line);
+				// \Log::debug("$line");
+				// echo 'data: {"message": "'. $line . '"}'."\n";
+				echo "data: <br>$line";
+				echo "\n\n";
+				ob_flush(); flush();
+			}
+
+			pclose($handle);
+
+			echo "data: finished\n\n";
+			ob_flush(); flush();
+		});
+
+		$response->headers->set('Content-Type', 'text/event-stream');
+
+		return $response;
 	}
 
 

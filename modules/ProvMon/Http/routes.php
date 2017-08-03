@@ -8,4 +8,6 @@ BaseRoute::group([], function() {
 	BaseRoute::get('provmon_cmts/{id}', array ('as' => 'ProvMon.cmts', 'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@cmts_analysis'));
 	BaseRoute::post('provmon/{id}', array ('as' => 'ProvMon.flood_ping', 'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@analyses'));
 
+	Route::get('provmon/ping/{ip}', ['as' => 'ProvMon.realtime_ping', 'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@realtime_ping']);
+
 });
