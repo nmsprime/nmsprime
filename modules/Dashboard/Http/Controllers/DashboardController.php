@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\ProvBase\Http\Controllers;
+namespace Modules\Dashboard\Http\Controllers;
 
 use View;
 use Log;
@@ -76,11 +76,11 @@ class DashboardController extends BaseController
 	public static function get_valid_contracts()
 	{
 		$query = Contract::where('contract_start', '<', date('Y-m-d'))
-				->where(function ($query) { $query
+			->where(function ($query) { $query
 				->where('contract_end', '>', date('Y-m-d'))
 				->orWhere('contract_end', '=', '0000-00-00')
 				->orWhereNull('contract_end');})
-				->orderBy('contract_start');
+			->orderBy('contract_start');
 
 		return \PPModule::is_active('billingbase') ? $query->with('items', 'items.product')->get()->all() : $query->get()->all();
 	}
@@ -151,6 +151,7 @@ class DashboardController extends BaseController
 		$ret = 0;
 
 		// for 800 contracts this is approximately 4x faster - DB::table is again 5x faster than Eloquents Contract:: -> (20x faster)
+		// TODO: Test with Contract again
 		$ret = \DB::table('contract')->where('contract_start', '<', $date_interval_start)
 			->whereNull('deleted_at')
 			->where(function ($query) { $query
