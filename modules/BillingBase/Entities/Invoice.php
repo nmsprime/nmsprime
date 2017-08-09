@@ -386,12 +386,14 @@ class Invoice extends \BaseModel{
 
 
 	/**
-	 * @param 	Array 	$cdrs 		Call Data Record array designated for this Invoice formatted by parse_cdr_data in accountingCommand
+	 * @param 	cdrs 	Array		Call Data Record array designated for this Invoice formatted by parse_cdr_data in accountingCommand
+	 * @param   conf   	model 		BillingBase
 	 */
-	public function add_cdr_data($cdrs)
+	public function add_cdr_data($cdrs, $conf)
 	{
 		$this->has_cdr = 1;
-		$this->time_cdr = $time_cdr = strtotime($cdrs[0][1]);
+		// $this->time_cdr = $time_cdr = strtotime($cdrs[0][1]);
+		$this->time_cdr = $time_cdr = $conf->cdr_offset ? strtotime('-'.($conf->cdr_offset+1).' month') : strtotime('first day of last month');
 		$this->data['cdr_month'] = date('m/Y', $time_cdr);
 
 		$sum = $count = 0;

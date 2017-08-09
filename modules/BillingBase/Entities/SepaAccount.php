@@ -299,7 +299,7 @@ class SepaAccount extends \BaseModel {
 			$this->invoices[$contract->id]->add_contract_data($contract, $conf, $this->_get_invoice_nr_formatted());
 		}
 
-		$this->invoices[$contract->id]->add_cdr_data($cdrs);
+		$this->invoices[$contract->id]->add_cdr_data($cdrs, $conf);
 	}
 
 
