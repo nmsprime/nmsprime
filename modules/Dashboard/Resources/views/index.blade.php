@@ -21,6 +21,12 @@
 	</ul>
 @stop
 
+<!-- Widgets -->
+@section ('contracts')
+	@include('dashboard::widgets.contracts')
+@stop
+
+<!-- Panels -->
 @section ('contract_analytics')
 	@include('dashboard::panels.contract_analytics')
 @stop
@@ -36,33 +42,15 @@
 
 		<div class="row">
 			{{-- Contracts --}}
-			<div class="col-md-3 col-sm-6">
-				<div class="widget widget-stats bg-green">
-					{{-- icon --}}
-					<div class="stats-icon">
-						<i class="fa fa-users"></i>
-					</div>
-
-					{{-- info/data --}}
-					<div class="stats-info">
-						<h4>{{ \App\Http\Controllers\BaseViewController::translate_view('Contracts', 'Dashboard') }} {{ date('m/Y') }}</h4>
-						<p>
-							@if ($contracts == 0)
-								{{ \App\Http\Controllers\BaseViewController::translate_view('NoContracts', 'Dashboard') }}
-							@else
-								{{ $contracts }}
-							@endif
-						</p>
-					</div>
-
-					{{-- refernce link --}}
-					<div class="stats-link">
-						<a href="javascript:;">
-							{{ \App\Http\Controllers\BaseViewController::translate_view('LinkDetails', 'Dashboard') }} <i class="fa fa-arrow-circle-o-right"></i>
-						</a>
-					</div>
-				</div>
-			</div>
+			@DivOpen(3)
+				@include ('bootstrap.widget',
+					array (
+						'content' => 'contracts',
+						'widget_icon' => 'users',
+						'widget_bg_color' => 'green',
+					)
+				)
+			@DivClose()
 
 			{{-- Income --}}
 			@if (\PPModule::is_active('billingbase'))
