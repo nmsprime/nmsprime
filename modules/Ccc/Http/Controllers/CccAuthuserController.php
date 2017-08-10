@@ -188,7 +188,7 @@ class CccAuthuserController extends \BaseController {
 		$this->data['contract_housenumber'] = $contract->house_number;
 		$this->data['contract_zip'] 	  = $contract->zip;
 		$this->data['contract_city'] 	  = $contract->city;
-		$this->data['contract_address']   = ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . ($contract->company ? "$contract->company\\\\" : '') . $this->data['contract_street'] . "\\\\$contract->zip $contract->city";
+		$this->data['contract_address']   = ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . ($contract->company ? "$contract->company\\\\" : '') . $contract->street.' '.$contract->house_number . "\\\\$contract->zip $contract->city";
 		$this->data['login_name'] 		  = $login_data['login_name'];
 		$this->data['psw'] 				  = $login_data['password'];
 
