@@ -26,6 +26,18 @@
 	@include('dashboard::widgets.contracts')
 @stop
 
+@section ('incomes')
+	@include('dashboard::widgets.income')
+@stop
+
+@section ('provvoipenvia')
+	@include('dashboard::widgets.provvoipenvia')
+@stop
+
+@section ('date')
+	@include('dashboard::widgets.date')
+@stop
+
 <!-- Panels -->
 @section ('contract_analytics')
 	@include('dashboard::panels.contract_analytics')
@@ -55,81 +67,43 @@
 			{{-- Income --}}
 			@if (\PPModule::is_active('billingbase'))
 				@if ($allowed_to_see['accounting'] === true)
-					<div class="col-md-3 col-sm-6">
-						<div class="widget widget-stats bg-blue">
-							{{-- icon --}}
-							<div class="stats-icon">
-								<i class="fa fa-euro"></i>
-							</div>
 
-							{{-- info/data --}}
-							<div class="stats-info">
-								<h4>{{ \App\Http\Controllers\BaseViewController::translate_view('Net Income', 'Dashboard') }} {{ date('m/Y') }}</h4>
-								<p>
-									@if (isset($income['total']))
-										{{ number_format($income['total'], 0, ',', '.') }}
-									@else
-										{{ number_format(0, 0, ',', '.') }}
-									@endif
-								</p>
-							</div>
-
-							{{-- refernce link --}}
-							<div class="stats-link">
-								<a href="javascript:;">
-									{{ \App\Http\Controllers\BaseViewController::translate_view('LinkDetails', 'Dashboard') }} <i class="fa fa-arrow-circle-o-right"></i>
-								</a>
-							</div>
-						</div>
-					</div>
+					@DivOpen(3)
+						@include ('bootstrap.widget',
+							array (
+								'content' => 'incomes',
+								'widget_icon' => 'euro',
+								'widget_bg_color' => 'blue',
+							)
+						)
+					@DivClose()
 				@endif
 			@endif
 
 			{{-- Placeholder --}}
 			@if (\PPModule::is_active('provvoipenvia'))
-				<div class="col-md-3 col-sm-6">
-					<div class="widget widget-stats bg-aqua">
-						{{-- icon --}}
-						<div class="stats-icon">
-							<i class="fa fa-info"></i>
-						</div>
 
-						{{-- info/data --}}
-						<div class="stats-info">
-							<h4>PLACEHOLDER</h4>
-							<p>ToDo's ProvVoipEnvia</p>
-						</div>
-
-						{{-- refernce link --}}
-						<div class="stats-link">
-							<a href="javascript:;">
-								{{ \App\Http\Controllers\BaseViewController::translate_view('LinkDetails', 'Dashboard') }} <i class="fa fa-arrow-circle-o-right"></i>
-							</a>
-						</div>
-					</div>
-				</div>
+				@DivOpen(3)
+					@include ('bootstrap.widget',
+						array (
+							'content' => 'provvoipenvia',
+							'widget_icon' => 'info',
+							'widget_bg_color' => 'aqua',
+						)
+					)
+				@DivClose()
 			@endif
 
 			{{-- Date --}}
-			<div class="col-md-3 col-sm-6">
-				<div class="widget widget-stats bg-purple">
-					{{-- icon --}}
-					<div class="stats-icon">
-						<i class="fa fa-calendar"></i>
-					</div>
-
-					{{-- info/data --}}
-					<div class="stats-info">
-						<h4>{{ \App\Http\Controllers\BaseViewController::translate_view('Date', 'Dashboard') }}</h4>
-						<p>{{ date('d.m.Y') }}</p>
-					</div>
-
-					{{-- refernce link --}}
-					<div class="stats-link">
-						<a href="javascript:;">&nbsp;</a>
-					</div>
-				</div>
-			</div>
+			@DivOpen(3)
+				@include ('bootstrap.widget',
+					array (
+						'content' => 'date',
+						'widget_icon' => 'purple',
+						'widget_bg_color' => 'calendar',
+					)
+				)
+			@DivClose()
 		</div>
 
 		<br><br>
