@@ -124,19 +124,10 @@ class DashboardController extends BaseController
 	 */
 	private static function get_chart_data_contracts()
 	{
-		$ret = array();
-		$i 	 = 13;
+		$dir_path = storage_path("app/data/dashboard/");
+		$fn = 'contracts.json';
 
-		while($i > 0)
-		{
-			$i--;
-			$time = strtotime("-$i month");
-
-			$ret['labels'][] = date('m/Y', $time);
-			$ret['contracts'][] = self::count_contracts(date('Y-m-01', $time));
-		}
-
-		return $ret;
+		return json_decode(\File::get($dir_path.$fn), true);
 	}
 
 	/**
@@ -258,6 +249,34 @@ class DashboardController extends BaseController
 		system("chown apache $dir_path");
 	}
 
+
+	/**
+	 * Calculate contracts for the last 12 months, format and save to json
+	 * Used by cronjob
+	 */
+	public static function save_contracts_to_json()
+	{
+		$i 	 = 13;
+		$contracts = array();
+		$dir_path = storage_path("app/data/dashboard/");
+		$fn = 'contracts.json';
+
+		while($i > 0)
+		{
+			$i--;
+			$time = strtotime("-$i month");
+
+			$contracts['labels'][] = date('m/Y', $time);
+			$contracts['contracts'][] = self::count_contracts(date('Y-m-01', $time));
+		}
+
+		if (!is_dir($dir_path)) {
+			mkdir($dir_path, 0740, true);
+			system("chown apache $dir_path");
+		}
+
+		\File::put($dir_path.$fn, json_encode($contracts));
+	}
 
 	/**
 	 * Get chart data from json file - created by cron job
