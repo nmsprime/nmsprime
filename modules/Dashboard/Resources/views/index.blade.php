@@ -21,6 +21,14 @@
 	</ul>
 @stop
 
+@section ('contract_analytics')
+	@include('dashboard::panels.contract_analytics')
+@stop
+
+@section ('income_analytics')
+	@include('dashboard::panels.income_analytics')
+@stop
+
 @section('content')
 	<div class="col-md-12">
 
@@ -140,39 +148,23 @@
 
 		<div class="row">
 			@if ($contracts > 0)
-				<div class="col-md-8">
-					<div class="panel panel-inverse">
-						<div class="panel-heading">
-							<h4 class="panel-title">{{ \App\Http\Controllers\BaseViewController::translate_view('ContractAnalytics', 'Dashboard') }}</h4>
-						</div>
-						<div class="panel-body">
-							<div class="height-sm" style="padding: 0px; position: relative;">
-								<canvas id="contracts-chart" height="75px"></canvas>
-							</div>
-						</div>
-					</div>
-				</div>
+
+				@DivOpen(8)
+					@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => 'Contract Analytics', 'md' => 12, 'height' => 'auto'))
+				@DivClose()
 
 				@DivOpen(4)
-				@include ('bootstrap.panel', array ('content' => "quickstart", 'view_header' => 'Quickstart', 'md' => 12, 'height' => 'auto'))
+					@include ('bootstrap.panel', array ('content' => "quickstart", 'view_header' => 'Quickstart', 'md' => 12, 'height' => 'auto'))
 				@DivClose()
 			@endif
 
 			@if (\PPModule::is_active('billingbase'))
 				@if ($allowed_to_see['accounting'] === true)
 					@if (isset($income['total']))
-						<div class="col-md-4">
-							<div class="panel panel-inverse">
-								<div class="panel-heading">
-									<h4 class="panel-title">{{ \App\Http\Controllers\BaseViewController::translate_view('IncomeAnalytics', 'Dashboard') }}</h4>
-								</div>
-								<div class="panel-body">
-									<div class="height-sm" style="padding: 0px; position: relative;">
-										<canvas id="income-chart" height="160px"></canvas>
-									</div>
-								</div>
-							</div>
-						</div>
+
+						@DivOpen(4)
+							@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 12, 'height' => 'auto'))
+						@DivClose()
 					@endif
 				@endif
 			@endif
