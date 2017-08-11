@@ -99,8 +99,8 @@
 				@include ('bootstrap.widget',
 					array (
 						'content' => 'date',
-						'widget_icon' => 'purple',
-						'widget_bg_color' => 'calendar',
+						'widget_icon' => 'calendar',
+						'widget_bg_color' => 'purple',
 					)
 				)
 			@DivClose()
