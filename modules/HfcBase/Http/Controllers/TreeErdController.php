@@ -167,7 +167,7 @@ class TreeErdController extends HfcBaseController {
 			if ($p1 != $p2)
 				$file .= "\n}\nsubgraph cluster_$n {\n style=filled;color=lightgrey;fillcolor=lightgrey;";
 
-			$url = $netelem->link ? : 'http://'.$netelem->ip;
+			$url = $netelem->link ? : route('NetElement.controlling_edit', [$netelem->id, 0, 0]);
 
 			#
 			# Amplifier - what?? - all types are considered here

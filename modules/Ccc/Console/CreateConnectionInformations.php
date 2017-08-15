@@ -85,6 +85,8 @@ class CreateConnectionInformations extends Command {
 				unlink($path);
 		}
 
+		$this->info("Connection Info created: ".$dir_path.$fn);
+
 		return $dir_path.$fn;
 
 	}
