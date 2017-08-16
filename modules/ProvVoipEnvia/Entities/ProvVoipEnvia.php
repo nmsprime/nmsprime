@@ -3408,19 +3408,26 @@ class ProvVoipEnvia extends \BaseModel {
 			// so it is save to overwrite the data in phonenumber
 			$msg = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $xml->contractreference, True, True);
 
-			// create enviacontract if not existing
-			$enviacontract = EnviaContract::where("envia_contract_reference", "=", $xml->contractreference)->first();
-			if (!$enviacontract) {
-				$data = [
-					'envia_contract_reference' => (string) $xml->contractreference,
-					'modem_id' => $phonenumber->mta->modem->id,
-					'contract_id' => $phonenumber->mta->modem->contract->id,
-					'start_date' => '1900-01-01',
-				];
-				$enviacontract = EnviaContract::create($data);
-				$_ = "Created EnviaContract $enviacontract->id";
-				\Log::info($_);
+			// create/update enviacontract
+			$enviacontract = EnviaContract::firstOrNew(['envia_contract_reference' => $xml->contractreference]);
+
+			$enviacontract->envia_customer_reference = $phonenumber->mta->modem->contract->customer_external_id;
+			$enviacontract->envia_contract_reference = (string) $xml->contractreference;
+			$enviacontract->modem_id = $phonenumber->mta->modem->id;
+			$enviacontract->contract_id = $phonenumber->mta->modem->contract->id;
+
+			if (!$enviacontract->exists) {
+				$enviacontract->start_date = '1900-01-01';
+				$_ = "Creating EnviaContract $enviacontract->id";
 				$msg .= "<br> $_";
+				Log::info($_);
+				$enviacontract->save();
+			}
+			elseif ($enviacontract->attributes != $enviacontract->original) {
+				$_ = "Updating EnviaContract $enviacontract->id";
+				$msg .= "<br> $_";
+				Log::info($_);
+				$enviacontract->save();
 			}
 
 			// update management if existing; else create a new one
