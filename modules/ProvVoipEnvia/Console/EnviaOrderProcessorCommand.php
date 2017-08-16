@@ -89,7 +89,7 @@ class EnviaOrderProcessorCommand extends Command {
 					$new_enviacontract = EnviaContract::firstOrCreate(array('envia_contract_reference' => $order->contractreference));
 
 					// if there is a next ID on envia contract: This has already been processed
-					if ($old_enviacontract->next_id != NULL) {
+					if (!is_null($old_enviacontract->next_id)) {
 						continue;
 					}
 
