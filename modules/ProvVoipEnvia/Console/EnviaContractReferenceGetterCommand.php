@@ -83,14 +83,7 @@ class EnviaContractReferenceGetterCommand extends Command {
 
 		Log::debug(__METHOD__." started");
 
-		if ($mode == 'default') {
-			// get all numbers without envia reference
-			$phonenumbers = Phonenumber::whereNull('contract_external_id')->get();
-		}
-		elseif ($mode == 'complete') {
-			// get all numbers
-			$phonenumbers = Phonenumber::all();
-		}
+		$phonenumbers = Phonenumber::all();
 
 		// check if we want to get a reference for the phonenumbers
 		foreach ($phonenumbers as $phonenumber) {
@@ -106,9 +99,20 @@ class EnviaContractReferenceGetterCommand extends Command {
 					continue;
 				}
 
-				// check if activation date is set
-				if (!$phonenumber->phonenumbermanagement->activation_date) {
-					Log::debug("Skipping phonenumber ".$log_number.": no activation_date");
+				// check if active
+				if (!$phonenumber->active) {
+					Log::debug("Skipping phonenumber ".$log_number.": not active");
+					continue;
+				}
+
+				// check if currently linked envia contract is existing and active
+				$envia_contract = $phonenumber->enviacontract;
+				if (
+					(!is_null($envia_contract))
+					&&
+					($envia_contract->state = 'Aktiv')
+				) {
+					Log::debug("Skipping phonenumber ".$log_number.": Envia contract $envia_contract->id is active.");
 					continue;
 				}
 			}

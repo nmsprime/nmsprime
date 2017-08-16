@@ -1709,10 +1709,10 @@ class ProvVoipEnvia extends \BaseModel {
 			// but not in getting the customer's reference – here in each case we have to use the contract number
 			$customerreference = $this->contract->customer_external_id;
 			$customerno = $this->contract->customer_number();
-			if ((!boolval($customerreference)) || ($customerreference == 'n/a')) {
+			if ((boolval($customerreference)) && ($customerreference != 'n/a')) {
 				$inner_xml->addChild('customerreference', $customerreference);
 			}
-			elseif ((!boolval($customerno)) || ($customerno == 'n/a')) {
+			elseif ((boolval($customerno)) && ($customerno != 'n/a')) {
 				$inner_xml->addChild('customerno', $customerno);
 			}
 		}
@@ -3408,20 +3408,26 @@ class ProvVoipEnvia extends \BaseModel {
 			// so it is save to overwrite the data in phonenumber
 			$msg = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $xml->contractreference, True, True);
 
-			// create enviacontract if not existing
-			$enviacontract = EnviaContract::where("envia_contract_reference", "=", $xml->contractreference)->first();
-			if (!$enviacontract) {
-				$data = [
-					'envia_contract_reference' => (string) $xml->contractreference,
-					'modem_id' => $phonenumber->mta->modem->id,
-					'contract_id' => $phonenumber->mta->modem->contract->id,
-					'external_creation_date' => '1900-01-01',
-					'start_date' => '1900-01-01',
-				];
-				$enviacontract = EnviaContract::create($data);
-				$_ = "Created EnviaContract $enviacontract->id";
-				\Log::info($_);
+			// create/update enviacontract
+			$enviacontract = EnviaContract::firstOrNew(['envia_contract_reference' => $xml->contractreference]);
+
+			$enviacontract->envia_customer_reference = $phonenumber->mta->modem->contract->customer_external_id;
+			$enviacontract->envia_contract_reference = (string) $xml->contractreference;
+			$enviacontract->modem_id = $phonenumber->mta->modem->id;
+			$enviacontract->contract_id = $phonenumber->mta->modem->contract->id;
+
+			if (!$enviacontract->exists) {
+				$enviacontract->start_date = '1900-01-01';
+				$_ = "Creating EnviaContract $enviacontract->id";
 				$msg .= "<br> $_";
+				Log::info($_);
+				$enviacontract->save();
+			}
+			elseif ($enviacontract->attributes != $enviacontract->original) {
+				$_ = "Updating EnviaContract $enviacontract->id";
+				$msg .= "<br> $_";
+				Log::info($_);
+				$enviacontract->save();
 			}
 
 			// update management if existing; else create a new one
@@ -3592,7 +3598,43 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_customer_get_contracts_response($xml, $data, $out) {
 
-		$out .= "<h3 style='color: red'>Changing database using returned data is not yet implemented in ".__METHOD__.".</h3>";
+		$envia_contracts = $xml->contracts;
+		foreach ($envia_contracts->contract as $data) {
+
+			// extract data
+			$contract_reference = sprintf($data->contractreference);
+			$variation_id = sprintf($data->variation_id);
+			$contract_state = sprintf($data->contractstate);
+			$_ = sprintf($data->contractstart);
+			$contract_start = boolval($_) ? substr($_, 0, 10) : null;
+			$_ = sprintf($data->contractend);
+			$contract_end = boolval($_) ? substr($_, 0, 10) : null;
+
+			// update or create EnviaContract
+			$envia_contract = EnviaContract::firstOrNew(['envia_contract_reference' => $contract_reference]);
+
+			$envia_contract->envia_customer_reference = $this->contract->customer_external_id;
+			$envia_contract->contract_id = $this->contract->id;
+			$envia_contract->state = $contract_state;
+			$envia_contract->start_date = $contract_start;
+			$envia_contract->end_date = boolval($contract_end) ? $contract_end : null;
+			$envia_contract->variation_id = $variation_id;
+			if (!$envia_contract->exists) {
+				$msg = "Creating Envia contract $contract_reference";
+				Log::info($msg);
+			}
+			elseif ($envia_contract->attributes != $envia_contract->original) {
+				$msg = "Updating Envia contract $contract_reference";
+				Log::info($msg);
+			}
+			else {
+				$msg = "Envia contract $contract_reference is up to date";
+				Log::debug($msg);
+			}
+
+			$out .= "<br>$msg";
+			$envia_contract->save();
+		}
 
 		return $out;
 	}
@@ -3748,6 +3790,17 @@ class ProvVoipEnvia extends \BaseModel {
 			if (array_key_exists('orderdate', $result)) {
 				$result['orderdate'] = substr($result['orderdate'], 0, 10);
 			}
+
+			// if an order with given ID exists in our database and is in final state: do nothing
+			$tmp_order = EnviaOrder::where('orderid', '=', $result['orderid'])->first();
+			if (
+				!is_null($tmp_order)
+				&&
+				(EnviaOrder::orderstate_is_final($tmp_order))
+			) {
+				\Log::debug("Order $tmp_order->id ($tmp_order->orderid) is in final state in our database. Nothing to do.");
+				continue;
+			};
 
 			$out .= "<br><br>";
 
