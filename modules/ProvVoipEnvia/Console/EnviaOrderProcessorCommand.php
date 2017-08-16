@@ -69,7 +69,7 @@ class EnviaOrderProcessorCommand extends Command {
 
 		// as there can be some delays in status change of orders we have to look back in history a little bit…
 		$date_threshold = date('c', strtotime("-2 weeks"));
-		$orders = EnviaOrder::whereRaw('method=contract/relocate OR ordertype=Umzug')->where('orderdate', '>=', $date_threshold)->get();
+		$orders = EnviaOrder::whereRaw("method='contract/relocate' OR ordertype='Umzug'")->where('orderdate', '>=', $date_threshold)->get();
 
 		foreach ($orders as $order) {
 
@@ -102,8 +102,8 @@ class EnviaOrderProcessorCommand extends Command {
 						'variation_id',
 					];
 					foreach ($copy_fields as $field) {
-						if ($new_enviacontract->${field} != $old_enviacontract->${field}) {
-							$new_enviacontract->${field} = $old_enviacontract->${field};
+						if ($new_enviacontract->{'field'} != $old_enviacontract->{'field'}) {
+							$new_enviacontract->{'field'} = $old_enviacontract->{'field'};
 						}
 					}
 
