@@ -80,6 +80,8 @@ class EnviaContractGetterCommand extends Command {
 			if (
 				(boolval($contract->contract_end))
 				&&
+				($contract->contract_end != '0000-00-00')
+				&&
 				($contract->contract_end <= date('Y-m-d'))
 			) {
 				continue;
