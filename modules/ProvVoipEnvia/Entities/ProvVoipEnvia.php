@@ -3791,6 +3791,17 @@ class ProvVoipEnvia extends \BaseModel {
 				$result['orderdate'] = substr($result['orderdate'], 0, 10);
 			}
 
+			// if an order with given ID exists in our database and is in final state: do nothing
+			$tmp_order = EnviaOrder::where('orderid', '=', $result['orderid'])->first();
+			if (
+				!is_null($tmp_order)
+				&&
+				(EnviaOrder::orderstate_is_final($tmp_order))
+			) {
+				\Log::debug("Order $tmp_order->id ($tmp_order->orderid) is in final state in our database. Nothing to do.");
+				continue;
+			};
+
 			$out .= "<br><br>";
 
 			$msg = "Processing order ".$result['orderid'];
