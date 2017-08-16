@@ -48,7 +48,7 @@ class EnviaContractGetterCommand extends Command {
 		parent::__construct();
 	}
 
-	/** 
+	/**
 	 * Execute the console command
 	 */
 	public function fire() {
@@ -76,10 +76,31 @@ class EnviaContractGetterCommand extends Command {
 
 		foreach ($contracts as $contract) {
 
+			// get only for active contracts
+			if (
+				(boolval($contract->contract_end))
+				&&
+				($contract->contract_end <= date('Y-m-d'))
+			) {
+				continue;
+			}
+
+			$has_active_number = False;
 			$phonenumbers = $contract->related_phonenumbers();
 
-			// TODO: maybe we can reduce the data by some conditions – ATM we use all contracts with phonenumbers attached
-			if (boolval($phonenumbers)) {
+			// check if there is any active number with existing phonenumbermanagement attached
+			foreach ($phonenumbers as $phonenumber) {
+				if (
+					($phonenumber->active)
+					&&
+					(!is_null($phonenumber->phonenumbermanagement))
+				) {
+					$has_active_number = True;
+					break;
+				}
+			}
+
+			if ($has_active_number) {
 				array_push($this->contracts_to_get_envia_contracts_for, $contract->id);
 			}
 
