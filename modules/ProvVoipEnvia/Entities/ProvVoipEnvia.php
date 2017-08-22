@@ -3793,13 +3793,38 @@ class ProvVoipEnvia extends \BaseModel {
 				$result['orderdate'] = substr($result['orderdate'], 0, 10);
 			}
 
-			// if an order with given ID exists in our database and is in final state: do nothing
+			$process_order = true;
+
+			// check if an order with given ID exists in our database
 			$tmp_order = EnviaOrder::where('orderid', '=', $result['orderid'])->first();
-			if (
-				!is_null($tmp_order)
-				&&
-				(EnviaOrder::orderstate_is_final($tmp_order))
-			) {
+
+			// if order does no exist: process the order; else processing depends on some conditions
+			if (!is_null($tmp_order)) {
+
+				// check if there is a relation between this order and the phonenumber in response
+				// this is needed for orders related to more than one number, where final state is not the only criteria
+				$relation_between_order_and_number_set = false;
+				if ($result['localareacode'] && $result['baseno']) {
+					foreach ($tmp_order->phonenumbers as $tmp_number) {
+						if (($tmp_number->prefix_number == $result['localareacode']) && ($tmp_number->number == $result['baseno'])) {
+							$relation_between_order_and_number_set = true;
+							break;
+						}
+					}
+				}
+
+				// check if order is in final state
+				$tmp_orderstate_is_final = EnviaOrder::orderstate_is_final($tmp_order);
+
+				// if all conditions are fulfilled: stop processing
+				if ($relation_between_order_and_number_set && $tmp_orderstate_is_final) {
+					$process_order = false;
+				}
+			}
+
+			// check if order has to be processed – we do only so if we can expect new data
+			if (!$process_order) {
+
 				\Log::debug("Order $tmp_order->id ($tmp_order->orderid) is in final state in our database. Nothing to do.");
 				continue;
 			};
