@@ -43,6 +43,16 @@ class EnviaContract extends \BaseModel {
 	}
 
 
+	/* // View Relation. */
+	/* public function view_has_many() */
+	/* { */
+	/* 	$ret = array(); */
+	/* 	$ret['Edit']['Contract'] = $this->contract; */
+	/* 	/1* $ret['Edit']['Modem'] = $this->modem; *1/ */
+
+	/* 	return $ret; */
+	/* } */
+
 	// the relations
 
 	/**
