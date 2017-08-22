@@ -846,14 +846,16 @@ class ProvVoipEnvia extends \BaseModel {
 						// if order is not in final state: add link to get current status
 						if (!EnviaOrder::orderstate_is_final($order)) {
 							$url = $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really;
+							$help = "Gets the current state of this order from Envia (if orderstate is not final).";
 						}
 						else {
 							$url = "";
+							$help = "";
 						}
 						array_push($ret, array(
 							'linktext' => $linktext,
 							'url' => $url,
-							'help' => "Gets the current state of this order from Envia (if orderstate is not final).",
+							'help' => $help,
 						));
 					}
 				}
