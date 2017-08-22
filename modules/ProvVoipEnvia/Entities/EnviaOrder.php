@@ -139,7 +139,8 @@ class EnviaOrder extends \BaseModel {
 				'orderstatus' => 'Fehlgeschlagen, Details siehe Bemerkung',
 				'view_class' => 'danger',
 				'state_type' => 'failed',
-				'final' => True,
+				/* 'final' => True, */
+				'final' => False,	// TODO: check if this is really not a final state
 			),
 			array(
 				'orderstatus_id' => 1015,
@@ -160,14 +161,16 @@ class EnviaOrder extends \BaseModel {
 				'orderstatus' => 'Stornierung bestätigt',
 				'view_class' => 'success',
 				'state_type' => 'success',
-				'final' => True,
+				/* 'final' => True, */
+				'final' => False,	// TODO: check if this is really not a final state
 			),
 			array(
 				'orderstatus_id' => 1018,
 				'orderstatus' => 'Stornierung nicht möglich',
 				'view_class' => 'danger',
 				'state_type' => 'failed',
-				'final' => True,
+				/* 'final' => True, */
+				'final' => False,	// TODO: check if this is really not a final state
 			),
 			array(
 				'orderstatus_id' => 1019,
@@ -195,7 +198,8 @@ class EnviaOrder extends \BaseModel {
 				'orderstatus' => 'Portierungsablehnung, siehe Bemerkung',
 				'view_class' => 'danger',
 				'state_type' => 'failed',
-				'final' => True,
+				/* 'final' => True, */
+				'final' => False,	// TODO: check if this is really not a final state
 			),
 			array(
 				'orderstatus_id' => 1039,
