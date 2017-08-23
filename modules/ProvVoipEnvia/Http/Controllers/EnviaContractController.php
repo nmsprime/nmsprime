@@ -48,7 +48,27 @@ class EnviaContractController extends \BaseController {
 		return $ret;
 	}
 
-	
+
+
+	/**
+	 * Overwrite base method.
+	 *
+	 * Here we inject the following data:
+	 *	- information about needed/possible user actions
+	 *	- mailto: link to Envia support as additional data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _get_additional_data_for_edit_view($model) {
+
+		$additional_data = array(
+			'relations' => $model->get_relation_information(),
+		);
+
+		return $additional_data;
+	}
+
+
 	/* public function index() */
 	/* { */
 	/* 	return view('provvoipenvia::index'); */

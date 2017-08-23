@@ -28,15 +28,29 @@ class EnviaContract extends \BaseModel {
 	{
 
 		$envia_contract_reference = is_null($this->envia_contract_reference) ? 'n/a' : $this->envia_contract_reference;
+		$state = is_null($this->state) ? 'n/a' : $this->state;
 		$start_date = is_null($this->start_date) ? 'n/a' : $this->start_date;
 		$end_date = is_null($this->end_date) ? 'n/a' : $this->end_date;
 
 		$contract_id = is_null($this->contract_id) ? 'n/a' : $this->contract_id;
 		$modem_id = is_null($this->modem_id) ? 'n/a' : $this->modem_id;
 
-        return ['index' => [$envia_contract_reference, $start_date, $end_date, $contract_id, $modem_id],
+		if (in_array($state, ['Aktiv', ])) {
+			$bsclass = 'success';
+		}
+		elseif (in_array($state, ['Gekündigt', ])) {
+			$bsclass = 'danger';
+		}
+		elseif (in_array($state, ['In Realisierung', ])) {
+			$bsclass = 'warning';
+		}
+		else {
+			$bsclass = 'info';
+		}
+
+        return ['index' => [$envia_contract_reference, $state, $start_date, $end_date, $contract_id, $modem_id],
                 'index_header' => ['Envia contract reference', 'Start date', 'End date', 'Contract', 'Modem'],
-                'bsclass' => 'success',
+                'bsclass' => $bsclass,
 				'header' => $envia_contract_reference,
 		];
 
@@ -73,21 +87,27 @@ class EnviaContract extends \BaseModel {
 	 * Link to enviaorders
 	 */
 	public function enviaorders() {
-		return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrder');
+		return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrder', 'enviacontract_id');
 	}
 
 	/**
 	 * Link to phonenumbermanagements
 	 */
 	public function phonenumbermanagements() {
-		return $this->hasMany('Modules\ProvVoip\Entities\PhonenumberManagement');
+		return $this->hasMany('Modules\ProvVoip\Entities\PhonenumberManagement', 'enviacontract_id');
 	}
 
 	/**
 	 * Link to phonenumbers
 	 */
 	public function phonenumbers() {
-		return $this->hasManyThrough('Modules\ProvVoip\Entities\Phonenumber', 'Modules\ProvVoip\Entities\PhonenumberManagement');
+		$phonenumbers = [];
+		foreach ($this->phonenumbermanagements as $mgmt) {
+			array_push($phonenumbers, $mgmt->phonenumber);
+		}
+		return collect($phonenumbers);
+		/* return $this->hasManyThrough('Modules\ProvVoip\Entities\Phonenumber', 'Modules\ProvVoip\Entities\PhonenumberManagement', 'enviacontract_id'); */
+		/* return $this->hasManyThrough('Modules\ProvVoip\Entities\Phonenumber', 'Modules\ProvVoip\Entities\PhonenumberManagement'); */
 	}
 
 	/**
@@ -133,6 +153,41 @@ class EnviaContract extends \BaseModel {
 		}
 
 		return $ret;
+	}
+
+
+	/**
+	 * Build an array containing all relations of this contract for edit view
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function get_relation_information() {
+
+		$relations = array();
+		$relations['head'] = "";
+		$relations['hints'] = array();
+		$relations['links'] = array();
+
+		if ($this->contract) {
+			$relations['hints']['Contract'] = ProvVoipEnviaHelpers::get_user_action_information_contract($this->contract);
+		}
+
+		if ($this->modem) {
+			$relations['hints']['Modem'] = ProvVoipEnviaHelpers::get_user_action_information_modem($this->modem);
+		}
+
+		$mgmts = $this->phonenumbermanagements;
+		if ($mgmts) {
+			$phonenumbers = [];
+			foreach ($mgmts as $mgmt) {
+				array_push($phonenumbers, $mgmt->phonenumber);
+			}
+			$this->phonenumbers = collect($phonenumbers);
+			$relations['hints']['Phonenumbers'] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $this->phonenumbers);
+		}
+
+		return $relations;
+
 	}
 
 }
