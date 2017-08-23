@@ -5,6 +5,7 @@ namespace Modules\ProvVoipEnvia\Entities;
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoip\Entities\Phonenumber;
+use Modules\ProvVoipEnvia\Entities\ProvVoipEnviaHelpers;
 
 // Model not found? execute composer dump-autoload in lara root dir
 class EnviaOrder extends \BaseModel {
@@ -720,308 +721,8 @@ class EnviaOrder extends \BaseModel {
 		return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrderDocument', 'enviaorder_id')->orderBy('created_at');
 	}
 
-
-	/**
-	 * Build the table HTML for given data.
-	 *
-	 * @param $data array containing the rows of the table (first is used as header)
-	 *					each row has to be given as an array holding the cols of this row
-	 *
-	 * @return raw HTML string for direct use
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _get_user_action_table($data) {
-
-		$replace_func = function($data) {
-			$placeholders = array(
-				'placeholder_yes' => '<span class="text-success">&#10004;</span>',
-				'placeholder_no' => '<span class="text-danger">&#10008;</span>',
-				'placeholder_unset' => '–',
-			);
-			foreach ($placeholders as $placeholder => $replacement) {
-				$data = str_replace($placeholder, $replacement, $data);
-			}
-			return $data;
-		};
-
-		$td_style = "padding-left: 5px; padding-right: 5px; vertical-align: top;";
-		$th_style = $td_style." padding-bottom: 4px; padding-top: 4px;";
-
-		$ret = "";
-
-		// the tables head
-		$ret = '<table class="table-hover">';
-		$ret .= '<thead><tr>';
-		foreach (array_shift($data) as $col) {
-			$ret .= '<th style="'.$th_style.'">'.$col.'</th>';
-		}
-		$ret .= '</tr></thead>';
-
-		$ret .= '<tbody>';
-
-		// the tables body (row by row)
-		foreach ($data as $row) {
-			$ret .= '<tr>';
-			foreach ($row as $col) {
-				$ret .= '<td style="'.$td_style.'">';
-				$ret .= $replace_func($col);
-				$ret .= '</td>';
-			}
-			$ret .= '</tr>';
-		}
-
-		$ret .= '</tbody>';
-
-		$ret .= '</table>';
-		return $ret;
-	}
-
-	/**
-	 * Create table containing information about the contract
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _get_user_action_information_contract($contract) {
-
-		$data = array();
-
-		$head = array(
-			'Number',
-			'Address',
-			'Contract start',
-			'Contract end',
-			'Internet access?',
-		);
-		array_push($data, $head);
-
-		$row= array();
-
-		array_push($row, '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a>');
-
-		$tmp_address = "";
-		$tmp_address .= (boolval($contract->company) ? $contract->company.",<br>" : "");
-		$tmp_address .= (boolval($contract->firstname) ? $contract->firstname." " : "");
-		$tmp_address .= (boolval($contract->lastname) ? $contract->lastname : "");
-		$tmp_address .= ((boolval($contract->firstname) || boolval($contract->lastname)) ? ",<br>" : "");
-		$tmp_address .= $contract->street.(boolval($contract->house_number) ? "&nbsp;".$contract->house_number : "").",<br>";
-		$tmp_address .= $contract->city;
-		$tmp_address .= (boolval($contract->district) ? " OT ".$contract->district : "");
-		array_push($row, $tmp_address);
-
-		array_push($row, boolval($contract->contract_start) ? $contract->contract_start : 'placeholder_unset');
-		array_push($row, boolval($contract->contract_end) ? $contract->contract_end : 'placeholder_unset');
-		array_push($row, ($contract->network_access > 0 ? 'placeholder_yes' : 'placeholder_no'));
-
-		array_push($data, $row);
-
-		$ret = $this->_get_user_action_table($data);
-
-		return $ret;
-	}
-
-
-	/**
-	 * Create table containing information about related items
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _get_user_action_information_items($items) {
-
-		$data = array();
-
-		$head = array(
-			'Product',
-			'Type',
-			'Valid from',
-			'Fix?',
-			'Valid to',
-			'Fix?',
-		);
-		array_push($data, $head);
-
-		foreach ($items as $item) {
-
-			if (!in_array(\Str::lower($item->product->type), ['internet', 'voip'])) {
-				continue;
-			}
-
-			$row = array();
-
-			array_push($row, '<a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a>');
-			array_push($row, $item->product->type);
-			array_push($row, (boolval($item->valid_from) ? $item->valid_from : 'placeholder_unset'));
-			if ($item->valid_from_fixed > 0) {
-				array_push($row, 'placeholder_yes');
-			}
-			elseif ($item->valid_from) {
-				array_push($row, 'placeholder_no');
-			}
-			else {
-				array_push($row, '');
-			}
-			array_push($row, (boolval($item->valid_to) ? $item->valid_to : "placeholder_unset"));
-			if ($item->valid_to_fixed > 0) {
-				array_push($row, 'placeholder_yes');
-			}
-			elseif ($item->valid_to) {
-				array_push($row, 'placeholder_no');
-			}
-			else {
-				array_push($row, '');
-			}
-
-			array_push($data, $row);
-		}
-
-		$ret = $this->_get_user_action_table($data);
-		return $ret;
-	}
-
-
-	/**
-	 * Create table containing information about the modem
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _get_user_action_information_modem($modem) {
-
-		$data = array();
-
-		$head = array(
-			'MAC address',
-			'Hostname',
-			'Installation address',
-			'Configfile',
-			'QoS',
-			'Network access?',
-		);
-		array_push($data, $head);
-
-		$row = array();
-
-		array_push($row, '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->mac.'</a>');
-		array_push($row, $modem->hostname);
-
-		$tmp_address = "";
-		$tmp_address .= (boolval($modem->company) ? $modem->company.",<br>" : "");
-		$tmp_address .= (boolval($modem->firstname) ? $modem->firstname." " : "");
-		$tmp_address .= (boolval($modem->lastname) ? $modem->lastname : "");
-		$tmp_address .= ((boolval($modem->firstname) || boolval($modem->lastname)) ? ",<br>" : "");
-		$tmp_address .= $modem->street.(boolval($modem->house_number) ? "&nbsp;".$modem->house_number : "").",<br>";
-		$tmp_address .= $modem->city;
-		$tmp_address .= (boolval($modem->district) ? " OT ".$modem->district : "");
-		array_push($row, $tmp_address);
-
-		if ($modem->configfile) {
-			array_push($row, $modem->configfile->name);
-		}
-		else {
-			array_push($row, '–');
-		}
-
-		if ($modem->qos) {
-			array_push($row, $modem->qos->name);
-		}
-		else {
-			array_push($row, '–');
-		}
-		array_push($row, ($modem->network_access > 0 ? 'placeholder_yes': 'placeholder_no'));
-
-		array_push($data, $row);
-
-		$ret = $this->_get_user_action_table($data);
-		return $ret;
-	}
-
-
-	/**
-	 * Create table containing information about related phonenumbers
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _get_user_action_information_phonenumbers($phonenumbers) {
-
-		$data = array();
-
-		$head = array(
-			'Phonenumber',
-			'Activation target',
-			'Activation confirmed',
-			'Deactivation target',
-			'Deactivation confirmed',
-			'Active?',
-		);
-		array_push($data, $head);
-
-		$closely_related = array();
-		$distantly_related = array();
-		foreach ($phonenumbers as $phonenumber) {
-
-			$direct_related = $this->phonenumbers->contains($phonenumber)? : false;
-
-			// helper to wrap weak related informations
-			$wrap = function ($content, $direct_related) {
-
-				if (!$direct_related) {
-					$content = "<i>$content</i>";
-				}
-
-				return $content;
-			};
-
-			$row = array();
-			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
-
-			if (!is_null($phonenumbermanagement)) {
-				$tmp = '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a>';
-			}
-			else {
-				$tmp = '<a href="'.\URL::route("Phonenumber.edit", array("phonenumber" => $phonenumber->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a>';
-			}
-
-			array_push($row, $wrap($tmp, $direct_related));
-
-			if (!is_null($phonenumbermanagement)) {
-				array_push($row, $wrap((boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"), $direct_related));
-				array_push($row, $wrap((boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "placeholder_unset"), $direct_related));
-				array_push($row, $wrap((boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "placeholder_unset"), $direct_related));
-				array_push($row, $wrap((boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "placeholder_unset"), $direct_related));
-			}
-			else {
-				array_push($row, $wrap('mgmt n/a', $direct_related));
-				array_push($row, $wrap('mgmt n/a', $direct_related));
-				array_push($row, $wrap('mgmt n/a', $direct_related));
-				array_push($row, $wrap('mgmt n/a', $direct_related));
-			}
-
-			array_push($row, $wrap(($phonenumber->active > 0 ? 'placeholder_yes': 'placeholder_no'), $direct_related));
-
-			if ($direct_related) {
-				array_push($closely_related, $row);
-			}
-			else {
-				array_push($distantly_related, $row);
-			}
-		}
-
-		$relation_placeholder = array();
-
-		// create the placeholder if there are closely and distantly related phonenumbers
-		if ($closely_related && $distantly_related) {
-			// for every col in last row: add a col to our placeholder
-			$placeholder_row = array();
-			foreach ($row as $_) {
-				/* array_push($placeholder_row, "<div style='font-size: 8px;'>&nbsp;</div>"); */
-				array_push($placeholder_row, "<hr style='margin: 4px 0'>");
-			}
-			array_push($relation_placeholder, $placeholder_row);
-		}
-
-		$data = array_merge($data, $closely_related, $relation_placeholder, $distantly_related);
-
-		$ret = $this->_get_user_action_table($data);
-		return $ret;
+	public function enviacontract() {
+		return $this->belongsTo('Modules\ProvVoipEnvia\Entities\EnviaContract', 'enviacontract_id');
 	}
 
 
@@ -1041,16 +742,17 @@ class EnviaOrder extends \BaseModel {
 
 
 		$contract = $this->contract;
-		$user_actions['hints']['Contract (= Envia Customer)'] = $this->_get_user_action_information_contract($contract);
+		$user_actions['hints']['Contract (= Envia Customer)'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
+		/* $user_actions['hints']['Contract (= Envia Customer)'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract); */
 
 		$items = $contract->items;
 		if ($items) {
-			$user_actions['hints']['Items (Internet and VoIP only)'] = $this->_get_user_action_information_items($items);
+			$user_actions['hints']['Items (Internet and VoIP only)'] = ProvVoipEnviaHelpers::get_user_action_information_items($items);
 		};
 
 		$modem = $this->modem;
 		if ($modem) {
-			$user_actions['hints']['Modem (can hold multiple Envia contracts)'] = $this->_get_user_action_information_modem($modem);
+			$user_actions['hints']['Modem (can hold multiple Envia contracts)'] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
 		};
 
 		$phonenumbers = array();
@@ -1068,7 +770,7 @@ class EnviaOrder extends \BaseModel {
 		}
 
 		if ($phonenumbers) {
-			$user_actions['hints']['Phonenumbers (= Envia VoipAccounts)'] = $this->_get_user_action_information_phonenumbers($phonenumbers);
+			$user_actions['hints']['Phonenumbers (= Envia VoipAccounts)'] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $phonenumbers);
 		}
 
 
@@ -1084,8 +786,16 @@ class EnviaOrder extends \BaseModel {
 
 		}
 
+		$enviacontract = $this->enviacontract;
+		if ($enviacontract) {
+			/* $_ = ProvVoipEnviaHelpers::get_user_action_information_enviacontract($enviacontract); */
+			/* $user_actions['hints']['Envia contract'] = ProvVoipEnviaHelpers::get_user_action_table($_); */
+			$user_actions['hints']['Envia contract'] = ProvVoipEnviaHelpers::get_user_action_information_enviacontract($enviacontract);
+		}
+
 		return $user_actions;
 	}
+
 
 	/**
 	 * Creates the mailto: links (ready-to-use) for generation of email templates.
