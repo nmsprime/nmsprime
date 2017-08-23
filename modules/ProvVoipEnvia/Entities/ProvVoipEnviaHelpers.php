@@ -341,4 +341,38 @@ class ProvVoipEnviaHelpers {
 		return $ret;
 	}
 
+
+	/**
+	 * Create table containing information about related envia orders
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function get_user_action_information_enviaorders($enviaorders) {
+
+		$data = array();
+
+		$head = array(
+			'Order ID',
+			'Ordertype',
+			'Orderdate',
+			'Orderstatus',
+			'Method',
+		);
+		array_push($data, $head);
+
+		foreach ($enviaorders as $enviaorder) {
+			$row = [
+				'<a href="'.\URL::route("EnviaOrder.edit", array("EnviaOrder" => $enviaorder->id)).'">'.$enviaorder->orderid.'</a>',
+				$enviaorder->ordertype ? $enviaorder->ordertype : '–',
+				$enviaorder->orderdate ? $enviaorder->orderdate : '–',
+				$enviaorder->orderstatus ? $enviaorder->orderstatus : 'n/a',
+				$enviaorder->method ? $enviaorder->method : '–',
+			];
+			array_push($data, $row);
+		}
+
+		$ret = static::_get_user_action_table($data);
+		return $ret;
+	}
+
 }

@@ -186,6 +186,10 @@ class EnviaContract extends \BaseModel {
 			$relations['hints']['Phonenumbers'] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $this->phonenumbers);
 		}
 
+		if ($this->enviaorders) {
+			$relations['hints']['Envia orders'] = ProvVoipEnviaHelpers::get_user_action_information_enviaorders($this->enviaorders->sortBy('orderdate'));
+		}
+
 		return $relations;
 
 	}
