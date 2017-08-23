@@ -3283,7 +3283,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 					$protocol = "MGCP";
 					// TODO: process data for packet cable
-					$msg .= "TODO: packet cable not yet implemented";
+					$msg = "TODO: MGCP not yet implemented";
 					$out .= "<b>$msg</b><br>";
 					Log::error($msg);
 				}
