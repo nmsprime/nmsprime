@@ -243,19 +243,20 @@ class ProvVoipEnviaHelpers {
 
 		$closely_related = array();
 		$distantly_related = array();
+
+		// helper to wrap weak related informations
+		$wrap = function ($content, $direct_related) {
+
+			if (!$direct_related) {
+				$content = "<i>$content</i>";
+			}
+
+			return $content;
+		};
+
 		foreach ($phonenumbers as $phonenumber) {
 
 			$direct_related = $model->phonenumbers->contains($phonenumber)? : false;
-
-			// helper to wrap weak related informations
-			$wrap = function ($content, $direct_related) {
-
-				if (!$direct_related) {
-					$content = "<i>$content</i>";
-				}
-
-				return $content;
-			};
 
 			$row = array();
 			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
