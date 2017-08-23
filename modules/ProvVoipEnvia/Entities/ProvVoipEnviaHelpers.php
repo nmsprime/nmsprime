@@ -246,11 +246,9 @@ class ProvVoipEnviaHelpers {
 
 		// helper to wrap weak related informations
 		$wrap = function ($content, $direct_related) {
-
 			if (!$direct_related) {
 				$content = "<i>$content</i>";
 			}
-
 			return $content;
 		};
 

@@ -74,4 +74,5 @@ class EnviaContractController extends \BaseController {
 	/* 	return view('provvoipenvia::index'); */
 	/* } */
 
+
 }
