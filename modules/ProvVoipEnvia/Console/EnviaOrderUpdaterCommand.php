@@ -6,6 +6,7 @@ use Log;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
+use \Modules\ProvVoipEnvia\Entities\EnviaContract;
 use \Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use \Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
 
@@ -62,6 +63,10 @@ class EnviaOrderUpdaterCommand extends Command {
 
 		echo "\n";
 		$this->_update_orders();
+		echo "\n";
+
+		echo "\n";
+		$this->_update_order_relation_to_contracts();
 		echo "\n";
 
 	}
@@ -170,6 +175,41 @@ class EnviaOrderUpdaterCommand extends Command {
 		}
 
 		return false;
+
+	}
+
+
+	/**
+	 * Try to create a relation to EnviaContract if not set
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _update_order_relation_to_contracts() {
+
+		Log::debug(__METHOD__." started");
+
+		$envia_orders = EnviaOrder::whereRaw('enviacontract_id IS NULL')->get();
+
+		$envia_contract = new EnviaContract();
+		foreach ($envia_orders as $envia_order) {
+
+			// if there is no contract reference we are not able to find a match
+			if (!$envia_order->contractreference) {
+				continue;
+			}
+
+			// try to get the corresponding envia contract
+			$envia_contract = EnviaContract::firstOrNew(['envia_contract_reference' => $envia_order->contractreference]);
+
+			if (!$envia_contract->exists) {
+				$envia_contract->envia_customer_reference = $envia_order->customerreference;
+				$envia_contract->save();
+			}
+
+			$envia_order->enviacontract_id = $envia_contract->id;
+			$envia_order->save();
+
+		}
 
 	}
 
