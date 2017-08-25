@@ -7,6 +7,7 @@ use Log;
 
 use App\Http\Controllers\BaseController;
 use Modules\ProvBase\Entities\Contract;
+use Modules\Ticket\Entities\Ticket;
 
 class DashboardController extends BaseController
 {
@@ -57,15 +58,16 @@ class DashboardController extends BaseController
 			$income['total'] = (int) $income['total'];
 		}
 
+		$new_tickets = self::getNewTickets();
+
 		if (\PPModule::is_active('hfcbase')) {
 			$netelements = $this->_get_impaired_netelements();
 			$services = $this->_get_impaired_services();
 		}
 
 		return View::make('provbase::dashboard', $this->compact_prep_view(
-				compact('title', 'contracts', 'chart_data_contracts', 'income', 'chart_data_income', 'allowed_to_see', 'netelements', 'services')
-			)
-		);
+				compact('title', 'contracts', 'chart_data_contracts', 'income', 'chart_data_income', 'allowed_to_see', 'netelements', 'services', 'new_tickets')
+			));
 	}
 
 	/**
@@ -486,4 +488,15 @@ class DashboardController extends BaseController
 	}
 
 
+}
+
+	/**
+	 * Returns all tickets with state = new
+	 *
+	 * @return array
+	 */
+	private static function getNewTickets()
+	{
+		return Ticket::where('state', '=', 1)->count();
+	}
 }

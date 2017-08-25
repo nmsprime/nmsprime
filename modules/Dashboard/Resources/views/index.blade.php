@@ -1,25 +1,5 @@
 @extends ('Layout.default')
 
-@section ('quickstart')
-	<!-- TODO: move to a seperate file -->
-	<!-- TODO: use translate lang -->
-	<ul class="registered-users-list clearfix">
-		<li>
-			{{ HTML::decode (HTML::linkRoute('Contract.index',
-                '<h1><div class="text-center"><i class="img-center fa fa-address-book-o"></i></div></h1>
-                 <h4 class="username text-ellipsis text-center">Show Contracts<small>Easy</small></h4>')) }}
-		</li>
-		<li>
-			{{ HTML::decode (HTML::linkRoute('Contract.create',
-                '<h1><div class="text-center"><i class="img-center fa fa-address-book-o"></i></div></h1>
-                 <h4 class="username text-ellipsis text-center">Add Contract<small>Easy</small></h4>')) }}
-		</li>
-		<li>
-			<h1><div class="text-center"><i class="img-center fa fa-ticket"></i></div></h1>
-			<h4 class="username text-ellipsis text-center">Add Ticket<small>Easy</small></h4>
-		</li>
-	</ul>
-@stop
 
 <!-- Widgets -->
 @section ('contracts')
@@ -34,8 +14,16 @@
 	@include('dashboard::widgets.provvoipenvia')
 @stop
 
+@section ('tickets')
+	@include('dashboard::widgets.ticket')
+@stop
+
 @section ('date')
 	@include('dashboard::widgets.date')
+@stop
+
+@section ('quickstart')
+	@include('dashboard::widgets.quickstart')
 @stop
 
 <!-- Panels -->
@@ -53,6 +41,17 @@
 		<h1 class="page-header">{{ $title }}</h1>
 
 		<div class="row">
+			{{-- Quickstart --}}
+			@DivOpen(6)
+				@include ('bootstrap.widget',
+					array (
+						'content' => 'quickstart',
+						'widget_icon' => 'addressbook-o',
+						'widget_bg_color' => 'white',
+					)
+				)
+			@DivClose()
+
 			{{-- Contracts --}}
 			@DivOpen(3)
 				@include ('bootstrap.widget',
@@ -94,6 +93,17 @@
 				@DivClose()
 			@endif
 
+			{{-- Tickets --}}
+			@DivOpen(3)
+				@include ('bootstrap.widget',
+					array (
+						'content' => 'tickets',
+						'widget_icon' => 'ticket',
+						'widget_bg_color' => 'orange',
+					)
+				)
+			@DivClose()
+
 			{{-- Date --}}
 			@DivOpen(3)
 				@include ('bootstrap.widget',
@@ -113,10 +123,6 @@
 
 				@DivOpen(8)
 					@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => 'Contract Analytics', 'md' => 12, 'height' => 'auto'))
-				@DivClose()
-
-				@DivOpen(4)
-					@include ('bootstrap.panel', array ('content' => "quickstart", 'view_header' => 'Quickstart', 'md' => 12, 'height' => 'auto'))
 				@DivClose()
 			@endif
 
