@@ -49,25 +49,50 @@ class SettlementRun extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		$bsclass = $this->verified ? 'info' : 'warning';
+		$bsclass = $this->get_bsclass();
 
 		return ['index' => [$this->year, $this->month, $this->created_at->toDateString(), $this->verified ? 'Yes' : 'No'], //$this->created_at->__get('day')],
 		        'index_header' => ['Year', 'Month', 'Created At', 'Verified'],
-		        'bsclass' => $bsclass,
+				'bsclass' => $bsclass,
+				'orderBy' => ['id' => 'desc'],
 		        'header' => $this->year.' - '.$this->month.' - '.$this->created_at->__get('day')];
 	}
 
-	public function index_list()
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
 	{
-		$srs = $this->orderBy('id', 'desc')->get();
+		$bsclass = $this->get_bsclass();
+		$day = (isset($this->created_at)) ? $this->created_at : '';
 
-		foreach ($srs as $key => $sr)
-		{
-			if ($sr->verified)
-				$sr->index_delete_disabled = true;
-		}
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.year', $this->table.'.month',  $this->table.'.created_at', 'verified'],
+				'header' =>  $this->year.' - '.$this->month.' - '.$day ,
+				'bsclass' => $bsclass,
+				'orderBy' => ['0' => 'desc'],
+				'edit' => ['verified' => 'run_verified', 'checkbox' => 'set_index_delete', 'created_at' => 'created_at_toDateString' ]];
+	}
 
-		return $srs;
+	public function get_bsclass()
+	{
+		return $this->verified ? 'info' : 'warning';
+	}
+
+	public function run_verified() 
+	{
+		return  $this->verified ? 'Yes' : 'No';
+	}
+
+	public function set_index_delete()
+	{
+		if ($this->verified)
+				$this->index_delete_disabled = true;
+	}
+
+	public function created_at_toDateString()
+	{
+		return ($this->created_at->toDateString());
+		
 	}
 
 	public function view_has_many()
