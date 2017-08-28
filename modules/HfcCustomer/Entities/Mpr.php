@@ -34,6 +34,11 @@ class Mpr extends \BaseModel {
 		return 'Modem Positioning Rule';
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-compass"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{
