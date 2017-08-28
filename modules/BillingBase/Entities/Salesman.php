@@ -57,6 +57,15 @@ class Salesman extends \BaseModel {
 				'header' => $this->lastname." ".$this->firstname];
 	}
 
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.id', $this->table.'.lastname', $this->table.'.Firstname'],
+				'orderBy' => ['0' => 'asc'],  // columnindex => direction
+				'header' =>  $this->lastname." ".$this->firstname];
+	}
 
 	// View Relation.
 	public function view_has_many()
