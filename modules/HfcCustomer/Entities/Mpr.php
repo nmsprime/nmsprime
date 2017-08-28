@@ -43,6 +43,17 @@ class Mpr extends \BaseModel {
 
 	}
 
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.name', 'netelement.name'],
+				'header' =>  $this->name,
+				'orderBy' => ['0' => 'asc'], // columnindex => direction
+				'eager_loading' => ['netelement']];
+	}
+
 	// Relation to NetElement
 	// NOTE: HfcReq Module is required !
 	public function netelement()
