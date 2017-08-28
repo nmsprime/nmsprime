@@ -512,13 +512,15 @@ class Invoice extends \BaseModel{
 		// var_dump($this->data['invoice_nr']);
 		$template = str_replace('\\_', '_', $template);
 
-		foreach ($this->data as $key => $value)
+		foreach ($this->data as $key => $string)
 		{
+			$string = escape_latex_special_chars($string);
+
 			// escape underscores for pdflatex to work
-			if (strpos($value, 'logo') === false)
-				$value = str_replace('_', '\\_', $value);
+			if (strpos($string, 'logo') === false)
+				$string = str_replace('_', '\\_', $string);
 			
-			$template = str_replace('{'.$key.'}', $value, $template);		
+			$template = str_replace('{'.$key.'}', $string, $template);
 		}
 
 		return $template;

@@ -134,12 +134,18 @@ class CccAuthuserController extends \BaseController {
 		if (!is_dir($dir_path))
 			mkdir($dir_path, 0733, true);
 
-		$filename = $contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info';
+		$filename = str_replace(['.', ' ', '&', '|', ',', ';' ], '', $contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info');
+		// $filename = str_sanitize($contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info');
+
+		// echo "$filename\n";
 
 		// Replace placeholder by value
 		$template = str_replace('\\_', '_', $template);
-		foreach ($this->data as $key => $value)
-			$template = str_replace('{'.$key.'}', $value, $template);
+		foreach ($this->data as $key => $string)
+		{
+			$string = escape_latex_special_chars($string);
+			$template = str_replace('{'.$key.'}', $string, $template);
+		}
 
 		File::put($dir_path.$filename, $template);
 

@@ -398,7 +398,7 @@ class SepaAccount extends \BaseModel {
 				$rec 		= $this->_get_billing_lang() == 'de' ? '' : '_records';
 
 				$file = $this->dir.$this->name.'/'.$accounting.'_'.BaseViewController::translate_label($key).$rec.'.txt';
-				$file = SepaAccount::str_sanitize($file);
+				$file = str_sanitize($file);
 
 				// initialise record files with Column names as first line
 				$keys = [];
@@ -471,7 +471,7 @@ class SepaAccount extends \BaseModel {
 					$directDebit->addTransfer($msg_id.$type, $r);
 
 				// Retrieve the resulting XML
-				$file = SepaAccount::str_sanitize($this->dir.$this->name.'/DD_'.$type.'.xml');
+				$file = str_sanitize($this->dir.$this->name.'/DD_'.$type.'.xml');
 				$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
 				STORAGE::put($file, $data);
 
@@ -504,7 +504,7 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Retrieve the resulting XML
-		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DD').'.xml');
+		$file = str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DD').'.xml');
 		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
 		STORAGE::put($file, $data);
 
@@ -537,7 +537,7 @@ class SepaAccount extends \BaseModel {
 			$customerCredit->addTransfer($msg_id.'C', $r);
 
 		// Retrieve the resulting XML
-		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DC').'.xml');
+		$file = str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DC').'.xml');
 		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $customerCredit->asXML());
 		STORAGE::put($file, $data);
 
@@ -558,17 +558,6 @@ class SepaAccount extends \BaseModel {
 
 		if ($this->sepa_xml['credits'])
 			$this->make_credit_file();
-	}
-
-
-	/**
-	 * Simplify string for Filenames
-	 * TODO: use as global helper function in other context
-	 */
-	public static function str_sanitize($string)
-	{
-		$string = str_replace(' ', '_', $string);
-		return preg_replace("/[^a-zA-Z0-9.\/_-]/", "", $string);
 	}
 
 
