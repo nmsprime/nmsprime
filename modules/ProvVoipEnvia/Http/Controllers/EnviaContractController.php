@@ -33,8 +33,8 @@ class EnviaContractController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'state', 'description' => 'State', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'start_date', 'description' => 'Start date', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'end_date', 'description' => 'End date', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'prev_id', 'description' => 'Start date', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'next_id', 'description' => 'Next contract ID', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'prev_id', 'description' => 'Previous Envia contract ID', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'next_id', 'description' => 'Next Envia contract ID', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'lock_level', 'description' => 'Previous contract ID', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'method', 'description' => 'Method', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'sla_id', 'description' => 'SLA ID', 'options' => ['readonly']),
@@ -42,7 +42,6 @@ class EnviaContractController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'variation_id', 'description' => 'Variation ID', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract ID', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'modem_id', 'description' => 'Modem ID', 'options' => ['readonly']),
-			/* array('form_type' => 'text', 'name' => '', 'description' => '', 'options' => ['readonly']), */
 		];
 
 		return $ret;
