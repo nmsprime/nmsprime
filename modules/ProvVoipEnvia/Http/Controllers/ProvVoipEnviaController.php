@@ -108,6 +108,7 @@ class ProvVoipEnviaController extends \BaseController {
 			'customer_get_contracts' => $base_url.'customer/get_contracts',
 			'customer_get_reference' => $base_url.'customer/get_reference',
 			'customer_get_reference_by_legacy_number' => $base_url.'customer/get_reference',
+			'misc_get_orders_csv_process_single_order' => '',
 		);
 
 		// allowed client IPs – currently restricted to localhost
@@ -144,10 +145,26 @@ class ProvVoipEnviaController extends \BaseController {
 			// prepare the model
 			$this->model->set_model_data();
 
-			// the requests payload (=XML)
-			$payload = $this->model->get_xml($job);
+			// check what job has to be done – there can be some special cases…
+			if ($job == 'misc_get_orders_csv_process_single_order') {
+				// special handling – we do not get data from envia but use the data given by GET param
+				$order_data = unserialize(urldecode(\Input::get('serialized_order', '')));
+				if (!is_array($order_data)) {
+					$msg = 'Malformed data given. Cancelling cronjob';
+					\Log::error($msg);
+					print_r($msg);
+					return;
+				}
+				$view_var = $this->model->_process_misc_get_orders_csv_response_single_order($order_data, 'cron');
+			}
+			else {
+				// default case: get data from Envia
 
-			$view_var = $this->_perform_request($url, $payload, $job);
+				// the requests payload (=XML)
+				$payload = $this->model->get_xml($job);
+
+				$view_var = $this->_perform_request($url, $payload, $job);
+			}
 		}
 		print_r($view_var);
 	}
@@ -385,6 +402,7 @@ class ProvVoipEnviaController extends \BaseController {
 			'misc_get_keys',
 			'misc_get_free_numbers',
 			'misc_get_orders_csv',
+			'misc_get_orders_csv_process_single_order',
 			'misc_get_usage_csv',
 			'order_cancel',
 			'order_create_attachment',

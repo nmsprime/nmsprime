@@ -74,6 +74,8 @@ class EnviaOrderUpdaterCommand extends Command {
 	/**
 	 * Gets CSV for all phonenumber related orders from envia and updates database via model ProvVoipEnvia
 	 *
+	 * This happenes order by order (each with a single request) to avoid timeouts which can leave the database in undefined state!
+	 *
 	 * @author Patrick Reichel
 	 */
 
@@ -89,7 +91,32 @@ class EnviaOrderUpdaterCommand extends Command {
 		$url = $this->base_url.$url_suffix;
 
 		// execute using cURL
-		$this->_perform_curl_request($url);
+		$result = $this->_perform_curl_request($url);
+
+		// the result should be an array containing the orders – if not there has been a problem…
+		try  {
+			$orders = unserialize($result);
+		}
+		catch (Exception $ex) {
+			Log::error('Exception deserializing expected Envia orders array created from CSV ('.$ex->getMessage().') – cannot proceed');
+			return;
+		}
+
+		if (!is_array($orders)) {
+			Log::error('Received no unserializable data – cannot proceed');
+			return;
+		}
+
+		// call the special method in ProvVoipEnvia to update the orders one by one
+		foreach ($orders as $order) {
+			$param = urlencode(serialize($order));
+			$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'misc_get_orders_csv_process_single_order', 'serialized_order' => $param, 'really' => 'True'), false);
+			$url = $this->base_url.$url_suffix;
+
+			$result = $this->_perform_curl_request($url);
+			echo "\n";
+			print_r($result);
+		}
 	}
 
 
