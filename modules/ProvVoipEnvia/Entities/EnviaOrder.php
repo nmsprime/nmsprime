@@ -544,20 +544,30 @@ class EnviaOrder extends \BaseModel {
 		}
 		$escalation_level = $escalations[$bsclass].' – '.$bsclass;
 
-		if (boolval($this->contract_id)) {
-			$contract_nr = Contract::findOrFail($this->contract_id)->number;
-			$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract_nr.'</a>';
-		}
-		else {
+		if (!$this->contract_id) {
 			$contract_nr = '–';
 		}
+		else {
+			$contract = Contract::withTrashed()->where('id', $this->contract_id)->first();
+			if (!is_null($contract->deleted_at)) {
+				$contract_nr = '<s>'.$contract->number.'</s>';
+			}
+			else {
+				$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract->number.'</a>';
+			}
+		}
 
-		if (boolval($this->modem_id)) {
-			$modem = Modem::findOrFail($this->modem_id);
-			$modem_nr = '<a href="'.\URL::route('Modem.edit', array($this->modem_id)).'" target="_blank">'.$this->modem_id.'</a>';
+		if (!$this->modem_id) {
+			$modem_id = '–';
 		}
 		else {
-			$modem_nr = '–';
+			$modem = Modem::withTrashed()->where('id', $this->modem_id)->first();
+			if (!is_null($modem->deleted_at)) {
+				$modem_id = '<s>'.$this->modem_id.'</s>';
+			}
+			else {
+				$modem_id = '<a href="'.\URL::route('Modem.edit', array($this->modem_id)).'" target="_blank">'.$this->modem_id.'</a>';
+			}
 		}
 
 		// show all order related phonenumbers
@@ -595,13 +605,25 @@ class EnviaOrder extends \BaseModel {
 			$phonenumber_nrs = implode('<br><br>', $tmp_nrs);
 		}
 
-		if (!$this->user_interaction_necessary()) {
-			$current = '-';
-		    $solve_link = '';
+		if ($this->enviacontract_id) {
+			$enviacontract = EnviaContract::withTrashed()->where('id', $this->enviacontract_id)->first();
+			$reference = !is_null($enviacontract->envia_contract_reference) ? $enviacontract->envia_contract_reference : 'ID: '.$this->enviacontract_id;
+			if (!is_null($enviacontract->deleted_at)) {
+				$enviacontract_nr = '<s>'.$reference.'</s>';
+			}
+			else {
+				$enviacontract_nr = '<a href="'.\URL::route('EnviaContract.edit', array($this->enviacontract_id)).'" target="_blank">'.$reference.'</a>';
+			}
 		}
 		else {
-			$current = '<b>Yes!!</b>';
-			$solve_link = '<a href="'.\URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id)).'" target="_self">Mark solved</a>';
+			$enviacontract_nr = '–';
+		}
+
+		if (!$this->user_interaction_necessary()) {
+			$current = '–';
+		}
+		else {
+			$current = '<b>Yes!!</b><br><a href="'.\URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id)).'" target="_self">Mark solved</a>';
 		}
 
 		// add line breaks to make stuff fit better into table
@@ -612,8 +634,8 @@ class EnviaOrder extends \BaseModel {
 		$orderstatus = $this->orderstatus;
 		$orderstatus = str_replace('Portierungserklärung', 'Portierungs&shy;erklärung', $orderstatus);
 
-        return ['index' => [$ordertype, $orderstatus, $escalation_level, $contract_nr, $modem_nr, $phonenumber_nrs, $this->created_at, $this->updated_at, $this->orderdate, $current, $solve_link],
-                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract', 'Modem', 'Numbers', 'Created at', 'Updated at', 'Orderdate', 'Needs action?', ''],
+        return ['index' => [$ordertype, $orderstatus, $escalation_level, $contract_nr, $modem_id, $phonenumber_nrs, $enviacontract_nr, $this->created_at, $this->updated_at, $this->orderdate, $current],
+                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract', 'Modem', 'Numbers', 'EnviaContract', 'Created at', 'Updated at', 'Orderdate', 'Needs action?'],
                 'bsclass' => $bsclass,
 				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
 		];

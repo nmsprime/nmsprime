@@ -27,13 +27,36 @@ class EnviaContract extends \BaseModel {
 	public function view_index_label()
 	{
 
-		$envia_contract_reference = is_null($this->envia_contract_reference) ? 'n/a' : $this->envia_contract_reference;
-		$state = is_null($this->state) ? 'n/a' : $this->state;
-		$start_date = is_null($this->start_date) ? 'n/a' : $this->start_date;
-		$end_date = is_null($this->end_date) ? 'n/a' : $this->end_date;
+		$envia_contract_reference = is_null($this->envia_contract_reference) ? '–' : $this->envia_contract_reference;
+		$state = is_null($this->state) ? '–' : $this->state;
+		$start_date = is_null($this->start_date) ? '–' : $this->start_date;
+		$end_date = is_null($this->end_date) ? '–' : $this->end_date;
 
-		$contract_id = is_null($this->contract_id) ? 'n/a' : $this->contract_id;
-		$modem_id = is_null($this->modem_id) ? 'n/a' : $this->modem_id;
+		if (!$this->contract_id) {
+			$contract_nr = '–';
+		}
+		else {
+			$contract = Contract::withTrashed()->where('id', $this->contract_id)->first();
+			if (!is_null($contract->deleted_at)) {
+				$contract_nr = '<s>'.$contract->number.'</s>';
+			}
+			else {
+				$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract->number.'</a>';
+			}
+		}
+
+		if (!$this->modem_id) {
+			$modem_id = '–';
+		}
+		else {
+			$modem = Modem::withTrashed()->where('id', $this->modem_id)->first();
+			if (!is_null($modem->deleted_at)) {
+				$modem_id = '<s>'.$this->modem_id.'</s>';
+			}
+			else {
+				$modem_id = '<a href="'.\URL::route('Modem.edit', array($this->modem_id)).'" target="_blank">'.$this->modem_id.'</a>';
+			}
+		}
 
 		if (in_array($state, ['Aktiv', ])) {
 			$bsclass = 'success';
@@ -48,8 +71,8 @@ class EnviaContract extends \BaseModel {
 			$bsclass = 'info';
 		}
 
-        return ['index' => [$envia_contract_reference, $state, $start_date, $end_date, $contract_id, $modem_id],
-                'index_header' => ['Envia contract reference', 'Start date', 'End date', 'Contract', 'Modem'],
+        return ['index' => [$envia_contract_reference, $state, $start_date, $end_date, $contract_nr, $modem_id],
+                'index_header' => ['Envia contract reference', 'State', 'Start date', 'End date', 'Contract', 'Modem'],
                 'bsclass' => $bsclass,
 				'header' => $envia_contract_reference,
 		];
