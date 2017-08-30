@@ -3217,16 +3217,12 @@ class ProvVoipEnvia extends \BaseModel {
 				// find phonenumber object for given phonenumber
 				$phonenumber = Phonenumber::where('prefix_number', '=', $entry->localareacode)->where('number', '=', $entry->baseno)->first();
 
-				// if there is data for a number not existing in our database: create
+				// if there is data for a number not existing in our database: inform the user and continue with the next number
 				if (is_null($phonenumber)) {
-					$_ = "Phonenumber ".$entry->localareacode."/".$entry->baseno." does not exist – creating it. Set proper MTA and port!!";
-					$out .= "<b>$_</b><br>";
-					Log::warning($_);
-					$phonenumber = new Phonenumber();
-					$phonenumber->prefix_number = $entry->localareacode;
-					$phoneunmber->number = $entry->baseno;
-					$phonenumber->save();
-
+					$_ = "Phonenumber ".$entry->localareacode."/".$entry->baseno." does not exist – create and try again!";
+					$out .= "<b style='color: red'>$_</b><br>";
+					Log::error($_);
+					continue;
 				}
 
 				$phonenumbermanagement = $phonenumber->phonenumbermanagement;
