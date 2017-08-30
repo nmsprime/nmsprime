@@ -121,6 +121,7 @@ class EnviaContractGetterCommand extends Command {
 		Log::debug(__METHOD__." started");
 
 		foreach ($this->contracts_to_get_envia_contracts_for as $contract_id) {
+			Log::info("Trying to get Envia contracts for contract $contract_id");
 
 			try {
 				// get the relative URL to execute the cron job for updating the current order_id
