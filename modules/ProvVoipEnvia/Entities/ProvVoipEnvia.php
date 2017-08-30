@@ -846,14 +846,16 @@ class ProvVoipEnvia extends \BaseModel {
 						// if order is not in final state: add link to get current status
 						if (!EnviaOrder::orderstate_is_final($order)) {
 							$url = $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really;
+							$help = "Gets the current state of this order from Envia (if orderstate is not final).";
 						}
 						else {
 							$url = "";
+							$help = "";
 						}
 						array_push($ret, array(
 							'linktext' => $linktext,
 							'url' => $url,
-							'help' => "Gets the current state of this order from Envia (if orderstate is not final).",
+							'help' => $help,
 						));
 					}
 				}
@@ -3281,7 +3283,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 					$protocol = "MGCP";
 					// TODO: process data for packet cable
-					$msg .= "TODO: packet cable not yet implemented";
+					$msg = "TODO: MGCP not yet implemented";
 					$out .= "<b>$msg</b><br>";
 					Log::error($msg);
 				}
@@ -3782,153 +3784,126 @@ class ProvVoipEnvia extends \BaseModel {
 			$out .= "<hr>";
 		}
 
+		// if started from cron job: print serialized results and exit
+		// cron job then starts processing order by order to prevent running in Apache timeout…
+		if ($data['entry_method'] == 'cron') {
+			echo serialize($results);
+			exit();
+		}
+
 		// process the valid CSV lines
 		foreach ($results as $result) {
-
-			// Envia changed API – now there are also times on “orderdate” which results in daily update of our database
-			// shorten this to date only – so we don't have to change in other methods
-			if (array_key_exists('orderdate', $result)) {
-				$result['orderdate'] = substr($result['orderdate'], 0, 10);
-			}
-
-			// if an order with given ID exists in our database and is in final state: do nothing
-			$tmp_order = EnviaOrder::where('orderid', '=', $result['orderid'])->first();
-			if (
-				!is_null($tmp_order)
-				&&
-				(EnviaOrder::orderstate_is_final($tmp_order))
-			) {
-				\Log::debug("Order $tmp_order->id ($tmp_order->orderid) is in final state in our database. Nothing to do.");
-				continue;
-			};
-
-			$out .= "<br><br>";
-
-			$msg = "Processing order ".$result['orderid'];
-			\Log::info($msg);
-			$out .= $msg;
-
-			// check what the order is related to ⇒ after silently changing the API behavior
-			// there now are orders not related to phonenumbers, too
-			if ($result['localareacode'] && $result['baseno']) {
-				// assume that order is related to a phonenumber
-
-				$msg = "<br>Order seems to be phonenumber related";
-				\Log::debug($msg);
-				$out .= $msg;
-
-				// start processing
-				$out .= $this->_process_misc_get_orders_csv_response__phonenumber_related($result);
-			}
-			elseif ($result['contractreference']) {
-				// order seems to be related to a contract
-
-				$msg = "<br>Order seems to be contract related";
-				\Log::debug($msg);
-				$out .= $msg;
-
-				// start processing
-				$out .= $this->_process_misc_get_orders_csv_response__contract_related($result);
-			}
-			elseif ($result['customerreference']) {
-				// order seems to be related to a contract
-
-				$msg = "<br>Order seems to be customer related";
-				\Log::debug($msg);
-				$out .= $msg;
-
-				// start processing
-				$out .= $this->_process_misc_get_orders_csv_response__customer_related($result);
-			}
-			else {
-				// no relation
-
-				$msg = "<br>Order seems to be standalone – no relation found";
-				\Log::debug($msg);
-				$out .= $msg;
-
-				// start processing
-				$out .= $this->_process_misc_get_orders_csv_response__not_related($result);
-			}
-
-			// check if there exists an Envia contract for the returned contract_reference
-			// this is save here because within the CSV there are only phonenumber related orders (and e.g. no contract/relocate)
-			// attention: there can be orders within the CSV that has been soft deleted in our database (via order/cancel)
-			/* $enviacontract = EnviaContract::where("envia_contract_reference", "=", $result['contractreference'])->first(); */
-			/* if (!$enviacontract) { */
-			/* 	// if not: create */
-			/* 	$data = [ */
-			/* 		'envia_customer_reference' => $result['customerreference'], */
-			/* 		'envia_contract_reference' => $result['contractreference'], */
-			/* 		'modem_id' => $first_phonenumber->mta->modem->id, */
-			/* 		'contract_id' => $first_phonenumber->mta->modem->contract->id, */
-			/* 	]; */
-			/* 	$enviacontract = EnviaContract::create($data); */
-			/* 	$msg = "Created EnviaContract $enviacontract->id"; */
-			/* 	Log::info($msg); */
-			/* 	$out .= '<br>'.$msg; */
-			/* } */
-
-			/* // add envia contract id to result array ⇒ used to check relation between phonenumbermanagement and envia */
-			/* // contract in _update_phonenumbermanagement_with_envia_data() (called later via _update_phonenumber_related_data() */
-			/* $result['enviacontract_id'] = $enviacontract->id; */
-
-			/* if (is_null($order)) { */
-			/* 	// order does not exist in our database: create it */
-
-			/* 	// create a new Order, add given data to model instance */
-			/* 	$order = EnviaOrder::create($result); */
-			/* 	$out .= '<br>Order '.$order_id.' created.'; */
-
-			/* } */
-			/* else { */
-			/* 	// ordertype_id is not given by order_get_status: we have to set it here if there are any changes */
-			/* 	if ($order->ordertype_id != $result['ordertype_id']) { */
-			/* 		$order->ordertype_id = $result['ordertype_id']; */
-			/* 		$order->save(); */
-			/* 		$msg = 'Updated ordertype_id in for existing order '.$order_id; */
-			/* 		Log::info($msg); */
-			/* 		$out .= '<br>'.$msg; */
-			/* 	} */
-			/* } */
-
-			/* if ($order->ordertype == 'Umzug') { */
-			/* 	$msg = "Ordertype is “Umzug”. Will not update phoneumber related data in this method"; */
-			/* 	\Log::warning($msg); */
-			/* 	$out .= "<br>$msg"; */
-			/* 	continue; */
-			/* } */
-
-			// as an order can be related to more than one phonenumber we
-			// have to check if the current relation exists
-			/* foreach ($phonenumbers as $phonenumber) { */
-			/* 	if (!$order->phonenumbers->contains($phonenumber->id)) { */
-			/* 		$order->phonenumbers()->attach($phonenumber->id); */
-			/* 		$msg = 'Added relation between existing enviaorder '.$order_id.' and phonenumber '.$phonenumber->id; */
-			/* 		Log::info($msg); */
-			/* 		$out .= '<br>'.$msg; */
-			/* 	} */
-			/* } */
-
-			/* // check if contract, modem and/or phonenumbermanagement need updates, too */
-			/* // don't perform action for successfully cancelled orders here */
-			/* if (!EnviaOrder::order_successfully_cancelled($order)) { */
-			/* 	if (!EnviaOrder::order_failed($order)) { */
-			/* 		foreach ($phonenumbers as $phonenumber) { */
-			/* 			$result['phonenumber_id'] = $phonenumber->id; */
-			/* 			$result['modem_id'] = $phonenumber->mta->modem->id; */
-			/* 			$result['contract_id'] = $phonenumber->mta->modem->contract->id; */
-			/* 			$out = $this->_update_phonenumber_related_data($result, $out); */
-			/* 		} */
-			/* 	} */
-			/* } */
-
+			$out .= $this->_process_misc_get_orders_csv_response_single_order($result, $data['entry_method']);
 		}
 
 		$out .= "<br><br><pre>".$csv."</pre>";
 		return $out;
 	}
 
+	/**
+	 * Processes one order from orders CSV.
+	 *
+	 * This method is either called the standard way or directly from cron job via controller – therefore it has to be public!
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function _process_misc_get_orders_csv_response_single_order($result, $method) {
+
+		$out = '';
+
+		// Envia changed API – now there are also times on “orderdate” which results in daily update of our database
+		// shorten this to date only – so we don't have to change in other methods
+		if (array_key_exists('orderdate', $result)) {
+			$result['orderdate'] = substr($result['orderdate'], 0, 10);
+		}
+
+		$process_order = true;
+
+		// check if an order with given ID exists in our database
+		$tmp_order = EnviaOrder::where('orderid', '=', $result['orderid'])->first();
+
+		// if order does no exist: process the order; else processing depends on some conditions
+		if (!is_null($tmp_order)) {
+
+			// check if there is a relation between this order and the phonenumber in response
+			// this is needed for orders related to more than one number, where final state is not the only criteria
+			$relation_between_order_and_number_set = false;
+			if ($result['localareacode'] && $result['baseno']) {
+				foreach ($tmp_order->phonenumbers as $tmp_number) {
+					if (($tmp_number->prefix_number == $result['localareacode']) && ($tmp_number->number == $result['baseno'])) {
+						$relation_between_order_and_number_set = true;
+						break;
+					}
+				}
+			}
+
+			// check if order is in final state
+			$tmp_orderstate_is_final = EnviaOrder::orderstate_is_final($tmp_order);
+
+			// if all conditions are fulfilled: stop processing
+			if ($relation_between_order_and_number_set && $tmp_orderstate_is_final) {
+				$process_order = false;
+			}
+		}
+
+		// check if order has to be processed – we do only so if we can expect new data
+		if (!$process_order) {
+
+			\Log::debug("Order $tmp_order->id ($tmp_order->orderid) is in final state in our database. Nothing to do.");
+			return $out;
+		};
+
+		$out .= "<br><br>";
+
+		$msg = "Processing order ".$result['orderid'];
+		\Log::info($msg);
+		$out .= $msg;
+
+		// check what the order is related to ⇒ after silently changing the API behavior
+		// there now are orders not related to phonenumbers, too
+		if ($result['localareacode'] && $result['baseno']) {
+			// assume that order is related to a phonenumber
+
+			$msg = "<br>Order seems to be phonenumber related";
+			\Log::debug($msg);
+			$out .= $msg;
+
+			// start processing
+			$out .= $this->_process_misc_get_orders_csv_response__phonenumber_related($result);
+		}
+		elseif ($result['contractreference']) {
+			// order seems to be related to a contract
+
+			$msg = "<br>Order seems to be contract related";
+			\Log::debug($msg);
+			$out .= $msg;
+
+			// start processing
+			$out .= $this->_process_misc_get_orders_csv_response__contract_related($result);
+		}
+		elseif ($result['customerreference']) {
+			// order seems to be related to a contract
+
+			$msg = "<br>Order seems to be customer related";
+			\Log::debug($msg);
+			$out .= $msg;
+
+			// start processing
+			$out .= $this->_process_misc_get_orders_csv_response__customer_related($result);
+		}
+		else {
+			// no relation
+
+			$msg = "<br>Order seems to be standalone – no relation found";
+			\Log::debug($msg);
+			$out .= $msg;
+
+			// start processing
+			$out .= $this->_process_misc_get_orders_csv_response__not_related($result);
+		}
+
+		return $out;
+	}
 
 	/**
 	 * Process phonenumber related order from orders CSV.
