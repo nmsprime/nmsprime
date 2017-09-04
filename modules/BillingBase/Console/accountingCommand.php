@@ -1,9 +1,14 @@
 <?php 
-namespace Modules\Billingbase\Console;
+namespace Modules\BillingBase\Console;
 
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
+
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Contracts\Bus\SelfHandling;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
 use Storage;
 use DB;
@@ -18,9 +23,13 @@ use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Entities\Item;
 use Modules\BillingBase\Entities\SettlementRun;
+use Modules\Billingbase\Http\Controllers\SettlementRunController;
 
 
-class accountingCommand extends Command {
+class accountingCommand extends Command implements SelfHandling, ShouldQueue {
+
+	use InteractsWithQueue, SerializesModels;
+
 
 	/**
 	 * The console command & table name, description, data arrays
@@ -33,6 +42,7 @@ class accountingCommand extends Command {
 	protected $dir 			= 'data/billingbase/accounting/'; 				// relative to storage/app/ - Note: completed by month in constructor!
 	
 	protected $dates;					// offen needed time strings for faster access - see constructor
+	protected $logger;
 
 
 	/**
@@ -42,30 +52,11 @@ class accountingCommand extends Command {
 	 */
 	public function __construct()
 	{
-		$this->dates = array(
-
-			'today' 		=> date('Y-m-d'),
-			'm' 			=> date('m'),
-			'Y' 			=> date('Y', strtotime("first day of last month")),
-
-			'this_m'	 	=> date('Y-m'),
-			'thism_01'		=> date('Y-m-01'),
-			'thism_bill'	=> date('m/Y'),
-
-			'lastm'			=> date('m', strtotime("first day of last month")),			// written this way because of known bug ("-1 month" or "last month" is erroneous)
-			'lastm_01' 		=> date('Y-m-01', strtotime("first day of last month")),
-			'lastm_bill'	=> date('m/Y', strtotime("first day of last month")),
-			'lastm_Y'		=> date('Y-m', strtotime("first day of last month")),		// strtotime(first day of last month) is integer with actual timestamp!
-
-			'nextm_01' 		=> date('Y-m-01', strtotime("+1 month")),
-
-			'null' 			=> '0000-00-00',
-			'm_in_sec' 		=> 60*60*24*30,			// month in seconds
-			'last_run'		=> '0000-00-00', 					// filled on start of execution
-
-		);
+		$this->dates = self::create_dates_array();
 
 		$this->dir .= date('Y-m', strtotime('first day of last month')).'/';
+
+		$this->logger = new BillingLogger;
 
 		parent::__construct();
 
@@ -78,16 +69,40 @@ class accountingCommand extends Command {
 	 *
 	 * TODO: add to app/Console/Kernel.php -> run monthly()->when(function(){ date('Y-m-d') == date('Y-m-10')}) for tenth day in month
 	 */
-	public function fire()
+	public function handle()
 	{
 		// $start = microtime(true);
 
-		$logger = new BillingLogger;
-		$logger->addInfo(' #####    Start Accounting Command    #####');
+		if (\App::runningInConsole())
+		{
+			$this->logger->addInfo(' #####    Start Accounting Command from Console   #####');
+			// create/update settlementrun model when we run from console
+			$sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->get()->all();
 
+			if (!$sr)
+			{
+				$this->logger->addDebug('Add new SettlementRun and Return as Observer will call this Cmd again');
+				SettlementRun::create(['year' => $this->dates['Y'], 'month' => $this->dates['lastm']]);
+				return;
+			}
+			else
+			{
+				$sr = $sr[0];
+				$settlementrun_id = $sr->id;
+				$sr->update(['updated_at' => date('Y-m-d H:i:s')]);
+				$this->logger->addDebug('Update existing SettlementRun', [$sr->id]);
+			}
+		}
+		else
+		{
+			$this->logger->addInfo(' #####    Start Accounting Command via GUI   #####');
+			// withTrashed()
+			$settlementrun_id = SettlementRun::orderBy('id', 'desc')->get()->first()->id;
+			$this->logger->addDebug('SettlementRun already created through GUI');
+		}
+
+		echo "Get all Data from Database\n";
 		$conf 		= BillingBase::first();
-		// don't increment id when running from commandline because no new model is created then
-		$settlementrun_id = \App::runningInConsole() ? SettlementRun::withTrashed()->orderBy('id', 'desc')->get()->first()->id : SettlementRun::withTrashed()->orderBy('id', 'desc')->get()->first()->id + 1;
 		$sepa_accs  = SepaAccount::all();
 
 		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
@@ -95,14 +110,9 @@ class accountingCommand extends Command {
 
 		if (!isset($sepa_accs[0]))
 		{
-			$logger->addError('There are no Sepa Accounts to create Billing Files for - Stopping here!');
+			$this->logger->addError('There are no Sepa Accounts to create Billing Files for - Stopping here!');
 			return -1;
 		}
-
-		// remove all entries of this month permanently (if already created)
-		$ret = AccountingRecord::whereBetween('created_at', [$this->dates['thism_01'], $this->dates['nextm_01']])->forceDelete();
-		if ($ret)
-			$logger->addNotice('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 
 		// init product types of salesmen and invoice nr counters for each sepa account, date of last run
 		$this->_init($sepa_accs, $salesmen, $conf);
@@ -110,37 +120,45 @@ class accountingCommand extends Command {
 		// get call data records as ordered structure (array)
 		$cdrs = $this->_get_cdr_data();
 		if (!$cdrs)
-			$logger->addAlert('No Call Data Records available for this Run!');
+			$this->logger->addAlert('No Call Data Records available for this Run!');
+
+		echo "Create Invoices:\n";
+		$num = count($contracts);
+		// if not called silent via queues
+		if ($this->output)
+			$bar = $this->output->createProgressBar($num);
 
 		/*
 		 * Loop over all Contracts
 		 */
-		foreach ($contracts as $c)
+		foreach ($contracts as $i => $c)
 		{
-			// debugging output
-			var_dump($c->id); //, round(microtime(true) - $start, 4));
+			// progress bar - workaround as progress bar is not shown when cmd is called 
+			// from observer or throws exception when called via queue
+			echo ($i + 1)."/$num [$c->id]\r";
+			// if (!$this->option('debug'))
+			if ($this->output)
+				$bar->advance();
 
 			// Skip invalid contracts
-			if (!$c->check_validity() && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number])))
-			{
-				$logger->addInfo('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
+			if (!$c->check_validity() && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
+				$this->logger->addInfo('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
 				continue;				
 			}
 
-			if (!$c->create_invoice)
-			{
-				$logger->addInfo('Create invoice for Contract '.$c->number.' is off', [$c->id]);
+			if (!$c->create_invoice) {
+				$this->logger->addInfo('Create invoice for Contract '.$c->number.' is off', [$c->id]);
 				continue;
 			}
 
-			if(!$c->costcenter)
-			{
-				$logger->addAlert('Contract '.$c->number.' has no CostCenter assigned - Stop execution for this contract', [$c->id]);
+			if(!$c->costcenter) {
+				$this->logger->addAlert('Contract '.$c->number.' has no CostCenter assigned - Stop execution for this contract', [$c->id]);
 				continue;
 			}
 
 			// init contract temp variables
 			$charge 	= []; 					// total costs for this month for current contract
+			// expires is checked in Item & SepaAccount
 			$c->expires = date('Y-m-01', strtotime($c->contract_end)) == $this->dates['lastm_01'];
 
 
@@ -150,23 +168,20 @@ class accountingCommand extends Command {
 			foreach ($c->items as $item)
 			{
 				// skip items that are related to a deleted product
-				if (!isset($item->product))
-				{
-					$logger->addError('Product '.$item->accounting_text.' was deleted', [$c->id]);
+				if (!isset($item->product)) {
+					$this->logger->addError('Product '.$item->accounting_text.' was deleted', [$c->id]);
 					continue;
 				}
 
 				// skip invalid items - TODO: Think about relevance as it is a bit redundant to calculate_price_and_span
-				if (!$item->check_validity($item->get_billing_cycle()))
-				{
-					$logger->addDebug('Item '.$item->product->name.' is outdated', [$c->id]);
+				if (!$item->check_validity($item->get_billing_cycle())) {
+					$this->logger->addDebug('Item '.$item->product->name.' is outdated', [$c->id]);
 					continue;
 				}
 
 				// skip if price is 0
-				if (!($ret = $item->calculate_price_and_span($this->dates)))
-				{
-					$logger->addDebug('Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
+				if (!($ret = $item->calculate_price_and_span($this->dates))) {
+					$this->logger->addDebug('Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
 					continue;
 				}
 
@@ -209,7 +224,7 @@ class accountingCommand extends Command {
 			$mandate = $c->get_valid_mandate();
 
 			if (!$mandate)
-				$logger->addNotice('Contract '.$c->number.' has no valid sepa mandate', [$c->id]);
+				$this->logger->addNotice('Contract '.$c->number.' has no valid sepa mandate', [$c->id]);
 
 
 			// Add Call Data Records - calculate charge and count
@@ -222,8 +237,7 @@ class accountingCommand extends Command {
 
 			if ($id)
 			{
-				foreach ($cdrs[$id] as $entry)
-				{
+				foreach ($cdrs[$id] as $entry) {
 					$charge += $entry[5];
 					$calls++;
 				}
@@ -240,7 +254,7 @@ class accountingCommand extends Command {
 				else
 				{
 					// this case should never happen
-					$logger->addAlert('Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
+					$this->logger->addAlert('Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
 					$c->charge[$acc->id]['net'] = $charge;
 					$c->charge[$acc->id]['tax'] = $charge * $conf->tax/100;
 					$acc->invoice_nr += 1;
@@ -281,6 +295,8 @@ class accountingCommand extends Command {
 
 		} // end of loop over contracts
 
+		echo "\n";
+
 		// avoid deleting temporary latex files before last invoice was built (multiple threads are used)
 		// and wait for all invoice pdfs to be created for concatenate them in zip command in _make_billing_files()
 		usleep(200000);
@@ -307,9 +323,9 @@ class accountingCommand extends Command {
 		// set language for this run
 		\App::setLocale($conf->userlang);
 
-		// create directory structure
+		// create directory structure and remove old invoices
 		if (is_dir(storage_path('app/'.$this->dir)))
-			$this->_directory_cleanup();
+			SettlementRunController::directory_cleanup($this->dir);
 		else
 			mkdir(storage_path('app/'.$this->dir, 0700, true));
 
@@ -330,7 +346,7 @@ class accountingCommand extends Command {
 		foreach ($sepa_accs as $acc)
 		{
 			$acc->dir = $this->dir;
-			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+5 days'));
+			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+1 day'));
 		}
 
 		// actual invoice nr counters
@@ -374,31 +390,6 @@ class accountingCommand extends Command {
 	}
 
 
-	/**
-	 * This function removes all "old" files created by the previous called Command
-	 * This is necessary because otherwise e.g. after deleting contracts the invoice would be kept and is still shown
-	 * in customer control centre
-	 */
-	private function _directory_cleanup()
-	{
-		// Delete all invoices
-		Invoice::delete_current_invoices();
-
-		// everything in accounting directory - SepaAccount specific
-		foreach (Storage::files($this->dir) as $f)
-		{
-			// keep cdr
-			// if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
-			if (basename($f) != self::_get_cdr_filename())
-				Storage::delete($f);
-		}
-
-		foreach (Storage::directories($this->dir) as $d)
-			Storage::deleteDirectory($d);
-			
-	}
-
-
 	/*
 	 * Stores all billing files besides invoices in the directory defined as property of this class
 	 */
@@ -419,6 +410,7 @@ class accountingCommand extends Command {
 		}
 
 		// create zip file
+		echo "ZIP all Files";
 		\Artisan::call('billing:zip');
 	}
 
@@ -452,20 +444,19 @@ class accountingCommand extends Command {
 		if (!is_file($filepath))
 		{
 			// get call data records
-			$ret = $this->call('billing:cdr');
+			$ret = \Artisan::call('billing:cdr');
 
 			if ($ret)
 				return array(array());
 		}
 
-
 		// NOTE: Add new Providers here!
-		if (isset($_ENV['PROVVOIPENVIA__RESELLER_USERNAME']))
+		if (env('PROVVOIPENVIA__RESELLER_USERNAME'))
 		{
 			return $this->_parse_envia_csv($filepath);
 		}
 
-		else if (isset($_ENV['HLKOMM_RESELLER_USERNAME']))
+		else if (env('HLKOMM_RESELLER_USERNAME'))
 		{
 			return $this->_parse_hlkomm_csv($filepath);
 		}
@@ -496,7 +487,7 @@ class accountingCommand extends Command {
 		foreach ($csv as $line)
 		{
 			$line = str_getcsv($line, ';');
-			$data[intval($line[0])][] = array($line[3], substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $line[7], str_replace(',', '.', $line[10]));
+			$data[intval(str_replace('002-', '', $line[0]))][] = array($line[3], substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $line[7], str_replace(',', '.', $line[10]));
 		}
 
 		return $data;
@@ -557,8 +548,7 @@ class accountingCommand extends Command {
 			else
 			{
 				// there is a phonenr entry in csv that doesnt exist in our db - this case should never happen
-				$logger = new BillingLogger;
-				$logger->addError('Parse CDR.csv: Call Data Record with Phonenr that doesnt exist in the Database - Phonenr deleted?');
+				$this->logger->addError('Parse CDR.csv: Call Data Record with Phonenr that doesnt exist in the Database - Phonenr deleted?');
 			}
 
 		}
@@ -567,6 +557,36 @@ class accountingCommand extends Command {
 	}	
 
 
+	/**
+	 * Instantiates an Array of all necessary date formats needed during execution of this Command
+	 *
+	 * Also needed in Item::calculate_price_and_span and in DashboardController!!
+	 */
+	public static function create_dates_array()
+	{
+		return array(
+
+			'today' 		=> date('Y-m-d'),
+			'm' 			=> date('m'),
+			'Y' 			=> date('Y', strtotime("first day of last month")),
+
+			'this_m'	 	=> date('Y-m'),
+			'thism_01'		=> date('Y-m-01'),
+			'thism_bill'	=> date('m/Y'),
+
+			'lastm'			=> date('m', strtotime("first day of last month")),			// written this way because of known bug ("-1 month" or "last month" is erroneous)
+			'lastm_01' 		=> date('Y-m-01', strtotime("first day of last month")),
+			'lastm_bill'	=> date('m/Y', strtotime("first day of last month")),
+			'lastm_Y'		=> date('Y-m', strtotime("first day of last month")),		// strtotime(first day of last month) is integer with actual timestamp!
+
+			'nextm_01' 		=> date('Y-m-01', strtotime("+1 month")),
+
+			'null' 			=> '0000-00-00',
+			'm_in_sec' 		=> 60*60*24*30,						// month in seconds
+			'last_run'		=> '0000-00-00', 					// filled on start of execution
+
+		);
+	}
 
 
 
@@ -585,22 +605,8 @@ class accountingCommand extends Command {
 	protected function getOptions()
 	{
 		return [
-			// ['example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null],
+			// array('debug', null, InputOption::VALUE_OPTIONAL, 'Print Debug Output to Commandline (1 - Yes, 0 - No (Default))', 0),
 		];
 	}
 
 }
-
-
-
-/*
- * Programming Notes
- */
-
-// $logger = new Logger('Billing');
-// $logger->pushHandler(new StreamHandler(storage_path().'/logs/billing-'.date('Y-m').'.log'), Logger::DEBUG, false);
-
-// switch ($this->argument('cycle'))
-// {
-// 	case 1:
-// $logger->addInfo('Cycle without TV items/products');

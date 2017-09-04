@@ -43,9 +43,6 @@ class TreeBuildCommand extends Command {
 	 */
 	public function fire()
 	{
-		if ($this->option('debug'))
-			dd("debug");
-
 		NetElement::relation_index_build_all(2);
 
 		return;

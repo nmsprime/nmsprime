@@ -58,9 +58,10 @@ class Modem extends \BaseModel {
 		}
 
 		$configfile = $this->configfile ? $this->configfile->name : '';
+		$valid 		= $this->contract->check_validity('Now') ? 'yes' : 'no';
 
-		return ['index' => [$this->id, $this->mac, $configfile, $this->name, $this->lastname, $this->city, $this->street, $us_pwr],
-		        'index_header' => ['Modem Number', 'MAC address', 'Configfile', 'Name', 'Lastname', 'City', 'Street', 'US level'],
+		return ['index' => [$this->id, $this->mac, $configfile, $this->name, $this->lastname, $this->city, $this->street, $this->contract->district, $us_pwr, \App\Http\Controllers\BaseViewController::translate_label($valid)],
+		        'index_header' => ['Modem Number', 'MAC address', 'Configfile', 'Name', 'Lastname', 'City', 'Street', 'District', 'US level', 'Contract valid'],
 		        'bsclass' => $bsclass,
 		        'header' => $this->id.' - '.$this->mac.($this->name ? ' - '.$this->name : '')];
 	}
@@ -105,6 +106,18 @@ class Modem extends \BaseModel {
 
 		return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrder')->where('ordertype', 'NOT LIKE', 'order/create_attachment');
 
+	}
+
+	/**
+	 * related enviacontracts
+	 */
+	public function enviacontracts() {
+		if (!\PPModule::is_active('provvoipenvia')) {
+			throw new \LogicException(__METHOD__.' only callable if module ProvVoipEnvia as active');
+		}
+		else {
+			return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaContract');
+		}
 	}
 
 	public function configfile ()
@@ -166,6 +179,9 @@ class Modem extends \BaseModel {
 
 		if (\PPModule::is_active('provvoipenvia'))
 		{
+			$ret['dummy']['EnviaContract']['class'] = 'EnviaContract';
+			$ret['dummy']['EnviaContract']['relation'] = $this->enviacontracts;
+
 			$ret['dummy']['EnviaOrder']['class'] = 'EnviaOrder';
 			$ret['dummy']['EnviaOrder']['relation'] = $this->_envia_orders;
 
@@ -184,6 +200,8 @@ class Modem extends \BaseModel {
 	 */
 	public static function boot()
 	{
+		Log::debug(__METHOD__." started");
+
 		parent::boot();
 
 		Modem::observe(new \App\SystemdObserver);
@@ -207,6 +225,8 @@ class Modem extends \BaseModel {
 	 */
 	private function generate_cm_dhcp_entry()
 	{
+		Log::debug(__METHOD__." started for ".$this->hostname);
+
 		$ret = 'host cm-'.$this->id.' { hardware ethernet '.$this->mac.'; filename "cm/cm-'.$this->id.'.cfg"; ddns-hostname "cm-'.$this->id.'";';
 
 		if(count($this->mtas))
@@ -218,7 +238,9 @@ class Modem extends \BaseModel {
 
 	private function generate_cm_dhcp_entry_pub()
 	{
-			return 'subclass "Client-Public" '.$this->mac.'; # CM id:'.$this->id."\n";
+		Log::debug(__METHOD__." started for ".$this->hostname);
+
+		return 'subclass "Client-Public" '.$this->mac.'; # CM id:'.$this->id."\n";
 	}
 
 
@@ -239,12 +261,12 @@ class Modem extends \BaseModel {
 	 * Make DHCP config files for all CMs including EPs - used in dhcpCommand after deleting
 	 * the config files with all entries
 	 *
-	 * TODO: make static function (class context not object)
-	 *
 	 * @author Torsten Schmidt
 	 */
 	public static function make_dhcp_cm_all ()
 	{
+		Log::debug(__METHOD__." started");
+
 		Modem::clear_dhcp_conf_files();
 
 		// Log
@@ -275,10 +297,118 @@ class Modem extends \BaseModel {
 		if ($ret === false)
 			die("Error writing to file");
 
-
 		// chown for future writes in case this function was called from CLI via php artisan nms:dhcp that changes owner to 'root'
 		system('/bin/chown -R apache /etc/dhcp/');
 	}
+
+
+	/**
+	 * Add DHCP config for a single CM including EPs to the appropriate DHCPD Config File
+	 * Used in ModemObserver@updated/deleted for created/updated/deleted events
+	 *
+	 * NOTES:
+	 	* This is way faster (0,01s (also on 2k modems) vs 2,8s for 348 Modems via make_dhcp_cm_all) than everytime creating files for all modems
+	 	* It's also more secure as it uses flock() to avoid dhcpd restart errors due to race conditions
+	 	* MaybeTODO: embed part between lock & unlock into try catch block to avoid forever locked files in case of exception
+	 *
+	 * @param 	delete  	set to true if you want to remove the entry from the configfile
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public function make_dhcp_cm($delete = false)
+	{
+		Log::debug(__METHOD__." started");
+
+		// Note: hostname is changed when modem was created
+		// if (!$this->isDirty(['hostname', 'mac', 'public']) && !$delete)
+		// 	return;
+
+		// Log
+		Log::info('DHCPD Configfile Update for Modem: '.$this->id);
+
+		$data 		= $this->generate_cm_dhcp_entry();
+		$original 	= $this->getOriginal();
+		$replace 	= $original ? $original['mac'] : $this->mac;
+
+		if (!file_exists(self::CONF_FILE_PATH))
+		{
+			// try to add file if it doesnt exist
+			Log::info('Missing DHCPD Configfile '.self::CONF_FILE_PATH);
+			if (File::put('', self::CONF_FILE_PATH) === false)
+			{
+				Log::alert('Error writing to DHCPD Configfile: '.self::CONF_FILE_PATH);
+				return;
+			}
+		}
+
+		// lock
+		$fp = fopen(self::CONF_FILE_PATH, "r+");
+
+		if (!flock($fp, LOCK_EX))
+			Log::error('Could not get exclusive lock for '.self::CONF_FILE_PATH);
+
+		// $conf = File::get(self::CONF_FILE_PATH);
+		$conf = file(self::CONF_FILE_PATH);
+
+		foreach ($conf as $key => $line)
+		{
+			if (strpos($line, $replace) !== false)
+			{
+				unset($conf[$key]);
+				break;
+			}
+		}
+
+		// dont replace directly as this wouldnt add the entry for a new created modem
+		// $conf = str_replace($replace, '', $conf);
+
+		if (!$delete)
+			$conf[] = $data;
+
+		self::_write_dhcp_file(self::CONF_FILE_PATH, implode($conf)); //	PHP_EOL
+
+		// public ip
+		if ($this->public || ($original && $original['public']))
+		{
+			$data_pub 	  = $this->generate_cm_dhcp_entry_pub();
+
+			if (file_exists(self::CONF_FILE_PATH_PUB))
+				$conf_pub = file(self::CONF_FILE_PATH_PUB);
+			else
+			{
+				Log::info('Missing DHCPD Configfile '.self::CONF_FILE_PATH_PUB);
+				if (File::put('', self::CONF_FILE_PATH_PUB) === false)
+					Log::alert('Error writing to DHCPD Configfile: '.self::CONF_FILE_PATH_PUB);
+			}
+
+			foreach ($conf_pub as $key => $line)
+			{
+				if (strpos($line, $replace) !== false)
+				{
+					unset($conf_pub[$key]);
+					break;
+				}
+			}
+
+			// $conf_pub = str_replace($replace_pub, '', $conf_pub);
+			if (!$delete && $this->public)
+				$conf_pub[] = $data_pub;
+
+			self::_write_dhcp_file(self::CONF_FILE_PATH_PUB, implode($conf_pub));
+		}
+
+		// unlock
+		flock($fp, LOCK_UN);
+		fclose($fp);
+	}
+
+
+	public static function _write_dhcp_file($filename, $data)
+	{
+		if (File::put($filename, $data) === false)
+			Log::critcal('Failed to modify DHCPD Configfile '.$filename);
+	}
+
 
 
 	/**
@@ -286,6 +416,8 @@ class Modem extends \BaseModel {
 	 */
 	public function make_configfile ()
 	{
+		Log::debug(__METHOD__." started for ".$this->hostname);
+
 		$modem	= $this;
 		$id		= $modem->id;
 		$mac	= $modem->mac;
@@ -308,8 +440,8 @@ class Modem extends \BaseModel {
 		if ($ret === false)
 				die("Error writing to file");
 
-		Log::info('configfile: update modem '.$this->hostname);
-		Log::info("configfile: /usr/local/bin/docsis -e $cf_file $dir/../keyfile $cfg_file");
+		Log::info('Configfile Update for Modem: '.$this->hostname);
+		Log::debug("configfile: /usr/local/bin/docsis -e $cf_file $dir/../keyfile $cfg_file");
 		// if (file_exists($cfg_file))
 		//	 unlink($cfg_file);
 
@@ -606,6 +738,8 @@ class Modem extends \BaseModel {
 	 */
 	public function geocode ($save = true)
 	{
+		Log::debug(__METHOD__." started for ".$this->hostname);
+
 		$country = 'Deutschland';
 
 		// Load google key if .ENV is set
@@ -699,8 +833,33 @@ class Modem extends \BaseModel {
 		// no numbers found
 		return False;
 
-
 	}
+
+
+	/**
+	 * Helper to get all phonenumbers related to contract.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function related_phonenumbers() {
+
+		// if voip module is not active: there can be no phonenumbers
+		if (!\PPModule::is_active('ProvVoip')) {
+			return [];
+		}
+
+		$phonenumbers_on_modem = [];
+
+		// else: search all mtas on all modems
+		foreach ($this->mtas as $mta) {
+			foreach ($mta->phonenumbers as $phonenumber) {
+				array_push($phonenumbers_on_modem, $phonenumber);
+			}
+		}
+
+		return $phonenumbers_on_modem;
+	}
+
 
 
 	/*
@@ -794,7 +953,7 @@ class Modem extends \BaseModel {
 
 		// first: check if envia module is enabled
 		// if not: do nothing – this database fields could be in use by another voip provider module!
-		if (\PPModule::is_active('ProvVoipEnvia')) {
+		if (!\PPModule::is_active('ProvVoipEnvia')) {
 			return;
 		}
 
@@ -819,27 +978,24 @@ class Modem extends \BaseModel {
 	 * Check if modem actually needs to be restarted. This is only the case if a
 	 * relevant attribute was modified.
 	 *
-	 * @return 1 if reset via Modem or original mac is needed (mac was changed), -1 for reset via CMTS (faster), 0 if no restart is needed
+	 * @return 1 if reset via Modem or original mac is needed (mac was changed)
+	 *		  -1 for reset via CMTS (faster), 
+	 *		   0 if no restart is needed
 	 *
 	 * @author Ole Ernst, Nino Ryschawy
 	 *
 	 * NOTE: returns 1 when modem is created
 	 */
-	public function needs_restart() {
-		$diff = array_diff_assoc($this->getAttributes(), $this->getOriginal());
+	public function needs_restart()
+	{
+		$diff = $this->getDirty();
 
 		// in case mac was changed, reset via cmts - or take original mac
 		if (array_key_exists('mac', $diff))
 			return 1;
 
-		if (array_key_exists('contract_id', $diff)
-			|| array_key_exists('public', $diff)
-			|| array_key_exists('network_access', $diff)
-			|| array_key_exists('configfile_id', $diff)
-			|| array_key_exists('qos_id', $diff))
-		{
+		if (multi_array_key_exists(['contract_id', 'public', 'network_access', 'configfile_id', 'qos_id'], $diff))
 			return -1;
-		}
 
 		return 0;
 	}
@@ -860,6 +1016,8 @@ class ModemObserver
 
 	public function created($modem)
 	{
+		Log::debug(__METHOD__." started for ".$modem->hostname);
+
 		$modem->hostname = 'cm-'.$modem->id;
 		$modem->save();	 // forces to call the updating() and updated() method of the observer !
 		if (\PPModule::is_active ('ProvMon'))
@@ -868,7 +1026,9 @@ class ModemObserver
 
 	public function updating($modem)
 	{
-		// reminder: on active Envia module: moving modem with phonenumbers attached to other contract is not allowed!
+		Log::debug(__METHOD__." started for ".$modem->hostname);
+
+		// reminder: on active Envia module: moving modem to other contract is not allowed!
 		// check if this is running if you decide to implement moving of modems to other contracts
 		// watch Ticket LAR-106
 		if (\PPModule::is_active('ProvVoipEnvia')) {
@@ -878,35 +1038,39 @@ class ModemObserver
 				&&
 				($modem['original']['contract_id'] != $modem->contract_id)
 			) {
-				if ($modem->has_phonenumbers_attached) {
-					// returning false should cancel the updating: verify this! There has been some problems with deleting modems – we had to put the logic in Modem::delete() probably caused by our Base* classes…
-					// see: http://laravel-tricks.com/tricks/cancelling-a-model-save-update-delete-through-events
-					return false;
-				}
-				elseif ($modem->contract_external_id) {
-					// if there are any Envia data: the number(s) are probably moved only temporary
-					// here we have to think about the references to this modem in all related EnviaOrders (maybe all the numbers have been terminated and then deleted from our database – but we still have the orders related to this numbers and also to this modem
-					return false;
-				}
+				// returning false should cancel the updating: verify this! There has been some problems with deleting modems – we had to put the logic in Modem::delete() probably caused by our Base* classes…
+				// see: http://laravel-tricks.com/tricks/cancelling-a-model-save-update-delete-through-events
+				return false;
 			}
 		}
 
 		if (!$modem->observer_enabled)
 			return;
 
+		$diff = $modem->getDirty();
+
 		// Use Updating to set the geopos before a save() is called.
 		// Notice: that we can not call save() in update(). This will re-tricker
 		//         the Observer and re-call update() -> endless loop is the result.
-		$modem->geocode(false);
+		if (multi_array_key_exists(['street', 'house_number', 'zip', 'city'], $diff))
+		{
+			$modem->geocode(false);
+			$diff['x'] = true; 			// refresh Mpr by setting changed attribute to true
+		}
 
 		// Refresh MPS rules
 		// Note: does not perform a save() which could trigger observer.
 		if (\PPModule::is_active('HfcCustomer'))
-			$modem->netelement_id = \Modules\HfcCustomer\Entities\Mpr::refresh($modem->id);
+		{
+			if (multi_array_key_exists(['x', 'y'], $diff))
+				$modem->netelement_id = \Modules\HfcCustomer\Entities\Mpr::refresh($modem->id);
+		}
 	}
 
 	public function updated($modem)
 	{
+		Log::debug(__METHOD__." started for ".$modem->hostname);
+
 		if (!$modem->observer_enabled)
 			return;
 
@@ -917,8 +1081,8 @@ class ModemObserver
 			$modem->restart_modem($restart > 0);
 		else if ($restart)
 		{
+			$modem->make_dhcp_cm();
 			$modem->restart_modem($restart > 0);
-			$modem->make_dhcp_cm_all();
 			$modem->make_configfile();
 		}
 
@@ -931,8 +1095,11 @@ class ModemObserver
 
 	public function deleted($modem)
 	{
+		Log::debug(__METHOD__." started for ".$modem->hostname);
+
+		// $modem->make_dhcp_cm_all();
+		$modem->make_dhcp_cm(true);
 		$modem->restart_modem();
-		$modem->make_dhcp_cm_all();
 		$modem->delete_configfile();
 	}
 }

@@ -40,6 +40,7 @@ class Contract extends \BaseModel {
 			'contract_end' => 'dateornull', // |after:now -> implies we can not change stuff in an out-dated contract
 			'sepa_iban' => 'iban',
 			'sepa_bic' => 'bic',
+			'costcenter_id' => 'required|numeric|min:1',
 			);
 	}
 
@@ -64,8 +65,10 @@ class Contract extends \BaseModel {
 		if ($this->network_access == 0)
 			$bsclass = 'danger';
 
-		return ['index' => [$this->number, $this->firstname, $this->lastname, $this->zip, $this->city, $this->street, $this->house_number, $this->district, $this->contract_start, $this->contract_end],
-				'index_header' => ['Contract Nr', 'Firstname', 'Lastname', 'Postcode', 'City', 'Street', 'House Nr', 'District', 'Start Date', 'End Date'],
+		$costcenter = $this->costcenter ? $this->costcenter->name : '';
+
+		return ['index' => [$this->number, $this->firstname, $this->lastname, $this->zip, $this->city, $this->street, $this->house_number, $this->district, $this->contract_start, $this->contract_end, $costcenter],
+				'index_header' => ['Contract Nr', 'Firstname', 'Lastname', 'Postcode', 'City', 'Street', 'House Nr', 'District', 'Start Date', 'End Date', 'CostCenter'],
 				'bsclass' => $bsclass,
 				'header' => $this->number.' '.$this->firstname.' '.$this->lastname];
 	}
@@ -96,6 +99,9 @@ class Contract extends \BaseModel {
 
 		if (\PPModule::is_active('provvoipenvia'))
 		{
+			$ret['Envia']['EnviaContract']['class'] = 'EnviaContract';
+			$ret['Envia']['EnviaContract']['relation'] = $this->enviacontracts;
+
 			$ret['Envia']['EnviaOrder']['class'] = 'EnviaOrder';
 			$ret['Envia']['EnviaOrder']['relation'] = $this->_envia_orders;
 
@@ -128,6 +134,18 @@ class Contract extends \BaseModel {
 	public function modems()
 	{
 		return $this->hasMany('Modules\ProvBase\Entities\Modem');
+	}
+
+	/**
+	 * related enviacontracts
+	 */
+	public function enviacontracts() {
+		if (!\PPModule::is_active('provvoipenvia')) {
+			throw new \LogicException(__METHOD__.' only callable if module ProvVoipEnvia as active');
+		}
+		else {
+			return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaContract');
+		}
 	}
 
 
@@ -302,7 +320,7 @@ class Contract extends \BaseModel {
 
 
 	/**
-	 * Helper to get the customer number.
+	 * Helper to get the customer number (may be identical with the contract number).
 	 * As there is no hard coded customer number in database we have to use this mapper. The semantic meaning of number…number4 can be defined in global configuration.
 	 *
 	 * @author Patrick Reichel
@@ -312,7 +330,7 @@ class Contract extends \BaseModel {
 	 */
 	public function customer_number() {
 
-		if (boolval($this->number3)) {
+		if (boolval($this->number3) && (\Str::lower($this->number3 != 'n/a'))) {
 			$customer_number = $this->number3;
 		}
 		else {
@@ -320,6 +338,56 @@ class Contract extends \BaseModel {
 		}
 
 		return $customer_number;
+
+	}
+
+
+	/**
+	 * Helper to get the legacy customer number (may be identical wtih the legacy contract number).
+	 * As there is no hard coded customer number in database we have to use this mapper. The semantic meaning of number…number4 can be defined in global configuration.
+	 *
+	 * @author Patrick Reichel
+	 *
+	 * @todo: in this first step the relation is hardcoded within the function. Later on we have to check the mapping against the configuration.
+	 * @return current customer number
+	 */
+	public function customer_number_legacy() {
+
+		if (boolval($this->number4) && (\Str::lower($this->number4 != 'n/a'))) {
+			$customer_number_lecacy = $this->number4;
+		}
+		else {
+			$customer_number_lecacy = $this->number2;
+		}
+
+		return $customer_number_lecacy;
+
+	}
+
+	/**
+	 * Helper to get all phonenumbers related to contract.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function related_phonenumbers() {
+
+		// if voip module is not active: there can be no phonenumbers
+		if (!\PPModule::is_active('ProvVoip')) {
+			return [];
+		}
+
+		$phonenumbers_on_contract = [];
+
+		// else: search all mtas on all modems
+		foreach ($this->modems as $modem) {
+			foreach ($modem->mtas as $mta) {
+				foreach ($mta->phonenumbers as $phonenumber) {
+					array_push($phonenumbers_on_contract, $phonenumber);
+				}
+			}
+		}
+
+		return $phonenumbers_on_contract;
 
 	}
 

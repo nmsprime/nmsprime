@@ -11,6 +11,7 @@ BaseRoute::group([], function() {
 
 	BaseRoute::get('/EnviaOrder/{EnviaOrder}/marksolved', array('as' => 'EnviaOrder.marksolved', 'uses' => 'Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderController@mark_solved'));
 
+	BaseRoute::resource('EnviaContract', 'Modules\ProvVoipEnvia\Http\Controllers\EnviaContractController');
 	BaseRoute::resource('EnviaOrder', 'Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderController');
 	BaseRoute::resource('EnviaOrderDocument', 'Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderDocumentController');
 });

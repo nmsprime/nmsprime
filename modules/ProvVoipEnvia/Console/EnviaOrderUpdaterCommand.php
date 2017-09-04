@@ -6,6 +6,7 @@ use Log;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
+use \Modules\ProvVoipEnvia\Entities\EnviaContract;
 use \Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use \Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
 
@@ -64,17 +65,24 @@ class EnviaOrderUpdaterCommand extends Command {
 		$this->_update_orders();
 		echo "\n";
 
+		echo "\n";
+		$this->_update_order_relation_to_contracts();
+		echo "\n";
+
 	}
 
 	/**
 	 * Gets CSV for all phonenumber related orders from envia and updates database via model ProvVoipEnvia
+	 *
+	 * This happenes order by order (each with a single request) to avoid timeouts which can leave the database in undefined state!
 	 *
 	 * @author Patrick Reichel
 	 */
 
 	protected function _get_all_orders_csv() {
 
-		Log::debug('Getting all orders csv');
+		Log::debug(__METHOD__." started");
+		Log::info('Getting all orders csv');
 
 		// create URL suffix
 		$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'misc_get_orders_csv', 'really' => 'True'), false);
@@ -83,7 +91,32 @@ class EnviaOrderUpdaterCommand extends Command {
 		$url = $this->base_url.$url_suffix;
 
 		// execute using cURL
-		$this->_perform_curl_request($url);
+		$result = $this->_perform_curl_request($url);
+
+		// the result should be an array containing the orders – if not there has been a problem…
+		try  {
+			$orders = unserialize($result);
+		}
+		catch (Exception $ex) {
+			Log::error('Exception deserializing expected Envia orders array created from CSV ('.$ex->getMessage().') – cannot proceed');
+			return;
+		}
+
+		if (!is_array($orders)) {
+			Log::error('Received no unserializable data – cannot proceed');
+			return;
+		}
+
+		// call the special method in ProvVoipEnvia to update the orders one by one
+		foreach ($orders as $order) {
+			$param = urlencode(serialize($order));
+			$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'misc_get_orders_csv_process_single_order', 'serialized_order' => $param, 'really' => 'True'), false);
+			$url = $this->base_url.$url_suffix;
+
+			$result = $this->_perform_curl_request($url);
+			echo "\n";
+			print_r($result);
+		}
 	}
 
 
@@ -95,7 +128,8 @@ class EnviaOrderUpdaterCommand extends Command {
 	 */
 	protected function _get_orders() {
 
-		Log::debug('Getting orders from database');
+		Log::debug(__METHOD__." started");
+		Log::info('Getting orders from database');
 		$this->orders = EnviaOrder::all();
 
 	}
@@ -106,6 +140,8 @@ class EnviaOrderUpdaterCommand extends Command {
 	 * @author Patrick Reichel
 	 */
 	protected function _update_orders() {
+
+		Log::debug(__METHOD__." started");
 
 		foreach ($this->orders as $order) {
 
@@ -147,10 +183,11 @@ class EnviaOrderUpdaterCommand extends Command {
 	 */
 	protected function _updated($order_id) {
 
-		// not older than 1 hours (this is relatively long; but there are some timing issues and
+		Log::debug(__METHOD__." started");
+
+		// not older than 1 hour (this is relatively long; but there are some timing issues and
 		// the script is run late at night…)
-		$timedelta_max = 60 * 60 * 1;
-		$compare_time = date('Y-m-d H:i:s', time() - $timedelta_max);
+		$compare_time = date('Y-m-d H:i:s', strtotime("-1 hour"));
 
 		$order = EnviaOrder::withTrashed()->where('orderid', '=', $order_id)->first();
 
@@ -165,6 +202,41 @@ class EnviaOrderUpdaterCommand extends Command {
 		}
 
 		return false;
+
+	}
+
+
+	/**
+	 * Try to create a relation to EnviaContract if not set
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _update_order_relation_to_contracts() {
+
+		Log::debug(__METHOD__." started");
+
+		$envia_orders = EnviaOrder::whereRaw('enviacontract_id IS NULL')->get();
+
+		$envia_contract = new EnviaContract();
+		foreach ($envia_orders as $envia_order) {
+
+			// if there is no contract reference we are not able to find a match
+			if (!$envia_order->contractreference) {
+				continue;
+			}
+
+			// try to get the corresponding envia contract
+			$envia_contract = EnviaContract::firstOrNew(['envia_contract_reference' => $envia_order->contractreference]);
+
+			if (!$envia_contract->exists) {
+				$envia_contract->envia_customer_reference = $envia_order->customerreference;
+				$envia_contract->save();
+			}
+
+			$envia_order->enviacontract_id = $envia_contract->id;
+			$envia_order->save();
+
+		}
 
 	}
 

@@ -36,11 +36,12 @@ class ModemController extends \BaseController {
 				where('modem_id', '=', $model->id)->
 				where('method', '=', 'contract/relocate')->
 				where('orderdate', '>=', $model['installation_address_change_date'])->
-				where('contractreference', '<>', $model->contract_external_id)->
 				get();
 
-			if ($orders->count() > 0) {
-				array_push($installation_address_change_date_options, 'readonly');
+			foreach ($orders as $order) {
+				if (!\Modules\ProvVoipEnvia\Entities\EnviaOrder::orderstate_is_final($order)) {
+					array_push($installation_address_change_date_options, 'readonly');
+				}
 			}
 		}
 
@@ -145,12 +146,12 @@ class ModemController extends \BaseController {
 		if(!\PPModule::is_active('ProvMon'))
 			return $a;
 
-		array_push($a, ['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$view_var->id]]);
-		array_push($a, ['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$view_var->id]]);
+		array_push($a, ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => [$view_var->id]]);
+		array_push($a, ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => [$view_var->id]]);
 
 		// MTA: only show MTA analysis if Modem has MTAs
 		if (isset($view_var->mtas) && isset($view_var->mtas[0]))
-			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'Provmon.mta', 'link' => [$view_var->id]]);
+			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => [$view_var->id]]);
 
 		// add tab for GuiLog
 		array_push($a, parent::get_form_tabs($view_var)[0]);

@@ -42,12 +42,12 @@ class ProvMonController extends \BaseController {
 		$this->modem = $modem;
 
 		$a = array(['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]],
-						['name' => 'Analyses', 'route' => 'Provmon.index', 'link' => [$id]],
-						['name' => 'CPE-Analysis', 'route' => 'Provmon.cpe', 'link' => [$id]],
+						['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => [$id]],
+						['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => [$id]],
 				);
 
 		if (isset($modem->mtas[0]))
-			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'Provmon.mta', 'link' => [$id]]);
+			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => [$id]]);
 
 		array_push($a, ['name' => 'Logging', 'route' => 'GuiLog.filter', 'link' => ['model_id' => $modem->id, 'model' => 'Modem']]);
 
@@ -69,10 +69,11 @@ class ProvMonController extends \BaseController {
 
 		// Ping: Send 5 request's at once with max timeout of 1 second
 		$ip = gethostbyname($hostname);
-		if ($ip != $hostname)
-			exec ('sudo ping -c5 -i0 -w1 '.$hostname, $ping);
-		else
+		if ($ip == $hostname)
 			$ip = null;
+
+		exec ('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
+		$online = $ret ? false : true;
 
 		// Flood Ping
 		$flood_ping = $this->flood_ping ($hostname);
@@ -83,31 +84,78 @@ class ProvMonController extends \BaseController {
 
 		// Configfile
 		$cf_path = "/tftpboot/cm/$modem->hostname.conf";
-		$configfile = is_file($cf_path) ? file($cf_path) : ['Error: Missing Configfile!'];
+		$configfile = is_file($cf_path) ? file($cf_path) : null;
 
-		// Realtime Measure - only fetch realtime values if all pings are successfull
-		if (count($ping) == 10)
+		// Realtime Measure - this takes the most time
+		// TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
+		if ($online)
 		{
 			// preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
 			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip);
 			$realtime['forecast'] = 'TODO';
 		}
-		else if (count($ping) <= 7)
-			$ping = null;
 
 		// Log dhcp (discover, ...), tftp (configfile or firmware)
-		$search = $ip ? "$mac|$modem->hostname|$ip" : "$mac|$modem->hostname";
-		exec ('egrep -i "('.$search.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
+		$search = $ip ? "$mac|$modem->hostname|$ip " : "$mac|$modem->hostname";
+		exec ('egrep -i "('.$search.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 30  | tac', $log);
 
-		// Monitoring
-		$monitoring = $this->monitoring($modem);
+		$host_id = $this->monitoring_get_host_id($modem);
 
 		// TODO: Dash / Forecast
 
 		$panel_right = $this->prep_sidebar($id);
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'monitoring', 'view_var', 'flood_ping')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip')));
+	}
+
+
+	/**
+	 * Send output of Ping in real-time to client browser as Stream with Server Sent Events
+	 * called in analyses.blade.php in javascript content
+	 *
+	 * @param 	ip 			String
+	 * @return 	response 	Stream
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public function realtime_ping($ip)
+	{
+		// \Log::debug(__FUNCTION__. "called with $ip");
+
+		$response = new \Symfony\Component\HttpFoundation\StreamedResponse(function() use ($ip) {
+
+			$cmd = "ping -c 5 ".escapeshellarg($ip);
+
+			$handle = popen($cmd, 'r');
+
+			if (!is_resource($handle))
+			{
+				echo "data: finished\n\n";
+				ob_flush(); flush();
+				return;
+			}
+
+			while(!feof($handle))
+			{
+				$line = fgets($handle);
+				$line = str_replace("\n", '', $line);
+				// \Log::debug("$line");
+				// echo 'data: {"message": "'. $line . '"}'."\n";
+				echo "data: <br>$line";
+				echo "\n\n";
+				ob_flush(); flush();
+			}
+
+			pclose($handle);
+
+			echo "data: finished\n\n";
+			ob_flush(); flush();
+		});
+
+		$response->headers->set('Content-Type', 'text/event-stream');
+
+		return $response;
 	}
 
 
@@ -281,15 +329,14 @@ end:
 			$realtime['forecast'] = 'TODO';
 		}
 
-		// Monitoring
-		$monitoring = $this->monitoring($modem);
+		$host_id = $this->monitoring_get_host_id($modem);
 
 		$panel_right =  [
 			['name' => 'Edit', 'route' => 'Cmts.edit', 'link' => [$id]],
-			['name' => 'Analysis', 'route' => 'Provmon.cmts', 'link' => [$id]]
+			['name' => 'Analysis', 'route' => 'ProvMon.cmts', 'link' => [$id]]
 		];
 
-		return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'monitoring', 'view_var')));
+		return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var')));
 	}
 
 	/**
@@ -841,7 +888,7 @@ end:
 		/*
 		 * Images
 		 */
-		$url_base = 'https://'.\Request::getHost()."/cacti/graph_image.php?rra_id=0&graph_start=$from_t&graph_end=$to_t";
+		$url_base = "/cacti/graph_image.php?rra_id=0&graph_start=$from_t&graph_end=$to_t";
 
 		// TODO: should be auto adapted to screen resolution. Note that we still use width=100% setting
 		// in the image view. This could lead to diffuse (unscharf) fonts.
@@ -857,6 +904,50 @@ end:
 
 		// default return
 		return $ret;
+	}
+
+
+	/**
+	 * Get the cacti host id, which corresponds to a given hostname of the modem object
+	 *
+	 * @param modem: The modem object
+	 * @return: The cacti host id
+	 *
+	 * @author: Ole Ernst
+	 */
+	public static function monitoring_get_host_id($modem)
+	{
+		// Connect to Cacti DB
+		$cacti = \DB::connection('mysql-cacti');
+
+		// Get Cacti Host ID to $modem
+		$host  = $cacti->table('host')->where('description', '=', $modem->hostname)->select('id')->first();
+		if (!isset($host))
+			return false;
+
+		return $host->id;
+	}
+
+
+	/**
+	 * Get the cacti graph template ids, which correspond to a given graph template name
+	 *
+	 * @param name: The cacti graph template name
+	 * @return: An array of the matching cacti graph template ids
+	 *
+	 * @author: Ole Ernst
+	 */
+	public static function monitoring_get_graph_template_id($name)
+	{
+		// Connect to Cacti DB
+		$cacti = \DB::connection('mysql-cacti');
+
+		// Get Cacti Host ID to $modem
+		$template  = $cacti->table('graph_templates')->where('name', '=', $name)->select('id')->first();
+		if (!isset($template))
+			return null;
+
+		return [$template->id];
 	}
 
 

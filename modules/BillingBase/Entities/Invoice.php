@@ -56,12 +56,12 @@ class Invoice extends \BaseModel{
 	/**
 	 * Init Observer
 	 */
-	// public static function boot()
-	// {
-	// 	parent::boot();
+	public static function boot()
+	{
+		parent::boot();
 
-	// 	Invoice::observe(new InvoiceObserver);
-	// }
+		Invoice::observe(new InvoiceObserver);
+	}
 
 
 	/**
@@ -76,7 +76,7 @@ class Invoice extends \BaseModel{
 	/**
 	 * @var string - invoice directory path relativ to Storage app path and temporary filename variables
 	 */
-	private $rel_storage_invoice_dir = 'data/billingbase/invoice/';
+	public $rel_storage_invoice_dir = 'data/billingbase/invoice/';
 
 	// temporary variables for settlement run without .pdf extension
 	private $filename_invoice 	= '';
@@ -86,7 +86,7 @@ class Invoice extends \BaseModel{
 	/**
 	 * @var object - logger for Billing Module - instantiated in constructor
 	 */
-	private $logger;
+	public $logger;
 
 	/**
 	 * Temporary CDR Variables
@@ -222,7 +222,7 @@ class Invoice extends \BaseModel{
 		$this->data['contract_street'] 		= $contract->street.' '.$contract->house_number;
 		$this->data['contract_zip'] 		= $contract->zip;
 		$this->data['contract_city'] 		= $contract->city;
-		$this->data['contract_address'] 	= $contract->company ? "$contract->firstname $contract->lastname\\\\$contract->company\\\\".$this->data['contract_street']."\\\\$contract->zip $contract->city" : "$contract->firstname $contract->lastname\\\\".$this->data['contract_street']."\\\\$contract->zip $contract->city";
+		$this->data['contract_address'] 	= ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . ($contract->company ? "$contract->company\\\\" : '') . $this->data['contract_street'] . "\\\\$contract->zip $contract->city";
 
 		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
@@ -386,12 +386,14 @@ class Invoice extends \BaseModel{
 
 
 	/**
-	 * @param 	Array 	$cdrs 		Call Data Record array designated for this Invoice formatted by parse_cdr_data in accountingCommand
+	 * @param 	cdrs 	Array		Call Data Record array designated for this Invoice formatted by parse_cdr_data in accountingCommand
+	 * @param   conf   	model 		BillingBase
 	 */
-	public function add_cdr_data($cdrs)
+	public function add_cdr_data($cdrs, $conf)
 	{
 		$this->has_cdr = 1;
-		$this->time_cdr = $time_cdr = strtotime($cdrs[0][1]);
+		// $this->time_cdr = $time_cdr = strtotime($cdrs[0][1]);
+		$this->time_cdr = $time_cdr = $conf->cdr_offset ? strtotime('-'.($conf->cdr_offset+1).' month') : strtotime('first day of last month');
 		$this->data['cdr_month'] = date('m/Y', $time_cdr);
 
 		$sum = $count = 0;
@@ -510,13 +512,15 @@ class Invoice extends \BaseModel{
 		// var_dump($this->data['invoice_nr']);
 		$template = str_replace('\\_', '_', $template);
 
-		foreach ($this->data as $key => $value)
+		foreach ($this->data as $key => $string)
 		{
+			$string = escape_latex_special_chars($string);
+
 			// escape underscores for pdflatex to work
-			if (strpos($value, 'logo') === false)
-				$value = str_replace('_', '\\_', $value);
+			if (strpos($string, 'logo') === false)
+				$string = str_replace('_', '\\_', $string);
 			
-			$template = str_replace('{'.$key.'}', $value, $template);		
+			$template = str_replace('{'.$key.'}', $string, $template);
 		}
 
 		return $template;
@@ -541,7 +545,7 @@ class Invoice extends \BaseModel{
 			if (is_file($file))
 			{
 				// take care - when we start process in background we don't get the return value anymore
-				system("pdflatex $file &>/dev/null &", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
+				system("pdflatex \"$file\" &>/dev/null &", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
 
 				switch ($ret)
 				{
@@ -557,7 +561,7 @@ class Invoice extends \BaseModel{
 						return null;
 				}
 
-				echo "Successfully created $key in $file\n";
+				// echo "Successfully created $key in $file\n";
 				$this->logger->addDebug("Successfully created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
 
 				// Deprecated: remove temporary files - This is done by remove_templatex_files() now after all pdfs were created simultaniously by multiple threads
@@ -657,6 +661,7 @@ class InvoiceObserver
 	public function deleted($invoice)
 	{
 		// Delete PDF from Storage
-		// Storage::delete($invoice->rel_storage_invoice_dir.$invoice->contract_id.'/'.$invoice->filename);
+		$ret = Storage::delete($invoice->rel_storage_invoice_dir.$invoice->contract_id.'/'.$invoice->filename);
+		$invoice->logger->addDebug('Removed Invoice from Storage', [$invoice->contract_id, $invoice->filename]);
 	}
 }

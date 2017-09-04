@@ -109,9 +109,9 @@ class Mpr extends \BaseModel {
 		if (is_int($modem))
 		{
 			$single_modem = true;
-			\Log::info('mps: perform mps rule matching for a single modem');
+			\Log::info('MPS: perform mps rule matching for a single modem');
 		} else {
-			\Log::info('mps: perform mps rule matching');
+			\Log::info('MPS: perform mps rule matching');
 			// reset all tree_ids if all modems are being matched,
 			// because we don't know if old matches are still valid
 			Modem::where('id', '>', '0')->update(['netelement_id' => 0]);
@@ -174,13 +174,57 @@ class Mpr extends \BaseModel {
 					$r = $select->update(['netelement_id' => $id]);
 
 				// Log
-				$log = 'mps: UPDATE: '.$id.', '.$mpr->name.' - updated modems: '.$r;
-				\Log::info ($log);
+				$log = 'MPS: UPDATE: '.$id.', '.$mpr->name.' - updated modems: '.$r;
+				\Log::debug ($log);
 				echo $log."\n";
+			} elseif (count($mpr->mprgeopos) > 2) {
+
+				// populate polygon array according to mprgeopostions, this will be used by _point_in_polygon()
+				$polygon = [];
+				foreach($mpr->mprgeopos as $geopos)
+					$polygon[] = [$geopos->x, $geopos->y];
+
+				foreach ($single_modem ? Modem::where('id', '=', $modem) : Modem::all() as $tmp) {
+					if(self::_point_in_polygon([$tmp->x,$tmp->y], $polygon)) {
+						$tmp->netelement_id = $mpr->netelement_id;
+						$tmp->observer_enabled = false;
+						$tmp->save();
+					}
+				}
 			}
 		}
 
 		return $return;
+	}
+
+	/**
+	 * Check if point is within the boundaries of the given polygon.
+	 * Based on: http://stackoverflow.com/questions/14818567/point-in-polygon-algorithm-giving-wrong-results-sometimes/18190354#18190354
+	 *
+	 * @param p: point to check (array)
+	 * @param polygon: vertices of polygon outline (array of points (array))
+	 * @return: true if point in polygon, otherwise false
+	 * @author: Ole Ernst
+	 */
+	private static function _point_in_polygon($p, $polygon) {
+		$c = 0;
+		$p1 = $polygon[0];
+		$n = count($polygon);
+
+		for ($i=1; $i<=$n; $i++) {
+			$p2 = $polygon[$i % $n];
+			if ($p[1] > min($p1[1], $p2[1])
+				&& $p[1] <= max($p1[1], $p2[1])
+				&& $p[0] <= max($p1[0], $p2[0])
+				&& $p1[1] != $p2[1]) {
+					$xinters = ($p[1] - $p1[1]) * ($p2[0] - $p1[0]) / ($p2[1] - $p1[1]) + $p1[0];
+					if ($p1[0] == $p2[0] || $p[0] <= $xinters)
+						$c++;
+			}
+			$p1 = $p2;
+		}
+		// even number of edges passed -> point not in the polygon
+		return $c%2 != 0;
 	}
 
 	/**

@@ -37,5 +37,13 @@
 	@endif
 
 	<div class="col-md-12" id="map" style="height: 80%;"></div>
+	<input type="radio" name="type" value="none" id="noneToggle" onclick="toggleControl(this);" checked="checked" />
+	<label for="noneToggle">navigate</label>
+	<input type="radio" name="type" value="box" id="boxToggle" onclick="toggleControl(this);" />
+	<label for="boxToggle">draw box</label>
+	<input type="radio" name="type" value="polygon" id="polygonToggle" onclick="toggleControl(this);" />
+	<label for="polygonToggle">draw polygon</label>
+	<input type="radio" name="type" value="modify" id="modifyToggle" onclick="toggleControl(this);" />
+	<label for="polygonToggle">modify</label>
 @stop
 

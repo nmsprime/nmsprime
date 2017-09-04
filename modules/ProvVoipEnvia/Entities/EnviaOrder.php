@@ -5,6 +5,7 @@ namespace Modules\ProvVoipEnvia\Entities;
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoip\Entities\Phonenumber;
+use Modules\ProvVoipEnvia\Entities\ProvVoipEnviaHelpers;
 
 // Model not found? execute composer dump-autoload in lara root dir
 class EnviaOrder extends \BaseModel {
@@ -31,9 +32,9 @@ class EnviaOrder extends \BaseModel {
 				'phonenumber_related' => False,
 			),
 			array(
-				'ordertype' => 'Kündigung envia TEL voip reselling',	// TODO: Add correct string given by Envia
-				'ordertype_id' => null,
-				'method' => 'contract/terminate',
+				'ordertype' => 'Sprachtarif wird geändert',
+				'ordertype_id' => 12,
+				'method' => 'contract/change_tariff',
 				'phonenumber_related' => False,
 			),
 			array(
@@ -43,29 +44,53 @@ class EnviaOrder extends \BaseModel {
 				'phonenumber_related' => True,
 			),
 			array(
+				'ordertype' => 'Stornierung eines Auftrags',
+				'ordertype_id' => 20,
+				'method' => 'order/cancel',
+				'phonenumber_related' => False,
+			),
+			array(
+				'ordertype' => 'Änderung der Rufnummernkonfiguration',
+				'ordertype_id' => 21,
+				'method' => 'voip_account/update',
+				'phonenumber_related' => True,
+			),
+			array(
+				'ordertype' => 'Änderung des Einkaufstarifs',
+				'ordertype_id' => 22,
+				'method' => 'contract/change_variation',
+				'phonenumber_related' => False,
+			),
+			array(
 				'ordertype' => 'Kündigung einer Rufnummer',
 				'ordertype_id' => 23,
 				'method' => 'voip_account/terminate',
 				'phonenumber_related' => True,
 			),
 			array(
-				'ordertype' => 'Sprachtarif wird geändert',
-				'ordertype_id' => null,
-				'method' => 'contract/change_tariff',
+				'ordertype' => 'Änderung der Kundendaten',
+				'ordertype_id' => 27,
+				'method' => 'customer/update',
 				'phonenumber_related' => False,
 			),
 			array(
-				'ordertype' => 'n/a',
-				'ordertype_id' => null,
-				'method' => 'contract/change_variation',
+				'ordertype' => 'Umzug',
+				'ordertype_id' => 70,
+				'method' => 'contract/relocate',
 				'phonenumber_related' => False,
 			),
 			array(
-				'ordertype' => 'Stornierung eines Auftrags',
+				'ordertype' => 'Kündigung envia TEL voip reselling',	// TODO: Add correct string given by Envia
 				'ordertype_id' => null,
-				'method' => 'order/cancel',
+				'method' => 'contract/terminate',
 				'phonenumber_related' => False,
 			),
+			/* array( */
+			/* 	'ordertype' => '', */
+			/* 	'ordertype_id' => , */
+			/* 	'method' => '', */
+			/* 	'phonenumber_related' => , */
+			/* ), */
 		),
 		'states' => array(
 			array(
@@ -101,7 +126,7 @@ class EnviaOrder extends \BaseModel {
 				'orderstatus' => 'Dokument fehlerhaft oder nicht lesbar',
 				'view_class' => 'danger',
 				'state_type' => 'pending',
-				'final' => False,
+				'final' => True,
 			),
 			array(
 				'orderstatus_id' => 1013,
@@ -211,6 +236,7 @@ class EnviaOrder extends \BaseModel {
 		'contractreference',
 		'contract_id',
 		'modem_id',
+		'enviacontract_id',
 	];
 
 
@@ -385,6 +411,29 @@ class EnviaOrder extends \BaseModel {
 
 
 	/**
+	 * Check if order has successfully been cancelled
+	 * We assume this if the orderstate indicates it and the ordertype is not order/cancel.
+	 *
+	 * TODO: check what happens if we try to cancel an order that cancelled another order…
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function order_successfully_cancelled($order) {
+
+		if (
+			(($order->orderstatus_id == 1017) || ($order->orderstatus == 'Stornierung bestätigt'))
+			&&
+			($order->ordertype != 'Stornierung eines Auftrags')
+		) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+
+	/**
 	 * Check if order is successfully processed.
 	 *
 	 * @author Patrick Reichel
@@ -495,15 +544,30 @@ class EnviaOrder extends \BaseModel {
 		}
 		$escalation_level = $escalations[$bsclass].' – '.$bsclass;
 
-		$contract_nr = Contract::findOrFail($this->contract_id)->number;
-		$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract_nr.'</a>';
-
-		if (boolval($this->modem_id)) {
-			$modem = Modem::findOrFail($this->modem_id);
-			$modem_nr = '<a href="'.\URL::route('Modem.edit', array($this->modem_id)).'" target="_blank">'.$this->modem_id.'</a>';
+		if (!$this->contract_id) {
+			$contract_nr = '–';
 		}
 		else {
-			$modem_nr = '–';
+			$contract = Contract::withTrashed()->where('id', $this->contract_id)->first();
+			if (!is_null($contract->deleted_at)) {
+				$contract_nr = '<s>'.$contract->number.'</s>';
+			}
+			else {
+				$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract->number.'</a>';
+			}
+		}
+
+		if (!$this->modem_id) {
+			$modem_id = '–';
+		}
+		else {
+			$modem = Modem::withTrashed()->where('id', $this->modem_id)->first();
+			if (!is_null($modem->deleted_at)) {
+				$modem_id = '<s>'.$this->modem_id.'</s>';
+			}
+			else {
+				$modem_id = '<a href="'.\URL::route('Modem.edit', array($this->modem_id)).'" target="_blank">'.$this->modem_id.'</a>';
+			}
 		}
 
 		// show all order related phonenumbers
@@ -541,13 +605,25 @@ class EnviaOrder extends \BaseModel {
 			$phonenumber_nrs = implode('<br><br>', $tmp_nrs);
 		}
 
-		if (!$this->user_interaction_necessary()) {
-			$current = '-';
-		    $solve_link = '';
+		if ($this->enviacontract_id) {
+			$enviacontract = EnviaContract::withTrashed()->where('id', $this->enviacontract_id)->first();
+			$reference = !is_null($enviacontract->envia_contract_reference) ? $enviacontract->envia_contract_reference : 'ID: '.$this->enviacontract_id;
+			if (!is_null($enviacontract->deleted_at)) {
+				$enviacontract_nr = '<s>'.$reference.'</s>';
+			}
+			else {
+				$enviacontract_nr = '<a href="'.\URL::route('EnviaContract.edit', array($this->enviacontract_id)).'" target="_blank">'.$reference.'</a>';
+			}
 		}
 		else {
-			$current = '<b>Yes!!</b>';
-			$solve_link = '<a href="'.\URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id)).'" target="_self">Mark solved</a>';
+			$enviacontract_nr = '–';
+		}
+
+		if (!$this->user_interaction_necessary()) {
+			$current = '–';
+		}
+		else {
+			$current = '<b>Yes!!</b><br><a href="'.\URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id)).'" target="_self">Mark solved</a>';
 		}
 
 		// add line breaks to make stuff fit better into table
@@ -558,8 +634,8 @@ class EnviaOrder extends \BaseModel {
 		$orderstatus = $this->orderstatus;
 		$orderstatus = str_replace('Portierungserklärung', 'Portierungs&shy;erklärung', $orderstatus);
 
-        return ['index' => [$ordertype, $orderstatus, $escalation_level, $contract_nr, $modem_nr, $phonenumber_nrs, $this->created_at, $this->updated_at, $this->orderdate, $current, $solve_link],
-                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract', 'Modem', 'Numbers', 'Created at', 'Updated at', 'Orderdate', 'Needs action?', ''],
+        return ['index' => [$ordertype, $orderstatus, $escalation_level, $contract_nr, $modem_id, $phonenumber_nrs, $enviacontract_nr, $this->created_at, $this->updated_at, $this->orderdate, $current],
+                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract', 'Modem', 'Numbers', 'EnviaContract', 'Created at', 'Updated at', 'Orderdate', 'Needs action?'],
                 'bsclass' => $bsclass,
 				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
 		];
@@ -612,11 +688,16 @@ class EnviaOrder extends \BaseModel {
 	public function view_belongs_to ()
 	{
 		if (!$this->phonenumbers->isEmpty()) {
-			$phonenumbermanagements = [];
+			$ret = [];
 			foreach ($this->phonenumbers as $phonenumber) {
-				array_push($phonenumbermanagements, $phonenumber->phonenumbermanagement);
+				if (is_null($phonenumber->phonenumbermanagement)) {
+					array_push($ret, $phonenumber);
+				}
+				else {
+					array_push($ret, $phonenumber->phonenumbermanagement);
+				}
 			}
-			return collect($phonenumbermanagements);
+			return collect($ret);
 		}
 		elseif (boolval($this->modem_id)) {
 			return $this->modem;
@@ -651,254 +732,15 @@ class EnviaOrder extends \BaseModel {
 	}
 
 	public function phonenumbers() {
-		return $this->belongsToMany('Modules\ProvVoip\Entities\Phonenumber', 'enviaorder_phonenumber', 'enviaorder_id', 'phonenumber_id');
+		return $this->belongsToMany('Modules\ProvVoip\Entities\Phonenumber', 'enviaorder_phonenumber', 'enviaorder_id', 'phonenumber_id')->withTimestamps();
 	}
 
 	public function enviaorderdocument() {
 		return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrderDocument', 'enviaorder_id')->orderBy('created_at');
 	}
 
-
-	/**
-	 * Build the table HTML for given data.
-	 *
-	 * @param $data array containing the rows of the table (first is used as header)
-	 *					each row has to be given as an array holding the cols of this row
-	 *
-	 * @return raw HTML string for direct use
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _get_user_action_table($data) {
-
-		$replace_func = function($data) {
-			$placeholders = array(
-				'placeholder_yes' => '<span class="text-success">&#10004;</span>',
-				'placeholder_no' => '<span class="text-danger">&#10008;</span>',
-				'placeholder_unset' => '–',
-			);
-			foreach ($placeholders as $placeholder => $replacement) {
-				$data = str_replace($placeholder, $replacement, $data);
-			}
-			return $data;
-		};
-
-		$td_style = "padding-left: 5px; padding-right: 5px; vertical-align: top;";
-		$th_style = $td_style." padding-bottom: 2px; padding-top: 4px;";
-
-		$ret = "";
-
-		// the tables head
-		$ret = '<table class="table-hover">';
-		$ret .= '<tr>';
-		foreach (array_shift($data) as $col) {
-			$ret .= '<th style="'.$th_style.'">'.$col.'</th>';
-		}
-		$ret .= '</tr>';
-
-		// the tables body (row by row)
-		foreach ($data as $row) {
-			$ret .= '<tr>';
-			foreach ($row as $col) {
-				$ret .= '<td style="'.$td_style.'">';
-				$ret .= $replace_func($col);
-				$ret .= '</td>';
-			}
-			$ret .= '</tr>';
-		}
-
-		$ret .= '</table>';
-		return $ret;
-	}
-
-	/**
-	 * Create table containing information about the contract
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _get_user_action_information_contract($contract) {
-
-		$data = array();
-
-		$head = array(
-			'Number',
-			'Contract start',
-			'Contract end',
-			'Internet access?',
-		);
-		array_push($data, $head);
-
-		$row= array();
-
-		array_push($row, '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a>');
-		array_push($row, boolval($contract->contract_start) ? $contract->contract_start : 'placeholder_unset');
-		array_push($row, boolval($contract->contract_end) ? $contract->contract_end : 'placeholder_unset');
-		array_push($row, ($contract->network_access > 0 ? 'placeholder_yes' : 'placeholder_no'));
-
-		array_push($data, $row);
-
-		$ret = $this->_get_user_action_table($data);
-
-		return $ret;
-	}
-
-
-	/**
-	 * Create table containing information about related items
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _get_user_action_information_items($items) {
-
-		$data = array();
-
-		$head = array(
-			'Product',
-			'Type',
-			'Valid from',
-			'Fix?',
-			'Valid to',
-			'Fix?',
-		);
-		array_push($data, $head);
-
-		foreach ($items as $item) {
-
-			$row = array();
-
-			array_push($row, '<a href="'.\URL::route("Item.edit", array("Item" => $item->id)).'">'.$item->product->name.'</a>');
-			array_push($row, $item->product->type);
-			array_push($row, (boolval($item->valid_from) ? $item->valid_from : 'placeholder_unset'));
-			if ($item->valid_from_fixed > 0) {
-				array_push($row, 'placeholder_yes');
-			}
-			elseif ($item->valid_from) {
-				array_push($row, 'placeholder_no');
-			}
-			else {
-				array_push($row, '');
-			}
-			array_push($row, (boolval($item->valid_to) ? $item->valid_to : "placeholder_unset"));
-			if ($item->valid_to_fixed > 0) {
-				array_push($row, 'placeholder_yes');
-			}
-			elseif ($item->valid_to) {
-				array_push($row, 'placeholder_no');
-			}
-			else {
-				array_push($row, '');
-			}
-
-			array_push($data, $row);
-		}
-
-		$ret = $this->_get_user_action_table($data);
-		return $ret;
-	}
-
-
-	/**
-	 * Create table containing information about the modem
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _get_user_action_information_modem($modem) {
-
-		$data = array();
-
-		$head = array(
-			'MAC address',
-			'Hostname',
-			'Configfile',
-			'QoS',
-			'Network access?',
-		);
-		array_push($data, $head);
-
-		$row = array();
-
-		array_push($row, '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->mac.'</a>');
-		array_push($row, $modem->hostname);
-
-		if ($modem->configfile) {
-			array_push($row, $modem->configfile->name);
-		}
-		else {
-			array_push($row, '–');
-		}
-
-		if ($modem->qos) {
-			array_push($row, $modem->qos->name);
-		}
-		else {
-			array_push($row, '–');
-		}
-		array_push($row, ($modem->network_access > 0 ? 'placeholder_yes': 'placeholder_no'));
-
-		array_push($data, $row);
-
-		$ret = $this->_get_user_action_table($data);
-		return $ret;
-	}
-
-
-	/**
-	 * Create table containing information about related phonenumbers
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _get_user_action_information_phonenumbers($phonenumbers) {
-
-		$data = array();
-
-		$head = array(
-			'Phonenumber',
-			'Activation target',
-			'Activation confirmed',
-			'Deactivation target',
-			'Deactivation confirmed',
-			'Active?',
-		);
-		array_push($data, $head);
-
-		foreach ($phonenumbers as $phonenumber) {
-
-			$row = array();
-			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
-
-			if (!is_null($phonenumbermanagement)) {
-				$tmp = '<a href="'.\URL::route("PhonenumberManagement.edit", array("phonenumbermanagement" => $phonenumbermanagement->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a>';
-			}
-			else {
-				$tmp = '<a href="'.\URL::route("Phonenumber.edit", array("phonenumber" => $phonenumber->id)).'">'.$phonenumber->prefix_number.'/'.$phonenumber->number.'</a>';
-			}
-
-			// if phonenumber is only related (not assigned to current order, but to assigned contract) mark with special markup
-			if (is_null($this->phonenumber) || ($this->phonenumber->id != $phonenumber->id)) {
-				$tmp = '<i>('.$tmp.')</i>';
-			}
-
-			array_push($row, $tmp);
-
-			if (!is_null($phonenumbermanagement)) {
-				array_push($row, (boolval($phonenumbermanagement->activation_date) ? $phonenumbermanagement->activation_date : "placeholder_unset"));
-				array_push($row, (boolval($phonenumbermanagement->external_activation_date) ? $phonenumbermanagement->external_activation_date : "placeholder_unset"));
-				array_push($row, (boolval($phonenumbermanagement->deactivation_date) ? $phonenumbermanagement->deactivation_date : "placeholder_unset"));
-				array_push($row, (boolval($phonenumbermanagement->external_deactivation_date) ? $phonenumbermanagement->external_deactivation_date : "placeholder_unset"));
-			}
-			else {
-				array_push($row, 'mgmt n/a');
-				array_push($row, 'mgmt n/a');
-				array_push($row, 'mgmt n/a');
-				array_push($row, 'mgmt n/a');
-			}
-			array_push($row, ($phonenumber->active > 0 ? 'placeholder_yes': 'placeholder_no'));
-
-			array_push($data, $row);
-		}
-
-		$ret = $this->_get_user_action_table($data);
-		return $ret;
+	public function enviacontract() {
+		return $this->belongsTo('Modules\ProvVoipEnvia\Entities\EnviaContract', 'enviacontract_id');
 	}
 
 
@@ -918,16 +760,17 @@ class EnviaOrder extends \BaseModel {
 
 
 		$contract = $this->contract;
-		$user_actions['hints']['Contract (= Envia Customer)'] = $this->_get_user_action_information_contract($contract);
+		$user_actions['hints']['Contract (= Envia Customer)'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
+		/* $user_actions['hints']['Contract (= Envia Customer)'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract); */
 
 		$items = $contract->items;
 		if ($items) {
-			$user_actions['hints']['Items'] = $this->_get_user_action_information_items($items);
+			$user_actions['hints']['Items (Internet and VoIP only)'] = ProvVoipEnviaHelpers::get_user_action_information_items($items);
 		};
 
 		$modem = $this->modem;
 		if ($modem) {
-			$user_actions['hints']['Modem (= Envia Contract)'] = $this->_get_user_action_information_modem($modem);
+			$user_actions['hints']['Modem (can hold multiple Envia contracts)'] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
 		};
 
 		$phonenumbers = array();
@@ -945,7 +788,7 @@ class EnviaOrder extends \BaseModel {
 		}
 
 		if ($phonenumbers) {
-			$user_actions['hints']['Phonenumbers (= Envia VoipAccounts)'] = $this->_get_user_action_information_phonenumbers($phonenumbers);
+			$user_actions['hints']['Phonenumbers (= Envia VoipAccounts)'] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $phonenumbers);
 		}
 
 
@@ -961,8 +804,16 @@ class EnviaOrder extends \BaseModel {
 
 		}
 
+		$enviacontract = $this->enviacontract;
+		if ($enviacontract) {
+			/* $_ = ProvVoipEnviaHelpers::get_user_action_information_enviacontract($enviacontract); */
+			/* $user_actions['hints']['Envia contract'] = ProvVoipEnviaHelpers::get_user_action_table($_); */
+			$user_actions['hints']['Envia contract'] = ProvVoipEnviaHelpers::get_user_action_information_enviacontract($enviacontract);
+		}
+
 		return $user_actions;
 	}
+
 
 	/**
 	 * Creates the mailto: links (ready-to-use) for generation of email templates.
@@ -1022,7 +873,7 @@ class EnviaOrder extends \BaseModel {
 	 */
 	public static function get_user_interaction_needing_enviaorder_count() {
 
-		$count = EnviaOrder::whereRaw('(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND orderstatus_id != 1000')->count();
+		$count = EnviaOrder::whereRaw('(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND ((orderstatus_id != 1000) OR ((orderstatus_id IS NULL) AND (orderstatus NOT LIKE "in Bearbeitung")))')->count();
 
 		return $count;
 	}
@@ -1044,7 +895,7 @@ class EnviaOrder extends \BaseModel {
 
 		// if current state is “in Bearbeitung” then we have to do nothing
 		// next action is to perform by Envia
-		if ($this->orderstatus_id == 1000) {
+		if ($this->orderstatus == 'in Bearbeitung' || $this->orderstatus_id == 1000) {
 			return false;
 		}
 

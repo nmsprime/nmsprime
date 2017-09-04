@@ -112,7 +112,8 @@ return [
 	*/
 
 
-	'log' => 'single',
+	'log' => env('APP_LOG', 'daily'),
+	'log_max_files' => env('APP_LOG_MAX_FILES', 30),
 	// 'log' => 'daily',
 	// 'log_max_files' => 30,
 
@@ -152,7 +153,6 @@ return [
 		'Illuminate\Translation\TranslationServiceProvider',
 		'Illuminate\Validation\ValidationServiceProvider',
 		'Illuminate\View\ViewServiceProvider',
-
 		/*
 		 * Application Service Providers...
 		 */
@@ -165,6 +165,7 @@ return [
 		'Collective\Html\HtmlServiceProvider',
 		'Acme\html\HtmlServiceProvider',
 		'Intervention\Validation\ValidationServiceProvider',
+		'Collective\Bus\BusServiceProvider',
 	],
 
 	/*

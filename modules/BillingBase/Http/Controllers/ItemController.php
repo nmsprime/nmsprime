@@ -40,10 +40,10 @@ class ItemController extends \BaseController {
 
 
 		// label has to be the same like column in sql table
-		return array(
+		$fields = array(
 			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'value' => $model->contract(), 'hidden' => '1'),
 			array('form_type' => 'select', 'name' => 'product_id', 'description' => 'Product', 'value' => $prods, 'select' => $types, 'help' => trans('helper.Item_ProductId')),
-			array('form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt, 'select' => 'Device Other'),
+			array('form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt, 'select' => 'Device Other TV'),
 			array('form_type' => 'text', 'name' => 'valid_from', 'description' => 'Valid from', 'options' => ['placeholder' => 'YYYY-MM-DD'], 'help' => trans('helper.Item_ValidFrom')),
 			array('form_type' => 'checkbox', 'name' => 'valid_from_fixed', 'description' => 'Valid from fixed', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidFromFixed')),
 			array('form_type' => 'text', 'name' => 'valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD']),
@@ -52,6 +52,12 @@ class ItemController extends \BaseController {
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
 			array('form_type' => 'text', 'name' => 'accounting_text', 'description' => 'Accounting Text (optional)')
 		);
+
+		// show negative credit amounts in red - Keep order of fields array or change index here!
+		if ($model->credit_amount && $model->credit_amount < 0)
+			$fields[7]['options'] = ['style' => 'color:red; '];
+
+		return $fields;
 	}
 
 
@@ -60,7 +66,7 @@ class ItemController extends \BaseController {
 	 */
 	public function prepare_input($data)
 	{
-		$data['credit_amount'] = $data['credit_amount'] ? abs($data['credit_amount']) : $data['credit_amount'];
+		// $data['credit_amount'] = $data['credit_amount'] ? abs($data['credit_amount']) : $data['credit_amount'];
 		$type = Product::findOrFail($data['product_id'])->type;
 
 		// set default valid from date to tomorrow for this product types
@@ -94,7 +100,7 @@ class ItemController extends \BaseController {
 	 */
 	public function prepare_rules($rules, $data)
 	{
-		$rules['count'] = str_replace('product_id', $data['product_id'], $rules['count']);
+		// $rules['count'] = str_replace('product_id', $data['product_id'], $rules['count']);
 
 		// termination only allowed on last day of month
 		$fix = BillingBase::select('termination_fix')->first()->termination_fix;
@@ -105,14 +111,16 @@ class ItemController extends \BaseController {
 		if ($data['valid_to'] && $data['valid_to'] != '0000-00-00')
 			$rules['valid_to'] .= '|after:'.$data['valid_from'];
 
-		// new tariff start date must be after old tariff start date if valid tariff exists - otherwise after end date of old tariff - does it?
-		$c = Contract::find($data['contract_id']);
-		$p = Product::find($data['product_id']);
-		$tariff = $c->get_valid_tariff($p->type);
-		if ($tariff)
+		// check only on creating: new tariff must start after old tariffs start date if valid tariff exists
+		// - otherwise after end date of old tariff - does it?
+		if (\Str::contains(\URL::previous(), '/Item/create'))
 		{
-			// check only on creating:
-			if (\Str::contains(\URL::previous(), '/Item/create')) {
+			$c = Contract::find($data['contract_id']);
+			$p = Product::find($data['product_id']);
+			$tariff = $c->get_valid_tariff($p->type);
+
+			if ($tariff)
+			{
 				// check if date is after today
 				$start = $tariff->get_start_time();
 				$rules['valid_from'] .= '|after:';
@@ -125,8 +133,25 @@ class ItemController extends \BaseController {
 		return parent::prepare_rules($rules, $data);
 	}
 
+
 	public function index()
 	{
 		return \View::make('errors.generic');
 	}
+
+
+	/**
+	 * Show Alert when Credit Amount is negative and Customer will be charged
+	 */
+	public function store($redirect = true)
+	{
+		if (\Input::get('credit_amount') && \Input::get('credit_amount') < 0)
+			\Session::put('alert', trans('messages.item_credit_amount_negative'));
+
+			// NOTE: ->with or Session::put is the same
+			// return parent::store($redirect = true)->with('alert', trans('messages.item_credit_amount_negative'));
+
+		return parent::store($redirect = true);
+	}
+
 }

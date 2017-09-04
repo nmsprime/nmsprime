@@ -69,7 +69,7 @@ class CccAuthuserController extends \BaseController {
 	 *
 	 * @author Torsten Schmidt, Nino Ryschawy
 	 */
-	public function connection_info_download ($id)
+	public function connection_info_download ($id, $return_pdf = true)
 	{
 		$c = Contract::find($id);
 		$customer = $c->cccauthuser;
@@ -83,7 +83,6 @@ class CccAuthuserController extends \BaseController {
 			$customer->contract_id = $c->id;
 			$login_data = $customer->store();
 		}
-
 		if (!$login_data)
 		{
 			Log::error('CustomerConnectionInfo: Error Creating Login Data', [$c->id]);
@@ -99,10 +98,10 @@ class CccAuthuserController extends \BaseController {
 		// TODO: try - catch exceptions that this function shall throw
 		$ret = $this->make_conn_info_pdf($c);
 
-		Log::info('Download Connection Information for CccAuthuser: '.$customer->first_name.' '.$customer->last_name.' ('.$customer->id.')');
+		Log::info('Download Connection Information for CccAuthuser: '.$customer->first_name.' '.$customer->last_name.' ('.$customer->id.')', [$c->id]);
 
 		if (is_string($ret))
-			return response()->download($ret);
+			return $return_pdf ? response()->download($ret) : $ret;
 
 		$err_msg = is_int($ret) ? trans('messages.conn_info_err_template') : trans('messages.conn_info_err_create');
 		return \Redirect::back()->with('error_msg', $err_msg);
@@ -135,12 +134,18 @@ class CccAuthuserController extends \BaseController {
 		if (!is_dir($dir_path))
 			mkdir($dir_path, 0733, true);
 
-		$filename = $contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info';
+		$filename = str_replace(['.', ' ', '&', '|', ',', ';' ], '', $contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info');
+		// $filename = str_sanitize($contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info');
+
+		// echo "$filename\n";
 
 		// Replace placeholder by value
 		$template = str_replace('\\_', '_', $template);
-		foreach ($this->data as $key => $value)
-			$template = str_replace('{'.$key.'}', $value, $template);
+		foreach ($this->data as $key => $string)
+		{
+			$string = escape_latex_special_chars($string);
+			$template = str_replace('{'.$key.'}', $string, $template);
+		}
 
 		File::put($dir_path.$filename, $template);
 
@@ -148,7 +153,8 @@ class CccAuthuserController extends \BaseController {
 		// create pdf from tex
 		chdir($dir_path);
 
-		system("pdflatex $filename &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
+		// Log::debug("pdflatex \"$filename\" -interaction=nonstopmode &>/dev/null");
+		system("pdflatex \"$filename\" -interaction=nonstopmode &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
 
 		// TODO: use exception handling to handle errors
 		switch ($ret)
@@ -170,6 +176,8 @@ class CccAuthuserController extends \BaseController {
 		unlink($filename.'.aux');
 		unlink($filename.'.log');
 
+		system("chown -R apache $dir_path");
+
 		return $dir_path.$filename.'.pdf';
 	}
 
@@ -186,6 +194,7 @@ class CccAuthuserController extends \BaseController {
 		$this->data['contract_housenumber'] = $contract->house_number;
 		$this->data['contract_zip'] 	  = $contract->zip;
 		$this->data['contract_city'] 	  = $contract->city;
+		$this->data['contract_address']   = ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . ($contract->company ? "$contract->company\\\\" : '') . $contract->street.' '.$contract->house_number . "\\\\$contract->zip $contract->city";
 		$this->data['login_name'] 		  = $login_data['login_name'];
 		$this->data['psw'] 				  = $login_data['password'];
 

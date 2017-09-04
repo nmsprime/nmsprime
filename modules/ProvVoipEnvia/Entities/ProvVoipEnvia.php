@@ -5,14 +5,16 @@ namespace Modules\ProvVoipEnvia\Entities;
 use Log;
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvBase\Entities\VoipRelatedDataUpdaterByEnvia;
+use Modules\ProvVoip\Entities\PhonebookEntry;
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
-use Modules\ProvVoip\Entities\PhonebookEntry;
+use Modules\ProvVoip\Entities\PhoneTariff;
 use Modules\ProvVoip\Entities\CarrierCode;
 use Modules\ProvVoip\Entities\EkpCode;
 use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvVoip\Entities\TRCClass;
 use Modules\ProvBase\Entities\Modem;
+use Modules\ProvVoipEnvia\Entities\EnviaContract;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
 use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
@@ -27,10 +29,11 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Constructor.
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	public function __construct($attributes = array()) {
 
-		// if not available in .env: set to -1 to not break e.g. “php artisan” command ⇒ thas has to be caught later on
+		// if not available in .env: set to -1 to not break e.g. “php artisan” command ⇒ that has to be caught later on
 		$v = getenv('PROVVOIPENVIA__REST_API_VERSION');
 		if ($v === False) {
 			$v = "-1";
@@ -66,6 +69,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @return array similar to Python's sys.version_info (containing three keys: major, minor, micro)
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _version_string_to_array($version) {
 
@@ -102,6 +106,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @return 'major' for strings without dots, 'minor' for strings containing one dot, 'micro' else
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _get_api_version_compare_level($version) {
 
@@ -129,6 +134,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 *			-1: given version is greater than currently used one
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _compare_to_api_version($version) {
 
@@ -180,6 +186,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @return bool
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	public function api_version_equals($version) {
 
@@ -194,6 +201,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @return bool
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	public function api_version_less_than($version) {
 
@@ -208,6 +216,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @return bool
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	public function api_version_greater_than($version) {
 
@@ -222,6 +231,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @return bool
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	public function api_version_less_or_equal($version) {
 
@@ -236,6 +246,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @return bool
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	public function api_version_greater_or_equal($version) {
 
@@ -248,10 +259,39 @@ class ProvVoipEnvia extends \BaseModel {
 	 * This will return a SimpleXML instance which can be used instead a real Envia answer.
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _get_xml_fake($xml_string) {
 
 		return new \SimpleXMLElement($xml_string);
+	}
+
+
+	/**
+	 * Replaces login credentials for Envia API by hash signs.
+	 * Used to safely show and store sent XML.
+	 *
+	 * @author Patrick Reichel
+	 *
+	 */
+	public static function hide_envia_api_credentials($dom) {
+
+		$reseller_identifiers = $dom->getElementsByTagName('reseller_identifier');
+		foreach ($reseller_identifiers as $reseller_identifier) {
+
+			$users = $reseller_identifier->getElementsByTagName('username');
+			foreach ($users as $user) {
+				$user->nodeValue = "################";
+			}
+
+			$pws = $reseller_identifier->getElementsByTagName('password');
+			foreach ($pws as $pw) {
+				$pw->nodeValue = "################";
+			}
+		}
+
+		return $dom;
+
 	}
 
 	/**
@@ -259,6 +299,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Use e.g. for debugging.
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 *
 	 * @param $xml string containing xml data
 	 * @param $hide_credentials don't show username/password if set to True
@@ -275,19 +316,7 @@ class ProvVoipEnvia extends \BaseModel {
 		// this replaces the former preg_replace variant which crashes on larger EnviaOrderDocument uploads.
 		// also this is more elegant and should also be faster
 		if ($hide_credentials) {
-		$reseller_identifiers = $dom->getElementsByTagName('reseller_identifier');
-			foreach ($reseller_identifiers as $reseller_identifier) {
-
-				$users = $reseller_identifier->getElementsByTagName('username');
-				foreach ($users as $user) {
-					$user->nodeValue = "################";
-				}
-
-				$pws = $reseller_identifier->getElementsByTagName('password');
-				foreach ($pws as $pw) {
-					$pw->nodeValue = "################";
-				}
-			}
+			$dom = static::hide_envia_api_credentials($dom);
 		}
 
 		$pretty = htmlentities($dom->saveXML());
@@ -336,7 +365,7 @@ class ProvVoipEnvia extends \BaseModel {
 			return array();
 		}
 
-		$this->_get_model_data($view_level, $model);
+		$this->set_model_data($view_level, $model);
 
 		$phonenumber_id = $this->phonenumber->id;
 
@@ -347,12 +376,46 @@ class ProvVoipEnvia extends \BaseModel {
 		$modem_id = $this->modem->id;
 		$contract_id = $this->contract->id;
 
+		// get all phonenumbers related to $this
+		if ($this->phonenumber->exists) {
+			$phonenumbers = [$this->phonenumber];
+		}
+		elseif ($this->modem->exists) {
+			$phonenumbers = $this->modem->related_phonenumbers();
+		}
+		elseif ($this->contract->exists) {
+			$phonenumbers = $this->contract->related_phonenumbers();
+		}
+		else {
+			// should never happen
+			$phonenumbers = [];
+		}
+
+		// count the contracts created/terminated
+		$contracts_created = [];
+		$contracts_terminated = [];
+		foreach ($phonenumbers as $_phonenumber) {
+			$_ = $_phonenumber->envia_contract_created();
+			if ($_) {
+				array_push($contracts_created, $_);
+			}
+			$_ = $_phonenumber->envia_contract_terminated();
+			if ($_) {
+				array_push($contracts_terminated, $_);
+			}
+		}
+		$contracts_created = array_unique($contracts_created);
+		$contracts_terminated = array_unique($contracts_terminated);
+
+		/* d($contracts_created, $contracts_terminated, $phonenumbers); */
 		// set the variables
-		if (is_null($this->modem->contract_ext_creation_date)) {
+		if (empty($contracts_created)) {
 			$this->contract_created = False;
+			$this->at_least_one_contract_created = False;
 		}
 		else {
 			$this->contract_created = True;
+			$this->at_least_one_contract_created = True;
 		}
 
 		if (is_null($this->modem->contract_ext_termination_date)) {
@@ -362,33 +425,16 @@ class ProvVoipEnvia extends \BaseModel {
 			$this->contract_terminated = True;
 		}
 
-		if ($this->contract_created && !$this->contract_terminated) {
+		if (count($contracts_created) > count($contracts_terminated)) {
 			$this->contract_available = True;
-		}
-		else {
-			$this->contract_available = False;
-		}
-
-		// check if at least one active envia contract is assigned to contract
-		$this->at_least_one_contract_created = False;
-		$this->at_least_one_contract_available = False;
-		if ($this->contract_available) {
-			$this->at_least_one_contract_created = True;
 			$this->at_least_one_contract_available = True;
 		}
 		else {
-			foreach ($this->contract->modems as $modem) {
-				if (!is_null($modem->contract_ext_creation_date)) {
-					$this->at_least_one_contract_created = True;
-
-					if (is_null($modem->contract_ext_termination_date)) {
-						$this->at_least_one_contract_available = True;
-					}
-				}
-			}
+			$this->contract_available = False;
+			$this->at_least_one_contract_available = False;
 		}
 
-		if (is_null($this->phonenumbermanagement->voipaccount_ext_creation_date)) {
+		if (is_null($this->phonenumber->contract_external_id)) {
 			$this->voipaccount_created = False;
 		}
 		else {
@@ -527,6 +573,12 @@ class ProvVoipEnvia extends \BaseModel {
 				));
 			}
 
+			array_push($ret, array(
+				'linktext' => 'Get (current) usage CSV',
+				'url' => $base.'misc_get_usage_csv'.$origin.$really,
+				'help' => "This method gets CSV containing usage statistic for the current month",
+			));
+
 		}
 
 
@@ -535,8 +587,26 @@ class ProvVoipEnvia extends \BaseModel {
 		if (in_array($view_level, ['contract', 'modem', 'phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Customer'));
 
+			if ($this->api_version_greater_or_equal("2.2")) {
+				array_push($ret, array(
+					'linktext' => 'Get Envia contracts for this customer',
+					'url' => $base.'customer_get_contracts'.$origin.'&amp;contract_id='.$contract_id,
+					'help' => "Tries to get the Envia contracts for this customer"
+				));
+			};
+
 			// customer data change possible if there is an active contract for this user
 			if ($this->at_least_one_contract_available) {
+				array_push($ret, array(
+					'linktext' => 'Get Envia customer reference',
+					'url' => $base.'customer_get_reference'.$origin.'&amp;contract_id='.$contract_id,
+					'help' => "Tries to get the Envia ID for this customer"
+				));
+				array_push($ret, array(
+					'linktext' => 'Get Envia customer reference by lecacy customer number',
+					'url' => $base.'customer_get_reference_by_legacy_number'.$origin.'&amp;contract_id='.$contract_id,
+					'help' => "Tries to get the Envia ID for this customer"
+				));
 				array_push($ret, array(
 					'linktext' => 'Update customer',
 					'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id,
@@ -550,14 +620,23 @@ class ProvVoipEnvia extends \BaseModel {
 		if (in_array($view_level, ['modem', 'phonenumbermanagement'])) {
 			array_push($ret, array('class' => 'Telephone connection (= Envia contract)'));
 
-			// contract can be created if not yet created
-			if (!$this->contract_created) {
+			// special case contract reference – now stored in phonenumber instead of modem
+			if (in_array($view_level, ['phonenumbermanagement'])) {
+				// can get reference if phonenumber exists at Envia
 				array_push($ret, array(
-					'linktext' => 'Create contract',
-					'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id,
-					'help' => "Creates a Envia contract (= telephone connection)",
+					'linktext' => 'Get Envia contract reference',
+					'url' => $base.'contract_get_reference'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
+					'help' => "You can get the Envia reference for a contract using a phonenumber related to this contract",
 				));
-			}
+			};
+
+			// “normal“ jobs
+			$phonenumbers_to_create = '&amp;phonenumbers_to_create=';
+			array_push($ret, array(
+				'linktext' => 'Create contract',
+				'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id.$phonenumbers_to_create,
+				'help' => "Creates a Envia contract (= telephone connection)",
+			));
 
 			// contract can be relocated if created; available with Envia API version 1.4
 			if ($this->contract_created) {
@@ -580,20 +659,29 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// can get contract related information if contract is available
 			if ($this->contract_available) {
+				// here we have to distinct between origin modem and phonenumber
+				// ATM we only can handle one contract_id per request – to update multiple contracts per modem we have to be at least in level phonenumber
+				if ($this->phonenumber->exists) {
+					$id = "phonenumber_id=$phonenumber_id";
+				}
+				else {
+					$id = "modem_id=$modem_id";
+				}
 				array_push($ret, array(
-					'linktext' => 'Get voice data (EXPERIMENTAL – can have unexpected side effects)',
-					'url' => $base.'contract_get_voice_data'.$origin.'&amp;modem_id='.$modem_id.$really,
-					'help' => "Get all phonenumbers and sip data for this modem.",
+					'linktext' => 'Get voice data',
+					'url' => $base.'contract_get_voice_data'.$origin.'&amp;'.$id.$really,
+					'help' => "Get SIP and TRC data for all phonenumbers on this Envia contract.",
 				));
 			}
 
 			// tariff can only be changed if contract exists and a tariff change is wanted
 			// TODO: implement checks for current change state; otherwise we get an error from Envia (change into the same tariff is not possible)
+			// TODO: this has to be done for each envia contract – this needs to be implemented
 			if ($this->contract_available) {
 				if (boolval($this->contract->next_voip_id) && boolval($this->contract->voip_id)) {
 					if ($this->contract->voip_id != $this->contract->next_voip_id) {
 						array_push($ret, array(
-							'linktext' => 'Change tariff',
+							'linktext' => 'Change tariff (EXPERIMENTAL)',
 							'url' => $base.'contract_change_tariff'.$origin.'&amp;modem_id='.$modem_id,
 							'help' => "Changes the VoIP sales tariff for this modem (=Envia contract).\n\nATTENTION: Has also to be changed for all other modems related to this customer!",
 						));
@@ -601,15 +689,44 @@ class ProvVoipEnvia extends \BaseModel {
 				}
 			}
 
+			// changes method from MGCP to SIP and vice versa
+			// ATM we don't create MGCP accounts – so this method is only usable to change imported old contracts
+			if ($this->contract_available) {
+				if (boolval($this->contract->next_purchase_tariff) && boolval($this->contract->purchase_tariff)) {
+					if ($this->contract->purchase_tariff != $this->contract->next_purchase_tariff) {
+
+						$old_proto = $this->contract->phonetariff_purchase->voip_protocol;
+						$new_proto = $this->contract->phonetariff_purchase_next->voip_protocol;
+
+						if ($old_proto != $new_proto) {
+							// here we have to distinct between origin modem and phonenumber
+							// ATM we only can handle one contract_id per request – to update multiple contracts per modem we have to be at least in level phonenumber
+							if ($this->phonenumber->exists) {
+								$id = "phonenumber_id=$phonenumber_id";
+							}
+							else {
+								$id = "modem_id=$modem_id";
+							}
+							array_push($ret, array(
+								'linktext' => 'Change method (MGCP⇔SIP) (EXPERIMENTAL).',
+								'url' => $base.'contract_change_method'.$origin.'&amp;'.$id,
+								'help' => "Changes method of an Envia contract depending on values of the future VoIP item.",
+							));
+						}
+					}
+				}
+			}
+
 			// variation can only be changed if contract exists and a variation change is wanted
 			// TODO: implement checks for current change state; otherwise we get an error from Envia (change into the same variation is not possible)
+			// TODO: this has to be done for each envia contract – this needs to be implemented
 			if ($this->contract_available) {
 				if (boolval($this->contract->next_purchase_tariff) && boolval($this->contract->purchase_tariff)) {
 					if ($this->contract->purchase_tariff != $this->contract->next_purchase_tariff) {
 						array_push($ret, array(
-							'linktext' => 'Change variation',
+							'linktext' => 'Change purchase tariff (EXPERIMENTAL)',
 							'url' => $base.'contract_change_variation'.$origin.'&amp;modem_id='.$modem_id,
-							'help' => "Changes the VoIP purchase tariff for this modem (=Envia contract).\n\nATTENTION: Has also to be changed for all other modems related to this customer!",
+							'help' => "Changes the VoIP purchase tariff for this Envia contract.\n\nATTENTION: Has also to be changed for all other Envia contracts related to this customer!",
 						));
 					}
 				}
@@ -661,14 +778,14 @@ class ProvVoipEnvia extends \BaseModel {
 				array_push($ret, array(
 					'linktext' => 'Get phonebook entry',
 					'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id,
-					'help' => "Gets the current phonebook entry for this phonenumber.",
+					'help' => "Gets the current phonebook entry for this phonenumber (EXPERIMENTAL).",
 				));
 
 				if ($view_level == 'phonebookentry') {
 					array_push($ret, array(
 						'linktext' => 'Create/change phonebook entry (EXPERIMENTAL)',
 						'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
-						'help' => "Creates a new or updates an existing phonebook entry for this phonenumber."
+						'help' => "Creates a new or updates an existing phonebook entry for this phonenumber (EXPERIMENTAL)."
 					));
 				}
 
@@ -676,7 +793,7 @@ class ProvVoipEnvia extends \BaseModel {
 					array_push($ret, array(
 						'linktext' => 'Delete phonebook entry (EXPERIMENTAL)',
 						'url' => $base.'phonebookentry_delete'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
-						'help' => "Deletes an existing phonebook entry for this phonenumber."
+						'help' => "Deletes an existing phonebook entry for this phonenumber (EXPERIMENTAL)."
 					));
 				}
 			}
@@ -720,17 +837,25 @@ class ProvVoipEnvia extends \BaseModel {
 					$order_status = $order->orderstatus;
 					$linktext = $order_id.' – '.$order_type.': <i>'.$order_status.'</i>';
 					// stroke soft deleted entries
-					// orders are deleted at Envia after some time (and then also soft deleted in our system)
-					// but maybe we want to see the whole history?
+					// we want to see the whole history (including canceled orders)
 					if (boolval($order->deleted_at)) {
 						$linktext = '<s>'.$linktext.'</s>';
 					}
 					// add order (except create_attachements)
 					if ($order_type != 'order/create_attachment') {
+						// if order is not in final state: add link to get current status
+						if (!EnviaOrder::orderstate_is_final($order)) {
+							$url = $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really;
+							$help = "Gets the current state of this order from Envia (if orderstate is not final).";
+						}
+						else {
+							$url = "";
+							$help = "";
+						}
 						array_push($ret, array(
 							'linktext' => $linktext,
-							'url' => $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really,
-							'help' => "Gets the current state of this order from Envia.",
+							'url' => $url,
+							'help' => $help,
 						));
 					}
 				}
@@ -779,6 +904,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Generate the XML used for communication against Envia API
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 *
 	 * @param $job job to do
 	 * @param $store created XML (used to deactivate the method e.g. for XML created to be shown only)
@@ -786,8 +912,6 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @return XML
 	 */
 	public function get_xml($job, $store=True) {
-
-		$this->_get_model_data();
 
 		$this->_create_base_xml_by_topic($job);
 		$this->_create_final_xml_by_topic($job);
@@ -803,6 +927,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Helper to save all sent and received XML to HDD for later debugging.
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	public function store_xml($context, $xml) {
 
@@ -817,6 +942,9 @@ class ProvVoipEnvia extends \BaseModel {
 		$dom->preserveWhiteSpace = false;
 		$dom->formatOutput = true;
 		$dom->loadXML($xml->asXML());
+
+		// replace login credentials by hashes
+		$dom = static::hide_envia_api_credentials($dom);
 		$filecontent = $dom->saveXML();
 
 
@@ -848,7 +976,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * @param $level current level to work from
 	 * @param $model the model to get related models from ($model is of type $level)
 	 */
-	protected function _get_model_data($level='', $model=null) {
+	public function set_model_data($level='', $model=null) {
 
 		// defaults => can be overwritten if there are “real” models in this context
 		$this->contract = null;
@@ -857,6 +985,8 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->phonenumber = null;
 		$this->phonenumbermanagement = null;
 		$this->phonebookentry = null;
+
+		$this->view_level = $level;
 
 		// level is irrelevant (e.g. for creating XML for a given contract_id)
 		// this means: the initial model comes from a database search using IDs given by GET/POST/WHATEVER
@@ -893,7 +1023,12 @@ class ProvVoipEnvia extends \BaseModel {
 				$this->modem = $this->mta->modem;
 				$this->contract = $this->modem->contract;
 				$this->phonenumbermanagement = $this->phonenumber->phonenumbermanagement;
-				$this->phonebookentry = $this->phonenumbermanagement->phonebookentry;
+				if (!is_null($this->phonenumbermanagement)) {
+					$this->phonebookentry = $this->phonenumbermanagement->phonebookentry;
+				}
+				else {
+					$this->phonebookentry = null;
+				}
 			}
 
 			// entry point is phonenumbermanagement
@@ -983,9 +1118,66 @@ class ProvVoipEnvia extends \BaseModel {
 	}
 
 	/**
+	 * To be sure we extract all error messages from returned error XML we have to visit each node.
+	 * There can be nested_errors in nested_errors in …
+	 *
+	 * Will change the given $errors array in place
+	 *
+	 * @author Patrick Reichel
+	 * @version 2017-05-10
+	 *
+	 * @param $xml SimpleXMLElement to be investigated
+	 * @param &$errors container array to collect all extracted errors in
+	 */
+	protected function _get_error_messages_recurse($xml, &$errors) {
+
+		// if current node is an error: process data
+		if (
+			($xml->getName() == 'response_error')
+			||
+			($xml->getName() == 'nested_error')
+		) {
+			$error = array(
+				'status' => (string) $xml->status?((string) $xml->status):'n/a',
+				'message' => (string) $xml->message?((string) $xml->message):'n/a'
+			);
+			array_push($errors, $error);
+		}
+
+		// Workaround for malformed error xml (<hash><[status|error]></hash>)
+		if ($xml->getName() == 'hash') {
+			$error = array(
+				'status' => (string) $xml->status?((string) $xml->status):'n/a',
+				'message' => '',
+			);
+			if ($xml->message) {
+				$error['message'] .= (string) $xml->message;
+			}
+			if ($xml->error) {
+				$error['message'] .= (string) $xml->error;
+			}
+			if (!$error['message']) {
+				$error['message'] == 'n/a';
+			}
+			array_push($data, $error);
+		}
+
+		// stop condition: no more children == leaf node
+		if (!$xml->count()) {
+			return;
+		}
+
+		// call this method for all children
+		foreach ($xml as $child) {
+			$this->_get_error_messages_recurse($child, $errors);
+		}
+	}
+
+	/**
 	 * Used to extract error messages from returned XML.
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 *
 	 * @param $raw_xml XML to extract error information from
 	 * @return error codes and messages in array
@@ -993,34 +1185,80 @@ class ProvVoipEnvia extends \BaseModel {
 	public function get_error_messages($raw_xml) {
 
 		$data = array();
-
 		$xml = new \SimpleXMLElement($raw_xml);
 
-		foreach ($xml->response_error as $response_error) {
-			$error = array(
-				'status' => (string) $response_error->status,
-				'message' => (string) $response_error->message,
-			);
-			array_push($data, $error);
-			foreach ($response_error->nested_errors as $nested_error) {
-				$error = array(
-					'status' => (string) $nested_error->status,
-					'message' => (string) $nested_error->message
-				);
-				array_push($data, $error);
+		// extract all error messages from XML
+		$this->_get_error_messages_recurse($xml, $data);
+
+		return $data;
+	}
+
+
+	/**
+	 * Generates array containing all numbers related to current modem.
+	 *
+	 * @author Patrick Reichel
+	 * @version 2017-05-10
+	 */
+	public function get_numbers_related_to_modem_for_contract_create() {
+
+		$key_no_mgmt = 'No PhonenumberManagement';
+		$key_new_number = 'New number';
+
+		$phonenumbers_on_modem = array(
+			$key_no_mgmt => array(),
+			$key_new_number => array(),
+		);
+
+		foreach ($this->modem->mtas as $mta) {
+			foreach ($mta->phonenumbers as $phonenumber) {
+
+				// exclude numbers with contract_external_id ⇒ they are already created
+				if (!is_null($phonenumber->contract_external_id)) {
+					continue;
+				}
+
+				$phonenumbermanagement = $phonenumber->phonenumbermanagement;
+
+				// handle missing management
+				if (!$phonenumbermanagement) {
+					if (!array_key_exists('–', $phonenumbers_on_modem[$key_no_mgmt])) {
+						$phonenumbers_on_modem[$key_no_mgmt]['–'] = array();
+					}
+					array_push($phonenumbers_on_modem[$key_no_mgmt]['–'], $phonenumber);
+					continue;
+				}
+
+				$activation_date = $phonenumbermanagement->activation_date ? : "n/a";
+
+				// handle numbers not to be ported (= new number from Envia pool)
+				if (!$phonenumbermanagement->porting_in) {
+					if (!array_key_exists($activation_date, $phonenumbers_on_modem[$key_new_number])) {
+						$phonenumbers_on_modem[$key_new_number][$activation_date] = array();
+					}
+					array_push($phonenumbers_on_modem[$key_new_number][$activation_date], $phonenumber);
+					continue;
+				}
+
+				// handle numbers to be ported
+				$ekp_code = EkpCode::findOrFail($phonenumbermanagement->ekp_in);
+				$ekp_code = 'From '.$ekp_code->company;
+
+				if (!array_key_exists($ekp_code, $phonenumbers_on_modem)) {
+					$phonenumbers_on_modem[$ekp_code] = array();
+				}
+
+				if (!array_key_exists($activation_date, $phonenumbers_on_modem[$ekp_code])) {
+					$phonenumbers_on_modem[$ekp_code][$activation_date] = array();
+				}
+				array_push($phonenumbers_on_modem[$ekp_code][$activation_date], $phonenumber);
 			}
 		}
 
-		// Workaround for malformed error xml (<hash><[status|error]></hash
-		if (strpos($raw_xml, '<hash') !== False) {
-			$error = array(
-				'status' => $xml->status,
-				'message' => $xml->error,
-			);
-			array_push($data, $error);
-		}
+		// bring array in wanted order for display
+		$phonenumbers_on_modem = array_reverse($phonenumbers_on_modem);
 
-		return $data;
+		return $phonenumbers_on_modem;
 	}
 
 
@@ -1028,6 +1266,8 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Create a xml object containing only the top level element
 	 * This is the skeleton for the final XML
 	 *
+	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 * @param $job job to create xml for
 	 */
 	protected function _create_base_xml_by_topic($job) {
@@ -1036,7 +1276,15 @@ class ProvVoipEnvia extends \BaseModel {
 		// also the prolog should be given; otherwise SimpleXML will not put the
 		// attribute “encoding” in…
 		$xml_prolog = '<?xml version="1.0" encoding="UTF-8"?>';
-		$xml_root = '<'.$job.' />';
+
+		// add the root element; in most cases this is the given job
+		if ($job == 'customer_get_reference_by_legacy_number') {
+			$xml_root = '<customer_get_reference/>';
+		}
+		else {
+			$xml_root = '<'.$job.' />';
+		}
+
 		$initial_xml = $xml_prolog.$xml_root;
 
 		// this is the basic xml object which will be extended by other methods
@@ -1050,6 +1298,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * now we use hardcoded defaults
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 *
 	 * @param $topic job to do
 	 *
@@ -1083,6 +1332,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * which is the mapping between the topic and the xml to create
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 *
 	 * @param $job job to do
 	 */
@@ -1095,6 +1345,11 @@ class ProvVoipEnvia extends \BaseModel {
 		// e.g. in reseller_identifier man will put username and password for
 		// authentication against the API
 		$second_level_nodes = array();
+
+		$second_level_nodes['availability_check'] = array(
+			'reseller_identifier',
+			'availability_address_data',
+		);
 
 			/* 'blacklist_create_entry' => array( */
 			/* 	'reseller_identifier', */
@@ -1137,9 +1392,20 @@ class ProvVoipEnvia extends \BaseModel {
 			/* 	'reseller_identifier', */
 			/* ), */
 
-			/* 'contract_change_method' => array( */
+		$second_level_nodes['contract_change_method'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+			'method_data',
+		);
+
+			/* 'contract_change_sla' => array( */
 			/* 	'reseller_identifier', */
 			/* ), */
+
+		$second_level_nodes['contract_change_tariff'] = array(
+			'reseller_identifier',
+			'contract_identifier',
+		);
 
 			/* 'contract_change_sla' => array( */
 			/* 	'reseller_identifier', */
@@ -1162,18 +1428,15 @@ class ProvVoipEnvia extends \BaseModel {
 			'customer_identifier',
 			'customer_data',
 			'contract_data',
-			// in this first step we do not create phonenumbers within
-			// the contract
-			// instead: create each phonenumber in separate step (voipaccount_create)
-			/* 'subscriber_data', */
 		);
 		if ($this->api_version_greater_or_equal("1.4")) {
 			array_push($second_level_nodes['contract_create'], 'installation_address_data');
 		}
 
-		/* 'contract_get_reference' => array( */
-		/* 	'reseller_identifier', */
-		/* ), */
+		$second_level_nodes['contract_get_reference'] = array(
+			'reseller_identifier',
+			'callnumber_contract_identifier',
+		);
 
 		$second_level_nodes['contract_get_voice_data'] = array(
 			'reseller_identifier',
@@ -1202,9 +1465,20 @@ class ProvVoipEnvia extends \BaseModel {
 		/* ), */
 
 
-		/* 'customer_get_reference' => array( */
-		/* 	'reseller_identifier', */
-		/* ), */
+		$second_level_nodes['customer_get_contracts'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+		);
+
+		$second_level_nodes['customer_get_reference'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+		);
+
+		$second_level_nodes['customer_get_reference_by_legacy_number'] = array(
+			'reseller_identifier',
+			'customer_identifier',
+		);
 
 		$second_level_nodes['customer_update'] = array(
 			'reseller_identifier',
@@ -1310,6 +1584,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Adds the login data of the reseller to the xml
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_reseller_identifier() {
 
@@ -1328,6 +1603,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Adds an order ID to xml
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_order_identifier() {
 
@@ -1347,6 +1623,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * This doesn't use method _add_fields – data comes only from $_GET
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 *
 	 */
 	protected function _add_filter_data() {
@@ -1392,6 +1669,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * This specifies the data to be caught from Envia.
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_key_data() {
 
@@ -1408,19 +1686,37 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add customer identifier
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_customer_identifier() {
 
-		// needed: our customer number
-		$customerno = $this->contract->customer_number();
-
 		$inner_xml = $this->xml->addChild('customer_identifier');
-		$inner_xml->addChild('customerno', $customerno);
 
-		$customerreference = $this->contract->customer_external_id;
-		// optional: envia customer reference
-		if (!is_null($customerreference) && ($customerreference != '')) {
-			$inner_xml->addChild('customerreference', $customerreference);
+		if ($this->job == 'customer_get_reference') {
+			$customerno = $this->contract->customer_number();
+			if (!$customerno) {
+				throw new XmlCreationError("Customernumber does not exist – try using legacy version.");
+			}
+			$inner_xml->addChild('customerno', $customerno);
+		}
+		elseif ($this->job == 'customer_get_reference_by_legacy_number') {
+			$customerno_legacy = $this->contract->customer_number_legacy();
+			if ((!boolval($customerno_legacy)) || ($customerno_legacy == 'n/a')) {
+				throw new XmlCreationError("Legacy customernumber does not exist – try using normal version.");
+			}
+			$inner_xml->addChild('customerno', $customerno_legacy);
+		}
+		else {
+			// if set: use customerreference (prefered by Envia)
+			// but not in getting the customer's reference – here in each case we have to use the contract number
+			$customerreference = $this->contract->customer_external_id;
+			$customerno = $this->contract->customer_number();
+			if ((boolval($customerreference)) && ($customerreference != 'n/a')) {
+				$inner_xml->addChild('customerreference', $customerreference);
+			}
+			elseif ((boolval($customerno)) && ($customerno != 'n/a')) {
+				$inner_xml->addChild('customerno', $customerno);
+			}
 		}
 
 	}
@@ -1430,10 +1726,11 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add customer data
 	 *
 	 * This data is attached on:
-	 *	– contract/create for now customers
+	 *	– contract/create for new customers
 	 *	– customer/update
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_customer_data() {
 
@@ -1466,11 +1763,34 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->_add_fields($inner_xml, $fields, $this->contract);
 	}
 
+	/**
+	 * Method to add address to get availability informations
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_availability_address_data() {
+
+		$inner_xml = $this->xml->addChild('availability_address_data');
+
+		// mapping xml to database
+		$fields = array(
+			'street' => 'street',
+			'houseno' => 'house_number',
+			'zipcode' => 'zip',
+			'city' => 'city',
+			'district' => 'district',
+		);
+
+		$this->_add_fields($inner_xml, $fields, $this->contract);
+		$inner_xml->addChild('data_source', 'enviatel');
+	}
+
 
 	/**
 	 * Method to add installation address.
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_installation_address_data() {
 
@@ -1504,13 +1824,9 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add contract data.
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_contract_data() {
-
-		$inner_xml = $this->xml->addChild('contract_data');
-
-		// add startdate for contract (default: today – there are no costs without phone numbers)
-		$inner_xml->addChild('orderdate', date('Y-m-d'));
 
 		// check if there are missing values (e.g. they are missing if billing is enabled but man forgot to add voip item before calling this
 		$value_missing = False;
@@ -1537,19 +1853,212 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 		}
 
+		// check if at least one phonenumber is given
+		$phonenumbers_to_create = \Input::get('phonenumbers_to_create', []);
+		if (!$phonenumbers_to_create) {
+			$msg = 'Can only create contract with at least one phonenumber, but none given';
+			$value_missing = True;
+		}
+		else {
+			$numbers_on_modem = $this->get_numbers_related_to_modem_for_contract_create();
+			$numbers_on_modem_rearranged = array();
+			foreach ($numbers_on_modem as $nr_origin => $tmp_outer) {
+				foreach ($tmp_outer as $nr_date => $tmp_inner) {
+					foreach ($tmp_inner as $nr) {
+						$numbers_on_modem_rearranged[$nr->id] = ['type' => $nr_origin."  ".$nr_date, 'nr' => $nr];
+					}
+				}
+			}
+
+			// check all given numbers for validity
+			$porting = null;
+			$ekp_in = null;
+			$orderdate = null;
+			$last_mgmt = null;
+
+			$subscriber_data_keys = [
+				'subscriber_company',
+				'subscriber_department',
+				'subscriber_salutation',
+				'subscriber_firstname',
+				'subscriber_lastname',
+				'subscriber_street',
+				'subscriber_house_number',
+				'subscriber_zip',
+				'subscriber_city',
+				'subscriber_district',
+				];
+
+			foreach ($phonenumbers_to_create as $nr_id) {
+
+				// check if number belongs to current modem
+				if (!array_key_exists($nr_id, $numbers_on_modem_rearranged)) {
+					$msg = "Phonenumber $nr_id does not belong to modem";
+					$value_missing = True;
+					break;
+				}
+
+				$mgmt = $numbers_on_modem_rearranged[$nr_id]['nr']->phonenumbermanagement;
+
+				// check if cur number has management
+				if (is_null($mgmt)) {
+					$msg = "Chosen phonenumber $nr_id has no management.";
+					$value_missing = True;
+					break;
+				}
+
+				// check if activation date set
+				if (is_null($mgmt->activation_date)) {
+					$msg = "No activation date set for number $nr_id";
+					$value_missing = True;
+					break;
+				}
+
+				// check if activation  dates of all numbers are identical
+				$orderdate = $mgmt->activation_date;
+				if (!is_null($last_mgmt) && ($last_mgmt->activation_date != $orderdate)) {
+					$msg = "Given numbers have different activation dates ($orderdate, $mgmt->activation_date)";
+					$value_missing = True;
+					break;
+				}
+
+				// check if all numbers have identical porting information
+				$porting = $mgmt->porting_in;
+				if (!is_null($last_mgmt) && ($last_mgmt->porting_in != $porting)) {
+					$msg = "Either all given numbers have to be ported or none – mixing is not allowed";
+					$value_missing = True;
+					break;
+				}
+
+				if ($porting) {
+
+					// if number has to be ported: check if incoming EKP codes are identical
+					$ekp_in = $mgmt->ekp_in;
+					if (!is_null($last_mgmt) && ($last_mgmt->ekp_in != $ekp_in)) {
+						$msg = "All numbers to be created have to have the same incoming EKP code";
+						$value_missing = True;
+						break;
+					}
+
+					// compare subscriber data
+					if (!is_null($last_mgmt)) {
+						foreach ($subscriber_data_keys as $key) {
+							if (trim($last_mgmt->{$key}) != trim($mgmt->{$key})) {
+								$value_missing = True;
+								$msg = "Differences in subscriber data ($last_mgmt->{$key} != $mgmt->{$key})";
+								break; // the inner foreach
+							}
+						}
+						if ($value_missing) {
+							break;	// the outer foreach
+						}
+					}
+				}
+
+				// store currend management for comparing values with next number
+				$last_mgmt = $mgmt;
+			}
+		}
+
 		if ($value_missing) {
 			throw new XmlCreationError($msg);
 		}
 
+		// begin to build the xml
+		$inner_xml = $this->xml->addChild('contract_data');
+
+		// set porting flag if numbers have to be ported
+		if ($porting) {
+			$inner_xml->addChild('porting', 1);
+		}
+
+		// add startdate for contract (default: today – there are no costs without phone numbers)
+		$inner_xml->addChild('orderdate', $orderdate);
+
 		// the data exists: now we can safely get the external identifiers without raising an Exception
 		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
 		$inner_xml->addChild('tariff', $this->contract->phonetariff_sale_next->external_identifier);
+
+		// add the phonenumbers
+		// before adding: build array containing instances of all phonenumbers to be created
+		$phonenumbers_to_create = array_flip($phonenumbers_to_create);
+		foreach ($phonenumbers_to_create as $id => $_) {
+			$phonenumbers_to_create[$id] = $numbers_on_modem_rearranged[$id]['nr'];
+		}
+		$this->_add_callnumbers($inner_xml, $phonenumbers_to_create);
 
 		// add the default values
 		$defaults = $this->_get_defaults_by_topic('contract_data');
 		foreach ($defaults as $xml_field => $payload) {
 			$inner_xml->addChild($xml_field, $payload);
 		}
+
+		// if number(s) have to be ported: add subscriber data
+		if ($porting) {
+			$this->_add_subscriber_data($mgmt);
+		}
+
+	}
+
+
+	/**
+	 * Method to add method data
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _add_method_data() {
+
+		$inner_xml = $this->xml->addChild('method_data');
+
+		// external reference to use has already been defined in $this->_add_contract_identifier()
+		// we can safely use this here
+		$external_contract_reference = sprintf($this->xml->contract_identifier->contractreference);
+
+		// Envia variation id to comes from the next-to-use phonetariff
+		$inner_xml->addChild('variation_id', $this->contract->phonetariff_purchase_next->external_identifier);
+
+		// orderdate is starting date of next item having (via product) the same Envia variation ID as the next-to-use
+		// phonetariff
+		$orderdate = '9999-99-99';
+		$today = date('Y-m-d', strtotime('today'));
+		foreach ($this->contract->items as $item) {
+			if ($item->product->voip_purchase_tariff_id == $this->contract->next_purchase_tariff) {
+				if ($item->valid_from >= $today) {
+					$orderdate = min($orderdate, $item->valid_from);
+				}
+			}
+		}
+		$inner_xml->addChild('orderdate', $orderdate);
+
+		// now we have to add the phonenumber data
+		$method_changes_xml = $inner_xml->addChild('callnumber_method_changes');
+
+		// next get all the phonenumbers belonging to the currently processed Envia contract
+		$phonenumbers_to_change = PhoneNumber::where('contract_external_id', '=', $external_contract_reference)->get();
+
+		if ($phonenumbers_to_change->count() == 0) {
+			throw new XmlCreationError("No phonenumbers found for Envia contract $external_contract_reference");
+		}
+		if ($phonenumbers_to_change->count() > 2) {
+			throw new XmlCreationError("Envia allows use of this method only for contracts with max. 2 phonenumbers (".$phonenumbers_to_change->count()." numbers found for Envia contract $external_contract_reference).");
+		}
+
+		// and add the needed data for each of this numbers
+		foreach ($phonenumbers_to_change as $phonenumber) {
+
+			$callnumber_xml = $method_changes_xml->addChild('callnumber_method_change_data');
+
+			$callnumber_id_xml = $callnumber_xml->addChild('callnumber_identifier');
+			$fields = array(
+				'localareacode' => 'prefix_number',
+				'baseno' => 'number',
+			);
+			$this->_add_fields($callnumber_id_xml, $fields, $phonenumber);
+
+			$this->_add_sip_data($callnumber_xml->addChild('method'), $phonenumber);
+		}
+
+
 
 	}
 
@@ -1579,6 +2088,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add variation data
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_variation_data() {
 
@@ -1599,6 +2109,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add contract termination
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_contract_termination_data() {
 
@@ -1619,12 +2130,19 @@ class ProvVoipEnvia extends \BaseModel {
 	/**
 	 * Method to add subscriber data
 	 *
+	 * @param: $phonenumbermanagement; if not given: use $this->phonenumbermanagement
+	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
-	protected function _add_subscriber_data() {
+	protected function _add_subscriber_data($phonenumbermanagement=null) {
+
+		if (is_null($phonenumbermanagement)) {
+			$phonenumbermanagement = $this->phonenumbermanagement;
+		}
 
 		// subscriber data contains the current “owner” of the number ⇒ this tag is only needed if a phonenumber shall be ported
-		$porting = boolval($this->phonenumbermanagement->porting_in);
+		$porting = boolval($phonenumbermanagement->porting_in);
 		if (!$porting) {
 			return;
 		}
@@ -1645,7 +2163,7 @@ class ProvVoipEnvia extends \BaseModel {
 			'district' => 'subscriber_district',
 		);
 
-		$this->_add_fields($inner_xml, $fields_subscriber, $this->phonenumbermanagement);
+		$this->_add_fields($inner_xml, $fields_subscriber, $phonenumbermanagement);
 
 	}
 
@@ -1654,6 +2172,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add account data
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_account_data() {
 
@@ -1675,14 +2194,22 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add  callnumbers
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
-	protected function _add_callnumbers($xml) {
+	protected function _add_callnumbers($xml, $phonenumbers=[]) {
 
 		$inner_xml = $xml->addChild('callnumbers');
 
 		// TODO: this contains callnumber_single_data, callnumber_range_data or callnumber_new_data objects
 		// in this first step we only implement callnumber_single_data
-		$this->_add_callnumber_single_data($inner_xml);
+		if (!$phonenumbers) {
+			$this->_add_callnumber_single_data($inner_xml);
+		}
+		else {
+			foreach ($phonenumbers as $nr) {
+				$this->_add_callnumber_single_data($inner_xml, $nr);
+			}
+		}
 
 	}
 
@@ -1690,9 +2217,17 @@ class ProvVoipEnvia extends \BaseModel {
 	/**
 	 * Method to add data for a single callnumber
 	 *
+	 * @param phonenumber: if not given use $this->phonenumber
+	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
-	protected function _add_callnumber_single_data($xml) {
+	protected function _add_callnumber_single_data($xml, $phonenumber=null) {
+
+		if (is_null($phonenumber)) {
+			$phonenumber = $this->phonenumber;
+		}
+		$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 
 		$inner_xml = $xml->addChild('callnumber_single_data');
 
@@ -1701,48 +2236,71 @@ class ProvVoipEnvia extends \BaseModel {
 			'baseno' => 'number',
 		);
 
-		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
+		$this->_add_fields($inner_xml, $fields, $phonenumber);
 
 		// special handling of trc_class needed (comes from external table)
-		$trc_class = TRCClass::find($this->phonenumbermanagement->trcclass)->trc_id;
+		$trc_class = TRCClass::find($phonenumbermanagement->trcclass)->trc_id;
 		$inner_xml->addChild('trc_class', $trc_class);
 
-		// special handling for incoming porting needed (comes from external table)
-		$carrier_in = CarrierCode::find($this->phonenumbermanagement->carrier_in)->carrier_code;
-		// on porting: check if valid CarrierIn chosen
-		if (boolval($this->phonenumbermanagement->porting_in)) {
-			if (!CarrierCode::is_valid($carrier_in)) {
-				throw new XmlCreationError('ERROR: '.$carrier_code.' is not a valid carrier_code');
-			}
-			$inner_xml->addChild('carriercode', $carrier_in);
-		}
-		// if no porting (new number): CarrierIn has to be D057 (EnviaTEL) (API 1.4 and higher)
-		else {
-			if ($this->api_version_greater_or_equal("1.4")) {
-				if ($carrier_in != 'D057') {
-					throw new XmlCreationError('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
+		// carrier code not needed in version 1.10 and above
+		if ($this->api_version_less_than("1.10")) {
+			// special handling for incoming porting needed (comes from external table)
+			$carrier_in = CarrierCode::find($phonenumbermanagement->carrier_in)->carrier_code;
+
+			// on porting: check if valid CarrierIn chosen
+			if (boolval($phonenumbermanagement->porting_in)) {
+				if (!CarrierCode::is_valid($carrier_in)) {
+					throw new XmlCreationError('ERROR: '.$carrier_code.' is not a valid carrier_code');
 				}
 				$inner_xml->addChild('carriercode', $carrier_in);
+			}
+			// if no porting (new number): CarrierIn has to be D057 (EnviaTEL) (API 1.4 and higher)
+			else {
+				if ($this->api_version_greater_or_equal("1.4")) {
+					if ($carrier_in != 'D057') {
+						throw new XmlCreationError('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
+					}
+					$inner_xml->addChild('carriercode', $carrier_in);
+				}
 			}
 		}
 
 		// in API 1.4 and higher we also need the EKP code for incoming porting
 		if ($this->api_version_greater_or_equal("1.4")) {
-			if (boolval($this->phonenumbermanagement->porting_in)) {
-				$ekp_in = EkpCode::find($this->phonenumbermanagement->ekp_in)->ekp_code;
+			if (boolval($phonenumbermanagement->porting_in)) {
+				$ekp_in = EkpCode::find($phonenumbermanagement->ekp_in)->ekp_code;
 				$inner_xml->addChild('ekp_code', $ekp_in);
 			}
 		}
 
-		$this->_add_sip_data($inner_xml->addChild('method'));
+		$this->_add_sip_data($inner_xml->addChild('method'), $phonenumber);
 	}
 
+
+	/**
+	 * Adds phonenumber to be used to get a contract reference.
+	 *
+	 * @author Patrick Reichel
+	 * @version 2017-05-10
+	 */
+	protected function _add_callnumber_contract_identifier() {
+
+		$inner_xml = $this->xml->addChild('callnumber_contract_identifier');
+
+		$fields = array(
+			'localareacode' => 'prefix_number',
+			'baseno' => 'number',
+		);
+
+		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
+	}
 
 	/**
 	* Method to add data for a callnumber.
 	* This is different from _add_callnumber_single_data – so we have to implement again…
 	*
 	* @author Patrick Reichel
+	 * @version 2017-05-10
 	*/
 	protected function _add_callnumber_data() {
 
@@ -1766,8 +2324,13 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add sip data.
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
-	protected function _add_sip_data($xml) {
+	protected function _add_sip_data($xml, $phonenumber=null) {
+
+		if (is_null($phonenumber)) {
+			$phonenumber = $this->phonenumber;
+		}
 
 		$inner_xml = $xml->addChild('sip_data');
 
@@ -1777,18 +2340,19 @@ class ProvVoipEnvia extends \BaseModel {
 		);
 
 		// Envia API throws error if <sipdomain nil="true" /> is given…
-		if (boolval($this->phonenumber->sipdomain)) {
+		if (boolval($phonenumber->sipdomain)) {
 			$fields['sipdomain'] = 'sipdomain';
 		}
 
-		$this->_add_fields($inner_xml, $fields, $this->phonenumber);
+		$this->_add_fields($inner_xml, $fields, $phonenumber);
 	}
 
 
 	/**
-	 * Method to add  callnumber identifier
+	 * Method to add callnumber identifier
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_callnumber_identifier() {
 
@@ -1807,6 +2371,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add account termination data
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_accounttermination_data() {
 
@@ -1843,8 +2408,9 @@ class ProvVoipEnvia extends \BaseModel {
 	 * This is a special case as the direction for the request is not coming from database but from GET!
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 *
-	 * @throws UnexpectedValueException if GET param envia_blacklist_get_direction is not in [in|out]
+	 * @throws XmlCreationError if GET param envia_blacklist_get_direction is not in [in|out]
 	 */
 	protected function _add_blacklist_data() {
 
@@ -1862,21 +2428,76 @@ class ProvVoipEnvia extends \BaseModel {
 
 	/**
 	 * Method to add contract identifier.
-	 * In Envia speech a contract is phone connection (“Anschluss”) and so equals with our modems.
+	 * In Envia speech a contract is phone connection (“Anschluss”). There can be multiple ones per modem.
 	 * This is especially important to support different installation addresses on multiple modems per user.
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-16
 	 */
 	protected function _add_contract_identifier() {
 
 		$inner_xml = $this->xml->addChild('contract_identifier');
 
-		// mapping xml to database
-		$fields_contract_identifier = array(
-			'contractreference' => 'contract_external_id',
-		);
+		$external_contract_references = [];
 
-		$this->_add_fields($inner_xml, $fields_contract_identifier, $this->modem);
+		// depending on the job to do we have to get the EnviaContract references
+		// especially we have to distinct jobs related to modems (e.g. contract_relocate) from those related to phonenumbers
+		if (in_array(
+				$this->job, [
+					'contract_change_tariff',
+					'contract_change_variation',
+					'contract_relocate',
+					]
+				)
+				||
+				(
+					// check if contract/get_voice_data has been called from modem level
+					// in this case we use the modem as source for external contract id
+					// else we use the phonenumber
+					(in_array($this->job, ['contract_get_voice_data', 'contract_change_method']))
+					&&
+					(!$this->phonenumber->exists)
+				)
+		) {
+			// this are the cases where more than one external contract can exist and we have to decide which to use (or to use all)
+			//
+			// get all contract references attached to this modem
+			foreach ($this->modem->mtas as $mta) {
+				foreach ($mta->phonenumbers as $phonenumber) {
+					if (
+						($phonenumber->contract_external_id)
+						&&
+						(!in_array($phonenumber->contract_external_id, $external_contract_references))
+					) {
+						array_push($external_contract_references, $phonenumber->contract_external_id);
+					}
+				}
+			}
+
+			// no reference found
+			if (!$external_contract_references) {
+				throw new XmlCreationError('No EnviaOrder ID (contract_external_id) found. Cannot proceed.');
+			}
+
+			// TODO: implement logic to relocate more than one contract attached to the current modem!!
+			if (count($external_contract_references) > 1) {
+				throw new XmlCreationError('There is more than one EnviaContract used on this modem ('.(implode(', ', $external_contract_references)).'. Processing this is not yet implemented – please use the Envia Web API and inform Patrick.');
+			}
+			else {
+				$external_contract_reference = $external_contract_references[0];
+			}
+		}
+		else {
+			// default: taking external contract reference from phonenumber
+			$external_contract_reference = $this->phonenumber->contract_external_id;
+		}
+
+		if (!$external_contract_reference) {
+			throw new XmlCreationError('No EnviaOrder ID (contract_external_id) found. Cannot proceed.');
+		}
+
+		$inner_xml->addChild('contractreference', $external_contract_reference);
+
 	}
 
 
@@ -1884,6 +2505,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add contract relocation data (used to change installation address of modem).
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_contract_relocation_data() {
 
@@ -1909,6 +2531,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add attachment
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_attachment_data() {
 
@@ -1951,6 +2574,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add phonebookentry data
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _add_phonebookentry_data() {
 
@@ -1987,6 +2611,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Method to add fields to xml node
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 *
 	 * @param $xml SimpleXML to add fields to
 	 * @param $fields mapping xml node to database field(s) (key is xml node, value is database field as string or array containing all database fields to use plus concatenator as last entry)
@@ -2047,8 +2672,11 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Action to do depends on the chosen job
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	public function process_envia_data($job, $data) {
+
+		Log::debug(__METHOD__." started for job ".$job);
 
 		// special header for order_get_status 404 response
 		if (($job == 'order_get_status') && ($data['status'] == 404)) {
@@ -2075,6 +2703,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Ping successful message.
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _process_misc_ping_response($xml, $data, $out) {
 
@@ -2094,6 +2723,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Extract free numbers and show them
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _process_misc_get_free_numbers_response($xml, $data, $out) {
 
@@ -2130,6 +2760,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * as a cron job (e.g. weekly)
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _process_misc_get_keys_response($xml, $data, $out) {
 
@@ -2186,6 +2817,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Update the database table carriercode using data delivered by Envia API
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _process_misc_get_keys_response_carriercode($xml, $data, $out) {
 
@@ -2268,8 +2900,8 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Update the database table ekpekpcode using data delivered by Envia API
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
-
 	protected function _process_misc_get_keys_response_ekp_code($xml, $data, $out) {
 
 		// first: get all currently existing ids – we need them later on to delete removed ekpcodes
@@ -2363,6 +2995,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Update the database table trc_code using data delivered by Envia API
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _process_misc_get_keys_response_trc_class($xml, $data, $out) {
 
@@ -2375,14 +3008,37 @@ class ProvVoipEnvia extends \BaseModel {
 			$existing_ids[$class->id] = $class->trc_id;
 		}
 
-		// process the returned data
-		foreach ($xml->keys->key as $entry) {
+		// we do not want to change the original XML (given by reference)
+		// so we have to make a copy to work with
+		$xml_working_copy = new \SimpleXMLElement($xml->asXML());
 
-			// Envia partially sends data with trailing 0xa0 (=NO-BREAK SPACE) – we have to trim this explicitely!
-			$id = trim($entry->id, " \t\n\r\0\x0B\xC2\xA0");
-			$tmp = explode(' ', trim($entry->description, " \t\n\r\0\x0B\xC2\xA0"));
-			$short = trim($tmp[0]);
-			$description = trim(implode(' ', array_slice($tmp, 2)), " \t\n\r\0\x0B\xC2\xA0");
+		// insert data for NULL entry (used if TRC is not yet known; e.g. in autogenerated phonenumbermanagements
+		$null_element = $xml_working_copy->keys->addChild('key');
+		$null_element->addChild('id', "NULL");
+		$null_element->addChild('description', "unknown or not set");
+
+		// process the returned data
+		foreach ($xml_working_copy->keys->key as $entry) {
+
+			// extract data from entries
+			if ($entry->id != "NULL") {
+				// “normal” entry received from Envia
+
+				// Envia partially sends data with trailing 0xa0 (=NO-BREAK SPACE) – we have to trim this explicitely!
+				$id = trim($entry->id, " \t\n\r\0\x0B\xC2\xA0");
+				if ($id == "NULL") {
+					$id = null;
+				}
+				$tmp = explode(' ', trim($entry->description, " \t\n\r\0\x0B\xC2\xA0"));
+				$short = trim($tmp[0]);
+				$description = trim(implode(' ', array_slice($tmp, 2)), " \t\n\r\0\x0B\xC2\xA0");
+			}
+			else {
+				// our null element
+				$id = null;
+				$short = "n/a";
+				$description = $entry->description;
+			}
 
 			$trcclass = TRCClass::withTrashed()->firstOrNew(['trc_id' => $id]);
 			$changed = False;
@@ -2451,18 +3107,30 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Process data after successful contract creation
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _process_contract_create_response($xml, $data, $out) {
 
 		// update contract
-		$this->contract->customer_external_id = $xml->customerreference;
-		$this->contract->save();
+		if (
+			($this->contract->customer_external_id)
+			&&
+			($this->contract->customer_external_id != $xml->customerreference)
+		) {
+			$msg = "Error in processing contract_create response (order ID: ".$xml->orderid."): Existing customer_external_id (".$this->contract->customer_external_id.") different from received one (".$xml->customerreference.")";
+			$out .= "<h5>$msg</h5>";
+			\Log::error($msg);
+		}
+		else {
+			$this->contract->customer_external_id = $xml->customerreference;
+			$this->contract->save();
+		}
 
 		// update modem
-		$this->modem->contract_external_id = $xml->contractreference;
+		/* $this->modem->contract_external_id = $xml->contractreference; */
+		// TODO: remove this when detection of active contracts is refactored to use data from enviacontract
 		$this->modem->contract_ext_creation_date = date('Y-m-d H:i:s');
 		$this->modem->save();
-
 
 		// create enviaorder
 		$order_data = array();
@@ -2477,8 +3145,45 @@ class ProvVoipEnvia extends \BaseModel {
 
 		$enviaOrder = EnviaOrder::create($order_data);
 
+		// create enviacontract
+		$enviacontract_data = [
+			'external_creation_date' => date('Y-m-d H:i:s'),
+			'envia_customer_reference' => $xml->customerreference,
+			'envia_contract_reference' => $xml->contractreference,
+			'contract_id' => $this->contract->id,
+			'modem_id' => $this->modem->id,
+		];
+		$enviacontract = EnviaContract::create($enviacontract_data);
+
+		// check if there are also phonenumbers created
+		$created_phonenumbers = \Input::get('phonenumbers_to_create', []);
+
+		// create some implicite data:
+		//   - relation between Envia order and phonenumber
+		//   - current timestamp as external creation date in managements
+		foreach ($created_phonenumbers as $phonenumber_id) {
+
+			// each given number should exist – if not there is a major problem!
+			$phonenumber = Phonenumber::findOrFail($phonenumber_id);
+
+			// add entry to pivot table – there can only be one for this method
+			$enviaOrder->phonenumbers()->attach($phonenumber_id);
+
+			// we create a new contract here – so it is save to overwrite potentially exsting data in phonenumbers
+			$ret = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $xml->contractreference, True, False);
+			if ($ret) {
+				$out .= "<br>$ret";
+			}
+
+			// set current timestamp as external creation date and add link between management and enviacontract
+			$mgmt = $phonenumber->phonenumbermanagement;
+			$mgmt->voipaccount_ext_creation_date = date('Y-m-d H:i:s');
+			$mgmt->enviacontract_id = $enviacontract->id;
+			$mgmt->save();
+		}
+
 		// view data
-		$out .= "<h5>Contract created (order ID: ".$xml->orderid.")</h5>";
+		$out .= "<h5>Envia contract created (contract reference: $xml->contractreference, order ID: $xml->orderid)</h5>";
 
 		return $out;
 	}
@@ -2495,8 +3200,6 @@ class ProvVoipEnvia extends \BaseModel {
 	protected function _process_contract_get_voice_data_response($xml, $data, $out) {
 
 		$out .= "<h5>Voice data for modem ".$this->modem->id."</h5>";
-		$out .= "<h5 style='color: red'>UNTESTED: This needs to be tested when <u>real data</u> is available<br>";
-		$out .= "IMPORTANT: Double check changes and new settings!!</h5>";
 
 		$out .= "Contained callnumber informations:<br>";
 		$out .= "<pre>";
@@ -2514,14 +3217,36 @@ class ProvVoipEnvia extends \BaseModel {
 				// find phonenumber object for given phonenumber
 				$phonenumber = Phonenumber::where('prefix_number', '=', $entry->localareacode)->where('number', '=', $entry->baseno)->first();
 
+				// if there is data for a number not existing in our database: create
+				if (is_null($phonenumber)) {
+					$_ = "Phonenumber ".$entry->localareacode."/".$entry->baseno." does not exist – creating it. Set proper MTA and port!!";
+					$out .= "<b>$_</b><br>";
+					Log::warning($_);
+					$phonenumber = new Phonenumber();
+					$phonenumber->prefix_number = $entry->localareacode;
+					$phoneunmber->number = $entry->baseno;
+					$phonenumber->save();
+
+				}
+
 				$phonenumbermanagement = $phonenumber->phonenumbermanagement;
 
 				// update TRCClass
 				// remember: trcclass.id != trclass.trc_id (first is local key, second is Envia Id!)
-				$trcclass = TRCClass::where('trc_id', '=', intval($entry->trc_class))->first();
-				if ($phonenumbermanagement['trcclass'] != $trcclass->id) {
-					$phonenumbermanagement['trcclass'] = $trcclass->id;
-					$phonenumbermanagement->save();
+				if (!$phonenumbermanagement) {
+					$_ = "No phonenumbermanagement found for phonenumber $phonenumber->id. Cannot set TRC class";
+					$out .= "<b>$_</b><br>";
+					Log::warning($_);
+				}
+				else {
+					$trcclass = TRCClass::where('trc_id', '=', intval($entry->trc_class))->first();
+					if ($phonenumbermanagement['trcclass'] != $trcclass->id) {
+						$phonenumbermanagement['trcclass'] = $trcclass->id;
+						$phonenumbermanagement->save();
+						$msg = "Changed TRC class for phonenumber $phonenumber->id.";
+						$out .= "$msg<br>";
+						Log::info($msg);
+					}
 				}
 
 				$method = $entry->method;
@@ -2529,6 +3254,8 @@ class ProvVoipEnvia extends \BaseModel {
 				// process SIP data
 				if (boolval($method->sip_data)) {
 					$sip_data = $method->sip_data;
+
+					$protocol = "SIP";
 
 					// update database
 					$changed = False;
@@ -2546,19 +3273,57 @@ class ProvVoipEnvia extends \BaseModel {
 					}
 					if ($changed) {
 						$phonenumber->save();
+						$msg = "Changed SIP data for phonenumber $phonenumber->id";
+						$out .= "$msg<br>";
+						Log::info($msg);
 					}
 				}
 				// process packet cable data
 				elseif (boolval($method->mgcp_data)) {
 
+					$protocol = "MGCP";
 					// TODO: process data for packet cable
-					$out .= "<b>TODO: packet cable not yet implemented</b>";
+					$msg = "TODO: MGCP not yet implemented";
+					$out .= "<b>$msg</b><br>";
+					Log::error($msg);
 				}
+
+				// update Envia contracts
+				if ($phonenumber->contract_external_id) {
+					$enviacontract = EnviaContract::firstOrCreate(array('envia_contract_reference' => $phonenumber->contract_external_id));
+					$changed = False;
+					if ($enviacontract->envia_contract_reference != $phonenumber->contract_external_id) {
+						$enviacontract->envia_contract_reference = $phonenumber->contract_external_id;
+						$changed = True;
+					}
+					if ($enviacontract->envia_customer_reference != $phonenumber->mta->modem->contract->customer_external_id) {
+						$enviacontract->envia_customer_reference = $phonenumber->mta->modem->contract->customer_external_id;
+						$changed = True;
+					}
+					if ($enviacontract->method != $protocol) {
+						$enviacontract->method = $protocol;
+						$changed = True;
+					}
+					if ($enviacontract->modem_id != $phonenumber->mta->modem->id) {
+						$enviacontract->modem_id = $phonenumber->mta->modem->id;
+						$changed = True;
+					}
+					if ($enviacontract->contract_id != $phonenumber->mta->modem->contract->id) {
+						$enviacontract->contract_id = $phonenumber->mta->modem->contract->id;
+						$changed = True;
+					}
+					if ($changed) {
+						$enviacontract->save();
+					}
+				}
+
 			}
 			elseif ($type == 'callnumber_range_data') {
 
 				// TODO: not yet implemented
-				$out .= "<b>TODO: handling of callnumber_range_data not yet implemented</b>";
+				$msg .= "TODO: handling of callnumber_range_data not yet implemented";
+				$out .= "<b>$msg</b><br>";
+				Log::error($msg);
 			}
 		}
 
@@ -2567,10 +3332,193 @@ class ProvVoipEnvia extends \BaseModel {
 		return $out;
 	}
 
+
+	/**
+	 * Sets (or possibly) overwrites envia contract reference in phonenumber table
+	 *
+	 * @param $phonenumber to be updated
+	 * @param $contractreference Envia contract ID
+	 * @param $overwrite Flag to allow changing of existing IDs (Default: Do not change)
+	 * @param $verbose Flag to return debug messages (Default: False)
+	 *
+	 * @author Patrick Reichel
+	 * @version 2017-05-10
+	 */
+	protected function _update_envia_contract_reference_on_phonenumber($phonenumber, $contractreference, $overwrite=False, $verbose=False) {
+
+		$msg = '';
+
+		// if there is no phonenumber something went wrong
+		if (is_null($phonenumber)) {
+
+			$msg = "Phonenumber does not exist";
+			\Log::error($msg);
+			$msg = "ERROR: $msg";
+			return $msg;
+		}
+
+		$changed = False;
+		if (is_null($phonenumber->contract_external_id)) {
+			// store the given Envia contract reference
+			$phonenumber->contract_external_id = $contractreference;
+			$changed = True;
+			$msg = "Envia contract reference not set at phonenumber ".$phonenumber->id." – set to ".$contractreference;
+			\Log::info($msg);
+		}
+		elseif ($phonenumber->contract_external_id != $contractreference) {
+			if ($overwrite) {
+				// update Envia contract reference in phonenumber
+				$phonenumber->contract_external_id = $contractreference;
+				$changed = True;
+				$msg = "Stored Envia contract reference in ".$phonenumber->id." (".$phonenumber->contract_external_id.") does not match returned value ".$contractreference.". Overwriting.";
+				\Log::warning($msg);
+			}
+		}
+		else {
+			$msg = "Envia contract reference for phonenumber ".$phonenumber->id." is ".$contractreference;
+			\Log::debug($msg);
+			if (!$verbose) {
+				$msg = '';
+			}
+		}
+
+		if ($changed) {
+			$phonenumber->save();
+		}
+
+		return $msg;
+	}
+
+	/**
+	 * Process data after requesting a contract reference by phonenumber
+	 *
+	 * @author Patrick Reichel
+	 * @version 2017-05-10
+	 */
+	protected function _process_contract_get_reference_response($xml, $data, $out) {
+
+		$phonenumber_id = \Input::get('phonenumber_id', null);
+
+		if (is_null($phonenumber_id)) {
+			$phonenumber = null;
+			$msg = "No phonenumber given";
+			\Log::error($msg);
+		}
+		else {
+			$phonenumber = Phonenumber::find($phonenumber_id);
+			// response of method contract/get_reference contains the currently used Envia contract reference
+			// so it is save to overwrite the data in phonenumber
+			$msg = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $xml->contractreference, True, True);
+
+			// create/update enviacontract
+			$enviacontract = EnviaContract::firstOrNew(['envia_contract_reference' => $xml->contractreference]);
+
+			$enviacontract->envia_customer_reference = $phonenumber->mta->modem->contract->customer_external_id;
+			$enviacontract->envia_contract_reference = (string) $xml->contractreference;
+			$enviacontract->modem_id = $phonenumber->mta->modem->id;
+			$enviacontract->contract_id = $phonenumber->mta->modem->contract->id;
+
+			if (!$enviacontract->exists) {
+				$enviacontract->start_date = '1900-01-01';
+				$_ = "Creating EnviaContract $enviacontract->id";
+				$msg .= "<br> $_";
+				Log::info($_);
+				$enviacontract->save();
+			}
+			elseif ($enviacontract->attributes != $enviacontract->original) {
+				$_ = "Updating EnviaContract $enviacontract->id";
+				$msg .= "<br> $_";
+				Log::info($_);
+				$enviacontract->save();
+			}
+
+			// update management if existing; else create a new one
+			$phonenumbermanagement = $phonenumber->phonenumbermanagement;
+
+			if (!$phonenumbermanagement) {
+
+				// if number is active: create PhonenumberManagement
+				if ($phonenumber->active) {
+					$phonenumbermanagement = new PhonenumberManagement();
+					$_ = 'No PhonenumberManagement for number '.$phonenumber->id.' found. Creating new one – you have to set some values manually!';
+					$msg .= '<br> ⇒ '.$_;
+					\Log::warning($_);
+
+					// set the correlating phonenumber id
+					$phonenumbermanagement->phonenumber_id = $phonenumber->id;
+
+					// set some default values
+					$phonenumbermanagement->voipaccount_ext_creation_date = '1900-01-01';
+					$phonenumbermanagement->activation_date = '1900-01-01';
+					$phonenumbermanagement->external_activation_date = '1900-01-01';
+
+					$trc_null = TRCClass::whereRaw('trc_id IS NULL')->first();
+					$trc_null_id = $trc_null->id;
+					$phonenumbermanagement->trcclass = $trc_null_id;
+					$phonenumbermanagement->porting_in = 0;
+					$phonenumbermanagement->carrier_in = 0;
+					$phonenumbermanagement->ekp_in = 0;
+					$phonenumbermanagement->porting_out = 0;
+					$phonenumbermanagement->carrier_out = 0;
+					$phonenumbermanagement->ekp_out = 0;
+					$phonenumbermanagement->autogenerated = 1;
+					$phonenumbermanagement->enviacontract_id = $enviacontract->id;
+
+					$phonenumbermanagement->save();
+				}
+				else {
+					$_ .= 'No PhonenumberManagement for number '.$phonenumber->id.' found. Will not create one because number is inactive!';
+					$msg .= '<br> ⇒ '.$_;
+					\Log::warning($_);
+				}
+
+			}
+			elseif ($phonenumbermanagement->enviacontract_id != $enviacontract->id) {
+				$phonenumbermanagement->enviacontract_id = $enviacontract->id;
+				$phonenumbermanagement_changed = True;
+				$msg .= "<br>Updated PhonenumberManagement $phonenumbermanagement->id";
+				$phonenumbermanagement->save();
+			}
+
+		}
+
+		$out .= "<h5>$msg</h5>";
+		return $out;
+
+	}
+
+
+	/**
+	 * Process data after successful method change
+	 *
+	 * @author Patrick Reichel
+	 * @todo: updating data in enviacontract has to be done in daily conversion!!
+	 */
+	protected function _process_contract_change_method_response($xml, $data, $out) {
+
+		// create enviaorder
+		$order_data = array();
+		$order_data['orderid'] = $xml->orderid;
+		$order_data['method'] = 'contract/change_method';
+		$order_data['contract_id'] = $this->contract->id;
+		$order_data['modem_id'] = $this->modem->id;
+		$order_data['ordertype'] = 'contract/change_method';
+		$order_data['orderstatus'] = 'initializing';
+
+		$enviaOrder = EnviaOrder::create($order_data);
+
+		// view data
+		$out .= "<h5>Method	change successful (order ID: ".$xml->orderid.")</h5>";
+
+		return $out;
+	}
+
+
 	/**
 	 * Process data after successful tariff change
 	 *
 	 * @author Patrick Reichel
+	 * @todo: updating data in enviacontract has to be done in daily conversion!!
 	 */
 	protected function _process_contract_change_tariff_response($xml, $data, $out) {
 
@@ -2595,6 +3543,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Process data after successful variation change
 	 *
 	 * @author Patrick Reichel
+	 * @todo: updating data in enviacontract has to be done in daily conversion!!
 	 */
 	protected function _process_contract_change_variation_response($xml, $data, $out) {
 
@@ -2620,6 +3569,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Process data after successful change of installation address
 	 *
 	 * @author Patrick Reichel
+	 * @todo update all enviacontract related stuff (dates, prev/next id in console job!)
 	 */
 	protected function _process_contract_relocate_response($xml, $data, $out) {
 
@@ -2641,10 +3591,121 @@ class ProvVoipEnvia extends \BaseModel {
 		return $out;
 	}
 
+
+	/**
+	 * Process data after requesting customer reference.
+	 *
+	 * @author Patrick Reichel
+	 * @version 2017-05-10
+	 */
+	protected function _process_customer_get_contracts_response($xml, $data, $out) {
+
+		$envia_contracts = $xml->contracts;
+		foreach ($envia_contracts->contract as $data) {
+
+			// extract data
+			$contract_reference = sprintf($data->contractreference);
+			$variation_id = sprintf($data->variation_id);
+			$contract_state = sprintf($data->contractstate);
+			$_ = sprintf($data->contractstart);
+			$contract_start = boolval($_) ? substr($_, 0, 10) : null;
+			$_ = sprintf($data->contractend);
+			$contract_end = boolval($_) ? substr($_, 0, 10) : null;
+
+			// update or create EnviaContract
+			$envia_contract = EnviaContract::firstOrNew(['envia_contract_reference' => $contract_reference]);
+
+			$envia_contract->envia_customer_reference = $this->contract->customer_external_id;
+			$envia_contract->contract_id = $this->contract->id;
+			$envia_contract->state = $contract_state;
+			$envia_contract->start_date = $contract_start;
+			$envia_contract->end_date = boolval($contract_end) ? $contract_end : null;
+			$envia_contract->variation_id = $variation_id;
+			if (!$envia_contract->exists) {
+				$msg = "Creating Envia contract $contract_reference";
+				Log::info($msg);
+			}
+			elseif ($envia_contract->attributes != $envia_contract->original) {
+				$msg = "Updating Envia contract $contract_reference";
+				Log::info($msg);
+			}
+			else {
+				$msg = "Envia contract $contract_reference is up to date";
+				Log::debug($msg);
+			}
+
+			$out .= "<br>$msg";
+			$envia_contract->save();
+		}
+
+		return $out;
+	}
+
+
+	/**
+	 * Process data after requesting customer reference by lecacy number.
+	 * This is simply a wrapper
+	 *
+	 * @author Patrick Reichel
+	 * @version 2017-05-10
+	 */
+	protected function _process_customer_get_reference_by_legacy_number_response($xml, $data, $out) {
+		return $this->_process_customer_get_reference_response($xml, $data, $out);
+	}
+
+
+	/**
+	 * Process data after requesting customer reference.
+	 *
+	 * @author Patrick Reichel
+	 * @version 2017-05-10
+	 */
+	protected function _process_customer_get_reference_response($xml, $data, $out) {
+
+		$update_envia_contract = False;
+
+		if(!boolval($this->contract->customer_external_id)) {
+			$this->contract->customer_external_id = $xml->customerreference;
+			$this->contract->save();
+			$msg = "Setting external customer id for contract ".$this->contract->id." to ".$xml->customerreference;
+			$out .= "<b>$msg</b>";
+			Log::info($msg);
+			$update_envia_contract = True;
+		}
+		elseif ($this->contract->customer_external_id == $xml->customerreference) {
+			$out .= "<b>Envia customer ID is ".$xml->customerreference."</b>";
+			$update_envia_contract = True;
+		}
+		else {
+			$msg = "Returned Envia customer reference for contract ".$this->contract->id." (".$xml->customerreference.") does not match our database entry (".$this->contract->customer_external_id.")";
+			Log::error($msg);
+			$out .= "<b>ERROR: $msg</b>";
+		}
+
+		// update data in enviacontract if this seems to be save
+		if ($update_envia_contract) {
+			$contract_id = $this->contract->id;
+			$enviacontracts = EnviaContract::where("contract_id", "=", $contract_id)->get();
+			foreach ($enviacontracts as $enviacontract) {
+				if ($enviacontract->envia_customer_reference != $this->contract->customer_external_id) {
+					$enviacontract->envia_customer_reference = $this->contract->customer_external_id;
+					$enviacontract->save();
+					$msg = "Updating envia_customer_reference in enviacontract $enviacontract->id to $enviacontract->envia_customer_reference";
+					Log::info($msg);
+					$out .= "<br><b>$msg</b>";
+				}
+			}
+		}
+
+		return $out;
+	}
+
+
 	/**
 	 * Process data after successful customer update
 	 *
 	 * @author Patrick Reichel
+	 * @version 2017-05-10
 	 */
 	protected function _process_customer_update_response($xml, $data, $out) {
 
@@ -2669,7 +3730,7 @@ class ProvVoipEnvia extends \BaseModel {
 	 * Extract and process order csv.
 	 *
 	 * According to Envia's Wienecke this method is only for debugging – the answer will only contain
-	 * voipaccount related orders.
+	 * recent voipaccount related orders.
 	 * Nevertheless we should use this – e.g. for nightly cron checks to detect manually created
 	 * orders (at least according to a phonenumber).
 	 *
@@ -2723,104 +3784,407 @@ class ProvVoipEnvia extends \BaseModel {
 			$out .= "<hr>";
 		}
 
+		// if started from cron job: print serialized results and exit
+		// cron job then starts processing order by order to prevent running in Apache timeout…
+		if ($data['entry_method'] == 'cron') {
+			echo serialize($results);
+			exit();
+		}
+
 		// process the valid CSV lines
 		foreach ($results as $result) {
-
-			$order_id = $result['orderid'];
-
-			$out .= "<br>";
-
-			$phonenumbers = Phonenumber::where('prefix_number', '=', $result['localareacode'])->where('number', '=', $result['baseno'])->get();
-
-			// check for edge cases (no number found, more than one number found)
-			// the number we look for should exist once and only once!
-			$phonenumber_count = $phonenumbers->count();
-			if ($phonenumber_count == 0) {
-				$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
-				\Log::warning($msg);
-				$out .= '<br><span style="color: red">'.$msg.'</span>';
-				continue;
-			}
-			elseif ($phonenumber_count > 1) {
-				$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' exists '.$phonenumber_count.' times. Clean your database! Skipping order '.$order_id;
-				\Log::warning($msg);
-				$out .= '<br><span style="color: red">'.$msg.'</span>';
-				continue;
-			}
-
-			$phonenumber = $phonenumbers->first();
-
-			$result['phonenumber_id'] = $phonenumber->id;
-			$result['modem_id'] = $phonenumber->mta->modem->id;
-			$result['contract_id'] = $phonenumber->mta->modem->contract->id;
-
-			$order = EnviaOrder::where('orderid', $order_id)->first();
-
-			// check if this order already exists within the database
-			if (!is_null($order)) {
-
-				$order_changed = False;
-
-				// ordertype_id is not given by order_get_status: we have to set it here if there are any changes
-				if ($order->ordertype_id != $result['ordertype_id']) {
-					$order->ordertype_id = $result['ordertype_id'];
-					$order->save();
-					$msg = 'Updated ordertype_id in for existing order '.$order_id;
-					Log::info($msg);
-					$out .= '<br>'.$msg;
-					$order_changed = true;
-				}
-
-				// as an order can be related to more than one phonenumber we
-				// have to check if the current relation exists
-				if (!$order->phonenumbers->contains($phonenumber->id)) {
-					$order->phonenumbers()->attach($phonenumber->id);
-					$msg = 'Added relation between existing enviaorder '.$order_id.' and phonenumber '.$phonenumber->id;
-					Log::info($msg);
-					$out .= '<br>'.$msg;
-					$order_changed = true;
-
-					// check if contract, modem and/or phonenumbermanagement need updates, too
-					$out = $this->_update_phonenumber_related_data($result, $out);
-				}
-
-				// if nothing happened related to the current order: inform the user
-				// updating other informations related to this order will be done in method order_get_status
-				if (!$order_changed) {
-					$out .= '<br>Order '.$order_id.' already exists in database and nothing to do. Skipping.';
-				}
-
-				continue;
-			}
-
-			// create a new Order, add given data to model instance
-			$order = EnviaOrder::create($result);
-
-			$out .= '<br>Order '.$order_id.' created.';
-
-			// if we end up here we have an order that not existed yet – so we have to check if
-			// contract, modem and/or phonenumbermanagement need updates, too
-			$out = $this->_update_phonenumber_related_data($result, $out);
+			$out .= $this->_process_misc_get_orders_csv_response_single_order($result, $data['entry_method']);
 		}
 
-		// return different output on cron jobs.
-		if ($data['entry_method'] == 'cron') {
-			return 'Database updated.';
+		$out .= "<br><br><pre>".$csv."</pre>";
+		return $out;
+	}
+
+	/**
+	 * Processes one order from orders CSV.
+	 *
+	 * This method is either called the standard way or directly from cron job via controller – therefore it has to be public!
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function _process_misc_get_orders_csv_response_single_order($result, $method) {
+
+		$out = '';
+
+		// Envia changed API – now there are also times on “orderdate” which results in daily update of our database
+		// shorten this to date only – so we don't have to change in other methods
+		if (array_key_exists('orderdate', $result)) {
+			$result['orderdate'] = substr($result['orderdate'], 0, 10);
+		}
+
+		$process_order = true;
+
+		// check if an order with given ID exists in our database
+		$tmp_order = EnviaOrder::where('orderid', '=', $result['orderid'])->first();
+
+		// if order does no exist: process the order; else processing depends on some conditions
+		if (!is_null($tmp_order)) {
+
+			// check if there is a relation between this order and the phonenumber in response
+			// this is needed for orders related to more than one number, where final state is not the only criteria
+			$relation_between_order_and_number_set = false;
+			if ($result['localareacode'] && $result['baseno']) {
+				foreach ($tmp_order->phonenumbers as $tmp_number) {
+					if (($tmp_number->prefix_number == $result['localareacode']) && ($tmp_number->number == $result['baseno'])) {
+						$relation_between_order_and_number_set = true;
+						break;
+					}
+				}
+			}
+
+			// check if order is in final state
+			$tmp_orderstate_is_final = EnviaOrder::orderstate_is_final($tmp_order);
+
+			// if all conditions are fulfilled: stop processing
+			if ($relation_between_order_and_number_set && $tmp_orderstate_is_final) {
+				$process_order = false;
+			}
+		}
+
+		// check if order has to be processed – we do only so if we can expect new data
+		if (!$process_order) {
+
+			\Log::debug("Order $tmp_order->id ($tmp_order->orderid) is in final state in our database. Nothing to do.");
+			return $out;
+		};
+
+		$out .= "<br><br>";
+
+		$msg = "Processing order ".$result['orderid'];
+		\Log::info($msg);
+		$out .= $msg;
+
+		// check what the order is related to ⇒ after silently changing the API behavior
+		// there now are orders not related to phonenumbers, too
+		if ($result['localareacode'] && $result['baseno']) {
+			// assume that order is related to a phonenumber
+
+			$msg = "<br>Order seems to be phonenumber related";
+			\Log::debug($msg);
+			$out .= $msg;
+
+			// start processing
+			$out .= $this->_process_misc_get_orders_csv_response__phonenumber_related($result);
+		}
+		elseif ($result['contractreference']) {
+			// order seems to be related to a contract
+
+			$msg = "<br>Order seems to be contract related";
+			\Log::debug($msg);
+			$out .= $msg;
+
+			// start processing
+			$out .= $this->_process_misc_get_orders_csv_response__contract_related($result);
+		}
+		elseif ($result['customerreference']) {
+			// order seems to be related to a contract
+
+			$msg = "<br>Order seems to be customer related";
+			\Log::debug($msg);
+			$out .= $msg;
+
+			// start processing
+			$out .= $this->_process_misc_get_orders_csv_response__customer_related($result);
 		}
 		else {
-			$out .= "<br><br><pre>".$csv."</pre>";
+			// no relation
+
+			$msg = "<br>Order seems to be standalone – no relation found";
+			\Log::debug($msg);
+			$out .= $msg;
+
+			// start processing
+			$out .= $this->_process_misc_get_orders_csv_response__not_related($result);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Process phonenumber related order from orders CSV.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response__phonenumber_related($result) {
+
+		$out = '';
+		$order_id = $result['orderid'];
+
+		// check if there are related phonenumbers
+		$phonenumbers = Phonenumber::where('prefix_number', '=', $result['localareacode'])->where('number', '=', $result['baseno'])->get();
+
+		// check for edge cases (no number found, more than one number found)
+		// the number we look for should exist once and only once!
+		$phonenumber_count = $phonenumbers->count();
+		if ($phonenumber_count == 0) {
+			$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
+			\Log::warning($msg);
+			$out .= '<br><span style="color: red">'.$msg.'</span>';
 			return $out;
 		}
+		if ($phonenumber_count > 1) {
+			$msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' exists '.$phonenumber_count.' times. Clean your database! Skipping order '.$order_id;
+			\Log::warning($msg);
+			$out .= '<br><span style="color: red">'.$msg.'</span>';
+			return $out;
+		}
+
+		// and here is the number we have to work with
+		$phonenumber = $phonenumbers->first();
+		$result['phonenumber_id'] = $phonenumber->id;
+
+		// enrich result array and get enviacontract and order
+		// add modem and contract ids
+		$result['modem_id'] = $phonenumber->mta->modem->id;
+		$result['contract_id'] = $phonenumber->mta->modem->contract->id;
+		// get envia contract
+		$_ = $this->_process_misc_get_orders_csv_response__update_or_create_enviacontract($result, $out);
+		$enviacontract = $_['enviacontract'];
+		$out .= $_['out'];
+		$result['enviacontract_id'] = (is_null($enviacontract) ? NULL : $enviacontract->id);
+		// get envia order
+		$_ = $this->_process_misc_get_orders_csv_response__update_or_create_order($result, $out);
+		$order = $_['order'];
+		$out .= $_['out'];
+
+		// check if relation between order and phonenumber exists
+		if (!$order->phonenumbers->contains($phonenumber->id)) {
+			$order->phonenumbers()->attach($phonenumber->id);
+			$msg = 'Added relation between existing enviaorder '.$order_id.' and phonenumber '.$phonenumber->id;
+			Log::info($msg);
+			$out .= '<br>'.$msg;
+		}
+
+		// check if contract, modem and/or phonenumbermanagement need updates, too
+		// don't perform action for successfully cancelled orders here
+		if (!EnviaOrder::order_successfully_cancelled($order)) {
+			if (!EnviaOrder::order_failed($order)) {
+				$out .= $this->_update_phonenumber_related_data($result, $out);
+			}
+		}
+
+		return $out;
 	}
 
 
 	/**
-	 * This is used to update several inforamtion in contract, modem and phonenumbermanagement.
+	 * Process contract related order from orders CSV.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response__contract_related($result) {
+
+		$out = '';
+
+		// try to find the modem this order is related to
+		$modem = null;
+		$phonenumbers = Phonenumber::where('contract_external_id', '=', $result['contractreference'])->get();
+		foreach ($phonenumbers as $phonenumber) {
+			// check if all numbers belong to the same modem – if not there is inconistent data
+			if (is_null($modem)) {
+				$modem = $phonenumber->modem;
+			}
+			else {
+				if ($modem != $phonenumber->modem) {
+					$msg = "Phonenumbers related to Envia contract ".$result['contractreference']." do belong to different modems. Skipping.";
+					\Log::error($msg);
+					$out .= '<br><span style="color: red">Error: '.$msg.'</span>';
+					return $out;
+				}
+			}
+		}
+
+		if (is_null($modem)) {
+			$msg = "No modem found for Envia contract ".$result['contractreference'].". Skipping.";
+			\Log::warning($msg);
+			$out .= '<br><span style="color: red">'.$msg.'</span>';
+			return $out;
+		}
+
+		$result['modem_id'] = $modem->id;
+		$result['contract_id'] = $modem->contract->id;
+
+		// get envia contract
+		$_ = $this->_process_misc_get_orders_csv_response__update_or_create_enviacontract($result, $out);
+		$enviacontract = $_['enviacontract'];
+		$out .= $_['out'];
+		$result['enviacontract_id'] = (is_null($enviacontract) ? NULL : $enviacontract->id);
+		// get envia order
+		$_ = $this->_process_misc_get_orders_csv_response__update_or_create_order($result, $out);
+		$order = $_['order'];
+		$out .= $_['out'];
+
+		// check if contract and/or modem need updates, too
+		// don't perform action for successfully cancelled orders here
+		if (!EnviaOrder::order_successfully_cancelled($order)) {
+			if (!EnviaOrder::order_failed($order)) {
+				$out .= $this->_update_modem_with_envia_data($result, $out);
+				$out .= $this->_update_contract_with_envia_data($result, $out);
+			}
+		}
+
+		return $out;
+	}
+
+
+	/**
+	 * Process customer related order from orders CSV.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response__customer_related($result) {
+
+		$out = '';
+
+		$contract = Contract::where('customer_external_id', '=', $result['customerreference'])->first();
+
+		if (is_null($contract)) {
+			$msg = "No contract found for Envia customer ".$result['customerreference'].". Skipping.";
+			\Log::warning($msg);
+			$out .= '<br><span style="color: red">'.$msg.'</span>';
+			return $out;
+		}
+
+		$result['modem_id'] = null;
+		$result['contract_id'] = $contract->id;
+		$result['enviacontract_id'] = null;
+
+		// get envia order
+		$_ = $this->_process_misc_get_orders_csv_response__update_or_create_order($result, $out);
+		$order = $_['order'];
+		$out .= $_['out'];
+
+		// check if contract and/or modem need updates, too
+		// don't perform action for successfully cancelled orders here
+		if (!EnviaOrder::order_successfully_cancelled($order)) {
+			if (!EnviaOrder::order_failed($order)) {
+				$out .= $this->_update_contract_with_envia_data($result, $out);
+			}
+		}
+
+		return $out;
+	}
+
+
+	/**
+	 * Process order from orders CSV related to nothing.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response__not_related($result) {
+
+		$out = '<br>TODO: check if we have to do something…';
+
+		return $out;
+	}
+
+
+	/**
+	 * Get enviacontract or create a new one.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response__update_or_create_enviacontract($result) {
+
+		$out = '';
+
+		// cannot create envia contract if no reference is given
+		if (!$result['contractreference']) {
+			return ['enviacontract' => null, 'out' => $out];
+		}
+
+		// check if there exists an Envia contract for the returned contract_reference
+		// attention: there can be orders within the CSV that has been soft deleted in our database (via order/cancel)
+		$enviacontract = EnviaContract::where("envia_contract_reference", "=", $result['contractreference'])->first();
+		if (!$enviacontract) {
+			// if not: create
+			$data = [
+				'envia_customer_reference' => $result['customerreference'],
+				'envia_contract_reference' => $result['contractreference'],
+				'modem_id' => $result['modem_id'],
+				'contract_id' => $result['contract_id'],
+			];
+			$enviacontract = EnviaContract::create($data);
+			$msg = "Created EnviaContract $enviacontract->id";
+			Log::info($msg);
+			$out .= '<br>'.$msg;
+		}
+
+		return ['enviacontract' => $enviacontract, 'out' => $out];
+	}
+
+
+	/**
+	 * Get order or create a new one.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_misc_get_orders_csv_response__update_or_create_order($result) {
+
+		$out = '';
+
+		$order = EnviaOrder::withTrashed()->where('orderid', '=', $result['orderid'])->first();
+
+		// create order if not existing
+		if (is_null($order)) {
+			$msg = "Order ".$result['orderid']." not existing – creating";
+			$out .= "<br>$msg";
+			\Log::info($msg);
+
+			$order = EnviaOrder::create($result);
+		}
+		else {
+			// update order data
+			$changed = False;
+			$fields = [
+				"ordertype_id",
+				"ordertype",
+				"orderstatus_id",
+				"orderstatus",
+				"orderdate",
+				"ordercomment",
+				"customerreference",
+				"contractreference",
+				"modem_id",
+				"contract_id",
+				"enviacontract_id",
+			];
+			foreach ($fields as $field) {
+				if ($order->{$field} != $result[$field]) {
+					$order->{$field} = $result[$field];
+					$changed = True;
+				}
+			}
+
+			if ($changed) {
+				if ($order->exists()) {
+					$msg = "Updating order ".$result['orderid'];
+					$out .= "<br>$msg";
+					\Log::info($msg);
+				}
+				$order->save();
+			}
+		}
+
+		return ['order' => $order, 'out' => $out];
+	}
+
+
+
+	/**
+	 * This is used to update several information in contract, modem and phonenumbermanagement.
 	 * Has to be done on misc_get_orders_csv and contract_get_reference because this values can be missing (e.g. voip_account has been created before activation of envia module)
 	 *
 	 * @author Patrick Reichel
 	 */
 	protected function _update_phonenumber_related_data($data, $out='') {
+
+		Log::debug(__METHOD__." started");
 
 		if (isset($data['contract_id'])) {
 			$out = $this->_update_contract_with_envia_data($data, $out);
@@ -2831,8 +4195,11 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		if (isset($data['phonenumber_id']) || isset($data['phonenumbermanagement_id'])) {
+			$out = $this->_update_phonenumber_with_envia_data($data, $out);
 			$out = $this->_update_phonenumbermanagement_with_envia_data($data, $out);
 		}
+
+		/* $out .= "<br><pre>".print_r($data)."</pre>"; */
 
 		return $out;
 	}
@@ -2845,11 +4212,15 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _update_contract_with_envia_data($data, $out='') {
 
+		Log::debug(__METHOD__." started");
+
 		if (!isset($data['contract_id'])) {
+			Log::warning("No contract_id given");
 			$out .= '<br> ⇒ Warning: No contract_id given';
 			return $out;
 		}
 
+		Log::debug("contract_id is ".$data['contract_id']);
 		$contract = Contract::findOrFail($data['contract_id']);
 
 		if (!isset($data['customerreference'])) {
@@ -2863,7 +4234,9 @@ class ProvVoipEnvia extends \BaseModel {
 			$out .= '<br> ⇒ Contract->customer_external_id set to '.$data['customerreference'];
 		}
 		elseif ($contract->customer_external_id != $data['customerreference']) {
-			$out .= '<br> ⇒ <span style="color: red">error: contract->customer_external_id ('.$contract->customer_external_id.') != enviaorder->customerreference ('.$data['customerreference'].')!!</span>';
+			$msg = 'contract->customer_external_id ('.$contract->customer_external_id.') != enviaorder->customerreference ('.$data['customerreference'].')!!';
+			\Log::error($msg);
+			$out .= "<br> ⇒ <span style='color: red'>$msg</span>";
 		}
 
 		return $out;
@@ -2877,11 +4250,15 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _update_modem_with_envia_data($data, $out='') {
 
+		Log::debug(__METHOD__." started");
+
 		if (!isset($data['modem_id'])) {
+			Log::warning("No modem_id given");
 			$out .= '<br> ⇒ Warning: No modem_id given';
 			return $out;
 		}
 
+		Log::debug("modem_id is ".$data['modem_id']);
 		$modem = Modem::findOrFail($data['modem_id']);
 
 		// try to get related contract (if id not given) and update it
@@ -2894,15 +4271,17 @@ class ProvVoipEnvia extends \BaseModel {
 
 		if (isset($data['contractreference'])) {
 
-			// set contractreference and check for integrity
-			if (is_null($modem->contract_external_id)) {
-				$modem->contract_external_id = $data['contractreference'];
-				$modem_changed = true;
-				$out .= '<br> ⇒ Modem->contract_external_id set to '.$data['contractreference'];
-			}
-			if ($modem->contract_external_id != $data['contractreference']) {
-				$out .= '<br> ⇒ <span style="color: red">ERROR: Modem->contract_external_id ('.$modem->contract_external_id.') != EnviaOrder->contractreference ('.$data['contractreference'].')!!</span>';
-			}
+			// TODO: check if we want to use this field in future
+			// Commented out by par – there can be more than one Envia contract at a modem.
+			/* // set contractreference and check for integrity */
+			/* if (is_null($modem->contract_external_id)) { */
+			/* 	$modem->contract_external_id = $data['contractreference']; */
+			/* 	$modem_changed = true; */
+			/* 	$out .= '<br> ⇒ Modem->contract_external_id set to '.$data['contractreference']; */
+			/* } */
+			/* if ($modem->contract_external_id != $data['contractreference']) { */
+			/* 	$out .= '<br> ⇒ <span style="color: red">ERROR: Modem->contract_external_id ('.$modem->contract_external_id.') != EnviaOrder->contractreference ('.$data['contractreference'].')!!</span>'; */
+			/* } */
 
 			// if there is a contract reference at Envia we can be sure that this contract has been created :-)
 			if (is_null($modem->contract_ext_creation_date)) {
@@ -2932,7 +4311,42 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		if ($modem_changed) {
+
+			// disable modem's observer to prevent multiple creation of DHCP files for all modems
+			// we don't touch any DHCP related data within this method
+			$modem->observer_enabled = False;
+
+			// save the changes
 			$modem->save();
+		}
+
+		return $out;
+	}
+
+
+	/**
+	 * Writes external contract reference to phonenumbers.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _update_phonenumber_with_envia_data($data, $out='') {
+
+		Log::debug(__METHOD__." started");
+
+		if (!isset($data['phonenumber_id'])) {
+			Log::warning("No phonenumber_id given");
+			$out .= '<br> ⇒ Warning: No phonenumber_id given';
+			return $out;
+		}
+
+		Log::debug("phonenumber_id is ".$data['phonenumber_id']);
+		$phonenumber = Phonenumber::findOrFail($data['phonenumber_id']);
+
+		if (isset($data['contractreference'])) {
+			$ret = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $data['contractreference'], False, False);
+			if ($ret) {
+				$out .= "<br>$ret";
+			}
 		}
 
 		return $out;
@@ -2946,9 +4360,12 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _update_phonenumbermanagement_with_envia_data($data, $out='') {
 
+		Log::debug(__METHOD__." started");
+
 		$phonenumbermanagement_changed = False;
 
 		if (!isset($data['phonenumber_id']) && !isset($data['phonenumbermanagement_id'])) {
+			Log::warning('Neither phonenumber_id nor phonenumbermanagement_id given');
 			$out .= '<br> ⇒ Warning: Neither phonenumber_id nor phonenumbermanagement_id given';
 			return $out;
 		}
@@ -2973,7 +4390,10 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		if (isset($data['orderid'])) {
-			$order = EnviaOrder::where('orderid', '=', intval($data['orderid']))->firstOrFail();
+			\Log::debug('orderid is '.$data['orderid']);
+			$order = EnviaOrder::where('orderid', '=', intval($data['orderid']))->first();
+		}
+		if (!is_null($order)) {
 
 			// if there is no existing management: create and bundle with phonenumber
 			if (
@@ -2996,7 +4416,9 @@ class ProvVoipEnvia extends \BaseModel {
 				$phonenumbermanagement->phonenumber_id = $phonenumber->id;
 
 				// set some default values
-				$phonenumbermanagement->trcclass = 0;
+				$trc_null = TRCClass::whereRaw('trc_id IS NULL')->first();
+				$trc_null_id = $trc_null->id;
+				$phonenumbermanagement->trcclass = $trc_null_id;
 				$phonenumbermanagement->porting_in = 0;
 				$phonenumbermanagement->carrier_in = 0;
 				$phonenumbermanagement->ekp_in = 0;
@@ -3052,8 +4474,25 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 		}
 
+		if (isset($data['enviacontract_id'])) {
+
+			// check if phonenumber is related to given envia contract
+			if ((!is_null($phonenumbermanagement))
+				&&
+				($phonenumbermanagement->enviacontract_id != $data['enviacontract_id'])
+			) {
+				// don't update enviacontract_id based on orders – contract/relocate causes new envia contract; will be caught in other method
+				$msg = 'PhonenumberManagement ('.$phonenumbermanagement->id.'): different enviacontract_id in order and management. Will not update since this id changes on contract/relocate. Will be handled in own method, can be set to current value using contract/get_reference';
+				\Log::info($msg);
+				$out .= '<br> ⇒ '.$msg;
+			}
+		}
+
+		// finally: check if management has been changed and save if so
 		if ($phonenumbermanagement_changed) {
 			$phonenumbermanagement->save();
+			$msg = "Updated PhonenumberManagement $phonenumbermanagement->id";
+			Log::info($msg);
 		}
 
 		return $out;
@@ -3090,10 +4529,86 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 		}
 
-		$out = "";
+		$out .= '<h5>Usage data</h5>';
+		$out .= 'Informational data only – nothing is going to be processed<br><br>';
+		$out .= '<table class="table table-striped table-hover">';
+		$out .= "<thead><tr>";
+		foreach ($csv_headers as $h) {
+			$out .= "<th>$h</th>";
+		}
+		$out .= "</tr></thead><tbody>";
 
-		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.").<h2>Returned csv is:</h2><pre>".$csv."</pre><h2>Extracted data is:</h2>";
-		d($results);
+		foreach ($results as $result) {
+			$out .= "<tr>";
+			$pos = 0;
+			// helper to cache customer data ⇒ there can be multiple entries per customer number in returned csv
+			$contracts = array();
+			foreach ($result as $r) {
+				$out .= "<td>";
+				if ($pos == 1) {
+					// customer number
+
+					if (!array_key_exists($r, $contracts)) {
+
+						// try to find a contract for the given customer number
+						// remember:
+						//		number3 ⇒ customer number
+						//		number4 ⇒ legacy customer number
+						//		number ⇒ contract number; used as customer number if number3 is not set
+						//		number2 ⇒ lecacy contract number; used as legacy customer number if number4 is not set
+						$contract = null;
+						$numbers = ['number3', 'number4', 'number', 'number2'];
+						while (is_null($contract)) {
+							if ($numbers) {
+								$contract = Contract::where(array_pop($numbers), '=', $r)->first();
+							}
+							else {
+								break;
+							}
+						}
+						if (is_null($contract)) {
+							// number not found ⇒ use dummy data
+							$contracts[$r] = [
+								'id' => null,
+								'name' => 'n/a',
+								'firstname' => 'n/a',
+								'city' => 'n/a',
+							];
+						}
+						else {
+							// fill cache with database data
+							$contracts[$r] = [
+								'id' => $contract->id,
+								'name' => $contract->lastname,
+								'firstname' => $contract->firstname,
+								'city' => $contract->city,
+							];
+						}
+
+						// extend customer number and add link to Contract.edit if entry exists
+						$customer = $r." ⇒ ".$contracts[$r]['name'].", ".$contracts[$r]['firstname']." (".$contracts[$r]['city'].")";
+						if (!is_null($contracts[$r]['id'])) {
+							$customer = "<a href=".\URL::route('Contract.edit', [$contracts[$r]['id']])." target='_self'>$customer</a>";
+						}
+					}
+					$out .= $customer;
+
+				}
+				else {
+					// show other data as sent by Envia
+					$out .= $r;
+				}
+				$out .= "</td>";
+				$pos++;
+			}
+			$out .= "</tr>";
+		}
+		$out .= "</tbody></table>";
+
+		/* echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.").<h2>Returned csv is:</h2><pre>".$csv."</pre><h2>Extracted data is:</h2>"; */
+		/* d($results); */
+
+		return $out;
 
 	}
 
@@ -3197,13 +4712,20 @@ class ProvVoipEnvia extends \BaseModel {
 		if (boolval(sprintf($xml->contractreference))) {
 			if ($order->contractreference != $xml->contractreference) {
 				$order->contractreference = $xml->contractreference;
+
+				// check relations to phonenumbers
+				foreach (PhoneNumber::where('contract_external_id', '=', $xml->contractreference)->get() as $phonenumber) {
+					if (!$envia->phonenumbers->contains($phonenumber->id)) {
+						$envia->phonenumbers()->attach($phonenumber->id);
+					}
+				}
 				$order_changed = True;
 			}
 			$out .= "<tr><td>Contractreference: </td><td>".$xml->contractreference."</td></tr>";
 		}
 
 		if (boolval(sprintf($xml->orderdate))) {
-			if ($order->orderdate != \Str::limit($xml->orderdate, 10, '')) {
+			if ($order->orderdate != substr($xml->orderdate, 0, 10)) {
 				$order->orderdate = $xml->orderdate;
 				$order_changed = True;
 			}
@@ -3237,11 +4759,18 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// only use data from not deleted orders
 			if (!$order->deleted_at) {
+
+				// update enviacontract
+				$out = $this->_process_order_get_status_response_for_enviacontract($order, $out);
+
 				// update contract
 				$out = $this->_process_order_get_status_response_for_contract($order, $out);
 
 				// update modem
 				$out = $this->_process_order_get_status_response_for_modem($order, $out);
+
+				// update phonenumber
+				$out = $this->_process_order_get_status_response_for_phonenumber($order, $out);
 
 				// update phonenumbermanagement
 				$out = $this->_process_order_get_status_response_for_phonenumbermanagement($order, $out);
@@ -3249,6 +4778,36 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		return $out;
+	}
+
+
+	/**
+	 * Apply order changes to phonenumber.
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_get_status_response_for_phonenumber($order, $out) {
+
+		$order_phonenumbers = $order->phonenumbers;
+		if ($order_phonenumbers->count() == 0) {
+			Log::debug('Order '.$order->id.' has no related phonenumber');
+			return $out;
+		}
+
+		foreach ($order_phonenumbers as $phonenumber) {
+			if ($order->contractreference) {
+				// check if envia contract reference has to be set
+				// do not change an existing entry – this should only be happening on contract/relocate
+				// which is processed using console command provvoipenvia:process_envia_orders
+				$ret = $this->_update_envia_contract_reference_on_phonenumber($phonenumber, $order->contractreference, False, False);
+				if ($ret) {
+					$out .= '<br>'.$ret;
+				}
+			}
+		}
+
+		return $out;
+
 	}
 
 
@@ -3331,6 +4890,19 @@ class ProvVoipEnvia extends \BaseModel {
 
 
 	/**
+	 * Apply order changes to enviacontract
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _process_order_get_status_response_for_enviacontract($order, $out) {
+
+		$out .= "<h5>ATTENTION: processing updated order data for enviacontract not yet implemented</h5>";
+
+		return $out;
+	}
+
+
+	/**
 	 * Apply order changes to contract (and mayby to items)
 	 *
 	 * @author Patrick Reichel
@@ -3405,7 +4977,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 		if ($modem_changed) {
 			$modem->save();
-			Log::info('Database table modem updated for modem with id '.$modem_id);
+			Log::info('Database table modem updated for modem with id '.$modem->id);
 			$out .= "<br><b>Modem table updated</b>";
 		};
 
@@ -3453,6 +5025,10 @@ class ProvVoipEnvia extends \BaseModel {
 			$ret = '';
 			$order_phonenumbers = $cancelled_order->phonenumbers;
 			foreach ($order_phonenumbers as $phonenumber) {
+
+				$phonenumber->contract_external_id = null;
+				$phonenumber->save();
+
 				$management = $phonenumber->phonenumbermanagement;
 
 				$management->voipaccount_ext_creation_date = null;
@@ -3485,7 +5061,7 @@ class ProvVoipEnvia extends \BaseModel {
 			Log::info($msg);
 			$out .= '<br><b>'.$msg.'</b>';
 
-			// in orders created via web gui there can be phonenumbers in method contract/create
+			// creating contracts contains phonenumbers
 			// we have to check this, too
 			$out .= $clean_phonenumbermanagement_creation_data($cancelled_order);
 		}
@@ -3708,10 +5284,22 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_phonebookentry_create_response($xml, $data, $out) {
 
-		$out = "";
+		if (is_null($this->phonebookentry->external_creation_date)) {
+			$this->phonebookentry->external_creation_date = date('Y-m-d');
+			$method = "Created";
+		}
+		else {
+			$this->phonebookentry->external_update_date = date('Y-m-d');
+			$method = "Updated";
+		}
+		$this->phonebookentry->save();
 
-		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Returned XML is:</h2>";
-		d($xml);
+		$msg = "$method PhonebookEntry ".$this->phonebookentry->id." at Telekom";
+
+		$out .= $msg;
+		Log::info($msg);
+
+		return $out;
 	}
 
 
@@ -3722,10 +5310,16 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_phonebookentry_delete_response($xml, $data, $out) {
 
-		$out = "";
+		// if we end up here the entry should be deleted at Telekom
 
-		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Returned XML is:</h2>";
-		d($xml);
+		$this->phonebookentry->delete();
+
+		$msg = "PhonebookEntry ".$this->phonebookentry->id." deleted";
+
+		$out .= $msg;
+		Log::info($msg);
+
+		return $out;
 	}
 
 
@@ -3736,10 +5330,44 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_phonebookentry_get_response($xml, $data, $out) {
 
-		$out = "";
+		$changed = false;
 
-		echo "<h1>Not yet implemented in ".__METHOD__."</h1>Check ".__FILE__." (line ".__LINE__.")<h2>Use returned data to create new or update existing phonebookentry</h2><h2>Returned XML is:</h2>";
-		d($xml);
+		if (is_null($this->phonebookentry)) {
+			$this->phonebookentry = new PhonebookEntry();
+			$changed = true;
+		}
+
+		foreach ($xml->children() as $child) {
+
+			$col = $child->getName();
+			$value = (string) $child;
+
+			if ($this->phonebookentry->$col != $value) {
+				$this->phonebookentry->$col = $value;
+				$changed = True;
+			}
+		}
+
+		// add a dummy creation date (indicates an entry not created using the API)
+		// this is used to guess if a phonebookentry really exists at Telekom
+		if (!$this->phonebookentry->external_creation_date) {
+			$this->phonebookentry->external_creation_date = '1900-01-01';
+			$this->phonebookentry->phonenumbermanagement_id = $this->phonenumbermanagement->id;
+		}
+
+		if ($changed) {
+			if ($this->phonebookentry->wasRecentlyCreated) {
+				$msg = "Created new PhonebookEntry for phonenumber ".$this->phonenumber->id." with data delivered by Telekom";
+			}
+			else {
+				$msg = "Updated PhonebookEntry for phonenumber ".$this->phonenumber-id." with data delivered by Telekom";
+			}
+			$this->phonebookentry->save();
+			$out .= $msg;
+			Log::info($msg);
+		}
+
+		return $out;
 	}
 
 

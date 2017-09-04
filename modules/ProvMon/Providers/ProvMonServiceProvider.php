@@ -1,4 +1,4 @@
-<?php namespace Modules\Provmon\Providers;
+<?php namespace Modules\ProvMon\Providers;
 
 use Illuminate\Support\ServiceProvider;
 

@@ -42,7 +42,7 @@ class EnviaOrderDocumentController extends \BaseController {
 		$ret = array(
 			array('form_type' => 'select', 'name' => 'enviaorder_id', 'description' => 'Envia Order', 'hidden' => '1', 'init_value' => $enviaorder_id),
 			array('form_type' => 'select', 'name' => 'document_type', 'description' => 'Document type', 'value' => EnviaOrderDocument::getPossibleEnumValues('document_type')),
-			array('form_type' => 'file', 'name' => 'document_upload', 'description' => 'Upload document'),
+			array('form_type' => 'file', 'name' => 'document_upload', 'description' => 'Upload document', 'help' => 'Max. filesize: 3MB; .doc|.docx|.jpg|.pdf.|.tif|.xls'),
 		);
 
 		return $ret;

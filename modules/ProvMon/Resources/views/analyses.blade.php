@@ -11,18 +11,8 @@
 
 @section('content_cacti')
 
-	@if ($monitoring)
-		<form action="" method="GET">
-			From:<input type="text" name="from" value={{$monitoring['from']}}>
-			To:<input type="text" name="to" value={{$monitoring['to']}}>
-			<input type="submit" value="Submit">
-		</form>
-		<br>
-
-		@foreach ($monitoring['graphs'] as $id => $graph)
-			<img width=100% src={{$graph}}></img>
-			<br><br>
-		@endforeach
+	@if ($host_id)
+		<iframe id="cacti-diagram" src="/cacti/graph_view.php?action=preview&columns=1&host_id={{$host_id}}" sandbox="allow-forms allow-scripts allow-pointer-lock allow-popups allow-same-origin" width="100%" height="100%" onload="resizeIframe(this)" scrolling="no" style="overflow:hidden; display:block; min-height: 100%; border: none; position: relative;"></iframe>
 	@else
 		<font color="red">{{trans('messages.modem_no_diag')}}</font><br>
 		{{ trans('messages.modem_monitoring_error') }}
@@ -33,21 +23,14 @@
 @section('content_ping')
 	<div class="tab-content">
 		<div class="tab-pane fade in" id="ping-test">
-			@if ($ping)
+			@if ($online)
 				<font color="green"><b>Modem is Online</b></font><br>
-				@foreach ($ping as $line)
-					<table>
-						<tr>
-							<td>
-						 		<font color="grey">{{$line}}</font>
-							</td>
-						</tr>
-					</table>
-				@endforeach
 			@else
 				<font color="red">{{trans('messages.modem_offline')}}</font>
 			@endif
+			<!-- pings are appended dynamically here by javascript -->
 		</div>
+
 		<div class="tab-pane fade in" id="flood-ping">
 			<?php $route = \Route::getCurrentRoute()->getUri(); ?>
 					<form route="$route" method="POST">Type:
@@ -59,7 +42,7 @@
 							<option value="4">huge load: 2500 packets of 1472 Byte</option> <!-- needs approximately 30 sec -->
 						</select>
 
-				<!-- {{ Form::open(['route' => ['Provmon.flood_ping', $view_var->id]]) }} -->
+				{{-- Form::open(['route' => ['ProvMon.flood_ping', $view_var->id]]) --}}
 				@if (isset($flood_ping))
 					@foreach ($flood_ping as $line)
 							<table class="m-t-20">
@@ -225,4 +208,38 @@
 @else
   <font color="red">{{trans('messages.modem_offline')}}</font>
 @endif
+@stop
+
+
+@section ('javascript')
+
+	<script type="text/javascript">
+
+		<?php if ($ip) : ?>
+		{
+			$(document).ready(function() {
+
+				setTimeout(function() {
+
+					var source = new EventSource("<?php echo route('ProvMon.realtime_ping', $ip); ?>");
+
+					source.onmessage = function(e) {
+						console.log(e.data);
+
+						// close connection
+						if (e.data == 'finished')
+						{
+							source.close();
+							return;
+						}
+
+						document.getElementById('ping-test').innerHTML += e.data;
+					}
+
+				}, 500);
+			});
+		}
+		<?php endif; ?>
+	</script>
+
 @stop

@@ -7,6 +7,9 @@ class SettlementRun extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'settlementrun';
 
+	// don't try to add these Input fields to Database of this model
+    public $guarded = ['rerun'];
+
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
@@ -23,7 +26,7 @@ class SettlementRun extends \BaseModel {
 	{
 		parent::boot();
 
-		// SettlementRun::observe(new SettlementRunObserver);
+		SettlementRun::observe(new SettlementRunObserver);
 	}
 
 
@@ -150,35 +153,38 @@ class SettlementRun extends \BaseModel {
 		return $hide;
 	}
 
-
-	public function delete_related_files()
-	{
-		// Delete invoices - this deletes db entry and pdf file via observer
-		foreach ($this->invoices as $invoice)
-			$invoice->delete();
-		
-		// Delete accounting record files and directories
-		$rel_dir = 'data/billingbase/accounting/'.$this->year.'-'.sprintf("%'.02d", $this->month).'/';
-		$files 	 = Storage::allFiles($rel_dir);
-		$dirs 	 = Storage::allDirectories($rel_dir);
-
-		foreach ($files as $f)
-			unlink($f);
-
-		foreach ($dirs as $d)
-			rmdir($d);
-
-		// $dir = storage_path('app/data/billingbase/accounting/'.$this->year.'-'.sprintf("%'.02d", $this->month).'/');
-	}
-
 }
 
 
 class SettlementRunObserver
 {
+	public function creating($settlementrun)
+	{
+		// dont show every settlementrun that was created in one month
+		$time = strtotime('first day of last month');
+		SettlementRun::where('month', '=', date('m', $time))->where('year', '=', date('Y', $time))->delete();
+	}
+
+	public function created($settlementrun)
+	{
+		if (!$settlementrun->observer_enabled)
+			return;
+
+		$job_id = \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
+		// \Artisan::call('billing:accounting', ['--debug' => 1]);
+		\Session::put('job_id', $job_id);
+	}
+
+	public function updated($settlementrun)
+	{
+	}
+
 	public function deleted($settlementrun)
 	{
-		// Delete all corresponding/related files in Storage and all Invoices from Database
-		// $settlementrun->delete_related_files();
+		// delete all invoices & accounting record files - maybe use accountingCommand@_directory_cleanup
+		$date = $settlementrun->year.'-'.str_pad($settlementrun->month, 2, '0', STR_PAD_LEFT);
+		$dir = 'data/billingbase/accounting/'.$date;
+
+		\Modules\BillingBase\Http\Controllers\SettlementRunController::directory_cleanup($dir, $settlementrun);
 	}
 }
