@@ -95,6 +95,19 @@ class SettlementRun extends \BaseModel {
 		
 	}
 
+	public function index_list()
+	{
+		$srs = $this->orderBy('id', 'desc')->get();
+
+		foreach ($srs as $key => $sr)
+		{
+			if ($sr->verified)
+				$sr->index_delete_disabled = true;
+		}
+
+		return $srs;
+	}
+
 	public function view_has_many()
 	{
 		$ret['Files']['SettlementRun']['view']['view'] = 'billingbase::settlementrun';
