@@ -62,7 +62,7 @@ class Salesman extends \BaseModel {
 	public function view_index_label_ajax()
 	{
 		return ['table' => $this->table,
-				'index_header' => [$this->table.'.id', $this->table.'.lastname', $this->table.'.Firstname'],
+				'index_header' => [$this->table.'.id', $this->table.'.lastname', $this->table.'.firstname'],
 				'orderBy' => ['0' => 'asc'],  // columnindex => direction
 				'header' =>  $this->lastname." ".$this->firstname];
 	}

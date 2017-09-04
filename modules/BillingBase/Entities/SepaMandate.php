@@ -65,8 +65,8 @@ class SepaMandate extends \BaseModel {
 	public function get_bsclass()
 	{
 		$bsclass = 'success';
-		
-		if (($this->get_start_time() > strtotime(date('Y-m-d'))) && !$this->check_validity('Now'))
+
+		if ( isset($this->created_at) && ($this->get_start_time() > strtotime(date('Y-m-d'))) && !$this->check_validity('Now'))
 			$bsclass = 'danger';
 
 		return $bsclass;
