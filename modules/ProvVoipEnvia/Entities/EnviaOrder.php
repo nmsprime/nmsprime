@@ -12,6 +12,12 @@ class EnviaOrder extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'enviaorder';
 
+	// View Icon
+	public static function view_icon()
+	{
+		return '<i class="fa fa-shopping-cart"></i>'; 
+	}
+
 	// collect all order related informations ⇒ later we can use subarrays of this array to get needed informations
 	// mark missing data with value null
 	protected static $meta = array(

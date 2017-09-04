@@ -38,6 +38,11 @@ class Item extends \BaseModel {
 		return 'Item';
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-toggle-on"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{

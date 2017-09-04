@@ -34,6 +34,11 @@ class SepaMandate extends \BaseModel {
 		return 'SEPA Mandate';
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-handshake-o"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{
