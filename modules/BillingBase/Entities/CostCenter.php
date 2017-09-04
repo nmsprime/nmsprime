@@ -38,9 +38,20 @@ class CostCenter extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		return ['index' => [$this->name, $this->number, $this->sepa_account ? $this->sepa_account->name : ''],
+		return ['index' => [$this->name, $this->number, $this->sepaaccount ? $this->sepaaccount->name : ''],
 				'index_header' => ['Name', 'Number', 'SEPA Account'],
 				'header' => $this->name];
+	}
+
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.name', $this->table.'.number', 'sepaaccount.name'],
+				'header' =>  $this->name,
+				'orderBy' => ['0' => 'asc'],  // columnindex => direction
+				'eager_loading' => ['sepaaccount']];
 	}
 
 	public function view_belongs_to ()
@@ -48,12 +59,10 @@ class CostCenter extends \BaseModel {
 		return $this->sepa_account;
 	}
 
-
-
 	/**
 	 * Relationships:
 	 */
-	public function sepa_account ()
+	public function sepaaccount ()
 	{
 		return $this->belongsTo('Modules\BillingBase\Entities\SepaAccount', 'sepaaccount_id');
 	}
