@@ -62,6 +62,15 @@ class SepaAccount extends \BaseModel {
 				'header' => $this->name];
 	}
 
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.name', $this->table.'.institute', $this->table.'.iban'],
+				'orderBy' => ['0' => 'asc'],  // columnindex => direction
+				'header' =>  $this->name];
+	}
 
 	// View Relation.
 	public function view_has_many()

@@ -34,6 +34,11 @@ class Mpr extends \BaseModel {
 		return 'Modem Positioning Rule';
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-compass"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{
@@ -41,6 +46,17 @@ class Mpr extends \BaseModel {
 				'index_header' => ['Name', 'Belongs To'],
 				'header' => $this->name];
 
+	}
+
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.name', 'netelement.name'],
+				'header' =>  $this->name,
+				'orderBy' => ['0' => 'asc'], // columnindex => direction
+				'eager_loading' => ['netelement']];
 	}
 
 	// Relation to NetElement
