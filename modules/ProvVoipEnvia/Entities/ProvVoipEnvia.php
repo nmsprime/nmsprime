@@ -3078,8 +3078,20 @@ class ProvVoipEnvia extends \BaseModel {
 		// update modem
 		/* $this->modem->contract_external_id = $xml->contractreference; */
 		// TODO: remove this when detection of active contracts is refactored to use data from enviacontract
-		$this->modem->contract_ext_creation_date = date('Y-m-d H:i:s');
-		$this->modem->save();
+		if (!$this->modem->contract_ext_creation_date) {
+			$this->modem->contract_ext_creation_date = date('Y-m-d H:i:s');
+			$this->modem->save();
+		}
+
+		// create enviacontract
+		$enviacontract_data = [
+			'external_creation_date' => date('Y-m-d H:i:s'),
+			'envia_customer_reference' => $xml->customerreference,
+			'envia_contract_reference' => $xml->contractreference,
+			'contract_id' => $this->contract->id,
+			'modem_id' => $this->modem->id,
+		];
+		$enviacontract = EnviaContract::create($enviacontract_data);
 
 		// create enviaorder
 		$order_data = array();
@@ -3091,18 +3103,9 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['modem_id'] = $this->modem->id;
 		$order_data['ordertype'] = 'contract/create';
 		$order_data['orderstatus'] = 'initializing';
+		$order_data['enviacontract_id'] = $enviacontract->id;
 
 		$enviaOrder = EnviaOrder::create($order_data);
-
-		// create enviacontract
-		$enviacontract_data = [
-			'external_creation_date' => date('Y-m-d H:i:s'),
-			'envia_customer_reference' => $xml->customerreference,
-			'envia_contract_reference' => $xml->contractreference,
-			'contract_id' => $this->contract->id,
-			'modem_id' => $this->modem->id,
-		];
-		$enviacontract = EnviaContract::create($enviacontract_data);
 
 		// check if there are also phonenumbers created
 		$created_phonenumbers = \Input::get('phonenumbers_to_create', []);
