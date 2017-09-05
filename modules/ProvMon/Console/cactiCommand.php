@@ -112,7 +112,7 @@ class cactiCommand extends Command {
 				continue;
 
 			// add host to cabelmodem tree
-			system("php -q $path/add_tree.php --type=node --node-type=host --tree-id=$tree_id --host-id=$matches[1]");
+			// system("php -q $path/add_tree.php --type=node --node-type=host --tree-id=$tree_id --host-id=$matches[1]");
 
 			// create all graphs belonging to host template cablemodem
 			foreach ($graph_template_ids as $id)
