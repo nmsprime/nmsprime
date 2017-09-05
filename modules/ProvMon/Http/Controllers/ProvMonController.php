@@ -67,11 +67,10 @@ class ProvMonController extends \BaseController {
 		$hostname = $modem->hostname.'.'.$this->domain_name;
 		$mac 	  = strtolower($modem->mac);
 
-		// Ping: Send 5 request's at once with max timeout of 1 second
 		$ip = gethostbyname($hostname);
-		if ($ip == $hostname)
-			$ip = null;
+		$ip = ($ip == $hostname) ? null : $ip;
 
+		// Ping: Only check if device is online
 		exec ('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
 		$online = $ret ? false : true;
 
@@ -97,7 +96,7 @@ class ProvMonController extends \BaseController {
 
 		// Log dhcp (discover, ...), tftp (configfile or firmware)
 		$search = $ip ? "$mac|$modem->hostname|$ip " : "$mac|$modem->hostname";
-		exec ('egrep -i "('.$search.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 30  | tac', $log);
+		$log = self::_get_syslog_entries($search, "| grep -v MTA | grep -v CPE | tail -n 30  | tac");
 
 		$host_id = $this->monitoring_get_host_id($modem);
 
@@ -107,6 +106,33 @@ class ProvMonController extends \BaseController {
 
 		// View
 		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip')));
+	}
+
+
+	/**
+	 * Helper to get Syslog entries dependent on what should be searched and discarded
+	 *
+	 * @param 	search 		String 		to search
+	 * @param 	grep_pipes 	String 		restrict matches
+	 * @return 	Array
+	 */
+	private static function _get_syslog_entries($search, $grep_pipes)
+	{
+		$search = escapeshellarg($search);
+		// $grep_pipes = escapeshellarg($grep_pipes);
+
+		exec ("egrep -i $search /var/log/messages $grep_pipes", $log);
+
+		// check if logrotate was done during last hours and consider older logfile (e.g. /var/log/messages-20170904)
+		if (!$log)
+		{
+			$files = glob('/var/log/messages-*');
+			$file  = max($files);
+
+			exec ("grep -i ".$search.' '.$file.' '.$grep_pipes, $log);
+		}
+
+		return $log;
 	}
 
 
@@ -176,6 +202,8 @@ class ProvMonController extends \BaseController {
 		if (!\Input::has('flood_ping'))
 			return null;
 
+		$hostname = escapeshellarg($hostname);
+
 		switch (\Input::get('flood_ping'))
 		{
 			case "1":
@@ -216,14 +244,17 @@ class ProvMonController extends \BaseController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// get MAC of CPE first
-		exec ('grep -i '.$modem_mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+		$str = self::_get_syslog_entries($modem_mac, "| grep CPE | tail -n 1 | tac");
+		// exec ('grep -i '.$modem_mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+
 		if ($str == [])
 		{
 			$mac = $modem_mac;
 			$mac[0] = ' ';
 			$mac = trim($mac);
 			$mac_bug = true;
-			exec ('grep -i '.$mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+			// exec ('grep -i '.$mac." /var/log/messages | grep CPE | tail -n 1 | tac", $str);
+			$str = self::_get_syslog_entries($mac, "| grep CPE | tail -n 1 | tac");
 
 			if (!$str && $lease['text'])
 				// get cpe mac addr from lease - first option tolerates small structural changes in dhcpd.leases and assures that it's a mac address
@@ -241,7 +272,11 @@ class ProvMonController extends \BaseController {
 
 		// Log
 		if (isset($cpe_mac[0][0]))
-			exec ('grep -i '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
+		{
+			// exec ('grep -i '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
+			$cpe_mac = $cpe_mac[0][0];
+			$log 	 = self::_get_syslog_entries($cpe_mac, "| tail -n 20 | tac");
+		}
 
 		// Ping
 		if (isset($lease['text'][0]))
@@ -297,8 +332,12 @@ class ProvMonController extends \BaseController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// log
-		exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
-
+		$ip = gethostbyname($mta->hostname);
+		$ip = $mta->hostname == $ip ? null : $ip;
+		$mac = strtolower($mta->mac);
+		$search = $ip ? "$mac|$mta->hostname|$ip " : "$mac|$mta->hostname";
+		$log = self::_get_syslog_entries($search, "| tail -n 25  | tac");
+		// exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
 end:
 		$panel_right = $this->prep_sidebar($id);
