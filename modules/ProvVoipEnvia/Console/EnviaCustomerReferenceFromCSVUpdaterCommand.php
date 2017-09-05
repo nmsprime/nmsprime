@@ -97,6 +97,8 @@ class EnviaCustomerReferenceFromCSVUpdaterCommand extends Command {
 	 */
 	protected function _update_contracts($csv) {
 
+		Log::info('Updating contracts (Envia customer reference) by data from Envia CSV');
+
 		// older contracts have been created at Envia using contract numbers with several prefixes
 		// our new NMS don't use this prefixes
 		// can be an empty array if there are no prefixes
@@ -124,7 +126,9 @@ class EnviaCustomerReferenceFromCSVUpdaterCommand extends Command {
 
 			$contract = Contract::where('number', '=', $customer_nr_clean)->first();
 			if (!$contract) {
-				echo "\nERROR: No contract for $customer_nr_clean ($combined_name_data)";
+				$msg = "No contract for $customer_nr_clean ($combined_name_data)";
+				echo "\nERROR: $msg";
+				Log::error($msg);
 				continue;
 			}
 
@@ -135,13 +139,16 @@ class EnviaCustomerReferenceFromCSVUpdaterCommand extends Command {
 				&&
 				($combined_name_data != $combined_name_db_reversed)
 			)	{
-				echo "\nERROR: Name mismatch for $customer_nr ($combined_name_db != $combined_name_data)";
+				$msg = "Name mismatch for $customer_nr ($combined_name_db != $combined_name_data)";
+				echo "\nERROR: $msg";
+				Log::error($msg);
 				continue;
 			}
 
 			$contract->number3 = $customer_nr_clean;
 			$contract->number4 = $data[$field_customer_nr];
 			$contract->customer_external_id = $data[$field_new_envia_customer_reference];
+			Log::info("Changing contract $contract->id: customer external id is ".$data[$field_new_envia_customer_reference]);
 
 			$contract->save();
 
