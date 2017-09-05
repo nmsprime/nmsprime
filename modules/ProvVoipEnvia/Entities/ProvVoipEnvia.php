@@ -4840,7 +4840,17 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_order_get_status_response_for_enviacontract($order, $out) {
 
-		$out .= "<h5>ATTENTION: processing updated order data for enviacontract not yet implemented</h5>";
+		// update relation between Envia order and Envia contract
+		if ($order->contractreference) {
+			$enviacontract = EnviaContract::firstOrCreate(['envia_contract_reference' => $order->contractreference]);
+			if ($order->enviacontract_id != $enviacontract->id) {
+				$msg = "Order is related to Envia contract $enviacontract->id ($enviacontract->envia_contract_reference) – Updating relation.";
+				Log::info($msg);
+				$out .= "<br>$msg";
+				$order->enviacontract_id = $enviacontract->id;
+				$order->save();
+			}
+		};
 
 		return $out;
 	}
