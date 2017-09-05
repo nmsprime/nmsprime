@@ -2209,10 +2209,10 @@ class ProvVoipEnvia extends \BaseModel {
 		$trc_class = TRCClass::find($phonenumbermanagement->trcclass)->trc_id;
 		$inner_xml->addChild('trc_class', $trc_class);
 
+		$carrier_in = CarrierCode::find($phonenumbermanagement->carrier_in)->carrier_code;
+
 		// carrier code not needed in version 1.10 and above
 		if ($this->api_version_less_than("1.10")) {
-			// special handling for incoming porting needed (comes from external table)
-			$carrier_in = CarrierCode::find($phonenumbermanagement->carrier_in)->carrier_code;
 
 			// on porting: check if valid CarrierIn chosen
 			if (boolval($phonenumbermanagement->porting_in)) {
@@ -2221,14 +2221,15 @@ class ProvVoipEnvia extends \BaseModel {
 				}
 				$inner_xml->addChild('carriercode', $carrier_in);
 			}
-			// if no porting (new number): CarrierIn has to be D057 (EnviaTEL) (API 1.4 and higher)
-			else {
-				if ($this->api_version_greater_or_equal("1.4")) {
-					if ($carrier_in != 'D057') {
-						throw new XmlCreationError('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
-					}
-					$inner_xml->addChild('carriercode', $carrier_in);
+		}
+
+		// if no porting (new number): CarrierIn has to be D057 (EnviaTEL) (API 1.4 and higher)
+		if (!boolval($phonenumbermanagement->porting_in)) {
+			if ($this->api_version_greater_or_equal("1.4")) {
+				if ($carrier_in != 'D057') {
+					throw new XmlCreationError('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
 				}
+				$inner_xml->addChild('carriercode', $carrier_in);
 			}
 		}
 
