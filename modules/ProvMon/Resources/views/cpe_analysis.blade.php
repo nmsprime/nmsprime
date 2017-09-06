@@ -49,7 +49,11 @@
 @section('content_ping')
 
 	@if ($ping)
-		<font color="green"><b>{{$type}} is Online</b></font><br>
+		<?php
+			$color = isset($ping[1]) ? "green" : "orange";
+			$text  = isset($ping[1]) ? "$type is Online" : trans('messages.device_probably_online', ['type' => $type]);
+		?>
+		<font color="{{$color}}"><b>{{$text}}</b></font><br>
 		@foreach ($ping as $line)
 				<table>
 				<tr>

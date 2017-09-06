@@ -293,7 +293,7 @@ class ProvMonController extends \BaseController {
 		{
 			$ping = null;
 			if ($lease['state'] == 'green')
-				$ping[0] = 'but not reachable from WAN-side due to manufacturing reasons (it can be possible to enable ICMP response via modem configfile)';
+				$ping[0] = trans('messages.cpe_not_reachable');
 		}
 
 		$panel_right = $this->prep_sidebar($id);
