@@ -462,13 +462,14 @@ end:
 			{
 				switch ($m)
 				{
-					case 0: $b = '0'; break; 		//no docsIfCmtsModulationTable entry
-					case 1: $b = 'QPSK'; break;
-					case 2: $b = '16QAM'; break;
-					case 3: $b = '8QAM'; break;
-					case 4: $b = '32QAM'; break;
-					case 5: $b = '64QAM'; break;
-					case 6: $b = '128QAM'; break;
+					case 0: $b = 'unknown'; break;	//no docsIfCmtsModulationTable entry
+					case 1: $b = 'other'; break;
+					case 2: $b = 'QPSK'; break;
+					case 3: $b = 'QAM16'; break;
+					case 4: $b = 'QAM8'; break;
+					case 5: $b = 'QAM32'; break;
+					case 6: $b = 'QAM64'; break;
+					case 7: $b = 'QAM128'; break;
 					default: $b = null; break;
 				}
 			}
@@ -536,10 +537,9 @@ end:
 		$us['Width MHz']      = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3');
 		foreach($us['Width MHz'] as $i => $freq)
 			$us['Width MHz'][$i] /= 1000000;
-		if ($docsis >= 4)
-			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.5'), 'us');
-		else
-			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.4'), 'us');
+
+		$mod = $cmts->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1'));
+		$us['Modulation Profile'] = $this->_docsis_modulation($mod, 'us');
 		$us['SNR dB'] = $cmts->get_us_snr($ip);
 
 		// remove all inactive channels (no range success)
