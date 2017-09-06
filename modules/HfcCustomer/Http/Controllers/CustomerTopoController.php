@@ -289,7 +289,7 @@ class CustomerTopoController extends NetElementController {
 		$x = 0;
 		$y = 0;
 		$num = 0;
-		$clr = '';
+		$clrs = [];
 		$str   = '';
 		$descr = '';
 		$states = ['okay', 'critical', 'offline'];
@@ -303,10 +303,11 @@ class CustomerTopoController extends NetElementController {
 			if ($x != $modem->x || $y != $modem->y)
 			{
 				# Print Marker
+				$clr = ($x) ? round(array_sum($clrs)/count($clrs)) : '';
 				$style = "#style$clr"; # green, yellow, red
 
 				# Reset Vars
-				$clr = 0;
+				$clrs = [];
 				$pos ="$x, $y, 0.000000";
 
 
@@ -335,8 +336,7 @@ class CustomerTopoController extends NetElementController {
 
 			$row_val = $modem->{$row};
 			$cur_clr = BaseViewController::get_quality_color_orig(explode('_',$row)[0], explode('_',$row)[1], [$row_val])[0];
-			if ($cur_clr > $clr)
-				$clr = $cur_clr;
+			$clrs[] = $cur_clr;
 
 			#
 			# Contract
@@ -363,6 +363,7 @@ class CustomerTopoController extends NetElementController {
 		#
 		# Print Last Marker
 		#
+		$clr = round(array_sum($clrs)/count($clrs));
 		$style = "#style$clr"; # green, yellow, red
 		$pos ="$x, $y, 0.000000";
 		if ($x)
