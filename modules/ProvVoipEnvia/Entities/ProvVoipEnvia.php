@@ -2209,10 +2209,10 @@ class ProvVoipEnvia extends \BaseModel {
 		$trc_class = TRCClass::find($phonenumbermanagement->trcclass)->trc_id;
 		$inner_xml->addChild('trc_class', $trc_class);
 
+		$carrier_in = CarrierCode::find($phonenumbermanagement->carrier_in)->carrier_code;
+
 		// carrier code not needed in version 1.10 and above
 		if ($this->api_version_less_than("1.10")) {
-			// special handling for incoming porting needed (comes from external table)
-			$carrier_in = CarrierCode::find($phonenumbermanagement->carrier_in)->carrier_code;
 
 			// on porting: check if valid CarrierIn chosen
 			if (boolval($phonenumbermanagement->porting_in)) {
@@ -2221,14 +2221,15 @@ class ProvVoipEnvia extends \BaseModel {
 				}
 				$inner_xml->addChild('carriercode', $carrier_in);
 			}
-			// if no porting (new number): CarrierIn has to be D057 (EnviaTEL) (API 1.4 and higher)
-			else {
-				if ($this->api_version_greater_or_equal("1.4")) {
-					if ($carrier_in != 'D057') {
-						throw new XmlCreationError('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
-					}
-					$inner_xml->addChild('carriercode', $carrier_in);
+		}
+
+		// if no porting (new number): CarrierIn has to be D057 (EnviaTEL) (API 1.4 and higher)
+		if (!boolval($phonenumbermanagement->porting_in)) {
+			if ($this->api_version_greater_or_equal("1.4")) {
+				if ($carrier_in != 'D057') {
+					throw new XmlCreationError('ERROR: If no incoming porting: Carriercode has to be D057 (EnviaTEL)');
 				}
+				$inner_xml->addChild('carriercode', $carrier_in);
 			}
 		}
 
@@ -3077,8 +3078,20 @@ class ProvVoipEnvia extends \BaseModel {
 		// update modem
 		/* $this->modem->contract_external_id = $xml->contractreference; */
 		// TODO: remove this when detection of active contracts is refactored to use data from enviacontract
-		$this->modem->contract_ext_creation_date = date('Y-m-d H:i:s');
-		$this->modem->save();
+		if (!$this->modem->contract_ext_creation_date) {
+			$this->modem->contract_ext_creation_date = date('Y-m-d H:i:s');
+			$this->modem->save();
+		}
+
+		// create enviacontract
+		$enviacontract_data = [
+			'external_creation_date' => date('Y-m-d H:i:s'),
+			'envia_customer_reference' => $xml->customerreference,
+			'envia_contract_reference' => $xml->contractreference,
+			'contract_id' => $this->contract->id,
+			'modem_id' => $this->modem->id,
+		];
+		$enviacontract = EnviaContract::create($enviacontract_data);
 
 		// create enviaorder
 		$order_data = array();
@@ -3090,18 +3103,9 @@ class ProvVoipEnvia extends \BaseModel {
 		$order_data['modem_id'] = $this->modem->id;
 		$order_data['ordertype'] = 'contract/create';
 		$order_data['orderstatus'] = 'initializing';
+		$order_data['enviacontract_id'] = $enviacontract->id;
 
 		$enviaOrder = EnviaOrder::create($order_data);
-
-		// create enviacontract
-		$enviacontract_data = [
-			'external_creation_date' => date('Y-m-d H:i:s'),
-			'envia_customer_reference' => $xml->customerreference,
-			'envia_contract_reference' => $xml->contractreference,
-			'contract_id' => $this->contract->id,
-			'modem_id' => $this->modem->id,
-		];
-		$enviacontract = EnviaContract::create($enviacontract_data);
 
 		// check if there are also phonenumbers created
 		$created_phonenumbers = \Input::get('phonenumbers_to_create', []);
@@ -4836,7 +4840,17 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	protected function _process_order_get_status_response_for_enviacontract($order, $out) {
 
-		$out .= "<h5>ATTENTION: processing updated order data for enviacontract not yet implemented</h5>";
+		// update relation between Envia order and Envia contract
+		if ($order->contractreference) {
+			$enviacontract = EnviaContract::firstOrCreate(['envia_contract_reference' => $order->contractreference]);
+			if ($order->enviacontract_id != $enviacontract->id) {
+				$msg = "Order is related to Envia contract $enviacontract->id ($enviacontract->envia_contract_reference) – Updating relation.";
+				Log::info($msg);
+				$out .= "<br>$msg";
+				$order->enviacontract_id = $enviacontract->id;
+				$order->save();
+			}
+		};
 
 		return $out;
 	}
