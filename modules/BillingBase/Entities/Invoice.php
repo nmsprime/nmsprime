@@ -412,7 +412,6 @@ class Invoice extends \BaseModel{
 		$this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural." & ".$sum.$this->currency.' & '.$sum.$this->currency.'\\\\';
 
 		$this->filename_cdr = date('Y_m', $time_cdr).'_cdr';
-
 	}
 
 
@@ -514,7 +513,9 @@ class Invoice extends \BaseModel{
 
 		foreach ($this->data as $key => $string)
 		{
-			$string = escape_latex_special_chars($string);
+			// dont escape for latex concatenated strings in form of tables or tabulators and so on
+			if (!in_array($key, ['table_summary', 'invoice_text', 'cdr_table_positions', 'item_table_positions']))
+				$string = escape_latex_special_chars($string);
 
 			// escape underscores for pdflatex to work
 			if (strpos($string, 'logo') === false)
