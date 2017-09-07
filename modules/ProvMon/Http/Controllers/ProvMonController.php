@@ -972,7 +972,7 @@ end:
 	 * Get the cacti graph template ids, which correspond to a given graph template name
 	 *
 	 * @param name: The cacti graph template name
-	 * @return: An array of the matching cacti graph template ids
+	 * @return: The matching cacti graph template id
 	 *
 	 * @author: Ole Ernst
 	 */
@@ -986,7 +986,7 @@ end:
 		if (!isset($template))
 			return null;
 
-		return [$template->id];
+		return $template->id;
 	}
 
 

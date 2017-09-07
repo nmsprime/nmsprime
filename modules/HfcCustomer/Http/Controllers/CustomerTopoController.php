@@ -205,7 +205,13 @@ class CustomerTopoController extends NetElementController {
 		foreach ($modems->orderBy('city', 'street')->get() as $modem)
 		{
 			// load per modem diagrams
-			$dia_ids = $provmon->monitoring_get_graph_template_id('DOCSIS Overview');
+			$dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Overview');
+			switch (\Input::get('row')) {
+				case null:
+				case 'us_pwr': $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Upstream'); break;
+				case 'ds_pwr': $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Downstream'); break;
+			}
+
 			$dia = $provmon->monitoring($modem, $dia_ids);
 
 			// valid diagram's ?
