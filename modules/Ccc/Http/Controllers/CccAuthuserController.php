@@ -119,7 +119,7 @@ class CccAuthuserController extends \BaseController {
 	{
 		// load template
 		$template_dir = storage_path('app/config/ccc/template/');
-		$template_filename = \PPModule::is_active('billingbase') ? $contract->costcenter->sepa_account->company->conn_info_template_fn : Ccc::first()->template_filename;
+		$template_filename = \PPModule::is_active('billingbase') ? $contract->costcenter->sepaaccount->company->conn_info_template_fn : Ccc::first()->template_filename;
 
 		if (!$template = file_get_contents($template_dir.$template_filename))
 		{

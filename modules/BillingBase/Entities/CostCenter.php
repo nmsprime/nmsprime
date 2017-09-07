@@ -56,7 +56,7 @@ class CostCenter extends \BaseModel {
 
 	public function view_belongs_to ()
 	{
-		return $this->sepa_account;
+		return $this->sepaaccount;
 	}
 
 	/**
