@@ -26,7 +26,7 @@
 		<ul class="nav nav-pills pull-right">
 		<?php
 			$par = Route::getCurrentRoute()->parameters();
-			$cur_row = isset($par['row']) ? $par['row'] : 'us_pwr';
+			$cur_row = \Input::has('row') ? \Input::get('row') : 'us_pwr';
 			foreach (['us_pwr' => 'US Power', 'us_snr' => 'US SNR', 'ds_pwr' => 'DS Power', 'ds_snr' => 'DS SNR'] as $key => $val) {
 				$par['row'] = $key;
 				$class = ($cur_row === $key) ? 'active' : '';

@@ -114,7 +114,7 @@ class CustomerTopoController extends NetElementController {
 		if($field == 'all')
 			$s = 'id>2';
 
-		return $this->show_topo(Modem::whereRaw($s));
+		return $this->show_topo(Modem::whereRaw($s), \Input::get('row'));
 	}
 
 
@@ -127,9 +127,9 @@ class CustomerTopoController extends NetElementController {
 	*
 	* @author: Torsten Schmidt
 	*/
-	public function show_rect($x1, $x2, $y1, $y2, $row = 'us_pwr')
+	public function show_rect($x1, $x2, $y1, $y2)
 	{
-		return $this->show_topo(Modem::whereRaw("(($x1 < x) AND (x < $x2) AND ($y1 < y) AND (y < $y2))"), $row);
+		return $this->show_topo(Modem::whereRaw("(($x1 < x) AND (x < $x2) AND ($y1 < y) AND (y < $y2))"), \Input::get('row'));
 	}
 
 
@@ -153,10 +153,12 @@ class CustomerTopoController extends NetElementController {
 	*
 	* @author: Torsten Schmidt
 	*/
-	public function show_topo($modems, $row = 'us_pwr')
+	public function show_topo($modems, $row = null)
 	{
 		if (!$modems->count())
 			return \View::make('errors.generic')->with('message', 'No Modem Entry found');
+		if (!$row)
+			$row = 'us_pwr';
 
 		// Generate SVG file
 		$file = $this->kml_generate ($modems, $row);
@@ -267,12 +269,11 @@ class CustomerTopoController extends NetElementController {
 	private function make_right_panel_links ($modems)
 	{
 		$ids = '0';
-
 		foreach ($modems->get() as $modem)
 			$ids .= '+'.$modem->id;
 
-		return [['name' => 'Topography', 'route' => 'CustomerModem.show', 'link' => ['true', $ids]],
-		        ['name' => 'Diagramms', 'route' => 'CustomerModem.show', 'link' => ['false', $ids]]];
+		return [['name' => 'Topography', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => \Input::get('row')]],
+		        ['name' => 'Diagramms', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => \Input::get('row')]]];
 	}
 
 
