@@ -195,13 +195,13 @@ class Mpr extends \BaseModel {
 				echo $log."\n";
 			} elseif (count($mpr->mprgeopos) > 2) {
 
-				// populate polygon array according to mprgeopostions, this will be used by _point_in_polygon()
+				// populate polygon array according to mprgeopostions, this will be used by point_in_polygon()
 				$polygon = [];
 				foreach($mpr->mprgeopos as $geopos)
 					$polygon[] = [$geopos->x, $geopos->y];
 
 				foreach ($single_modem ? Modem::where('id', '=', $modem) : Modem::all() as $tmp) {
-					if(self::_point_in_polygon([$tmp->x,$tmp->y], $polygon)) {
+					if(self::point_in_polygon([$tmp->x,$tmp->y], $polygon)) {
 						$tmp->netelement_id = $mpr->netelement_id;
 						$tmp->observer_enabled = false;
 						$tmp->save();
@@ -222,7 +222,7 @@ class Mpr extends \BaseModel {
 	 * @return: true if point in polygon, otherwise false
 	 * @author: Ole Ernst
 	 */
-	private static function _point_in_polygon($p, $polygon) {
+	public static function point_in_polygon($p, $polygon) {
 		$c = 0;
 		$p1 = $polygon[0];
 		$n = count($polygon);

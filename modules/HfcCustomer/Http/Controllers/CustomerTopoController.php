@@ -3,6 +3,7 @@
 namespace Modules\HfcCustomer\Http\Controllers;
 
 use Modules\HfcCustomer\Entities\ModemHelper;
+use Modules\HfcCustomer\Entities\Mpr;
 use Modules\HfcReq\Http\Controllers\NetElementController;
 
 use Modules\ProvBase\Entities\Modem;
@@ -132,6 +133,29 @@ class CustomerTopoController extends NetElementController {
 		return $this->show_topo(Modem::whereRaw("(($x1 < x) AND (x < $x2) AND ($y1 < y) AND (y < $y2))"), \Input::get('row'));
 	}
 
+	/**
+	* Show all customers within the polygon
+	*
+	* @param poly: the polygon, its vertices are separated by semicolons
+	* @author: Ole Ernst
+	*/
+	public function show_poly($poly)
+	{
+		$ids = 'id = 0';
+		$poly = explode(';', $poly);
+		// every point must have two coordinates
+		if(count($poly) % 2)
+			return \Redirect::back();
+		// convert from flat array into array of array as expeceted by point_in_polygon
+		while($poly)
+			$polygon[] = [array_shift($poly), array_shift($poly)];
+		// add modems which are within the polygon
+		foreach (Modem::all() as $modem)
+			if(Mpr::point_in_polygon([$modem->x,$modem->y], $polygon))
+				$ids .= " OR id = $modem->id";
+
+		return $this->show_topo(Modem::whereRaw($ids));
+	}
 
 	/**
 	* Show all customers in proximity (radius in meters)
