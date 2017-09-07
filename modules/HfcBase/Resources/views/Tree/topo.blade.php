@@ -22,7 +22,6 @@
 
 	@include ('hfcbase::Tree.search')
 
-	@if(Route::getCurrentRoute()->getName() === 'CustomerRect.show')
 		<ul class="nav nav-pills pull-right">
 		<?php
 			$par = Route::getCurrentRoute()->parameters();
@@ -34,7 +33,6 @@
 			}
 		?>
 		</ul>
-	@endif
 
 	<div class="col-md-12" id="map" style="height: 80%;"></div>
 	<input type="radio" name="type" value="none" id="noneToggle" onclick="toggleControl(this);" checked="checked" />
