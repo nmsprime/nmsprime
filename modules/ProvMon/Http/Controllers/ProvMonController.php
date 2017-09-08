@@ -90,7 +90,7 @@ class ProvMonController extends \BaseController {
 		if ($online)
 		{
 			// preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
-			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip);
+			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
 			$realtime['forecast'] = 'TODO';
 		}
 
@@ -462,13 +462,14 @@ end:
 			{
 				switch ($m)
 				{
-					case 0: $b = '0'; break; 		//no docsIfCmtsModulationTable entry
-					case 1: $b = 'QPSK'; break;
-					case 2: $b = '16QAM'; break;
-					case 3: $b = '8QAM'; break;
-					case 4: $b = '32QAM'; break;
-					case 5: $b = '64QAM'; break;
-					case 6: $b = '128QAM'; break;
+					case 0: $b = 'unknown'; break;	//no docsIfCmtsModulationTable entry
+					case 1: $b = 'other'; break;
+					case 2: $b = 'QPSK'; break;
+					case 3: $b = 'QAM16'; break;
+					case 4: $b = 'QAM8'; break;
+					case 5: $b = 'QAM32'; break;
+					case 6: $b = 'QAM64'; break;
+					case 7: $b = 'QAM128'; break;
 					default: $b = null; break;
 				}
 			}
@@ -480,7 +481,7 @@ end:
 
 
 
-	/*
+	/**
 	 * The Modem Realtime Measurement Function
 	 * Fetches all realtime values from Modem with SNMP
 	 *
@@ -488,87 +489,69 @@ end:
 	 * - add units like (dBmV, MHz, ..)
 	 * - speed-up: use SNMP::get with multiple gets in one request. Test if this speeds up stuff (?)
 	 *
-	 * @param host: The Modem hostname like cm-xyz.abc.de
-	 * @param com:  SNMP RO community
-	 * @param ip: 	ip address of modem
+	 * @param host:  The Modem hostname like cm-xyz.abc.de
+	 * @param com:   SNMP RO community
+	 * @param ip: 	 IP address of modem
+	 * @param cacti: Is function called by cacti?
 	 * @return: array[section][Fieldname][Values]
 	 */
-	public function realtime($host, $com, $ip)
+	public function realtime($host, $com, $ip, $cacti)
 	{
 		// Copy from SnmpController
 		$this->snmp_def_mode();
 
-		try
-		{
+		try {
 			// First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
 			$docsis = snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
-		}
-		catch (\Exception $e)
-		{
-			if (((strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false) || (strpos($e->getMessage(), "No response from") !== false)))
+		} catch (\Exception $e) {
+			if (strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false ||
+				strpos($e->getMessage(), "No response from") !== false)
 			return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
 		}
 
 		$cmts = $this->get_cmts($ip);
-
-		// System
-		$sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')];
-		$sys['Firmware'] = [snmpget($host, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
-		$sys['Uptime']   = [$this->_secondsToTime(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
-		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
-		$sys['CMTS'] = [$cmts->hostname];
+		$sys = [];
+		// these values are not important for cacti, so only retrieve them on the analysis page
+		if(!$cacti) {
+			$sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')];
+			$sys['Firmware'] = [snmpget($host, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
+			$sys['Uptime']   = [$this->_secondsToTime(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
+			$sys['DOCSIS']   = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
+			$sys['CMTS']     = [$cmts->hostname];
+			$ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
+			$us['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2'), 1000000);
+			$us['Width MHz']     = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'), 1000000);
+			$us['Modulation Profile'] = $this->_docsis_modulation($cmts->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
+		}
 
 		// Downstream
-		$ds['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2');		// DOCS-IF-MIB
-		foreach($ds['Frequency MHz'] as $i => $freq)
-			$ds['Frequency MHz'][$i] /= 1000000;
-		$ds['Modulation'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
-		$ds['Power dBmV']      = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));
+		$ds['Modulation']    = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
+		$ds['Power dBmV']    = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));
 		$ds['MER dB']        = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
 		$ds['Microreflection -dBc'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6');
 
 		// Upstream
-		$us['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
-		foreach($us['Frequency MHz'] as $i => $freq)
-			$us['Frequency MHz'][$i] /= 1000000;
 		if ($docsis >= 4) $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
 		else              $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
-		$us['Width MHz']      = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3');
-		foreach($us['Width MHz'] as $i => $freq)
-			$us['Width MHz'][$i] /= 1000000;
-		if ($docsis >= 4)
-			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.5'), 'us');
-		else
-			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.4'), 'us');
 		$us['SNR dB'] = $cmts->get_us_snr($ip);
 
 		// remove all inactive channels (no range success)
-		$tmp = count($ds['Frequency MHz']);
-		foreach ($ds['Frequency MHz'] as $key => $freq)
-		{
+		$tmp = count($ds['Power dBmV']);
+		foreach ($ds['Power dBmV'] as $key => $val)
 			if ($ds['Modulation'][$key] == '' && $ds['MER dB'][$key] == 0)
-			{
 				foreach ($ds as $entry => $arr)
 					unset($ds[$entry][$key]);
-			}
-		}
-		$ds['Operational CHs %'] = [count($ds['Frequency MHz']) / $tmp * 100];
+		$ds['Operational CHs %'] = [count($ds['Power dBmV']) / $tmp * 100];
 
-		if ($docsis >= 4)
-		{
+		if ($docsis >= 4) {
 			$us_ranging_status = snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9');
-			$tmp = count($us['Frequency MHz']);
-			foreach ($us_ranging_status as $key => $value)
-			{
-				if ($value != 4)
-				{
+			$tmp = count($us['Power dBmV']);
+			foreach ($us_ranging_status as $key => $val)
+				if ($val != 4)
 					foreach($us as $entry => $arr)
 						unset($us[$entry][$key]);
-				}
-			}
-			$us['Operational CHs %'] = [count($us['Frequency MHz']) / $tmp * 100];
-		}
-		else
+			$us['Operational CHs %'] = [count($us['Power dBmV']) / $tmp * 100];
+		} else
 			$us['Operational CHs %'] = [100];
 
 		// Put Sections together
@@ -576,7 +559,6 @@ end:
 		$ret['Downstream']  = $ds;
 		$ret['Upstream']    = $us;
 
-		// Return
 		return $ret;
 	}
 
