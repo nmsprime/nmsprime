@@ -54,7 +54,7 @@ class SettlementRun extends \BaseModel {
 		return ['index' => [$this->year, $this->month, $this->created_at->toDateString(), $this->verified ? 'Yes' : 'No'], //$this->created_at->__get('day')],
 		        'index_header' => ['Year', 'Month', 'Created At', 'Verified'],
 				'bsclass' => $bsclass,
-				'orderBy' => ['id' => 'desc'],
+				'order_by' => ['id' => 'desc'],
 		        'header' => $this->year.' - '.$this->month.' - '.$this->created_at->__get('day')];
 	}
 
@@ -69,7 +69,7 @@ class SettlementRun extends \BaseModel {
 				'index_header' => [$this->table.'.year', $this->table.'.month',  $this->table.'.created_at', 'verified'],
 				'header' =>  $this->year.' - '.$this->month.' - '.$day ,
 				'bsclass' => $bsclass,
-				'orderBy' => ['0' => 'desc'],
+				'order_by' => ['0' => 'desc'],
 				'edit' => ['verified' => 'run_verified', 'checkbox' => 'set_index_delete', 'created_at' => 'created_at_toDateString' ]];
 	}
 
