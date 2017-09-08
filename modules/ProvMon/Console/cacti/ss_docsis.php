@@ -30,20 +30,6 @@ function ss_docsis_avg($a) {
 function ss_docsis($hostname, $snmp_community) {
 	$val = app()->call([$GLOBALS['controller'], 'realtime'], [$hostname, $snmp_community, gethostbyname($hostname)]);
 
-	$ds_sum = $us_sum = 0;
-	snmp_set_valueretrieval(SNMP_VALUE_PLAIN);
-	$ifs = snmprealwalk($hostname, $snmp_community, '1.3.6.1.2.1.2.2.1.3');
-	$in = snmp2_real_walk($hostname, $snmp_community, '1.3.6.1.2.1.31.1.1.1.6');
-	$out = snmp2_real_walk($hostname, $snmp_community, '1.3.6.1.2.1.31.1.1.1.10');
-	foreach($ifs as $type) {
-		$ds = array_shift($in);
-		$us = array_shift($out);
-		if($type == 128)
-			$ds_sum += $ds;
-		if($type == 129)
-			$us_sum += $us;
-	}
-
 	$arr = [
 		 'minDsPow' => min($val['Downstream']['Power dBmV']),
 		 'avgDsPow' => ss_docsis_avg($val['Downstream']['Power dBmV']),
@@ -61,8 +47,8 @@ function ss_docsis($hostname, $snmp_community) {
 		'T3Timeout' => array_sum(snmpwalk($hostname, $snmp_community, '1.3.6.1.2.1.10.127.1.2.2.1.12')),
 		'T4Timeout' => array_sum(snmpwalk($hostname, $snmp_community, '1.3.6.1.2.1.10.127.1.2.2.1.13')),
 		'Corrected' => array_sum(snmpwalk($hostname, $snmp_community, '1.3.6.1.2.1.10.127.1.1.4.1.3')),
-		 'InOctets' => $ds_sum,
-		'OutOctets' => $us_sum
+		 'InOctets' => 0,
+		'OutOctets' => 0
 	];
 
 	$result = '';
