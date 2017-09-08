@@ -17,13 +17,13 @@ use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\AccountingRecord;
 use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Entities\BillingBase;
-use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Entities\Item;
 use Modules\BillingBase\Entities\SettlementRun;
 use Modules\Billingbase\Http\Controllers\SettlementRunController;
+use ChannelLog as Log;
 
 
 class accountingCommand extends Command implements SelfHandling, ShouldQueue {
@@ -42,7 +42,6 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	protected $dir 			= 'data/billingbase/accounting/'; 				// relative to storage/app/ - Note: completed by month in constructor!
 	
 	protected $dates;					// offen needed time strings for faster access - see constructor
-	protected $logger;
 
 
 	/**
@@ -53,13 +52,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	public function __construct()
 	{
 		$this->dates = self::create_dates_array();
-
 		$this->dir .= date('Y-m', strtotime('first day of last month')).'/';
 
-		$this->logger = new BillingLogger;
-
 		parent::__construct();
-
 	}
 
 
@@ -75,13 +70,13 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		if (\App::runningInConsole())
 		{
-			$this->logger->addInfo(' #####    Start Accounting Command from Console   #####');
+			Log::info('billing', ' #####    Start Accounting Command from Console   #####');
 			// create/update settlementrun model when we run from console
 			$sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->get()->all();
 
 			if (!$sr)
 			{
-				$this->logger->addDebug('Add new SettlementRun and Return as Observer will call this Cmd again');
+				Log::debug('billing', 'Add new SettlementRun and Return as Observer will call this Cmd again');
 				SettlementRun::create(['year' => $this->dates['Y'], 'month' => $this->dates['lastm']]);
 				return;
 			}
@@ -90,15 +85,15 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$sr = $sr[0];
 				$settlementrun_id = $sr->id;
 				$sr->update(['updated_at' => date('Y-m-d H:i:s')]);
-				$this->logger->addDebug('Update existing SettlementRun', [$sr->id]);
+				Log::debug('billing', 'Update existing SettlementRun', [$sr->id]);
 			}
 		}
 		else
 		{
-			$this->logger->addInfo(' #####    Start Accounting Command via GUI   #####');
+			Log::info('billing', ' #####    Start Accounting Command via GUI   #####');
 			// withTrashed()
 			$settlementrun_id = SettlementRun::orderBy('id', 'desc')->get()->first()->id;
-			$this->logger->addDebug('SettlementRun already created through GUI');
+			Log::debug('billing', 'SettlementRun already created through GUI');
 		}
 
 		echo "Get all Data from Database\n";
@@ -110,7 +105,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		if (!isset($sepa_accs[0]))
 		{
-			$this->logger->addError('There are no Sepa Accounts to create Billing Files for - Stopping here!');
+			Log::error('billing', 'There are no Sepa Accounts to create Billing Files for - Stopping here!');
 			return -1;
 		}
 
@@ -120,7 +115,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		// get call data records as ordered structure (array)
 		$cdrs = $this->_get_cdr_data();
 		if (!$cdrs)
-			$this->logger->addAlert('No Call Data Records available for this Run!');
+			Log::alert('billing', 'No Call Data Records available for this Run!');
 
 		echo "Create Invoices:\n";
 		$num = count($contracts);
@@ -142,17 +137,17 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 			// Skip invalid contracts
 			if (!$c->check_validity() && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
-				$this->logger->addInfo('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
+				Log::info('billing', 'Contract '.$c->number.' has no valid dates for this month', [$c->id]);
 				continue;				
 			}
 
 			if (!$c->create_invoice) {
-				$this->logger->addInfo('Create invoice for Contract '.$c->number.' is off', [$c->id]);
+				Log::info('billing', 'Create invoice for Contract '.$c->number.' is off', [$c->id]);
 				continue;
 			}
 
 			if(!$c->costcenter) {
-				$this->logger->addAlert('Contract '.$c->number.' has no CostCenter assigned - Stop execution for this contract', [$c->id]);
+				Log::alert('billing', 'Contract '.$c->number.' has no CostCenter assigned - Stop execution for this contract', [$c->id]);
 				continue;
 			}
 
@@ -169,19 +164,19 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			{
 				// skip items that are related to a deleted product
 				if (!isset($item->product)) {
-					$this->logger->addError('Product '.$item->accounting_text.' was deleted', [$c->id]);
+					Log::error('billing', 'Product '.$item->accounting_text.' was deleted', [$c->id]);
 					continue;
 				}
 
 				// skip invalid items - TODO: Think about relevance as it is a bit redundant to calculate_price_and_span
 				if (!$item->check_validity($item->get_billing_cycle())) {
-					$this->logger->addDebug('Item '.$item->product->name.' is outdated', [$c->id]);
+					Log::debug('billing', 'Item '.$item->product->name.' is outdated', [$c->id]);
 					continue;
 				}
 
 				// skip if price is 0
 				if (!($ret = $item->calculate_price_and_span($this->dates))) {
-					$this->logger->addDebug('Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
+					Log::debug('billing', 'Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
 					continue;
 				}
 
@@ -224,7 +219,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			$mandate = $c->get_valid_mandate();
 
 			if (!$mandate)
-				$this->logger->addNotice('Contract '.$c->number.' has no valid sepa mandate', [$c->id]);
+				Log::notice('billing', 'Contract '.$c->number.' has no valid sepa mandate', [$c->id]);
 
 
 			// Add Call Data Records - calculate charge and count
@@ -254,7 +249,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				else
 				{
 					// this case should never happen
-					$this->logger->addAlert('Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
+					Log::alert('billing', 'Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
 					$c->charge[$acc->id]['net'] = $charge;
 					$c->charge[$acc->id]['tax'] = $charge * $conf->tax/100;
 					$acc->invoice_nr += 1;
@@ -267,7 +262,6 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 				// invoice
 				$acc->add_invoice_cdr($c, $cdrs[$id], $conf, $settlementrun_id);
-
 
 			}
 
@@ -548,7 +542,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			else
 			{
 				// there is a phonenr entry in csv that doesnt exist in our db - this case should never happen
-				$this->logger->addError('Parse CDR.csv: Call Data Record with Phonenr that doesnt exist in the Database - Phonenr deleted?');
+				Log::error('billing', 'Parse CDR.csv: Call Data Record with Phonenr that doesnt exist in the Database - Phonenr deleted?');
 			}
 
 		}

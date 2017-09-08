@@ -4,7 +4,7 @@ namespace Modules\BillingBase\Entities;
 
 use Storage;
 use Modules\BillingBase\Entities\BillingLogger;
-
+use ChannelLog;
 
 
 /**
@@ -81,12 +81,6 @@ class Invoice extends \BaseModel{
 	// temporary variables for settlement run without .pdf extension
 	private $filename_invoice 	= '';
 	private $filename_cdr 		= '';
-
-
-	/**
-	 * @var object - logger for Billing Module - instantiated in constructor
-	 */
-	public $logger;
 
 	/**
 	 * Temporary CDR Variables
@@ -170,7 +164,6 @@ class Invoice extends \BaseModel{
 
 	public function __construct($attributes = array())
 	{
-		$this->logger = new BillingLogger;
 		$this->filename_invoice = self::_get_invoice_filename();
 		
 		parent::__construct($attributes);
@@ -360,7 +353,7 @@ class Invoice extends \BaseModel{
 
 		if ($err_msg)
 		{
-			$this->logger->addError($err_mgs);
+			ChannelLog::error('billing', $err_mgs);
 			$this->error_flag = true;
 			return false;
 		}
@@ -440,7 +433,7 @@ class Invoice extends \BaseModel{
 			$this->_create_db_entry();
 		}
 		else
-			$this->logger->addError("No Items for Invoice - only build CDR", [$this->data['contract_id']]);
+			ChannelLog::error('billing', "No Items for Invoice - only build CDR", [$this->data['contract_id']]);
 
 
 		// Store as pdf
@@ -486,13 +479,13 @@ class Invoice extends \BaseModel{
 	{
 		if ($this->error_flag)
 		{
-			$this->logger->addError("Missing Data from SepaAccount or Company to Create $type", [$this->data['contract_id']]);
+			ChannelLog::error('billing', "Missing Data from SepaAccount or Company to Create $type", [$this->data['contract_id']]);
 			return -2;			
 		}
 
 		if (!$template = file_get_contents($this->_get_abs_template_path($type)))
 		{
-			$this->logger->addError("Failed to Create Invoice: Could not read template ".$this->_get_abs_template_path($type), [$this->data['contract_id']]);
+			ChannelLog::error('billing', "Failed to Create Invoice: Could not read template ".$this->_get_abs_template_path($type), [$this->data['contract_id']]);
 			return -3;
 		}
 
@@ -552,18 +545,18 @@ class Invoice extends \BaseModel{
 				{
 					case 0: break;
 					case 1: 
-						$this->logger->addError("PdfLatex: Syntax Error in filled tex template!");
+						ChannelLog::error('billing', "PdfLatex: Syntax Error in filled tex template!");
 						return null;
 					case 127:
-						$this->logger->addError("Illegal Command - PdfLatex not installed!");
+						ChannelLog::error('billing', "Illegal Command - PdfLatex not installed!");
 						return null;
 					default:
-						$this->logger->addError("Error executing PdfLatex - Return Code: $ret");
+						ChannelLog::error('billing', "Error executing PdfLatex - Return Code: $ret");
 						return null;
 				}
 
 				// echo "Successfully created $key in $file\n";
-				$this->logger->addDebug("Successfully created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
+				ChannelLog::debug('billing', "Successfully created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
 
 				// Deprecated: remove temporary files - This is done by remove_templatex_files() now after all pdfs were created simultaniously by multiple threads
 				// unlink($file);
@@ -663,6 +656,6 @@ class InvoiceObserver
 	{
 		// Delete PDF from Storage
 		$ret = Storage::delete($invoice->rel_storage_invoice_dir.$invoice->contract_id.'/'.$invoice->filename);
-		$invoice->logger->addDebug('Removed Invoice from Storage', [$invoice->contract_id, $invoice->filename]);
+		ChannelLog::debug('billing', 'Removed Invoice from Storage', [$invoice->contract_id, $invoice->filename]);
 	}
 }
