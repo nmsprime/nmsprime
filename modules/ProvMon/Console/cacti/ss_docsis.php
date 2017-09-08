@@ -28,7 +28,7 @@ function ss_docsis_avg($a) {
 }
 
 function ss_docsis($hostname, $snmp_community) {
-	$val = app()->call([$GLOBALS['controller'], 'realtime'], [$hostname, $snmp_community, gethostbyname($hostname)]);
+	$val = app()->call([$GLOBALS['controller'], 'realtime'], [$hostname, $snmp_community, gethostbyname($hostname), true]);
 
 	$arr = [
 		 'minDsPow' => min($val['Downstream']['Power dBmV']),

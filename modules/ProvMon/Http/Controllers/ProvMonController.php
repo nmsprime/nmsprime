@@ -90,7 +90,7 @@ class ProvMonController extends \BaseController {
 		if ($online)
 		{
 			// preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
-			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip);
+			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
 			$realtime['forecast'] = 'TODO';
 		}
 
@@ -495,7 +495,7 @@ end:
 	 * @param cacti: Is function called by cacti?
 	 * @return: array[section][Fieldname][Values]
 	 */
-	public function realtime($host, $com, $ip, $cacti=false)
+	public function realtime($host, $com, $ip, $cacti)
 	{
 		// Copy from SnmpController
 		$this->snmp_def_mode();
@@ -510,6 +510,7 @@ end:
 		}
 
 		$cmts = $this->get_cmts($ip);
+		$sys = [];
 		// these values are not important for cacti, so only retrieve them on the analysis page
 		if(!$cacti) {
 			$sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')];
