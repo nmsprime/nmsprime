@@ -454,24 +454,79 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 
 	/**
-	 * Parse Envia CSV
+	 * Parse Envia CSV and Check if customerNr to Phonenr assignment exists
 	 *
 	 * @return array  [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
 	 */
 	protected function _parse_envia_csv($filepath)
 	{
-		$csv = is_file($filepath) ? file($filepath) : array(array());
+		Log::debug('billing', 'Parse Envia Call Data Records CSV');
 
-		// skip first line (column description)
-		if ($csv[0])
-			unset($csv[0]);
-		else
-			return $csv;
+		$csv = is_file($filepath) ? file($filepath) : null;
+
+		if (!$csv)
+			return array(array());
+
+		/* 
+		 * Order existing phonenumbers in format 03735 739822 (prefix, number) to contract id/number as structured array:
+		 * 		[pn1 => [id, num], pn2 => [...], ...]
+		 * needed to check later if customer can really have made these calls (if customer number to phonenumber assignment is correct)
+		 * NOTE: customer number here means the envia customer number that corresponds to id OR number in the laravel database
+		 */
+		$phonenumbers_db = \DB::table('phonenumber')
+			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
+			->join('modem', 'modem.id', '=', 'mta.modem_id')
+			->join('contract', 'contract.id', '=', 'modem.contract_id')
+			->where('phonenumber.deleted_at', '=', null)
+			->select('modem.contract_id', 'contract.number', 'phonenumber.username')
+			->orderBy('modem.contract_id')->get();
+
+		foreach ($phonenumbers_db as $key => $pn)
+		{
+			if (substr($pn->username, 0, 1) != '0') {
+				// can be a poorly disabled testnumber -> discard
+				Log::warning('billing', "Username of Phonenumber not in correct format [".$pn->username."]");
+				continue;
+			}
+
+			$customer_nrs[substr_replace($pn->username, '49', 0, 1)] = [$pn->contract_id, $pn->number];
+
+			$customer_nrs_array[] = $pn->contract_id;
+			$customer_nrs_array[] = $pn->number;
+		}
+
+		// skip first line of csv (column description)
+		$logged = '';
+		unset($csv[0]);
 
 		foreach ($csv as $line)
 		{
 			$line = str_getcsv($line, ';');
-			$data[intval(str_replace('002-', '', $line[0]))][] = array($line[3], substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $line[7], str_replace(',', '.', $line[10]));
+			$customer_nr 	= intval(str_replace('002-', '', $line[0]));
+			$calling_number = $line[3];
+			$called_number  = $line[7];
+
+			if (!isset($customer_nrs[$calling_number]))
+			{
+				if (in_array($customer_nr, $customer_nrs_array)) {
+					Log::error('billing', "Calling Number [$calling_number] does not exist in laravel DB for customer number $customer_nr! Exit");
+					throw new \Exception("Calling Number [$calling_number] does not exist in laravel DB for customer number $customer_nr! Exit");
+				}
+
+				if ($logged != $calling_number) {
+					Log::warning('billing', "Calling Number [$calling_number] does not exist - but customer number neither!");
+					$logged = $calling_number;
+				}
+				continue;
+			}
+
+			if (!in_array($customer_nr, $customer_nrs[$calling_number])) {
+				Log::error('billing', "Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database! Exit");
+				// $this->error("Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database!");
+				throw new \Exception("Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database!");
+			}
+
+			$data[$customer_nr][] = array($calling_number, substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $called_number, str_replace(',', '.', $line[10]));
 		}
 
 		return $data;
@@ -485,12 +540,13 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 */
 	protected function _parse_hlkomm_csv($filepath)
 	{
-		$csv = is_file($filepath) ? file($filepath) : array(array());
+		$csv = is_file($filepath) ? file($filepath) : null;
+
+		if (!$csv)
+			return array(array());
+
 		// skip first 5 lines (descriptions)
-		if ($csv[0])
-			unset($csv[0], $csv[1], $csv[2], $csv[3], $csv[4]);
-		else
-			return $csv;
+		unset($csv[0], $csv[1], $csv[2], $csv[3], $csv[4]);
 
 		$config = BillingBase::first();
 
@@ -499,6 +555,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		$phonenumbers_o = \DB::table('phonenumber')
 			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
 			->join('modem', 'modem.id', '=', 'mta.modem_id')
+			->where('phonenumber.deleted_at', '=', null)
 			->select('modem.contract_id', 'phonenumber.username')
 			->orderBy('modem.contract_id')->get();
 
