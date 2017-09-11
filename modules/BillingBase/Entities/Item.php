@@ -3,6 +3,7 @@
 namespace Modules\BillingBase\Entities;
 
 use DB;
+use ChannelLog;
 
 class Item extends \BaseModel {
 
@@ -128,7 +129,7 @@ class Item extends \BaseModel {
 	 *
 	 * @var float
 	 */ 
-	public $charge;
+	public $charge = 0;
 
 
 	/**
@@ -220,6 +221,12 @@ class Item extends \BaseModel {
 		$billing_cycle = $this->get_billing_cycle();
 		$start = $this->get_start_time();
 		$end   = $this->get_end_time();
+
+		// skip invalid items
+		if (!$this->check_validity($billing_cycle)) {
+			ChannelLog::info('billing', 'Item '.$this->product->name." ($this->id) is outdated", [$this->contract->id]);
+			return null;
+		}
 
 		// contract ends before item ends - contract has higher priority
 		if ($this->contract->expires)

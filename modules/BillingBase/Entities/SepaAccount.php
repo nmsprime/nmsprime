@@ -433,7 +433,7 @@ class SepaAccount extends \BaseModel {
 	{
 		$path = storage_path('app/');
 		// echo "Stored $name in $path"."$pathname\n";
-		ChannelLog::info('billing', "Successfully stored $name in $path"."$pathname \n");
+		ChannelLog::debug('billing', "Successfully stored $name in $path"."$pathname \n");
 	}
 
 

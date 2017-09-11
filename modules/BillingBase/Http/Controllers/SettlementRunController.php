@@ -1,5 +1,5 @@
 <?php 
-namespace Modules\Billingbase\Http\Controllers;
+namespace Modules\BillingBase\Http\Controllers;
 
 use Modules\BillingBase\Entities\AccountingRecord;
 use Modules\BillingBase\Entities\BillingLogger;

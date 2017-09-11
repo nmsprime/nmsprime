@@ -3,7 +3,6 @@
 namespace Modules\BillingBase\Entities;
 
 use Storage;
-use Modules\BillingBase\Entities\BillingLogger;
 use ChannelLog;
 
 
@@ -433,7 +432,7 @@ class Invoice extends \BaseModel{
 			$this->_create_db_entry();
 		}
 		else
-			ChannelLog::error('billing', "No Items for Invoice - only build CDR", [$this->data['contract_id']]);
+			ChannelLog::warning('billing', "No Items for Invoice - only build CDR", [$this->data['contract_id']]);
 
 
 		// Store as pdf
@@ -477,14 +476,12 @@ class Invoice extends \BaseModel{
 	 */
 	private function _make_tex($type = 'invoice')
 	{
-		if ($this->error_flag)
-		{
+		if ($this->error_flag) {
 			ChannelLog::error('billing', "Missing Data from SepaAccount or Company to Create $type", [$this->data['contract_id']]);
 			return -2;			
 		}
 
-		if (!$template = file_get_contents($this->_get_abs_template_path($type)))
-		{
+		if (!$template = file_get_contents($this->_get_abs_template_path($type))) {
 			ChannelLog::error('billing', "Failed to Create Invoice: Could not read template ".$this->_get_abs_template_path($type), [$this->data['contract_id']]);
 			return -3;
 		}
@@ -656,6 +653,6 @@ class InvoiceObserver
 	{
 		// Delete PDF from Storage
 		$ret = Storage::delete($invoice->rel_storage_invoice_dir.$invoice->contract_id.'/'.$invoice->filename);
-		ChannelLog::debug('billing', 'Removed Invoice from Storage', [$invoice->contract_id, $invoice->filename]);
+		ChannelLog::info('billing', 'Removed Invoice from Storage', [$invoice->contract_id, $invoice->filename]);
 	}
 }

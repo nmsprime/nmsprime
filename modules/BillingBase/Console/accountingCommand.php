@@ -22,7 +22,7 @@ use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Entities\Item;
 use Modules\BillingBase\Entities\SettlementRun;
-use Modules\Billingbase\Http\Controllers\SettlementRunController;
+use Modules\BillingBase\Http\Controllers\SettlementRunController;
 use ChannelLog as Log;
 
 
@@ -91,11 +91,11 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		else
 		{
 			Log::info('billing', ' #####    Start Accounting Command via GUI   #####');
-			// withTrashed()
 			$settlementrun_id = SettlementRun::orderBy('id', 'desc')->get()->first()->id;
 			Log::debug('billing', 'SettlementRun already created through GUI');
 		}
 
+		// Fetch all Data from Database
 		echo "Get all Data from Database\n";
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
@@ -103,10 +103,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
 		$salesmen 	= Salesman::all();
 
-		if (!isset($sepa_accs[0]))
-		{
+		if (!isset($sepa_accs[0])) {
 			Log::error('billing', 'There are no Sepa Accounts to create Billing Files for - Stopping here!');
-			return -1;
+			throw new Exception("There are no Sepa Accounts to create Billing Files for");
 		}
 
 		// init product types of salesmen and invoice nr counters for each sepa account, date of last run
@@ -115,7 +114,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		// get call data records as ordered structure (array)
 		$cdrs = $this->_get_cdr_data();
 		if (!$cdrs)
-			Log::alert('billing', 'No Call Data Records available for this Run!');
+			Log::warning('billing', 'No Call Data Records available for this Run!');
 
 		echo "Create Invoices:\n";
 		$num = count($contracts);
@@ -130,10 +129,10 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		{
 			// progress bar - workaround as progress bar is not shown when cmd is called 
 			// from observer or throws exception when called via queue
-			echo ($i + 1)."/$num [$c->id]\r";
-			// if (!$this->option('debug'))
 			if ($this->output)
 				$bar->advance();
+			else
+				echo ($i + 1)."/$num [$c->id]\r";
 
 			// Skip invalid contracts
 			if (!$c->check_validity() && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
@@ -147,7 +146,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			}
 
 			if(!$c->costcenter) {
-				Log::alert('billing', 'Contract '.$c->number.' has no CostCenter assigned - Stop execution for this contract', [$c->id]);
+				Log::error('billing', 'Contract '.$c->number.' has no CostCenter assigned - Stop execution for this contract', [$c->id]);
+				throw new Exception("Contract $c->number has not CostCenter assigned", 1);
 				continue;
 			}
 
@@ -164,28 +164,19 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			{
 				// skip items that are related to a deleted product
 				if (!isset($item->product)) {
-					Log::error('billing', 'Product '.$item->accounting_text.' was deleted', [$c->id]);
+					Log::warning('billing', 'Product '.$item->accounting_text.' was deleted', [$c->id]);
 					continue;
 				}
 
-				// skip invalid items - TODO: Think about relevance as it is a bit redundant to calculate_price_and_span
-				if (!$item->check_validity($item->get_billing_cycle())) {
-					Log::debug('billing', 'Item '.$item->product->name.' is outdated', [$c->id]);
-					continue;
-				}
-
-				// skip if price is 0
+				// skip if price is 0 (or item dates are invalid)
 				if (!($ret = $item->calculate_price_and_span($this->dates))) {
-					Log::debug('billing', 'Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
+					Log::info('billing', 'Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
 					continue;
 				}
 
 				// get account via costcenter
 				$costcenter = $item->get_costcenter();
 				$acc 		= $sepa_accs->find($costcenter->sepaaccount_id);
-
-				// if ($c->number == 10003 && $item->product->type == 'Credit')
-				// 	dd($item->charge);
 
 				// increase invoice nr of sepa account, increase charge for account by price, calculate tax
 				if (isset($c->charge[$acc->id]))
@@ -262,9 +253,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 				// invoice
 				$acc->add_invoice_cdr($c, $cdrs[$id], $conf, $settlementrun_id);
-
 			}
-
 
 
 			// Add contract specific data for accounting files
@@ -297,10 +286,11 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		$this->_make_billing_files($sepa_accs, $salesmen);
 		Invoice::remove_templatex_files();
-
-		// performance analysis debugging output
-		// echo "time needed: ".round(microtime(true) - $start, 4)."\n";
 	}
+
+
+
+
 
 
 	/**
