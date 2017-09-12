@@ -69,6 +69,8 @@ class Item extends \BaseModel {
 		}
 
 		$count = $this->count && $this->count != 1 ? "$this->count x " : '';
+		$price = $this->credit_amount != 0 ? $this->credit_amount : $this->product->price;
+		$price = ' | '.round($price, 2).'€';
 
 		/* Evaluate Colours
 		 	* green: it will be considered for next accounting cycle
@@ -82,7 +84,7 @@ class Item extends \BaseModel {
 		return ['index' => [$this->product->name, $start, $end],
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
-		        'header' => $count.$this->product->name.$start.$start_fixed.$end.$end_fixed];
+		        'header' => $count.$this->product->name.$start.$start_fixed.$end.$end_fixed.$price];
 	}
 
 	public function view_belongs_to ()
@@ -285,7 +287,7 @@ class Item extends \BaseModel {
 				// started this yr
 				if (date('Y', $start) == $dates['Y'])
 				{
-					$ratio = 1 - date('z', $start) / (366 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1 
+					$ratio = 1 - date('z', $start) / (365 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1 
 					$text  = date('Y-m-d', $start);
 				}
 				else
@@ -299,7 +301,7 @@ class Item extends \BaseModel {
 				// ended this yr
 				if ($end && (date('Y', $end) == $dates['Y']))
 				{
-					$ratio += $ratio ? (date('z', $end) + 1)/(366 + date('L')) - 1 : 0;
+					$ratio += $ratio ? (date('z', $end) + 1)/(365 + date('L')) - 1 : 0;
 					$text  .= date('Y-m-d', $end);
 				}
 				else

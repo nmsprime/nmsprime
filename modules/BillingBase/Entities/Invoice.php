@@ -333,28 +333,24 @@ class Invoice extends \BaseModel{
 	{
 		$err_msg = '';
 
-		if (!$account)
-			$err_msg .= 'Missing account data for Invoice ('.$this->data['contract_id'].')';
+		if (!$account) {
+			$err_msg = 'Missing account data for Invoice ('.$this->data['contract_id'].')';
+			ChannelLog::error('billing', $err_msg);
+			throw new Exception($err_msg);
+		}
 
-		if (!$account->template_invoice || !$account->template_cdr)
-		{
-			$err_msg .= $err_msg ? '; ' : '';
-			$err_msg .= 'Missing SepaAccount specific templates for Invoice or CDR';
+		if (!$account->template_invoice) {
+			$err_msg = 'Missing SepaAccount specific templates for Invoice';
+			ChannelLog::error('billing', $err_msg);
+			throw new Exception($err_msg);
 		}
 
 		$company = $account->company;
 
-		if (!$company || !$company->logo)
-		{
-			$err_msg .= $err_msg ? '; ' : '';
+		if (!$company || !$company->logo) {
 			$err_msg = $company ? "Missing Company's Logo ($company->name)" : 'No Company assigned to Account '.$account->name;
-		}
-
-		if ($err_msg)
-		{
-			ChannelLog::error('billing', $err_mgs);
-			$this->error_flag = true;
-			return false;
+			ChannelLog::error('billing', $err_msg);
+			throw new Exception($err_msg);
 		}
 
 		$this->data['company_account_institute'] = $account->institute;
