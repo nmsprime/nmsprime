@@ -35,7 +35,7 @@ class ItemController extends \BaseController {
 
 		$cnt[0] = null;
 		// 	$b[date('Y-m-01', strtotime("now +$i months"))] = date('Y-m', strtotime("now +$i months"));
-		for ($i=1; $i < 10; $i++)
+		for ($i=1; $i < 99; $i++)
 			$cnt[$i] = $i;
 
 

@@ -68,6 +68,8 @@ class Item extends \BaseModel {
 			}
 		}
 
+		$count = $this->count && $this->count != 1 ? "$this->count x " : '';
+
 		/* Evaluate Colours
 		 	* green: it will be considered for next accounting cycle
 		 	* blue:  new item - not yet considered for settlement run
@@ -80,7 +82,7 @@ class Item extends \BaseModel {
 		return ['index' => [$this->product->name, $start, $end],
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
-		        'header' => $this->product->name.$start.$start_fixed.$end.$end_fixed];
+		        'header' => $count.$this->product->name.$start.$start_fixed.$end.$end_fixed];
 	}
 
 	public function view_belongs_to ()
