@@ -70,7 +70,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		if (\App::runningInConsole())
 		{
-			Log::info('billing', ' #####    Start Accounting Command from Console   #####');
+			Log::debug('billing', ' #####    Start Accounting Command from Console   #####');
 			// create/update settlementrun model when we run from console
 			$sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->get()->all();
 
@@ -90,7 +90,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		}
 		else
 		{
-			Log::info('billing', ' #####    Start Accounting Command via GUI   #####');
+			Log::debug('billing', ' #####    Start Accounting Command via GUI   #####');
 			$settlementrun_id = SettlementRun::orderBy('id', 'desc')->get()->first()->id;
 			Log::debug('billing', 'SettlementRun already created through GUI');
 		}
@@ -136,18 +136,18 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 			// Skip invalid contracts
 			if (!$c->check_validity('yearly') && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
-				Log::info('billing', 'Contract '.$c->number.' is invalid for current year', [$c->id]);
+				Log::info('billing', "Contract $c->number [$c->id] is invalid for current year");
 				continue;
 			}
 
 			if (!$c->create_invoice) {
-				Log::info('billing', 'Create invoice for Contract '.$c->number.' is off', [$c->id]);
+				Log::info('billing', "Create invoice for Contract $c->number [$c->id] is off");
 				continue;
 			}
 
 			if(!$c->costcenter) {
-				Log::error('billing', 'Contract '.$c->number.' has no CostCenter assigned - Stop execution for this contract', [$c->id]);
-				throw new Exception("Contract $c->number has not CostCenter assigned", 1);
+				Log::error('billing', "Contract $c->number [$c->id] has no CostCenter assigned - Stop execution");
+				throw new Exception("Contract $c->number [$c->id] has no CostCenter assigned", 1);
 				continue;
 			}
 
@@ -164,7 +164,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			{
 				// skip items that are related to a deleted product
 				if (!isset($item->product)) {
-					Log::warning('billing', 'Product '.$item->accounting_text.' was deleted', [$c->id]);
+					Log::warning('billing', "Product $item->accounting_text was deleted", [$c->id]);
 					continue;
 				}
 
@@ -210,7 +210,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			$mandate = $c->get_valid_mandate();
 
 			if (!$mandate)
-				Log::notice('billing', 'Contract '.$c->number.' has no valid sepa mandate', [$c->id]);
+				Log::info('billing', "Contract $c->number [$c->id] has no valid sepa mandate");
 
 
 			// Add Call Data Records - calculate charge and count
@@ -485,7 +485,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		{
 			if (substr($pn->username, 0, 1) != '0') {
 				// can be a poorly disabled testnumber -> discard
-				Log::warning('billing', "Username of Phonenumber not in correct format [".$pn->username."]");
+				Log::warning('billing', "Username [$pn->username] of Phonenumber [$pn->id] not in correct format");
 				continue;
 			}
 
@@ -514,7 +514,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				}
 
 				if ($logged != $calling_number) {
-					Log::warning('billing', "Calling Number [$calling_number] does not exist - but customer number neither!");
+					Log::warning('billing', "Calling Number [$calling_number] does not exist - but customer number [$customer_nr] neither!");
 					$logged = $calling_number;
 				}
 				continue;

@@ -123,19 +123,17 @@ class SettlementRunController extends \BaseController {
 	 */
 	public static function directory_cleanup($dir, $settlementrun = null)
 	{
-		$logger = new BillingLogger;
-
 		$start  = $settlementrun ? date('Y-m-01 00:00:00', strtotime($settlementrun->created_at)) : date('Y-m-01');
 		$end 	= $settlementrun ? date('Y-m-01 00:00:00', strtotime('+1 month', strtotime($settlementrun->created_at))) : date('Y-m-01', strtotime('+1 month'));
 
 		// remove all entries of this month permanently (if already created)
 		$ret = AccountingRecord::whereBetween('created_at', [$start, $end])->forceDelete();
 		if ($ret)
-			$logger->addInfo('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
+			ChannelLog::debug('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 
 		// Delete all invoices
 		$logmsg = 'Remove all already created Invoices and Accounting Files for this month';
-		$logger->addDebug($logmsg);	echo "$logmsg\n";
+		ChannelLog::debug($logmsg);	echo "$logmsg\n";
 
 		if (!$settlementrun)
 			Invoice::delete_current_invoices();
