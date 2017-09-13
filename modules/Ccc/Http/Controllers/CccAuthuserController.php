@@ -194,7 +194,7 @@ class CccAuthuserController extends \BaseController {
 		$this->data['contract_housenumber'] = $contract->house_number;
 		$this->data['contract_zip'] 	  = $contract->zip;
 		$this->data['contract_city'] 	  = $contract->city;
-		$this->data['contract_address']   = ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . ($contract->company ? "$contract->company\\\\" : '') . $contract->street.' '.$contract->house_number . "\\\\$contract->zip $contract->city";
+		$this->data['contract_address']   = ($contract->company ? "$contract->company\\\\" : '') . ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . $contract->street.' '.$contract->house_number . "\\\\$contract->zip $contract->city";
 		$this->data['login_name'] 		  = $login_data['login_name'];
 		$this->data['psw'] 				  = $login_data['password'];
 
@@ -209,7 +209,7 @@ class CccAuthuserController extends \BaseController {
 			return;
 		}
 
-		$sepa_account = $costcenter->sepa_account;
+		$sepa_account = $costcenter->sepaaccount;
 
 		if (!is_object($sepa_account))
 		{
@@ -222,7 +222,6 @@ class CccAuthuserController extends \BaseController {
 		$this->data['company_account_iban'] = $sepa_account->iban;
 		$this->data['company_account_bic']  = $sepa_account->bic;
 
-
 		$company = $sepa_account->company;
 
 		if (!is_object($company))
@@ -234,7 +233,6 @@ class CccAuthuserController extends \BaseController {
 		$this->data = array_merge($this->data, $company->template_data());
 
 		$this->data['company_logo'] = storage_path('app/config/billingbase/logo/'.$this->data['company_logo']);
-
 	}
 
 
