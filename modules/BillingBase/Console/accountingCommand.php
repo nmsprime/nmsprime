@@ -36,7 +36,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 *
 	 * @var string
 	 */
-	protected $name 		= 'billing:accounting';
+	public $name 		= 'billing:accounting';
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
 	protected $dir 			= 'data/billingbase/accounting/'; 				// relative to storage/app/ - Note: completed by month in constructor!

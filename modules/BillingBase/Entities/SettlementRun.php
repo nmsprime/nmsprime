@@ -110,9 +110,12 @@ class SettlementRun extends \BaseModel {
 
 	public function view_has_many()
 	{
-		$ret['Files']['SettlementRun']['view']['view'] = 'billingbase::settlementrun';
-		$ret['Files']['SettlementRun']['view']['vars'] = $this->accounting_files();
+		$ret['Files']['Files']['view']['view'] = 'billingbase::settlementrun';
+		$ret['Files']['Files']['view']['vars'] = $this->accounting_files();
 
+		$ret['Files']['Logs']['view']['view'] = 'billingbase::logs';
+		$ret['Files']['Logs']['view']['vars']['md_size'] = 12;
+		$ret['Files']['Logs']['view']['vars']['logs'] =  \Modules\BillingBase\Http\Controllers\SettlementRunController::get_logs($this->updated_at);
 		return $ret;
 	}
 
@@ -144,25 +147,19 @@ class SettlementRun extends \BaseModel {
 	 */
 	public function accounting_files()
 	{
-		$a = $b = [];
+		if (!is_dir($this->get_files_dir()))
+			return [];
 
-		if (is_dir($this->get_files_dir()))
+		$files = \File::allFiles($this->get_files_dir());
+
+		//order files
+		foreach ($files as $file)
 		{
-			$files = \File::allFiles($this->get_files_dir());
-
-			//order files
-			foreach ($files as $file)
-			{
-				if (!$file->getRelativePath())
-					$a[] = $file;
-				else
-					$b[] = $file;
-			}
-
-			return array_merge($a,$b);
+			$sepaacc = $file->getRelativePath() ? : \App\Http\Controllers\BaseViewController::translate_label('General');
+			$arr[$sepaacc][] = $file;
 		}
 
-		return [];
+		return $arr;
 	}
 
 

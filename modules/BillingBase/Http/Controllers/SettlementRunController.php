@@ -6,8 +6,13 @@ use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\SettlementRun;
 use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Console\accountingCommand;
+use \Monolog\Logger;
+use ChannelLog;
 
 class SettlementRunController extends \BaseController {
+
+	protected $edit_left_md_size = 6;
+	protected $edit_right_md_size = 6;
 
 	public function view_form_fields($model = null)
 	{
@@ -54,19 +59,88 @@ class SettlementRunController extends \BaseController {
 	}
 
 
-	/*
-	 * Extends generic edit function from Basecontroller for own view - Removes Rerun Button when next month has begun
+	/**
+	 * Extends generic edit function from Basecontroller for own view
+	 	* Removes Rerun Button when next month has begun
+	 	* passes logs dependent of execution status of accountingCommand
+	 *
+	 * @return View
 	 */
 	public function edit($id)
 	{
+		$logs = [];
 		$job = \DB::table('jobs')->find(\Session::get('job_id'));
 
 		$finished = $job ? false : true;
 
-		$obj = SettlementRun::find($id);
-		$bool = (date('m') == $obj->created_at->__get('month')) && !$obj->verified;
+		$sr = SettlementRun::find($id);
+		$bool = (date('m') == $sr->created_at->__get('month')) && !$sr->verified;
 
-		return parent::edit($id)->with('rerun_button', $bool)->with('finished', $finished);
+		$failed_jobs = \DB::table('failed_jobs')->get();
+		foreach ($failed_jobs as $job)
+		{
+			$obj = unserialize((json_decode($job->payload)->data->command));
+			if ($obj->name == 'billing:accounting')
+			{
+				\Artisan::call('queue:forget', ['' => $job->id]);
+				$logs = self::get_logs(strtotime("-2 minute", strtotime($job->failed_at)), Logger::ERROR);
+				break;
+			}
+		}
+
+		// get execution logs if job has finished successfully - show error logs otherwise - show nothing during execution
+		$logs = !$logs && $finished ? self::get_logs(strtotime("-20 seconds", strtotime($sr->updated_at)) : $logs;
+
+		return parent::edit($id)->with('rerun_button', $bool)->with('finished', $finished)->with('logs', $logs);
+	}
+
+
+	/**
+	 * Get Logs from Parent Function from billing.log and Format for table view
+	 *
+	 * @param date_time 	Unix Timestamp  	Return only Log entries after this timestamp
+	 * @param severity_lvl 	Enum 				Minimum Severity Level to show
+	 * @return Array 		[timestamp => [color, type, message], ...]
+	 */
+	public static function get_logs($date_time, $severity_lvl = Logger::INFO)
+	{
+		$logs = parent::get_logs(storage_path('logs/billing.log'), $severity_lvl);
+		$old = [];
+
+		foreach ($logs as $key => $string)
+		{
+			$timestamp = substr($string, 1, 19);
+			$type = substr($string, $x = strpos($string, 'billing.') + 8, $y = strpos($string, ': ') - $x);
+
+			switch ($type)
+			{
+				case 'CRITICAL':
+				case 'ALERT':
+				case 'ERROR': $bsclass = 'danger'; break;
+				case 'WARNING': $bsclass = 'warning'; break;
+				case 'INFO': $bsclass = 'info'; break;
+				default: $bsclass = ''; break;
+			}
+
+			$arr = array(
+				'color' 	=> $bsclass,
+				'time' 		=> $timestamp,
+				'type' 		=> $type,
+				'message' 	=> substr($string, $x + $y + 2),
+				);
+
+			if ($old == $arr)
+				continue;
+
+			if (strtotime($timestamp) < $date_time)
+				break;
+
+			$filtered[] = $arr;
+
+			$old = $arr;
+		}
+
+		return $filtered;
 	}
 
 
