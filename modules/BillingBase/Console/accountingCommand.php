@@ -135,9 +135,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				echo ($i + 1)."/$num [$c->id]\r";
 
 			// Skip invalid contracts
-			if (!$c->check_validity() && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
-				Log::info('billing', 'Contract '.$c->number.' has no valid dates for this month', [$c->id]);
-				continue;				
+			if (!$c->check_validity('yearly') && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
+				Log::info('billing', 'Contract '.$c->number.' is invalid for current year', [$c->id]);
+				continue;
 			}
 
 			if (!$c->create_invoice) {
