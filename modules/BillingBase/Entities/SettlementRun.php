@@ -115,7 +115,7 @@ class SettlementRun extends \BaseModel {
 
 		$ret['Files']['Logs']['view']['view'] = 'billingbase::logs';
 		$ret['Files']['Logs']['view']['vars']['md_size'] = 12;
-		$ret['Files']['Logs']['view']['vars']['logs'] =  \Modules\BillingBase\Http\Controllers\SettlementRunController::get_logs($this->updated_at);
+		$ret['Files']['Logs']['view']['vars']['logs'] =  \Modules\BillingBase\Http\Controllers\SettlementRunController::get_logs($this->updated_at->__get('timestamp'));
 		return $ret;
 	}
 

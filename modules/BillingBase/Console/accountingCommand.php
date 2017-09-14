@@ -478,7 +478,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			->join('modem', 'modem.id', '=', 'mta.modem_id')
 			->join('contract', 'contract.id', '=', 'modem.contract_id')
 			->where('phonenumber.deleted_at', '=', null)
-			->select('modem.contract_id', 'contract.number', 'phonenumber.username')
+			->select('modem.contract_id', 'contract.number', 'phonenumber.username', 'phonenumber.id')
 			->orderBy('modem.contract_id')->get();
 
 		foreach ($phonenumbers_db as $key => $pn)
@@ -589,7 +589,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			else
 			{
 				// there is a phonenr entry in csv that doesnt exist in our db - this case should never happen
-				Log::error('billing', 'Parse CDR.csv: Call Data Record with Phonenr that doesnt exist in the Database - Phonenr deleted?');
+				Log::error('billing', "Parse CDR.csv: Call Data Record with Phonenr [$phonenr1] that doesnt exist in the Database - Phonenr deleted?");
 			}
 
 		}

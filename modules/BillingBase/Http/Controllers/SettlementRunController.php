@@ -70,7 +70,6 @@ class SettlementRunController extends \BaseController {
 	{
 		$logs = [];
 		$job = \DB::table('jobs')->find(\Session::get('job_id'));
-
 		$finished = $job ? false : true;
 
 		$sr = SettlementRun::find($id);
@@ -82,14 +81,14 @@ class SettlementRunController extends \BaseController {
 			$obj = unserialize((json_decode($job->payload)->data->command));
 			if ($obj->name == 'billing:accounting')
 			{
-				\Artisan::call('queue:forget', ['' => $job->id]);
-				$logs = self::get_logs(strtotime("-2 minute", strtotime($job->failed_at)), Logger::ERROR);
+				\Artisan::call('queue:forget', ['id' => $job->id]);
+				$logs = self::get_logs(strtotime('-2 minutes', strtotime($job->failed_at)), Logger::ERROR);
 				break;
 			}
 		}
 
 		// get execution logs if job has finished successfully - show error logs otherwise - show nothing during execution
-		$logs = !$logs && $finished ? self::get_logs(strtotime("-20 seconds", strtotime($sr->updated_at)) : $logs;
+		$logs = !$logs && $finished ? self::get_logs($sr->updated_at->subSeconds(20)->__get('timestamp')) : $logs;
 
 		return parent::edit($id)->with('rerun_button', $bool)->with('finished', $finished)->with('logs', $logs);
 	}
@@ -105,7 +104,7 @@ class SettlementRunController extends \BaseController {
 	public static function get_logs($date_time, $severity_lvl = Logger::INFO)
 	{
 		$logs = parent::get_logs(storage_path('logs/billing.log'), $severity_lvl);
-		$old = [];
+		$old = $filtered = [];
 
 		foreach ($logs as $key => $string)
 		{
@@ -131,7 +130,6 @@ class SettlementRunController extends \BaseController {
 
 			if ($old == $arr)
 				continue;
-
 			if (strtotime($timestamp) < $date_time)
 				break;
 
@@ -203,11 +201,11 @@ class SettlementRunController extends \BaseController {
 		// remove all entries of this month permanently (if already created)
 		$ret = AccountingRecord::whereBetween('created_at', [$start, $end])->forceDelete();
 		if ($ret)
-			ChannelLog::debug('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
+			ChannelLog::debug('billing', 'Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 
 		// Delete all invoices
 		$logmsg = 'Remove all already created Invoices and Accounting Files for this month';
-		ChannelLog::debug($logmsg);	echo "$logmsg\n";
+		ChannelLog::debug('billing', $logmsg);	echo "$logmsg\n";
 
 		if (!$settlementrun)
 			Invoice::delete_current_invoices();
