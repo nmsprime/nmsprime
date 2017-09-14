@@ -113,9 +113,10 @@ class SettlementRun extends \BaseModel {
 		$ret['Files']['Files']['view']['view'] = 'billingbase::settlementrun';
 		$ret['Files']['Files']['view']['vars'] = $this->accounting_files();
 
+		// NOTE: logs are fetched in SettlementRunController::edit
 		$ret['Files']['Logs']['view']['view'] = 'billingbase::logs';
 		$ret['Files']['Logs']['view']['vars']['md_size'] = 12;
-		$ret['Files']['Logs']['view']['vars']['logs'] =  \Modules\BillingBase\Http\Controllers\SettlementRunController::get_logs($this->updated_at->__get('timestamp'));
+
 		return $ret;
 	}
 

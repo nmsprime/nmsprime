@@ -9,15 +9,17 @@
 		</tr>
 	</thead>
 	<tbody>
-		@foreach($logs as $row)
-			<tr class="{{ $row['color'] }}">
-				<td></td>
-				<?php unset($row['color']) ?>
-					
-				@foreach($row as $cell)
-					<td>{{ $cell }}</td>
-				@endforeach
-			</tr>
-		@endforeach
+		@if (isset($logs))
+			@foreach($logs as $row)
+				<tr class="{{ $row['color'] }}">
+					<td></td>
+					<?php unset($row['color']) ?>
+
+					@foreach($row as $cell)
+						<td>{{ $cell }}</td>
+					@endforeach
+				</tr>
+			@endforeach
+		@endif
 	</tbody>
 </table>

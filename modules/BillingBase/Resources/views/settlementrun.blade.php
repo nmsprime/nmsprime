@@ -1,6 +1,5 @@
 @if (isset($relation['view']['vars']))
 
-	@if ($finished)
 
 		@DivOpen(3)
 		@DivClose()
@@ -14,6 +13,10 @@
 
 		<br>
 
+	@if (\Session::get('job_id'))
+		{{-- accountingCommand running --}}
+		<div class="alert alert-warning fade in m-b-15">{{ trans('messages.accCmd_processing') }}</div>
+	@else
 		@foreach($relation['view']['vars'] as $key => $files)
 			@DivOpen(6)
 				<table class="table table-bordered">
@@ -24,15 +27,30 @@
 				</table>
 			@DivClose()
 		@endforeach
-
-	@else
-		{{-- accountingCommand still running --}}
-		<div class="alert alert-warning fade in m-b-15">{{ trans('messages.accCmd_processing') }}</div>
-
-		{{-- Simply refresh every 10 sec - TODO: Replace by Events --}}
-		<META HTTP-EQUIV="refresh" CONTENT="10">
 	@endif
 
 @endif
 
 
+@section ('javascript_extra')
+
+	@if (\Session::get('job_id'))
+		<script type="text/javascript">
+
+			$(document).ready(function()
+			{
+				setTimeout(function()
+				{
+					var source = new EventSource("<?php echo route('SettlementRun.check_state'); ?>");
+					source.onmessage = function(e)
+					{
+						if (e.data == 'reload')
+							location.reload();
+					}
+
+				}, 500);
+			});
+		</script>
+	@endif
+
+@stop

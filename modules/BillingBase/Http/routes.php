@@ -20,4 +20,6 @@ BaseRoute::group([], function() {
 	BaseRoute::resource('BillingBase', 'Modules\BillingBase\Http\Controllers\BillingBaseController');
 	BaseRoute::resource('SettlementRun', 'Modules\BillingBase\Http\Controllers\SettlementRunController');
 	Route::get('SettlementRun/download/{id}/{key}', ['as' => 'Settlement.download', 'uses' => 'Modules\BillingBase\Http\Controllers\SettlementRunController@download']);
+	Route::get('SettlementRun/download/{id}/{key}', ['as' => 'Settlement.download', 'uses' => 'Modules\BillingBase\Http\Controllers\SettlementRunController@download']);
+	Route::get('SettlementRun/check_state', ['as' => 'SettlementRun.check_state', 'uses' => 'Modules\BillingBase\Http\Controllers\SettlementRunController@check_state']);
 });

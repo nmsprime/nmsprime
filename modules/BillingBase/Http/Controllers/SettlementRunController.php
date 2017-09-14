@@ -68,29 +68,85 @@ class SettlementRunController extends \BaseController {
 	 */
 	public function edit($id)
 	{
-		$logs = [];
-		$job = \DB::table('jobs')->find(\Session::get('job_id'));
-		$finished = $job ? false : true;
-
-		$sr = SettlementRun::find($id);
+		$logs = $failed_jobs = [];
+		$sr   = SettlementRun::find($id);
 		$bool = (date('m') == $sr->created_at->__get('month')) && !$sr->verified;
+		// $job = \DB::table('jobs')->find(\Session::get('job_id'));
 
+		// get error logs in case job failed and remove failed job from table
 		$failed_jobs = \DB::table('failed_jobs')->get();
-		foreach ($failed_jobs as $job)
+		foreach ($failed_jobs as $failed_job)
 		{
-			$obj = unserialize((json_decode($job->payload)->data->command));
+			$obj = unserialize((json_decode($failed_job->payload)->data->command));
 			if ($obj->name == 'billing:accounting')
 			{
-				\Artisan::call('queue:forget', ['id' => $job->id]);
-				$logs = self::get_logs(strtotime('-2 minutes', strtotime($job->failed_at)), Logger::ERROR);
+				\Artisan::call('queue:forget', ['id' => $failed_job->id]);
+				// show all logs made from 2 min before job failed
+				$logs = self::get_logs(strtotime('-2 minutes', strtotime($failed_job->failed_at)), Logger::ERROR);
 				break;
 			}
 		}
 
-		// get execution logs if job has finished successfully - show error logs otherwise - show nothing during execution
-		$logs = !$logs && $finished ? self::get_logs($sr->updated_at->subSeconds(20)->__get('timestamp')) : $logs;
+		// get execution logs if job has finished successfully - (show error logs otherwise - show nothing during execution)
+		$logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->subSeconds(20)->__get('timestamp')) : $logs;
 
-		return parent::edit($id)->with('rerun_button', $bool)->with('finished', $finished)->with('logs', $logs);
+		return parent::edit($id)->with('rerun_button', $bool)->with('logs', $logs);
+	}
+
+
+	/**
+	 * Check State of Job "accountingCommand"
+	 * Send Reload info when job has finished
+	 *
+	 * @return 	response 	Stream
+	 */
+	public function check_state()
+	{
+		\Log::debug(__CLASS__ .'::'. __FUNCTION__);
+		$response = new \Symfony\Component\HttpFoundation\StreamedResponse(function() {
+
+			$job = true;
+			while ($job)
+			{
+				$job = \DB::table('jobs')->find(\Session::get('job_id'));
+				// \Log::debug('Session job_id: '.\Session::get('job_id'));
+				sleep(3);
+			}
+
+			\Log::debug('SettlementRun Job ['. \Session::get('job_id').'] stopped');
+
+			\Session::remove('job_id');
+
+			// wait for job to land in failed jobs table - if it failed - wait max 20 seconds
+			$i 		 = 10;
+			$success = true;
+
+			while ($i && $success)
+			{
+				$i--;
+				$failed_jobs = \DB::table('failed_jobs')->get();
+				foreach ($failed_jobs as $job)
+				{
+					$obj = unserialize((json_decode($job->payload)->data->command));
+					if ($obj->name == 'billing:accounting') {
+						$success = false;
+						break;
+					}
+				}
+
+				sleep(2);
+			}
+
+			$success ? \Log::info('Settlementrun finished successfully') : \Log::error('Settlementrun failed!');
+
+			\Log::debug('Reload Settlementrun Edit View');
+			echo "data: reload\n\n";
+			ob_flush(); flush();
+		});
+
+		$response->headers->set('Content-Type', 'text/event-stream');
+
+		return $response;
 	}
 
 
