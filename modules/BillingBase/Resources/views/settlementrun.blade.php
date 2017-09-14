@@ -17,12 +17,12 @@
 		{{-- accountingCommand running --}}
 		<div class="alert alert-warning fade in m-b-15">{{ trans('messages.accCmd_processing') }}</div>
 	@else
-		@foreach($relation['view']['vars'] as $key => $files)
+		@foreach($relation['view']['vars'] as $sepaacc => $files)
 			@DivOpen(6)
 				<table class="table table-bordered">
-				<th class="text-center active"> {{ $key }} </th>
-				@foreach ($files as $file)
-					<tr><td class="text-center">{{ HTML::linkRoute('Settlement.download', $file->getFilename(), ['id' => $view_var->id, 'key' => $key]) }}</td></tr>
+				<th class="text-center active"> {{ $sepaacc }} </th>
+				@foreach ($files as $key => $file)
+					<tr><td class="text-center">{{ HTML::linkRoute('Settlement.download', $file->getFilename(), ['id' => $view_var->id, 'sepaacc' => $sepaacc, 'key' => $key]) }}</td></tr>
 				@endforeach
 				</table>
 			@DivClose()

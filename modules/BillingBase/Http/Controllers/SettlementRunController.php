@@ -88,6 +88,7 @@ class SettlementRunController extends \BaseController {
 		}
 
 		// get execution logs if job has finished successfully - (show error logs otherwise - show nothing during execution)
+		// NOTE: when SettlementRun gets verified the logs will disappear because timestamp is updated
 		$logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->subSeconds(20)->__get('timestamp')) : $logs;
 
 		return parent::edit($id)->with('rerun_button', $bool)->with('logs', $logs);
@@ -229,12 +230,12 @@ class SettlementRunController extends \BaseController {
 	/**
 	 * Download a billing file or all files as ZIP archive
 	 */
-	public function download($id, $key)
+	public function download($id, $sepaacc, $key)
 	{
 		$obj 	= SettlementRun::find($id);
 		$files  = $obj->accounting_files();
 
-		return response()->download($files[$key]->getRealPath());
+		return response()->download($files[$sepaacc][$key]->getRealPath());
 	}
 
 
