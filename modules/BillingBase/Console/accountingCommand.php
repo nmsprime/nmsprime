@@ -485,7 +485,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		{
 			if (substr($pn->username, 0, 1) != '0') {
 				// can be a poorly disabled testnumber -> discard
-				Log::warning('billing', "Username [$pn->username] of Phonenumber [$pn->id] not in correct format");
+				Log::warning('billing', "Username [$pn->username] of Phonenumber ID [$pn->id] not in correct format");
 				continue;
 			}
 
