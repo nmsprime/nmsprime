@@ -71,7 +71,12 @@ class SettlementRunController extends \BaseController {
 		$logs = $failed_jobs = [];
 		$sr   = SettlementRun::find($id);
 		$bool = (date('m') == $sr->created_at->__get('month')) && !$sr->verified;
-		// $job = \DB::table('jobs')->find(\Session::get('job_id'));
+
+		// delete Session job id if job is done in case someone broke the tcp connection (close tab/window) manually
+		if (\Session::get('job_id')) {
+			if (!\DB::table('jobs')->find(\Session::get('job_id')))
+				\Session::remove('job_id');
+		}
 
 		// get error logs in case job failed and remove failed job from table
 		$failed_jobs = \DB::table('failed_jobs')->get();
