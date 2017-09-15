@@ -206,6 +206,7 @@ class SettlementRunObserver
 		if (!$settlementrun->observer_enabled)
 			return;
 
+		// NOTE: Make sure that we use Database Queue Driver - See .env!
 		$job_id = \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
 		// \Artisan::call('billing:accounting', ['--debug' => 1]);
 		\Session::put('job_id', $job_id);

@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\BillingBase\Http\Controllers;
 
 use Modules\BillingBase\Entities\AccountingRecord;
@@ -40,7 +40,7 @@ class SettlementRunController extends \BaseController {
 		if (!isset($data['description']))
 		{
 			$data['description'] = '';
-			$data['verified'] = '';			
+			$data['verified'] = '';
 		}
 
 		return parent::prepare_input($data);
@@ -111,12 +111,17 @@ class SettlementRunController extends \BaseController {
 		\Log::debug(__CLASS__ .'::'. __FUNCTION__);
 		$response = new \Symfony\Component\HttpFoundation\StreamedResponse(function() {
 
+			// Make Sleeptime dependent of Contract count - min 2 sec
+			// $num = DB::table('contract')->where('deleted_at', '=', null)->count();
+			// $sleep = (int) pow($num/10, 1/3);
+			// $sleep = $sleep < 2 ? 2 : $sleep;
+
 			$job = true;
 			while ($job)
 			{
 				$job = \DB::table('jobs')->find(\Session::get('job_id'));
-				// \Log::debug('Session job_id: '.\Session::get('job_id'));
 				sleep(3);
+				// sleep($sleep);
 			}
 
 			\Log::debug('SettlementRun Job ['. \Session::get('job_id').'] stopped');
@@ -221,6 +226,7 @@ class SettlementRunController extends \BaseController {
 
 		if (\Input::has('rerun'))
 		{
+			// NOTE: Make sure that we use Database Queue Driver - See .env!
 			$job_id = $this->dispatch(new \Modules\BillingBase\Console\accountingCommand);
 			// \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
 			\Session::put('job_id', $job_id);
