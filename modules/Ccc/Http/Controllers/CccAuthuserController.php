@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\Ccc\Http\Controllers;
 
 use Modules\Ccc\Entities\Ccc;
@@ -37,7 +37,7 @@ class CccAuthuserController extends \BaseController {
 		// Company
 		'company_name'			=> '',
 		'company_street'		=> '',
-		'company_zip'			=> '',	
+		'company_zip'			=> '',
 		'company_city'			=> '',
 		'company_phone'			=> '',
 		'company_fax'			=> '',
@@ -160,7 +160,7 @@ class CccAuthuserController extends \BaseController {
 		switch ($ret)
 		{
 			case 0: break;
-			case 1: 
+			case 1:
 				Log::error("PdfLatex - Syntax error in tex template (misspelled placeholder?)", [$template_dir.$template_filename, $dir_path.$filename]);
 				return null;
 			case 127:
@@ -227,7 +227,7 @@ class CccAuthuserController extends \BaseController {
 		if (!is_object($company))
 		{
 			Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
-			return;			
+			return;
 		}
 
 		$this->data = array_merge($this->data, $company->template_data());

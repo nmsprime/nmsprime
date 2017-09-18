@@ -103,7 +103,7 @@ class Invoice extends \BaseModel{
 		// Company
 		'company_name'			=> '',
 		'company_street'		=> '',
-		'company_zip'			=> '',	
+		'company_zip'			=> '',
 		'company_city'			=> '',
 		'company_phone'			=> '',
 		'company_fax'			=> '',
@@ -164,7 +164,7 @@ class Invoice extends \BaseModel{
 	public function __construct($attributes = array())
 	{
 		$this->filename_invoice = self::_get_invoice_filename();
-		
+
 		parent::__construct($attributes);
 	}
 
@@ -227,7 +227,7 @@ class Invoice extends \BaseModel{
 
 
 
-	public function add_item($item) 
+	public function add_item($item)
 	{
 		// $count = $item->count ? $item->count : 1;
 		$price  = sprintf("%01.2f", round($item->charge/$item->count, 2));
@@ -262,10 +262,10 @@ class Invoice extends \BaseModel{
 		$this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$tax.$this->currency.'\\\\';
 		$this->data['table_summary'] .= '~ & \textbf{Rechnungsbetrag:} & ~ & \textbf{'.$total.$this->currency.'}\\\\';
 
-		$this->data['table_sum_charge_net']  	= $net; 
+		$this->data['table_sum_charge_net']  	= $net;
 		$this->data['table_sum_tax_percent'] 	= $tax_percent;
 		$this->data['table_sum_tax'] 			= $tax;
-		$this->data['table_sum_charge_total'] 	= $total; 
+		$this->data['table_sum_charge_total'] 	= $total;
 
 
 		// make transfer reason (Verwendungszweck)
@@ -435,7 +435,7 @@ class Invoice extends \BaseModel{
 		$this->_create_pdfs();
 
 		system('chown -R apache '.$dir);
-		
+
 	}
 
 
@@ -474,7 +474,7 @@ class Invoice extends \BaseModel{
 	{
 		if ($this->error_flag) {
 			ChannelLog::error('billing', "Missing Data from SepaAccount or Company to Create $type", [$this->data['contract_id']]);
-			return -2;			
+			return -2;
 		}
 
 		if (!$template = file_get_contents($this->_get_abs_template_path($type))) {
@@ -506,7 +506,7 @@ class Invoice extends \BaseModel{
 			// escape underscores for pdflatex to work
 			if (strpos($string, 'logo') === false)
 				$string = str_replace('_', '\\_', $string);
-			
+
 			$template = str_replace('{'.$key.'}', $string, $template);
 		}
 
@@ -537,7 +537,7 @@ class Invoice extends \BaseModel{
 				switch ($ret)
 				{
 					case 0: break;
-					case 1: 
+					case 1:
 						ChannelLog::error('billing', "PdfLatex: Syntax Error in filled tex template!");
 						return null;
 					case 127:
@@ -592,7 +592,7 @@ class Invoice extends \BaseModel{
 		$cdr_fname 		= self::_get_cdr_filename().'.pdf';
 
 		$query = Invoice::where('filename', '=', $invoice_fname)->orWhere('filename', '=', $cdr_fname)->whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
-		
+
 		$invoices = $query->get();
 
 		// Delete PDFs
@@ -610,7 +610,7 @@ class Invoice extends \BaseModel{
 
 	/**
 	 * Remove all old Invoice & CDR DB-Entries & Files as it's prescribed by law
-	 	* Germany: CDRs 6 Months (§97 TKG) - Invoices ?? - 
+	 	* Germany: CDRs 6 Months (§97 TKG) - Invoices ?? -
 	 *
 	 * NOTE: This can be different from country to country
 	 * TODO: Remove old Invoices

@@ -129,7 +129,7 @@ class ProvMonController extends \BaseController {
 			$files = glob('/var/log/messages-*');
 			$file  = max($files);
 
-			exec ("grep -i ".$search.' '.$file.' '.$grep_pipes, $log);
+			exec ("egrep -i ".$search.' '.$file.' '.$grep_pipes, $log);
 		}
 
 		return $log;
