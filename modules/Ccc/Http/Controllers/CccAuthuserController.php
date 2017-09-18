@@ -245,10 +245,20 @@ class CccAuthuserController extends \BaseController {
 
 	/**
 	 * Shows the invoice history for the Customer
+	 *
+	 * @return View
 	 */
 	public function show()
 	{
 		$invoices = \Auth::guard('ccc')->user()->contract->invoices;
+
+		// dont show unverified invoices
+		foreach ($invoices as $key => $invoice)
+		{
+			if (!$invoice->settlementrun->verified)
+				unset($invoices[$key]);
+		}
+
 		$emails = \PPModule::is_active('mail') ? \Auth::guard('ccc')->user()->contract->emails : collect();
 
 		return \View::make('ccc::index', compact('invoices','emails'));
@@ -268,7 +278,7 @@ class CccAuthuserController extends \BaseController {
 		$user 	 = \Auth::guard('ccc')->user();
 
 		// check that only allowed files are downloadable - invoice must belong to customer and settlmentrun must be verified
-		if (!$invoice || $invoice->contract_id != $user->contract_id || !SettlementRun::find($invoice->settlementrun_id)->verified)
+		if (!$invoice || $invoice->contract_id != $user->contract_id || !$invoice->settlementrun->verified)
 			throw new \App\Exceptions\AuthExceptions('Permission Denied');
 
 		Log::info($user->first_name.' '.$user->last_name.' downloaded invoice '.$invoice->filename.' - id: '.$invoice->id);

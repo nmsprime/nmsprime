@@ -51,6 +51,10 @@ class Invoice extends \BaseModel{
 		return $this->belongsTo('Modules\ProvBase\Entities\Contract');
 	}
 
+	public function settlementrun()
+	{
+		return $this->belongsTo('Modules\BillingBase\Entities\SettlementRun');
+	}
 
 	/**
 	 * Init Observer
