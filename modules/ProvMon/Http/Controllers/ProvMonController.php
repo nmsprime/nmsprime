@@ -61,7 +61,7 @@ class ProvMonController extends \BaseController {
 	 */
 	public function analyses($id)
 	{
-		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = null;
+		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = null;
 		$modem 	  = $this->modem ? $this->modem : Modem::find($id);
 		$view_var = $modem; // for top header
 		$hostname = $modem->hostname.'.'.$this->domain_name;
@@ -87,11 +87,13 @@ class ProvMonController extends \BaseController {
 
 		// Realtime Measure - this takes the most time
 		// TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
-		if ($online)
-		{
+		if ($online) {
 			// preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
 			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
 			$realtime['forecast'] = 'TODO';
+			// get eventlog table
+			if(!array_key_exists('SNMP-Server not reachable', $realtime['measure']))
+				$eventlog = $modem->get_eventlog();
 		}
 
 		// Log dhcp (discover, ...), tftp (configfile or firmware)
@@ -105,7 +107,7 @@ class ProvMonController extends \BaseController {
 		$panel_right = $this->prep_sidebar($id);
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip')));
 	}
 
 
