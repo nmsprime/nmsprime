@@ -310,7 +310,7 @@ class ProvMonController extends \BaseController {
 	 */
 	public function mta_analysis($id)
 	{
-		$ping = $lease = $log = $dash = $realtime = null;
+		$ping = $lease = $log = $dash = $realtime = $configfile = null;
 		$modem 	  = $this->modem ? $this->modem : Modem::find($id);
 		$view_var = $modem; // for top header
 		$type = 'MTA';
@@ -333,6 +333,9 @@ class ProvMonController extends \BaseController {
 		$lease['text'] = $this->search_lease("mta-".$mta->id);
 		$lease = $this->validate_lease($lease, $type);
 
+		// configfile
+		$configfile = file("/tftpboot/mta/$mta->hostname.conf");
+
 		// log
 		$ip = gethostbyname($mta->hostname);
 		$ip = $mta->hostname == $ip ? null : $ip;
@@ -344,7 +347,7 @@ class ProvMonController extends \BaseController {
 end:
 		$panel_right = $this->prep_sidebar($id);
 
-		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'configfile', 'view_var')));
 	}
 
 
