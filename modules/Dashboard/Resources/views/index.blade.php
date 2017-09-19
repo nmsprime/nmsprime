@@ -22,9 +22,10 @@
 	@include('dashboard::widgets.date')
 @stop
 
-@section ('quickstart')
-	@include('dashboard::widgets.quickstart')
-@stop
+{{--@section ('quickstart')--}}
+    {{--@include('dashboard::widgets.quickstart')--}}
+{{--@stop--}}
+
 
 <!-- Panels -->
 @section ('contract_analytics')
@@ -35,23 +36,16 @@
 	@include('dashboard::panels.income_analytics')
 @stop
 
+{{--@section ('quickstart')--}}
+    {{--@include('dashboard::panels.quickstart')--}}
+{{--@stop--}}
+
 @section('content')
 	<div class="col-md-12">
 
 		<h1 class="page-header">{{ $title }}</h1>
 
 		<div class="row">
-			{{-- Quickstart --}}
-			@DivOpen(6)
-				@include ('bootstrap.widget',
-					array (
-						'content' => 'quickstart',
-						'widget_icon' => 'addressbook-o',
-						'widget_bg_color' => 'white',
-					)
-				)
-			@DivClose()
-
 			{{-- Contracts --}}
 			@DivOpen(3)
 				@include ('bootstrap.widget',
@@ -116,16 +110,22 @@
 			@DivClose()
 		</div>
 
-		<br><br>
-
 		<div class="row">
-			@if ($contracts > 0)
+            {{-- Quickstart --}}
+            @DivOpen(3)
+                @include('dashboard::widgets.quickstart')
+            @DivClose()
+        </div>
 
+        <div class="row">
+			{{-- Contract chart --}}
+            @if ($contracts > 0)
 				@DivOpen(8)
 					@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => 'Contract Analytics', 'md' => 12, 'height' => 'auto'))
 				@DivClose()
 			@endif
 
+			{{-- Income chart --}}
 			@if (\PPModule::is_active('billingbase'))
 				@if ($allowed_to_see['accounting'] === true)
 					@if (isset($income['total']))
@@ -171,7 +171,15 @@
                 options: {
                     legend: {
                         display: false
-                    }
+                    },
+                    maintainAspectRatio: false,
+					scales: {
+						yAxes: [{
+							ticks: { 
+								beginAtZero: true 
+							}
+						}]
+					}
                 }
             });
         }
@@ -201,7 +209,15 @@
                 options: {
                     legend: {
                         display: false
-                    }
+                    },
+                    maintainAspectRatio: false,
+					scales: {
+						yAxes: [{
+							ticks: { 
+								beginAtZero: true 
+							}
+						}]
+					}
                 }
             });
         }

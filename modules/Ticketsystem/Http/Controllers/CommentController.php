@@ -1,6 +1,8 @@
 <?php
 
-namespace Modules\Ticket\Http\Controllers;
+namespace Modules\Ticketsystem\Http\Controllers;
+
+use Modules\Ticketsystem\Entities\Comment;
 
 class CommentController extends \BaseController {
 	
@@ -22,7 +24,7 @@ class CommentController extends \BaseController {
 				'form_type' => 'text', 
 				'name' => 'ticket_id', 
 				'hidden' => 1,
-				'value' => 1
+//				'value' => 1
 			),
 			array(
 				'form_type' => 'text', 

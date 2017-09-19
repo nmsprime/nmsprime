@@ -1,12 +1,12 @@
 {
-    "name": "Ticket",
-    "alias": "ticket",
+    "name": "Ticketsystem",
+    "alias": "ticketsystem",
     "description": "",
     "keywords": [],
     "active": 1,
     "order": 0,
     "providers": [
-        "Modules\\Ticket\\Providers\\TicketServiceProvider"
+        "Modules\\Ticketsystem\\Providers\\TicketsystemServiceProvider"
     ],
     "aliases":{},
     "files": [

@@ -1,8 +1,8 @@
-<?php namespace Modules\Ticket\Providers;
+<?php namespace Modules\Ticketsystem\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
-class TicketServiceProvider extends ServiceProvider {
+class TicketsystemServiceProvider extends ServiceProvider {
 
 	/**
 	 * Indicates if loading of the provider is deferred.
@@ -41,10 +41,10 @@ class TicketServiceProvider extends ServiceProvider {
 	protected function registerConfig()
 	{
 		$this->publishes([
-		    __DIR__.'/../Config/config.php' => config_path('ticket.php'),
+		    __DIR__.'/../Config/config.php' => config_path('ticketsystem.php'),
 		]);
 		$this->mergeConfigFrom(
-		    __DIR__.'/../Config/config.php', 'ticket'
+		    __DIR__.'/../Config/config.php', 'ticketsystem'
 		);
 	}
 
@@ -55,7 +55,7 @@ class TicketServiceProvider extends ServiceProvider {
 	 */
 	public function registerViews()
 	{
-		$viewPath = base_path('resources/views/modules/ticket');
+		$viewPath = base_path('resources/views/modules/ticketsystem');
 
 		$sourcePath = __DIR__.'/../Resources/views';
 
@@ -64,8 +64,8 @@ class TicketServiceProvider extends ServiceProvider {
 		]);
 
 		$this->loadViewsFrom(array_merge(array_map(function ($path) {
-			return $path . '/modules/ticket';
-		}, \Config::get('view.paths')), [$sourcePath]), 'ticket');
+			return $path . '/modules/ticketsystem';
+		}, \Config::get('view.paths')), [$sourcePath]), 'ticketsystem');
 	}
 
 	/**
@@ -75,12 +75,12 @@ class TicketServiceProvider extends ServiceProvider {
 	 */
 	public function registerTranslations()
 	{
-		$langPath = base_path('resources/lang/modules/ticket');
+		$langPath = base_path('resources/lang/modules/ticketsystem');
 
 		if (is_dir($langPath)) {
-			$this->loadTranslationsFrom($langPath, 'ticket');
+			$this->loadTranslationsFrom($langPath, 'ticketsystem');
 		} else {
-			$this->loadTranslationsFrom(__DIR__ .'/../Resources/lang', 'ticket');
+			$this->loadTranslationsFrom(__DIR__ .'/../Resources/lang', 'ticketsystem');
 		}
 	}
 

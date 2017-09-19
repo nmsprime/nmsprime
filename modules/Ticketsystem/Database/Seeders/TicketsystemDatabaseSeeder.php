@@ -1,9 +1,9 @@
-<?php namespace Modules\Ticket\Database\Seeders;
+<?php namespace Modules\Ticketsystem\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
-class TicketDatabaseSeeder extends Seeder {
+class TicketsystemDatabaseSeeder extends Seeder {
 
 	/**
 	 * Run the database seeds.

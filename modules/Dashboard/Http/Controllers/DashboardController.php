@@ -7,7 +7,7 @@ use Log;
 
 use App\Http\Controllers\BaseController;
 use Modules\ProvBase\Entities\Contract;
-use Modules\Ticket\Entities\Ticket;
+use Modules\Ticketsystem\Entities\Ticket;
 
 class DashboardController extends BaseController
 {
@@ -43,7 +43,7 @@ class DashboardController extends BaseController
 
 		// get chart data: contracts
 		$chart_data_contracts = self::get_chart_data_contracts();
-		$contracts = end($chart_data_contracts['contracts']);
+		$contracts = count($chart_data_contracts->contracts);
 
 		// income
 		if (\PPModule::is_active('billingbase') && $allowed_to_see['accounting'])
@@ -53,7 +53,7 @@ class DashboardController extends BaseController
 			// TODO: move income total calculation to get_chart_data_income() and return well structured array
 			// to use in blade -> content of this if-clause will only be the one line ahead
 			$income['total'] = 0;
-			foreach ($chart_data_income['data'] as $value)
+			foreach ($chart_data_income->data as $value)
 				$income['total'] += $value;
 			$income['total'] = (int) $income['total'];
 		}
@@ -126,10 +126,13 @@ class DashboardController extends BaseController
 	 */
 	private static function get_chart_data_contracts()
 	{
-		$dir_path = storage_path("app/data/dashboard/");
-		$fn = 'contracts.json';
+		if (\Storage::disk('chart-data')->has('contracts.json') === false) {
+			$content = json_encode(\Config::get('dashboard.contracts'));
+		} else {
+			$content = \Storage::disk('chart-data')->get('contracts.json');
+		}
 
-		return json_decode(\File::get($dir_path.$fn), true);
+		return json_decode($content);
 	}
 
 	/**
@@ -237,18 +240,10 @@ class DashboardController extends BaseController
 	 */
 	public static function save_income_to_json()
 	{
-		$dir_path = storage_path("app/data/dashboard/");
-		$fn = 'income.json';
-
 		$income = self::get_income_total();
 		$income = self::format_chart_data_income($income);
 
-		if (!is_dir($dir_path))
-			mkdir($dir_path, 0740, true);
-
-		\File::put($dir_path.$fn, json_encode($income));
-
-		system("chown apache $dir_path");
+		\Storage::disk('chart-data')->put('income.json', json_encode($income));
 	}
 
 
@@ -258,26 +253,19 @@ class DashboardController extends BaseController
 	 */
 	public static function save_contracts_to_json()
 	{
-		$i 	 = 13;
+		$i = 13;
 		$contracts = array();
-		$dir_path = storage_path("app/data/dashboard/");
-		$fn = 'contracts.json';
 
 		while($i > 0)
 		{
 			$i--;
-			$time = strtotime("-$i month");
+			$time = strtotime("first day -$i month");
 
 			$contracts['labels'][] = date('m/Y', $time);
 			$contracts['contracts'][] = self::count_contracts(date('Y-m-01', $time));
 		}
 
-		if (!is_dir($dir_path)) {
-			mkdir($dir_path, 0740, true);
-			system("chown apache $dir_path");
-		}
-
-		\File::put($dir_path.$fn, json_encode($contracts));
+		\Storage::disk('chart-data')->put('contracts.json', json_encode($contracts));
 	}
 
 	/**
@@ -287,28 +275,13 @@ class DashboardController extends BaseController
 	 */
 	public static function get_chart_data_income()
 	{
-		$total = 0.0;
-		$ret = array();
-		$prepared_data = array();
-		$dir_path = storage_path("app/data/dashboard/");
-		$fn = 'income.json';
-
-		if (!\File::isDirectory($dir_path)) {
-			\File::makeDirectory($dir_path, 0740, true);
+		if (\Storage::disk('chart-data')->has('income.json') === false) {
+			$content = json_encode(\Config::get('dashboard.income'));
+		} else {
+			$content = \Storage::disk('chart-data')->get('income.json');
 		}
 
-		if (!\File::exists($dir_path.$fn)) {
-			$initial_income = array(
-				'Internet' => array('Monthly' => 0),
-				'Voip' => array('Monthly' => 0),
-				'TV' => array('Monthly' => 0),
-				'Other' => array('Monthly' => 0),
-			);
-
-			\File::put($dir_path.$fn, json_encode($initial_income));
-		}
-
-		return json_decode(\File::get($dir_path.$fn), true);
+		return json_decode($content);
 	}
 
 
@@ -497,6 +470,6 @@ class DashboardController extends BaseController
 	 */
 	private static function getNewTickets()
 	{
-		return Ticket::where('state', '=', 1)->count();
+		return Ticket::where('state', '=', 'New')->count();
 	}
 }

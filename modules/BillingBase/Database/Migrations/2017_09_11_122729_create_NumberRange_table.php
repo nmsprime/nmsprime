@@ -3,9 +3,9 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateTicketassigneeTable extends BaseMigration {
+class CreateNumberRangeTable extends BaseMigration {
 
-    protected $tablename = "ticketassignee";
+    protected $tablename = 'numberrange';
 
     /**
      * Run the migrations.
@@ -17,9 +17,15 @@ class CreateTicketassigneeTable extends BaseMigration {
         Schema::create($this->tablename, function(Blueprint $table)
         {
             $this->up_table_generic($table);
-            
-            $table->integer('user_id');
-            $table->integer('ticket_id');
+
+            $table->string('prefix');
+            $table->string('suffix');
+            $table->integer('start');
+            $table->integer('end');
+            $table->string('name');
+            $table->integer('costcenter_id');
+            $table->enum('type', ['contract', 'invoice']);
+            $table->integer('last_generated_number');
 
             return parent::up();
         });

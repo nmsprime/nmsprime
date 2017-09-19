@@ -1,12 +1,10 @@
 <?php 
 
-namespace Modules\Ticket\Entities;
+namespace Modules\Ticketsystem\Entities;
 
 class Comment extends \BaseModel {
 
 	protected $table = 'comment';
-
-    protected $fillable = [];
 
     public static function view_headline()
 	{
@@ -26,12 +24,12 @@ class Comment extends \BaseModel {
 	public function view_index_label()
 	{
 		return [
-			'index' => [
-				$this->id, 
-				$this->comment, 
-			],
+			// 'index' => [
+			// 	$this->id, 
+			// 	$this->comment, 
+			// ],
 //			'index_header' => ['Kommentar'],
-			'header' => '(' . $this->id . ') ' . $this->comment
+			'header' => $this->id . ' - ' . substr_replace($this->comment, '...', 25)
 		];
 	}
 
@@ -41,10 +39,10 @@ class Comment extends \BaseModel {
 	}
 
 	/**
-	 * Relations
+	 * Relation views
 	 */
 	public function ticket()
 	{
-		return $this->belongsTo('Modules\Ticket\Entities\Ticket', 'ticket_id');
+		return $this->belongsTo('Modules\Ticketsystem\Entities\Ticket', 'ticket_id');
 	}
 }

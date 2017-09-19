@@ -8,7 +8,7 @@
     "providers": [
         "Modules\\Dashboard\\Providers\\DashboardServiceProvider"
     ],
-    "aliases":{},
+    "aliases": [],
     "files": [
         "start.php"
     ]

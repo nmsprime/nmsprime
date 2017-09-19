@@ -1,5 +1,5 @@
 {
-	"name": "pingpong-modules/ticket",
+	"name": "pingpong-modules/ticketsystem",
 	"description": "",
 	"authors": [
 		{
@@ -9,7 +9,7 @@
 	],
 	"autoload": {
 		"psr-4": {
-			"Modules\\Ticket\\": ""
+			"Modules\\Ticketsystem\\": ""
 		}
 	}
 }
