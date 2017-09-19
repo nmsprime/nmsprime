@@ -20,6 +20,9 @@
 	<div class="col-md-5 ui-sortable">
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_ping', 'view_header' => 'Ping Test', 'md' => 4))
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_lease', 'view_header' => 'DHCP Lease', 'md' => 4))
+		@if (isset($configfile))
+			@include ('bootstrap.panel-no-div', array ('content' => 'content_configfile', 'view_header' => 'Configfile', 'md' => 4))
+		@endif
 </div>
 
 

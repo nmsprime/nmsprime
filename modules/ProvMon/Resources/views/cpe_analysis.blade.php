@@ -45,6 +45,22 @@
 	@endif
 @stop
 
+@section('content_configfile')
+	@if (isset($configfile))
+		<font color="green"><b>{{$type}} Configfile</b></font><br>
+		@foreach ($configfile as $line)
+			<table>
+				<tr>
+					<td>
+					 <font color="grey">{{$line}}</font>
+					</td>
+				</tr>
+			</table>
+		@endforeach
+	@else
+		<font color="red">{{ trans('messages.mta_configfile_error')}}</font>
+	@endif
+@stop
 
 @section('content_ping')
 
