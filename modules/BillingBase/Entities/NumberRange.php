@@ -41,24 +41,48 @@ class NumberRange extends \BaseModel {
 		];
     }
     
-    public static function get_new_number($type)
-    {
-        $numberrange = \DB::table('numberrange')->where('type', $type)->first();
-        if (is_null($numberrange->last_generated_number)) {
-            $new_number = $numberrange->start;
-        } else {
-            $new_number = $numberrange->last_generated_number + 1;
-        }
+    public static function get_new_number($type, $costcenter_id)
+	{
+		$new_number = null;
+		$tables = array(
+			'contract' => 'contract',
+			'invoice' => 'invoice'
+		);
 
-        if ($new_number > $numberrange->end) {
-            // Todo: Throw Exception
-        }
+		// get numberrange
+		$numberrange = \DB::table('numberrange')
+		                  ->where('type', $type)
+		                  ->where('id', $costcenter_id)
+		                  ->first();
 
-        // save last genrated number
-        \DB::table('numberrange')
-            ->where('id', $numberrange->id)
-            ->update(['last_generated_number' => $new_number]);
+		// find all entries for given numberrange and type
+		$elements = \DB::table($tables[$type])
+		               ->whereBetween('number', [$numberrange->start, $numberrange->end])
+		               ->orderBy('number', 'asc')
+		               ->get();
 
-        return $new_number;
-    }
+		if (count($elements) == 0) {
+			$new_number = $numberrange->start;
+		} else {
+			// get last number
+			$last_element = end($elements);
+			$new_number = $last_element->number + 1;
+		}
+
+		if ($new_number > $numberrange->end) {
+			// Todo: Throw Exception
+		}
+
+		// suffix
+		if (trim($numberrange->suffix) != '') {
+			$new_number = $new_number . $numberrange->suffix;
+		}
+
+		// prefix
+		if (trim($numberrange->prefix) != '') {
+			$new_number = $numberrange->prefix . $new_number;
+		}
+
+		return $new_number;
+	}
 }
