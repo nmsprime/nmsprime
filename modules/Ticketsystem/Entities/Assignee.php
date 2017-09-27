@@ -95,8 +95,9 @@ class AssigneeObserver {
 	public function created($assignee)
 	{
 		// send email to assignee
-		$user = \App\Authuser::findOrFail($assignee->user_id);
-		$ticket = Ticket::findOrFail($assignee->ticket_id);
+		$user = \App\Authuser::find($assignee->user_id);
+		$ticket = Ticket::find($assignee->ticket_id);
+
  		if (!empty($user->email)) {
 			 \Mail::send('ticketsystem::emails.assignticket', ['user' => $user, 'ticket' => $ticket], function ($m) use ($user) {
 			 	$m->from('noreply@roetzer-engineering.com', 'NMS Prime');

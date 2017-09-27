@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateAssigneeTable extends Migration {
+class CreateAssigneeTable extends BaseMigration {
 
 	protected $tablename = 'assignee';
 

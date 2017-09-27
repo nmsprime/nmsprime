@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateTicketTable extends Migration {
+class CreateTicketTable extends BaseMigration {
 
 	protected $tablename = 'ticket';
 
