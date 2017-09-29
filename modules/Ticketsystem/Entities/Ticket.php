@@ -92,6 +92,26 @@ class TicketObserver {
 		unset($ticket->assigned_user_id);
 	}
 
+	public function created($ticket)
+	{
+		$assigned_users = \DB::table('assignee')->where('ticket_id', '=', $ticket->id)->get();
+
+		if (count($assigned_users) > 0) {
+			foreach ($assigned_users as $assignee) {
+				$user = \App\Authuser::find($assignee->user_id);
+				$ticket = Ticket::find($assignee->ticket_id);
+
+				if (!empty($user->email)) {
+					\Mail::send('ticketsystem::emails.assignticket', ['user' => $user, 'ticket' => $ticket], function ($m) use ($user) {
+			 	        $m->from('noreply@roetzer-engineering.com', 'NMS Prime');
+			 	        $m->to($user->email, $user->last_name . ', ' . $user->first_name)->subject('New ticket assigned');
+			        });
+				}
+
+			}
+		}
+	}
+
 	public function updating($ticket)
 	{
 		// add relation and remove assigned_user_id

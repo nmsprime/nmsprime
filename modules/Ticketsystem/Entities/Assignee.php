@@ -92,22 +92,6 @@ class Assignee extends \BaseModel {
 
 class AssigneeObserver {
 
-	public function created($assignee)
-	{
-		// send email to assignee
-		$user = \App\Authuser::find($assignee->user_id);
-		$ticket = Ticket::find($assignee->ticket_id);
-
- 		if (!empty($user->email)) {
-			 \Mail::send('ticketsystem::emails.assignticket', ['user' => $user, 'ticket' => $ticket], function ($m) use ($user) {
-			 	$m->from('noreply@roetzer-engineering.com', 'NMS Prime');
-			 	$m->to($user->email, $user->last_name . ', ' . $user->first_name)->subject('New ticket assigned');
-			 });
-		}
-
-		return \Redirect::back();
-	}
-
 	public function deleted($assignee)
 	{
 		$query = 'DELETE FROM assignee WHERE deleted_at IS NOT NULL;';

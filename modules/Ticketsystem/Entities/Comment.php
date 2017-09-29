@@ -6,6 +6,12 @@ class Comment extends \BaseModel {
 
 	protected $table = 'comment';
 
+	public static function boot()
+	{
+		parent::boot();
+		Comment::observe(new CommentObserver);
+	}
+
     public static function view_headline()
 	{
 		return 'Comments';
@@ -46,3 +52,12 @@ class Comment extends \BaseModel {
 		return $this->belongsTo('Modules\Ticketsystem\Entities\Ticket', 'ticket_id');
 	}
 }
+
+class CommentObserver {
+
+	public function created($comment)
+	{
+		return redirect()->route('Ticket.edit', ['id' => $comment->ticket_id]);
+	}
+}
+

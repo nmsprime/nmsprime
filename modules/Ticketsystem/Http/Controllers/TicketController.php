@@ -65,13 +65,12 @@ class TicketController extends \BaseController {
 
 	protected function prepare_input($data)
 	{
-//dd($data, $this->view_form_fields(static::get_model_obj()));
 		if (isset($data['assigned_user_id'])) {
 			$data['assigned_user_id'] = implode(';', $data['assigned_user_id']);
 		} elseif (!isset($data['assigned_user_id'])) {
 			$data['assigned_user_id'] = null;
 		}
-//dd($data, $this->view_form_fields(static::get_model_obj()));
+
 		return parent::prepare_input($data);
 	}
 }
