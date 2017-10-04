@@ -41,19 +41,17 @@ class Mta extends \BaseModel {
 	// View Icon
 	public static function view_icon()
 	{
-		return '<i class="fa fa-fax"></i>'; 
+		return '<i class="fa fa-fax"></i>';
 	}
 
 	// link title in index view
 	public function view_index_label()
 	{
-		$bsclass = 'info';
+		$bsclass = $this->get_bsclass();
 		$cf_name = 'No Configfile assigned';
 
 		if (isset($this->configfile))
 			$cf_name = $this->configfile->name;
-		else
-			$bsclass = 'danger';
 
 		// TODO: use mta states.
 		//       Maybe use fast ping to test if online in this function?
@@ -63,6 +61,42 @@ class Mta extends \BaseModel {
 				'bsclass' => $bsclass,
 				'header' => $this->hostname.' - '.$this->mac];
 	}
+
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		$bsclass = $this->get_bsclass();
+
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.hostname', $this->table.'.mac', $this->table.'.type', 'configfile.name'],
+				'header' => $this->hostname.' - '.$this->mac,
+				'bsclass' => $bsclass,
+				'orderBy' => ['3' => 'asc'],
+                'edit' => ['configfile.name' => 'has_configfile_assigned'],
+				'eager_loading' => ['configfile']];
+	}
+
+	public function get_bsclass()
+	{
+		$bsclass = 'info';
+		if (!isset($this->configfile))
+			$bsclass = 'danger';
+
+		return $bsclass;
+	}
+
+	public function has_configfile_assigned()
+	{
+		$cf_name = 'No Configfile assigned';
+
+		if (isset($this->configfile))
+			$cf_name = $this->configfile->name;
+
+		return $cf_name;
+	}
+
+
 
 	public function view_belongs_to ()
 	{
@@ -311,11 +345,17 @@ _failed:
 		// if hostname cant be resolved we dont want to have an php error
 		try
 		{
-			$config = ProvBase::first();
-			$fqdn 	= $this->hostname.'.'.$config->domain_name;
+			$domain = ProvVoip::first()->mta_domain;
 
-			// restart - PKTC-EXCENTIS-MTA-MIB::pktcMtaDevResetNow - NOTE: Version 2 is important for some Modems!
-			snmp2_set($fqdn, $config->rw_community, '1.3.6.1.4.1.7432.1.1.1.1.0', 'i', '1', 300000, 1);
+			if (!$domain)
+				$domain = ProvBase::first()->domain_name;
+
+			$fqdn = $this->hostname.'.'.$domain;
+
+			// restart - PKTC-EXCENTIS-MTA-MIB::pktcMtaDevResetNow
+			// NOTES: Version 2 is important!
+			// 'private' is the always working default community
+			snmp2_set($fqdn, 'private', '1.3.6.1.4.1.7432.1.1.1.1.0', 'i', '1', 300000, 1);
 		}
 		catch (\Exception $e)
 		{
@@ -354,7 +394,8 @@ class MtaObserver
 	{
 		$mta->hostname = 'mta-'.$mta->id;
 		$mta->save(); 			// forces to call updated method
-		$mta->modem->make_dhcp_cm();
+		$mta->modem->make_dhcp_cm(false, true);
+		$mta->modem->restart_modem();
 	}
 
 	public function updated($mta)
@@ -368,7 +409,7 @@ class MtaObserver
 		{
 			if (array_key_exists('mac', $modifications))
 				$mta->make_dhcp_mta();
-			
+
 			$mta->make_configfile();
 		}
 
@@ -378,8 +419,8 @@ class MtaObserver
 	public function deleted($mta)
 	{
 		$mta->make_dhcp_mta(true);
-		$mta->modem->make_dhcp_cm();
+		$mta->modem->make_dhcp_cm(false, true);
 		$mta->delete_configfile();
-		$mta->restart();
+		$mta->modem->restart_modem();
 	}
 }

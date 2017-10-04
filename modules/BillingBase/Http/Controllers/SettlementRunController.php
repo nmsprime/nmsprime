@@ -1,13 +1,18 @@
-<?php 
-namespace Modules\Billingbase\Http\Controllers;
+<?php
+namespace Modules\BillingBase\Http\Controllers;
 
 use Modules\BillingBase\Entities\AccountingRecord;
 use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\SettlementRun;
 use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Console\accountingCommand;
+use \Monolog\Logger;
+use ChannelLog;
 
 class SettlementRunController extends \BaseController {
+
+	protected $edit_left_md_size = 6;
+	protected $edit_right_md_size = 6;
 
 	public function view_form_fields($model = null)
 	{
@@ -35,7 +40,7 @@ class SettlementRunController extends \BaseController {
 		if (!isset($data['description']))
 		{
 			$data['description'] = '';
-			$data['verified'] = '';			
+			$data['verified'] = '';
 		}
 
 		return parent::prepare_input($data);
@@ -54,19 +59,153 @@ class SettlementRunController extends \BaseController {
 	}
 
 
-	/*
-	 * Extends generic edit function from Basecontroller for own view - Removes Rerun Button when next month has begun
+	/**
+	 * Extends generic edit function from Basecontroller for own view
+	 	* Removes Rerun Button when next month has begun
+	 	* passes logs dependent of execution status of accountingCommand
+	 *
+	 * @return View
 	 */
 	public function edit($id)
 	{
-		$job = \DB::table('jobs')->find(\Session::get('job_id'));
+		$logs = $failed_jobs = [];
+		$sr   = SettlementRun::find($id);
+		$bool = (date('m') == $sr->created_at->__get('month')) && !$sr->verified;
 
-		$finished = $job ? false : true;
+		// delete Session job id if job is done in case someone broke the tcp connection (close tab/window) manually
+		if (\Session::get('job_id')) {
+			if (!\DB::table('jobs')->find(\Session::get('job_id')))
+				\Session::remove('job_id');
+		}
 
-		$obj = SettlementRun::find($id);
-		$bool = (date('m') == $obj->created_at->__get('month')) && !$obj->verified;
+		// get error logs in case job failed and remove failed job from table
+		$failed_jobs = \DB::table('failed_jobs')->get();
+		foreach ($failed_jobs as $failed_job)
+		{
+			$obj = unserialize((json_decode($failed_job->payload)->data->command));
+			if ($obj->name == 'billing:accounting')
+			{
+				\Artisan::call('queue:forget', ['id' => $failed_job->id]);
+				// show all logs made from 2 min before job failed
+				$logs = self::get_logs(strtotime('-2 minutes', strtotime($failed_job->failed_at)), Logger::ERROR);
+				break;
+			}
+		}
 
-		return parent::edit($id)->with('rerun_button', $bool)->with('finished', $finished);
+		// get execution logs if job has finished successfully - (show error logs otherwise - show nothing during execution)
+		// NOTE: when SettlementRun gets verified the logs will disappear because timestamp is updated
+		$logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->subSeconds(20)->__get('timestamp')) : $logs;
+
+		return parent::edit($id)->with('rerun_button', $bool)->with('logs', $logs);
+	}
+
+
+	/**
+	 * Check State of Job "accountingCommand"
+	 * Send Reload info when job has finished
+	 *
+	 * @return 	response 	Stream
+	 */
+	public function check_state()
+	{
+		\Log::debug(__CLASS__ .'::'. __FUNCTION__);
+		$response = new \Symfony\Component\HttpFoundation\StreamedResponse(function() {
+
+			// Make Sleeptime dependent of Contract count - min 2 sec
+			// $num = DB::table('contract')->where('deleted_at', '=', null)->count();
+			// $sleep = (int) pow($num/10, 1/3);
+			// $sleep = $sleep < 2 ? 2 : $sleep;
+
+			$job = true;
+			while ($job)
+			{
+				$job = \DB::table('jobs')->find(\Session::get('job_id'));
+				sleep(3);
+				// sleep($sleep);
+			}
+
+			\Log::debug('SettlementRun Job ['. \Session::get('job_id').'] stopped');
+
+			\Session::remove('job_id');
+
+			// wait for job to land in failed jobs table - if it failed - wait max 20 seconds
+			$i 		 = 10;
+			$success = true;
+
+			while ($i && $success)
+			{
+				$i--;
+				$failed_jobs = \DB::table('failed_jobs')->get();
+				foreach ($failed_jobs as $job)
+				{
+					$obj = unserialize((json_decode($job->payload)->data->command));
+					if ($obj->name == 'billing:accounting') {
+						$success = false;
+						break;
+					}
+				}
+
+				sleep(2);
+			}
+
+			$success ? \Log::info('Settlementrun finished successfully') : \Log::error('Settlementrun failed!');
+
+			\Log::debug('Reload Settlementrun Edit View');
+			echo "data: reload\n\n";
+			ob_flush(); flush();
+		});
+
+		$response->headers->set('Content-Type', 'text/event-stream');
+
+		return $response;
+	}
+
+
+	/**
+	 * Get Logs from Parent Function from billing.log and Format for table view
+	 *
+	 * @param date_time 	Unix Timestamp  	Return only Log entries after this timestamp
+	 * @param severity_lvl 	Enum 				Minimum Severity Level to show
+	 * @return Array 		[timestamp => [color, type, message], ...]
+	 */
+	public static function get_logs($date_time, $severity_lvl = Logger::INFO)
+	{
+		$logs = parent::get_logs(storage_path('logs/billing.log'), $severity_lvl);
+		$old = $filtered = [];
+
+		foreach ($logs as $key => $string)
+		{
+			$timestamp = substr($string, 1, 19);
+			$type = substr($string, $x = strpos($string, 'billing.') + 8, $y = strpos($string, ': ') - $x);
+
+			switch ($type)
+			{
+				case 'CRITICAL':
+				case 'ALERT':
+				case 'ERROR': $bsclass = 'danger'; break;
+				case 'WARNING': $bsclass = 'warning'; break;
+				case 'INFO': $bsclass = 'info'; break;
+				default: $bsclass = ''; break;
+			}
+
+			$arr = array(
+				'color' 	=> $bsclass,
+				'time' 		=> $timestamp,
+				'type' 		=> $type,
+				'message' 	=> substr($string, $x + $y + 2),
+				);
+
+			if ($old == $arr)
+				continue;
+			if (strtotime($timestamp) < $date_time)
+				break;
+
+			$filtered[] = $arr;
+
+			$old = $arr;
+		}
+
+		return $filtered;
 	}
 
 
@@ -87,6 +226,7 @@ class SettlementRunController extends \BaseController {
 
 		if (\Input::has('rerun'))
 		{
+			// NOTE: Make sure that we use Database Queue Driver - See .env!
 			$job_id = $this->dispatch(new \Modules\BillingBase\Console\accountingCommand);
 			// \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
 			\Session::put('job_id', $job_id);
@@ -101,12 +241,12 @@ class SettlementRunController extends \BaseController {
 	/**
 	 * Download a billing file or all files as ZIP archive
 	 */
-	public function download($id, $key)
+	public function download($id, $sepaacc, $key)
 	{
 		$obj 	= SettlementRun::find($id);
 		$files  = $obj->accounting_files();
 
-		return response()->download($files[$key]->getRealPath());
+		return response()->download($files[$sepaacc][$key]->getRealPath());
 	}
 
 
@@ -123,19 +263,17 @@ class SettlementRunController extends \BaseController {
 	 */
 	public static function directory_cleanup($dir, $settlementrun = null)
 	{
-		$logger = new BillingLogger;
-
 		$start  = $settlementrun ? date('Y-m-01 00:00:00', strtotime($settlementrun->created_at)) : date('Y-m-01');
 		$end 	= $settlementrun ? date('Y-m-01 00:00:00', strtotime('+1 month', strtotime($settlementrun->created_at))) : date('Y-m-01', strtotime('+1 month'));
 
 		// remove all entries of this month permanently (if already created)
 		$ret = AccountingRecord::whereBetween('created_at', [$start, $end])->forceDelete();
 		if ($ret)
-			$logger->addInfo('Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
+			ChannelLog::debug('billing', 'Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 
 		// Delete all invoices
 		$logmsg = 'Remove all already created Invoices and Accounting Files for this month';
-		$logger->addDebug($logmsg);	echo "$logmsg\n";
+		ChannelLog::debug('billing', $logmsg);	echo "$logmsg\n";
 
 		if (!$settlementrun)
 			Invoice::delete_current_invoices();

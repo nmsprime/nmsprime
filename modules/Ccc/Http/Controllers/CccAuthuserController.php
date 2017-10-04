@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\Ccc\Http\Controllers;
 
 use Modules\Ccc\Entities\Ccc;
@@ -37,7 +37,7 @@ class CccAuthuserController extends \BaseController {
 		// Company
 		'company_name'			=> '',
 		'company_street'		=> '',
-		'company_zip'			=> '',	
+		'company_zip'			=> '',
 		'company_city'			=> '',
 		'company_phone'			=> '',
 		'company_fax'			=> '',
@@ -119,7 +119,7 @@ class CccAuthuserController extends \BaseController {
 	{
 		// load template
 		$template_dir = storage_path('app/config/ccc/template/');
-		$template_filename = \PPModule::is_active('billingbase') ? $contract->costcenter->sepa_account->company->conn_info_template_fn : Ccc::first()->template_filename;
+		$template_filename = \PPModule::is_active('billingbase') ? $contract->costcenter->sepaaccount->company->conn_info_template_fn : Ccc::first()->template_filename;
 
 		if (!$template = file_get_contents($template_dir.$template_filename))
 		{
@@ -160,7 +160,7 @@ class CccAuthuserController extends \BaseController {
 		switch ($ret)
 		{
 			case 0: break;
-			case 1: 
+			case 1:
 				Log::error("PdfLatex - Syntax error in tex template (misspelled placeholder?)", [$template_dir.$template_filename, $dir_path.$filename]);
 				return null;
 			case 127:
@@ -194,7 +194,7 @@ class CccAuthuserController extends \BaseController {
 		$this->data['contract_housenumber'] = $contract->house_number;
 		$this->data['contract_zip'] 	  = $contract->zip;
 		$this->data['contract_city'] 	  = $contract->city;
-		$this->data['contract_address']   = ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . ($contract->company ? "$contract->company\\\\" : '') . $contract->street.' '.$contract->house_number . "\\\\$contract->zip $contract->city";
+		$this->data['contract_address']   = ($contract->company ? "$contract->company\\\\" : '') . ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . $contract->street.' '.$contract->house_number . "\\\\$contract->zip $contract->city";
 		$this->data['login_name'] 		  = $login_data['login_name'];
 		$this->data['psw'] 				  = $login_data['password'];
 
@@ -209,7 +209,7 @@ class CccAuthuserController extends \BaseController {
 			return;
 		}
 
-		$sepa_account = $costcenter->sepa_account;
+		$sepa_account = $costcenter->sepaaccount;
 
 		if (!is_object($sepa_account))
 		{
@@ -222,19 +222,17 @@ class CccAuthuserController extends \BaseController {
 		$this->data['company_account_iban'] = $sepa_account->iban;
 		$this->data['company_account_bic']  = $sepa_account->bic;
 
-
 		$company = $sepa_account->company;
 
 		if (!is_object($company))
 		{
 			Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
-			return;			
+			return;
 		}
 
 		$this->data = array_merge($this->data, $company->template_data());
 
 		$this->data['company_logo'] = storage_path('app/config/billingbase/logo/'.$this->data['company_logo']);
-
 	}
 
 
@@ -247,10 +245,20 @@ class CccAuthuserController extends \BaseController {
 
 	/**
 	 * Shows the invoice history for the Customer
+	 *
+	 * @return View
 	 */
 	public function show()
 	{
 		$invoices = \Auth::guard('ccc')->user()->contract->invoices;
+
+		// dont show unverified invoices
+		foreach ($invoices as $key => $invoice)
+		{
+			if (!$invoice->settlementrun->verified)
+				unset($invoices[$key]);
+		}
+
 		$emails = \PPModule::is_active('mail') ? \Auth::guard('ccc')->user()->contract->emails : collect();
 
 		return \View::make('ccc::index', compact('invoices','emails'));
@@ -270,7 +278,7 @@ class CccAuthuserController extends \BaseController {
 		$user 	 = \Auth::guard('ccc')->user();
 
 		// check that only allowed files are downloadable - invoice must belong to customer and settlmentrun must be verified
-		if (!$invoice || $invoice->contract_id != $user->contract_id || !SettlementRun::find($invoice->settlementrun_id)->verified)
+		if (!$invoice || $invoice->contract_id != $user->contract_id || !$invoice->settlementrun->verified)
 			throw new \App\Exceptions\AuthExceptions('Permission Denied');
 
 		Log::info($user->first_name.' '.$user->last_name.' downloaded invoice '.$invoice->filename.' - id: '.$invoice->id);

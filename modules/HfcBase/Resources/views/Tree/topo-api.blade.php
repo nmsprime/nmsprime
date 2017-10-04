@@ -372,24 +372,23 @@ function toggleControl(element) {
 		select.deactivate();
 }
 
-function getPolyStr(base, geo) {
-	var str = base;
+function getPolyStr(str, geo, end) {
 	var vertices = geo.transform(map.getProjectionObject(), new OpenLayers.Projection("EPSG:4326")).getVertices();
 	for (var i = 0; i < vertices.length; i++) {
 		if(i) str += ';';
 		str += vertices[i].x + ';' + vertices[i].y;
 	}
-	return str;
+	return str + end;
 }
 
 function savePolygonMPR(geo) {
-	str = getPolyStr('<li><a href="' + global_url + 'Mpr/create?value=', geo);
-	str += '">Add Modem Positioning Rule</a></li>';
+	str = getPolyStr('<li><a href="' + global_url + 'CustomerPoly/', geo, '">Show Customer in Polygon</a></li>');
+	str += getPolyStr('<li><a href="' + global_url + 'Mpr/create?value=', geo, '">Add Modem Positioning Rule</a></li>');
 	alert('Modem Positioning System', str, {width:500});
 }
 
 function onAfterFeatureModified(event) {
-	str = getPolyStr('', event.feature.geometry);
+	str = getPolyStr('', event.feature.geometry, '');
 	<?php echo 'window.location = "' . route('Mpr.update_geopos', ['%id', '%str']) . "\".replace('%id', event.feature.attributes.id).replace('%str', str)"; ?>;
 }
 

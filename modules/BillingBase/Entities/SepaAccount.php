@@ -3,14 +3,13 @@
 namespace Modules\BillingBase\Entities;
 use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\BillingBase;
-use Modules\BillingBase\Entities\BillingLogger;
 
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
 use Digitick\Sepa\PaymentInformation;
 use Storage;
 use IBAN;
 use \App\Http\Controllers\BaseViewController;
-
+use ChannelLog;
 
 /**
  * Contains the functionality for Creating the SEPA-XML-Files of a SettlementRun
@@ -62,6 +61,15 @@ class SepaAccount extends \BaseModel {
 				'header' => $this->name];
 	}
 
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.name', $this->table.'.institute', $this->table.'.iban'],
+				'orderBy' => ['0' => 'asc'],  // columnindex => direction
+				'header' =>  $this->name];
+	}
 
 	// View Relation.
 	public function view_has_many()
@@ -96,7 +104,6 @@ class SepaAccount extends \BaseModel {
 		parent::__construct($attributes);
 
 		$this->invoice_nr_prefix = date('Y', strtotime("first day of last month")).'/';
-		$this->logger = new BillingLogger;
 	}
 
 
@@ -107,7 +114,6 @@ class SepaAccount extends \BaseModel {
 	public $invoice_nr = 100000; 			// invoice number counter - default start nr is replaced by global config field
 	private $invoice_nr_prefix;				// see constructor
 	public $dir;							// directory to store billing files
-	protected $logger;
 	public $rcd; 							// requested collection date from global config
 
 
@@ -427,7 +433,7 @@ class SepaAccount extends \BaseModel {
 	{
 		$path = storage_path('app/');
 		// echo "Stored $name in $path"."$pathname\n";
-		$this->logger->addInfo("Successfully stored $name in $path"."$pathname \n");		
+		ChannelLog::debug('billing', "Successfully stored $name in $path"."$pathname \n");
 	}
 
 

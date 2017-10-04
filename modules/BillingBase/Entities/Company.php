@@ -44,9 +44,33 @@ class Company extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
+		$bsclass = $this->get_bsclass();
+		
 		return ['index' => [$this->name, $this->city, $this->phone, $this->mail],
 				'index_header' => ['Name', 'City', 'Phonenumber', 'Mail'],
+				'bsclass' => $bsclass,
 				'header' => $this->name];
+	}
+
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		$bsclass = $this->get_bsclass();
+
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.name', $this->table.'.city', $this->table.'.phone', $this->table.'.mail'],
+		        'bsclass' => $bsclass,
+				'header' => $this->name,
+				'orderBy' => ['0' => 'asc'], // columnindex => direction
+				];
+	}
+
+	public function get_bsclass()
+	{
+		$bsclass = 'info';
+
+		return $bsclass;
 	}
 
 	public function view_has_many ()

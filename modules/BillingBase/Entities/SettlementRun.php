@@ -49,12 +49,50 @@ class SettlementRun extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		$bsclass = $this->verified ? 'info' : 'warning';
+		$bsclass = $this->get_bsclass();
 
 		return ['index' => [$this->year, $this->month, $this->created_at->toDateString(), $this->verified ? 'Yes' : 'No'], //$this->created_at->__get('day')],
 		        'index_header' => ['Year', 'Month', 'Created At', 'Verified'],
-		        'bsclass' => $bsclass,
+				'bsclass' => $bsclass,
+				'orderBy' => ['id' => 'desc'],
 		        'header' => $this->year.' - '.$this->month.' - '.$this->created_at->__get('day')];
+	}
+
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		$bsclass = $this->get_bsclass();
+		$day = (isset($this->created_at)) ? $this->created_at : '';
+
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.year', $this->table.'.month',  $this->table.'.created_at', 'verified'],
+				'header' =>  $this->year.' - '.$this->month.' - '.$day ,
+				'bsclass' => $bsclass,
+				'orderBy' => ['0' => 'desc'],
+				'edit' => ['verified' => 'run_verified', 'checkbox' => 'set_index_delete', 'created_at' => 'created_at_toDateString' ]];
+	}
+
+	public function get_bsclass()
+	{
+		return $this->verified ? 'info' : 'warning';
+	}
+
+	public function run_verified() 
+	{
+		return  $this->verified ? 'Yes' : 'No';
+	}
+
+	public function set_index_delete()
+	{
+		if ($this->verified)
+				$this->index_delete_disabled = true;
+	}
+
+	public function created_at_toDateString()
+	{
+		return ($this->created_at->toDateString());
+		
 	}
 
 	public function index_list()
@@ -72,8 +110,12 @@ class SettlementRun extends \BaseModel {
 
 	public function view_has_many()
 	{
-		$ret['Files']['SettlementRun']['view']['view'] = 'billingbase::settlementrun';
-		$ret['Files']['SettlementRun']['view']['vars'] = $this->accounting_files();
+		$ret['Files']['Files']['view']['view'] = 'billingbase::settlementrun';
+		$ret['Files']['Files']['view']['vars'] = $this->accounting_files();
+
+		// NOTE: logs are fetched in SettlementRunController::edit
+		$ret['Files']['Logs']['view']['view'] = 'billingbase::logs';
+		$ret['Files']['Logs']['view']['vars']['md_size'] = 12;
 
 		return $ret;
 	}
@@ -106,25 +148,19 @@ class SettlementRun extends \BaseModel {
 	 */
 	public function accounting_files()
 	{
-		$a = $b = [];
+		if (!is_dir($this->get_files_dir()))
+			return [];
 
-		if (is_dir($this->get_files_dir()))
+		$files = \File::allFiles($this->get_files_dir());
+
+		//order files
+		foreach ($files as $file)
 		{
-			$files = \File::allFiles($this->get_files_dir());
-
-			//order files
-			foreach ($files as $file)
-			{
-				if (!$file->getRelativePath())
-					$a[] = $file;
-				else
-					$b[] = $file;
-			}
-
-			return array_merge($a,$b);
+			$sepaacc = $file->getRelativePath() ? : \App\Http\Controllers\BaseViewController::translate_label('General');
+			$arr[$sepaacc][] = $file;
 		}
 
-		return [];
+		return $arr;
 	}
 
 
@@ -170,6 +206,7 @@ class SettlementRunObserver
 		if (!$settlementrun->observer_enabled)
 			return;
 
+		// NOTE: Make sure that we use Database Queue Driver - See .env!
 		$job_id = \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
 		// \Artisan::call('billing:accounting', ['--debug' => 1]);
 		\Session::put('job_id', $job_id);

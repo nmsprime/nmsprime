@@ -112,6 +112,37 @@
 			<font color="red">{{ trans('messages.modem_configfile_error')}}</font>
 		@endif
 	</div>
+
+	<div class="tab-pane fade in" id="eventlog">
+		@if ($eventlog)
+			<div class="table-responsive">
+				<table class="table streamtable table-bordered" width="100%">
+					<thead>
+						<tr class='active'>
+							<th width="20px"></th>
+							@foreach (array_shift($eventlog) as $col_name)
+								<th class='text-center'>{{$col_name}}</th>
+							@endforeach
+						</tr>
+					</thead>
+					<tbody>
+					@foreach ($eventlog as $row)
+						<tr class = "{{$row[2]}}">
+							<td></td>
+							@foreach ($row as $idx => $data)
+								@if($idx != 2)
+									<td><font>{{$data}}</font></td>
+								@endif
+							@endforeach
+						</tr>
+					@endforeach
+					</tbody>
+				</table>
+			</div>
+		@else
+			<font color="red">{{ trans('messages.modem_eventlog_error')}}</font>
+		@endif
+	</div>
 </div>
 
 @stop

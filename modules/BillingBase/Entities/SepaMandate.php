@@ -34,14 +34,16 @@ class SepaMandate extends \BaseModel {
 		return 'SEPA Mandate';
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-handshake-o"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{
 		$bsclass = 'success';
 		$valid_to = $this->sepa_valid_to ? ' - '.$this->sepa_valid_to : '';
-
-		if (($this->get_start_time() > strtotime(date('Y-m-d'))) && !$this->check_validity('Now'))
-			$bsclass = 'danger';
 
 		return ['index' => [$this->sepa_holder, $this->sepa_valid_from, $this->sepa_valid_to, $this->reference],
 		        'index_header' => ['Holder', 'From', 'To', 'Reference'],
@@ -50,11 +52,36 @@ class SepaMandate extends \BaseModel {
 	}
 
 
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		$bsclass = $this->get_bsclass();
+		$valid_to = $this->sepa_valid_to ? ' - '.$this->sepa_valid_to : '';
+
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.sepa_holder', $this->table.'.sepa_valid_from', $this->table.'.sepa_valid_to', $this->table.'.reference'],
+				'bsclass' => $bsclass,
+				'orderBy' => ['0' => 'asc'],
+				'header' =>  $this->lastname." ".$this->firstname];
+	}
+
+	
+	public function get_bsclass()
+	{
+		$bsclass = 'success';
+
+		if ( isset($this->created_at) && ($this->get_start_time() > strtotime(date('Y-m-d'))) && !$this->check_validity('Now'))
+			$bsclass = 'danger';
+
+		return $bsclass;
+	}
+
+
 	public function view_belongs_to ()
 	{
 		return $this->contract;
 	}
-
 
 
 	/**

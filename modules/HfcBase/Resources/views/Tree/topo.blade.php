@@ -22,19 +22,17 @@
 
 	@include ('hfcbase::Tree.search')
 
-	@if(Route::getCurrentRoute()->getName() === 'CustomerRect.show')
-		<ul class="nav nav-pills pull-right">
-		<?php
-			$par = Route::getCurrentRoute()->parameters();
-			$cur_row = isset($par['row']) ? $par['row'] : 'us_pwr';
-			foreach (['us_pwr' => 'US Power', 'us_snr' => 'US SNR', 'ds_pwr' => 'DS Power', 'ds_snr' => 'DS SNR'] as $key => $val) {
-				$par['row'] = $key;
-				$class = ($cur_row === $key) ? 'active' : '';
-				echo("<li role=\"presentation\" class=\"$class\">".link_to_route(Route::getCurrentRoute()->getName(), $val, $par).'</li>');
-			}
-		?>
-		</ul>
-	@endif
+	<ul class="nav nav-pills pull-right">
+	<?php
+		$par = Route::getCurrentRoute()->parameters();
+		$cur_row = \Input::has('row') ? \Input::get('row') : 'us_pwr';
+		foreach (['us_pwr' => 'US Power', 'us_snr' => 'US SNR', 'ds_pwr' => 'DS Power', 'ds_snr' => 'DS SNR'] as $key => $val) {
+			$par['row'] = $key;
+			$class = ($cur_row === $key) ? 'active' : '';
+			echo("<li role=\"presentation\" class=\"$class\">".link_to_route(Route::getCurrentRoute()->getName(), $val, $par).'</li>');
+		}
+	?>
+	</ul>
 
 	<div class="col-md-12" id="map" style="height: 80%;"></div>
 	<input type="radio" name="type" value="none" id="noneToggle" onclick="toggleControl(this);" checked="checked" />

@@ -17,13 +17,13 @@ use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\AccountingRecord;
 use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Entities\BillingBase;
-use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Entities\Item;
 use Modules\BillingBase\Entities\SettlementRun;
-use Modules\Billingbase\Http\Controllers\SettlementRunController;
+use Modules\BillingBase\Http\Controllers\SettlementRunController;
+use ChannelLog as Log;
 
 
 class accountingCommand extends Command implements SelfHandling, ShouldQueue {
@@ -36,13 +36,12 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 *
 	 * @var string
 	 */
-	protected $name 		= 'billing:accounting';
+	public $name 		= 'billing:accounting';
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
 	protected $dir 			= 'data/billingbase/accounting/'; 				// relative to storage/app/ - Note: completed by month in constructor!
 	
 	protected $dates;					// offen needed time strings for faster access - see constructor
-	protected $logger;
 
 
 	/**
@@ -53,13 +52,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	public function __construct()
 	{
 		$this->dates = self::create_dates_array();
-
 		$this->dir .= date('Y-m', strtotime('first day of last month')).'/';
 
-		$this->logger = new BillingLogger;
-
 		parent::__construct();
-
 	}
 
 
@@ -75,13 +70,13 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		if (\App::runningInConsole())
 		{
-			$this->logger->addInfo(' #####    Start Accounting Command from Console   #####');
+			Log::debug('billing', ' #####    Start Accounting Command from Console   #####');
 			// create/update settlementrun model when we run from console
 			$sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->get()->all();
 
 			if (!$sr)
 			{
-				$this->logger->addDebug('Add new SettlementRun and Return as Observer will call this Cmd again');
+				Log::debug('billing', 'Add new SettlementRun and Return as Observer will call this Cmd again');
 				SettlementRun::create(['year' => $this->dates['Y'], 'month' => $this->dates['lastm']]);
 				return;
 			}
@@ -90,17 +85,17 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$sr = $sr[0];
 				$settlementrun_id = $sr->id;
 				$sr->update(['updated_at' => date('Y-m-d H:i:s')]);
-				$this->logger->addDebug('Update existing SettlementRun', [$sr->id]);
+				Log::debug('billing', 'Update existing SettlementRun', [$sr->id]);
 			}
 		}
 		else
 		{
-			$this->logger->addInfo(' #####    Start Accounting Command via GUI   #####');
-			// withTrashed()
+			Log::debug('billing', ' #####    Start Accounting Command via GUI   #####');
 			$settlementrun_id = SettlementRun::orderBy('id', 'desc')->get()->first()->id;
-			$this->logger->addDebug('SettlementRun already created through GUI');
+			Log::debug('billing', 'SettlementRun already created through GUI');
 		}
 
+		// Fetch all Data from Database
 		echo "Get all Data from Database\n";
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
@@ -108,10 +103,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
 		$salesmen 	= Salesman::all();
 
-		if (!isset($sepa_accs[0]))
-		{
-			$this->logger->addError('There are no Sepa Accounts to create Billing Files for - Stopping here!');
-			return -1;
+		if (!isset($sepa_accs[0])) {
+			Log::error('billing', 'There are no Sepa Accounts to create Billing Files for - Stopping here!');
+			throw new Exception("There are no Sepa Accounts to create Billing Files for");
 		}
 
 		// init product types of salesmen and invoice nr counters for each sepa account, date of last run
@@ -120,7 +114,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		// get call data records as ordered structure (array)
 		$cdrs = $this->_get_cdr_data();
 		if (!$cdrs)
-			$this->logger->addAlert('No Call Data Records available for this Run!');
+			Log::warning('billing', 'No Call Data Records available for this Run!');
 
 		echo "Create Invoices:\n";
 		$num = count($contracts);
@@ -135,24 +129,25 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		{
 			// progress bar - workaround as progress bar is not shown when cmd is called 
 			// from observer or throws exception when called via queue
-			echo ($i + 1)."/$num [$c->id]\r";
-			// if (!$this->option('debug'))
 			if ($this->output)
 				$bar->advance();
+			else
+				echo ($i + 1)."/$num [$c->id]\r";
 
 			// Skip invalid contracts
-			if (!$c->check_validity() && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
-				$this->logger->addInfo('Contract '.$c->number.' has no valid dates for this month', [$c->id]);
-				continue;				
+			if (!$c->check_validity('yearly') && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
+				Log::info('billing', "Contract $c->number [$c->id] is invalid for current year");
+				continue;
 			}
 
 			if (!$c->create_invoice) {
-				$this->logger->addInfo('Create invoice for Contract '.$c->number.' is off', [$c->id]);
+				Log::info('billing', "Create invoice for Contract $c->number [$c->id] is off");
 				continue;
 			}
 
 			if(!$c->costcenter) {
-				$this->logger->addAlert('Contract '.$c->number.' has no CostCenter assigned - Stop execution for this contract', [$c->id]);
+				Log::error('billing', "Contract $c->number [$c->id] has no CostCenter assigned - Stop execution");
+				throw new Exception("Contract $c->number [$c->id] has no CostCenter assigned", 1);
 				continue;
 			}
 
@@ -169,28 +164,19 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			{
 				// skip items that are related to a deleted product
 				if (!isset($item->product)) {
-					$this->logger->addError('Product '.$item->accounting_text.' was deleted', [$c->id]);
+					Log::warning('billing', "Product $item->accounting_text was deleted", [$c->id]);
 					continue;
 				}
 
-				// skip invalid items - TODO: Think about relevance as it is a bit redundant to calculate_price_and_span
-				if (!$item->check_validity($item->get_billing_cycle())) {
-					$this->logger->addDebug('Item '.$item->product->name.' is outdated', [$c->id]);
-					continue;
-				}
-
-				// skip if price is 0
+				// skip if price is 0 (or item dates are invalid)
 				if (!($ret = $item->calculate_price_and_span($this->dates))) {
-					$this->logger->addDebug('Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
+					Log::info('billing', 'Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
 					continue;
 				}
 
 				// get account via costcenter
 				$costcenter = $item->get_costcenter();
 				$acc 		= $sepa_accs->find($costcenter->sepaaccount_id);
-
-				// if ($c->number == 10003 && $item->product->type == 'Credit')
-				// 	dd($item->charge);
 
 				// increase invoice nr of sepa account, increase charge for account by price, calculate tax
 				if (isset($c->charge[$acc->id]))
@@ -224,7 +210,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			$mandate = $c->get_valid_mandate();
 
 			if (!$mandate)
-				$this->logger->addNotice('Contract '.$c->number.' has no valid sepa mandate', [$c->id]);
+				Log::info('billing', "Contract $c->number [$c->id] has no valid sepa mandate");
 
 
 			// Add Call Data Records - calculate charge and count
@@ -254,7 +240,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				else
 				{
 					// this case should never happen
-					$this->logger->addAlert('Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
+					Log::alert('billing', 'Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
 					$c->charge[$acc->id]['net'] = $charge;
 					$c->charge[$acc->id]['tax'] = $charge * $conf->tax/100;
 					$acc->invoice_nr += 1;
@@ -267,10 +253,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 				// invoice
 				$acc->add_invoice_cdr($c, $cdrs[$id], $conf, $settlementrun_id);
-
-
 			}
-
 
 
 			// Add contract specific data for accounting files
@@ -303,10 +286,11 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		$this->_make_billing_files($sepa_accs, $salesmen);
 		Invoice::remove_templatex_files();
-
-		// performance analysis debugging output
-		// echo "time needed: ".round(microtime(true) - $start, 4)."\n";
 	}
+
+
+
+
 
 
 	/**
@@ -470,24 +454,79 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 
 	/**
-	 * Parse Envia CSV
+	 * Parse Envia CSV and Check if customerNr to Phonenr assignment exists
 	 *
 	 * @return array  [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
 	 */
 	protected function _parse_envia_csv($filepath)
 	{
-		$csv = is_file($filepath) ? file($filepath) : array(array());
+		Log::debug('billing', 'Parse Envia Call Data Records CSV');
 
-		// skip first line (column description)
-		if ($csv[0])
-			unset($csv[0]);
-		else
-			return $csv;
+		$csv = is_file($filepath) ? file($filepath) : null;
+
+		if (!$csv)
+			return array(array());
+
+		/* 
+		 * Order existing phonenumbers in format 03735 739822 (prefix, number) to contract id/number as structured array:
+		 * 		[pn1 => [id, num], pn2 => [...], ...]
+		 * needed to check later if customer can really have made these calls (if customer number to phonenumber assignment is correct)
+		 * NOTE: customer number here means the envia customer number that corresponds to id OR number in the laravel database
+		 */
+		$phonenumbers_db = \DB::table('phonenumber')
+			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
+			->join('modem', 'modem.id', '=', 'mta.modem_id')
+			->join('contract', 'contract.id', '=', 'modem.contract_id')
+			->where('phonenumber.deleted_at', '=', null)
+			->select('modem.contract_id', 'contract.number', 'phonenumber.username', 'phonenumber.id')
+			->orderBy('modem.contract_id')->get();
+
+		foreach ($phonenumbers_db as $key => $pn)
+		{
+			if (substr($pn->username, 0, 1) != '0') {
+				// can be a poorly disabled testnumber -> discard
+				Log::warning('billing', "Username [$pn->username] of Phonenumber ID [$pn->id] not in correct format");
+				continue;
+			}
+
+			$customer_nrs[substr_replace($pn->username, '49', 0, 1)] = [$pn->contract_id, $pn->number];
+
+			$customer_nrs_array[] = $pn->contract_id;
+			$customer_nrs_array[] = $pn->number;
+		}
+
+		// skip first line of csv (column description)
+		$logged = '';
+		unset($csv[0]);
 
 		foreach ($csv as $line)
 		{
 			$line = str_getcsv($line, ';');
-			$data[intval(str_replace('002-', '', $line[0]))][] = array($line[3], substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $line[7], str_replace(',', '.', $line[10]));
+			$customer_nr 	= intval(str_replace('002-', '', $line[0]));
+			$calling_number = $line[3];
+			$called_number  = $line[7];
+
+			if (!isset($customer_nrs[$calling_number]))
+			{
+				if (in_array($customer_nr, $customer_nrs_array)) {
+					Log::error('billing', "Calling Number [$calling_number] does not exist in laravel DB for customer number $customer_nr! Exit");
+					throw new \Exception("Calling Number [$calling_number] does not exist in laravel DB for customer number $customer_nr! Exit");
+				}
+
+				if ($logged != $calling_number) {
+					Log::warning('billing', "Calling Number [$calling_number] does not exist - but customer number [$customer_nr] neither!");
+					$logged = $calling_number;
+				}
+				continue;
+			}
+
+			if (!in_array($customer_nr, $customer_nrs[$calling_number])) {
+				Log::error('billing', "Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database! Exit");
+				// $this->error("Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database!");
+				throw new \Exception("Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database!");
+			}
+
+			$data[$customer_nr][] = array($calling_number, substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $called_number, str_replace(',', '.', $line[10]));
 		}
 
 		return $data;
@@ -501,12 +540,13 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 */
 	protected function _parse_hlkomm_csv($filepath)
 	{
-		$csv = is_file($filepath) ? file($filepath) : array(array());
+		$csv = is_file($filepath) ? file($filepath) : null;
+
+		if (!$csv)
+			return array(array());
+
 		// skip first 5 lines (descriptions)
-		if ($csv[0])
-			unset($csv[0], $csv[1], $csv[2], $csv[3], $csv[4]);
-		else
-			return $csv;
+		unset($csv[0], $csv[1], $csv[2], $csv[3], $csv[4]);
 
 		$config = BillingBase::first();
 
@@ -515,6 +555,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		$phonenumbers_o = \DB::table('phonenumber')
 			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
 			->join('modem', 'modem.id', '=', 'mta.modem_id')
+			->where('phonenumber.deleted_at', '=', null)
 			->select('modem.contract_id', 'phonenumber.username')
 			->orderBy('modem.contract_id')->get();
 
@@ -548,7 +589,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			else
 			{
 				// there is a phonenr entry in csv that doesnt exist in our db - this case should never happen
-				$this->logger->addError('Parse CDR.csv: Call Data Record with Phonenr that doesnt exist in the Database - Phonenr deleted?');
+				Log::error('billing', "Parse CDR.csv: Call Data Record with Phonenr [$phonenr1] that doesnt exist in the Database - Phonenr deleted?");
 			}
 
 		}

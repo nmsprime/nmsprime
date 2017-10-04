@@ -50,7 +50,7 @@ if (typeof(Storage) !== "undefined") {
         $('#' + sitem).addClass("active");
         $('#' + sitem + ' .sub-menu ').css("display", "block");
         $('#' + chitem).addClass("active");
-        
+
         $('#sidebar .sub-menu li').click(function(event) {
             localStorage.setItem("clicked-item", $(this).attr('id'));
             localStorage.setItem("sidebar-item", $(this).parent().parent().attr('id'))
@@ -191,8 +191,23 @@ $('.erd-popover').mousemove(
  *  - search in tr HTML code for an HTML "a" element and fetch the href attribute
  * INFO: - working directly with row element also adds a click object to checkbox entry, which disabled checkbox functionality
  */
-$('.ClickableTd').click(function () {
-  window.location = $(this.parentNode).find('a').attr("href");
+$('.datatable').click(function (e) {
+  if ($(e.target).hasClass('ClickableTd') && $(e.target).is('td')) {
+    window.location = $(e.target.parentNode).find('a').attr("href");
+  }
+  if ($(e.target).hasClass('index_check') && !($(e.target).find('input:checkbox').is(':disabled')) ) {
+    var checkbox = $(e.target).find('input:checkbox');
+    checkbox.prop('checked',!checkbox.prop("checked") );
+  }
+  if (e.target.id == 'selectall' || e.target.id =="allCheck") {
+    var allCheck = ($(this).closest('table').find('td input:checkbox:enabled'));
+    allCheck.prop('checked', !allCheck.prop("checked"));
+  }
+});
+
+
+$('a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
+  $($.fn.dataTable.tables(true)).DataTable().columns.adjust().responsive.recalc();
 });
 
 

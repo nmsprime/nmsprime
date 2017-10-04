@@ -3,6 +3,7 @@
 namespace Modules\BillingBase\Entities;
 
 use DB;
+use ChannelLog;
 
 class Item extends \BaseModel {
 
@@ -38,6 +39,11 @@ class Item extends \BaseModel {
 		return 'Item';
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-toggle-on"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{
@@ -62,6 +68,10 @@ class Item extends \BaseModel {
 			}
 		}
 
+		$count = $this->count && $this->count != 1 ? "$this->count x " : '';
+		$price = $this->credit_amount != 0 ? $this->credit_amount : $this->product->price;
+		$price = ' | '.round($price, 2).'€';
+
 		/* Evaluate Colours
 		 	* green: it will be considered for next accounting cycle
 		 	* blue:  new item - not yet considered for settlement run
@@ -74,7 +84,7 @@ class Item extends \BaseModel {
 		return ['index' => [$this->product->name, $start, $end],
 		        'index_header' => ['Type', 'Name', 'Price'],
 		        'bsclass' => $bsclass,
-		        'header' => $this->product->name.$start.$start_fixed.$end.$end_fixed];
+		        'header' => $count.$this->product->name.$start.$start_fixed.$end.$end_fixed.$price];
 	}
 
 	public function view_belongs_to ()
@@ -123,7 +133,7 @@ class Item extends \BaseModel {
 	 *
 	 * @var float
 	 */ 
-	public $charge;
+	public $charge = 0;
 
 
 	/**
@@ -216,6 +226,12 @@ class Item extends \BaseModel {
 		$start = $this->get_start_time();
 		$end   = $this->get_end_time();
 
+		// skip invalid items
+		if (!$this->check_validity($billing_cycle)) {
+			ChannelLog::info('billing', 'Item '.$this->product->name." ($this->id) is outdated", [$this->contract->id]);
+			return null;
+		}
+
 		// contract ends before item ends - contract has higher priority
 		if ($this->contract->expires)
 			$end = !$end || strtotime($this->contract->contract_end) < $end ? strtotime($this->contract->contract_end) : $end;
@@ -271,7 +287,7 @@ class Item extends \BaseModel {
 				// started this yr
 				if (date('Y', $start) == $dates['Y'])
 				{
-					$ratio = 1 - date('z', $start) / (366 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1 
+					$ratio = 1 - date('z', $start) / (365 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1 
 					$text  = date('Y-m-d', $start);
 				}
 				else
@@ -285,7 +301,7 @@ class Item extends \BaseModel {
 				// ended this yr
 				if ($end && (date('Y', $end) == $dates['Y']))
 				{
-					$ratio += $ratio ? (date('z', $end) + 1)/(366 + date('L')) - 1 : 0;
+					$ratio += $ratio ? (date('z', $end) + 1)/(365 + date('L')) - 1 : 0;
 					$text  .= date('Y-m-d', $end);
 				}
 				else

@@ -3,8 +3,7 @@
 namespace Modules\BillingBase\Entities;
 
 use Storage;
-use Modules\BillingBase\Entities\BillingLogger;
-
+use ChannelLog;
 
 
 /**
@@ -52,6 +51,10 @@ class Invoice extends \BaseModel{
 		return $this->belongsTo('Modules\ProvBase\Entities\Contract');
 	}
 
+	public function settlementrun()
+	{
+		return $this->belongsTo('Modules\BillingBase\Entities\SettlementRun');
+	}
 
 	/**
 	 * Init Observer
@@ -82,12 +85,6 @@ class Invoice extends \BaseModel{
 	private $filename_invoice 	= '';
 	private $filename_cdr 		= '';
 
-
-	/**
-	 * @var object - logger for Billing Module - instantiated in constructor
-	 */
-	public $logger;
-
 	/**
 	 * Temporary CDR Variables
 	 *
@@ -110,7 +107,7 @@ class Invoice extends \BaseModel{
 		// Company
 		'company_name'			=> '',
 		'company_street'		=> '',
-		'company_zip'			=> '',	
+		'company_zip'			=> '',
 		'company_city'			=> '',
 		'company_phone'			=> '',
 		'company_fax'			=> '',
@@ -170,9 +167,8 @@ class Invoice extends \BaseModel{
 
 	public function __construct($attributes = array())
 	{
-		$this->logger = new BillingLogger;
 		$this->filename_invoice = self::_get_invoice_filename();
-		
+
 		parent::__construct($attributes);
 	}
 
@@ -222,7 +218,7 @@ class Invoice extends \BaseModel{
 		$this->data['contract_street'] 		= $contract->street.' '.$contract->house_number;
 		$this->data['contract_zip'] 		= $contract->zip;
 		$this->data['contract_city'] 		= $contract->city;
-		$this->data['contract_address'] 	= ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . ($contract->company ? "$contract->company\\\\" : '') . $this->data['contract_street'] . "\\\\$contract->zip $contract->city";
+		$this->data['contract_address'] 	= ($contract->company ? "$contract->company\\\\" : '') . ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . $this->data['contract_street'] . "\\\\$contract->zip $contract->city";
 
 		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
@@ -235,7 +231,7 @@ class Invoice extends \BaseModel{
 
 
 
-	public function add_item($item) 
+	public function add_item($item)
 	{
 		// $count = $item->count ? $item->count : 1;
 		$price  = sprintf("%01.2f", round($item->charge/$item->count, 2));
@@ -270,10 +266,10 @@ class Invoice extends \BaseModel{
 		$this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$tax.$this->currency.'\\\\';
 		$this->data['table_summary'] .= '~ & \textbf{Rechnungsbetrag:} & ~ & \textbf{'.$total.$this->currency.'}\\\\';
 
-		$this->data['table_sum_charge_net']  	= $net; 
+		$this->data['table_sum_charge_net']  	= $net;
 		$this->data['table_sum_tax_percent'] 	= $tax_percent;
 		$this->data['table_sum_tax'] 			= $tax;
-		$this->data['table_sum_charge_total'] 	= $total; 
+		$this->data['table_sum_charge_total'] 	= $total;
 
 
 		// make transfer reason (Verwendungszweck)
@@ -341,28 +337,24 @@ class Invoice extends \BaseModel{
 	{
 		$err_msg = '';
 
-		if (!$account)
-			$err_msg .= 'Missing account data for Invoice ('.$this->data['contract_id'].')';
+		if (!$account) {
+			$err_msg = 'Missing account data for Invoice ('.$this->data['contract_id'].')';
+			ChannelLog::error('billing', $err_msg);
+			throw new Exception($err_msg);
+		}
 
-		if (!$account->template_invoice || !$account->template_cdr)
-		{
-			$err_msg .= $err_msg ? '; ' : '';
-			$err_msg .= 'Missing SepaAccount specific templates for Invoice or CDR';
+		if (!$account->template_invoice) {
+			$err_msg = 'Missing SepaAccount specific templates for Invoice';
+			ChannelLog::error('billing', $err_msg);
+			throw new Exception($err_msg);
 		}
 
 		$company = $account->company;
 
-		if (!$company || !$company->logo)
-		{
-			$err_msg .= $err_msg ? '; ' : '';
+		if (!$company || !$company->logo) {
 			$err_msg = $company ? "Missing Company's Logo ($company->name)" : 'No Company assigned to Account '.$account->name;
-		}
-
-		if ($err_msg)
-		{
-			$this->logger->addError($err_mgs);
-			$this->error_flag = true;
-			return false;
+			ChannelLog::error('billing', $err_msg);
+			throw new Exception($err_msg);
 		}
 
 		$this->data['company_account_institute'] = $account->institute;
@@ -412,7 +404,6 @@ class Invoice extends \BaseModel{
 		$this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural." & ".$sum.$this->currency.' & '.$sum.$this->currency.'\\\\';
 
 		$this->filename_cdr = date('Y_m', $time_cdr).'_cdr';
-
 	}
 
 
@@ -441,14 +432,14 @@ class Invoice extends \BaseModel{
 			$this->_create_db_entry();
 		}
 		else
-			$this->logger->addError("No Items for Invoice - only build CDR", [$this->data['contract_id']]);
+			ChannelLog::warning('billing', "No Items for Invoice - only build CDR", [$this->data['contract_id']]);
 
 
 		// Store as pdf
 		$this->_create_pdfs();
 
 		system('chown -R apache '.$dir);
-		
+
 	}
 
 
@@ -485,15 +476,13 @@ class Invoice extends \BaseModel{
 	 */
 	private function _make_tex($type = 'invoice')
 	{
-		if ($this->error_flag)
-		{
-			$this->logger->addError("Missing Data from SepaAccount or Company to Create $type", [$this->data['contract_id']]);
-			return -2;			
+		if ($this->error_flag) {
+			ChannelLog::error('billing', "Missing Data from SepaAccount or Company to Create $type", [$this->data['contract_id']]);
+			return -2;
 		}
 
-		if (!$template = file_get_contents($this->_get_abs_template_path($type)))
-		{
-			$this->logger->addError("Failed to Create Invoice: Could not read template ".$this->_get_abs_template_path($type), [$this->data['contract_id']]);
+		if (!$template = file_get_contents($this->_get_abs_template_path($type))) {
+			ChannelLog::error('billing', "Failed to Create Invoice: Could not read template ".$this->_get_abs_template_path($type), [$this->data['contract_id']]);
 			return -3;
 		}
 
@@ -514,12 +503,14 @@ class Invoice extends \BaseModel{
 
 		foreach ($this->data as $key => $string)
 		{
-			$string = escape_latex_special_chars($string);
+			// dont escape for latex concatenated strings in form of tables or tabulators and so on
+			if (!in_array($key, ['table_summary', 'invoice_text', 'cdr_table_positions', 'item_table_positions']))
+				$string = escape_latex_special_chars($string);
 
 			// escape underscores for pdflatex to work
 			if (strpos($string, 'logo') === false)
 				$string = str_replace('_', '\\_', $string);
-			
+
 			$template = str_replace('{'.$key.'}', $string, $template);
 		}
 
@@ -550,19 +541,19 @@ class Invoice extends \BaseModel{
 				switch ($ret)
 				{
 					case 0: break;
-					case 1: 
-						$this->logger->addError("PdfLatex: Syntax Error in filled tex template!");
+					case 1:
+						ChannelLog::error('billing', "PdfLatex: Syntax Error in filled tex template!");
 						return null;
 					case 127:
-						$this->logger->addError("Illegal Command - PdfLatex not installed!");
+						ChannelLog::error('billing', "Illegal Command - PdfLatex not installed!");
 						return null;
 					default:
-						$this->logger->addError("Error executing PdfLatex - Return Code: $ret");
+						ChannelLog::error('billing', "Error executing PdfLatex - Return Code: $ret");
 						return null;
 				}
 
 				// echo "Successfully created $key in $file\n";
-				$this->logger->addDebug("Successfully created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
+				ChannelLog::debug('billing', "Successfully created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
 
 				// Deprecated: remove temporary files - This is done by remove_templatex_files() now after all pdfs were created simultaniously by multiple threads
 				// unlink($file);
@@ -605,7 +596,7 @@ class Invoice extends \BaseModel{
 		$cdr_fname 		= self::_get_cdr_filename().'.pdf';
 
 		$query = Invoice::where('filename', '=', $invoice_fname)->orWhere('filename', '=', $cdr_fname)->whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
-		
+
 		$invoices = $query->get();
 
 		// Delete PDFs
@@ -623,7 +614,7 @@ class Invoice extends \BaseModel{
 
 	/**
 	 * Remove all old Invoice & CDR DB-Entries & Files as it's prescribed by law
-	 	* Germany: CDRs 6 Months (§97 TKG) - Invoices ?? - 
+	 	* Germany: CDRs 6 Months (§97 TKG) - Invoices ?? -
 	 *
 	 * NOTE: This can be different from country to country
 	 * TODO: Remove old Invoices
@@ -662,6 +653,6 @@ class InvoiceObserver
 	{
 		// Delete PDF from Storage
 		$ret = Storage::delete($invoice->rel_storage_invoice_dir.$invoice->contract_id.'/'.$invoice->filename);
-		$invoice->logger->addDebug('Removed Invoice from Storage', [$invoice->contract_id, $invoice->filename]);
+		ChannelLog::info('billing', 'Removed Invoice from Storage', [$invoice->contract_id, $invoice->filename]);
 	}
 }

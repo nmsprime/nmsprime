@@ -60,10 +60,7 @@ class Contract extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		$bsclass = 'success';
-
-		if ($this->network_access == 0)
-			$bsclass = 'danger';
+		$bsclass = $this->get_bsclass();
 
 		$costcenter = $this->costcenter ? $this->costcenter->name : '';
 
@@ -71,6 +68,30 @@ class Contract extends \BaseModel {
 				'index_header' => ['Contract Nr', 'Firstname', 'Lastname', 'Postcode', 'City', 'Street', 'House Nr', 'District', 'Start Date', 'End Date', 'CostCenter'],
 				'bsclass' => $bsclass,
 				'header' => $this->number.' '.$this->firstname.' '.$this->lastname];
+	}
+
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		$bsclass = $this->get_bsclass();
+
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.number', $this->table.'.firstname', $this->table.'.lastname', $this->table.'.zip', $this->table.'.city', $this->table.'.street', $this->table.'.house_number', $this->table.'.district', $this->table.'.contract_start', $this->table.'.contract_end'],
+				'header' =>  $this->number.' '.$this->firstname.' '.$this->lastname,
+				'bsclass' => $bsclass,
+				'orderBy' => ['0' => 'asc']];
+	}
+
+
+	public function get_bsclass() 
+	{
+		$bsclass = 'success';
+		
+		if ($this->network_access == 0)
+			$bsclass = 'danger';
+
+		return $bsclass;
 	}
 
 	// View Relation.
@@ -270,16 +291,11 @@ class Contract extends \BaseModel {
 	public function invoices()
 	{
 		if (\PPModule::is_active('billingbase'))
-		{
-			$srs  = SettlementRun::where('verified', '=', '0')->get(['id'])->pluck('id')->all();
+			return $this->hasMany('Modules\BillingBase\Entities\Invoice');
+			// $srs  = SettlementRun::where('verified', '=', '0')->get(['id'])->pluck('id')->all();
+			// $hide = $srs ? : 0;
+			// return $this->hasMany('Modules\BillingBase\Entities\Invoice')->where('contract_id', '=', $this->id)->where('settlementrun_id', '!=', [$hide]);
 
-			$hide = $srs ? : 0;
-
-			return $this->hasMany('Modules\BillingBase\Entities\Invoice')->where('contract_id', '=', $this->id)->where('settlementrun_id', '!=', [$hide]);
-
-			// $hide = SettlementRun::unverified_files();
-			// return $this->hasMany('Modules\BillingBase\Entities\Invoice')->orderBy('year', 'desc')->orderBy('month', 'desc')->whereNotIn('filename', $hide);
-		}
 		return null;
 	}
 

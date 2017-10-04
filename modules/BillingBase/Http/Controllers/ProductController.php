@@ -26,7 +26,7 @@ class ProductController extends \BaseController {
 		$sales_tariffs = $this->_add_empty_first_element_to_options(PhoneTariff::get_sale_tariffs());
 		$purchase_tariffs = $this->_add_empty_first_element_to_options(PhoneTariff::get_purchase_tariffs());
 
-		$tax = array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV');
+		$tax = array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV Credit');
 		if ($model->tax === null)
 			$tax = array_merge($tax, ['checked' => true, 'value' => 1]);
 

@@ -5,6 +5,7 @@ namespace Modules\ProvBase\Entities;
 use File;
 use Log;
 use Exception;
+use Acme\php\ArrayHelper;
 use Modules\ProvBase\Entities\Qos;
 use Modules\ProvBase\Entities\ProvBase;
 use Modules\ProvMon\Http\Controllers\ProvMonController;
@@ -44,8 +45,38 @@ class Modem extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
+		$us_pwr = $this->get_us_pwr();
+		$bsclass = $this->get_bsclass();
+
+		$configfile = $this->configfile ? $this->configfile->name : '';
+		//d($this->contract->district );
+		//$valid 		= $this->contract->check_validity('Now') ? 'yes' : 'no';
+		$valid = 'yes';
+
+		return ['index' => [$this->id, $this->mac, $configfile, $this->name, $this->lastname, $this->city, $this->street, '', $us_pwr, \App\Http\Controllers\BaseViewController::translate_label($valid)],
+		        'index_header' => ['Modem Number', 'MAC address', 'Configfile', 'Name', 'Lastname', 'City', 'Street', 'District', 'US level', 'Contract valid'],
+		        'bsclass' => $bsclass,
+				'header' => $this->id.' - '.$this->mac.($this->name ? ' - '.$this->name : '')];
+	}
+
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		$bsclass = $this->get_bsclass();
+
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.id', $this->table.'.mac', 'configfile.name', $this->table.'.name', $this->table.'.lastname', $this->table.'.city', $this->table.'.street', $this->table.'.district', $this->table.'.us_pwr', 'contract_valid'],
+		        'bsclass' => $bsclass,
+				'header' => $this->id.' - '.$this->mac.($this->name ? ' - '.$this->name : ''),
+				'edit' => ['us_pwr' => 'get_us_pwr', 'contract_valid' => 'get_contract_valid'],
+				'eager_loading' => ['configfile','contract'],
+				'sortsearch' => ['contract_valid' => 'false'] ]; // TO DO -> find reason for error
+	}
+
+	public function get_bsclass()
+	{
 		$bsclass = 'success';
-		$us_pwr = $this->us_pwr.' dBmV';
 
 		switch ($this->get_state('int'))
 		{
@@ -57,13 +88,17 @@ class Modem extends \BaseModel {
 			default: $bsclass = 'danger'; break;
 		}
 
-		$configfile = $this->configfile ? $this->configfile->name : '';
-		$valid 		= $this->contract->check_validity('Now') ? 'yes' : 'no';
+		return $bsclass;
+	}
 
-		return ['index' => [$this->id, $this->mac, $configfile, $this->name, $this->lastname, $this->city, $this->street, $this->contract->district, $us_pwr, \App\Http\Controllers\BaseViewController::translate_label($valid)],
-		        'index_header' => ['Modem Number', 'MAC address', 'Configfile', 'Name', 'Lastname', 'City', 'Street', 'District', 'US level', 'Contract valid'],
-		        'bsclass' => $bsclass,
-		        'header' => $this->id.' - '.$this->mac.($this->name ? ' - '.$this->name : '')];
+	public function get_contract_valid()
+	{
+		return $this->contract->check_validity('Now') ? 'yes' : 'no';
+	}
+
+	public function get_us_pwr()
+	{
+		return $this->us_pwr.' dBmV';
 	}
 
 	public function index_list()
@@ -77,7 +112,8 @@ class Modem extends \BaseModel {
 	 */
 	public function configfiles ()
 	{
-		return Configfile::where('device', '=', 'CM')->where('public', '=', 'yes')->get();
+		return \DB::table('configfile')->select(['id', 'name'])->whereNull('deleted_at')->where('device', '=', 'CM')->where('public', '=', 'yes')->get();
+		// return Configfile::select(['id', 'name'])->where('device', '=', 'CM')->where('public', '=', 'yes')->get();
 	}
 
 	/**
@@ -85,7 +121,7 @@ class Modem extends \BaseModel {
 	 */
 	public function qualities ()
 	{
-		return QoS::all();
+		return DB::table('qos')->whereNull('deleted_at')->get();
 	}
 
 
@@ -135,9 +171,14 @@ class Modem extends \BaseModel {
 		return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
 	}
 
+	/**
+	 * Return all Contracts
+	 * NOTE: Dont use Eloquent here as it's super slow for many models and we dont need the Eloquent instance here
+	 */
 	public function contracts()
 	{
-		return Contract::get();
+		// Contract::select(['id', 'lastname'])->get();
+		return \DB::table('contract')->whereNull('deleted_at')->get();
 	}
 
 	public function mtas()
@@ -309,19 +350,20 @@ class Modem extends \BaseModel {
 	 * NOTES:
 	 	* This is way faster (0,01s (also on 2k modems) vs 2,8s for 348 Modems via make_dhcp_cm_all) than everytime creating files for all modems
 	 	* It's also more secure as it uses flock() to avoid dhcpd restart errors due to race conditions
-	 	* MaybeTODO: embed part between lock & unlock into try catch block to avoid forever locked files in case of exception
+	 	* MaybeTODO: embed part between lock & unlock into try catch block to avoid forever locked files in case of exception !?
+	 	* Attention!: MAC Address must be unique in database to work correctly !!!
 	 *
 	 * @param 	delete  	set to true if you want to remove the entry from the configfile
 	 *
 	 * @author Nino Ryschawy
 	 */
-	public function make_dhcp_cm($delete = false)
+	public function make_dhcp_cm($delete = false, $mta_added = false)
 	{
 		Log::debug(__METHOD__." started");
 
 		// Note: hostname is changed when modem was created
-		// if (!$this->isDirty(['hostname', 'mac', 'public']) && !$delete)
-		// 	return;
+		if (!$this->isDirty(['hostname', 'mac', 'public']) && !$delete && !$mta_added)
+			return;
 
 		// Log
 		Log::info('DHCPD Configfile Update for Modem: '.$this->id);
@@ -347,20 +389,17 @@ class Modem extends \BaseModel {
 		if (!flock($fp, LOCK_EX))
 			Log::error('Could not get exclusive lock for '.self::CONF_FILE_PATH);
 
-		// $conf = File::get(self::CONF_FILE_PATH);
 		$conf = file(self::CONF_FILE_PATH);
 
+		// TODO: check for hostname to avoid deleting the wrong entry when mac exists multiple times in DB !?
 		foreach ($conf as $key => $line)
 		{
-			if (strpos($line, $replace) !== false)
+			if (strpos($line, $replace) !== false && strpos($line, $this->hostname) !== false)
 			{
 				unset($conf[$key]);
 				break;
 			}
 		}
-
-		// dont replace directly as this wouldnt add the entry for a new created modem
-		// $conf = str_replace($replace, '', $conf);
 
 		if (!$delete)
 			$conf[] = $data;
@@ -538,6 +577,62 @@ class Modem extends \BaseModel {
 			}
 		}
 
+	}
+
+
+	/**
+	 * Get eventlog of a modem via snmp
+	 *
+	 * @return: Array of rows of the eventlog table
+	 * @author: Ole Ernst
+	 */
+	public function get_eventlog()
+	{
+		$conf = ProvBase::first();
+		$fqdn = $this->hostname.'.'.$conf->domain_name;
+		$com = $conf->ro_community;
+
+		snmp_set_quick_print(TRUE);
+		snmp_set_oid_output_format(SNMP_OID_OUTPUT_NUMERIC);
+		snmp_set_valueretrieval(SNMP_VALUE_LIBRARY);
+
+		$log = snmp2_real_walk($fqdn, $com, '.1.3.6.1.2.1.69.1.5.8.1');
+		$log = ArrayHelper::snmpwalk_fold($log);
+
+		// filter unnecessary entries
+		$log = array_filter($log, function($k) {
+			$tmp = explode('.', $k);
+			$tmp = array_pop($tmp);
+			if($tmp > 2 && $tmp < 8 && $tmp != 6)
+				return true;
+		}, ARRAY_FILTER_USE_KEY);
+
+		// show time column in a human-readable format
+		$time_key = array_keys($log)[0];
+		foreach($log[$time_key] as $k => $time) {
+			$time = explode(' ', trim($time, "\" "));
+			$time[0] .= $time[1]; unset($time[1]);
+			$time = array_map('hexdec', $time);
+			$time = sprintf("%02d.%02d.%04d %02d:%02d:%02d.%d", $time[3], $time[2], $time[0], $time[4], $time[5], $time[6], $time[7]);
+			$log[$time_key][$k] = $time;
+		}
+
+		// translate severity level of log entry to datatable colors
+		$color_key = array_keys($log)[2];
+		foreach($log[$color_key] as $k => $color_idx) {
+			$trans = ['', 'danger', 'danger', 'danger', 'danger', 'warning', 'success', '', 'info'];
+			$log[$color_key][$k] = $trans[$color_idx];
+		}
+
+		// add table headers
+		$ret[] = ['Time', '#', 'Text'];
+
+		// reshape array into the right format
+		foreach (array_reverse(array_keys(reset($log))) as $idx)
+			foreach ($log as $k => $v)
+				$ret[$idx][] = $v[$idx];
+
+		return $ret;
 	}
 
 
@@ -979,7 +1074,7 @@ class Modem extends \BaseModel {
 	 * relevant attribute was modified.
 	 *
 	 * @return 1 if reset via Modem or original mac is needed (mac was changed)
-	 *		  -1 for reset via CMTS (faster), 
+	 *		  -1 for reset via CMTS (faster),
 	 *		   0 if no restart is needed
 	 *
 	 * @author Ole Ernst, Nino Ryschawy
@@ -1077,14 +1172,13 @@ class ModemObserver
 		// TODO: only restart, make dhcp and configfile and only restart dhcpd via systemdobserver when it's necessary
 		$restart = $modem->needs_restart();
 
-		if(\Input::has('_force_restart'))
-			$modem->restart_modem($restart > 0);
-		else if ($restart)
+		if ($restart)
 		{
 			$modem->make_dhcp_cm();
 			$modem->restart_modem($restart > 0);
 			$modem->make_configfile();
 		}
+
 
 		// ATTENTION:
 		// If we ever think about moving modems to other contracts we have to delete Envia related stuff, too –
