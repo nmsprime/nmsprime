@@ -31,8 +31,8 @@ UPDATE user_auth SET password='invalidated', must_change_password='', enabled='o
 EOF
 
 # link ss_docsis.php in git to the correct location, this way its automatically updated
-ln -srf /var/www/lara/modules/ProvMon/Console/cacti/ss_docsis.php /usr/share/cacti/scripts/ss_docsis.php
-ln -srf /var/www/lara/modules/ProvMon/Console/cacti/cisco_cmts.xml /usr/share/cacti/resource/snmp_queries/cisco_cmts.xml
+ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/ss_docsis.php /usr/share/cacti/scripts/ss_docsis.php
+ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/cisco_cmts.xml /usr/share/cacti/resource/snmp_queries/cisco_cmts.xml
 
 echo "*/5 * * * * cacti /usr/bin/php /usr/share/cacti/poller.php > /dev/null 2>&1" > /etc/cron.d/cacti
 sed -i 's/Require host localhost$/Require all granted/' /etc/httpd/conf.d/cacti.conf
@@ -42,15 +42,15 @@ systemctl reload httpd.service
 cd /usr/share/cacti/cli
 su -s /bin/bash -c "php add_tree.php --type=tree --name='Cablemodem' --sort-method=natural" apache
 su -s /bin/bash -c "php add_tree.php --type=tree --name='CMTS' --sort-method=natural" apache
-su -s /bin/bash -c "php import_template.php --filename=/var/www/lara/modules/ProvMon/Console/cacti/cacti_host_template_cablemodem.xml" apache
-su -s /bin/bash -c "php import_template.php --filename=/var/www/lara/modules/ProvMon/Console/cacti/cacti_host_template_casa_cmts.xml" apache
-su -s /bin/bash -c "php import_template.php --filename=/var/www/lara/modules/ProvMon/Console/cacti/cacti_host_template_cisco_cmts.xml" apache
+su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_cablemodem.xml" apache
+su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_casa_cmts.xml" apache
+su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_cisco_cmts.xml" apache
 
-php /var/www/lara/artisan view:clear
+php /var/www/nmsprime/artisan view:clear
 # we call ProvMonController from cacti and thus need to be able to write to the following folder
-chmod o+w /var/www/lara/storage/framework/views
+chmod o+w /var/www/nmsprime/storage/framework/views
 
 # create graphs for all existing modems
-php /var/www/lara/artisan nms:cacti
+php /var/www/nmsprime/artisan nms:cacti
 
 echo "Please visit https://localhost/cacti to finish the installation"
