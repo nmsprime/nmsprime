@@ -5,7 +5,7 @@ namespace Modules\ProvVoipEnvia\Entities;
 class ProvVoipEnviaTest extends \TestCase {
 
 	/**
-	 * Test the correct lara response to ping against Envia API.
+	 * Test the correct nmsprime response to ping against Envia API.
 	 *
 	 * @return void
 	 */

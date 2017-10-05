@@ -7,7 +7,7 @@ use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoipEnvia\Entities\ProvVoipEnviaHelpers;
 
-// Model not found? execute composer dump-autoload in lara root dir
+// Model not found? execute composer dump-autoload in nmsprime root dir
 class EnviaOrder extends \BaseModel {
 
 	// The associated SQL table for this Model
@@ -16,7 +16,7 @@ class EnviaOrder extends \BaseModel {
 	// View Icon
 	public static function view_icon()
 	{
-		return '<i class="fa fa-shopping-cart"></i>'; 
+		return '<i class="fa fa-shopping-cart"></i>';
 	}
 
 	// collect all order related informations ⇒ later we can use subarrays of this array to get needed informations
