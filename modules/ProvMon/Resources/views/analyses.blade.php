@@ -255,8 +255,6 @@
 					var source = new EventSource("<?php echo route('ProvMon.realtime_ping', $ip); ?>");
 
 					source.onmessage = function(e) {
-						console.log(e.data);
-
 						// close connection
 						if (e.data == 'finished')
 						{
