@@ -230,11 +230,11 @@ class CustomerTopoController extends NetElementController {
 		{
 			// load per modem diagrams
 			$dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Overview');
-			switch (\Input::get('row')) {
-				case null:
-				case 'us_pwr': $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Upstream'); break;
-				case 'ds_pwr': $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Downstream'); break;
-			}
+			if (!\Input::has('row'))
+				$dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS US PWR');
+			else
+				$dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS '.strtoupper(str_replace('_', ' ', \Input::get('row'))));
+
 
 			$dia = $provmon->monitoring($modem, $dia_ids);
 
