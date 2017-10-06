@@ -37,18 +37,19 @@ function ss_docsis($hostname, $snmp_community) {
 		 'minMuRef' => min($val['Downstream']['Microreflection -dBc']),
 		 'avgMuRef' => ss_docsis_avg($val['Downstream']['Microreflection -dBc']),
 		 'maxMuRef' => max($val['Downstream']['Microreflection -dBc']),
+		 'minDsSNR' => min($val['Downstream']['MER dB']),
 		 'avgDsSNR' => ss_docsis_avg($val['Downstream']['MER dB']),
+		 'maxDsSNR' => max($val['Downstream']['MER dB']),
 		 'minUsPow' => min($val['Upstream']['Power dBmV']),
 		 'avgUsPow' => ss_docsis_avg($val['Upstream']['Power dBmV']),
 		 'maxUsPow' => max($val['Upstream']['Power dBmV']),
+		 'minUsSNR' => min($val['Upstream']['SNR dB']),
 		 'avgUsSNR' => ss_docsis_avg($val['Upstream']['SNR dB']),
-		   'upDSch' => $val['Downstream']['Operational CHs %'][0],
-		   'upUSch' => $val['Upstream']['Operational CHs %'][0],
+		 'maxUsSNR' => max($val['Upstream']['SNR dB']),
 		'T3Timeout' => array_sum(snmpwalk($hostname, $snmp_community, '1.3.6.1.2.1.10.127.1.2.2.1.12')),
 		'T4Timeout' => array_sum(snmpwalk($hostname, $snmp_community, '1.3.6.1.2.1.10.127.1.2.2.1.13')),
 		'Corrected' => array_sum(snmpwalk($hostname, $snmp_community, '1.3.6.1.2.1.10.127.1.1.4.1.3')),
-		 'InOctets' => 0,
-		'OutOctets' => 0
+		'Uncorrectable' => array_sum(snmpwalk($hostname, $snmp_community, '1.3.6.1.2.1.10.127.1.1.4.1.4')),
 	];
 
 	$result = '';
