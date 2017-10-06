@@ -6,6 +6,7 @@ if (!isset($_SERVER['argv'][0]) || isset($_SERVER['REQUEST_METHOD'])  || isset($
 }
 
 $no_http_headers = true;
+$_SERVER['SERVER_PORT'] = 8080;
 
 /* display ALL errors */
 error_reporting(0);
