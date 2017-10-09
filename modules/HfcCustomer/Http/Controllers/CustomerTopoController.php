@@ -167,6 +167,22 @@ class CustomerTopoController extends NetElementController {
 		return $this->show_topo(Modem::whereRaw(Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))));
 	}
 
+	/**
+	* Show customers with an upstream power of bigger than 50dBmV
+	*
+	* @author: Ole Ernst
+	*/
+	public function show_bad()
+	{
+		$modems = Modem::where('us_pwr', '>', '50');
+
+		// return back if all modems are fine
+		if(!$modems->count())
+			return back();
+
+		return $this->show_topo($modems);
+	}
+
 	/*
 	* Show Modems om Topography
 	*
