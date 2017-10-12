@@ -15,10 +15,9 @@ class UpdateCccAuthuserMoveTable extends BaseMigration {
 	public function up()
 	{
 		$faker = Faker\Factory::create();
-		$psw = $faker->password;
+		$psw = str_replace(["\\", "'"], ';', $faker->password);
 
 		DB::statement('CREATE DATABASE lara_customer');
-
 		DB::statement("CREATE USER 'customer'@'localhost' IDENTIFIED BY '$psw'");
 		DB::statement("GRANT select, delete, update, insert on lara_customer.* to 'customer'@'localhost'");
 
