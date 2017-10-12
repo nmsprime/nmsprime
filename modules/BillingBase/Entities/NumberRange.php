@@ -43,6 +43,7 @@ class NumberRange extends \BaseModel {
     
     public static function get_new_number($type, $costcenter_id)
 	{
+		$elements = array();
 		$new_number = null;
 		$tables = array(
 			'contract' => 'contract',
@@ -56,33 +57,35 @@ class NumberRange extends \BaseModel {
 		                  ->first();
 
 		// find all entries for given numberrange and type
-		$elements = \DB::table($tables[$type])
-		               ->whereBetween('number', [$numberrange->start, $numberrange->end])
-		               ->orderBy('number', 'asc')
-		               ->get();
+		if (!is_null($numberrange)) {
+			$start = trim($numberrange->prefix) . $numberrange->start . trim($numberrange->suffix);
+			$end = trim($numberrange->prefix) . $numberrange->end . trim($numberrange->suffix);
+
+			$elements = \DB::table($tables[$type])
+			               ->whereBetween('number', [$start, $end])
+			               ->orderBy('number', 'asc')
+			               ->get();
+		}
 
 		if (count($elements) == 0) {
 			$new_number = $numberrange->start;
 		} else {
 			// get last number
 			$last_element = end($elements);
-			$new_number = $last_element->number + 1;
+
+			$pos = strpos($last_element->number, trim($numberrange->prefix));
+			$last_number = substr_replace($last_element->number,'', $pos, strlen(trim($numberrange->prefix)));
+
+			$pos = strrpos($last_element->number, trim($numberrange->suffix));
+			$last_number = substr_replace($last_number,'', $pos - strlen(trim($numberrange->suffix)));
+
+			$new_number = $last_number + 1;
 		}
 
 		if ($new_number > $numberrange->end) {
 			// Todo: Throw Exception
 		}
 
-		// suffix
-		if (trim($numberrange->suffix) != '') {
-			$new_number = $new_number . $numberrange->suffix;
-		}
-
-		// prefix
-		if (trim($numberrange->prefix) != '') {
-			$new_number = $numberrange->prefix . $new_number;
-		}
-
-		return $new_number;
+		return trim($numberrange->prefix) . $new_number . trim($numberrange->suffix);
 	}
 }
