@@ -72,6 +72,7 @@ class NumberRange extends \BaseModel {
 		} else {
 			// get last number
 			$last_element = end($elements);
+			$last_number = $last_element->number;
 
 			if (trim($numberrange->prefix) != '') {
 				$pos = strpos($last_element->number, trim($numberrange->prefix));
