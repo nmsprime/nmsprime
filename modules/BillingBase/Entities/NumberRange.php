@@ -73,11 +73,15 @@ class NumberRange extends \BaseModel {
 			// get last number
 			$last_element = end($elements);
 
-			$pos = strpos($last_element->number, trim($numberrange->prefix));
-			$last_number = substr_replace($last_element->number,'', $pos, strlen(trim($numberrange->prefix)));
+			if (trim($numberrange->prefix) != '') {
+				$pos = strpos($last_element->number, trim($numberrange->prefix));
+				$last_number = substr_replace($last_element->number,'', $pos, strlen(trim($numberrange->prefix)));
+			}
 
-			$pos = strrpos($last_element->number, trim($numberrange->suffix));
-			$last_number = substr_replace($last_number,'', $pos - strlen(trim($numberrange->suffix)));
+			if (trim($numberrange->suffix) != '') {
+				$pos = strrpos( $last_element->number, trim( $numberrange->suffix ) );
+				$last_number = substr_replace( $last_number, '', $pos - strlen( trim( $numberrange->suffix ) ) );
+			}
 
 			$new_number = $last_number + 1;
 		}
