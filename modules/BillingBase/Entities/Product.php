@@ -64,7 +64,7 @@ class Product extends \BaseModel {
 				'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price'],
 				'header' =>  $this->type.' - '.$this->name.' | '.$this->price.' €',
 				'bsclass' => $bsclass,
-				'orderBy' => ['0' => 'asc']];  // columnindex => direction
+				'order_by' => ['0' => 'asc']];  // columnindex => direction
 	}
 
 	public function get_bsclass(){

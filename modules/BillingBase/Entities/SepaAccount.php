@@ -67,7 +67,7 @@ class SepaAccount extends \BaseModel {
 	{
 		return ['table' => $this->table,
 				'index_header' => [$this->table.'.name', $this->table.'.institute', $this->table.'.iban'],
-				'orderBy' => ['0' => 'asc'],  // columnindex => direction
+				'order_by' => ['0' => 'asc'],  // columnindex => direction
 				'header' =>  $this->name];
 	}
 
