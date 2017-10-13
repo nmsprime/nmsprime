@@ -525,7 +525,6 @@ end:
 			$sys['CMTS']     = [$cmts->hostname];
 			$ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
 			$us['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2'), 1000000);
-			$us['Width MHz']     = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'), 1000000);
 			$us['Modulation Profile'] = $this->_docsis_modulation($cmts->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
 		}
 
@@ -536,6 +535,7 @@ end:
 		$ds['Microreflection -dBc'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6');
 
 		// Upstream
+		$us['Width MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'), 1000000);
 		if ($docsis >= 4) $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
 		else              $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
 		$us['SNR dB'] = $cmts->get_us_snr($ip);
@@ -590,10 +590,7 @@ end:
 			if ($r > 10)
 				// maximum actual power is 10 dB
 				$r = 10;
-			if ($cmts->company == 'Casa')
-				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
-			if ($cmts->company == 'Cisco')
-				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.9.9.116.1.4.1.1.6.$idx", 'i', 10 * $r);
+			snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
 
 			array_push($rx_pwr, $r);
 		}
@@ -631,33 +628,23 @@ end:
 		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)];
 
 		$i = 0;
-		foreach(snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2') as $id => $freq)
-		{
+		foreach(snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2') as $id => $freq) {
 			$id = end((explode('.', $id)));
 			$us['Cluster'][$i] = snmpget($cmts->ip, $com, ".1.3.6.1.2.1.31.1.1.1.18.$id");
+			/* if utilization is always zero, DOCS-IF-MIB::docsIfCmtsChannelUtilizationInterval must be set to a non-zero value */
+			$us['Avg Utilization %'][$i] = array_sum(snmpwalk($cmts->ip, $com, ".1.3.6.1.2.1.10.127.1.3.9.1.3.$id"));
 			$us['If Id'][$i] = $id;
 			$us['Frequency MHz'][$i] = $freq / 1000000;
 			$i++;
 		}
-
 		$us['SNR dB'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
-
-		if ($cmts->company == 'Casa')
-			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
-		if ($cmts->company == 'Cisco') {
-			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.9.9.116.1.4.1.1.6'));
-			$us['Avg Utilization %'] = snmpwalk($cmts->ip, $com, ".1.3.6.1.4.1.9.9.116.1.4.1.1.7");
-		}
+		$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
 
 		// unset unused interfaces, as we don't want to show them on the web gui
 		foreach ($us['Frequency MHz'] as $key => $freq)
-		{
 			if ($us['SNR dB'][$key] == 0)
-			{
 				foreach ($us as $entry => $arr)
 					unset($us[$entry][$key]);
-			}
-		}
 
 		if($ctrl && isset($us['Rx Power dBmV']))
 			$us['Rx Power dBmV'] = $this->_set_new_rx_power($cmts, $cmts->get_rw_community(), $us);

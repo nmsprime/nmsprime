@@ -34,7 +34,7 @@ EOF
 ln -srf /var/www/lara/modules/ProvMon/Console/cacti/ss_docsis.php /usr/share/cacti/scripts/ss_docsis.php
 ln -srf /var/www/lara/modules/ProvMon/Console/cacti/cisco_cmts.xml /usr/share/cacti/resource/snmp_queries/cisco_cmts.xml
 
-echo "*/5 * * * * cacti /usr/bin/php /usr/share/cacti/poller.php > /dev/null 2>&1" > /etc/cron.d/cacti
+echo "#*/5 * * * * cacti /usr/bin/php /usr/share/cacti/poller.php > /dev/null 2>&1" > /etc/cron.d/cacti
 sed -i 's/Require host localhost$/Require all granted/' /etc/httpd/conf.d/cacti.conf
 systemctl reload httpd.service
 
@@ -53,4 +53,4 @@ chmod o+w /var/www/lara/storage/framework/views
 # create graphs for all existing modems
 php /var/www/lara/artisan nms:cacti
 
-echo "Please visit https://localhost/cacti to finish the installation"
+echo "Please visit https://localhost/cacti to finish the installation, rerun php artisan nms:cacti and uncomment /etc/cron.d/cacti"
