@@ -31,17 +31,19 @@ function ss_docsis_avg($a) {
 function ss_docsis($hostname, $snmp_community) {
 	$file = "/usr/share/cacti/rra/$hostname.json";
 	$rates = ['+8 hours', '+4 hours', '+10 minutes'];
+	$val = app()->call([$GLOBALS['controller'], 'realtime'], [$hostname, $snmp_community, gethostbyname($hostname), true]);
 
 	$preq = json_decode(file_exists($file) ? file_get_contents($file) : '{"rate":0}', true);
 	if(!isset($preq['next']) || time() > $preq['next']) {
 		snmp_set_quick_print(TRUE);
+		snmp_set_valueretrieval(SNMP_VALUE_LIBRARY);
 		$tmp = snmp2_walk($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.2.2.1.17.2');
-		$preq['data'] = preg_replace("/[^A-Fa-f0-9]/", '', reset($tmp));
+		$preq['data'] = isset($tmp) ? preg_replace("/[^A-Fa-f0-9]/", '', reset($tmp)) : '';
+		$preq['width'] = ss_docsis_avg($val['Upstream']['Width MHz']) * 1000000;
 		$preq['next'] = strtotime($rates[$preq['rate']]);
 		file_put_contents($file, json_encode($preq));
 	}
 
-	$val = app()->call([$GLOBALS['controller'], 'realtime'], [$hostname, $snmp_community, gethostbyname($hostname), true]);
 	$arr = [
 		 'minDsPow' => min($val['Downstream']['Power dBmV']),
 		 'avgDsPow' => ss_docsis_avg($val['Downstream']['Power dBmV']),
