@@ -132,8 +132,8 @@ class cactiCommand extends Command {
 				->where('h.id', '=', $matches[1]);
 
 			// if possible choose preexisting rrd file, instead of creating a new one
-			$file = glob('/var/lib/cacti/rra/'.$name.'_*.rrd')[0];
-			$data_source_path = $file ? str_replace('/var/lib/cacti/rra', '<path_rra>', $file) : $first->data_source_path;
+			$file = glob('/var/lib/cacti/rra/'.$name.'_*.rrd');
+			$data_source_path = $file ? str_replace('/var/lib/cacti/rra', '<path_rra>', $file[0]) : $first->data_source_path;
 			$stmnt->update(['t.data_source_path' => $data_source_path]);
 
 			// disable updating all RRDs except for first
