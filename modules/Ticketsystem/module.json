@@ -5,6 +5,7 @@
     "keywords": [],
     "active": 1,
     "order": 0,
+    "icon": "fa fa-ticket",
     "providers": [
         "Modules\\Ticketsystem\\Providers\\TicketsystemServiceProvider"
     ],
