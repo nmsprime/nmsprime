@@ -49,7 +49,7 @@ class TicketController extends \BaseController {
 			array(
 				'form_type' => 'select',
 				'name' => 'assigned_user_id[]',
-				'description' => 'Assigned user', 
+				'description' => 'Assign user',
 				'value' => $model->html_list(
 					Assignee::get_assignees(\Route::current()->getParameter('Ticket')),
 					array('last_name', 'first_name'), 
@@ -59,6 +59,7 @@ class TicketController extends \BaseController {
 				'options' => array(
 					'multiple' => 'multiple',
 				),
+				'help' => trans('helper.assign_user'),
 			),
 		);
 	}
