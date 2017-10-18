@@ -83,7 +83,7 @@ class TicketObserver {
 	public function creating($ticket)
 	{
 		// generate new ticketId and assign it to the ticket
-		$last_id = $ticket::count();
+		$last_id = $ticket::withTrashed()->count();
 		$new_id = $last_id + 1;
 		$ticket->id = $new_id;
 		
