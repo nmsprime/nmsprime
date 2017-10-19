@@ -127,7 +127,7 @@
 
 		<div class="row">
             {{-- Quickstart --}}
-            @DivOpen(3)
+            @DivOpen(5)
                 @include('dashboard::widgets.quickstart')
             @DivClose()
         </div>
@@ -143,19 +143,14 @@
 
 			{{-- Contract chart --}}
             @if ($contracts > 0)
-				@DivOpen(8)
-					@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => 'Contract Analytics', 'md' => 12, 'height' => 'auto'))
-				@DivClose()
+                @include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => 'Contract Analytics', 'md' => 8, 'height' => 'auto'))
 			@endif
 
 			{{-- Income chart --}}
 			@if (\PPModule::is_active('billingbase'))
 				@if ($allowed_to_see['accounting'] === true)
 					@if (isset($income['total']))
-
-						@DivOpen(4)
-							@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 12, 'height' => 'auto'))
-						@DivClose()
+                        @include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 4, 'height' => 'auto'))
 					@endif
 				@endif
 			@endif
