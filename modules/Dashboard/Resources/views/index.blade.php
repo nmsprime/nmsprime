@@ -65,6 +65,7 @@
 						'content' => 'contracts',
 						'widget_icon' => 'users',
 						'widget_bg_color' => 'green',
+						'link_target' => '#anchor-contracts',
 					)
 				)
 			@DivClose()
@@ -79,6 +80,7 @@
 								'content' => 'incomes',
 								'widget_icon' => 'euro',
 								'widget_bg_color' => 'blue',
+						        'link_target' => '#anchor-income',
 							)
 						)
 					@DivClose()
@@ -94,6 +96,7 @@
 							'content' => 'provvoipenvia',
 							'widget_icon' => 'info',
 							'widget_bg_color' => 'aqua',
+						    'link_target' => '#anchor-provvoipenvia',
 						)
 					)
 				@DivClose()
