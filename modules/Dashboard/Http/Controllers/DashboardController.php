@@ -461,8 +461,6 @@ class DashboardController extends BaseController
 	}
 
 
-}
-
 	/**
 	 * Returns all tickets with state = new
 	 *
