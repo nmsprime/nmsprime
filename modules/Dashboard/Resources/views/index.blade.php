@@ -88,7 +88,7 @@
 			@endif
 
 			{{-- Placeholder --}}
-			@if (\PPModule::is_active('provvoipenvia'))
+{{--			@if (\PPModule::is_active('provvoipenvia'))
 
 				@DivOpen(3)
 					@include ('bootstrap.widget',
@@ -101,7 +101,7 @@
 					)
 				@DivClose()
 			@endif
-
+--}}
 			{{-- Tickets --}}
 			@DivOpen(3)
 				@include ('bootstrap.widget',
