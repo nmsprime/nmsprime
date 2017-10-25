@@ -3,7 +3,7 @@
 class Cdr extends \BaseModel {
 
 	// SQL connection
-	// Default config of the voipmonitor daemon is to create its own database, use it instead of db_lara
+	// Default config of the voipmonitor daemon is to create its own database, use it instead of database defined in .env
 	protected $connection = 'mysql-voipmonitor';
 
 	// The associated SQL table for this Model
