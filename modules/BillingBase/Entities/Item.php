@@ -15,7 +15,7 @@ class Item extends \BaseModel {
 	{
 		// $tariff_prods = Product::whereIn('type', ['internet', 'tv', 'voip'])->lists('id')->all();
 		// $tariff_ids   = implode(',', $tariff_prods);
-		
+
 		$credit_prods = Product::where('type', '=', 'credit')->lists('id')->all();
 		$credit_ids   = implode(',', $credit_prods);
 
@@ -132,7 +132,7 @@ class Item extends \BaseModel {
 	 * The calculated charge for the customer that has purchased this item (last month is considered)
 	 *
 	 * @var float
-	 */ 
+	 */
 	public $charge = 0;
 
 
@@ -140,7 +140,7 @@ class Item extends \BaseModel {
 	 * The calculated ratio of the items product price (for the last month)
 	 *
 	 * @var float
-	 */ 
+	 */
 	public $ratio;
 
 
@@ -148,7 +148,7 @@ class Item extends \BaseModel {
 	 * The product name and date range the customer is charged for this item
 	 *
 	 * @var string
-	 */ 
+	 */
 	public $invoice_description;
 
 
@@ -287,7 +287,7 @@ class Item extends \BaseModel {
 				// started this yr
 				if (date('Y', $start) == $dates['Y'])
 				{
-					$ratio = 1 - date('z', $start) / (365 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1 
+					$ratio = 1 - date('z', $start) / (365 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1
 					$text  = date('Y-m-d', $start);
 				}
 				else
@@ -538,7 +538,7 @@ class ItemObserver
 
 		$cnt = $item->product->cycle_count;
 		if ($item->product->billing_cycle == 'Quarterly') $cnt *= 3;
-		if ($item->product->billing_cycle == 'Yearly') $cnt *= 12; 
+		if ($item->product->billing_cycle == 'Yearly') $cnt *= 12;
 
 		if(!$item->valid_from || $item->valid_from == '0000-00-00')
 			$item->valid_from = date('Y-m-d');

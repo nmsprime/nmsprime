@@ -50,7 +50,7 @@ class SepaAccount extends \BaseModel {
 
 	public static function view_icon()
 	{
-		return '<i class="fa fa-credit-card"></i>'; 
+		return '<i class="fa fa-credit-card"></i>';
 	}
 
 	// link title in index view
@@ -156,7 +156,7 @@ class SepaAccount extends \BaseModel {
 
 
 	/**
-	 * Sepa XML 
+	 * Sepa XML
 		* resulting in 2 possible files for direct debits or credits
 	 * @var array
 	 */
@@ -254,7 +254,7 @@ class SepaAccount extends \BaseModel {
 			);
 
 			$data = array_merge($data, $data2);
-			
+
 			$this->book_recs['sepa'][] = $data;
 		}
 		else
