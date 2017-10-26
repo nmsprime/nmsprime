@@ -323,6 +323,16 @@ class DashboardController extends BaseController
 	}
 
 	/**
+	 * Returns all tickets with state = new
+	 *
+	 * @return array
+	 */
+	private static function getNewTickets()
+	{
+		return Ticket::where('state', '=', 'New')->where('user_id', '=', \Auth::user()->id)->count();
+	}
+
+	/**
 	 * Return all impaired netelements in a table array
 	 *
 	 * @author Ole Ernst
@@ -460,14 +470,4 @@ class DashboardController extends BaseController
 		}
 	}
 
-
-	/**
-	 * Returns all tickets with state = new
-	 *
-	 * @return array
-	 */
-	private static function getNewTickets()
-	{
-		return Ticket::where('state', '=', 'New')->count();
-	}
 }

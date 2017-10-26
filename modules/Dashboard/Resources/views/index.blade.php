@@ -22,11 +22,6 @@
 	@include('dashboard::widgets.date')
 @stop
 
-{{--@section ('quickstart')--}}
-    {{--@include('dashboard::widgets.quickstart')--}}
-{{--@stop--}}
-
-
 <!-- Panels -->
 @section ('contract_analytics')
 	@include('dashboard::panels.contract_analytics')
@@ -35,10 +30,6 @@
 @section ('income_analytics')
 	@include('dashboard::panels.income_analytics')
 @stop
-
-{{--@section ('quickstart')--}}
-    {{--@include('dashboard::panels.quickstart')--}}
-{{--@stop--}}
 
 @section ('impaired_netelements')
     @if($netelements)
@@ -72,8 +63,8 @@
 
 			{{-- Income --}}
 			@if (\PPModule::is_active('billingbase'))
-				@if ($allowed_to_see['accounting'] === true)
-
+{{--				@if ($allowed_to_see['accounting'] === true) --}}
+                @if (\Auth::user()->is_admin())
 					@DivOpen(3)
 						@include ('bootstrap.widget',
 							array (
@@ -148,7 +139,8 @@
 
 			{{-- Income chart --}}
 			@if (\PPModule::is_active('billingbase'))
-				@if ($allowed_to_see['accounting'] === true)
+				{{--@if ($allowed_to_see['accounting'] === true)--}}
+                @if (\Auth::user()->is_admin())
 					@if (isset($income['total']))
                         @include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 4, 'height' => 'auto'))
 					@endif
