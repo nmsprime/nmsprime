@@ -134,11 +134,6 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			else
 				echo ($i + 1)."/$num [$c->id]\r";
 
-			// Skip invalid contracts
-			if (!$c->check_validity('yearly') && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
-				Log::info('billing', "Contract $c->number [$c->id] is invalid for current year");
-				continue;
-			}
 
 			if (!$c->create_invoice) {
 				Log::info('billing', "Create invoice for Contract $c->number [$c->id] is off");
@@ -151,10 +146,11 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				continue;
 			}
 
-			// init contract temp variables
-			$charge 	= []; 					// total costs for this month for current contract
-			// expires is checked in Item & SepaAccount
-			$c->expires = date('Y-m-01', strtotime($c->contract_end)) == $this->dates['lastm_01'];
+			// Skip invalid contracts
+			if (!$c->check_validity('yearly') && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
+				Log::info('billing', "Contract $c->number [$c->id] is invalid for current year");
+				continue;
+			}
 
 
 			/*
