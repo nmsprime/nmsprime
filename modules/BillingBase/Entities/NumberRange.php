@@ -34,12 +34,32 @@ class NumberRange extends \BaseModel {
 				$this->start,
 				$this->end,
 				$this->type,
-				CostCenter::find($this->costcenter_id)->name
+				CostCenter::withTrashed()->find($this->costcenter_id)->name
 			],
 			'index_header' => ['Id', 'Name', 'Prefix', 'Suffix', 'Start', 'End', 'Type', 'CostCenter'],
 			'header' => $this->id . ' - ' . $this->name
 		];
     }
+
+	public function view_index_label_ajax()
+	{
+		return [
+			'table' => $this->table,
+			'index_header' => [
+				$this->table . '.id',
+				$this->table . '.name',
+				$this->table . '.prefix',
+				$this->table . '.suffix',
+				$this->table . '.start',
+				$this->table . '.end',
+				$this->table . '.type',
+				$this->table . '.costcenter.name'
+			],
+			'header' => $this->table . 'id' . ' - ' . $this->table . 'name',
+			'order_by' => ['0' => 'asc'],
+			'eager_loading' => ['costcenter']
+		];
+	}
     
     public static function get_new_number($type, $costcenter_id)
 	{

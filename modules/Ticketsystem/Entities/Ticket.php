@@ -31,6 +31,8 @@ class Ticket extends \BaseModel {
 
 	public function view_index_label()
 	{
+		$bsclass = $this->get_bsclass();
+
 		return [
 			'index' => [
 				$this->id, 
@@ -42,8 +44,47 @@ class Ticket extends \BaseModel {
 				$this->created_at
 			],
 			'index_header' => ['Ticket Id', 'Title', 'Type', 'Priority', 'State', 'Created by', 'Created at'],
-			'header' => $this->id . ' - ' . $this->name
+			'header' => $this->id . ' - ' . $this->name,
+			'bsclass' => $bsclass
 		];
+	}
+
+	public function view_index_label_ajax()
+	{
+		$bsclass = $this->get_bsclass();
+
+		return [
+			'table' => $this->table,
+			'index_header' => [
+				$this->table . '.id',
+				$this->table . '.name',
+				$this->table . '.type',
+				$this->table . '.priority',
+				$this->table . '.state',
+				$this->table . '.user_id',
+				$this->table . '.created_at'
+			],
+			'header' => $this->id . ' - ' . $this->name,
+			'bsclass' => $bsclass,
+			'order_by' => ['0' => 'desc'],
+		];
+	}
+
+	public function get_bsclass()
+	{
+		$bs_class = 'default';
+
+		if ($this->state == 'Closed') {
+			$bs_class = 'success';
+		} elseif ($this->state == 'In process') {
+			$bs_class = 'info';
+		} elseif ($this->state == 'New' && ($this->priority == 'Critical' || $this->priority == 'Major')) {
+			$bs_class = 'danger';
+		} elseif ($this->state == 'New' && ($this->priority == 'Trivial' || $this->priority == 'Minor')) {
+			$bs_class = 'warning';
+		}
+
+		return $bs_class;
 	}
 
 	public function view_has_many()
