@@ -1,13 +1,24 @@
 <?php namespace Modules\Billingbase\Entities;
    
 use Modules\BillingBase\Entities\CostCenter;
+use Modules\ProvBase\Entities\Contract;
 
 class NumberRange extends \BaseModel {
 
     public $table = 'numberrange';
 
     protected $fillable = [];
-    
+
+	/**
+	 * BOOT:
+	 * - init observer
+	 */
+	public static function boot()
+	{
+		parent::boot();
+		NumberRange::observe(new NumberRangeObserver);
+	}
+
     public static function view_headline()
     {
         return 'Numberranges';
@@ -60,57 +71,117 @@ class NumberRange extends \BaseModel {
 			'eager_loading' => ['costcenter']
 		];
 	}
-    
+
+	/**
+	 * Relationships
+	 */
+	public function costcenter ()
+	{
+		return $this->belongsTo('Modules\BillingBase\Entities\CostCenter', 'costcenter_id');
+	}
+
     public static function get_new_number($type, $costcenter_id)
 	{
-		$elements = array();
 		$new_number = null;
-		$tables = array(
-			'contract' => 'contract',
-			'invoice' => 'invoice'
-		);
 
-		// get numberrange
-		$numberrange = \DB::table('numberrange')
-		                  ->where('type', $type)
-		                  ->where('id', $costcenter_id)
-		                  ->first();
+		switch ($type) {
+			case 'contract':
+				$new_number = self::get_new_contract_number($costcenter_id);
+				break;
 
-		// find all entries for given numberrange and type
-		if (!is_null($numberrange)) {
-			$start = trim($numberrange->prefix) . $numberrange->start . trim($numberrange->suffix);
-			$end = trim($numberrange->prefix) . $numberrange->end . trim($numberrange->suffix);
+			case 'invoice':
+				$new_number = self::get_new_invoice_number($costcenter_id);
+				break;
 
-			$elements = \DB::table($tables[$type])
-			               ->whereBetween('number', [$start, $end])
-			               ->orderBy('number', 'asc')
-			               ->get();
+			default:
+				$new_number = self::get_new_contract_number($costcenter_id);
 		}
 
-		if (count($elements) == 0) {
-			$new_number = $numberrange->start;
+		return $new_number;
+	}
+
+	protected static function get_new_contract_number($costcenter_id)
+	{
+		$contract_number = null;
+		$model = new Contract();
+		$numberranges = self::get_numberranges_by_type_and_costcenter('contract', $costcenter_id);
+
+		foreach ($numberranges as $key => $range) {
+
+			$contract_number = self::generate_number($model, $range);
+
+			if (!is_null($contract_number)) {
+				break;
+			}
+		}
+
+		return $contract_number;
+	}
+
+	public static function get_numberranges_by_type_and_costcenter($type, $costcenter_id)
+	{
+		return NumberRange::where('type', $type)
+		                  ->where('costcenter_id', $costcenter_id)
+		                  ->get();
+	}
+
+	protected static function get_new_invoice_number()
+	{
+		return null;
+	}
+
+	protected static function generate_number($model, $range)
+	{
+		$new_number = null;
+
+		// get last given number
+		$last_number = $range->last_generated_number;
+
+		/*
+		 * if last given number 0 then start with the first number of the range
+		 * otherwise raise the number about 1
+		 */
+		if ( $last_number == 0 ) {
+			$new_number = $range->start;
 		} else {
-			// get last number
-			$last_element = end($elements);
-			$last_number = $last_element->number;
-
-			if (trim($numberrange->prefix) != '') {
-				$pos = strpos($last_element->number, trim($numberrange->prefix));
-				$last_number = substr_replace($last_element->number,'', $pos, strlen(trim($numberrange->prefix)));
+			if ( $last_number < $range->end ) {
+				$new_number = $last_number + 1;
 			}
-
-			if (trim($numberrange->suffix) != '') {
-				$pos = strrpos( $last_element->number, trim( $numberrange->suffix ) );
-				$last_number = substr_replace( $last_number, '', $pos - strlen( trim( $numberrange->suffix ) ) );
-			}
-
-			$new_number = $last_number + 1;
 		}
 
-		if ($new_number > $numberrange->end) {
-			// Todo: Throw Exception
+		if (!is_null($new_number)) {
+			/*
+			 * save last number for range
+			 */
+			$range->last_generated_number = $new_number;
+			$range->save();
+
+			// add prefix and suffix
+			$new_number = trim($range->prefix) . $new_number . trim($range->suffix);
 		}
 
-		return trim($numberrange->prefix) . $new_number . trim($numberrange->suffix);
+		return $new_number;
+	}
+
+	private static function check_number($model, $number)
+	{
+		return $model::withTrashed()
+		      ->where('number', '=', $number)
+		      ->get();
+	}
+}
+
+/**
+ * Observer Class
+ *
+ * can handle   'creating', 'created', 'updating', 'updated',
+ *              'deleting', 'deleted', 'saving', 'saved',
+ *              'restoring', 'restored',
+ */
+class NumberRangeObserver
+{
+	public function created($numberrange)
+	{
+		return redirect()->route('CostCenter.edit', ['id' => $numberrange->costcenter_id]);
 	}
 }
