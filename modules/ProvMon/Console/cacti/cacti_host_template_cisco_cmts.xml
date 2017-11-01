@@ -1,4 +1,4 @@
-<cacti>	
+<cacti>
 	<hash_020025430a2cf82a01fbf7fb8bdc06cc1bf1b7>
 		<name>Cisco CMTS</name>
 		<graph_templates></graph_templates>
@@ -343,7 +343,7 @@
 				<cdef_id>0</cdef_id>
 				<value></value>
 				<gprint_id>hash_060025304a778405392f878a6db435afffc1e9</gprint_id>
-				<text_format>US Util (%)</text_format>
+				<text_format>US Util (pct)</text_format>
 				<hard_return></hard_return>
 				<sequence>11</sequence>
 			</hash_100025696d214af732c1a4984986a4d4038575>
@@ -595,6 +595,6 @@
 	</hash_05002583b5885f3c21d20dc269baa2faf7fb69>
 	<hash_060025304a778405392f878a6db435afffc1e9>
 		<name>Load Average</name>
-		<gprint_text>%8.2lf</gprint_text>
+		<gprint_text>%4.2lf</gprint_text>
 	</hash_060025304a778405392f878a6db435afffc1e9>
 </cacti>

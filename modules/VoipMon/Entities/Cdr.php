@@ -61,7 +61,7 @@ class Cdr extends \BaseModel {
 				'header' =>  'Caller: '.$this->caller.' (Start: '.$this->calldate.')',
                 'bsclass' => $bsclass,
                 'edit' => ['mos_min_mult10' => 'mos_min_normalized',],
-				'orderBy' => ['0' => 'desc']];
+				'order_by' => ['0' => 'desc']];
 	}
 
 	public function get_bsclass() 

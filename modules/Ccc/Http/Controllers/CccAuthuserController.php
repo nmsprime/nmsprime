@@ -326,7 +326,7 @@ class CccAuthuserController extends \BaseController {
 			return $this->show();
 		}
 
-		return \View::make('ccc::psw_update', $this->compact_prep_view(compact('email')));
+		return \View::make('ccc::psw_update', compact('email'));
 	}
 
 

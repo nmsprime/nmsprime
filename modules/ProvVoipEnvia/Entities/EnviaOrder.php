@@ -13,12 +13,6 @@ class EnviaOrder extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'enviaorder';
 
-	// View Icon
-	public static function view_icon()
-	{
-		return '<i class="fa fa-shopping-cart"></i>';
-	}
-
 	// collect all order related informations ⇒ later we can use subarrays of this array to get needed informations
 	// mark missing data with value null
 	protected static $meta = array(
@@ -525,6 +519,12 @@ class EnviaOrder extends \BaseModel {
 		return 'EnviaOrders';
 	}
 
+	// View Icon
+	public static function view_icon()
+	{
+		return '<i class="fa fa-shopping-cart"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{
@@ -548,21 +548,103 @@ class EnviaOrder extends \BaseModel {
 		else {
 	        $bsclass = $colors[$this->orderstatus_id];
 		}
+
 		$escalation_level = $escalations[$bsclass].' – '.$bsclass;
 
-		if (!$this->contract_id) {
-			$contract_nr = '–';
-		}
-		else {
-			$contract = Contract::withTrashed()->where('id', $this->contract_id)->first();
-			if (!is_null($contract->deleted_at)) {
-				$contract_nr = '<s>'.$contract->number.'</s>';
-			}
-			else {
-				$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract->number.'</a>';
-			}
+		$contract_nr = $this->get_contract_nr();
+
+		$modem_id = $this->get_modem_id();
+
+		// show all order related phonenumbers
+		$phonenumber_nrs = $this->get_phonenumbers();
+
+		$enviacontract_nr = $this->get_enviacontract_ref();
+
+		$current = $this->get_user_interaction_necessary();
+
+		// add line breaks to make stuff fit better into table
+		// for the use of &shy; read https://css-tricks.com/almanac/properties/h/hyphenate/#article-header-id-2
+		$ordertype = $this->get_ordertype();
+
+		$orderstatus = $this->get_orderstatus();
+
+        return ['index' => [$ordertype, $orderstatus, $escalation_level, $contract_nr, $modem_id, $phonenumber_nrs, $enviacontract_nr, $this->created_at, $this->updated_at, $this->orderdate, $current],
+                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract', 'Modem', 'Numbers', 'EnviaContract', 'Created at', 'Updated at', 'Orderdate', 'Needs action?'],
+                'bsclass' => $bsclass,
+				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
+		];
+	}
+
+	public function view_index_label_ajax()
+	{
+		// combine all possible orderstatus IDs with GUI colors
+		$colors = array();
+		foreach (self::$meta['states'] as $state) {
+			$colors[$state['orderstatus_id']] = $state['view_class'];
 		}
 
+		if (!boolval($this->orderstatus_id)) {
+			$bsclass = 'info';
+		}
+		else {
+			$bsclass = $colors[$this->orderstatus_id];
+		}
+
+        return ['table' => $this->table,
+                'index_header' => [$this->table.'.ordertype', $this->table.'.orderstatus', 'escalation_level', 'contract.number', 'modem.id', 'phonenumber.number', 'enviacontract.envia_contract_reference',  $this->table.'.created_at', $this->table.'.updated_at', $this->table.'.orderdate', 'enviaorder_current'],
+				'bsclass' => $bsclass,
+				'sortsearch' => ['phonenumbers'],
+				'eager_loading' => ['modem', 'contract', 'enviacontract', 'phonenumbers' ],
+				'edit' => ['ordertype' => 'get_ordertype', 'orderstatus'  => 'get_orderstatus', 'modem.id' => 'get_modem_id', 'contract.number' => 'get_contract_nr', 'enviacontract.envia_contract_reference' => 'get_enviacontract_ref', 'enviaorder_current' => 'get_user_interaction_necessary', 'phonenumber.number' => 'get_phonenumbers', 'escalation_level' => 'get_escalation_level'],
+				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
+		];
+	}
+
+	public function get_escalation_level()
+	{
+		// combine all possible orderstatus IDs with GUI colors
+		$colors = array();
+		foreach (self::$meta['states'] as $state) {
+			$colors[$state['orderstatus_id']] = $state['view_class'];
+		}
+
+		if (!boolval($this->orderstatus_id)) {
+			$bsclass = 'info';
+		}
+		else {
+			$bsclass = $colors[$this->orderstatus_id];
+		}
+		// this is used to group the orders by their escalation levels (so later on we can sort them by these levels)
+		$escalations = [
+			'success' => 0,
+			'info' => 1,
+			'warning' => 2,
+			'danger' => 3,
+		];
+
+		$escalation_level = $escalations[$bsclass].' – '.$bsclass;
+
+		return $escalation_level;
+	}
+
+	public function get_ordertype()
+	{
+		$ordertype = $this->ordertype;
+		$ordertype = str_replace('Rufnummernkonfiguration', 'Rufnummern&shy;konfiguration', $ordertype);
+
+		return $ordertype;
+	}
+
+	public function get_orderstatus()
+	{
+		$orderstatus = $this->orderstatus;
+		$orderstatus = str_replace('Portierungserklärung', 'Portierungs&shy;erklärung', $orderstatus);
+
+		return $orderstatus;
+	}
+
+	public function get_modem_id()
+	{
 		if (!$this->modem_id) {
 			$modem_id = '–';
 		}
@@ -576,6 +658,60 @@ class EnviaOrder extends \BaseModel {
 			}
 		}
 
+		return $modem_id;
+	}
+
+	public function get_contract_nr()
+	{
+		if (!$this->contract_id) {
+			$contract_nr = '–';
+		}
+		else {
+			$contract = Contract::withTrashed()->where('id', $this->contract_id)->first();
+			if (!is_null($contract->deleted_at)) {
+				$contract_nr = '<s>'.$contract->number.'</s>';
+			}
+			else {
+				$contract_nr = '<a href="'.\URL::route('Contract.edit', array($this->contract_id)).'" target="_blank">'.$contract->number.'</a>';
+			}
+		}
+
+		return $contract_nr;
+	}
+
+	public function get_enviacontract_ref()
+	{
+		if ($this->enviacontract_id) {
+			$enviacontract = EnviaContract::withTrashed()->where('id', $this->enviacontract_id)->first();
+			$reference = !is_null($enviacontract->envia_contract_reference) ? $enviacontract->envia_contract_reference : 'ID: '.$this->enviacontract_id;
+			if (!is_null($enviacontract->deleted_at)) {
+				$enviacontract_nr = '<s>'.$reference.'</s>';
+			}
+			else {
+				$enviacontract_nr = '<a href="'.\URL::route('EnviaContract.edit', array($this->enviacontract_id)).'" target="_blank">'.$reference.'</a>';
+			}
+		}
+		else {
+			$enviacontract_nr = '–';
+		}
+
+		return $enviacontract_nr;
+	}
+
+	public function get_user_interaction_necessary()
+	{
+		if (!$this->user_interaction_necessary()) {
+			$current = '–';
+		}
+		else {
+			$current = '<b>'.\App\Http\Controllers\BaseViewController::translate_label('Yes').'!!</b><br><a href="'.\URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id)).'" target="_self">'.\App\Http\Controllers\BaseViewController::translate_label('Mark solved').'</a>';
+		}
+
+		return $current;
+	}
+
+	public function get_phonenumbers()
+	{
 		// show all order related phonenumbers
 		$phonenumber_nrs = [];
 		$space_before_numbers = str_repeat('&nbsp', 3);
@@ -611,42 +747,8 @@ class EnviaOrder extends \BaseModel {
 			$phonenumber_nrs = implode('<br><br>', $tmp_nrs);
 		}
 
-		if ($this->enviacontract_id) {
-			$enviacontract = EnviaContract::withTrashed()->where('id', $this->enviacontract_id)->first();
-			$reference = !is_null($enviacontract->envia_contract_reference) ? $enviacontract->envia_contract_reference : 'ID: '.$this->enviacontract_id;
-			if (!is_null($enviacontract->deleted_at)) {
-				$enviacontract_nr = '<s>'.$reference.'</s>';
-			}
-			else {
-				$enviacontract_nr = '<a href="'.\URL::route('EnviaContract.edit', array($this->enviacontract_id)).'" target="_blank">'.$reference.'</a>';
-			}
-		}
-		else {
-			$enviacontract_nr = '–';
-		}
-
-		if (!$this->user_interaction_necessary()) {
-			$current = '–';
-		}
-		else {
-			$current = '<b>Yes!!</b><br><a href="'.\URL::route("EnviaOrder.marksolved", array('EnviaOrder' => $this->id)).'" target="_self">Mark solved</a>';
-		}
-
-		// add line breaks to make stuff fit better into table
-		// for the use of &shy; read https://css-tricks.com/almanac/properties/h/hyphenate/#article-header-id-2
-		$ordertype = $this->ordertype;
-		$ordertype = str_replace('Rufnummernkonfiguration', 'Rufnummern&shy;konfiguration', $ordertype);
-
-		$orderstatus = $this->orderstatus;
-		$orderstatus = str_replace('Portierungserklärung', 'Portierungs&shy;erklärung', $orderstatus);
-
-        return ['index' => [$ordertype, $orderstatus, $escalation_level, $contract_nr, $modem_id, $phonenumber_nrs, $enviacontract_nr, $this->created_at, $this->updated_at, $this->orderdate, $current],
-                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract', 'Modem', 'Numbers', 'EnviaContract', 'Created at', 'Updated at', 'Orderdate', 'Needs action?'],
-                'bsclass' => $bsclass,
-				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
-		];
+		return $phonenumber_nrs;
 	}
-
 
 	/**
 	 * Prepare the list of orders to be shown on index page

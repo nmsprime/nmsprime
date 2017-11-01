@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\BillingBase\Console;
 
 use Illuminate\Console\Command;
@@ -40,7 +40,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
 	protected $dir 			= 'data/billingbase/accounting/'; 				// relative to storage/app/ - Note: completed by month in constructor!
-	
+
 	protected $dates;					// offen needed time strings for faster access - see constructor
 
 
@@ -127,34 +127,30 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		 */
 		foreach ($contracts as $i => $c)
 		{
-			// progress bar - workaround as progress bar is not shown when cmd is called 
+			// progress bar - workaround as progress bar is not shown when cmd is called
 			// from observer or throws exception when called via queue
 			if ($this->output)
 				$bar->advance();
 			else
 				echo ($i + 1)."/$num [$c->id]\r";
 
-			// Skip invalid contracts
-			if (!$c->check_validity('yearly') && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
-				Log::info('billing', "Contract $c->number [$c->id] is invalid for current year");
-				continue;
-			}
 
 			if (!$c->create_invoice) {
 				Log::info('billing', "Create invoice for Contract $c->number [$c->id] is off");
 				continue;
 			}
 
-			if(!$c->costcenter) {
+			if (!$c->costcenter) {
 				Log::error('billing', "Contract $c->number [$c->id] has no CostCenter assigned - Stop execution");
 				throw new Exception("Contract $c->number [$c->id] has no CostCenter assigned", 1);
 				continue;
 			}
 
-			// init contract temp variables
-			$charge 	= []; 					// total costs for this month for current contract
-			// expires is checked in Item & SepaAccount
-			$c->expires = date('Y-m-01', strtotime($c->contract_end)) == $this->dates['lastm_01'];
+			// Skip invalid contracts
+			if (!$c->check_validity('yearly') && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
+				Log::info('billing', "Contract $c->number [$c->id] is invalid for current year");
+				continue;
+			}
 
 
 			/*
@@ -164,7 +160,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			{
 				// skip items that are related to a deleted product
 				if (!isset($item->product)) {
-					Log::warning('billing', "Product $item->accounting_text was deleted", [$c->id]);
+					Log::error('billing', "Product of $item->accounting_text was deleted", [$c->id]);
+					throw new \Exception("Product of $item->accounting_text was deleted");
 					continue;
 				}
 
@@ -414,7 +411,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	/**
 	 * Calls cdrCommand to get Call data records from Provider and formats relevant data to structured array
 	 *
-	 * @return array 	[contract_id => [phonr_nr, time, duration, ...], 
+	 * @return array 	[contract_id => [phonr_nr, time, duration, ...],
 	 *					 next_contract_id => [...],
 	 * 					 ...]
 	 *					on success, else 2 dimensional empty array
@@ -467,7 +464,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		if (!$csv)
 			return array(array());
 
-		/* 
+		/*
 		 * Order existing phonenumbers in format 03735 739822 (prefix, number) to contract id/number as structured array:
 		 * 		[pn1 => [id, num], pn2 => [...], ...]
 		 * needed to check later if customer can really have made these calls (if customer number to phonenumber assignment is correct)
@@ -595,13 +592,15 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		}
 
 		return $data;
-	}	
+	}
 
 
 	/**
 	 * Instantiates an Array of all necessary date formats needed during execution of this Command
 	 *
 	 * Also needed in Item::calculate_price_and_span and in DashboardController!!
+	 *
+	 * TODO: Maybe implement this as service Provider or just dont use it
 	 */
 	public static function create_dates_array()
 	{

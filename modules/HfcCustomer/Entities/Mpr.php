@@ -55,7 +55,7 @@ class Mpr extends \BaseModel {
 		return ['table' => $this->table,
 				'index_header' => [$this->table.'.name', 'netelement.name'],
 				'header' =>  $this->name,
-				'orderBy' => ['0' => 'asc'], // columnindex => direction
+				'order_by' => ['0' => 'asc'], // columnindex => direction
 				'eager_loading' => ['netelement']];
 	}
 

@@ -158,7 +158,7 @@ class TreeErdController extends HfcBaseController {
 			$id 	= $netelem->id;
 			$name 	= $netelem->name;
 			$type 	= $netelem->netelementtype->name;
-			$state  = $netelem->state;
+			$state  = $netelem->get_bsclass();
 			$ip   	= $netelem->ip;
 			$p2   	= $netelem->pos;
 			$parent = $netelem->get_parent();
@@ -172,15 +172,12 @@ class TreeErdController extends HfcBaseController {
 			#
 			# Amplifier - what?? - all types are considered here
 			#
-			// if ($ip == '')
-				$color = 'green';
-			// if ($state == 'OK' || $state == '')
-				// $color = 'green';
-			if ($state == 'YELLOW')
+			$color = 'green';
+			if ($state == 'warning')
 				$color = 'yellow';
-			if ($state == 'RED')
+			if ($state == 'danger')
 				$color = 'red';
-			if ($state == 'BLUE')
+			if ($state == 'info')
 				$color = 'blue';
 
 			// why are elements with parent->id == 1 blue ?? - what is distinction made for?

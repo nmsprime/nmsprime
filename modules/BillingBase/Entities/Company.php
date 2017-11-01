@@ -62,7 +62,7 @@ class Company extends \BaseModel {
 				'index_header' => [$this->table.'.name', $this->table.'.city', $this->table.'.phone', $this->table.'.mail'],
 		        'bsclass' => $bsclass,
 				'header' => $this->name,
-				'orderBy' => ['0' => 'asc'], // columnindex => direction
+				'order_by' => ['0' => 'asc'], // columnindex => direction
 				];
 	}
 
