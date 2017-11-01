@@ -309,7 +309,10 @@ class SepaAccount extends \BaseModel {
 	}
 
 
-	public function add_invoice_data($contract, $mandate, $value)
+	/**
+	 * Set Invoice Data (Mandate, Company, Amount to charge) for invoice (of contract) that belongs to this SepaAccount
+	 */
+	public function set_invoice_data($contract, $mandate, $value)
 	{
 		// Attention! the chronical order of these functions has to be kept until now because of dependencies for extracting the invoice text
 		$this->invoices[$contract->id]->set_mandate($mandate);
@@ -318,7 +321,7 @@ class SepaAccount extends \BaseModel {
 	}
 
 	/**
-	 * Adds a sepa transfer for this account with the charge of a contract to the corresponding sepa_xml-Array (credit/debit)
+	 * Adds a sepa transfer for this account with the charge for a contract to the corresponding sepa_xml-Array (credit/debit)
 	 *
 	 * @param object 	$mandate
 	 * @param float 	$charge
