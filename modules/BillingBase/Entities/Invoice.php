@@ -608,7 +608,7 @@ class Invoice extends \BaseModel{
 	public static function cleanup()
 	{
 		if (\Config::get('database.default') == 'mysql')
-			$query = Invoice::where('type', '=', 'CDR')->whereRaw("CONCAT_WS('', year, '-', LPAD(month, 2 ,0), '-', '01') < '".date('Y-m-01', strtotime('-6 month'))."'");
+			$query = Invoice::where('type', '=', 'CDR')->whereRaw("CONCAT_WS('', year, '-', LPAD(month, 2 ,0), '-', '01') < '".date('Y-m-01', strtotime('-'.(BillingBase::first()->cdr_offset + 6).'month'))."'");
 		else
 		{
 			\Log::error('Missing Query in Modules\BillingBase\Entities\Invoice@cleanup for Database '.\Config::get('database.default'));
