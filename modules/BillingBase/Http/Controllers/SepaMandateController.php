@@ -4,6 +4,7 @@ namespace Modules\Billingbase\Http\Controllers;
 use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\SepaMandate;
 use Modules\BillingBase\Entities\SepaAccount;
+use Modules\BillingBase\Entities\CostCenter;
 
 class SepaMandateController extends \BaseController {
 
@@ -29,7 +30,9 @@ class SepaMandateController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'sepa_institute', 'description' => 'Bank Institute'),
 			array('form_type' => 'text', 'name' => 'sepa_valid_from', 'description' => 'Valid from', 'options' => ['placeholder' => 'YYYY-MM-DD']),
 			array('form_type' => 'text', 'name' => 'sepa_valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD']),
+			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'CostCenter', 'value' => $model->html_list(CostCenter::all(), 'name', true), 'help' => trans('helper.sm_cc')),
 			array('form_type' => 'checkbox', 'name' => 'recurring', 'description' => 'Already a Recurring Debit?', 'value' => '1'),
+
 		);
 	}
 
@@ -41,7 +44,18 @@ class SepaMandateController extends \BaseController {
 
 		$data['sepa_iban'] = strtoupper(str_replace(' ', '' ,$data['sepa_iban']));
 
-		return parent::prepare_input($data);
+		$data = parent::prepare_input($data);
+
+		// set this to null if no value is given
+		$nullable_fields = array(
+			'sepa_valid_from',
+			'sepa_valid_to',
+			'signature_date',
+		);
+
+		$data = $this->_nullify_fields($data, $nullable_fields);
+
+		return $data;
 	}
 
 
