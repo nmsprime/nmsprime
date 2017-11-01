@@ -43,6 +43,11 @@ class Invoice extends \BaseModel{
 				'header' => $this->year.' - '.$this->month.$type];
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-id-card-o"></i>';
+	}
+
 	/**
 	 * Relations
 	 */
