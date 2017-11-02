@@ -46,7 +46,7 @@ class DashboardController extends BaseController
 		$contracts = count($chart_data_contracts->contracts);
 
 		// income
-		if (\PPModule::is_active('billingbase') && $allowed_to_see['accounting'])
+		if (\PPModule::is_active('billingbase'))
 		{
 			$chart_data_income = self::get_chart_data_income();
 
