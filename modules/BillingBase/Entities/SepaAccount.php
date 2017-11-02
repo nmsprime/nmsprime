@@ -5,7 +5,6 @@ use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\BillingBase;
 
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
-use Digitick\Sepa\PaymentInformation;
 use Storage;
 use IBAN;
 use \App\Http\Controllers\BaseViewController;
@@ -352,28 +351,6 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Debits
-		// determine transaction type: first/recurring/final
-		$type  = PaymentInformation::S_RECURRING;
-		$start = $mandate->get_start_time();
-		$end   = $mandate->get_end_time();
-
-		// new mandate - after last run
-		// if ($start > strtotime('2016-04-12') && !$mandate->recurring)		// for test
-		if ($start > strtotime($dates['last_run']) && !$mandate->recurring)
-			$type = PaymentInformation::S_FIRST;
-
-		// when mandate ends next month
-		// TODO: Evaluate properly: If Contract still had Voip Tariff last month there can be another charge on next month
-		else if ($end && ($end < strtotime('first day of next month')))
-			$type = PaymentInformation::S_FINAL;
-
-		// else if ( (date('Y-m-01', strtotime($mandate->contract->contract_end)) == $dates['lastm_01']) || ($end && ($end < strtotime('first day of next month'))) )
-		// {
-		// 	if (!$mandate->contract->_get_valid_tariff_item_and_count('Voip')['count'])
-		// 		$type = PaymentInformation::S_FINAL;
-		// }
-
-
 		$data = array(
 			'endToEndId'			=> 'RG '.$this->_get_invoice_nr_formatted(),
 			'amount'                => $charge,
@@ -385,7 +362,11 @@ class SepaAccount extends \BaseModel {
 			'remittanceInformation' => $info,
 		);
 
-		$this->sepa_xml['debits'][$type][] = $data;
+		// determine transaction type: first/recurring/...
+		$state = $mandate->state;
+		$mandate->update_status();
+
+		$this->sepa_xml['debits'][$state][] = $data;
 	}
 
 

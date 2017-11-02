@@ -2,6 +2,7 @@
 
 namespace Modules\BillingBase\Entities;
 use Modules\ProvBase\Entities\Contract;
+use Digitick\Sepa\PaymentInformation;
 
 use DB;
 use Storage;
@@ -113,6 +114,30 @@ class SepaMandate extends \BaseModel {
 	 * Other Functions
 	 */
 
+
+	/**
+	 * Update SEPA-Mandate status during SettlementRun (accountingCommand) if it changes
+	 */
+	public function update_status()
+	{
+		$end  = $this->get_end_time();
+		$ends = $end && ($end < strtotime('first day of next month'));
+
+		$changed = false;
+
+		if ($this->state == PaymentInformation::S_FIRST) {
+			$this->state == $ends ? PaymentInformation::S_ONEOFF : PaymentInformation::S_RECURRING;
+			$changed = true;
+		}
+
+		else if ($ends) {
+			$this->state = PaymentInformation::S_FINAL;
+			$changed = true;
+		}
+
+		if ($changed)
+			$this->save();
+	}
 
 	/**
 	 * Returns start time of item - Note: sepa_valid_from field has higher priority than created_at

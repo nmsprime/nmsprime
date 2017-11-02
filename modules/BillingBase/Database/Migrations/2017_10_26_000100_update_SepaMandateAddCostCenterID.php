@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Digitick\Sepa\PaymentInformation;
 
 class UpdateSepaMandateAddCostCenterID extends BaseMigration {
 
@@ -18,7 +19,16 @@ class UpdateSepaMandateAddCostCenterID extends BaseMigration {
 		Schema::table($this->tablename, function(Blueprint $table)
 		{
 			$table->integer('costcenter_id')->nullable();
+			$table->boolean('disable')->nullable(); 			// temporary disabled mandate flag
+			$table->text('description')->nullable();
+
+			DB::statement("ALTER TABLE $this->tablename CHANGE COLUMN state state ENUM('".PaymentInformation::S_FIRST."', '".PaymentInformation::S_RECURRING."', '".PaymentInformation::S_ONEOFF."', '".PaymentInformation::S_FINAL."')");
+			$table->dropColumn('recurring');
 		});
+
+		$this->set_fim_fields(['description', 'sepa_bic', 'sepa_iban', 'sepa_institute', 'reference', 'sepa_holder']);
+
+		DB::update("UPDATE $this->tablename SET state='".PaymentInformation::S_RECURRING."' where (state is null or state='' or state='RECUR');");
 	}
 
 	/**
@@ -30,7 +40,10 @@ class UpdateSepaMandateAddCostCenterID extends BaseMigration {
 	{
 		Schema::table($this->tablename, function(Blueprint $table)
 		{
-			$table->dropColumn('costcenter_id');
+			// NOTE: we dont need to undo changes of column "state" as it wasn't used before
+
+			$table->dropColumn(['costcenter_id', 'disable', 'description']);
+			$table->boolean('recurring');
 		});
 	}
 
