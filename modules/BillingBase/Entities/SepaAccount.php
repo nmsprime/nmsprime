@@ -450,7 +450,7 @@ class SepaAccount extends \BaseModel {
 			foreach ($this->sepa_xml['debits'] as $type => $records)
 			{
 				// Set the initial information for direct debits
-				$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id.$type, $this->name);
+				$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id.$type, $this->name, 'pain.008.003.02');
 
 				// create a payment
 				$directDebit->addPaymentInfo($msg_id.$type, array(
@@ -469,8 +469,8 @@ class SepaAccount extends \BaseModel {
 
 				// Retrieve the resulting XML
 				$file = str_sanitize($this->dir.$this->name.'/DD_'.$type.'.xml');
-				$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
-				STORAGE::put($file, $data);
+				// $data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
+				Storage::put($file, $directDebit->asXML());
 
 				$this->_log("sepa direct debit $type xml", $file);
 			}
@@ -479,7 +479,7 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Set the initial information for direct debits
-		$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id, $this->name);
+		$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id, $this->name, 'pain.008.003.02');
 
 		foreach ($this->sepa_xml['debits'] as $type => $records)
 		{
@@ -497,13 +497,11 @@ class SepaAccount extends \BaseModel {
 			// Add Transactions to the named payment
 			foreach($records as $r)
 				$directDebit->addTransfer($msg_id.$type, $r);
-
 		}
 
 		// Retrieve the resulting XML
 		$file = str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DD').'.xml');
-		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
-		STORAGE::put($file, $data);
+		Storage::put($file, $directDebit->asXML());
 
 		$this->_log("sepa direct debit $type xml", $file);
 	}
@@ -535,8 +533,7 @@ class SepaAccount extends \BaseModel {
 
 		// Retrieve the resulting XML
 		$file = str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DC').'.xml');
-		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $customerCredit->asXML());
-		STORAGE::put($file, $data);
+		Storage::put($file, $customerCredit->asXML());
 
 		$this->_log("sepa direct credit xml", $file);
 	}
