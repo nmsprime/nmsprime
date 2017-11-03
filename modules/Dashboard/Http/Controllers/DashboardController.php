@@ -170,11 +170,11 @@ class DashboardController extends BaseController
 	/**
 	 * Returns monthly incomes for each product type
 	 *
-	 * @param array $contracts
 	 * @return array
 	 */
 	public static function get_income_total()
 	{
+		$ret = [];
 		$contracts = self::get_valid_contracts();
 
 		// manipulate dates array for charge calculation for coming month (not last one)
