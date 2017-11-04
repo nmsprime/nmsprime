@@ -516,7 +516,7 @@ class EnviaOrder extends \BaseModel {
 	// Name of View
 	public static function view_headline()
 	{
-		return 'EnviaOrders';
+		return 'envia TEL orders';
 	}
 
 	// View Icon
