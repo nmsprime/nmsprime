@@ -50,7 +50,7 @@ class SepaAccount extends \BaseModel {
 
 	public static function view_icon()
 	{
-		return '<i class="fa fa-credit-card"></i>'; 
+		return '<i class="fa fa-credit-card"></i>';
 	}
 
 	// link title in index view
@@ -67,7 +67,7 @@ class SepaAccount extends \BaseModel {
 	{
 		return ['table' => $this->table,
 				'index_header' => [$this->table.'.name', $this->table.'.institute', $this->table.'.iban'],
-				'orderBy' => ['0' => 'asc'],  // columnindex => direction
+				'order_by' => ['0' => 'asc'],  // columnindex => direction
 				'header' =>  $this->name];
 	}
 
@@ -133,14 +133,14 @@ class SepaAccount extends \BaseModel {
 		* resulting in 2 files for items and tariffs
 	 	* Filestructure is defined in add_accounting_record()-function
 	 * @var array
-	 */ 
+	 */
 	protected $acc_recs = array('tariff' => [], 'item' => []);
 
 
 	/**
 	 * Booking Records
 		* resulting in 2 files for records with sepa mandate or without
-	 	* Filestructure is defined in add_booking_record()-function		
+		* Filestructure is defined in add_booking_record()-function
 	 * @var array
 	 */
 	protected $book_recs = array('sepa' => [], 'no_sepa' => []);
@@ -156,7 +156,7 @@ class SepaAccount extends \BaseModel {
 
 
 	/**
-	 * Sepa XML 
+	 * Sepa XML
 		* resulting in 2 possible files for direct debits or credits
 	 * @var array
 	 */
@@ -254,7 +254,7 @@ class SepaAccount extends \BaseModel {
 			);
 
 			$data = array_merge($data, $data2);
-			
+
 			$this->book_recs['sepa'][] = $data;
 		}
 		else
@@ -301,7 +301,7 @@ class SepaAccount extends \BaseModel {
 		if (!isset($this->invoices[$contract->id]))
 		{
 			$this->invoices[$contract->id] = new Invoice;
-			$this->invoices[$item->contract->id]->settlementrun_id = $settlementrun_id;
+			$this->invoices[$contract->id]->settlementrun_id = $settlementrun_id;
 			$this->invoices[$contract->id]->add_contract_data($contract, $conf, $this->_get_invoice_nr_formatted());
 		}
 
@@ -330,7 +330,7 @@ class SepaAccount extends \BaseModel {
 			return;
 
 		$info = $this->company->name.' - ';
-		$info .= trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
+		$info .= trans('messages.month').' '.date('m/Y', strtotime('first day of last month'));
 
 		// Credits
 		if ($charge < 0)
@@ -351,17 +351,24 @@ class SepaAccount extends \BaseModel {
 		// Debits
 		// determine transaction type: first/recurring/final
 		$type  = PaymentInformation::S_RECURRING;
-		$start = strtotime($mandate->sepa_valid_from);
-		$end   = strtotime($mandate->sepa_valid_to);
+		$start = $mandate->get_start_time();
+		$end   = $mandate->get_end_time();
 
 		// new mandate - after last run
 		// if ($start > strtotime('2016-04-12') && !$mandate->recurring)		// for test
 		if ($start > strtotime($dates['last_run']) && !$mandate->recurring)
 			$type = PaymentInformation::S_FIRST;
 
-		// when mandate ends next month but before billing run
-		else if ($mandate->contract->expires || ($end > 0 && $end < strtotime('+1 month')))
+		// when mandate ends next month
+		// TODO: Evaluate properly: If Contract still had Voip Tariff last month there can be another charge on next month
+		else if ($end && ($end < strtotime('first day of next month')))
 			$type = PaymentInformation::S_FINAL;
+
+		// else if ( (date('Y-m-01', strtotime($mandate->contract->contract_end)) == $dates['lastm_01']) || ($end && ($end < strtotime('first day of next month'))) )
+		// {
+		// 	if (!$mandate->contract->_get_valid_tariff_item_and_count('Voip')['count'])
+		// 		$type = PaymentInformation::S_FINAL;
+		// }
 
 
 		$data = array(

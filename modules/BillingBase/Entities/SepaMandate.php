@@ -62,7 +62,7 @@ class SepaMandate extends \BaseModel {
 		return ['table' => $this->table,
 				'index_header' => [$this->table.'.sepa_holder', $this->table.'.sepa_valid_from', $this->table.'.sepa_valid_to', $this->table.'.reference'],
 				'bsclass' => $bsclass,
-				'orderBy' => ['0' => 'asc'],
+				'order_by' => ['0' => 'asc'],
 				'header' =>  $this->lastname." ".$this->firstname];
 	}
 

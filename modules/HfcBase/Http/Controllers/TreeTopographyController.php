@@ -269,11 +269,12 @@ class TreeTopographyController extends HfcBaseController {
 
 			$type  = $tree->type;
 			$parent= $tree->get_parent()->id;
+			$state = $tree->get_bsclass();
 
-			if ($tree->state == 'YELLOW')
+			if ($tree->state == 'warning')
 				$ystate += 1;
 
-			if ($tree->state == 'RED')
+			if ($tree->state == 'danger')
 				$rstate += 1;
 
 			if (($type == 'CMTS') || ($type == 'CLUSTER') || ($type == 'DATA') || ($type == 'NET'))
