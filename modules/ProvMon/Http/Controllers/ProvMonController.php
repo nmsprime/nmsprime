@@ -662,31 +662,6 @@ end:
 		return $ret;
 	}
 
-	/**
-	 * Get CMTS for a registered CM
-	 *
-	 * @param ip:	ip address of cm
-	 *
-	 * @author Nino Ryschawy
-	 */
-	static public function get_cmts($ip)
-	{
-		$validator = new \Acme\Validators\ExtendedValidator;
-		foreach(IpPool::all() as $pool)
-		{
-			$net[0] = $pool->net;
-			$net[1] = $pool->netmask;
-			if ($validator->validateIpInRange(0, $ip, $net))
-			{
-				$cmts_id = $pool->cmts_id;
-				break;
-			}
-		}
-		if (isset($cmts_id))
-			return Cmts::find($cmts_id);
-		return null;
-	}
-
 
 	/**
 	 * Set PHP SNMP Default Values
