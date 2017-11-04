@@ -473,7 +473,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		 * Order existing phonenumbers in format 03735 739822 (prefix, number) to contract id/number as structured array:
 		 * 		[pn1 => [id, num], pn2 => [...], ...]
 		 * needed to check later if customer can really have made these calls (if customer number to phonenumber assignment is correct)
-		 * NOTE: customer number here means the envia customer number that corresponds to id OR number in the laravel database
+		 * NOTE: customer number here means the envia customer number that corresponds to id OR number in our database
 		 */
 		$phonenumbers_db = \DB::table('phonenumber')
 			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
@@ -511,8 +511,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			if (!isset($customer_nrs[$calling_number]))
 			{
 				if (in_array($customer_nr, $customer_nrs_array)) {
-					Log::error('billing', "Calling Number [$calling_number] does not exist in laravel DB for customer number $customer_nr! Exit");
-					throw new \Exception("Calling Number [$calling_number] does not exist in laravel DB for customer number $customer_nr! Exit");
+					Log::error('billing', "Calling Number [$calling_number] does not exist in our DB for customer number $customer_nr! Exit");
+					throw new \Exception("Calling Number [$calling_number] does not exist in our DB for customer number $customer_nr! Exit");
 				}
 
 				if ($logged != $calling_number) {

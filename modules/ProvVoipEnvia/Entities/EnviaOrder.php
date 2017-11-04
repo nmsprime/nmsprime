@@ -7,7 +7,7 @@ use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoipEnvia\Entities\ProvVoipEnviaHelpers;
 
-// Model not found? execute composer dump-autoload in lara root dir
+// Model not found? execute composer dump-autoload in nmsprime root dir
 class EnviaOrder extends \BaseModel {
 
 	// The associated SQL table for this Model
@@ -678,6 +678,7 @@ class EnviaOrder extends \BaseModel {
 
 		return $contract_nr;
 	}
+
 	public function get_enviacontract_ref()
 	{
 		if ($this->enviacontract_id) {

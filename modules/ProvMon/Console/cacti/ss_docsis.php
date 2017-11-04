@@ -17,8 +17,8 @@ if (!isset($called_by_script_server)) {
 	print call_user_func('ss_docsis');
 }
 
-require '/var/www/lara/bootstrap/autoload.php';
-$app = require_once '/var/www/lara/bootstrap/app.php';
+require '/var/www/nmsprime/bootstrap/autoload.php';
+$app = require_once '/var/www/nmsprime/bootstrap/app.php';
 
 // https://gist.github.com/frzsombor/ddd0e11f93885060ef35#gistcomment-1455777
 $app->make('Illuminate\Contracts\Http\Kernel')->handle(Illuminate\Http\Request::capture());

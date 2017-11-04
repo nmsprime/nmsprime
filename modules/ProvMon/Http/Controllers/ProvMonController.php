@@ -191,10 +191,10 @@ class ProvMonController extends \BaseController {
 	 * Flood ping
 	 *
 	 * NOTE:
-	 * --- add /etc/sudoers.d/nms-lara ---
+	 * --- add /etc/sudoers.d/nms-nmsprime ---
 	 * Defaults:apache        !requiretty
 	 * apache  ALL=(root) NOPASSWD: /usr/bin/ping
-	 * --- /etc/sudoers.d/nms-lara ---
+	 * --- /etc/sudoers.d/nms-nmsprime ---
 	 *
 	 * @param hostname  the host to send a flood ping
 	 * @return flood ping exec result
