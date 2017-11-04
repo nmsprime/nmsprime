@@ -251,17 +251,31 @@ class CccAuthuserController extends \BaseController {
 	public function show()
 	{
 		$invoices = \Auth::guard('ccc')->user()->contract->invoices;
+		$invoice_links = [];
 
-		// dont show unverified invoices
+		$bsclass = ['info', 'active'];
+		$start = $year = 0;
+
 		foreach ($invoices as $key => $invoice)
 		{
+			// dont show unverified invoices
 			if (!$invoice->settlementrun->verified)
-				unset($invoices[$key]);
+				continue;
+
+			if ($invoice->year != $year)
+				$start = ($start + 1) % 2;
+
+			$year = $invoice->year;
+
+			$invoice_links[] = array(
+					'link' => \HTML::linkRoute('Customer.Download', str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''), ['invoice' => $invoice->id]),
+					'bsclass' => $bsclass[$start],
+				);
 		}
 
 		$emails = \PPModule::is_active('mail') ? \Auth::guard('ccc')->user()->contract->emails : collect();
 
-		return \View::make('ccc::index', compact('invoices','emails'));
+		return \View::make('ccc::index', compact('invoice_links','emails'));
 	}
 
 

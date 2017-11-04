@@ -43,6 +43,11 @@ class Invoice extends \BaseModel{
 				'header' => $this->year.' - '.$this->month.$type];
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-id-card-o"></i>';
+	}
+
 	/**
 	 * Relations
 	 */
@@ -165,14 +170,6 @@ class Invoice extends \BaseModel{
 	);
 
 
-	public function __construct($attributes = array())
-	{
-		$this->filename_invoice = self::_get_invoice_filename();
-
-		parent::__construct($attributes);
-	}
-
-
 	public function get_invoice_dir_path()
 	{
 		return storage_path('app/'.$this->rel_storage_invoice_dir.$this->contract_id.'/');
@@ -189,9 +186,11 @@ class Invoice extends \BaseModel{
 	}
 
 	/**
-	 * @return String 	Invoice Filename without extension (like .pdf)
+	 * @return String 	Date part of the invoice filename
+	 *
+	 * NOTE: This has to be adapted if we want support creating invoices for multiple months in the past
 	 */
-	private static function _get_invoice_filename()
+	private static function _get_invoice_filename_date_part()
 	{
 		return date('Y_m', strtotime('first day of last month'));
 	}
@@ -223,6 +222,7 @@ class Invoice extends \BaseModel{
 		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
 		$this->data['date_invoice'] = date('d.m.Y', strtotime('last day of last month'));
+		$this->filename_invoice 	= $this->filename_invoice ? : self::_get_invoice_filename_date_part().'_'.str_replace('/', '_', $invoice_nr);
 
 		// Note: Add other currencies here
 		$this->currency	= strtolower($config->currency) == 'eur' ? '€' : $config->currency;
@@ -396,7 +396,7 @@ class Invoice extends \BaseModel{
 			$count++;
 		}
 
-		$sum = sprintf("%01.2f", $sum); 	// round($sum, 2)
+		$sum = sprintf("%01.2f", $sum);
 
 		$this->data['cdr_charge'] = $sum;
 		$this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'. $sum . '}\\\\';
@@ -439,7 +439,6 @@ class Invoice extends \BaseModel{
 		$this->_create_pdfs();
 
 		system('chown -R apache '.$dir);
-
 	}
 
 
@@ -467,7 +466,6 @@ class Invoice extends \BaseModel{
 		self::create($data);
 	}
 
-
 	/**
 	 * Creates Tex File of Invoice or CDR
 	 * replaces all '\_' and all fields of data array that are set by it's value
@@ -489,16 +487,13 @@ class Invoice extends \BaseModel{
 		// Replace placeholder by value
 		$template = $this->_replace_placeholder($template);
 
-
 		// Create tex file(s)
 		Storage::put($this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"}, $template);
-		// echo 'Stored tex file in '.storage_path('app/'.$this->rel_storage_invoice_dir.$this->filename_invoice)."\n";
 	}
 
 
 	private function _replace_placeholder($template)
 	{
-		// var_dump($this->data['invoice_nr']);
 		$template = str_replace('\\_', '_', $template);
 
 		foreach ($this->data as $key => $string)
@@ -554,11 +549,6 @@ class Invoice extends \BaseModel{
 
 				// echo "Successfully created $key in $file\n";
 				ChannelLog::debug('billing', "Successfully created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
-
-				// Deprecated: remove temporary files - This is done by remove_templatex_files() now after all pdfs were created simultaniously by multiple threads
-				// unlink($file);
-				// unlink($file.'.aux');
-				// unlink($file.'.log');
 			}
 		}
 
@@ -592,11 +582,7 @@ class Invoice extends \BaseModel{
 	 */
 	public static function delete_current_invoices()
 	{
-		$invoice_fname  = self::_get_invoice_filename().'.pdf';
-		$cdr_fname 		= self::_get_cdr_filename().'.pdf';
-
-		$query = Invoice::where('filename', '=', $invoice_fname)->orWhere('filename', '=', $cdr_fname)->whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
-
+		$query 	  = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
 		$invoices = $query->get();
 
 		// Delete PDFs
@@ -622,7 +608,7 @@ class Invoice extends \BaseModel{
 	public static function cleanup()
 	{
 		if (\Config::get('database.default') == 'mysql')
-			$query = Invoice::where('type', '=', 'CDR')->whereRaw("CONCAT_WS('', year, '-', LPAD(month, 2 ,0), '-', '01') < '".date('Y-m-01', strtotime('-6 month'))."'");
+			$query = Invoice::where('type', '=', 'CDR')->whereRaw("CONCAT_WS('', year, '-', LPAD(month, 2 ,0), '-', '01') < '".date('Y-m-01', strtotime('-'.(BillingBase::first()->cdr_offset + 6).'month'))."'");
 		else
 		{
 			\Log::error('Missing Query in Modules\BillingBase\Entities\Invoice@cleanup for Database '.\Config::get('database.default'));

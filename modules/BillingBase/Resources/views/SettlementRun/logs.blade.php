@@ -9,6 +9,12 @@
 		</tr>
 	</thead>
 	<tbody>
+		<div align='right'>
+			{{ Form::open(array('route' => ['SettlementRun.log_dl', $view_var->id], 'method' => 'get')) }}
+				{{ Form::submit(trans('view.sr_dl_logs') , ['style' => 'simple']) }}
+			{{ Form::close() }}
+		@DivClose()
+
 		@if (isset($logs))
 			@foreach($logs as $row)
 				<tr class="{{ $row['color'] }}">

@@ -86,15 +86,14 @@ class SettlementRunController extends \BaseController {
 			if ($obj->name == 'billing:accounting')
 			{
 				\Artisan::call('queue:forget', ['id' => $failed_job->id]);
-				// show all logs made from 2 min before job failed
-				$logs = self::get_logs(strtotime('-2 minutes', strtotime($failed_job->failed_at)), Logger::ERROR);
+				$logs = self::get_logs($sr->updated_at->subSeconds(1)->__get('timestamp'), Logger::ERROR);
 				break;
 			}
 		}
 
 		// get execution logs if job has finished successfully - (show error logs otherwise - show nothing during execution)
 		// NOTE: when SettlementRun gets verified the logs will disappear because timestamp is updated
-		$logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->subSeconds(20)->__get('timestamp')) : $logs;
+		$logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
 
 		return parent::edit($id)->with('rerun_button', $bool)->with('logs', $logs);
 	}
@@ -168,7 +167,7 @@ class SettlementRunController extends \BaseController {
 	 * @param severity_lvl 	Enum 				Minimum Severity Level to show
 	 * @return Array 		[timestamp => [color, type, message], ...]
 	 */
-	public static function get_logs($date_time, $severity_lvl = Logger::INFO)
+	public static function get_logs($date_time, $severity_lvl = Logger::NOTICE)
 	{
 		$logs = parent::get_logs(storage_path('logs/billing.log'), $severity_lvl);
 		$old = $filtered = [];
@@ -206,6 +205,29 @@ class SettlementRunController extends \BaseController {
 		}
 
 		return $filtered;
+	}
+
+
+	/**
+	 * Return CSV with all Log Entries of minimum log level INFO
+	 */
+	public function download_logs($id)
+	{
+		$sr = SettlementRun::find($id);
+
+		$logs = self::get_logs($sr->updated_at->__get('timestamp'), Logger::INFO);
+
+		$fn = '/tmp/billing-logs.csv';
+		$fh = fopen($fn, 'w+');
+
+		foreach (array_reverse($logs) as $key => $arr) {
+			unset($arr['color']);
+			fputcsv($fh, $arr);
+		}
+
+		fclose($fh);
+
+		return response()->download($fn);
 	}
 
 

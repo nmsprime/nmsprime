@@ -5,7 +5,6 @@ use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\BillingBase;
 
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
-use Digitick\Sepa\PaymentInformation;
 use Storage;
 use IBAN;
 use \App\Http\Controllers\BaseViewController;
@@ -309,7 +308,10 @@ class SepaAccount extends \BaseModel {
 	}
 
 
-	public function add_invoice_data($contract, $mandate, $value)
+	/**
+	 * Set Invoice Data (Mandate, Company, Amount to charge) for invoice (of contract) that belongs to this SepaAccount
+	 */
+	public function set_invoice_data($contract, $mandate, $value)
 	{
 		// Attention! the chronical order of these functions has to be kept until now because of dependencies for extracting the invoice text
 		$this->invoices[$contract->id]->set_mandate($mandate);
@@ -318,7 +320,7 @@ class SepaAccount extends \BaseModel {
 	}
 
 	/**
-	 * Adds a sepa transfer for this account with the charge of a contract to the corresponding sepa_xml-Array (credit/debit)
+	 * Adds a sepa transfer for this account with the charge for a contract to the corresponding sepa_xml-Array (credit/debit)
 	 *
 	 * @param object 	$mandate
 	 * @param float 	$charge
@@ -349,28 +351,6 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Debits
-		// determine transaction type: first/recurring/final
-		$type  = PaymentInformation::S_RECURRING;
-		$start = $mandate->get_start_time();
-		$end   = $mandate->get_end_time();
-
-		// new mandate - after last run
-		// if ($start > strtotime('2016-04-12') && !$mandate->recurring)		// for test
-		if ($start > strtotime($dates['last_run']) && !$mandate->recurring)
-			$type = PaymentInformation::S_FIRST;
-
-		// when mandate ends next month
-		// TODO: Evaluate properly: If Contract still had Voip Tariff last month there can be another charge on next month
-		else if ($end && ($end < strtotime('first day of next month')))
-			$type = PaymentInformation::S_FINAL;
-
-		// else if ( (date('Y-m-01', strtotime($mandate->contract->contract_end)) == $dates['lastm_01']) || ($end && ($end < strtotime('first day of next month'))) )
-		// {
-		// 	if (!$mandate->contract->_get_valid_tariff_item_and_count('Voip')['count'])
-		// 		$type = PaymentInformation::S_FINAL;
-		// }
-
-
 		$data = array(
 			'endToEndId'			=> 'RG '.$this->_get_invoice_nr_formatted(),
 			'amount'                => $charge,
@@ -382,7 +362,11 @@ class SepaAccount extends \BaseModel {
 			'remittanceInformation' => $info,
 		);
 
-		$this->sepa_xml['debits'][$type][] = $data;
+		// determine transaction type: first/recurring/...
+		$state = $mandate->state;
+		$mandate->update_status();
+
+		$this->sepa_xml['debits'][$state][] = $data;
 	}
 
 
@@ -466,7 +450,7 @@ class SepaAccount extends \BaseModel {
 			foreach ($this->sepa_xml['debits'] as $type => $records)
 			{
 				// Set the initial information for direct debits
-				$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id.$type, $this->name);
+				$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id.$type, $this->name, 'pain.008.003.02');
 
 				// create a payment
 				$directDebit->addPaymentInfo($msg_id.$type, array(
@@ -485,8 +469,8 @@ class SepaAccount extends \BaseModel {
 
 				// Retrieve the resulting XML
 				$file = str_sanitize($this->dir.$this->name.'/DD_'.$type.'.xml');
-				$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
-				STORAGE::put($file, $data);
+				// $data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
+				Storage::put($file, $directDebit->asXML());
 
 				$this->_log("sepa direct debit $type xml", $file);
 			}
@@ -495,7 +479,7 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Set the initial information for direct debits
-		$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id, $this->name);
+		$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id, $this->name, 'pain.008.003.02');
 
 		foreach ($this->sepa_xml['debits'] as $type => $records)
 		{
@@ -513,13 +497,11 @@ class SepaAccount extends \BaseModel {
 			// Add Transactions to the named payment
 			foreach($records as $r)
 				$directDebit->addTransfer($msg_id.$type, $r);
-
 		}
 
 		// Retrieve the resulting XML
 		$file = str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DD').'.xml');
-		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
-		STORAGE::put($file, $data);
+		Storage::put($file, $directDebit->asXML());
 
 		$this->_log("sepa direct debit $type xml", $file);
 	}
@@ -551,8 +533,7 @@ class SepaAccount extends \BaseModel {
 
 		// Retrieve the resulting XML
 		$file = str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DC').'.xml');
-		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $customerCredit->asXML());
-		STORAGE::put($file, $data);
+		Storage::put($file, $customerCredit->asXML());
 
 		$this->_log("sepa direct credit xml", $file);
 	}
