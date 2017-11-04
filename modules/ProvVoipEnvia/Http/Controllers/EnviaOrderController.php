@@ -5,6 +5,7 @@ namespace Modules\ProvVoipEnvia\Http\Controllers;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\View;
 
+use Modules\ProvBase\Entities\Contract;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
 use Modules\ProvVoip\Entities\Phonenumber;
@@ -35,18 +36,15 @@ class EnviaOrderController extends \BaseController {
 			// order can be related to phonenumber and/or modem and/or contract
 			// get the contract (has to be given; watch create()
 			$contract_id = \Input::get('contract_id', null);
-			if (boolval($contract_id)) {
-				$init_values['contract_id'] = $contract_id;
-			}
-			else {
-				throw new \InvalidArgumentException('Order at least has to be related to a contract, but could not get a contract id');
-			}
+			$init_values['contract_id'] = $contract_id;
 
 			// try to get modem (can be given)
 			$modem_id = \Input::get('modem_id', null);
 			if (boolval($modem_id)) {
 				$init_values['modem_id'] = $modem_id;
-				$modem = Modem::findOrFail($modem_id);
+				if (!$modem = Modem::find($modem_id)) {
+					return [];
+				}
 				$init_values['contract_id'] = $modem->contract->id;
 			}
 
@@ -54,7 +52,9 @@ class EnviaOrderController extends \BaseController {
 			$phonenumber_id = \Input::get('phonenumber_id', null);
 			if (boolval($phonenumber_id)) {
 				$init_values['phonenumber_id'] = $phonenumber_id;
-				$phonenumber = Phonenumber::findOrFail($phonenumber_id);
+				if (!$phonenumber = Phonenumber::find($phonenumber_id)) {
+					return [];
+				}
 				$init_values['modem_id'] = $phonenumber->mta->modem->id;
 				$init_values['contract_id'] = $phonenumber->mta->modem->contract->id;
 			}
@@ -152,6 +152,10 @@ class EnviaOrderController extends \BaseController {
 		// if contract_id is given: all is fine => call parent
 		// in this case we take for sure that the caller is is either contract=>create_envia_order or a redirected phonenumbermanagement=>create_envia_order
 		if (!is_null($contract_id)) {
+			if (!Contract::find($contract_id)) {
+				$this->edit_view_save_button = false;
+				\Session::push('tmp_info_above_form', "Cannot create EnviaOrder – contract $contract_id does not exist");
+			}
 			return parent::create();
 		}
 
@@ -169,11 +173,17 @@ class EnviaOrderController extends \BaseController {
 
 		// if no contract_id has been given: calculate contract_id and (if possible) modem_id and/or phonenumber_id
 		if (is_null($modem_id) && is_null($phonenumbermanagement_id)) {
-			throw new \RuntimeException("Order has to be related to contract or modem or phonenumbermanagement");
+			$this->edit_view_save_button = false;
+			\Session::push('tmp_info_above_form', "Cannot create EnviaOrder – neither contract_id nor modem_id nor phonenumbermanagement_id given.");
+			return parent::create();
 		}
 
 		if (!is_null($phonenumbermanagement_id)) {
-			$phonenumbermanagement = PhonenumberManagement::findOrFail($phonenumbermanagement_id);
+			if (!$phonenumbermanagement = PhonenumberManagement::find($phonenumbermanagement_id)) {
+				$this->edit_view_save_button = false;
+				\Session::push('tmp_info_above_form', "Cannot create EnviaOrder – PhonenumberManagement $phonenumbermanagement_id does not exist");
+				return parent::create();
+			}
 			$params['phonenumber_id'] = $phonenumbermanagement->phonenumber->id;
 			$params['modem_id'] = $phonenumbermanagement->phonenumber->mta->modem->id;
 			$params['contract_id'] = $phonenumbermanagement->phonenumber->mta->modem->contract->id;
@@ -181,7 +191,11 @@ class EnviaOrderController extends \BaseController {
 			$params['customerreference'] = $phonenumbermanagement->phonenumber->mta->modem->contract->customer_external_id;
 		}
 		elseif (!is_null($modem_id)) {
-			$modem = Modem::findOrFail($modem_id);
+			if (!$modem = Modem::find($modem_id)) {
+				$this->edit_view_save_button = false;
+				\Session::push('tmp_info_above_form', "Cannot create EnviaOrder – Modem $modem_id does not exist");
+				return parent::create();
+			}
 			$params['phonenumber_id'] = null;
 			$params['modem_id'] = $modem->id;
 			$params['contract_id'] = $modem->contract->id;
