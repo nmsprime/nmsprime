@@ -17,7 +17,7 @@ class EnviaOrder extends \BaseModel {
 	// mark missing data with value null
 	protected static $meta = array(
 
-		// TODO: Process the list with all possible ordertypes ⇒ hope to get this from envia some day…
+		// TODO: Process the list with all possible ordertypes
 		'orders' => array(
 			array(
 				'ordertype' => 'Neuschaltung envia TEL voip reselling',
@@ -25,7 +25,7 @@ class EnviaOrder extends \BaseModel {
 				'method' => 'contract/create',
 				'phonenumber_related' => False,
 			),
-			array(	// I don't know why – but Envia has (at least) two IDs for this ordertype – maybe for creates with and without attached phonenumbers?
+			array(	// I don't know why – but envia TEL has (at least) two IDs for this ordertype – maybe for creates with and without attached phonenumbers?
 				'ordertype' => 'Neuschaltung envia TEL voip reselling',
 				'ordertype_id' => 2,
 				'method' => 'contract/create',
@@ -80,7 +80,7 @@ class EnviaOrder extends \BaseModel {
 				'phonenumber_related' => False,
 			),
 			array(
-				'ordertype' => 'Kündigung envia TEL voip reselling',	// TODO: Add correct string given by Envia
+				'ordertype' => 'Kündigung envia TEL voip reselling',	// TODO: Add correct string given by envia TEL
 				'ordertype_id' => null,
 				'method' => 'contract/terminate',
 				'phonenumber_related' => False,
@@ -213,7 +213,7 @@ class EnviaOrder extends \BaseModel {
 	public static function rules($id=null) {
 
 		return array(
-			// Prevent users from creating orders (table enviaorder is only changable through Envia API!)
+			// Prevent users from creating orders (table enviaorder is only changable through envia TEL API!)
 			// TODO: later remove delete button
 			'orderid' => 'required|integer|min:1',
 			'related_order_id' => 'exists:enviaorder,id',
@@ -516,7 +516,7 @@ class EnviaOrder extends \BaseModel {
 	// Name of View
 	public static function view_headline()
 	{
-		return 'EnviaOrders';
+		return 'envia TEL orders';
 	}
 
 	// View Icon
@@ -815,7 +815,7 @@ class EnviaOrder extends \BaseModel {
 		}
 	}
 
-	// returns all objects that are related to an EnviaOrder
+	// returns all objects that are related to an envia TEL Order
 	public function view_has_many()
 	{
 		if (\PPModule::is_active('provvoipenvia')) {
@@ -868,8 +868,7 @@ class EnviaOrder extends \BaseModel {
 
 
 		$contract = $this->contract;
-		$user_actions['hints']['Contract (= Envia Customer)'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
-		/* $user_actions['hints']['Contract (= Envia Customer)'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract); */
+		$user_actions['hints']['Contract (= envia TEL  Customer)'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
 
 		$items = $contract->items;
 		if ($items) {
@@ -878,7 +877,7 @@ class EnviaOrder extends \BaseModel {
 
 		$modem = $this->modem;
 		if ($modem) {
-			$user_actions['hints']['Modem (can hold multiple Envia contracts)'] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
+			$user_actions['hints']['Modem (can hold multiple envia TEL contracts)'] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
 		};
 
 		$phonenumbers = array();
@@ -896,7 +895,7 @@ class EnviaOrder extends \BaseModel {
 		}
 
 		if ($phonenumbers) {
-			$user_actions['hints']['Phonenumbers (= Envia VoipAccounts)'] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $phonenumbers);
+			$user_actions['hints']['Phonenumbers (= envia TEL VoipAccounts)'] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $phonenumbers);
 		}
 
 
@@ -904,7 +903,7 @@ class EnviaOrder extends \BaseModel {
 		if ($this->user_interaction_necessary()) {
 
 			// show that user interaction is necessary
-			$user_actions['head'] = '<h5 class="text-danger">EnviaOrder has been updated</h5>';
+			$user_actions['head'] = '<h5 class="text-danger">envia TEL Order has been updated</h5>';
 			$user_actions['head'] .= 'Please check if user interaction is necessary.<br><br>';
 
 			// finally add link to mark open order as solved
@@ -914,9 +913,7 @@ class EnviaOrder extends \BaseModel {
 
 		$enviacontract = $this->enviacontract;
 		if ($enviacontract) {
-			/* $_ = ProvVoipEnviaHelpers::get_user_action_information_enviacontract($enviacontract); */
-			/* $user_actions['hints']['Envia contract'] = ProvVoipEnviaHelpers::get_user_action_table($_); */
-			$user_actions['hints']['Envia contract'] = ProvVoipEnviaHelpers::get_user_action_information_enviacontract($enviacontract);
+			$user_actions['hints']['envia TEL contract'] = ProvVoipEnviaHelpers::get_user_action_information_enviacontract($enviacontract);
 		}
 
 		return $user_actions;
@@ -1002,7 +999,7 @@ class EnviaOrder extends \BaseModel {
 		}
 
 		// if current state is “in Bearbeitung” then we have to do nothing
-		// next action is to perform by Envia
+		// next action is to perform by envia TEL
 		if ($this->orderstatus == 'in Bearbeitung' || $this->orderstatus_id == 1000) {
 			return false;
 		}

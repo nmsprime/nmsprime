@@ -19,7 +19,7 @@ class EnviaContract extends \BaseModel {
 	// Name of View
 	public static function view_headline()
 	{
-		return 'EnviaContract';
+		return 'envia TEL contract';
 	}
 
 	public static function view_icon()
@@ -31,7 +31,7 @@ class EnviaContract extends \BaseModel {
 	public function view_index_label()
 	{
 
-		$envia_contract_reference = $this->get_envia_contract_reference();		
+		$envia_contract_reference = $this->get_envia_contract_reference();
 		$state = $this->get_state();
 		$start_date = $this->get_start_date();
 		$end_date = $this->get_end_date();
@@ -94,21 +94,21 @@ class EnviaContract extends \BaseModel {
 	public function get_start_date()
 	{
 		$start_date = is_null($this->start_date) ? '–' : $this->start_date;
-		
+
 		return $start_date;
 	}
 
 	public function get_end_date()
 	{
 		$end_date = is_null($this->end_date) ? '–' : $this->end_date;
-		
+
 		return $end_date;
 	}
 
 	public function get_envia_contract_reference()
 	{
 		$envia_contract_reference = is_null($this->envia_contract_reference) ? '–' : $this->envia_contract_reference;
-		
+
 		return $envia_contract_reference;
 	}
 
