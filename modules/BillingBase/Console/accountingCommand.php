@@ -141,7 +141,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 			if (!$c->costcenter) {
 				Log::error('billing', "Contract $c->number [$c->id] has no CostCenter assigned - Stop execution");
-				throw new Exception("Contract $c->number [$c->id] has no CostCenter assigned", 1);
+				throw new \Exception("Contract $c->number [$c->id] has no CostCenter assigned", 1);
 				continue;
 			}
 
@@ -313,7 +313,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		if (is_dir(storage_path('app/'.$this->dir)))
 			SettlementRunController::directory_cleanup($this->dir);
 		else
-			mkdir(storage_path('app/'.$this->dir, 0700, true));
+			mkdir(storage_path('app/'.$this->dir), 0700, true);
 
 		// Salesmen
 		$prod_types = Product::getPossibleEnumValues('type');
