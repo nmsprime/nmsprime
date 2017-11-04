@@ -1,4 +1,3 @@
-# TODO: use/replace Console stuff
 
 # make .env files readable for apache
 chgrp -R apache /etc/nmsprime/env
