@@ -16,7 +16,6 @@
 	<div class="col-md-7 ui-sortable">
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_dash', 'view_header' => 'Dashboard', 'md' => 8))
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_realtime', 'view_header' => \App\Http\Controllers\BaseViewController::translate_label('Real Time Values'), 'md' => 8))
-		@include ('bootstrap.panel-no-div', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'md' => 8))
 	</div>
 
 	<div class="col-md-5 ui-sortable">
@@ -34,6 +33,10 @@
 		@if (\PPModule::is_active('HfcCustomer'))
 			@include ('bootstrap.panel-no-div', array ('content' => 'content_proximity_search', 'view_header' => 'Proximity Search', 'md' => 4))
 		@endif
+	</div>
+
+	<div class="col-md-12 ui-sortable">
+		@include ('bootstrap.panel-no-div', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'md' => 12))
 	</div>
 
 </div>
