@@ -100,7 +100,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
 
-		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
+		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter', 'sepamandates')->get();		// eager loading for better performance
 		$salesmen 	= Salesman::all();
 
 		if (!isset($sepa_accs[0])) {
@@ -118,7 +118,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		echo "Create Invoices:\n";
 		$num = count($contracts);
-		// if not called silent via queues
+		// if not called silently via queues
 		if ($this->output)
 			$bar = $this->output->createProgressBar($num);
 
@@ -133,7 +133,6 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$bar->advance();
 			else
 				echo ($i + 1)."/$num [$c->id]\r";
-
 
 			if (!$c->create_invoice) {
 				Log::info('billing', "Create invoice for Contract $c->number [$c->id] is off");
@@ -203,14 +202,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			} // end of item loop
 
 
-			// get actual valid sepa mandate
-			$mandate = $c->get_valid_mandate();
-
-			if (!$mandate)
-				Log::info('billing', "Contract $c->number [$c->id] has no valid sepa mandate");
-
-
-			// Add Call Data Records - calculate charge and count
+			/**
+			 * Add Call Data Records - calculate charge and count
+			 */
 			$charge = $calls = $id = 0;
 
 			if (isset($cdrs[$c->id]))
@@ -236,8 +230,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				}
 				else
 				{
-					// this case should never happen
-					Log::alert('billing', 'Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
+					// this case should only happen when contract/voip tarif ended and deferred CDRs are calculated
+					Log::notice('billing', 'Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
 					$c->charge[$acc->id]['net'] = $charge;
 					$c->charge[$acc->id]['tax'] = $charge * $conf->tax/100;
 					$acc->invoice_nr += 1;
@@ -252,23 +246,34 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$acc->add_invoice_cdr($c, $cdrs[$id], $conf, $settlementrun_id);
 			}
 
+			/*
+			 * Add contract specific data for accounting files
+			 */
 
-			// Add contract specific data for accounting files
+			// get actual globally valid sepa mandate (valid for all CostCenters/SepaAccounts)
+			$mandate_global = $c->get_valid_mandate();
+
 			foreach ($c->charge as $acc_id => $value)
 			{
 				$value['net'] = round($value['net'], 2);
 				$value['tax'] = round($value['tax'], 2);
 
 				$acc = $sepa_accs->find($acc_id);
+
+				$mandate_specific = $c->get_valid_mandate('now', $acc->id);
+				$mandate = $mandate_specific ? : $mandate_global;
+
 				$acc->add_booking_record($c, $mandate, $value, $conf);
-				$acc->add_invoice_data($c, $mandate, $value);
+				$acc->set_invoice_data($c, $mandate, $value);
 
 				// create invoice pdf already - this task is the most timeconsuming and therefore threaded!
 				$acc['invoices'][$c->id]->make_invoice();
 
 				// skip sepa part if contract has no valid mandate
-				if (!$mandate)
+				if (!$mandate) {
+					Log::info('billing', "Contract $c->number [$c->id] has no valid sepa mandate for SepaAccount $acc->name [$acc->id]");
 					continue;
+				}
 
 				$acc->add_sepa_transfer($mandate, $value['net'] + $value['tax'], $this->dates);
 			}
