@@ -638,7 +638,11 @@ end:
 			$i++;
 		}
 		$us['SNR dB'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
-		$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
+		try {
+			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
+		}
+		catch (\Exception $e) {
+		}
 
 		// unset unused interfaces, as we don't want to show them on the web gui
 		foreach ($us['Frequency MHz'] as $key => $freq)
@@ -654,6 +658,7 @@ end:
 
 		$ret['System'] = $sys;
 		$ret['Upstream'] = $us;
+
 		return $ret;
 	}
 
