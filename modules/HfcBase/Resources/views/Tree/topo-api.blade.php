@@ -388,8 +388,12 @@ function savePolygonMPR(geo) {
 }
 
 function onAfterFeatureModified(event) {
-	str = getPolyStr('', event.feature.geometry, '');
-	<?php echo 'window.location = "' . route('Mpr.update_geopos', ['%id', '%str']) . "\".replace('%id', event.feature.attributes.id).replace('%str', str)"; ?>;
+	if (confirm ("Modify Polygon %id?".replace('%id', event.feature.attributes.id))) {
+		str = getPolyStr('', event.feature.geometry, '');
+		<?php echo 'window.location = "' . route('Mpr.update_geopos', ['%id', '%str']) . "\".replace('%id', event.feature.attributes.id).replace('%str', str)"; ?>;
+	} else {
+		location.reload();
+	}
 }
 
 /*

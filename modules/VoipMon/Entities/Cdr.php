@@ -3,7 +3,7 @@
 class Cdr extends \BaseModel {
 
 	// SQL connection
-	// Default config of the voipmonitor daemon is to create its own database, use it instead of db_lara
+	// Default config of the voipmonitor daemon is to create its own database, use it instead of database defined in .env
 	protected $connection = 'mysql-voipmonitor';
 
 	// The associated SQL table for this Model
@@ -61,7 +61,7 @@ class Cdr extends \BaseModel {
 				'header' =>  'Caller: '.$this->caller.' (Start: '.$this->calldate.')',
                 'bsclass' => $bsclass,
                 'edit' => ['mos_min_mult10' => 'mos_min_normalized',],
-				'orderBy' => ['0' => 'desc']];
+				'order_by' => ['0' => 'desc']];
 	}
 
 	public function get_bsclass() 

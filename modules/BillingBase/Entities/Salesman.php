@@ -63,7 +63,7 @@ class Salesman extends \BaseModel {
 	{
 		return ['table' => $this->table,
 				'index_header' => [$this->table.'.id', $this->table.'.lastname', $this->table.'.firstname'],
-				'orderBy' => ['0' => 'asc'],  // columnindex => direction
+				'order_by' => ['0' => 'asc'],  // columnindex => direction
 				'header' =>  $this->lastname." ".$this->firstname];
 	}
 

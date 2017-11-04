@@ -167,6 +167,22 @@ class CustomerTopoController extends NetElementController {
 		return $this->show_topo(Modem::whereRaw(Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))));
 	}
 
+	/**
+	* Show customers with an upstream power of bigger than 50dBmV
+	*
+	* @author: Ole Ernst
+	*/
+	public function show_bad()
+	{
+		$modems = Modem::where('us_pwr', '>', '50');
+
+		// return back if all modems are fine
+		if(!$modems->count())
+			return back();
+
+		return $this->show_topo($modems);
+	}
+
 	/*
 	* Show Modems om Topography
 	*
@@ -230,11 +246,11 @@ class CustomerTopoController extends NetElementController {
 		{
 			// load per modem diagrams
 			$dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Overview');
-			switch (\Input::get('row')) {
-				case null:
-				case 'us_pwr': $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Upstream'); break;
-				case 'ds_pwr': $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Downstream'); break;
-			}
+			if (!\Input::has('row'))
+				$dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS US PWR');
+			else
+				$dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS '.strtoupper(str_replace('_', ' ', \Input::get('row'))));
+
 
 			$dia = $provmon->monitoring($modem, $dia_ids);
 

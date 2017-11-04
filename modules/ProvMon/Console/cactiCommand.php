@@ -77,8 +77,7 @@ class cactiCommand extends Command {
 		}
 
 		$modems = $this->option('modem-id') === false ? Modem::all() : Modem::where('id', '=', $this->option('modem-id'))->get();
-		foreach ($modems as $modem)
-		{
+		foreach ($modems as $modem) {
 			// Skip all $modem's that already have cacti graphs
 			if (ProvMonController::monitoring_get_graph_ids($modem))
 				continue;
@@ -116,9 +115,7 @@ class cactiCommand extends Command {
 
 			// create all graphs belonging to host template cablemodem
 			foreach ($graph_template_ids as $id)
-			{
 				system("php -q $path/add_graphs.php --host-id=$matches[1] --graph-type=cg --graph-template-id=$id");
-			}
 
 			// get first RRD belonging to newly created host
 			$first = \DB::connection($this->connection)->table('host AS h')
@@ -129,13 +126,18 @@ class cactiCommand extends Command {
 				->select('t.id', 't.data_source_path')
 				->first();
 
-			// disable updating all RRDs except for first and use first RRD for all graphs
-			\DB::connection($this->connection)->table('host AS h')
+			$stmnt = \DB::connection($this->connection)->table('host AS h')
 				->join('data_local AS l', 'h.id', '=', 'l.host_id')
 				->join('data_template_data AS t', 'l.id', '=', 't.local_data_id')
-				->where('h.id', '=', $matches[1])
-				->where('t.id', '!=', $first->id)
-				->update(['t.active' => '', 't.data_source_path' => $first->data_source_path]);
+				->where('h.id', '=', $matches[1]);
+
+			// if possible choose preexisting rrd file, instead of creating a new one
+			$file = glob('/var/lib/cacti/rra/'.$name.'_*.rrd');
+			$data_source_path = $file ? str_replace('/var/lib/cacti/rra', '<path_rra>', $file[0]) : $first->data_source_path;
+			$stmnt->update(['t.data_source_path' => $data_source_path]);
+
+			// disable updating all RRDs except for first
+			$stmnt->where('t.id', '!=', $first->id)->update(['t.active' => '']);
 
 			// rebuild poller cache, since we changed the database manually
 			system("php -q $path/rebuild_poller_cache.php --host-id=$matches[1]");
@@ -146,8 +148,7 @@ class cactiCommand extends Command {
 		}
 
 		$cmtss = $this->option('cmts-id') === false ? Cmts::all() : Cmts::where('id', '=', $this->option('cmts-id'))->get();
-		foreach ($cmtss as $cmts)
-		{
+		foreach ($cmtss as $cmts) {
 			// Skip all $cmts's that already have cacti graphs
 			if (ProvMonController::monitoring_get_graph_ids($cmts))
 				continue;
@@ -167,6 +168,12 @@ class cactiCommand extends Command {
 			$tree_id = \DB::connection($this->connection)->table('graph_tree')
 				->where('name', '=', 'cmts')
 				->select('id')->first()->id;
+			$query = \DB::connection($this->connection)->table('snmp_query')
+				->where('name', '=', 'SNMP - Interface Statistics')
+				->select('id')->first();
+			// query doesn't exist yet, this can only happen during installation of cacti
+			if(!$query)
+				continue;
 
 			$out = system("php -q $path/add_device.php --description=\"$name\" --ip=$hostname --template=$host_template->id --community=\"$community\" --avail=snmp --version=2");
 			preg_match('/^Success - new device-id: \(([0-9]+)\)$/', $out, $matches);
@@ -174,7 +181,7 @@ class cactiCommand extends Command {
 				continue;
 
 			// add "SNMP - Interface Statistics" query
-			system("php -q $path/add_data_query.php --host-id=$matches[1] --data-query-id=1 --reindex-method=1");
+			system("php -q $path/add_data_query.php --host-id=$matches[1] --data-query-id=$query->id --reindex-method=1");
 			// add host to cmts tree
 			system("php -q $path/add_tree.php --type=node --node-type=host --tree-id=$tree_id --host-id=$matches[1]");
 		}

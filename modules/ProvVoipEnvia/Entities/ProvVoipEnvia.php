@@ -21,7 +21,7 @@ use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
 use Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
 use App\Exceptions\NotImplementedException;
 
-// Model not found? execute composer dump-autoload in lara root dir
+// Model not found? execute composer dump-autoload in nmsprime root dir
 class ProvVoipEnvia extends \BaseModel {
 
 
@@ -475,7 +475,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$this->extract_environment($model, $view_level);
 
 		// helpers (the model IDs will be appended to most jobs as get params)
-		$base = "/lara/admin/provvoipenvia/request/";
+		$base = "/nmsprime/admin/provvoipenvia/request/";
 		if ($view_level == 'phonenumbermanagement') {
 			$contract_id = $model->phonenumber->mta->modem->contract->id;
 			$modem_id = $model->phonenumber->mta->modem->id;

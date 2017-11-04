@@ -15,7 +15,7 @@ class Item extends \BaseModel {
 	{
 		// $tariff_prods = Product::whereIn('type', ['internet', 'tv', 'voip'])->lists('id')->all();
 		// $tariff_ids   = implode(',', $tariff_prods);
-		
+
 		$credit_prods = Product::where('type', '=', 'credit')->lists('id')->all();
 		$credit_ids   = implode(',', $credit_prods);
 
@@ -132,7 +132,7 @@ class Item extends \BaseModel {
 	 * The calculated charge for the customer that has purchased this item (last month is considered)
 	 *
 	 * @var float
-	 */ 
+	 */
 	public $charge = 0;
 
 
@@ -140,7 +140,7 @@ class Item extends \BaseModel {
 	 * The calculated ratio of the items product price (for the last month)
 	 *
 	 * @var float
-	 */ 
+	 */
 	public $ratio;
 
 
@@ -148,7 +148,7 @@ class Item extends \BaseModel {
 	 * The product name and date range the customer is charged for this item
 	 *
 	 * @var string
-	 */ 
+	 */
 	public $invoice_description;
 
 
@@ -211,35 +211,62 @@ class Item extends \BaseModel {
 
 
 	/**
-	 * Calculate Price for actual month of an item with valid dates - writes it to temporary billing variables of this model
+	 * Calculate Charge for item in last month
 	 *
-	 * @param 	array  $dates 	of often used billing dates
-	 * @return 	null if no costs incurred, 1 otherwise
+	 * @param 	array 	dates 			of often used billing dates
+	 * @param 	bool 	return_array 	return [charge, ratio, invoice_descrption] if true
+	 *
+	 * @return 	null if no costs incurred, true otherwise - NOTE: Amount to Charge is currently stored in Item Models temp variable ($charge)
 	 * @author 	Nino Ryschawy
 	 */
 	public function calculate_price_and_span($dates, $return_array = false, $update = true)
 	{
 		$ratio = 0;
-		$text  = '';			// only dates
-		
-		$billing_cycle = $this->get_billing_cycle();
-		$start = $this->get_start_time();
-		$end   = $this->get_end_time();
+		$text  = '';			// dates of invoice text
+
+		$billing_cycle  = strtolower($this->get_billing_cycle());
+
+		// evaluate start & end dates with higher priority to contracts start & end
+		$item_start 	= $this->get_start_time();
+		$item_end   	= $this->get_end_time();
+		$contract_start = $this->contract->get_start_time();
+		$contract_end   = $this->contract->get_end_time();
+
+		if ($billing_cycle == 'once')
+		{
+			$start = $item_start;
+			$end = $item_end;
+		}
+		else
+		{
+			// Note: start will always be set - end date can be open (null)
+			$start = $contract_start > $item_start ? $contract_start : $item_start;
+
+			// Note: cases are sorted by likelihood
+			if (!$contract_end && !$item_end)
+				$end = null;
+
+			else if ($contract_end && !$item_end)
+				$end = $contract_end;
+
+			else if (!$contract_end && $item_end)
+				$end = $item_end;
+
+			else if ($contract_end && $item_end)
+				$end = $contract_end < $item_end ? $contract_end : $item_end;
+		}
 
 		// skip invalid items
-		if (!$this->check_validity($billing_cycle)) {
+		if (!$this->check_validity($billing_cycle, null, [$start, $end])) {
 			ChannelLog::info('billing', 'Item '.$this->product->name." ($this->id) is outdated", [$this->contract->id]);
 			return null;
 		}
 
-		// contract ends before item ends - contract has higher priority
-		if ($this->contract->expires)
-			$end = !$end || strtotime($this->contract->contract_end) < $end ? strtotime($this->contract->contract_end) : $end;
-
+		// Carbon::createFromTimestampUTC
 
 		switch($billing_cycle)
 		{
-			case 'Monthly':
+			case 'monthly':
 
 				// started last month
 				if (date('Y-m', $start) == $dates['lastm_Y'])
@@ -267,7 +294,7 @@ class Item extends \BaseModel {
 				break;
 
 
-			case 'Yearly':
+			case 'yearly':
 				// discard already payed items
 				if ($this->payed_month && ($this->payed_month != ((int) $dates['lastm'])))
 					break;
@@ -287,7 +314,7 @@ class Item extends \BaseModel {
 				// started this yr
 				if (date('Y', $start) == $dates['Y'])
 				{
-					$ratio = 1 - date('z', $start) / (365 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1 
+					$ratio = 1 - date('z', $start) / (365 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1
 					$text  = date('Y-m-d', $start);
 				}
 				else
@@ -318,7 +345,7 @@ class Item extends \BaseModel {
 				break;
 
 
-			case 'Quarterly':
+			case 'quarterly':
 
 				// always after 3 months
 				$billing_month = date('m', strtotime('+2 month', $start));
@@ -356,7 +383,7 @@ class Item extends \BaseModel {
 				break;
 
 
-			case 'Once':
+			case 'once':
 
 				if (date('Y-m', $start) == $dates['lastm_Y'])
 					$ratio = 1;
@@ -390,7 +417,7 @@ class Item extends \BaseModel {
 
 		$this->count = $this->count ? $this->count : 1;
 
-		$this->charge = $this->product->type == 'Credit' ?  (-1) * $this->credit_amount : $this->product->price * $ratio * $this->count;
+		$this->charge = $this->product->type == 'Credit' ?  (-1) * $this->credit_amount * $ratio : $this->product->price * $ratio * $this->count;
 		$this->ratio  = $ratio ? $ratio : 1;
 		$this->invoice_description = $this->product->name.' '.$text;
 		$this->invoice_description .= $this->accounting_text ? ' - '.$this->accounting_text : '';
@@ -538,7 +565,7 @@ class ItemObserver
 
 		$cnt = $item->product->cycle_count;
 		if ($item->product->billing_cycle == 'Quarterly') $cnt *= 3;
-		if ($item->product->billing_cycle == 'Yearly') $cnt *= 12; 
+		if ($item->product->billing_cycle == 'Yearly') $cnt *= 12;
 
 		if(!$item->valid_from || $item->valid_from == '0000-00-00')
 			$item->valid_from = date('Y-m-d');
