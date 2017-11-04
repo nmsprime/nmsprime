@@ -141,7 +141,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 			if (!$c->costcenter) {
 				Log::error('billing', "Contract $c->number [$c->id] has no CostCenter assigned - Stop execution");
-				throw new Exception("Contract $c->number [$c->id] has no CostCenter assigned", 1);
+				throw new \Exception("Contract $c->number [$c->id] has no CostCenter assigned", 1);
 				continue;
 			}
 
