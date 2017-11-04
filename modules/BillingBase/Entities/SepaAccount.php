@@ -3,14 +3,12 @@
 namespace Modules\BillingBase\Entities;
 use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\BillingBase;
-use Modules\BillingBase\Entities\BillingLogger;
 
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
-use Digitick\Sepa\PaymentInformation;
 use Storage;
 use IBAN;
 use \App\Http\Controllers\BaseViewController;
-
+use ChannelLog;
 
 /**
  * Contains the functionality for Creating the SEPA-XML-Files of a SettlementRun
@@ -51,7 +49,7 @@ class SepaAccount extends \BaseModel {
 
 	public static function view_icon()
 	{
-		return '<i class="fa fa-credit-card"></i>'; 
+		return '<i class="fa fa-credit-card"></i>';
 	}
 
 	// link title in index view
@@ -62,6 +60,15 @@ class SepaAccount extends \BaseModel {
 				'header' => $this->name];
 	}
 
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.name', $this->table.'.institute', $this->table.'.iban'],
+				'order_by' => ['0' => 'asc'],  // columnindex => direction
+				'header' =>  $this->name];
+	}
 
 	// View Relation.
 	public function view_has_many()
@@ -96,7 +103,6 @@ class SepaAccount extends \BaseModel {
 		parent::__construct($attributes);
 
 		$this->invoice_nr_prefix = date('Y', strtotime("first day of last month")).'/';
-		$this->logger = new BillingLogger;
 	}
 
 
@@ -107,7 +113,6 @@ class SepaAccount extends \BaseModel {
 	public $invoice_nr = 100000; 			// invoice number counter - default start nr is replaced by global config field
 	private $invoice_nr_prefix;				// see constructor
 	public $dir;							// directory to store billing files
-	protected $logger;
 	public $rcd; 							// requested collection date from global config
 
 
@@ -127,14 +132,14 @@ class SepaAccount extends \BaseModel {
 		* resulting in 2 files for items and tariffs
 	 	* Filestructure is defined in add_accounting_record()-function
 	 * @var array
-	 */ 
+	 */
 	protected $acc_recs = array('tariff' => [], 'item' => []);
 
 
 	/**
 	 * Booking Records
 		* resulting in 2 files for records with sepa mandate or without
-	 	* Filestructure is defined in add_booking_record()-function		
+		* Filestructure is defined in add_booking_record()-function
 	 * @var array
 	 */
 	protected $book_recs = array('sepa' => [], 'no_sepa' => []);
@@ -150,7 +155,7 @@ class SepaAccount extends \BaseModel {
 
 
 	/**
-	 * Sepa XML 
+	 * Sepa XML
 		* resulting in 2 possible files for direct debits or credits
 	 * @var array
 	 */
@@ -248,7 +253,7 @@ class SepaAccount extends \BaseModel {
 			);
 
 			$data = array_merge($data, $data2);
-			
+
 			$this->book_recs['sepa'][] = $data;
 		}
 		else
@@ -295,15 +300,18 @@ class SepaAccount extends \BaseModel {
 		if (!isset($this->invoices[$contract->id]))
 		{
 			$this->invoices[$contract->id] = new Invoice;
-			$this->invoices[$item->contract->id]->settlementrun_id = $settlementrun_id;
+			$this->invoices[$contract->id]->settlementrun_id = $settlementrun_id;
 			$this->invoices[$contract->id]->add_contract_data($contract, $conf, $this->_get_invoice_nr_formatted());
 		}
 
-		$this->invoices[$contract->id]->add_cdr_data($cdrs);
+		$this->invoices[$contract->id]->add_cdr_data($cdrs, $conf);
 	}
 
 
-	public function add_invoice_data($contract, $mandate, $value)
+	/**
+	 * Set Invoice Data (Mandate, Company, Amount to charge) for invoice (of contract) that belongs to this SepaAccount
+	 */
+	public function set_invoice_data($contract, $mandate, $value)
 	{
 		// Attention! the chronical order of these functions has to be kept until now because of dependencies for extracting the invoice text
 		$this->invoices[$contract->id]->set_mandate($mandate);
@@ -312,7 +320,7 @@ class SepaAccount extends \BaseModel {
 	}
 
 	/**
-	 * Adds a sepa transfer for this account with the charge of a contract to the corresponding sepa_xml-Array (credit/debit)
+	 * Adds a sepa transfer for this account with the charge for a contract to the corresponding sepa_xml-Array (credit/debit)
 	 *
 	 * @param object 	$mandate
 	 * @param float 	$charge
@@ -324,7 +332,7 @@ class SepaAccount extends \BaseModel {
 			return;
 
 		$info = $this->company->name.' - ';
-		$info .= trans('messages.month').' '.date('m/Y', strtotime('-1 month'));
+		$info .= trans('messages.month').' '.date('m/Y', strtotime('first day of last month'));
 
 		// Credits
 		if ($charge < 0)
@@ -343,21 +351,6 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Debits
-		// determine transaction type: first/recurring/final
-		$type  = PaymentInformation::S_RECURRING;
-		$start = strtotime($mandate->sepa_valid_from);
-		$end   = strtotime($mandate->sepa_valid_to);
-
-		// new mandate - after last run
-		// if ($start > strtotime('2016-04-12') && !$mandate->recurring)		// for test
-		if ($start > strtotime($dates['last_run']) && !$mandate->recurring)
-			$type = PaymentInformation::S_FIRST;
-
-		// when mandate ends next month but before billing run
-		else if ($mandate->contract->expires || ($end > 0 && $end < strtotime('+1 month')))
-			$type = PaymentInformation::S_FINAL;
-
-
 		$data = array(
 			'endToEndId'			=> 'RG '.$this->_get_invoice_nr_formatted(),
 			'amount'                => $charge,
@@ -369,7 +362,11 @@ class SepaAccount extends \BaseModel {
 			'remittanceInformation' => $info,
 		);
 
-		$this->sepa_xml['debits'][$type][] = $data;
+		// determine transaction type: first/recurring/...
+		$state = $mandate->state;
+		$mandate->update_status();
+
+		$this->sepa_xml['debits'][$state][] = $data;
 	}
 
 
@@ -398,7 +395,7 @@ class SepaAccount extends \BaseModel {
 				$rec 		= $this->_get_billing_lang() == 'de' ? '' : '_records';
 
 				$file = $this->dir.$this->name.'/'.$accounting.'_'.BaseViewController::translate_label($key).$rec.'.txt';
-				$file = SepaAccount::str_sanitize($file);
+				$file = str_sanitize($file);
 
 				// initialise record files with Column names as first line
 				$keys = [];
@@ -427,7 +424,7 @@ class SepaAccount extends \BaseModel {
 	{
 		$path = storage_path('app/');
 		// echo "Stored $name in $path"."$pathname\n";
-		$this->logger->addInfo("Successfully stored $name in $path"."$pathname \n");		
+		ChannelLog::debug('billing', "Successfully stored $name in $path"."$pathname \n");
 	}
 
 
@@ -453,7 +450,7 @@ class SepaAccount extends \BaseModel {
 			foreach ($this->sepa_xml['debits'] as $type => $records)
 			{
 				// Set the initial information for direct debits
-				$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id.$type, $this->name);
+				$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id.$type, $this->name, 'pain.008.003.02');
 
 				// create a payment
 				$directDebit->addPaymentInfo($msg_id.$type, array(
@@ -471,9 +468,9 @@ class SepaAccount extends \BaseModel {
 					$directDebit->addTransfer($msg_id.$type, $r);
 
 				// Retrieve the resulting XML
-				$file = SepaAccount::str_sanitize($this->dir.$this->name.'/DD_'.$type.'.xml');
-				$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
-				STORAGE::put($file, $data);
+				$file = str_sanitize($this->dir.$this->name.'/DD_'.$type.'.xml');
+				// $data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
+				Storage::put($file, $directDebit->asXML());
 
 				$this->_log("sepa direct debit $type xml", $file);
 			}
@@ -482,7 +479,7 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Set the initial information for direct debits
-		$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id, $this->name);
+		$directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id, $this->name, 'pain.008.003.02');
 
 		foreach ($this->sepa_xml['debits'] as $type => $records)
 		{
@@ -494,19 +491,17 @@ class SepaAccount extends \BaseModel {
 				'creditorAgentBIC'      => $this->bic,
 				'seqType'               => $type,
 				'creditorId'            => $this->creditorid,
-				// 'dueDate'				=> // requested collection date (Fälligkeits-/Ausführungsdatum) - from global config
+				'dueDate'				=> $this->rcd, // requested collection date (Fälligkeits-/Ausführungsdatum) - from global config
 			));
 
 			// Add Transactions to the named payment
 			foreach($records as $r)
 				$directDebit->addTransfer($msg_id.$type, $r);
-
 		}
 
 		// Retrieve the resulting XML
-		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DD').'.xml');
-		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
-		STORAGE::put($file, $data);
+		$file = str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DD').'.xml');
+		Storage::put($file, $directDebit->asXML());
 
 		$this->_log("sepa direct debit $type xml", $file);
 	}
@@ -537,9 +532,8 @@ class SepaAccount extends \BaseModel {
 			$customerCredit->addTransfer($msg_id.'C', $r);
 
 		// Retrieve the resulting XML
-		$file = SepaAccount::str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DC').'.xml');
-		$data = str_replace('pain.008.002.02', 'pain.008.003.02', $customerCredit->asXML());
-		STORAGE::put($file, $data);
+		$file = str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DC').'.xml');
+		Storage::put($file, $customerCredit->asXML());
 
 		$this->_log("sepa direct credit xml", $file);
 	}
@@ -558,17 +552,6 @@ class SepaAccount extends \BaseModel {
 
 		if ($this->sepa_xml['credits'])
 			$this->make_credit_file();
-	}
-
-
-	/**
-	 * Simplify string for Filenames
-	 * TODO: use as global helper function in other context
-	 */
-	public static function str_sanitize($string)
-	{
-		$string = str_replace(' ', '_', $string);
-		return preg_replace("/[^a-zA-Z0-9.\/_-]/", "", $string);
 	}
 
 

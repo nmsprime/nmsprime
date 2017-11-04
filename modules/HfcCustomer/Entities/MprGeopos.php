@@ -37,6 +37,11 @@ class MprGeopos extends \BaseModel {
 		return 'Modem Positioning Rule Geoposition';
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-map-marker"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{

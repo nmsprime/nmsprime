@@ -3,7 +3,7 @@
 class Cdr extends \BaseModel {
 
 	// SQL connection
-	// Default config of the voipmonitor daemon is to create its own database, use it instead of db_lara
+	// Default config of the voipmonitor daemon is to create its own database, use it instead of database defined in .env
 	protected $connection = 'mysql-voipmonitor';
 
 	// The associated SQL table for this Model
@@ -42,6 +42,30 @@ class Cdr extends \BaseModel {
 	// Link title in index view
 	public function view_index_label()
 	{
+		$bsclass = $this->get_bsclass();
+
+		return ['index' =>	[$this->calldate, $this->caller, $this->called, $this->mos_min_mult10 / 10],
+			'index_header' =>	['Call Start', 'Caller', 'Callee', 'min. MOS'],
+			'bsclass' => $bsclass,
+			'header' => 'Caller: '.$this->caller.' (Start: '.$this->calldate.')'];
+	}
+
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		$bsclass = $this->get_bsclass();
+
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.calldate', $this->table.'.caller', $this->table.'.called', $this->table.'.mos_min_mult10'],
+				'header' =>  'Caller: '.$this->caller.' (Start: '.$this->calldate.')',
+                'bsclass' => $bsclass,
+                'edit' => ['mos_min_mult10' => 'mos_min_normalized',],
+				'order_by' => ['0' => 'desc']];
+	}
+
+	public function get_bsclass() 
+	{
 		if ($this->mos_min_mult10 > 40)
 			$bsclass = 'success';
 		elseif ($this->mos_min_mult10 > 30)
@@ -50,11 +74,13 @@ class Cdr extends \BaseModel {
 			$bsclass = 'warning';
 		else
 			$bsclass = 'danger';
-
-		return ['index' =>	[$this->calldate, $this->caller, $this->called, $this->mos_min_mult10 / 10],
-			'index_header' =>	['Call Start', 'Caller', 'Callee', 'min. MOS'],
-			'bsclass' => $bsclass,
-			'header' => 'Caller: '.$this->caller.' (Start: '.$this->calldate.')'];
+		
+		return $bsclass;
+	}
+	
+	public function mos_min_normalized() 
+	{
+		return $this->mos_min_mult10 / 10;
 	}
 
 	/**

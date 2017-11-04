@@ -46,8 +46,29 @@ class Product extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		// return $this->type.' - '.$this->name.' | '.$this->price.' €';
+		$bsclass = $this->get_bsclass();
 
+		return ['index' => [$this->type, $this->name, $this->price],
+		        'index_header' => ['Type', 'Name', 'Price'],
+		        'bsclass' => $bsclass,
+		        'header' => $this->type.' - '.$this->name.' | '.$this->price.' €'];
+	}
+
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		$bsclass = $this->get_bsclass();
+
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price'],
+				'header' =>  $this->type.' - '.$this->name.' | '.$this->price.' €',
+				'bsclass' => $bsclass,
+				'order_by' => ['0' => 'asc']];  // columnindex => direction
+	}
+
+	public function get_bsclass(){
+		
 		switch ($this->type)
 		{
 			case 'Internet':	$bsclass = 'info'; break; // online
@@ -60,16 +81,7 @@ class Product extends \BaseModel {
 			default: $bsclass = 'danger'; break;
 		}
 
-		return ['index' => [$this->type, $this->name, $this->price],
-		        'index_header' => ['Type', 'Name', 'Price'],
-		        'bsclass' => $bsclass,
-		        'header' => $this->type.' - '.$this->name.' | '.$this->price.' €'];
-	}
-
-	// Return a pre-formated index list
-	public function index_list ()
-	{
-		return $this->orderBy('type')->get();
+		return $bsclass;
 	}
 
 

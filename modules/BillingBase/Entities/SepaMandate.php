@@ -2,6 +2,8 @@
 
 namespace Modules\BillingBase\Entities;
 use Modules\ProvBase\Entities\Contract;
+use Digitick\Sepa\PaymentInformation;
+
 use DB;
 use Storage;
 
@@ -34,14 +36,16 @@ class SepaMandate extends \BaseModel {
 		return 'SEPA Mandate';
 	}
 
+	public static function view_icon()
+	{
+		return '<i class="fa fa-handshake-o"></i>';
+	}
+
 	// link title in index view
 	public function view_index_label()
 	{
-		$bsclass = 'info';
+		$bsclass = 'success';
 		$valid_to = $this->sepa_valid_to ? ' - '.$this->sepa_valid_to : '';
-
-		if (($this->get_start_time() > strtotime(date('Y-m-d'))) && !$this->check_validity('Now'))
-			$bsclass = 'danger';
 
 		return ['index' => [$this->sepa_holder, $this->sepa_valid_from, $this->sepa_valid_to, $this->reference],
 		        'index_header' => ['Holder', 'From', 'To', 'Reference'],
@@ -50,11 +54,36 @@ class SepaMandate extends \BaseModel {
 	}
 
 
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		$bsclass = $this->get_bsclass();
+		$valid_to = $this->sepa_valid_to ? ' - '.$this->sepa_valid_to : '';
+
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.sepa_holder', $this->table.'.sepa_valid_from', $this->table.'.sepa_valid_to', $this->table.'.reference'],
+				'bsclass' => $bsclass,
+				'order_by' => ['0' => 'asc'],
+				'header' =>  $this->lastname." ".$this->firstname];
+	}
+
+
+	public function get_bsclass()
+	{
+		$bsclass = 'success';
+
+		if ( isset($this->created_at) && ($this->get_start_time() > strtotime(date('Y-m-d'))) && !$this->check_validity('Now'))
+			$bsclass = 'danger';
+
+		return $bsclass;
+	}
+
+
 	public function view_belongs_to ()
 	{
 		return $this->contract;
 	}
-
 
 
 	/**
@@ -65,6 +94,10 @@ class SepaMandate extends \BaseModel {
 		return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
 	}
 
+	public function costcenter ()
+	{
+		return $this->belongsTo('Modules\BillingBase\Entities\CostCenter');
+	}
 
 
 	/*
@@ -81,6 +114,30 @@ class SepaMandate extends \BaseModel {
 	 * Other Functions
 	 */
 
+
+	/**
+	 * Update SEPA-Mandate status during SettlementRun (accountingCommand) if it changes
+	 */
+	public function update_status()
+	{
+		$end  = $this->get_end_time();
+		$ends = $end && ($end < strtotime('first day of next month'));
+
+		$changed = false;
+
+		if ($this->state == PaymentInformation::S_FIRST) {
+			$this->state == $ends ? PaymentInformation::S_ONEOFF : PaymentInformation::S_RECURRING;
+			$changed = true;
+		}
+
+		else if ($ends) {
+			$this->state = PaymentInformation::S_FINAL;
+			$changed = true;
+		}
+
+		if ($changed)
+			$this->save();
+	}
 
 	/**
 	 * Returns start time of item - Note: sepa_valid_from field has higher priority than created_at
@@ -124,25 +181,17 @@ class SepaMandateObserver
 		$mandate->reference = $mandate->reference ? : $this->build_mandate_ref($mandate);
 
 		// Set default values for empty fields - NOTE: prepare_input() functions fills data too
-		if (!$mandate->sepa_holder)
-		{
-			$contract = $mandate->contract;
-			$mandate->sepa_holder = $contract->firstname.' '.$contract->lastname;
-		}
+		$mandate->sepa_holder = $mandate->sepa_holder ? : $mandate->contract->firstname.' '.$mandate->contract->lastname;
+		$mandate->signature_date = $mandate->signature_date ? : date('Y-m-d');
+		$mandate->sepa_valid_from = $mandate->sepa_valid_from ? : date('Y-m-d');
 
-		$today = date('Y-m-d');
-		$mandate->signature_date = $mandate->signature_date ? : $today;
-		$mandate->sepa_valid_from = $mandate->sepa_valid_from ? : $today;
-
-		// set end date of old mandate to starting date of new mandate
-		$mandate_old = $mandate->contract->get_valid_mandate();
-
-		if ($mandate_old)
-		{
-			$mandate_old->sepa_valid_to = date('Y-m-d', strtotime('-1 day', strtotime($mandate->sepa_valid_from)));
-			$mandate_old->save();
-		}
-
+		// set end date of old mandate to starting date of new mandate - Note: commented because multiple mandates with different cost centers are possible now
+		// $mandate_old = $mandate->contract->get_valid_mandate();
+		// if ($mandate_old)
+		// {
+		// 	$mandate_old->sepa_valid_to = date('Y-m-d', strtotime('-1 day', strtotime($mandate->sepa_valid_from)));
+		// 	$mandate_old->save();
+		// }
 	}
 
 	public function updating($mandate)

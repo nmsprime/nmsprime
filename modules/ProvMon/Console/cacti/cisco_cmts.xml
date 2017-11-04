@@ -92,42 +92,42 @@
                         <direction>output</direction>
                         <oid>.1.3.6.1.2.1.31.1.1.1.10</oid>
                 </ifHCOutOctets>
-                <ifCableTOTAL> 
+                <ifCableTOTAL>
                         <name>Interface Total CMs</name>
-                        <method>walk</method>     
+                        <method>walk</method>
                         <source>value</source>
                         <direction>output</direction>
-                        <oid>1.3.6.1.4.1.9.9.116.1.3.3.1.4</oid>
+                        <oid>.1.3.6.1.4.1.9.9.116.1.3.3.1.4</oid>
                 </ifCableTOTAL>
                 <ifCableACTIVE>
                         <name>Interface Active CMs</name>
-                        <method>walk</method>      
+                        <method>walk</method>
                         <source>value</source>
                         <direction>output</direction>
-                        <oid>1.3.6.1.4.1.9.9.116.1.3.3.1.5</oid>
+                        <oid>.1.3.6.1.4.1.9.9.116.1.3.3.1.5</oid>
                 </ifCableACTIVE>
-                <ifCableREG>   
+                <ifCableREG>
                         <name>Interface Registered CMs</name>
                         <method>walk</method>
                         <source>value</source>
                         <direction>output</direction>
-                        <oid>1.3.6.1.4.1.9.9.116.1.3.3.1.6</oid>
+                        <oid>.1.3.6.1.4.1.9.9.116.1.3.3.1.6</oid>
                 </ifCableREG>
-                <ifUpTOTAL> 
+                <ifUpTOTAL>
                         <name>Upstream Total Cms</name>
-                        <method>walk</method>     
+                        <method>walk</method>
                         <source>value</source>
                         <direction>output</direction>
                         <oid>.1.3.6.1.4.1.9.9.116.1.4.1.1.3</oid>
                 </ifUpTOTAL>
                 <ifUpACTIVE>
                         <name>Upstream Active Cms</name>
-                        <method>walk</method>      
+                        <method>walk</method>
                         <source>value</source>
                         <direction>output</direction>
                         <oid>.1.3.6.1.4.1.9.9.116.1.4.1.1.5</oid>
                 </ifUpACTIVE>
-                <ifUpREG>   
+                <ifUpREG>
                         <name>Upstream Registered CMs</name>
                         <method>walk</method>
                         <source>value</source>
@@ -144,7 +144,7 @@
                 <ifUpInSNR>
                         <name>Upstream SNR</name>
                         <method>walk</method>
-                        <source>value</source>     
+                        <source>value</source>
                         <direction>output</direction>
                         <oid>.1.3.6.1.2.1.10.127.1.1.4.1.5</oid>
                 </ifUpInSNR>
@@ -164,32 +164,25 @@
                 </ifUpChannelWidth>
                 <ifUpChannelModulationProfile>
                         <name>UpModulationProf</name>
-                        <method>walk</method>  
+                        <method>walk</method>
                         <source>value</source>
                         <direction>output</direction>
-                        <oid>1.3.6.1.2.1.10.127.1.1.2.1.4</oid>
+                        <oid>.1.3.6.1.2.1.10.127.1.1.2.1.4</oid>
                 </ifUpChannelModulationProfile>
                 <ifdocsIfUpChannelType>
                         <name>UpChannelType</name>
                         <method>walk</method>
-                        <source>value</source>     
+                        <source>value</source>
                         <direction>output</direction>
-                        <oid>1.3.6.1.2.1.10.127.1.1.2.1.15</oid>
-                </ifdocsIfUpChannelType> 
-		<ifUpChannelPower>
+                        <oid>.1.3.6.1.2.1.10.127.1.1.2.1.15</oid>
+                </ifdocsIfUpChannelType>
+                <ifUpChannelPower>
                         <name>UpChannelPower</name>
-                        <method>walk</method>
-                        <source>value</source>     
-                        <direction>output</direction>
-                        <oid>1.3.6.1.4.1.9.9.116.1.4.1.1.6</oid>
-                </ifUpChannelPower> 
-                <ifUpChannelPowerCasa>
-                        <name>UpChannelPowerCasa</name>
                         <method>walk</method>
                         <source>value</source>
                         <direction>output</direction>
                         <oid>.1.3.6.1.4.1.4491.2.1.20.1.25.1.2</oid>
-                </ifUpChannelPowerCasa>
+                </ifUpChannelPower>
                 <ifIP>
                         <name>IP Address</name>
                         <method>walk</method>

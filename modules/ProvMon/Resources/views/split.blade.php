@@ -29,6 +29,7 @@
 						<li role="presentation"><a href="#log" data-toggle="pill">Log</a></li>
 						<li role="presentation"><a href="#lease" data-toggle="pill">Lease</a></li>
 						<li role="presentation"><a href="#configfile" data-toggle="pill">Configfile</a></li>
+						<li role="presentation"><a href="#eventlog" data-toggle="pill">Eventlog</a></li>
 					</ul>', 'md' => 4))
 		@if (\PPModule::is_active('HfcCustomer'))
 			@include ('bootstrap.panel-no-div', array ('content' => 'content_proximity_search', 'view_header' => 'Proximity Search', 'md' => 4))

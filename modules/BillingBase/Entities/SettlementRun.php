@@ -7,6 +7,9 @@ class SettlementRun extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'settlementrun';
 
+	// don't try to add these Input fields to Database of this model
+    public $guarded = ['rerun'];
+
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
@@ -23,7 +26,7 @@ class SettlementRun extends \BaseModel {
 	{
 		parent::boot();
 
-		// SettlementRun::observe(new SettlementRunObserver);
+		SettlementRun::observe(new SettlementRunObserver);
 	}
 
 
@@ -46,12 +49,50 @@ class SettlementRun extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-		$bsclass = $this->verified ? 'info' : 'warning';
+		$bsclass = $this->get_bsclass();
 
 		return ['index' => [$this->year, $this->month, $this->created_at->toDateString(), $this->verified ? 'Yes' : 'No'], //$this->created_at->__get('day')],
 		        'index_header' => ['Year', 'Month', 'Created At', 'Verified'],
-		        'bsclass' => $bsclass,
+				'bsclass' => $bsclass,
+				'order_by' => ['id' => 'desc'],
 		        'header' => $this->year.' - '.$this->month.' - '.$this->created_at->__get('day')];
+	}
+
+	// AJAX Index list function
+	// generates datatable content and classes for model
+	public function view_index_label_ajax()
+	{
+		$bsclass = $this->get_bsclass();
+		$day = (isset($this->created_at)) ? $this->created_at : '';
+
+		return ['table' => $this->table,
+				'index_header' => [$this->table.'.year', $this->table.'.month',  $this->table.'.created_at', 'verified'],
+				'header' =>  $this->year.' - '.$this->month.' - '.$day ,
+				'bsclass' => $bsclass,
+				'order_by' => ['0' => 'desc'],
+				'edit' => ['verified' => 'run_verified', 'checkbox' => 'set_index_delete', 'created_at' => 'created_at_toDateString' ]];
+	}
+
+	public function get_bsclass()
+	{
+		return $this->verified ? 'info' : 'warning';
+	}
+
+	public function run_verified()
+	{
+		return  $this->verified ? 'Yes' : 'No';
+	}
+
+	public function set_index_delete()
+	{
+		if ($this->verified)
+				$this->index_delete_disabled = true;
+	}
+
+	public function created_at_toDateString()
+	{
+		return ($this->created_at->toDateString());
+
 	}
 
 	public function index_list()
@@ -69,8 +110,12 @@ class SettlementRun extends \BaseModel {
 
 	public function view_has_many()
 	{
-		$ret['Files']['SettlementRun']['view']['view'] = 'billingbase::settlementrun';
-		$ret['Files']['SettlementRun']['view']['vars'] = $this->accounting_files();
+		$ret['Files']['Files']['view']['view'] = 'billingbase::SettlementRun.files';
+		$ret['Files']['Files']['view']['vars'] = $this->accounting_files();
+
+		// NOTE: logs are fetched in SettlementRunController::edit
+		$ret['Files']['Logs']['view']['view'] = 'billingbase::SettlementRun.logs';
+		$ret['Files']['Logs']['view']['vars']['md_size'] = 12;
 
 		return $ret;
 	}
@@ -78,7 +123,7 @@ class SettlementRun extends \BaseModel {
 
 	public function get_files_dir()
 	{
-		return storage_path('app/data/billingbase/accounting/'.$this->year.'-'.sprintf('%02d', $this->month));		
+		return storage_path('app/data/billingbase/accounting/'.$this->year.'-'.sprintf('%02d', $this->month));
 	}
 
 	public static function get_last_run()
@@ -103,25 +148,19 @@ class SettlementRun extends \BaseModel {
 	 */
 	public function accounting_files()
 	{
-		$a = $b = [];
+		if (!is_dir($this->get_files_dir()))
+			return [];
 
-		if (is_dir($this->get_files_dir()))
+		$files = \File::allFiles($this->get_files_dir());
+
+		//order files
+		foreach ($files as $file)
 		{
-			$files = \File::allFiles($this->get_files_dir());
-
-			//order files
-			foreach ($files as $file)
-			{
-				if (!$file->getRelativePath())
-					$a[] = $file;
-				else
-					$b[] = $file;
-			}
-
-			return array_merge($a,$b);
+			$sepaacc = $file->getRelativePath() ? : \App\Http\Controllers\BaseViewController::translate_label('General');
+			$arr[$sepaacc][] = $file;
 		}
 
-		return [];
+		return $arr;
 	}
 
 
@@ -150,35 +189,39 @@ class SettlementRun extends \BaseModel {
 		return $hide;
 	}
 
-
-	public function delete_related_files()
-	{
-		// Delete invoices - this deletes db entry and pdf file via observer
-		foreach ($this->invoices as $invoice)
-			$invoice->delete();
-		
-		// Delete accounting record files and directories
-		$rel_dir = 'data/billingbase/accounting/'.$this->year.'-'.sprintf("%'.02d", $this->month).'/';
-		$files 	 = Storage::allFiles($rel_dir);
-		$dirs 	 = Storage::allDirectories($rel_dir);
-
-		foreach ($files as $f)
-			unlink($f);
-
-		foreach ($dirs as $d)
-			rmdir($d);
-
-		// $dir = storage_path('app/data/billingbase/accounting/'.$this->year.'-'.sprintf("%'.02d", $this->month).'/');
-	}
-
 }
 
 
 class SettlementRunObserver
 {
+	public function creating($settlementrun)
+	{
+		// dont show every settlementrun that was created in one month
+		$time = strtotime('first day of last month');
+		SettlementRun::where('month', '=', date('m', $time))->where('year', '=', date('Y', $time))->delete();
+	}
+
+	public function created($settlementrun)
+	{
+		if (!$settlementrun->observer_enabled)
+			return;
+
+		// NOTE: Make sure that we use Database Queue Driver - See .env!
+		$job_id = \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
+		// \Artisan::call('billing:accounting', ['--debug' => 1]);
+		\Session::put('job_id', $job_id);
+	}
+
+	public function updated($settlementrun)
+	{
+	}
+
 	public function deleted($settlementrun)
 	{
-		// Delete all corresponding/related files in Storage and all Invoices from Database
-		// $settlementrun->delete_related_files();
+		// delete all invoices & accounting record files - maybe use accountingCommand@_directory_cleanup
+		$date = $settlementrun->year.'-'.str_pad($settlementrun->month, 2, '0', STR_PAD_LEFT);
+		$dir = 'data/billingbase/accounting/'.$date;
+
+		\Modules\BillingBase\Http\Controllers\SettlementRunController::directory_cleanup($dir, $settlementrun);
 	}
 }

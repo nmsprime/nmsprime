@@ -1,8 +1,18 @@
-<?php 
-namespace Modules\Billingbase\Http\Controllers;
+<?php
+namespace Modules\BillingBase\Http\Controllers;
+
+use Modules\BillingBase\Entities\AccountingRecord;
+use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\SettlementRun;
+use Modules\BillingBase\Entities\Invoice;
+use Modules\BillingBase\Console\accountingCommand;
+use \Monolog\Logger;
+use ChannelLog;
 
 class SettlementRunController extends \BaseController {
+
+	protected $edit_left_md_size = 6;
+	protected $edit_right_md_size = 6;
 
 	public function view_form_fields($model = null)
 	{
@@ -30,7 +40,7 @@ class SettlementRunController extends \BaseController {
 		if (!isset($data['description']))
 		{
 			$data['description'] = '';
-			$data['verified'] = '';			
+			$data['verified'] = '';
 		}
 
 		return parent::prepare_input($data);
@@ -50,47 +60,257 @@ class SettlementRunController extends \BaseController {
 
 
 	/**
-	 * Extension of generic Store function of BaseController 
-	 * Run Accounting Command, Delete current Model if already existent, Create new Model
-	 */
-	public function store($redirect = true)
-	{
-		$time = strtotime('first day of last month');
-		SettlementRun::where('month', '=', date('m', $time))->where('year', '=', date('Y', $time))->delete();
-
-		// this is a workaround to redirect output - laravel 3rd variable in call function disregards it
-		// output is buffered in internal storage and later discarded with ob_end_clean()
-		ob_start();
-
-		$ret = \Artisan::call('billing:accounting');
-
-		ob_end_clean();
-
-		return parent::store();
-	}
-
-
-	/*
-	 * Extends generic edit function from Basecontroller for own view - Removes Rerun Button when next month has begun
+	 * Extends generic edit function from Basecontroller for own view
+	 	* Removes Rerun Button when next month has begun
+	 	* passes logs dependent of execution status of accountingCommand
+	 *
+	 * @return View
 	 */
 	public function edit($id)
 	{
-		$obj = SettlementRun::find($id);
-		$bool = (date('m') == $obj->created_at->__get('month')) && !$obj->verified;
+		$logs = $failed_jobs = [];
+		$sr   = SettlementRun::find($id);
+		$bool = (date('m') == $sr->created_at->__get('month')) && !$sr->verified;
 
-		return parent::edit($id)->with('rerun_button', $bool);
+		// delete Session job id if job is done in case someone broke the tcp connection (close tab/window) manually
+		if (\Session::get('job_id')) {
+			if (!\DB::table('jobs')->find(\Session::get('job_id')))
+				\Session::remove('job_id');
+		}
+
+		// get error logs in case job failed and remove failed job from table
+		$failed_jobs = \DB::table('failed_jobs')->get();
+		foreach ($failed_jobs as $failed_job)
+		{
+			$obj = unserialize((json_decode($failed_job->payload)->data->command));
+			if ($obj->name == 'billing:accounting')
+			{
+				\Artisan::call('queue:forget', ['id' => $failed_job->id]);
+				$logs = self::get_logs($sr->updated_at->subSeconds(1)->__get('timestamp'), Logger::ERROR);
+				break;
+			}
+		}
+
+		// get execution logs if job has finished successfully - (show error logs otherwise - show nothing during execution)
+		// NOTE: when SettlementRun gets verified the logs will disappear because timestamp is updated
+		$logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
+
+		return parent::edit($id)->with('rerun_button', $bool)->with('logs', $logs);
+	}
+
+
+	/**
+	 * Check State of Job "accountingCommand"
+	 * Send Reload info when job has finished
+	 *
+	 * @return 	response 	Stream
+	 */
+	public function check_state()
+	{
+		\Log::debug(__CLASS__ .'::'. __FUNCTION__);
+		$response = new \Symfony\Component\HttpFoundation\StreamedResponse(function() {
+
+			// Make Sleeptime dependent of Contract count - min 2 sec
+			// $num = DB::table('contract')->where('deleted_at', '=', null)->count();
+			// $sleep = (int) pow($num/10, 1/3);
+			// $sleep = $sleep < 2 ? 2 : $sleep;
+
+			$job = true;
+			while ($job)
+			{
+				$job = \DB::table('jobs')->find(\Session::get('job_id'));
+				sleep(3);
+				// sleep($sleep);
+			}
+
+			\Log::debug('SettlementRun Job ['. \Session::get('job_id').'] stopped');
+
+			\Session::remove('job_id');
+
+			// wait for job to land in failed jobs table - if it failed - wait max 20 seconds
+			$i 		 = 10;
+			$success = true;
+
+			while ($i && $success)
+			{
+				$i--;
+				$failed_jobs = \DB::table('failed_jobs')->get();
+				foreach ($failed_jobs as $job)
+				{
+					$obj = unserialize((json_decode($job->payload)->data->command));
+					if ($obj->name == 'billing:accounting') {
+						$success = false;
+						break;
+					}
+				}
+
+				sleep(2);
+			}
+
+			$success ? \Log::info('Settlementrun finished successfully') : \Log::error('Settlementrun failed!');
+
+			\Log::debug('Reload Settlementrun Edit View');
+			echo "data: reload\n\n";
+			ob_flush(); flush();
+		});
+
+		$response->headers->set('Content-Type', 'text/event-stream');
+
+		return $response;
+	}
+
+
+	/**
+	 * Get Logs from Parent Function from billing.log and Format for table view
+	 *
+	 * @param date_time 	Unix Timestamp  	Return only Log entries after this timestamp
+	 * @param severity_lvl 	Enum 				Minimum Severity Level to show
+	 * @return Array 		[timestamp => [color, type, message], ...]
+	 */
+	public static function get_logs($date_time, $severity_lvl = Logger::NOTICE)
+	{
+		$logs = parent::get_logs(storage_path('logs/billing.log'), $severity_lvl);
+		$old = $filtered = [];
+
+		foreach ($logs as $key => $string)
+		{
+			$timestamp = substr($string, 1, 19);
+			$type = substr($string, $x = strpos($string, 'billing.') + 8, $y = strpos($string, ': ') - $x);
+
+			switch ($type)
+			{
+				case 'CRITICAL':
+				case 'ALERT':
+				case 'ERROR': $bsclass = 'danger'; break;
+				case 'WARNING': $bsclass = 'warning'; break;
+				case 'INFO': $bsclass = 'info'; break;
+				default: $bsclass = ''; break;
+			}
+
+			$arr = array(
+				'color' 	=> $bsclass,
+				'time' 		=> $timestamp,
+				'type' 		=> $type,
+				'message' 	=> substr($string, $x + $y + 2),
+				);
+
+			if ($old == $arr)
+				continue;
+			if (strtotime($timestamp) < $date_time)
+				break;
+
+			$filtered[] = $arr;
+
+			$old = $arr;
+		}
+
+		return $filtered;
+	}
+
+
+	/**
+	 * Return CSV with all Log Entries of minimum log level INFO
+	 */
+	public function download_logs($id)
+	{
+		$sr = SettlementRun::find($id);
+
+		$logs = self::get_logs($sr->updated_at->__get('timestamp'), Logger::INFO);
+
+		$fn = '/tmp/billing-logs.csv';
+		$fh = fopen($fn, 'w+');
+
+		foreach (array_reverse($logs) as $key => $arr) {
+			unset($arr['color']);
+			fputcsv($fh, $arr);
+		}
+
+		fclose($fh);
+
+		return response()->download($fn);
+	}
+
+
+	// public function store($redirect = true)
+	// {
+	// 	$this->dispatch(new \Modules\BillingBase\Console\accountingCommand());
+	// 	return parent::store();
+	// }
+
+
+	/**
+	 * Extend BaseControllers update to call Artisan Command when Settlement run shall rerun
+	 */
+	public function update($id)
+	{
+		// used as workaround to not display output
+		// ob_start();
+
+		if (\Input::has('rerun'))
+		{
+			// NOTE: Make sure that we use Database Queue Driver - See .env!
+			$job_id = $this->dispatch(new \Modules\BillingBase\Console\accountingCommand);
+			// \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
+			\Session::put('job_id', $job_id);
+		}
+
+		// ob_end_clean();
+
+		return parent::update($id);
 	}
 
 
 	/**
 	 * Download a billing file or all files as ZIP archive
 	 */
-	public function download($id, $key)
+	public function download($id, $sepaacc, $key)
 	{
 		$obj 	= SettlementRun::find($id);
 		$files  = $obj->accounting_files();
 
-		return response()->download($files[$key]->getRealPath());
+		return response()->download($files[$sepaacc][$key]->getRealPath());
+	}
+
+
+	/**
+	 * This function removes all "old" files and DB Entries created by the previous called accounting Command
+	 * This is necessary because otherwise e.g. after deleting contracts the invoice would be kept and is still
+	 * available in customer control center
+	 * Used in: SettlementRunObserver@deleted, accountingCommand
+	 *
+	 * USE WITH CARE!
+	 *
+	 * @param 	dir 			String 		Accounting Record Files Directory relative to storage/app/
+	 * @param 	settlementrun 	Object 		SettlementRun the directory should be cleared for
+	 */
+	public static function directory_cleanup($dir, $settlementrun = null)
+	{
+		$start  = $settlementrun ? date('Y-m-01 00:00:00', strtotime($settlementrun->created_at)) : date('Y-m-01');
+		$end 	= $settlementrun ? date('Y-m-01 00:00:00', strtotime('+1 month', strtotime($settlementrun->created_at))) : date('Y-m-01', strtotime('+1 month'));
+
+		// remove all entries of this month permanently (if already created)
+		$ret = AccountingRecord::whereBetween('created_at', [$start, $end])->forceDelete();
+		if ($ret)
+			ChannelLog::debug('billing', 'Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
+
+		// Delete all invoices
+		$logmsg = 'Remove all already created Invoices and Accounting Files for this month';
+		ChannelLog::debug('billing', $logmsg);	echo "$logmsg\n";
+
+		if (!$settlementrun)
+			Invoice::delete_current_invoices();
+
+		// everything in accounting directory - SepaAccount specific
+		foreach (\Storage::files($dir) as $f)
+		{
+			// keep cdr
+			// if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
+			if (basename($f) != accountingCommand::_get_cdr_filename())
+				\Storage::delete($f);
+		}
+
+		foreach (\Storage::directories($dir) as $d)
+			\Storage::deleteDirectory($d);
 	}
 
 }

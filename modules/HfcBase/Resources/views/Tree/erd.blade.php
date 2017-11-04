@@ -19,8 +19,8 @@
 			url    = '<?php echo \BaseRoute::get_base_url() ?>'
 	        kml    = 0;
 
-	        alert ("Element Number: "+id, "<li><a href="+url+"/Tree/"+id+"/edit>Change</a></li>" +
-	                                      "<li><a href="+url+"/Tree/"+id+"/delete>Delete </a></li>" +
+	        alert ("Element Number: "+id, "<li><a href="+url+"/NetElement/"+id+"/edit>Change</a></li>" +
+	                                      "<li><a href="+url+"/NetElement/"+id+"/delete>Delete </a></li>" +
 	                                      "<li><a href=details.php?id="+id+">Details</a>", {width:150});
 	        return false;
 	}
@@ -43,7 +43,7 @@
 
 			if ($is_pos)
 			{
-				$url = \BaseRoute::get_base_url().'/Tree/create?pos='.$search;
+				$url = \BaseRoute::get_base_url().'/NetElement/create?pos='.$search;
 				echo "<h4><div align=\"center\"> <a href=$url>Add Device</a></div></h4>";
 			}
 		?>

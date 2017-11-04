@@ -45,11 +45,31 @@
 	@endif
 @stop
 
+@section('content_configfile')
+	@if (isset($configfile))
+		<font color="green"><b>{{$type}} Configfile</b></font><br>
+		@foreach ($configfile as $line)
+			<table>
+				<tr>
+					<td>
+					 <font color="grey">{{$line}}</font>
+					</td>
+				</tr>
+			</table>
+		@endforeach
+	@else
+		<font color="red">{{ trans('messages.mta_configfile_error')}}</font>
+	@endif
+@stop
 
 @section('content_ping')
 
 	@if ($ping)
-		<font color="green"><b>{{$type}} is Online</b></font><br>
+		<?php
+			$color = isset($ping[1]) ? "green" : "orange";
+			$text  = isset($ping[1]) ? "$type is Online" : trans('messages.device_probably_online', ['type' => $type]);
+		?>
+		<font color="{{$color}}"><b>{{$text}}</b></font><br>
 		@foreach ($ping as $line)
 				<table>
 				<tr>

@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\Ccc\Http\Controllers;
 
 use Modules\Ccc\Entities\Ccc;
@@ -37,7 +37,7 @@ class CccAuthuserController extends \BaseController {
 		// Company
 		'company_name'			=> '',
 		'company_street'		=> '',
-		'company_zip'			=> '',	
+		'company_zip'			=> '',
 		'company_city'			=> '',
 		'company_phone'			=> '',
 		'company_fax'			=> '',
@@ -69,7 +69,7 @@ class CccAuthuserController extends \BaseController {
 	 *
 	 * @author Torsten Schmidt, Nino Ryschawy
 	 */
-	public function connection_info_download ($id)
+	public function connection_info_download ($id, $return_pdf = true)
 	{
 		$c = Contract::find($id);
 		$customer = $c->cccauthuser;
@@ -83,7 +83,6 @@ class CccAuthuserController extends \BaseController {
 			$customer->contract_id = $c->id;
 			$login_data = $customer->store();
 		}
-
 		if (!$login_data)
 		{
 			Log::error('CustomerConnectionInfo: Error Creating Login Data', [$c->id]);
@@ -99,10 +98,10 @@ class CccAuthuserController extends \BaseController {
 		// TODO: try - catch exceptions that this function shall throw
 		$ret = $this->make_conn_info_pdf($c);
 
-		Log::info('Download Connection Information for CccAuthuser: '.$customer->first_name.' '.$customer->last_name.' ('.$customer->id.')');
+		Log::info('Download Connection Information for CccAuthuser: '.$customer->first_name.' '.$customer->last_name.' ('.$customer->id.')', [$c->id]);
 
 		if (is_string($ret))
-			return response()->download($ret);
+			return $return_pdf ? response()->download($ret) : $ret;
 
 		$err_msg = is_int($ret) ? trans('messages.conn_info_err_template') : trans('messages.conn_info_err_create');
 		return \Redirect::back()->with('error_msg', $err_msg);
@@ -120,7 +119,7 @@ class CccAuthuserController extends \BaseController {
 	{
 		// load template
 		$template_dir = storage_path('app/config/ccc/template/');
-		$template_filename = \PPModule::is_active('billingbase') ? $contract->costcenter->sepa_account->company->conn_info_template_fn : Ccc::first()->template_filename;
+		$template_filename = \PPModule::is_active('billingbase') ? $contract->costcenter->sepaaccount->company->conn_info_template_fn : Ccc::first()->template_filename;
 
 		if (!$template = file_get_contents($template_dir.$template_filename))
 		{
@@ -135,12 +134,18 @@ class CccAuthuserController extends \BaseController {
 		if (!is_dir($dir_path))
 			mkdir($dir_path, 0733, true);
 
-		$filename = $contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info';
+		$filename = str_replace(['.', ' ', '&', '|', ',', ';' ], '', $contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info');
+		// $filename = str_sanitize($contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info');
+
+		// echo "$filename\n";
 
 		// Replace placeholder by value
 		$template = str_replace('\\_', '_', $template);
-		foreach ($this->data as $key => $value)
-			$template = str_replace('{'.$key.'}', $value, $template);
+		foreach ($this->data as $key => $string)
+		{
+			$string = escape_latex_special_chars($string);
+			$template = str_replace('{'.$key.'}', $string, $template);
+		}
 
 		File::put($dir_path.$filename, $template);
 
@@ -148,13 +153,14 @@ class CccAuthuserController extends \BaseController {
 		// create pdf from tex
 		chdir($dir_path);
 
-		system("pdflatex $filename &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
+		// Log::debug("pdflatex \"$filename\" -interaction=nonstopmode &>/dev/null");
+		system("pdflatex \"$filename\" -interaction=nonstopmode &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
 
 		// TODO: use exception handling to handle errors
 		switch ($ret)
 		{
 			case 0: break;
-			case 1: 
+			case 1:
 				Log::error("PdfLatex - Syntax error in tex template (misspelled placeholder?)", [$template_dir.$template_filename, $dir_path.$filename]);
 				return null;
 			case 127:
@@ -169,6 +175,8 @@ class CccAuthuserController extends \BaseController {
 		unlink($filename);
 		unlink($filename.'.aux');
 		unlink($filename.'.log');
+
+		system("chown -R apache $dir_path");
 
 		return $dir_path.$filename.'.pdf';
 	}
@@ -186,6 +194,7 @@ class CccAuthuserController extends \BaseController {
 		$this->data['contract_housenumber'] = $contract->house_number;
 		$this->data['contract_zip'] 	  = $contract->zip;
 		$this->data['contract_city'] 	  = $contract->city;
+		$this->data['contract_address']   = ($contract->company ? "$contract->company\\\\" : '') . ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . $contract->street.' '.$contract->house_number . "\\\\$contract->zip $contract->city";
 		$this->data['login_name'] 		  = $login_data['login_name'];
 		$this->data['psw'] 				  = $login_data['password'];
 
@@ -200,7 +209,7 @@ class CccAuthuserController extends \BaseController {
 			return;
 		}
 
-		$sepa_account = $costcenter->sepa_account;
+		$sepa_account = $costcenter->sepaaccount;
 
 		if (!is_object($sepa_account))
 		{
@@ -213,19 +222,17 @@ class CccAuthuserController extends \BaseController {
 		$this->data['company_account_iban'] = $sepa_account->iban;
 		$this->data['company_account_bic']  = $sepa_account->bic;
 
-
 		$company = $sepa_account->company;
 
 		if (!is_object($company))
 		{
 			Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
-			return;			
+			return;
 		}
 
 		$this->data = array_merge($this->data, $company->template_data());
 
 		$this->data['company_logo'] = storage_path('app/config/billingbase/logo/'.$this->data['company_logo']);
-
 	}
 
 
@@ -238,13 +245,37 @@ class CccAuthuserController extends \BaseController {
 
 	/**
 	 * Shows the invoice history for the Customer
+	 *
+	 * @return View
 	 */
 	public function show()
 	{
 		$invoices = \Auth::guard('ccc')->user()->contract->invoices;
+		$invoice_links = [];
+
+		$bsclass = ['info', 'active'];
+		$start = $year = 0;
+
+		foreach ($invoices as $key => $invoice)
+		{
+			// dont show unverified invoices
+			if (!$invoice->settlementrun->verified)
+				continue;
+
+			if ($invoice->year != $year)
+				$start = ($start + 1) % 2;
+
+			$year = $invoice->year;
+
+			$invoice_links[] = array(
+					'link' => \HTML::linkRoute('Customer.Download', str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''), ['invoice' => $invoice->id]),
+					'bsclass' => $bsclass[$start],
+				);
+		}
+
 		$emails = \PPModule::is_active('mail') ? \Auth::guard('ccc')->user()->contract->emails : collect();
 
-		return \View::make('ccc::index', compact('invoices','emails'));
+		return \View::make('ccc::index', compact('invoice_links','emails'));
 	}
 
 
@@ -261,7 +292,7 @@ class CccAuthuserController extends \BaseController {
 		$user 	 = \Auth::guard('ccc')->user();
 
 		// check that only allowed files are downloadable - invoice must belong to customer and settlmentrun must be verified
-		if (!$invoice || $invoice->contract_id != $user->contract_id || !SettlementRun::find($invoice->settlementrun_id)->verified)
+		if (!$invoice || $invoice->contract_id != $user->contract_id || !$invoice->settlementrun->verified)
 			throw new \App\Exceptions\AuthExceptions('Permission Denied');
 
 		Log::info($user->first_name.' '.$user->last_name.' downloaded invoice '.$invoice->filename.' - id: '.$invoice->id);
@@ -309,7 +340,7 @@ class CccAuthuserController extends \BaseController {
 			return $this->show();
 		}
 
-		return \View::make('ccc::psw_update', $this->compact_prep_view(compact('email')));
+		return \View::make('ccc::psw_update', compact('email'));
 	}
 
 

@@ -55,13 +55,14 @@ class cdrCommand extends Command {
 		$this->_init();
 		$logger = new BillingLogger;
 
+		$logger->addInfo('Get Call Data Records');
+
 		// skip if file is already loaded
 		if (is_file($this->target_dir.$this->target_file))
 		{
 			$logger->addDebug('CDR already loaded');
 			return;
 		}
-
 
 		// Choose Provider via array key in environment file - Add new Providers here!!!
 		// NOTE: - use env() to parse all super global variables for this key here as this super global variable is consciously not set in cronjobs
@@ -125,11 +126,15 @@ class cdrCommand extends Command {
 		$password = env('PROVVOIPENVIA__RESELLER_PASSWORD');
 		$logger = new BillingLogger;
 
-		// TODO: proof if file is already available
-		$data = file_get_contents("https://$user:$password@www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/".$this->year.'/'.$this->month);
+		try {
+			$data = file_get_contents("https://$user:$password@www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/".$this->year.'/'.$this->month);
+		} catch (\Exception $e) {
+			$data = [];
+		}
+
 		if (!$data)
 		{
-			$logger->addAlert('CDR-Import: Could not get Call Data Records from Envia for month: '.$this->month, ["www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/2016/$month"]);
+			$logger->addAlert('CDR-Import: Could not get Call Data Records from Envia for month: '.$this->month, ["www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/2016/$this->month"]);
 			return -1;
 		}
 

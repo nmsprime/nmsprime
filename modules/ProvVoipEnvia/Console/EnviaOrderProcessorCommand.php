@@ -68,8 +68,8 @@ class EnviaOrderProcessorCommand extends Command {
 		Log::info('Processing contract/relocate orders');
 
 		// as there can be some delays in status change of orders we have to look back in history a little bit…
-		$date_threshold = date('c', strtotime("-2 weeks"));
-		$orders = EnviaOrder::whereRaw('method=contract/relocate OR ordertype=Umzug')->where('orderdate', '>=', $date_threshold)->get();
+		$date_threshold = date('c', strtotime("-2 days"));
+		$orders = EnviaOrder::whereRaw("method='contract/relocate' OR ordertype='Umzug'")->where('orderdate', '>=', $date_threshold)->get();
 
 		foreach ($orders as $order) {
 
@@ -88,6 +88,16 @@ class EnviaOrderProcessorCommand extends Command {
 					$old_enviacontract = EnviaContract::firstOrCreate(array('envia_contract_reference' => $phonenumber->contract_external_id));
 					$new_enviacontract = EnviaContract::firstOrCreate(array('envia_contract_reference' => $order->contractreference));
 
+					// if there is a next ID on envia contract: This has already been processed
+					if (!is_null($old_enviacontract->next_id)) {
+						continue;
+					}
+
+					// check if the Envia contract to switch to is the currently active one
+					if ($new_enviacontract->state != 'Aktiv') {
+						continue;
+					};
+
 					$old_enviacontract->envia_contract_reference = $phonenumber->contract_external_id;
 					$old_enviacontract->end_date = date('Y-m-d', strtotime($order->orderdate.' -1 day'));
 					$old_enviacontract->end_reason = "contract/relocate";
@@ -102,8 +112,8 @@ class EnviaOrderProcessorCommand extends Command {
 						'variation_id',
 					];
 					foreach ($copy_fields as $field) {
-						if ($new_enviacontract->${field} != $old_enviacontract->${field}) {
-							$new_enviacontract->${field} = $old_enviacontract->${field};
+						if ($new_enviacontract->{'field'} != $old_enviacontract->{'field'}) {
+							$new_enviacontract->{'field'} = $old_enviacontract->{'field'};
 						}
 					}
 

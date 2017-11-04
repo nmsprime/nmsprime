@@ -3,6 +3,7 @@
 namespace Modules\HfcCustomer\Http\Controllers;
 
 use Modules\HfcCustomer\Entities\ModemHelper;
+use Modules\HfcCustomer\Entities\Mpr;
 use Modules\HfcReq\Http\Controllers\NetElementController;
 
 use Modules\ProvBase\Entities\Modem;
@@ -114,7 +115,7 @@ class CustomerTopoController extends NetElementController {
 		if($field == 'all')
 			$s = 'id>2';
 
-		return $this->show_topo(Modem::whereRaw($s));
+		return $this->show_topo(Modem::whereRaw($s), \Input::get('row'));
 	}
 
 
@@ -127,11 +128,34 @@ class CustomerTopoController extends NetElementController {
 	*
 	* @author: Torsten Schmidt
 	*/
-	public function show_rect($x1, $x2, $y1, $y2, $row = 'us_pwr')
+	public function show_rect($x1, $x2, $y1, $y2)
 	{
-		return $this->show_topo(Modem::whereRaw("(($x1 < x) AND (x < $x2) AND ($y1 < y) AND (y < $y2))"), $row);
+		return $this->show_topo(Modem::whereRaw("(($x1 < x) AND (x < $x2) AND ($y1 < y) AND (y < $y2))"), \Input::get('row'));
 	}
 
+	/**
+	* Show all customers within the polygon
+	*
+	* @param poly: the polygon, its vertices are separated by semicolons
+	* @author: Ole Ernst
+	*/
+	public function show_poly($poly)
+	{
+		$ids = 'id = 0';
+		$poly = explode(';', $poly);
+		// every point must have two coordinates
+		if(count($poly) % 2)
+			return \Redirect::back();
+		// convert from flat array into array of array as expeceted by point_in_polygon
+		while($poly)
+			$polygon[] = [array_shift($poly), array_shift($poly)];
+		// add modems which are within the polygon
+		foreach (Modem::all() as $modem)
+			if(Mpr::point_in_polygon([$modem->x,$modem->y], $polygon))
+				$ids .= " OR id = $modem->id";
+
+		return $this->show_topo(Modem::whereRaw($ids));
+	}
 
 	/**
 	* Show all customers in proximity (radius in meters)
@@ -141,6 +165,22 @@ class CustomerTopoController extends NetElementController {
 	public function show_prox()
 	{
 		return $this->show_topo(Modem::whereRaw(Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))));
+	}
+
+	/**
+	* Show customers with an upstream power of bigger than 50dBmV
+	*
+	* @author: Ole Ernst
+	*/
+	public function show_bad()
+	{
+		$modems = Modem::where('us_pwr', '>', '50');
+
+		// return back if all modems are fine
+		if(!$modems->count())
+			return back();
+
+		return $this->show_topo($modems);
 	}
 
 	/*
@@ -153,10 +193,12 @@ class CustomerTopoController extends NetElementController {
 	*
 	* @author: Torsten Schmidt
 	*/
-	public function show_topo($modems, $row = 'us_pwr')
+	public function show_topo($modems, $row = null)
 	{
 		if (!$modems->count())
 			return \View::make('errors.generic')->with('message', 'No Modem Entry found');
+		if (!$row)
+			$row = 'us_pwr';
 
 		// Generate SVG file
 		$file = $this->kml_generate ($modems, $row);
@@ -203,7 +245,13 @@ class CustomerTopoController extends NetElementController {
 		foreach ($modems->orderBy('city', 'street')->get() as $modem)
 		{
 			// load per modem diagrams
-			$dia_ids = $provmon->monitoring_get_graph_template_id('DOCSIS Overview');
+			$dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Overview');
+			if (!\Input::has('row'))
+				$dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS US PWR');
+			else
+				$dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS '.strtoupper(str_replace('_', ' ', \Input::get('row'))));
+
+
 			$dia = $provmon->monitoring($modem, $dia_ids);
 
 			// valid diagram's ?
@@ -267,12 +315,11 @@ class CustomerTopoController extends NetElementController {
 	private function make_right_panel_links ($modems)
 	{
 		$ids = '0';
-
 		foreach ($modems->get() as $modem)
 			$ids .= '+'.$modem->id;
 
-		return [['name' => 'Topography', 'route' => 'CustomerModem.show', 'link' => ['true', $ids]],
-		        ['name' => 'Diagramms', 'route' => 'CustomerModem.show', 'link' => ['false', $ids]]];
+		return [['name' => 'Topography', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => \Input::get('row')]],
+		        ['name' => 'Diagramms', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => \Input::get('row')]]];
 	}
 
 
@@ -289,7 +336,7 @@ class CustomerTopoController extends NetElementController {
 		$x = 0;
 		$y = 0;
 		$num = 0;
-		$clr = '';
+		$clrs = [];
 		$str   = '';
 		$descr = '';
 		$states = ['okay', 'critical', 'offline'];
@@ -303,10 +350,11 @@ class CustomerTopoController extends NetElementController {
 			if ($x != $modem->x || $y != $modem->y)
 			{
 				# Print Marker
+				$clr = ($x) ? round(array_sum($clrs)/count($clrs)) : '';
 				$style = "#style$clr"; # green, yellow, red
 
 				# Reset Vars
-				$clr = 0;
+				$clrs = [];
 				$pos ="$x, $y, 0.000000";
 
 
@@ -335,8 +383,7 @@ class CustomerTopoController extends NetElementController {
 
 			$row_val = $modem->{$row};
 			$cur_clr = BaseViewController::get_quality_color_orig(explode('_',$row)[0], explode('_',$row)[1], [$row_val])[0];
-			if ($cur_clr > $clr)
-				$clr = $cur_clr;
+			$clrs[] = $cur_clr;
 
 			#
 			# Contract
@@ -363,6 +410,7 @@ class CustomerTopoController extends NetElementController {
 		#
 		# Print Last Marker
 		#
+		$clr = round(array_sum($clrs)/count($clrs));
 		$style = "#style$clr"; # green, yellow, red
 		$pos ="$x, $y, 0.000000";
 		if ($x)

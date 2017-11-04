@@ -23,7 +23,11 @@
 					<span>
 				@endif
 
-				<a href="{{ $extra_content['url'] }}">{{ $extra_content['linktext'] }}</a>
+				@if ($extra_content['url'])
+					<a href="{{ $extra_content['url'] }}">{{ $extra_content['linktext'] }}</a>
+				@else
+					{{ $extra_content['linktext'] }}
+				@endif
 
 				</span>
 

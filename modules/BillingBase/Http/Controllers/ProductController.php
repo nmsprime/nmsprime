@@ -9,6 +9,8 @@ use Modules\ProvVoip\Entities\PhoneTariff;
 
 class ProductController extends \BaseController {
 
+	protected $index_datatables_ajax_enabled = true;
+
     /**
      * defines the formular fields for the edit and create view
      */
@@ -26,7 +28,7 @@ class ProductController extends \BaseController {
 		$sales_tariffs = $this->_add_empty_first_element_to_options(PhoneTariff::get_sale_tariffs());
 		$purchase_tariffs = $this->_add_empty_first_element_to_options(PhoneTariff::get_purchase_tariffs());
 
-		$tax = array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV');
+		$tax = array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV Credit');
 		if ($model->tax === null)
 			$tax = array_merge($tax, ['checked' => true, 'value' => 1]);
 
@@ -63,7 +65,7 @@ class ProductController extends \BaseController {
 		switch ($data['type'])
 		{
 			case 'Credit':
-				$rules['billing_cycle'] = 'In:Once,Monthly';
+				// $rules['billing_cycle'] = 'In:Once,Monthly';
 				$rules['qos_id'] = 'In:0';
 				$rules['voip_sales_tariff_id'] = 'In:0';
 				$rules['voip_purchase_tariff_id'] = 'In:0';

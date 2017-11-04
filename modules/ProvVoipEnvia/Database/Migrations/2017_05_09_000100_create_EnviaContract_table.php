@@ -25,8 +25,8 @@ class CreateEnviaContractTable extends BaseMigration {
 			$table->datetime('external_termination_date')->nullable()->default(NULL);
 			$table->string('envia_customer_reference', 60)->nullable()->default(NULL);
 			$table->string('envia_contract_reference', 60)->nullable()->default(NULL);
-			$table->date('end_date')->nullable()->default(NULL);
 			$table->date('start_date')->nullable()->default(NULL);
+			$table->date('end_date')->nullable()->default(NULL);
 
 			// Envia contract reference can change over the time (e.g. on contract_relocate)
 			$table->integer('next_id')->unsigned()->nullable()->default(NULL);

@@ -12,7 +12,7 @@
 @section('content_cacti')
 
 	@if ($host_id)
-		<iframe id="cacti-diagram" src="/cacti/graph_view.php?action=preview&columns=1&host_id={{$host_id}}" sandbox="allow-forms allow-scripts allow-pointer-lock allow-popups allow-same-origin" width="100%" height="100%" onload="resizeIframe(this)" scrolling="no" style="overflow:hidden; display:block; min-height: 100%; border: none; position: relative;"></iframe>
+		<iframe id="cacti-diagram" src="/cacti/graph_view.php?action=preview&columns=1&host_id={{$host_id}}" sandbox="allow-scripts allow-same-origin" width="100%" height="100%" onload="resizeIframe(this)" scrolling="no" style="min-height: 100%; border: none;"></iframe>
 	@else
 		<font color="red">{{trans('messages.modem_no_diag')}}</font><br>
 		{{ trans('messages.modem_monitoring_error') }}
@@ -23,21 +23,14 @@
 @section('content_ping')
 	<div class="tab-content">
 		<div class="tab-pane fade in" id="ping-test">
-			@if ($ping)
+			@if ($online)
 				<font color="green"><b>Modem is Online</b></font><br>
-				@foreach ($ping as $line)
-					<table>
-						<tr>
-							<td>
-						 		<font color="grey">{{$line}}</font>
-							</td>
-						</tr>
-					</table>
-				@endforeach
 			@else
 				<font color="red">{{trans('messages.modem_offline')}}</font>
 			@endif
+			<!-- pings are appended dynamically here by javascript -->
 		</div>
+
 		<div class="tab-pane fade in" id="flood-ping">
 			<?php $route = \Route::getCurrentRoute()->getUri(); ?>
 					<form route="$route" method="POST">Type:
@@ -117,6 +110,37 @@
 			@endforeach
 		@else
 			<font color="red">{{ trans('messages.modem_configfile_error')}}</font>
+		@endif
+	</div>
+
+	<div class="tab-pane fade in" id="eventlog">
+		@if ($eventlog)
+			<div class="table-responsive">
+				<table class="table streamtable table-bordered" width="100%">
+					<thead>
+						<tr class='active'>
+							<th width="20px"></th>
+							@foreach (array_shift($eventlog) as $col_name)
+								<th class='text-center'>{{$col_name}}</th>
+							@endforeach
+						</tr>
+					</thead>
+					<tbody>
+					@foreach ($eventlog as $row)
+						<tr class = "{{$row[2]}}">
+							<td></td>
+							@foreach ($row as $idx => $data)
+								@if($idx != 2)
+									<td><font>{{$data}}</font></td>
+								@endif
+							@endforeach
+						</tr>
+					@endforeach
+					</tbody>
+				</table>
+			</div>
+		@else
+			<font color="red">{{ trans('messages.modem_eventlog_error')}}</font>
 		@endif
 	</div>
 </div>
@@ -215,4 +239,36 @@
 @else
   <font color="red">{{trans('messages.modem_offline')}}</font>
 @endif
+@stop
+
+
+@section ('javascript')
+
+	<script type="text/javascript">
+
+		<?php if ($ip) : ?>
+		{
+			$(document).ready(function() {
+
+				setTimeout(function() {
+
+					var source = new EventSource("<?php echo route('ProvMon.realtime_ping', $ip); ?>");
+
+					source.onmessage = function(e) {
+						// close connection
+						if (e.data == 'finished')
+						{
+							source.close();
+							return;
+						}
+
+						document.getElementById('ping-test').innerHTML += e.data;
+					}
+
+				}, 500);
+			});
+		}
+		<?php endif; ?>
+	</script>
+
 @stop

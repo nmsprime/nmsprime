@@ -61,18 +61,18 @@ class ProvMonController extends \BaseController {
 	 */
 	public function analyses($id)
 	{
-		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = null;
+		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = null;
 		$modem 	  = $this->modem ? $this->modem : Modem::find($id);
 		$view_var = $modem; // for top header
 		$hostname = $modem->hostname.'.'.$this->domain_name;
 		$mac 	  = strtolower($modem->mac);
 
-		// Ping: Send 5 request's at once with max timeout of 1 second
 		$ip = gethostbyname($hostname);
-		if ($ip != $hostname)
-			exec ('sudo ping -c5 -i0 -w1 '.$hostname, $ping);
-		else
-			$ip = null;
+		$ip = ($ip == $hostname) ? null : $ip;
+
+		// Ping: Only check if device is online
+		exec ('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
+		$online = $ret ? false : true;
 
 		// Flood Ping
 		$flood_ping = $this->flood_ping ($hostname);
@@ -83,21 +83,22 @@ class ProvMonController extends \BaseController {
 
 		// Configfile
 		$cf_path = "/tftpboot/cm/$modem->hostname.conf";
-		$configfile = is_file($cf_path) ? file($cf_path) : ['Error: Missing Configfile!'];
+		$configfile = is_file($cf_path) ? file($cf_path) : null;
 
-		// Realtime Measure - only fetch realtime values if all pings are successfull
-		if (count($ping) == 10)
-		{
+		// Realtime Measure - this takes the most time
+		// TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
+		if ($online) {
 			// preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
-			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip);
+			$realtime['measure']  = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
 			$realtime['forecast'] = 'TODO';
+			// get eventlog table
+			if(!array_key_exists('SNMP-Server not reachable', $realtime['measure']))
+				$eventlog = $modem->get_eventlog();
 		}
-		else if (count($ping) <= 7)
-			$ping = null;
 
 		// Log dhcp (discover, ...), tftp (configfile or firmware)
 		$search = $ip ? "$mac|$modem->hostname|$ip " : "$mac|$modem->hostname";
-		exec ('egrep -i "('.$search.')" /var/log/messages | grep -v MTA | grep -v CPE | tail -n 20  | tac', $log);
+		$log = self::_get_syslog_entries($search, "| grep -v MTA | grep -v CPE | tail -n 30  | tac");
 
 		$host_id = $this->monitoring_get_host_id($modem);
 
@@ -106,7 +107,83 @@ class ProvMonController extends \BaseController {
 		$panel_right = $this->prep_sidebar($id);
 
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'ping', 'panel_right', 'lease', 'log', 'configfile', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip')));
+	}
+
+
+	/**
+	 * Helper to get Syslog entries dependent on what should be searched and discarded
+	 *
+	 * @param 	search 		String 		to search
+	 * @param 	grep_pipes 	String 		restrict matches
+	 * @return 	Array
+	 */
+	private static function _get_syslog_entries($search, $grep_pipes)
+	{
+		$search = escapeshellarg($search);
+		// $grep_pipes = escapeshellarg($grep_pipes);
+
+		exec ("egrep -i $search /var/log/messages $grep_pipes", $log);
+
+		// check if logrotate was done during last hours and consider older logfile (e.g. /var/log/messages-20170904)
+		if (!$log)
+		{
+			$files = glob('/var/log/messages-*');
+			$file  = max($files);
+
+			exec ("egrep -i ".$search.' '.$file.' '.$grep_pipes, $log);
+		}
+
+		return $log;
+	}
+
+
+	/**
+	 * Send output of Ping in real-time to client browser as Stream with Server Sent Events
+	 * called in analyses.blade.php in javascript content
+	 *
+	 * @param 	ip 			String
+	 * @return 	response 	Stream
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public function realtime_ping($ip)
+	{
+		// \Log::debug(__FUNCTION__. "called with $ip");
+
+		$response = new \Symfony\Component\HttpFoundation\StreamedResponse(function() use ($ip) {
+
+			$cmd = "ping -c 5 ".escapeshellarg($ip);
+
+			$handle = popen($cmd, 'r');
+
+			if (!is_resource($handle))
+			{
+				echo "data: finished\n\n";
+				ob_flush(); flush();
+				return;
+			}
+
+			while(!feof($handle))
+			{
+				$line = fgets($handle);
+				$line = str_replace("\n", '', $line);
+				// \Log::debug("$line");
+				// echo 'data: {"message": "'. $line . '"}'."\n";
+				echo "data: <br>$line";
+				echo "\n\n";
+				ob_flush(); flush();
+			}
+
+			pclose($handle);
+
+			echo "data: finished\n\n";
+			ob_flush(); flush();
+		});
+
+		$response->headers->set('Content-Type', 'text/event-stream');
+
+		return $response;
 	}
 
 
@@ -114,10 +191,10 @@ class ProvMonController extends \BaseController {
 	 * Flood ping
 	 *
 	 * NOTE:
-	 * --- add /etc/sudoers.d/nms-lara ---
+	 * --- add /etc/sudoers.d/nms-nmsprime ---
 	 * Defaults:apache        !requiretty
 	 * apache  ALL=(root) NOPASSWD: /usr/bin/ping
-	 * --- /etc/sudoers.d/nms-lara ---
+	 * --- /etc/sudoers.d/nms-nmsprime ---
 	 *
 	 * @param hostname  the host to send a flood ping
 	 * @return flood ping exec result
@@ -126,6 +203,8 @@ class ProvMonController extends \BaseController {
 	{
 		if (!\Input::has('flood_ping'))
 			return null;
+
+		$hostname = escapeshellarg($hostname);
 
 		switch (\Input::get('flood_ping'))
 		{
@@ -167,14 +246,17 @@ class ProvMonController extends \BaseController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// get MAC of CPE first
-		exec ('grep -i '.$modem_mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+		$str = self::_get_syslog_entries($modem_mac, "| grep CPE | tail -n 1 | tac");
+		// exec ('grep -i '.$modem_mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+
 		if ($str == [])
 		{
 			$mac = $modem_mac;
 			$mac[0] = ' ';
 			$mac = trim($mac);
 			$mac_bug = true;
-			exec ('grep -i '.$mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
+			// exec ('grep -i '.$mac." /var/log/messages | grep CPE | tail -n 1 | tac", $str);
+			$str = self::_get_syslog_entries($mac, "| grep CPE | tail -n 1 | tac");
 
 			if (!$str && $lease['text'])
 				// get cpe mac addr from lease - first option tolerates small structural changes in dhcpd.leases and assures that it's a mac address
@@ -192,7 +274,11 @@ class ProvMonController extends \BaseController {
 
 		// Log
 		if (isset($cpe_mac[0][0]))
-			exec ('grep -i '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
+		{
+			// exec ('grep -i '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
+			$cpe_mac = $cpe_mac[0][0];
+			$log 	 = self::_get_syslog_entries($cpe_mac, "| tail -n 20 | tac");
+		}
 
 		// Ping
 		if (isset($lease['text'][0]))
@@ -209,7 +295,7 @@ class ProvMonController extends \BaseController {
 		{
 			$ping = null;
 			if ($lease['state'] == 'green')
-				$ping[0] = 'but not reachable from WAN-side due to manufacturing reasons (it can be possible to enable ICMP response via modem configfile)';
+				$ping[0] = trans('messages.cpe_not_reachable');
 		}
 
 		$panel_right = $this->prep_sidebar($id);
@@ -224,7 +310,7 @@ class ProvMonController extends \BaseController {
 	 */
 	public function mta_analysis($id)
 	{
-		$ping = $lease = $log = $dash = $realtime = null;
+		$ping = $lease = $log = $dash = $realtime = $configfile = null;
 		$modem 	  = $this->modem ? $this->modem : Modem::find($id);
 		$view_var = $modem; // for top header
 		$type = 'MTA';
@@ -247,14 +333,21 @@ class ProvMonController extends \BaseController {
 		$lease['text'] = $this->search_lease("mta-".$mta->id);
 		$lease = $this->validate_lease($lease, $type);
 
-		// log
-		exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
+		// configfile
+		$configfile = file("/tftpboot/mta/$mta->hostname.conf");
 
+		// log
+		$ip = gethostbyname($mta->hostname);
+		$ip = $mta->hostname == $ip ? null : $ip;
+		$mac = strtolower($mta->mac);
+		$search = $ip ? "$mac|$mta->hostname|$ip " : "$mac|$mta->hostname";
+		$log = self::_get_syslog_entries($search, "| tail -n 25  | tac");
+		// exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
 end:
 		$panel_right = $this->prep_sidebar($id);
 
-		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'configfile', 'view_var')));
 	}
 
 
@@ -374,13 +467,14 @@ end:
 			{
 				switch ($m)
 				{
-					case 0: $b = '0'; break; 		//no docsIfCmtsModulationTable entry
-					case 1: $b = 'QPSK'; break;
-					case 2: $b = '16QAM'; break;
-					case 3: $b = '8QAM'; break;
-					case 4: $b = '32QAM'; break;
-					case 5: $b = '64QAM'; break;
-					case 6: $b = '128QAM'; break;
+					case 0: $b = 'unknown'; break;	//no docsIfCmtsModulationTable entry
+					case 1: $b = 'other'; break;
+					case 2: $b = 'QPSK'; break;
+					case 3: $b = 'QAM16'; break;
+					case 4: $b = 'QAM8'; break;
+					case 5: $b = 'QAM32'; break;
+					case 6: $b = 'QAM64'; break;
+					case 7: $b = 'QAM128'; break;
 					default: $b = null; break;
 				}
 			}
@@ -392,7 +486,7 @@ end:
 
 
 
-	/*
+	/**
 	 * The Modem Realtime Measurement Function
 	 * Fetches all realtime values from Modem with SNMP
 	 *
@@ -400,87 +494,69 @@ end:
 	 * - add units like (dBmV, MHz, ..)
 	 * - speed-up: use SNMP::get with multiple gets in one request. Test if this speeds up stuff (?)
 	 *
-	 * @param host: The Modem hostname like cm-xyz.abc.de
-	 * @param com:  SNMP RO community
-	 * @param ip: 	ip address of modem
+	 * @param host:  The Modem hostname like cm-xyz.abc.de
+	 * @param com:   SNMP RO community
+	 * @param ip: 	 IP address of modem
+	 * @param cacti: Is function called by cacti?
 	 * @return: array[section][Fieldname][Values]
 	 */
-	public function realtime($host, $com, $ip)
+	public function realtime($host, $com, $ip, $cacti)
 	{
 		// Copy from SnmpController
 		$this->snmp_def_mode();
 
-		try
-		{
+		try {
 			// First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
 			$docsis = snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
-		}
-		catch (\Exception $e)
-		{
-			if (((strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false) || (strpos($e->getMessage(), "No response from") !== false)))
+		} catch (\Exception $e) {
+			if (strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false ||
+				strpos($e->getMessage(), "No response from") !== false)
 			return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
 		}
 
 		$cmts = $this->get_cmts($ip);
-
-		// System
-		$sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')];
-		$sys['Firmware'] = [snmpget($host, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
-		$sys['Uptime']   = [$this->_secondsToTime(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
-		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
-		$sys['CMTS'] = [$cmts->hostname];
+		$sys = [];
+		// these values are not important for cacti, so only retrieve them on the analysis page
+		if(!$cacti) {
+			$sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')];
+			$sys['Firmware'] = [snmpget($host, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
+			$sys['Uptime']   = [$this->_secondsToTime(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
+			$sys['DOCSIS']   = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
+			$sys['CMTS']     = [$cmts->hostname];
+			$ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
+			$us['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2'), 1000000);
+			$us['Modulation Profile'] = $this->_docsis_modulation($cmts->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
+		}
 
 		// Downstream
-		$ds['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2');		// DOCS-IF-MIB
-		foreach($ds['Frequency MHz'] as $i => $freq)
-			$ds['Frequency MHz'][$i] /= 1000000;
-		$ds['Modulation'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
-		$ds['Power dBmV']      = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));
+		$ds['Modulation']    = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
+		$ds['Power dBmV']    = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));
 		$ds['MER dB']        = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
 		$ds['Microreflection -dBc'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6');
 
 		// Upstream
-		$us['Frequency MHz']  = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
-		foreach($us['Frequency MHz'] as $i => $freq)
-			$us['Frequency MHz'][$i] /= 1000000;
+		$us['Width MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'), 1000000);
 		if ($docsis >= 4) $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
 		else              $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
-		$us['Width MHz']      = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3');
-		foreach($us['Width MHz'] as $i => $freq)
-			$us['Width MHz'][$i] /= 1000000;
-		if ($docsis >= 4)
-			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.5'), 'us');
-		else
-			$us['Modulation Profile'] = $this->_docsis_modulation(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.4'), 'us');
 		$us['SNR dB'] = $cmts->get_us_snr($ip);
 
 		// remove all inactive channels (no range success)
-		$tmp = count($ds['Frequency MHz']);
-		foreach ($ds['Frequency MHz'] as $key => $freq)
-		{
+		$tmp = count($ds['Power dBmV']);
+		foreach ($ds['Power dBmV'] as $key => $val)
 			if ($ds['Modulation'][$key] == '' && $ds['MER dB'][$key] == 0)
-			{
 				foreach ($ds as $entry => $arr)
 					unset($ds[$entry][$key]);
-			}
-		}
-		$ds['Operational CHs %'] = [count($ds['Frequency MHz']) / $tmp * 100];
+		$ds['Operational CHs %'] = [count($ds['Power dBmV']) / $tmp * 100];
 
-		if ($docsis >= 4)
-		{
+		if ($docsis >= 4) {
 			$us_ranging_status = snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9');
-			$tmp = count($us['Frequency MHz']);
-			foreach ($us_ranging_status as $key => $value)
-			{
-				if ($value != 4)
-				{
+			$tmp = count($us['Power dBmV']);
+			foreach ($us_ranging_status as $key => $val)
+				if ($val != 4)
 					foreach($us as $entry => $arr)
 						unset($us[$entry][$key]);
-				}
-			}
-			$us['Operational CHs %'] = [count($us['Frequency MHz']) / $tmp * 100];
-		}
-		else
+			$us['Operational CHs %'] = [count($us['Power dBmV']) / $tmp * 100];
+		} else
 			$us['Operational CHs %'] = [100];
 
 		// Put Sections together
@@ -488,7 +564,6 @@ end:
 		$ret['Downstream']  = $ds;
 		$ret['Upstream']    = $us;
 
-		// Return
 		return $ret;
 	}
 
@@ -515,10 +590,7 @@ end:
 			if ($r > 10)
 				// maximum actual power is 10 dB
 				$r = 10;
-			if ($cmts->company == 'Casa')
-				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
-			if ($cmts->company == 'Cisco')
-				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.9.9.116.1.4.1.1.6.$idx", 'i', 10 * $r);
+			snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
 
 			array_push($rx_pwr, $r);
 		}
@@ -556,33 +628,23 @@ end:
 		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)];
 
 		$i = 0;
-		foreach(snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2') as $id => $freq)
-		{
+		foreach(snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2') as $id => $freq) {
 			$id = end((explode('.', $id)));
 			$us['Cluster'][$i] = snmpget($cmts->ip, $com, ".1.3.6.1.2.1.31.1.1.1.18.$id");
+			/* if utilization is always zero, DOCS-IF-MIB::docsIfCmtsChannelUtilizationInterval must be set to a non-zero value */
+			$us['Avg Utilization %'][$i] = array_sum(snmpwalk($cmts->ip, $com, ".1.3.6.1.2.1.10.127.1.3.9.1.3.$id"));
 			$us['If Id'][$i] = $id;
 			$us['Frequency MHz'][$i] = $freq / 1000000;
 			$i++;
 		}
-
 		$us['SNR dB'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
-
-		if ($cmts->company == 'Casa')
-			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
-		if ($cmts->company == 'Cisco') {
-			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.9.9.116.1.4.1.1.6'));
-			$us['Avg Utilization %'] = snmpwalk($cmts->ip, $com, ".1.3.6.1.4.1.9.9.116.1.4.1.1.7");
-		}
+		$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
 
 		// unset unused interfaces, as we don't want to show them on the web gui
 		foreach ($us['Frequency MHz'] as $key => $freq)
-		{
 			if ($us['SNR dB'][$key] == 0)
-			{
 				foreach ($us as $entry => $arr)
 					unset($us[$entry][$key]);
-			}
-		}
 
 		if($ctrl && isset($us['Rx Power dBmV']))
 			$us['Rx Power dBmV'] = $this->_set_new_rx_power($cmts, $cmts->get_rw_community(), $us);
@@ -884,7 +946,7 @@ end:
 	 * Get the cacti graph template ids, which correspond to a given graph template name
 	 *
 	 * @param name: The cacti graph template name
-	 * @return: An array of the matching cacti graph template ids
+	 * @return: The matching cacti graph template id
 	 *
 	 * @author: Ole Ernst
 	 */
@@ -898,7 +960,7 @@ end:
 		if (!isset($template))
 			return null;
 
-		return [$template->id];
+		return $template->id;
 	}
 
 

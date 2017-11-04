@@ -11,6 +11,15 @@ class CccServiceProvider extends ServiceProvider {
 	 */
 	protected $defer = false;
 
+
+	/**
+	 * The artisan commands provided by this module
+	 */
+	protected $commands = [
+		'Modules\Ccc\Console\CreateConnectionInformations',
+	];
+
+
 	/**
 	 * Boot the application events.
 	 * 
@@ -30,7 +39,7 @@ class CccServiceProvider extends ServiceProvider {
 	 */
 	public function register()
 	{		
-		//
+		$this->commands($this->commands);
 	}
 
 	/**
