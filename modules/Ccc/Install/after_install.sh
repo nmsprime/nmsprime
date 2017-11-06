@@ -1,3 +1,10 @@
+env="/etc/nmsprime/env/ccc.env"
+ccc_pw=$(pwgen 12 1) # SQL password for user nmsprime_ccc
+
+mysql -u root -e "CREATE DATABASE nmsprime_ccc;"
+mysql -u root -e "GRANT ALL ON nmsprime_ccc.* TO 'nmsprime_ccc'@'localhost' IDENTIFIED BY '$ccc_pw'";
+sed -i "s/^CCC_DB_PASSWORD=$/CCC_DB_PASSWORD=$ccc_pw/" "$env"
+
 # reload apache config
 systemctl reload httpd
 
