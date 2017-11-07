@@ -19,7 +19,7 @@ class cdrCommand extends Command {
 	 * @var string
 	 */
 	protected $name 		= 'billing:cdr';
-	protected $description 	= 'Get Call Data Records from Envia/HLKomm (dependent of Array keys in Environment file) - optional argument: month (integer - load file up to 12 months in past)';
+	protected $description 	= 'Get Call Data Records from envia TEL/HLKomm (dependent of Array keys in Environment file) - optional argument: month (integer - load file up to 12 months in past)';
 	protected $signature 	= 'billing:cdr {month? : 1 (Jan) to 12 (Dec)}';
 
 
@@ -68,7 +68,7 @@ class cdrCommand extends Command {
 		// NOTE: - use env() to parse all super global variables for this key here as this super global variable is consciously not set in cronjobs
 		if (env('PROVVOIPENVIA__RESELLER_USERNAME'))
 		{
-			$logger->addDebug('GET Envia Call Data Records');
+			$logger->addDebug('GET envia TEL Call Data Records');
 			$this->_get_envia_cdr();
 		}
 
@@ -116,7 +116,7 @@ class cdrCommand extends Command {
 
 
 	/**
-	 * Load Call Data Records from Envia Interface and save file to accounting directory of appropriate date
+	 * Load Call Data Records from envia TEL Interface and save file to accounting directory of appropriate date
 	 *
  	 * @return integer 		0 on success, -1 on error
 	 */
@@ -134,7 +134,7 @@ class cdrCommand extends Command {
 
 		if (!$data)
 		{
-			$logger->addAlert('CDR-Import: Could not get Call Data Records from Envia for month: '.$this->month, ["www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/2016/$this->month"]);
+			$logger->addAlert('CDR-Import: Could not get Call Data Records from envia TEL for month: '.$this->month, ["www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/2016/$this->month"]);
 			return -1;
 		}
 
