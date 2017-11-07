@@ -104,8 +104,8 @@ class EnviaOrderController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'orderstatus', 'description' => 'Orderstatus', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'orderdate', 'description' => 'Orderdate', 'options' => ['readonly'], 'hidden' => 'C'),
 			array('form_type' => 'text', 'name' => 'ordercomment', 'description' => 'Ordercomment', 'options' => ['readonly'], 'hidden' => 'C'),
-			array('form_type' => 'text', 'name' => 'customerreference', 'description' => 'Envia customer reference', 'options' => ['readonly'], 'hidden' => 'C'),
-			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'Envia contract reference', 'options' => ['readonly'], 'hidden' => 'C', 'space' => '1'),
+			array('form_type' => 'text', 'name' => 'customerreference', 'description' => 'envia TEL customer reference', 'options' => ['readonly'], 'hidden' => 'C'),
+			array('form_type' => 'text', 'name' => 'contractreference', 'description' => 'envia TEL contract reference', 'options' => ['readonly'], 'hidden' => 'C', 'space' => '1'),
 			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract ID', 'options' => ['readonly'], 'hidden' => 1),
 			array('form_type' => 'text', 'name' => 'modem_id', 'description' => 'Modem ID', 'options' => ['readonly'], 'hidden' => 1),
 			array('form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber ID', 'options' => ['readonly'], 'hidden' => 1),
@@ -217,7 +217,7 @@ class EnviaOrderController extends \BaseController {
 	 *
 	 * Here we inject the following data:
 	 *	- information about needed/possible user actions
-	 *	- mailto: link to Envia support as additional data
+	 *	- mailto: link to envia TEL support as additional data
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -241,7 +241,7 @@ class EnviaOrderController extends \BaseController {
 	 */
 	public function mark_solved($id) {
 
-		// check if user has the right to perform actions against Envia API
+		// check if user has the right to perform actions against envia TEL API
 		\App\Http\Controllers\BaseAuthController::auth_check('edit', \NamespaceController::get_model_name());
 		\App\Http\Controllers\BaseAuthController::auth_check('edit', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
@@ -264,12 +264,12 @@ class EnviaOrderController extends \BaseController {
 		// so authentication is done!
 		$parent_return = parent::edit($id);
 
-		// if already updated against Envia API: show edit form
+		// if already updated against envia TEL API: show edit form
 		if (\Input::get('recently_updated', false)) {
 			return $parent_return;
 		}
 
-		// else redirect to update order against Envia
+		// else redirect to update order against envia TEL
 		$params = array(
 			'job' => 'order_get_status',
 			'order_id' => EnviaOrder::findOrFail($id)->orderid,
@@ -298,7 +298,7 @@ class EnviaOrderController extends \BaseController {
 			return $parent_return;
 		}
 
-		// else redirect to check newly created order against Envia API
+		// else redirect to check newly created order against envia TEL API
 		$order_id = \Input::get('orderid');
 		$params = array(
 			'job' => 'order_get_status',
@@ -318,7 +318,7 @@ class EnviaOrderController extends \BaseController {
 	 */
 	public function destroy($id) {
 
-		// check if user has the right to perform actions against Envia API
+		// check if user has the right to perform actions against envia TEL API
 		\App\Http\Controllers\BaseAuthController::auth_check('view', \NamespaceController::get_model_name());
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
