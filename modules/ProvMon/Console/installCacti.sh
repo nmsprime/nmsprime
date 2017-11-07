@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# NOTE: this will be automatically performed durring RPM or aritsan install installation
+#       so this script is deprecated / duplicated
+
 # ask user for various credentials
 read -e -p "Enter MYSQL root psw:" mysql_root_psw
 read -e -p "Enter MYSQL cactiuser (will be automatically created) psw:" mysql_cacti_psw
