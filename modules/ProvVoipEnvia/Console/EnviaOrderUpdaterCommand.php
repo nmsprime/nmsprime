@@ -26,7 +26,7 @@ class EnviaOrderUpdaterCommand extends Command {
 	/**
 	 * The console command description.
 	 */
-	protected $description = 'Update Envia orders database';
+	protected $description = 'Update envia TEL orders database';
 
 	/**
 	 * Create a new command instance.
@@ -98,7 +98,7 @@ class EnviaOrderUpdaterCommand extends Command {
 			$orders = unserialize($result);
 		}
 		catch (Exception $ex) {
-			Log::error('Exception deserializing expected Envia orders array created from CSV ('.$ex->getMessage().') – cannot proceed');
+			Log::error('Exception deserializing expected envia TEL orders array created from CSV ('.$ex->getMessage().') – cannot proceed');
 			return;
 		}
 
@@ -121,7 +121,7 @@ class EnviaOrderUpdaterCommand extends Command {
 
 
 	/**
-	 * Get all the Envia orders to be updated.
+	 * Get all the envia TEL orders to be updated.
 	 * Currently this is an simple select – later we could add some more checks: E.g. don't get updates for orders in final state.
 	 *
 	 * @author Patrick Reichel
