@@ -13,12 +13,7 @@ class IcingaObjects extends \BaseModel {
 			$ret = \Schema::connection('mysql-icinga2')->hasTable('icinga_objects');
 		}
 		catch (\PDOException $e) {
-			// Code 1045 == Access denied for user
-			// Code 1049 == Unknown database
-			if($e->getCode() == 1045 || $e->getCode() == 1049)
-				return false;
-			// Don't catch other PDOExceptions
-			throw $e;
+			return false;
 		}
 
 		return $ret;
