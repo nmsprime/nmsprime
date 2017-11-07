@@ -456,13 +456,13 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 
 	/**
-	 * Parse Envia CSV and Check if customerNr to Phonenr assignment exists
+	 * Parse envia TEL CSV and Check if customerNr to Phonenr assignment exists
 	 *
 	 * @return array  [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
 	 */
 	protected function _parse_envia_csv($filepath)
 	{
-		Log::debug('billing', 'Parse Envia Call Data Records CSV');
+		Log::debug('billing', 'Parse envia TEL Call Data Records CSV');
 
 		$csv = is_file($filepath) ? file($filepath) : null;
 
