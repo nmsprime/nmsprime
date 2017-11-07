@@ -24,7 +24,7 @@ class EnviaOrderProcessorCommand extends Command {
 	/**
 	 * The console command description.
 	 */
-	protected $description = 'Process Envia orders of some special types';
+	protected $description = 'Process envia TEL orders of some special types';
 
 	/**
 	 * Create a new command instance.
@@ -57,7 +57,7 @@ class EnviaOrderProcessorCommand extends Command {
 	/**
 	 * Process orders which relocated contracts
 	 *
-	 * The problem is that Envia does not change the currently active (Envia) contract – they remove the old and create a new one.
+	 * The problem is that envia TEL does not change the currently active (envia TEL) contract – they remove the old and create a new one.
 	 * The contractreference changes – but at the orderdate. Changes before this date (e.g. the TRC class) have
 	 * to be sent using the OLD reference. So, on orderdate we have to change the contract references…
 	 *
@@ -93,7 +93,7 @@ class EnviaOrderProcessorCommand extends Command {
 						continue;
 					}
 
-					// check if the Envia contract to switch to is the currently active one
+					// check if the envia TEL contract to switch to is the currently active one
 					if ($new_enviacontract->state != 'Aktiv') {
 						continue;
 					};
