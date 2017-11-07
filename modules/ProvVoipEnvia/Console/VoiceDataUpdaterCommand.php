@@ -38,7 +38,7 @@ class VoiceDataUpdaterCommand extends Command {
 	 * The signature (defining the optional argument)
 	 */
 	protected $signature = 'provvoipenvia:update_voice_data
-							{mode=default : The mode to run in; give argument “complete” to get Envia voice data for all phonenumbers (and not only for those with missing data}';
+							{mode=default : The mode to run in; give argument “complete” to get envia TEL voice data for all phonenumbers (and not only for those with missing data}';
 
 	// store for contract ids for which we want to get voice data
 	protected $affected_contracts = array();
@@ -91,7 +91,7 @@ class VoiceDataUpdaterCommand extends Command {
 
 
 	/**
-	 * Get all Envia SIP contracts we want to get voice data for.
+	 * Get all envia TEL SIP contracts we want to get voice data for.
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -133,7 +133,7 @@ class VoiceDataUpdaterCommand extends Command {
 				continue;
 			}
 
-			// check if we have an Envia contract ID for this phonenumber
+			// check if we have an envia TEL contract ID for this phonenumber
 			if (!$phonenumber->contract_external_id) {
 				continue;
 			}
@@ -144,7 +144,7 @@ class VoiceDataUpdaterCommand extends Command {
 			}
 
 			// add phonenumber to our contracts array
-			// we safely can overwrite existing numbers ⇒ method call is based on phonenumber and extracts Envia contract ID from this
+			// we safely can overwrite existing numbers ⇒ method call is based on phonenumber and extracts envia TEL contract ID from this
 			$this->affected_contracts[$phonenumber->contract_external_id] = $phonenumber->id;
 		};
 
