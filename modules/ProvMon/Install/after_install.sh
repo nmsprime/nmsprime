@@ -18,7 +18,9 @@ mysqladmin -u root create cacti
 mysql -u root -e "GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY '$mysql_cacti_psw';";
 
 # populate timezone info
+mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -u root mysql
 mysql -u root -e "GRANT SELECT ON mysql.time_zone_name TO 'cactiuser'@'localhost';";
+sed -i "s|^;date.timezone =$|date.timezone = $(timedatectl | grep 'Time zone' | cut -d':' -f2 | xargs | cut -d' ' -f1)|" /etc/php.ini
 
 # set psw in cacti db config file
 sed -i "s/database_password =.*/database_password = \"$mysql_cacti_psw\";/" /etc/cacti/db.php
