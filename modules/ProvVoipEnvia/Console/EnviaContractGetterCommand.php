@@ -8,7 +8,7 @@ use \Modules\ProvBase\Entities\Contract;
 use \Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
 
 /**
- * Class to get Envia contracts by customer
+ * Class to get envia TEL contracts by customer
  */
 class EnviaContractGetterCommand extends Command {
 
@@ -23,7 +23,7 @@ class EnviaContractGetterCommand extends Command {
 	/**
 	 * The console command description.
 	 */
-	protected $description = 'Get Envia contracts by customer';
+	protected $description = 'Get envia TEL contracts by customer';
 
 	/**
 	 * The signature (defining the optional argument)
@@ -31,7 +31,7 @@ class EnviaContractGetterCommand extends Command {
 	protected $signature = 'provvoipenvia:get_envia_contracts_by_customer';
 
 	/**
-	 * Array holding the contracts (ours, not Envia contracts) to get Envia contracts for
+	 * Array holding the contracts (ours, not envia TEL contracts) to get envia TEL contracts for
 	 */
 	protected $contracts_to_get_envia_contracts_for = array();
 
@@ -64,7 +64,7 @@ class EnviaContractGetterCommand extends Command {
 
 
 	/**
-	 * Collect all of our contracts we want to get Envia contracts for
+	 * Collect all of our contracts we want to get envia TEL contracts for
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -112,7 +112,7 @@ class EnviaContractGetterCommand extends Command {
 
 
 	/**
-	 * Get all the Envia contracts for our contracts
+	 * Get all the envia TEL contracts for our contracts
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -121,7 +121,7 @@ class EnviaContractGetterCommand extends Command {
 		Log::debug(__METHOD__." started");
 
 		foreach ($this->contracts_to_get_envia_contracts_for as $contract_id) {
-			Log::info("Trying to get Envia contracts for contract $contract_id");
+			Log::info("Trying to get envia TEL contracts for contract $contract_id");
 
 			try {
 				// get the relative URL to execute the cron job for updating the current order_id
@@ -132,7 +132,7 @@ class EnviaContractGetterCommand extends Command {
 				$this->_perform_curl_request($url);
 			}
 			catch (Exception $ex) {
-				Log::error("Exception getting Envia contract for contract ".$contract_id."): ".$ex->getMessage()." => ".$ex->getTraceAsString());
+				Log::error("Exception getting envia TEL contract for contract ".$contract_id."): ".$ex->getMessage()." => ".$ex->getTraceAsString());
 			}
 		}
 

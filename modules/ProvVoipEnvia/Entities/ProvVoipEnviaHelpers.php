@@ -321,7 +321,7 @@ class ProvVoipEnviaHelpers {
 		$data = array();
 
 		$head = array(
-			'Envia contract ID',
+			'envia TEL contract ID',
 			'State',
 			'Start date',
 			'End date',

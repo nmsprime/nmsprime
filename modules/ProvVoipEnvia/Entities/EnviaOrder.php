@@ -819,10 +819,10 @@ class EnviaOrder extends \BaseModel {
 	public function view_has_many()
 	{
 		if (\PPModule::is_active('provvoipenvia')) {
-			$ret['Envia']['EnviaOrderDocument']['class'] = 'EnviaOrderDocument';
-			$ret['Envia']['EnviaOrderDocument']['relation'] = $this->enviaorderdocument;
-			$ret['Envia']['EnviaOrderDocument']['method'] = 'show';
-			$ret['Envia']['EnviaOrderDocument']['options']['hide_delete_button'] = '1';
+			$ret['envia TEL']['EnviaOrderDocument']['class'] = 'EnviaOrderDocument';
+			$ret['envia TEL']['EnviaOrderDocument']['relation'] = $this->enviaorderdocument;
+			$ret['envia TEL']['EnviaOrderDocument']['method'] = 'show';
+			$ret['envia TEL']['EnviaOrderDocument']['options']['hide_delete_button'] = '1';
 		}
 		else {
 			$ret = array();

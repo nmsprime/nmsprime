@@ -41,7 +41,7 @@ class EnviaContract extends \BaseModel {
 		$bsclass = $this->get_bsclass();
 
         return ['index' => [$envia_contract_reference, $state, $start_date, $end_date, $contract_nr, $modem_id],
-                'index_header' => ['Envia contract reference', 'State', 'Start date', 'End date', 'Contract', 'Modem'],
+                'index_header' => ['envia TEL contract reference', 'State', 'Start date', 'End date', 'Contract', 'Modem'],
                 'bsclass' => $bsclass,
 				'header' => $envia_contract_reference,
 		];
@@ -278,7 +278,7 @@ class EnviaContract extends \BaseModel {
 		}
 
 		if ($this->enviaorders) {
-			$relations['hints']['Envia orders'] = ProvVoipEnviaHelpers::get_user_action_information_enviaorders($this->enviaorders->sortBy('orderdate'));
+			$relations['hints']['envia TEL orders'] = ProvVoipEnviaHelpers::get_user_action_information_enviaorders($this->enviaorders->sortBy('orderdate'));
 		}
 
 		return $relations;
