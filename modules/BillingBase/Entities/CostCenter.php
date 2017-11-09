@@ -32,7 +32,7 @@ class CostCenter extends \BaseModel {
 
 	public static function view_icon()
 	{
-		return '<i class="fa fa-creative-commons"></i>'; 
+		return '<i class="fa fa-creative-commons"></i>';
 	}
 
 	// link title in index view
@@ -61,11 +61,8 @@ class CostCenter extends \BaseModel {
 
 	public function view_has_many()
 	{
-//		return $this->numberranges;
-
 		$ret = array();
 
-		// assigned comments
 		$ret['Edit']['NumberRange']['class'] = 'NumberRange';
 		$ret['Edit']['NumberRange']['relation'] = $this->numberranges;
 
@@ -87,7 +84,7 @@ class CostCenter extends \BaseModel {
 
 	public function numberranges()
 	{
-		return $this->hasMany('Modules\Billingbase\Entities\NumberRange', 'costcenter_id', 'id');
+		return $this->hasMany('Modules\Billingbase\Entities\NumberRange', 'costcenter_id');
 	}
 
 	/**
