@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Modules\Ticketsystem\Entities;
 
@@ -6,11 +6,7 @@ class Comment extends \BaseModel {
 
 	protected $table = 'comment';
 
-	public static function boot()
-	{
-		parent::boot();
-		Comment::observe(new CommentObserver);
-	}
+
 
     public static function view_headline()
 	{
@@ -30,11 +26,6 @@ class Comment extends \BaseModel {
 	public function view_index_label()
 	{
 		return [
-			// 'index' => [
-			// 	$this->id, 
-			// 	$this->comment, 
-			// ],
-//			'index_header' => ['Kommentar'],
 			'header' => $this->id . ' - ' . substr_replace($this->comment, '...', 25)
 		];
 	}
@@ -50,14 +41,6 @@ class Comment extends \BaseModel {
 	public function ticket()
 	{
 		return $this->belongsTo('Modules\Ticketsystem\Entities\Ticket', 'ticket_id');
-	}
-}
-
-class CommentObserver {
-
-	public function created($comment)
-	{
-		return redirect()->route('Ticket.edit', ['id' => $comment->ticket_id]);
 	}
 }
 
