@@ -3,9 +3,9 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateAssigneeTable extends BaseMigration {
+class CreateTicketUserTable extends BaseMigration {
 
-	protected $tablename = 'assignee';
+	protected $tablename = 'ticket_user';
 
 	/**
 	 * Run the migrations.

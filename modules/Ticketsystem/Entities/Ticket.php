@@ -6,7 +6,9 @@ use Modules\Ticketsystem\Entities\Assignee;
 
 class Ticket extends \BaseModel {
 
-    public $table = 'ticket';
+	public $table = 'ticket';
+
+	public $guarded = ['assigned_user_id'];
 
 	public static function boot()
 	{
@@ -34,14 +36,12 @@ class Ticket extends \BaseModel {
 		$bsclass = $this->get_bsclass();
 
 		return [
-			'index' => [
-				$this->id, 
-				$this->name, 
+			'index' => [$this->id, $this->name,
 				\App\Http\Controllers\BaseViewController::translate_view($this->type, 'Ticket_Type'),
 				\App\Http\Controllers\BaseViewController::translate_view($this->priority, 'Ticket_Priority'),
 				\App\Http\Controllers\BaseViewController::translate_view($this->state, 'Ticket_State'),
-				self::getUserName($this->user_id), 
-				$this->created_at
+				$this->user->first_name.' '.$this->user->last_name,
+				$this->created_at,
 			],
 			'index_header' => ['Ticket Id', 'Title', 'Type', 'Priority', 'State', 'Created by', 'Created at'],
 			'header' => $this->id . ' - ' . $this->name,
@@ -91,86 +91,98 @@ class Ticket extends \BaseModel {
 	{
 		$ret = array();
 
+		// assigned users
+		$ret['Edit']['Authuser']['class'] = 'Authuser';
+		$ret['Edit']['Authuser']['relation'] = $this->users;
+		$ret['Edit']['Authuser']['options']['many_to_many'] = 'users';
+		$ret['Edit']['Authuser']['options']['hide_create_button'] = true;
 		// assigned comments
 		$ret['Edit']['Comment']['class'] = 'Comment';
 		$ret['Edit']['Comment']['relation'] = $this->comments;
-		// assigned users
-		$ret['Edit']['Assignee']['class'] = 'Assignee';
-		$ret['Edit']['Assignee']['relation'] = $this->assignees;
-		$ret['Edit']['Assignee']['options']['hide_create_button'] = 0;
 
 		return $ret;
-	}	
-	
+	}
+
+	/**
+	 * Relations
+	 */
 	public function comments()
 	{
 		return $this->hasMany('Modules\Ticketsystem\Entities\Comment')->orderBy('id', 'desc');
-	}	
-	
-	public function assignees()
-	{
-		return $this->hasMany('Modules\Ticketsystem\Entities\Assignee');
 	}
 
-	private static function getUserName($id)
+	// user who created the ticket
+	public function user()
 	{
-		$user = \App\Authuser::find($id);
-		return $user->first_name . ' ' . $user->last_name;
+		return $this->belongsTo('App\Authuser', 'user_id');
 	}
+
+	// assigned users
+	public function users()
+	{
+		return $this->belongsToMany('\App\Authuser', 'ticket_user', 'ticket_id', 'user_id');
+	}
+
+	public function contract()
+	{
+		return $this->belongsTo('Modules\ProvBase\Entities\Contract');
+	}
+
+
+	/**
+	 * Return list of Users that are not yet assigned to this Ticket
+	 */
+	public function not_assigned_users()
+	{
+		$ret = array();
+		$users = \App\Authuser::orderBy('last_name', 'ASC')->get();
+		$users_assigned = $this->users;
+
+		foreach ($users as $user)
+		{
+			if (!$users_assigned->contains('id', $user->id))
+				$ret[] = $user;
+		}
+
+		return $ret;
+	}
+
 }
 
-class TicketObserver {
 
-	public function creating($ticket)
-	{
-		// generate new ticketId and assign it to the ticket
-		$last_id = $ticket::withTrashed()->count();
-		$new_id = $last_id + 1;
-		$ticket->id = $new_id;
-		
-		// add relation and remove assigned_user_id
-		$this->add_to_ticketassignee($ticket);
-		unset($ticket->assigned_user_id);
-	}
-
+class TicketObserver
+{
 	public function created($ticket)
 	{
-		$assigned_users = \DB::table('assignee')->where('ticket_id', '=', $ticket->id)->get();
+		$this->_assign_user($ticket);
 
-		if (count($assigned_users) > 0) {
-			foreach ($assigned_users as $assignee) {
-				$user = \App\Authuser::find($assignee->user_id);
-				$ticket = Ticket::find($assignee->ticket_id);
+		foreach ($ticket->users as $user)
+		{
+			// send mail to assigned users
+			if (empty($user->email))
+				continue;
 
-				if (!empty($user->email)) {
-					\Mail::send('ticketsystem::emails.assignticket', ['user' => $user, 'ticket' => $ticket], function ($m) use ($user) {
-			 	        $m->from('noreply@roetzer-engineering.com', 'NMS Prime');
-			 	        $m->to($user->email, $user->last_name . ', ' . $user->first_name)->subject('New ticket assigned');
-			        });
-				}
-
-			}
+			\Mail::send('ticketsystem::emails.assignticket', ['user' => $user, 'ticket' => $ticket], function ($m) use ($user, $ticket) {
+				$m->from('noreply@roetzer-engineering.com', 'NMS Prime');
+				$m->to($user->email, $user->last_name . ', ' . $user->first_name)->subject(trans('new_ticket')."\n\n".$ticket->description);
+			});
 		}
 	}
 
-	public function updating($ticket)
+	public function updated($ticket)
 	{
-		// add relation and remove assigned_user_id
-		$this->add_to_ticketassignee($ticket);
-		unset($ticket->assigned_user_id);
+		$this->_assign_user($ticket);
+
+		// TODO: send mail, too
 	}
 
-	private function add_to_ticketassignee($ticket)
-	{
-		if (trim($ticket->assigned_user_id) != '') {
-			$assignees = explode(';', $ticket->assigned_user_id);
 
-			foreach ($assignees as $assignee) {
-				$entry = new Assignee;
-				$entry->user_id = $assignee;
-				$entry->ticket_id = $ticket->id;
-				$entry->save();
-			}
-		}
+	private function _assign_user($ticket)
+	{
+		if (!\Input::has('assigned_user_id'))
+			return;
+
+		foreach (\Input::get('assigned_user_id') as $user_id)
+			$ticket->users()->attach($user_id, ['created_at' => date('Y-m-d H:i:s')]);
 	}
 }

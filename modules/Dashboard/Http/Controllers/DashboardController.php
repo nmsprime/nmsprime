@@ -334,10 +334,14 @@ class DashboardController extends BaseController
 	 *
 	 * @return array
 	 */
-	private static function getNewTickets()
+	private static function get_new_tickets()
 	{
-		return Ticket::where('state', '=', 'New')->where('user_id', '=', \Auth::user()->id)->count();
+		if (!\PPModule::is_active('ticketsystem'))
+			return null;
+
+		return \Auth::user()->tickets->where('state', 'New')->all();
 	}
+
 
 	/**
 	 * Return all impaired netelements in a table array
