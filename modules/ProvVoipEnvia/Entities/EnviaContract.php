@@ -262,12 +262,14 @@ class EnviaContract extends \BaseModel {
 		$relations['hints'] = array();
 		$relations['links'] = array();
 
-		if ($this->contract) {
-			$relations['hints']['Contract'] = ProvVoipEnviaHelpers::get_user_action_information_contract($this->contract);
+		if ($this->contract_id) {
+			$contract = Contract::withTrashed()->find($this->contract_id);
+			$relations['hints']['Contract'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
 		}
 
-		if ($this->modem) {
-			$relations['hints']['Modem'] = ProvVoipEnviaHelpers::get_user_action_information_modem($this->modem);
+		if ($this->modem_id) {
+			$modem = Modem::withTrashed()->find($this->modem_id);
+			$relations['hints']['Modem'] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
 		}
 
 		$mgmts = $this->phonenumbermanagements;
