@@ -13,6 +13,10 @@ class EnviaOrder extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'enviaorder';
 
+	// do not auto delete anything related to envia orders (can e.g. be contracts, modems or phonenumbers)
+	// deletion of orders (and related order documents is later done in separate cron job) – so we don't have to care here
+	protected $delete_children = False;
+
 	// collect all order related informations ⇒ later we can use subarrays of this array to get needed informations
 	// mark missing data with value null
 	protected static $meta = array(
@@ -1028,6 +1032,32 @@ class EnviaOrder extends \BaseModel {
 		// set last user interaction date to now
 		$this->last_user_interaction = \Carbon\Carbon::now()->toDateTimeString();
 		$this->save();
+	}
+
+
+	/**
+	 * We do not delete envia TEL orders directly (e.g. on deleting a phonenumber).
+	 * This is later done using a cronjob that deletes all orphaned orders.
+	 *
+	 * This method will return true so that related models can be deleted.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function delete() {
+
+		// check from where the deletion request has been triggered and set the correct var to show information
+		$prev = explode('?', \URL::previous())[0];
+		$prev = \Str::lower($prev);
+
+		$msg = "Deletion of envia TEL orders will be done via cron job";
+		if (\Str::endsWith($prev, 'edit')) {
+			\Session::push('tmp_info_above_relations', $msg);
+		}
+		else {
+			\Session::push('tmp_info_above_index_list', $msg);
+		}
+
+		return True;
 	}
 
 }

@@ -13,6 +13,9 @@ class EnviaContract extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'enviacontract';
 
+	// do not auto delete anything related to envia (can e.g. be contracts and modems)
+	protected $delete_children = False;
+
     protected $fillable = [];
 
 
@@ -283,6 +286,32 @@ class EnviaContract extends \BaseModel {
 
 		return $relations;
 
+	}
+
+
+	/**
+	 * We do not delete envia TEL contracts directly (e.g. on deleting a phonenumber).
+	 * This is later done using a cronjob that deletes all orphaned contracts.
+	 *
+	 * This method will return true so that related models can be deleted.
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function delete() {
+
+		// check from where the deletion request has been triggered and set the correct var to show information
+		$prev = explode('?', \URL::previous())[0];
+		$prev = \Str::lower($prev);
+
+		$msg = "Deletion of envia TEL contracts will be done via cron job";
+		if (\Str::endsWith($prev, 'edit')) {
+			\Session::push('tmp_info_above_relations', $msg);
+		}
+		else {
+			\Session::push('tmp_info_above_index_list', $msg);
+		}
+
+		return True;
 	}
 
 }
