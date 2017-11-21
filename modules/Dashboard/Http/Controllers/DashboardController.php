@@ -19,7 +19,6 @@ class DashboardController extends BaseController
 	{
 		$title = 'Dashboard';
 		$netelements = $services = array();
-
 		$view = self::_get_view_permissions();
 
 		if ($view['contracts'])
@@ -348,19 +347,26 @@ class DashboardController extends BaseController
 	 *
 	 * @author Ole Ernst
 	 * @return array
+	 *
+	 * TODO: This function is actually the most timeconsuming while creating the dashboard index view
+	 *	-> calculate in Background ? (comment by Nino Ryschawy 2017-11-21)
 	 */
 	private static function _get_impaired_netelements()
 	{
 		$ret = [];
+
+		if(!\Modules\HfcBase\Entities\IcingaObjects::db_exists())
+			return $ret;
+
 		foreach(\Modules\HfcReq\Entities\NetElement::where('id', '>', '2')->get() as $element) {
-			$status = $element->get_bsclass();
-			if ($status == 'success' || $status == 'info')
+			$state = $element->get_bsclass();
+			if ($state == 'success' || $state == 'info')
 				continue;
 			if(!isset($element->icingaobjects->icingahoststatus) || !$element->icingaobjects->is_active)
 				continue;
 
 			$status = $element->icingaobjects->icingahoststatus;
-			$ret['clr'][] = $element->get_bsclass();
+			$ret['clr'][] = $state;
 			$ret['row'][] = [$element->name, $status->output, $status->last_time_up];
 		}
 

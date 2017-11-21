@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Billingbase\Entities;
+namespace Modules\BillingBase\Entities;
 
 class NumberRange extends \BaseModel {
 
@@ -112,6 +112,11 @@ class NumberRange extends \BaseModel {
 	{
 		$numberranges = NumberRange::where('type', '=', 'contract')->where('costcenter_id', $costcenter_id)->orderBy('id')->get();
 
+		if (!$numberranges) {
+			\Log::alert("No NumberRange assigned to CostCenter [$costcenter_id]!");
+			return null;
+		}
+
 		foreach ($numberranges as $range)
 		{
 			$first = \Modules\ProvBase\Entities\Contract::where('number', '=', $range->prefix.$range->start.$range->suffix)->get(['number'])->all();
@@ -152,7 +157,8 @@ class NumberRange extends \BaseModel {
 			return $range->prefix.$num.$range->suffix;
 		}
 
-		\Log::alert("No free contract numbers under all number ranges of cost center: ".$range->costcenter->name." [".$range->costcenter->id."]");
+		$cc = CostCenter::find($costcenter_id);
+		\Log::alert("No free contract numbers under all number ranges of cost center: ".$cc->name." [".$cc->id."]");
 		return null;
 	}
 
