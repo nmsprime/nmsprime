@@ -1,0 +1,15 @@
+{
+	"name": "pingpong-modules/ticketsystem",
+	"description": "",
+	"authors": [
+		{
+			"name": "Pingpong Labs",
+			"email": "pingpong.labs@gmail.com"
+		}
+	],
+	"autoload": {
+		"psr-4": {
+			"Modules\\Ticketsystem\\": ""
+		}
+	}
+}

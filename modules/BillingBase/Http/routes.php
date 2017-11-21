@@ -15,6 +15,7 @@ BaseRoute::group([], function() {
 	BaseRoute::resource('Company', 'Modules\BillingBase\Http\Controllers\CompanyController');
 	BaseRoute::resource('Salesman', 'Modules\BillingBase\Http\Controllers\SalesmanController');
 	BaseRoute::resource('Invoice', 'Modules\BillingBase\Http\Controllers\InvoiceController');
+	BaseRoute::resource('NumberRange', 'Modules\BillingBase\Http\Controllers\NumberRangeController');
 
 	// BaseRoute::get('BillingBase', array('as' => 'BillingBase.edit', 'uses' => 'Modules\BillingBase\Http\Controllers\BillingBaseController@edit'));
 	BaseRoute::resource('BillingBase', 'Modules\BillingBase\Http\Controllers\BillingBaseController');

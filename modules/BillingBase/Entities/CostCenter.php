@@ -32,7 +32,7 @@ class CostCenter extends \BaseModel {
 
 	public static function view_icon()
 	{
-		return '<i class="fa fa-creative-commons"></i>'; 
+		return '<i class="fa fa-creative-commons"></i>';
 	}
 
 	// link title in index view
@@ -59,6 +59,16 @@ class CostCenter extends \BaseModel {
 		return $this->sepaaccount;
 	}
 
+	public function view_has_many()
+	{
+		$ret = array();
+
+		$ret['Edit']['NumberRange']['class'] = 'NumberRange';
+		$ret['Edit']['NumberRange']['relation'] = $this->numberranges;
+
+		return $ret;
+	}
+
 	/**
 	 * Relationships:
 	 */
@@ -72,7 +82,10 @@ class CostCenter extends \BaseModel {
 		return $this->hasMany('Modules\BillingBase\Entities\Item');
 	}
 
-
+	public function numberranges()
+	{
+		return $this->hasMany('Modules\Billingbase\Entities\NumberRange', 'costcenter_id');
+	}
 
 	/**
 	 * Returns billing month with leading zero - Note: if not set June is set as default

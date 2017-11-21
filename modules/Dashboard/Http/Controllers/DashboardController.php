@@ -1,72 +1,90 @@
 <?php
 
-namespace Modules\ProvBase\Http\Controllers;
+namespace Modules\Dashboard\Http\Controllers;
 
 use View;
 use Log;
 
 use App\Http\Controllers\BaseController;
 use Modules\ProvBase\Entities\Contract;
+use Modules\Ticketsystem\Entities\Ticket;
 
 class DashboardController extends BaseController
 {
+
+	/**
+	 * @return Obj 	View: Dashboard (index.blade)
+	 */
 	public function index()
 	{
 		$title = 'Dashboard';
+		$netelements = $services = array();
+		$view = self::_get_view_permissions();
 
-		$contracts = $income = $chart_data_contracts = $chart_data_income = $netelements = $services = array();
+		if ($view['contracts'])
+			$data['contracts'] = self::get_contract_data();
 
-		$allowed_to_see = array(
-			'accounting' => false,
-			'technican' => false
+		if ($view['income'])
+			$data['income'] = self::get_income_data();
+
+		// TODO: add panel with table of tickets
+		if ($view['tickets'])
+			$data['tickets']['total'] = count(self::get_new_tickets());
+
+		if ($view['hfc'])
+		{
+			$netelements = $this->_get_impaired_netelements();
+			$services 	 = $this->_get_impaired_services();
+		}
+
+		return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'data', 'view', 'netelements', 'services')));
+	}
+
+
+	/**
+	 * Return Array of boolean values of different categories that shall (/not) be shown in dashboard (index.blade)
+	 */
+	private static function _get_view_permissions()
+	{
+		$role_ids_fix = array(
+			'superadmin' 	=> 1,
+			'director' 		=> 3,
+			'technican' 	=> 4,
+			'accounting' 	=> 5,
 		);
-		$allowed_roles = array(
-			3 => 'technican',
-			4 => 'accounting'
-		);
+
+		$income = $hfc = false;
 
 		// check user permissions
-		$roles = \Auth::user()->roles();
-		foreach ($roles as $role)
+		foreach (\Auth::user()->roles() as $role)
 		{
-			// allow super-admin to see everything
-			// if ($role->id == 1)
-			// {
-			// 	$allowed_to_see = ['accounting' => true, 'technican' => true];
-			// 	break;
-			// }
+			if (\PPModule::is_active('billingbase'))
+			{
+				if ($role->id == $role_ids_fix['director'])
+					$income = true;
+			}
 
-			if (array_key_exists($role->id, $allowed_roles))
-				$allowed_to_see[$allowed_roles[$role->id]] = true;
+			if (\PPModule::is_active('hfcreq'))
+			{
+				if ($role->id == $role_ids_fix['superadmin'] ||
+					$role->id == $role_ids_fix['director'] ||
+					$role->id == $role_ids_fix['technican'])
+					$hfc = true;
+			}
 		}
 
-		// get chart data: contracts
-		$chart_data_contracts = self::get_chart_data_contracts();
-		$contracts = end($chart_data_contracts['contracts']);
+		$view = array(
+			'contracts' 	=> \PPModule::is_active('provbase'),
+			'income'		=> $income,
+			'tickets' 		=> \PPModule::is_active('ticketsystem'),
+			'provvoipenvia' => false,
+			'date' 			=> true,
+			'hfc' 			=> $hfc,
+			);
 
-		// income
-		if (\PPModule::is_active('billingbase') && $allowed_to_see['accounting'])
-		{
-			$chart_data_income = self::get_chart_data_income();
-
-			// TODO: move income total calculation to get_chart_data_income() and return well structured array
-			// to use in blade -> content of this if-clause will only be the one line ahead
-			$income['total'] = 0;
-			foreach ($chart_data_income['data'] as $value)
-				$income['total'] += $value;
-			$income['total'] = (int) $income['total'];
-		}
-
-		if (\PPModule::is_active('hfcbase')) {
-			$netelements = $this->_get_impaired_netelements();
-			$services = $this->_get_impaired_services();
-		}
-
-		return View::make('provbase::dashboard', $this->compact_prep_view(
-				compact('title', 'contracts', 'chart_data_contracts', 'income', 'chart_data_income', 'allowed_to_see', 'netelements', 'services')
-			)
-		);
+		return $view;
 	}
+
 
 	/**
 	 * Get all today valid contracts
@@ -76,11 +94,11 @@ class DashboardController extends BaseController
 	public static function get_valid_contracts()
 	{
 		$query = Contract::where('contract_start', '<', date('Y-m-d'))
-				->where(function ($query) { $query
+			->where(function ($query) { $query
 				->where('contract_end', '>', date('Y-m-d'))
 				->orWhere('contract_end', '=', '0000-00-00')
 				->orWhereNull('contract_end');})
-				->orderBy('contract_start');
+			->orderBy('id');
 
 		return \PPModule::is_active('billingbase') ? $query->with('items', 'items.product')->get()->all() : $query->get()->all();
 	}
@@ -117,26 +135,22 @@ class DashboardController extends BaseController
 	}
 
 	/**
-	 * Returns rehashed data for the line chart
+	 * Returns rehashed data for the line chart and total number of contracts for the widget
 	 *
-	 * @param array $contracts
-	 * @return array
+	 * @return Array 	[chart => Array, total => Integer]
 	 */
-	private static function get_chart_data_contracts()
+	private static function get_contract_data()
 	{
-		$ret = array();
-		$i 	 = 13;
-
-		while($i > 0)
-		{
-			$i--;
-			$time = strtotime("-$i month");
-
-			$ret['labels'][] = date('m/Y', $time);
-			$ret['contracts'][] = self::count_contracts(date('Y-m-01', $time));
+		if (\Storage::disk('chart-data')->has('contracts.json') === false) {
+			$content = json_encode(\Config::get('dashboard.contracts'));
+		} else {
+			$content = \Storage::disk('chart-data')->get('contracts.json');
 		}
 
-		return $ret;
+		$data['chart'] = json_decode($content);
+		$data['total'] = end($data['chart']->contracts);
+
+		return $data;
 	}
 
 	/**
@@ -150,21 +164,14 @@ class DashboardController extends BaseController
 	{
 		$ret = 0;
 
-		// for 800 contracts this is approximately 4x faster - DB::table is again 5x faster than Eloquents Contract:: -> (20x faster)
+		// for 800 contracts this is approximately 4x faster - DB::table is again 5x faster than Eloquents Contract::count -> (20x faster)
 		$ret = \DB::table('contract')->where('contract_start', '<', $date_interval_start)
 			->whereNull('deleted_at')
 			->where(function ($query) { $query
-			->where('contract_end', '>', date('Y-m-d'))
-			->orWhere('contract_end', '=', '0000-00-00')
-			->orWhereNull('contract_end');})
+				->where('contract_end', '>', date('Y-m-d'))
+				->orWhere('contract_end', '=', '0000-00-00')
+				->orWhereNull('contract_end');})
 			->count();
-
-		// foreach ($contracts as $contract) {
-		// 	if (($contract->contract_start < $date_interval_start) &&
-		// 		($contract->contract_end == '0000-00-00' || $contract->contract_end > date('Y-m-d') || is_null($contract->contract_end))) {
-		// 		$ret++;
-		// 	}
-		// }
 
 		return $ret;
 	}
@@ -173,12 +180,13 @@ class DashboardController extends BaseController
 	/**
 	 * Returns monthly incomes for each product type
 	 *
-	 * @param array $contracts
 	 * @return array
 	 */
 	public static function get_income_total()
 	{
+		$ret = [];
 		$contracts = self::get_valid_contracts();
+		$total = 0;
 
 		// manipulate dates array for charge calculation for coming month (not last one)
 		$conf  = \Modules\BillingBase\Entities\BillingBase::first();
@@ -203,16 +211,12 @@ class DashboardController extends BaseController
 				if (!isset($item->product))
 					continue;
 
-				$cycle 	  = $item->get_billing_cycle();
-				$interval = strtotime('first day of this month');
-
-				if (!$item->check_validity($cycle, $interval))
-					continue;
-
 				$item->calculate_price_and_span($dates, false, false);
+				$cycle = $item->get_billing_cycle();
 
-				// $prepared_data[$product->type][$cycle][$product->name][$c->id]['price'] = $item->charge;
-				// prepared data not really needed - why cycle ?? - TODO: simplify
+				$total += $item->charge;
+
+				// why cycle ?? - TODO: simplify
 				if (!isset($ret[$item->product->type][$cycle])) {
 					$ret[$item->product->type][$cycle] = $item->charge;
 					continue;
@@ -222,18 +226,10 @@ class DashboardController extends BaseController
 			}
 		}
 
-		$total = 0;
-		foreach ($ret as $cycle) {
-			foreach ($cycle as $value) {
-				$total += $value;
-			}
-		}
-
 		// Net income total - TODO: calculate gross ?
 		$ret['total'] = $total;
 
 		return $ret;
-
 	}
 
 
@@ -243,35 +239,55 @@ class DashboardController extends BaseController
 	 */
 	public static function save_income_to_json()
 	{
-		$dir_path = storage_path("app/data/dashboard/");
-		$fn = 'income.json';
-
 		$income = self::get_income_total();
 		$income = self::format_chart_data_income($income);
 
-		if (!is_dir($dir_path))
-			mkdir($dir_path, 0740, true);
-
-		\File::put($dir_path.$fn, json_encode($income));
-
-		system("chown apache $dir_path");
+		\Storage::disk('chart-data')->put('income.json', json_encode($income));
 	}
 
+
+	/**
+	 * Calculate contracts for the last 12 months, format and save to json
+	 * Used by cronjob
+	 */
+	public static function save_contracts_to_json()
+	{
+		$i = 13;
+		$contracts = array();
+
+		while($i > 0)
+		{
+			$i--;
+			$time = strtotime("first day -$i month");
+
+			$contracts['labels'][] = date('m/Y', $time);
+			$contracts['contracts'][] = self::count_contracts(date('Y-m-01', $time));
+		}
+
+		\Storage::disk('chart-data')->put('contracts.json', json_encode($contracts));
+	}
 
 	/**
 	 * Get chart data from json file - created by cron job
 	 *
 	 * @return array
 	 */
-	public static function get_chart_data_income()
+	public static function get_income_data()
 	{
-		$total = 0.0;
-		$ret = array();
-		$prepared_data = array();
-		$dir_path = storage_path("app/data/dashboard/");
-		$fn = 'income.json';
+		if (\Storage::disk('chart-data')->has('income.json') === false)
+			$content = json_encode(\Config::get('dashboard.income'));
+		else
+			$content = \Storage::disk('chart-data')->get('income.json');
 
-		return json_decode(\File::get($dir_path.$fn), true);
+		$data['chart'] = json_decode($content);
+
+		$data['total'] = 0;
+		foreach ($data['chart']->data as $value)
+			$data['total'] += $value;
+
+		$data['total'] = (int) $data['total'];
+
+		return $data;
 	}
 
 
@@ -313,10 +329,27 @@ class DashboardController extends BaseController
 	}
 
 	/**
+	 * Returns all tickets with state = new
+	 *
+	 * @return array
+	 */
+	private static function get_new_tickets()
+	{
+		if (!\PPModule::is_active('ticketsystem'))
+			return null;
+
+		return \Auth::user()->tickets->where('state', 'New')->all();
+	}
+
+
+	/**
 	 * Return all impaired netelements in a table array
 	 *
 	 * @author Ole Ernst
 	 * @return array
+	 *
+	 * TODO: This function is actually the most timeconsuming while creating the dashboard index view
+	 *	-> calculate in Background ? (comment by Nino Ryschawy 2017-11-21)
 	 */
 	private static function _get_impaired_netelements()
 	{
@@ -326,14 +359,14 @@ class DashboardController extends BaseController
 			return $ret;
 
 		foreach(\Modules\HfcReq\Entities\NetElement::where('id', '>', '2')->get() as $element) {
-			$status = $element->get_bsclass();
-			if ($status == 'success' || $status == 'info')
+			$state = $element->get_bsclass();
+			if ($state == 'success' || $state == 'info')
 				continue;
 			if(!isset($element->icingaobjects->icingahoststatus) || !$element->icingaobjects->is_active)
 				continue;
 
 			$status = $element->icingaobjects->icingahoststatus;
-			$ret['clr'][] = $element->get_bsclass();
+			$ret['clr'][] = $state;
 			$ret['row'][] = [$element->name, $status->output, $status->last_time_up];
 		}
 
@@ -453,6 +486,5 @@ class DashboardController extends BaseController
 			return 'warning';
 		}
 	}
-
 
 }
