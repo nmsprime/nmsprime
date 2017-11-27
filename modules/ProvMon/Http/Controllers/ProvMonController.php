@@ -514,7 +514,7 @@ end:
 			return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
 		}
 
-		$cmts = $this->get_cmts($ip);
+		$cmts = Modem::get_cmts($ip);
 		$sys = [];
 		// these values are not important for cacti, so only retrieve them on the analysis page
 		if(!$cacti) {
