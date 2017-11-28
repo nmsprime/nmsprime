@@ -1,11 +1,11 @@
 <?php 
 
-namespace Modules\Billingbase\Database\Seeders;
+namespace Modules\BillingBase\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
-class BillingbaseDatabaseSeeder extends Seeder {
+class BillingBaseDatabaseSeeder extends Seeder {
 
 	/**
 	 * Run the database seeds.
