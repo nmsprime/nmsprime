@@ -16,7 +16,7 @@ class CostCenterTableSeeder extends \BaseSeeder {
 		$cycles = [1 => 'Once', 2 => 'Montly', 3 => 'Yearly'];
 		$other_names = [1 => 'Antenna Dose Installation', 2 => 'Public IP', 3 => 'fixed cycle prod'];
 
-		foreach(range(1, $this->max_seed_l2) as $index)
+		foreach(range(1, self::$max_seed_l2) as $index)
 		{
 			$name = 'CC '.$index;
 			$sepa_account_id = (int) ($index + 2 / 3);

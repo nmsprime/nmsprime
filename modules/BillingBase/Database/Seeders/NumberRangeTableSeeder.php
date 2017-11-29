@@ -13,7 +13,7 @@ class NumberRangeTableSeeder extends \BaseSeeder {
 	{
 		$faker = Faker::create();
 
-		foreach (range(1, $this->max_seed_l2) as $index) {
+		foreach (range(1, self::$max_seed_l2) as $index) {
 			for ($i=1; $i<=2; $i++) {
 				NumberRange::create([
 					'name' => "number_range_".$faker->colorName(),
