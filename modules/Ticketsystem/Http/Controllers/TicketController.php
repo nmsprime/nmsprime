@@ -26,11 +26,7 @@ class TicketController extends \BaseController {
 
 	protected function prepare_input($data)
 	{
-		if (isset($data['assigned_user_id'])) {
-			$data['assigned_user_id'] = implode(';', $data['assigned_user_id']);
-		} elseif (!isset($data['assigned_user_id'])) {
-			$data['assigned_user_id'] = null;
-		}
+		$data['assigned_user_id'] = isset($data['assigned_user_id']) ? implode(';', $data['assigned_user_id']) : null;
 
 		return parent::prepare_input($data);
 	}
