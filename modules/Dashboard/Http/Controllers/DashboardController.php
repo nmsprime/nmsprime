@@ -255,10 +255,10 @@ class DashboardController extends BaseController
 		$i = 13;
 		$contracts = array();
 
-		while($i > 0)
+		while($i > 1)
 		{
 			$i--;
-			$time = strtotime("first day -$i month");
+			$time = strtotime("second day -$i month");
 
 			$contracts['labels'][] = date('m/Y', $time);
 			$contracts['contracts'][] = self::count_contracts(date('Y-m-01', $time));
