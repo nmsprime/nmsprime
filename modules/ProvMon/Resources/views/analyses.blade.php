@@ -168,6 +168,116 @@
 			<font color="red">{{ trans('messages.modem_eventlog_error')}}</font>
 		@endif
 	</div>
+
+	<div class="tab-pane fade in" id="preeq">
+		@if ($preeq)
+			<font color="green"><b>Pre-Equalization Data</b></font><br>
+			<div class="table-responsive">
+				<table class="=table table-bordered" width="100%">
+					<thead>
+						<tr>
+							<th class="text-center">Tap</th>
+							<th class="text-center">Energy (db)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="text-center">
+								@for ($i = 1; $i < 25; $i++)
+									<font color="black">{{$i}}<br></font>
+								@endfor
+							</td>
+							<td class="text-center">
+								@foreach ($preeq['energy'] as $line)
+									<font color="black">{{$line}}<br></font>
+								@endforeach
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="container-fluid box" style="width:100%; overflow: hidden;"">
+				<font color="black"><b>TDR = </b><font color="blue">{{$preeq['tdr']}}</font><font color="black"><b> meters</b></font></font>
+			</div>
+			<div width="500px" height="400px" style="z-index: 9999;">
+				<canvas id="myChart"></canvas>
+			</div>
+
+			@section('mycharts')
+			<script>
+			window.onload = (function(_event)
+			{
+				setTimeout(function(){
+					console.log(_event);
+					var ctx = document.getElementById("myChart").getContext('2d');
+					console.log('Hi John');
+					var js_array = [<?php echo '"'.implode('","', $preeq['energy']).'"' ?>];
+					var myChart = new Chart(ctx,
+					{
+						type: 'bar',
+						data: {
+							{{-- labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"], --}}
+							labels: Array.apply(null, {length: 25}).map(Number.call, Number),
+							datasets: [{
+								label: 'Tap Energy Distribution',
+								{{-- data: [,12, 19, 3, 5, 2, 3], --}}
+								data: js_array,
+								backgroundColor: [
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(255, 99, 132, 0.2)',
+								'rgba(54, 162, 235, 0.2)',
+								'rgba(255, 206, 86, 0.2)',
+								'rgba(75, 192, 192, 0.2)',
+								'rgba(153, 102, 255, 0.2)',
+								'rgba(255, 159, 64, 0.2)'
+								],
+								borderColor: [
+								'rgba(255,99,132,1)',
+								'rgba(54, 162, 235, 1)',
+								'rgba(255, 206, 86, 1)',
+								'rgba(75, 192, 192, 1)',
+								'rgba(153, 102, 255, 1)',
+								'rgba(255, 159, 64, 1)'
+								],
+								borderWidth: 1
+							}]
+						},
+						options: {
+							scales: {
+								yAxes: [{
+									ticks: {
+										beginAtZero:true
+									}
+								}]
+							}
+						}
+					});
+				}, 1000);
+			});
+			</script>
+			@stop
+
+
+		@else
+			<font color="red">{{ trans('messages.preeq_error') }}</font>
+		@endif
+	</div>
 </div>
 
 @stop

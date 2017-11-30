@@ -138,6 +138,7 @@ class ProvMonController extends \BaseController
 
         // this can be done irrespective of device online state
         $measure = $this->realtimePPP($modem);
+        $preeq = $modem->get_preq_data();  //calling the function get_preq_data() from the modem and instantiating it to class modem
 
         if ($online) {
             if ($modemConfigfileStatus = $this->modemConfigfileStatus($modem)) {
@@ -177,7 +178,7 @@ class ProvMonController extends \BaseController
         $picture = $this->modemPicture($modem, $realtime);
 
         $pills = ['<ul class="nav nav-pills" id="loglease">'];
-        foreach (['log', 'lease', 'configfile', 'eventlog'] as $pill) {
+        foreach (['log', 'lease', 'configfile', 'eventlog', 'preeq'] as $pill) {
             if ($$pill) {
                 $pills[] = "<li role=\"presentation\"><a href=\"#$pill\" data-toggle=\"pill\">".ucfirst($pill).'</a></li>';
             }
@@ -186,7 +187,7 @@ class ProvMonController extends \BaseController
         $pills = implode('', $pills);
 
         return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
-                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device', 'picture', 'pills')));
+                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device', 'picture', 'pills', 'preeq')));
     }
 
     /**
