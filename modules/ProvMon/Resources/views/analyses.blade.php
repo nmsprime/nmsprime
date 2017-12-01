@@ -28,7 +28,7 @@
 			@else
 				<font color="red">{{trans('messages.modem_offline')}}</font>
 			@endif
-			<!-- pings are appended dynamically here by javascript -->
+			{{-- pings are appended dynamically here by javascript --}}
 		</div>
 
 		<div class="tab-pane fade in" id="flood-ping">
@@ -36,10 +36,10 @@
 					<form route="$route" method="POST">Type:
 						<input type="hidden" name="_token" value="{{ csrf_token() }}"></input>
 						<select class="select2 form-control m-b-20" name="flood_ping" style="width : 100 %">
-							<option value="1">low load: 500 packets of 56 Byte</option> <!-- needs approximately 5 sec -->
-							<option value="2">average load: 1000 packets of 736 Byte</option> <!-- needs approximately 10 sec -->
-							<option value="3">big load: 2500 packets of 56 Byte</option> <!-- needs approximately 30 sec -->
-							<option value="4">huge load: 2500 packets of 1472 Byte</option> <!-- needs approximately 30 sec -->
+							<option value="1">low load: 500 packets of 56 Byte</option> {{-- needs approximately 5 sec --}}
+							<option value="2">average load: 1000 packets of 736 Byte</option> {{-- needs approximately 10 sec --}}
+							<option value="3">big load: 2500 packets of 56 Byte</option> {{-- needs approximately 30 sec --}}
+							<option value="4">huge load: 2500 packets of 1472 Byte</option> {{-- needs approximately 30 sec --}}
 						</select>
 
 				{{-- Form::open(['route' => ['ProvMon.flood_ping', $view_var->id]]) --}}
