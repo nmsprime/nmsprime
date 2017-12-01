@@ -7,7 +7,6 @@ use Input;
 
 class CompanyController extends \BaseController {
 
-	protected $edit_left_md_size = 7;
 
 	/**
 	 * defines the formular fields for the edit and create view

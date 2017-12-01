@@ -26,6 +26,7 @@ class ProvMonController extends \BaseController {
 
 	protected $domain_name = "";
 	protected $modem = null;
+	protected $edit_left_md_size = 12;
 
 	public function __construct()
 	{
@@ -48,8 +49,6 @@ class ProvMonController extends \BaseController {
 
 		if (isset($modem->mtas[0]))
 			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => [$id]]);
-
-		array_push($a, ['name' => 'Logging', 'route' => 'GuiLog.filter', 'link' => ['model_id' => $modem->id, 'model' => 'Modem']]);
 
 		return $a;
 	}
