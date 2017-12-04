@@ -29,7 +29,10 @@ class DashboardController extends BaseController
 
 		// TODO: add panel with table of tickets
 		if ($view['tickets'])
-			$data['tickets']['total'] = count(self::get_new_tickets());
+		{
+			$data['tickets']['table'] = self::get_new_tickets();
+			$data['tickets']['total'] = count($data['tickets']['table']);
+		}
 
 		if ($view['hfc'])
 		{
