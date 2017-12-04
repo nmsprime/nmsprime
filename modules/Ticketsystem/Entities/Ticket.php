@@ -42,8 +42,9 @@ class Ticket extends \BaseModel {
 				\App\Http\Controllers\BaseViewController::translate_view($this->state, 'Ticket_State'),
 				$this->user->first_name.' '.$this->user->last_name,
 				$this->created_at,
+				$this->get_assigned_users(),
 			],
-			'index_header' => ['Ticket Id', 'Title', 'Type', 'Priority', 'State', 'Created by', 'Created at'],
+			'index_header' => ['Ticket Id', 'Title', 'Type', 'Priority', 'State', 'Created by', 'Created at', 'Assigned Users'],
 			'header' => $this->id . ' - ' . $this->name,
 			'bsclass' => $bsclass
 		];
@@ -62,13 +63,37 @@ class Ticket extends \BaseModel {
 				$this->table . '.priority',
 				$this->table . '.state',
 				$this->table . '.user_id',
-				$this->table . '.created_at'
+				$this->table . '.created_at',
+				$this->table . '.assigned_users',
 			],
 			'header' => $this->id . ' - ' . $this->name,
 			'bsclass' => $bsclass,
 			'order_by' => ['0' => 'desc'],
+			'edit' => ['assigned_users' => 'get_assigned_users'],
 		];
 	}
+
+	/**
+	 * Concatenate names of assigned users for index view
+	 *
+	 * @return String
+	 */
+	public function get_assigned_users()
+	{
+		$string = '';
+		foreach ($this->users as $user)
+		{
+			$string .= $string ? ', ' : '';
+
+			if (strlen($string) > 125)
+				return $string.'...';
+
+			$string .= $user->first_name.' '.$user->last_name;
+		}
+
+		return $string;
+	}
+
 
 	public function get_bsclass()
 	{
