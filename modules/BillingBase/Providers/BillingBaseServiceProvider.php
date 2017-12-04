@@ -1,4 +1,4 @@
-<?php namespace Modules\Billingbase\Providers;
+<?php namespace Modules\BillingBase\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
