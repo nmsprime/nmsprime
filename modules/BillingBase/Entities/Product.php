@@ -43,20 +43,9 @@ class Product extends \BaseModel {
 		return '<i class="fa fa-th-list"></i>';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		$bsclass = $this->get_bsclass();
-
-		return ['index' => [$this->type, $this->name, $this->price],
-		        'index_header' => ['Type', 'Name', 'Price'],
-		        'bsclass' => $bsclass,
-		        'header' => $this->type.' - '.$this->name.' | '.$this->price.' €'];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 
@@ -68,7 +57,7 @@ class Product extends \BaseModel {
 	}
 
 	public function get_bsclass(){
-		
+
 		switch ($this->type)
 		{
 			case 'Internet':	$bsclass = 'info'; break; // online

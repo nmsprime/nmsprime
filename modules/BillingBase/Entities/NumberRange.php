@@ -35,15 +35,6 @@ class NumberRange extends \BaseModel {
 	public function view_index_label()
 	{
 		return [
-			'index' => [$this->id, $this->name, $this->prefix, $this->suffix, $this->start, $this->end, $this->type, $this->costcenter ? $this->costcenter->name : ''],
-			'index_header' => ['Id', 'Name', 'Prefix', 'Suffix', 'Start', 'End', 'Type', 'CostCenter'],
-			'header' => $this->id . ' - ' . $this->name
-		];
-	}
-
-	public function view_index_label_ajax()
-	{
-		return [
 			'table' => $this->table,
 			'index_header' => [$this->table . '.id', $this->table . '.name', $this->table . '.prefix', $this->table . '.suffix', $this->table . '.start', $this->table . '.end', $this->table . '.type', $this->table . '.costcenter.name'],
 			'header' => $this->table . 'id' . ' - ' . $this->table . 'name',

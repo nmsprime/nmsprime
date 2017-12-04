@@ -31,18 +31,6 @@ class Invoice extends \BaseModel{
 		return 'Invoices';
 	}
 
-	public function view_index_label()
-	{
-		$bsclass = 'info';
-
-		$type = $this->type == 'Invoice' ? '' : ' ('.trans('messages.Call Data Record').')';
-
-		return ['index' => [$this->type, $this->year, $this->month],
-				'index_header' => ['Type', 'Year', 'Month'],
-				'bsclass' => $bsclass,
-				'header' => $this->year.' - '.$this->month.$type];
-	}
-
 	public static function view_icon()
 	{
 		return '<i class="fa fa-id-card-o"></i>';

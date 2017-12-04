@@ -39,20 +39,9 @@ class Cdr extends \BaseModel {
 		return $this->where('mos_min_mult10','<',45)->orderBy('id', 'DESC')->simplePaginate(1000);
 	}
 
-	// Link title in index view
-	public function view_index_label()
-	{
-		$bsclass = $this->get_bsclass();
-
-		return ['index' =>	[$this->calldate, $this->caller, $this->called, $this->mos_min_mult10 / 10],
-			'index_header' =>	['Call Start', 'Caller', 'Callee', 'min. MOS'],
-			'bsclass' => $bsclass,
-			'header' => 'Caller: '.$this->caller.' (Start: '.$this->calldate.')'];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 
@@ -64,7 +53,7 @@ class Cdr extends \BaseModel {
 				'order_by' => ['0' => 'desc']];
 	}
 
-	public function get_bsclass() 
+	public function get_bsclass()
 	{
 		if ($this->mos_min_mult10 > 40)
 			$bsclass = 'success';
@@ -74,11 +63,11 @@ class Cdr extends \BaseModel {
 			$bsclass = 'warning';
 		else
 			$bsclass = 'danger';
-		
+
 		return $bsclass;
 	}
-	
-	public function mos_min_normalized() 
+
+	public function mos_min_normalized()
 	{
 		return $this->mos_min_mult10 / 10;
 	}

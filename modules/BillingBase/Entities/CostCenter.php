@@ -35,17 +35,9 @@ class CostCenter extends \BaseModel {
 		return '<i class="fa fa-creative-commons"></i>';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		return ['index' => [$this->name, $this->number, $this->sepaaccount ? $this->sepaaccount->name : ''],
-				'index_header' => ['Name', 'Number', 'SEPA Account'],
-				'header' => $this->name];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		return ['table' => $this->table,
 				'index_header' => [$this->table.'.name', $this->table.'.number', 'sepaaccount.name'],

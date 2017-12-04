@@ -33,27 +33,6 @@ class EnviaContract extends \BaseModel {
 	// link title in index view
 	public function view_index_label()
 	{
-
-		$envia_contract_reference = $this->get_envia_contract_reference();
-		$state = $this->get_state();
-		$start_date = $this->get_start_date();
-		$end_date = $this->get_end_date();
-		$contract_nr = $this->get_contract_nr();
-		$modem_id = $this->get_modem_id();
-
-		$bsclass = $this->get_bsclass();
-
-        return ['index' => [$envia_contract_reference, $state, $start_date, $end_date, $contract_nr, $modem_id],
-                'index_header' => ['envia TEL contract reference', 'State', 'Start date', 'End date', 'Contract', 'Modem'],
-                'bsclass' => $bsclass,
-				'header' => $envia_contract_reference,
-		];
-
-	}
-
-	// link title in index view
-	public function view_index_label_ajax()
-	{
 		$envia_contract_reference = $this->get_envia_contract_reference();
 		$bsclass = $this->get_bsclass();
 

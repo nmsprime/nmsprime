@@ -41,20 +41,9 @@ class Company extends \BaseModel {
 		return '<i class="fa fa-industry"></i>';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		$bsclass = $this->get_bsclass();
-		
-		return ['index' => [$this->name, $this->city, $this->phone, $this->mail],
-				'index_header' => ['Name', 'City', 'Phonenumber', 'Mail'],
-				'bsclass' => $bsclass,
-				'header' => $this->name];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 
@@ -125,7 +114,7 @@ class Company extends \BaseModel {
 
 				foreach ($value as $name)
 					$tmp[] = trim($name);
-				
+
 				$data[$class.'_'.$key] = implode('\\\\', $tmp);
 
 				continue;
