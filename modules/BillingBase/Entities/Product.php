@@ -68,7 +68,7 @@ class Product extends \BaseModel {
 	}
 
 	public function get_bsclass(){
-		
+
 		switch ($this->type)
 		{
 			case 'Internet':	$bsclass = 'info'; break; // online
@@ -131,31 +131,41 @@ class Product extends \BaseModel {
 
 	/**
 	 * Returns an array with all ids of a specific product type
-	 * Note: until now only Internet & Voip is needed
-	 * @param String/Enum 	product type
-	 * @return Array 		of id's
+	 *
+	 * NOTE: DB::table is approximately 100x faster than Eloquent here and this function
+	 *	is called for every Contract during daily_conversion
+	 *
+	 * @param 	String/Enum 	[internet|voip|tv]
+	 * @return 	Array
 	 *
 	 * @author Nino Ryschawy
 	 */
 	public static function get_product_ids($type)
 	{
-		switch ($type)
+		switch (strtolower($type))
 		{
-			case 'Internet':
-				$prod_ids = DB::table('product')->where('type', '=', $type)->where('qos_id', '!=', '0')->select('id')->get();
+			case 'internet':
+				$prod_ids = DB::table('product')->where('type', '=', $type)
+					->where('qos_id', '!=', '0')->where('deleted_at', '=', null)->select('id')->get();
+					// $prod_ids = Product::where('type', '=', 'Internet')->where('qos_id', '!=', '0')->select('id')->get()->pluck('id')->all();
 				break;
-			case 'Voip':
-				$prod_ids = DB::table('product')->where('type', '=', $type)->where('voip_sales_tariff_id', '!=', '0')->orWhere('voip_purchase_tariff_id', '!=', '0')->select('id')->get();
+
+			case 'voip':
+				$prod_ids = DB::table('product')
+					->where('deleted_at', '=', null)->where('type', '=', 'Voip')
+					->where(function ($query) { $query
+						->where('voip_sales_tariff_id', '!=', '0')
+						->orWhere('voip_purchase_tariff_id', '!=', '0');})
+					->select('id')->get();
 				break;
-			case 'TV':
-				$prod_ids = DB::table('product')->where('type', '=', 'TV')->select('id')->get();
-				goto make_list;
+
+			case 'tv':
+				$prod_ids = DB::table('product')->where('type', '=', 'TV')->where('deleted_at', '=', null)->select('id')->get();
+				break;
+
 			default:
 				return null;
 		}
-
-
-make_list:
 
 		$ids = array();
 
