@@ -96,6 +96,13 @@ class NumberRange extends \BaseModel {
 	 */
 	protected static function get_next_contract_number($costcenter_id)
 	{
+		// check if costcenter_id is given
+		if (is_null($costcenter_id) || ($costcenter_id == "0") || ($costcenter_id == 0)) {
+			\Log::warning("No costcenter_id given – cannot get next contract number");
+			return null;
+		}
+
+
 		$numberranges = NumberRange::where('type', '=', 'contract')->where('costcenter_id', $costcenter_id)->orderBy('id')->get();
 
 		if (!$numberranges) {
