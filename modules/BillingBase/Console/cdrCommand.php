@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\Billingbase\Console;
 
 use Illuminate\Console\Command;
@@ -8,7 +8,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use \Chumper\Zipper\Zipper;
 use Storage;
 use File;
-use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\BillingBase;
 
 class cdrCommand extends Command {
@@ -53,14 +52,13 @@ class cdrCommand extends Command {
 	public function fire()
 	{
 		$this->_init();
-		$logger = new BillingLogger;
 
-		$logger->addInfo('Get Call Data Records');
+		\ChannelLog::info('billing', 'Get Call Data Records');
 
 		// skip if file is already loaded
 		if (is_file($this->target_dir.$this->target_file))
 		{
-			$logger->addDebug('CDR already loaded');
+			\ChannelLog::debug('billing', 'CDR already loaded');
 			return;
 		}
 
@@ -68,13 +66,13 @@ class cdrCommand extends Command {
 		// NOTE: - use env() to parse all super global variables for this key here as this super global variable is consciously not set in cronjobs
 		if (env('PROVVOIPENVIA__RESELLER_USERNAME'))
 		{
-			$logger->addDebug('GET envia TEL Call Data Records');
+			\ChannelLog::debug('billing', 'GET envia TEL Call Data Records');
 			$this->_get_envia_cdr();
 		}
 
 		else if (env('HLKOMM_RESELLER_USERNAME'))
 		{
-			$logger->addDebug('GET HL Komm Call Data Records');
+			\ChannelLog::debug('billing', 'GET HL Komm Call Data Records');
 			$this->_get_hlkomm_cdr();
 		}
 
@@ -89,28 +87,23 @@ class cdrCommand extends Command {
 
 
 	/**
-	 * Init global variables
-		* logger
-		* dates
-		* directory- & filepaths
+	 * Init global variables: directory- & filepaths
 	 */
 	private function _init()
 	{
 		$offset = BillingBase::first()->cdr_offset;
-		$month_sec = 31*24*60*60;
 
 		if ($this->argument('month') >= 1 && $this->argument('month') <= 12)
 			// argument is specified
 			$this->month = sprintf('%02d', $this->argument('month'));
 		else
-			$this->month = $offset ? date('m', strtotime('-'.($offset+1).' month')) : date('m', strtotime('first day of last month'));
+			$this->month = $offset ? date('m', strtotime('second day -'.($offset+1).' month')) : date('m', strtotime('second day of last month'));
 
-		// $this->month = $this->argument('month') >= 1 && $this->argument('month') <= 12 ? sprintf('%02d', $this->argument('month')) : ( $offset == 0 ? date('m', strtotime('first day of last month')) : date('m', strtotime('-'.($offset+1).' month')));
-		$this->year  = $this->month >= date('m') ? date('Y') - 1 : date('Y');
+		$this->year = $this->month >= date('m') ? date('Y') - 1 : date('Y');
 
 		$this->tmp_dir 		= storage_path('app/tmp/');
 		$this->target_dir   = storage_path("app/data/billingbase/accounting/");
-		$this->target_dir 	.= $offset ? date('Y-m', $offset * $month_sec + strtotime('01.'.$this->month.'.'.$this->year)) : $this->year.'-'.$this->month;
+		$this->target_dir 	.= $offset ? date('Y-m', strtotime("second day + $offset month", strtotime('01.'.$this->month.'.'.$this->year))) : $this->year.'-'.$this->month;
 		$this->target_file  = \App\Http\Controllers\BaseViewController::translate_label('Call Data Record')."_".$this->year.'_'.$this->month.'.csv';
 	}
 
@@ -124,17 +117,12 @@ class cdrCommand extends Command {
 	{
 		$user 	  = env('PROVVOIPENVIA__RESELLER_USERNAME');
 		$password = env('PROVVOIPENVIA__RESELLER_PASSWORD');
-		$logger = new BillingLogger;
 
 		try {
+			\ChannelLog::debug('billing', "GET: https://$user:$password@www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/".$this->year.'/'.$this->month);
 			$data = file_get_contents("https://$user:$password@www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/".$this->year.'/'.$this->month);
 		} catch (\Exception $e) {
-			$data = [];
-		}
-
-		if (!$data)
-		{
-			$logger->addAlert('CDR-Import: Could not get Call Data Records from envia TEL for month: '.$this->month, ["www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/2016/$this->month"]);
+			\ChannelLog::alert('billing', 'CDR-Import: Could not get Call Data Records from envia TEL for month: '.$this->month, ["www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/$this->year/$this->month"]);
 			return -1;
 		}
 
@@ -146,7 +134,7 @@ class cdrCommand extends Command {
 
 		$zipper = new Zipper;
 		$zipper->make($this->tmp_dir.$tmp_file)->extractTo($this->tmp_dir);
-		
+
 		// TODO: Rename File
 		$files = Storage::files('tmp');
 
@@ -160,7 +148,7 @@ class cdrCommand extends Command {
 			}
 		}
 
-		$logger->addDebug("Successfully stored Call Data Record in ".$this->target_dir, [$this->target_file]);
+		\ChannelLog::debug('billing', "Successfully stored Call Data Record in ".$this->target_dir, [$this->target_file]);
 
 		Storage::delete("tmp/$tmp_file");
 	}
@@ -175,14 +163,13 @@ class cdrCommand extends Command {
 	{
 		$user 	  = env('HLKOMM_RESELLER_USERNAME');
 		$password = env('HLKOMM_RESELLER_PASSWORD');
-		$logger = new BillingLogger;
 		// establish ftp connection and login
 		$ftp_server = "ftp.hlkomm.net";
 
 		$ftp_conn = ftp_connect($ftp_server);
 		if (!$ftp_conn)
 		{
-			$logger->addError('Load-CDR: Could not establish ftp connection!', [__FUNCTION__]);
+			\ChannelLog::error('billing', 'Load-CDR: Could not establish ftp connection!', [__FUNCTION__]);
 			return -1;
 		}
 
@@ -204,8 +191,8 @@ class cdrCommand extends Command {
 
 		if (!isset($remote_fname))
 		{
-			$logger->addError('No CDR File on ftp Server that matches naming conventions', [__FUNCTION__]);
-			return -1;			
+			\ChannelLog::error('billing', 'No CDR File on ftp Server that matches naming conventions', [__FUNCTION__]);
+			return -1;
 		}
 
 		// load file
@@ -215,10 +202,10 @@ class cdrCommand extends Command {
 			mkdir($this->target_dir, 0744, true);
 
 		if (ftp_get($ftp_conn, $target_file, $remote_fname, FTP_BINARY))
-			$logger->addDebug('Successfully stored CDR txt', [$target_file]);
+			\ChannelLog::debug('billing', 'Successfully stored CDR txt', [$target_file]);
 		else
 		{
-			$logger->addError('Could not Retrieve CDR File from ftp Server', [__FUNCTION__]);
+			\ChannelLog::error('billing', 'Could not Retrieve CDR File from ftp Server', [__FUNCTION__]);
 			return -1;
 		}
 
