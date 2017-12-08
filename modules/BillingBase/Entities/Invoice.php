@@ -236,7 +236,7 @@ class Invoice extends \BaseModel{
 		// $count = $item->count ? $item->count : 1;
 		$price  = sprintf("%01.2f", round($item->charge/$item->count, 2));
 		$sum 	= sprintf("%01.2f", $item->charge);
-		$this->data['item_table_positions'] .= $item->count.' & '.$item->invoice_description.' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
+		$this->data['item_table_positions'] .= $item->count.' & '.escape_latex_special_chars($item->invoice_description).' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
 	}
 
 
