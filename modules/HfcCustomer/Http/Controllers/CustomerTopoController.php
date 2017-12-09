@@ -164,7 +164,7 @@ class CustomerTopoController extends NetElementController {
 	*/
 	public function show_prox()
 	{
-		return $this->show_topo(Modem::whereRaw(Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))));
+		return $this->show_topo(Modem::whereRaw(Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))), \Input::get('row'));
 	}
 
 	/**
