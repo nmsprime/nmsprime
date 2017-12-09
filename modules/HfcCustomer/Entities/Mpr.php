@@ -93,10 +93,11 @@ class Mpr extends \BaseModel {
 	 */
 	public function view_has_many()
 	{
-		return array(
-			'MprGeopos' => $this->mprgeopos
-		);
+		$ret['Edit']['MprGeopos']['class'] = 'MprGeopos';
+		$ret['Edit']['MprGeopos']['relation'] = $this->mprgeopos;
+		$ret['Edit']['MprGeopos']['options']['hide_create_button'] = 1;
 
+		return $ret;
 	}
 
 

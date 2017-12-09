@@ -8,9 +8,11 @@ use Illuminate\Http\RedirectResponse;
 
 class MprController extends \BaseController {
 
-    /**
-     * defines the formular fields for the edit and create view
-     */
+	protected $index_create_allowed = false;
+
+	/**
+	 * defines the formular fields for the edit and create view
+	 */
 	public function view_form_fields($model = null)
 	{
 		// label has to be the same like column in sql table
