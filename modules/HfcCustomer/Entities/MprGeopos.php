@@ -87,14 +87,13 @@ class MprGeopos extends \BaseModel {
  */
 class MprGeoposObserver
 {
-	// 'saved' handles both 'created' and 'updated'
-	public function saved($modem)
+	public function updated($modem)
 	{
-		Mpr::refresh();
+		\Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
 	}
 
 	public function deleted($modem)
 	{
-		Mpr::refresh();
+		\Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
 	}
 }

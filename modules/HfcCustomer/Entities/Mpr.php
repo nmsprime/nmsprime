@@ -267,10 +267,10 @@ class Mpr extends \BaseModel {
  */
 class MprObserver
 {
-	// unlike MprGeoposObserver we only hook into 'updated' here, as Mpr::refresh will already
+	// unlike MprGeoposObserver we only hook into 'updated' here, as MpsCommand will already
 	// be called in MprGeoposObserver if MPRs (including their geopos) are created or deleted
 	public function updated($modem)
 	{
-		Mpr::refresh();
+		\Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
 	}
 }

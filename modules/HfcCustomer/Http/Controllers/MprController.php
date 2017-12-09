@@ -69,6 +69,8 @@ class MprController extends \BaseController {
 			}
 		}
 
+		\Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
+
 		return \Redirect::route(\NamespaceController::get_route_name().'.edit', $mpr_id)->with('message', 'Created!');
 	}
 
@@ -89,19 +91,24 @@ class MprController extends \BaseController {
 			return back();
 
 		// delete superfluous mprgeopos
-		foreach(Mpr::find($id)->mprgeopos->slice(count($gp_new)/2) as $gp_del)
+		foreach(Mpr::find($id)->mprgeopos->slice(count($gp_new)/2) as $gp_del) {
+			$gp_del->observer_enabled = false;
 			$gp_del->delete();
+		}
 
 		// update mprgeopos
 		foreach (Mpr::find($id)->mprgeopos as $gp) {
 			$gp->x = array_shift($gp_new);
 			$gp->y = array_shift($gp_new);
+			$gp->observer_enabled = false;
 			$gp->save();
 		}
 
 		// add new mprgeopos
 		while (count($gp_new))
 			MprGeopos::create(['mpr_id' => $id, 'x' => array_shift($gp_new), 'y' => array_shift($gp_new)]);
+
+		\Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
 
 		return back();
 	}
