@@ -334,7 +334,8 @@ class ProvMonController extends \BaseController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// configfile
-		$configfile = file("/tftpboot/mta/$mta->hostname.conf");
+		$cf_path = "/tftpboot/mta/$mta->hostname.conf";
+		$configfile = is_file($cf_path) ? file($cf_path) : null;
 
 		// log
 		$ip = gethostbyname($mta->hostname);
