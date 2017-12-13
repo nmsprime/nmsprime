@@ -21,12 +21,12 @@ mysql -u root -e "GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY 
 mysql -u root -e "GRANT SELECT ON mysql.time_zone_name TO 'cactiuser'@'localhost';";
 
 # set psw in cacti db config file
-sed -i "s/database_password =.*/database_password = \"$mysql_cacti_psw\";/" /etc/cacti/db.php
+sed -i "s/^\$database_password =.*/\$database_password = '$mysql_cacti_psw';/" /etc/cacti/db.php
 
 # populate default DB
 # NOTE: for some unknown reasons, doing this in one line, like "mysql ... < ", does not work. maybe due two special char * in file link
 cacti_file=`ls /usr/share/doc/cacti-*/cacti.sql`
-mysql -u cactiuser --password="$mysql_cacti_psw" cacti < "$cacti_file"
+mysql -u root cacti < "$cacti_file"
 
 # allow guest user to access graphs without login (also invalidate its password, by setting an imposible bcrypt hash)
 # send SNMP queries concurrenly to modems (depending on no of cpus)

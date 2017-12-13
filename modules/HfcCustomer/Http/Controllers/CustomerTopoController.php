@@ -164,7 +164,7 @@ class CustomerTopoController extends NetElementController {
 	*/
 	public function show_prox()
 	{
-		return $this->show_topo(Modem::whereRaw(Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))));
+		return $this->show_topo(Modem::whereRaw(Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))), \Input::get('row'));
 	}
 
 	/**
@@ -260,6 +260,7 @@ class CustomerTopoController extends NetElementController {
 				// Description Line per Modem
 				$descr = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' '.$modem->house_number.' - '.$modem->mac;
 				$dia['descr']  = \HTML::linkRoute('Modem.edit', $descr, $modem->id);
+				$dia['row'] = \Input::has('row') ? \Input::get('row') : 'us_snr';
 
 				// Add diagrams to monitoring array (goes directly to view)
 				$monitoring[$modem->id] = $dia;
