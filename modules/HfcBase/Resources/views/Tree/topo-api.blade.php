@@ -301,34 +301,11 @@ function load (id, link, name)
 
 function map_kml_load ()
 {
-
 	load(0, "{{asset($file)}}", "Infrastructure");
 
-<?php
-
-	if (0)
-	{
-		#
-		# Load static KML files
-		#
-		include_once ('include.php');
-		__include('mysql.php');
-		_mysql_connect();
-
-		$id = $_GET['kml'];
-		$ext = mysql_query("SELECT id, kml_file, name FROM tree WHERE cluster = $id OR id = $id AND deleted = 0");
-		$i = 1;
-
-		while ($row = mysql_fetch_assoc($ext))
-		{
-			$id = $row['id'];
-			$name = $row['name'];
-			if ($row['kml_file'] != '')
-				echo "\n\tload(1, \"static/$id.kml\", \"Details: $name\");\n\n";
-		}
-	}
-
-?>
+@foreach ($kmls as $id => $kml)
+	load({{$id+10}}, "{{asset($kml['file'])}}", "{{$kml['descr']}}");
+@endforeach
 }
 
 
