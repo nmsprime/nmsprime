@@ -50,6 +50,7 @@
 				<table class="table streamtable table-bordered" width="100%">
 					<thead>
 						<tr class="active">
+							<th> </th>
 							<th>#</th>
 							@foreach ($table as $colheader => $colarray)
 								@if ($colheader == "Modulation Profile")
@@ -65,6 +66,7 @@
 						<?php $max = count(current($table)); ?>
 						@foreach(current($table) as $i => $dummy)
 						<tr>
+							<td width="20"> </td>
 							<td width="20"> {{ $i }}</td>
 							@foreach ($table as $colheader => $colarray)
 								@if ($colheader != "Operational CHs %")
@@ -117,4 +119,53 @@
 	@else
 		<font color="red">{{trans('messages.modem_offline')}}</font>
 	@endif
+@stop
+
+@section ('javascript')
+<script language="javascript">
+	$(document).ready(function() {
+		$('table.streamtable').DataTable(
+		{
+		// Translate Datatables
+		language: {
+			"sEmptyTable":        "<?php echo trans('view.jQuery_sEmptyTable'); ?>",
+			"sInfo":              "<?php echo trans('view.jQuery_sInfo'); ?>",
+			"sInfoEmpty":         "<?php echo trans('view.jQuery_sInfoEmpty'); ?>",
+			"sInfoFiltered":      "<?php echo trans('view.jQuery_sInfoFiltered'); ?>",
+			"sInfoPostFix":       "<?php echo trans('view.jQuery_sInfoPostFix'); ?>",
+			"sInfoThousands":     "<?php echo trans('view.jQuery_sInfoThousands'); ?>",
+			"sLengthMenu":        "<?php echo trans('view.jQuery_sLengthMenu'); ?>",
+			"sLoadingRecords":    "<?php echo trans('view.jQuery_sLoadingRecords'); ?>",
+			"sProcessing":        "<?php echo trans('view.jQuery_sProcessing'); ?>",
+			"sSearch":            "<?php echo trans('view.jQuery_sSearch'); ?>",
+			"sZeroRecords":       "<?php echo trans('view.jQuery_sZeroRecords'); ?>",
+			"oPaginate": {
+				"sFirst":         "<?php echo trans('view.jQuery_PaginatesFirst'); ?>",
+				"sPrevious":      "<?php echo trans('view.jQuery_PaginatesPrevious'); ?>",
+				"sNext":          "<?php echo trans('view.jQuery_PaginatesNext'); ?>",
+				"sLast":          "<?php echo trans('view.jQuery_PaginatesLast'); ?>"
+				},
+			"oAria": {
+				"sSortAscending": "<?php echo trans('view.jQuery_sLast'); ?>",
+				"sSortDescending":"<?php echo trans('view.jQuery_sLast'); ?>"
+				}
+		},
+		//auto resize the Table to fit the viewing device
+		responsive: {
+			details: {
+				type: 'column'
+			}
+		},
+		autoWidth: false,
+		paging: false,
+		info: false,
+		searching: false,
+		aoColumnDefs: [ {
+			className: 'control',
+			orderable: false,
+			targets:   [0]
+		} ]
+		});
+});
+</script>
 @stop
