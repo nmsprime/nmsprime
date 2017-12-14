@@ -165,7 +165,7 @@
 @if ($realtime)
 	@foreach ($realtime['measure'] as $tablename => $table)
 		<h4>{{$tablename}}</h4>
-			@if ($tablename == "Downstream" || $tablename == "Upstream"  )
+			@if ( $tablename == "Upstream"  )
 			<div class="table-responsive">
 				<table class="table streamtable table-bordered" width="100%">
 					<thead>
@@ -244,78 +244,77 @@
 
 @section ('javascript')
 
-	<script type="text/javascript">
+<script type="text/javascript">
 
-		<?php if ($ip) : ?>
-		{
-			$(document).ready(function() {
+@if ($ip)
 
-				setTimeout(function() {
+	$(document).ready(function() {
 
-					var source = new EventSource("<?php echo route('ProvMon.realtime_ping', $ip); ?>");
+		setTimeout(function() {
 
-					source.onmessage = function(e) {
-						// close connection
-						if (e.data == 'finished')
-						{
-							source.close();
-							return;
-						}
+			var source = new EventSource(" {{ route('ProvMon.realtime_ping', $ip) }}");
 
-						document.getElementById('ping-test').innerHTML += e.data;
-					}
-
-				}, 500);
-			});
-		}
-		<?php endif; ?>
-	</script>
-
-	<script language="javascript">
-		$(document).ready(function() {
-			$('table.streamtable').DataTable(
-			{
-			// Translate Datatables
-			language: {
-				"sEmptyTable":        "<?php echo trans('view.jQuery_sEmptyTable'); ?>",
-				"sInfo":              "<?php echo trans('view.jQuery_sInfo'); ?>",
-				"sInfoEmpty":         "<?php echo trans('view.jQuery_sInfoEmpty'); ?>",
-				"sInfoFiltered":      "<?php echo trans('view.jQuery_sInfoFiltered'); ?>",
-				"sInfoPostFix":       "<?php echo trans('view.jQuery_sInfoPostFix'); ?>",
-				"sInfoThousands":     "<?php echo trans('view.jQuery_sInfoThousands'); ?>",
-				"sLengthMenu":        "<?php echo trans('view.jQuery_sLengthMenu'); ?>",
-				"sLoadingRecords":    "<?php echo trans('view.jQuery_sLoadingRecords'); ?>",
-				"sProcessing":        "<?php echo trans('view.jQuery_sProcessing'); ?>",
-				"sSearch":            "<?php echo trans('view.jQuery_sSearch'); ?>",
-				"sZeroRecords":       "<?php echo trans('view.jQuery_sZeroRecords'); ?>",
-				"oPaginate": {
-					"sFirst":         "<?php echo trans('view.jQuery_PaginatesFirst'); ?>",
-					"sPrevious":      "<?php echo trans('view.jQuery_PaginatesPrevious'); ?>",
-					"sNext":          "<?php echo trans('view.jQuery_PaginatesNext'); ?>",
-					"sLast":          "<?php echo trans('view.jQuery_PaginatesLast'); ?>"
-					},
-				"oAria": {
-					"sSortAscending": "<?php echo trans('view.jQuery_sLast'); ?>",
-					"sSortDescending":"<?php echo trans('view.jQuery_sLast'); ?>"
-					}
-			},
-			//auto resize the Table to fit the viewing device
-			responsive: {
-				details: {
-					type: 'column'
+			source.onmessage = function(e) {
+				// close connection
+				if (e.data == 'finished')
+				{
+					source.close();
+					return;
 				}
-			},
-			autoWidth: false,
-			paging: false,
-			info: false,
-			searching: false,
-			aoColumnDefs: [ {
-				className: 'control',
-				orderable: false,
-				targets:   [0]
-			} ]
-			});
+
+				document.getElementById('ping-test').innerHTML += e.data;
+			}
+
+		}, 500);
 	});
-	</script>
+@endif
+</script>
+
+<script language="javascript">
+	$(document).ready(function() {
+		$('table.streamtable').DataTable(
+		{
+		// Translate Datatables
+		language: {
+			"sEmptyTable":        "<?php echo trans('view.jQuery_sEmptyTable'); ?>",
+			"sInfo":              "<?php echo trans('view.jQuery_sInfo'); ?>",
+			"sInfoEmpty":         "<?php echo trans('view.jQuery_sInfoEmpty'); ?>",
+			"sInfoFiltered":      "<?php echo trans('view.jQuery_sInfoFiltered'); ?>",
+			"sInfoPostFix":       "<?php echo trans('view.jQuery_sInfoPostFix'); ?>",
+			"sInfoThousands":     "<?php echo trans('view.jQuery_sInfoThousands'); ?>",
+			"sLengthMenu":        "<?php echo trans('view.jQuery_sLengthMenu'); ?>",
+			"sLoadingRecords":    "<?php echo trans('view.jQuery_sLoadingRecords'); ?>",
+			"sProcessing":        "<?php echo trans('view.jQuery_sProcessing'); ?>",
+			"sSearch":            "<?php echo trans('view.jQuery_sSearch'); ?>",
+			"sZeroRecords":       "<?php echo trans('view.jQuery_sZeroRecords'); ?>",
+			"oPaginate": {
+				"sFirst":         "<?php echo trans('view.jQuery_PaginatesFirst'); ?>",
+				"sPrevious":      "<?php echo trans('view.jQuery_PaginatesPrevious'); ?>",
+				"sNext":          "<?php echo trans('view.jQuery_PaginatesNext'); ?>",
+				"sLast":          "<?php echo trans('view.jQuery_PaginatesLast'); ?>"
+				},
+			"oAria": {
+				"sSortAscending": "<?php echo trans('view.jQuery_sLast'); ?>",
+				"sSortDescending":"<?php echo trans('view.jQuery_sLast'); ?>"
+				}
+		},
+		//auto resize the Table to fit the viewing device
+		responsive: {
+			details: {
+				type: 'column'
+			}
+		},
+		autoWidth: false,
+		paging: false,
+		info: false,
+		searching: false,
+		aoColumnDefs: [ {
+			className: 'control',
+			orderable: false,
+			targets:   [0]
+		} ]
+		});
+});
+</script>
 
 @stop
