@@ -84,9 +84,9 @@
 
 		<!-- Quickstart -->
 		<div class="row">
-			@DivOpen(4)
+			<div class="col-auto-md">
 				@include('dashboard::widgets.quickstart')
-			@DivClose()
+			</div>
 		</div>
 
 

@@ -274,34 +274,11 @@
 	$(document).ready(function() {
 		$('table.streamtable').DataTable(
 		{
-		// Translate Datatables
-		language: {
-			"sEmptyTable":        "<?php echo trans('view.jQuery_sEmptyTable'); ?>",
-			"sInfo":              "<?php echo trans('view.jQuery_sInfo'); ?>",
-			"sInfoEmpty":         "<?php echo trans('view.jQuery_sInfoEmpty'); ?>",
-			"sInfoFiltered":      "<?php echo trans('view.jQuery_sInfoFiltered'); ?>",
-			"sInfoPostFix":       "<?php echo trans('view.jQuery_sInfoPostFix'); ?>",
-			"sInfoThousands":     "<?php echo trans('view.jQuery_sInfoThousands'); ?>",
-			"sLengthMenu":        "<?php echo trans('view.jQuery_sLengthMenu'); ?>",
-			"sLoadingRecords":    "<?php echo trans('view.jQuery_sLoadingRecords'); ?>",
-			"sProcessing":        "<?php echo trans('view.jQuery_sProcessing'); ?>",
-			"sSearch":            "<?php echo trans('view.jQuery_sSearch'); ?>",
-			"sZeroRecords":       "<?php echo trans('view.jQuery_sZeroRecords'); ?>",
-			"oPaginate": {
-				"sFirst":         "<?php echo trans('view.jQuery_PaginatesFirst'); ?>",
-				"sPrevious":      "<?php echo trans('view.jQuery_PaginatesPrevious'); ?>",
-				"sNext":          "<?php echo trans('view.jQuery_PaginatesNext'); ?>",
-				"sLast":          "<?php echo trans('view.jQuery_PaginatesLast'); ?>"
-				},
-			"oAria": {
-				"sSortAscending": "<?php echo trans('view.jQuery_sLast'); ?>",
-				"sSortDescending":"<?php echo trans('view.jQuery_sLast'); ?>"
-				}
-		},
-		//auto resize the Table to fit the viewing device
+		{{-- Translate Datatables Base --}}
+			@include('datatables.lang')
 		responsive: {
 			details: {
-				type: 'column'
+				type: 'column' {{-- auto resize the Table to fit the viewing device --}}
 			}
 		},
 		autoWidth: false,
