@@ -45,7 +45,7 @@ class Company extends \BaseModel {
 	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
-		
+
 		return ['index' => [$this->name, $this->city, $this->phone, $this->mail],
 				'index_header' => ['Name', 'City', 'Phonenumber', 'Mail'],
 				'bsclass' => $bsclass,
@@ -124,12 +124,14 @@ class Company extends \BaseModel {
 				$tmp = [];
 
 				foreach ($value as $name)
-					$tmp[] = trim($name);
-				
+					$tmp[] = trim(escape_latex_special_chars($name));
+
 				$data[$class.'_'.$key] = implode('\\\\', $tmp);
 
 				continue;
 			}
+			else if (!in_array($key, ['zip', 'conn_info_template_fn']))
+				$value = escape_latex_special_chars($value);
 
 			$data[$class.'_'.$key] = $value;
 		}
