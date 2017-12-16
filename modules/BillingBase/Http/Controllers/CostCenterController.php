@@ -1,5 +1,5 @@
 <?php
-namespace Modules\Billingbase\Http\Controllers;
+namespace Modules\BillingBase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\CostCenter;

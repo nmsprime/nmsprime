@@ -1,5 +1,7 @@
-<?php
-namespace Modules\Billingbase\Console;
+
+<?php 
+namespace Modules\BillingBase\Console;
+
 
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
@@ -7,6 +9,7 @@ use Symfony\Component\Console\Input\InputArgument;
 
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\Invoice;
+
 use Storage;
 
 class zipCommand extends Command {
@@ -45,6 +48,7 @@ class zipCommand extends Command {
 	public function fire()
 	{
 		$offset = intval(BillingBase::first()->cdr_offset);
+
 		$year  = $this->argument('year');
 		$month = $this->argument('month');
 

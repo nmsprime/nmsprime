@@ -1,5 +1,5 @@
-<?php
-namespace Modules\Billingbase\Console;
+<?php 
+namespace Modules\BillingBase\Console;
 
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;

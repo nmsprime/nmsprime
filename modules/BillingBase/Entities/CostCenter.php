@@ -84,7 +84,7 @@ class CostCenter extends \BaseModel {
 
 	public function numberranges()
 	{
-		return $this->hasMany('Modules\Billingbase\Entities\NumberRange', 'costcenter_id');
+		return $this->hasMany('Modules\BillingBase\Entities\NumberRange', 'costcenter_id');
 	}
 
 	/**

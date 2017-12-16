@@ -1,8 +1,8 @@
 <?php
-namespace Modules\Billingbase\Http\Controllers;
+namespace Modules\BillingBase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
-use Modules\Billingbase\Entities\Company;
+use Modules\BillingBase\Entities\Company;
 use Input;
 
 class CompanyController extends \BaseController {

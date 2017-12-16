@@ -1,4 +1,4 @@
-<?php namespace Modules\Billingbase\Http\Controllers;
+<?php namespace Modules\BillingBase\Http\Controllers;
 
 use Schema;
 use Pingpong\Modules\Routing\Controller;
