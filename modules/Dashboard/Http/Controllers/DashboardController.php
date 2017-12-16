@@ -29,7 +29,10 @@ class DashboardController extends BaseController
 
 		// TODO: add panel with table of tickets
 		if ($view['tickets'])
-			$data['tickets']['total'] = count(self::get_new_tickets());
+		{
+			$data['tickets']['table'] = self::get_new_tickets();
+			$data['tickets']['total'] = count($data['tickets']['table']);
+		}
 
 		if ($view['hfc'])
 		{
@@ -255,10 +258,10 @@ class DashboardController extends BaseController
 		$i = 13;
 		$contracts = array();
 
-		while($i > 0)
+		while($i > 1)
 		{
 			$i--;
-			$time = strtotime("first day -$i month");
+			$time = strtotime("second day -$i month");
 
 			$contracts['labels'][] = date('m/Y', $time);
 			$contracts['contracts'][] = self::count_contracts(date('Y-m-01', $time));

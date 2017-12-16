@@ -64,6 +64,7 @@
 							'content' => 'tickets',
 							'widget_icon' => 'ticket',
 							'widget_bg_color' => 'orange',
+							'link_target' => '#anchor-tickets',
 						)
 					)
 				@DivClose()
@@ -120,6 +121,14 @@
 				@stop
 				@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 4, 'height' => 'auto'))
 			@endif
+
+			@if ($view['tickets'])
+				@section ('ticket_table')
+					@include('dashboard::panels.ticket_table')
+				@stop
+				@include ('bootstrap.panel', array ('content' => "ticket_table", 'view_header' => trans('messages.dashbrd_ticket'), 'md' => 4, 'height' => 'auto'))
+			@endif
+
 		</div>
 	</div>
 @stop

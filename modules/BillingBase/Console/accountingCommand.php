@@ -267,7 +267,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$acc->set_invoice_data($c, $mandate, $value);
 
 				// create invoice pdf already - this task is the most timeconsuming and therefore threaded!
-				$acc['invoices'][$c->id]->make_invoice();
+				$acc->invoices[$c->id]->make_invoice();
+				unset($acc->invoices[$c->id]);
 
 				// skip sepa part if contract has no valid mandate
 				if (!$mandate) {
