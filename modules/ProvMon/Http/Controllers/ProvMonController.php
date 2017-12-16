@@ -511,7 +511,9 @@ end:
 		} catch (\Exception $e) {
 			if (strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false ||
 				strpos($e->getMessage(), "No response from") !== false)
-			return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
+				return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
+			else if (strpos($e->getMessage(), "Error in packet at") !== false)
+                                $docsis = 1;
 		}
 
 		$cmts = Modem::get_cmts($ip);

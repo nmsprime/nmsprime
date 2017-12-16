@@ -258,7 +258,7 @@ class Item extends \BaseModel {
 
 		// skip invalid items
 		if (!$this->check_validity($billing_cycle, null, [$start, $end])) {
-			ChannelLog::info('billing', 'Item '.$this->product->name." ($this->id) is outdated", [$this->contract->id]);
+			ChannelLog::debug('billing', 'Item '.$this->product->name." ($this->id) is outdated", [$this->contract->id]);
 			return null;
 		}
 

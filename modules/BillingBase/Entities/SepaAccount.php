@@ -143,7 +143,7 @@ class SepaAccount extends \BaseModel {
 		* each entry results in one invoice pdf file
 	 * @var array
 	 */
-	protected $invoices = [];
+	public $invoices = [];
 
 
 	/**

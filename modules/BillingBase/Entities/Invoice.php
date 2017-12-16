@@ -97,7 +97,7 @@ class Invoice extends \BaseModel{
 	 */
 	public $data = array(
 
-		// Company
+		// Company - NOTE: Set by Company->template_data()
 		'company_name'			=> '',
 		'company_street'		=> '',
 		'company_zip'			=> '',
@@ -199,13 +199,13 @@ class Invoice extends \BaseModel{
 		$this->data['contract_id'] 			= $contract->id;
 		$this->contract_id 		 			= $contract->id;
 		$this->data['contract_nr'] 			= $contract->number;
-		$this->data['contract_firstname'] 	= $contract->firstname;
-		$this->data['contract_lastname'] 	= $contract->lastname;
-		$this->data['contract_company'] 	= $contract->company;
-		$this->data['contract_street'] 		= $contract->street.' '.$contract->house_number;
+		$this->data['contract_firstname'] 	= escape_latex_special_chars($contract->firstname);
+		$this->data['contract_lastname'] 	= escape_latex_special_chars($contract->lastname);
+		$this->data['contract_company'] 	= escape_latex_special_chars($contract->company);
+		$this->data['contract_street'] 		= escape_latex_special_chars($contract->street.' '.$contract->house_number);
 		$this->data['contract_zip'] 		= $contract->zip;
-		$this->data['contract_city'] 		= $contract->city;
-		$this->data['contract_address'] 	= ($contract->company ? "$contract->company\\\\" : '') . ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . $this->data['contract_street'] . "\\\\$contract->zip $contract->city";
+		$this->data['contract_city'] 		= escape_latex_special_chars($contract->city);
+		$this->data['contract_address'] 	= ($contract->company ? $this->data['contract_company']."\\\\" : '') . ($contract->academic_degree ? escape_latex_special_chars($contract->academic_degree)." " : '') . $this->data['contract_firstname'].' '.$this->data['contract_lastname']."\\\\" . $this->data['contract_street'] . "\\\\$contract->zip ".$this->data['contract_city'];
 
 		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
@@ -224,7 +224,7 @@ class Invoice extends \BaseModel{
 		// $count = $item->count ? $item->count : 1;
 		$price  = sprintf("%01.2f", round($item->charge/$item->count, 2));
 		$sum 	= sprintf("%01.2f", $item->charge);
-		$this->data['item_table_positions'] .= $item->count.' & '.$item->invoice_description.' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
+		$this->data['item_table_positions'] .= $item->count.' & '.escape_latex_special_chars($item->invoice_description).' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
 	}
 
 
@@ -235,6 +235,62 @@ class Invoice extends \BaseModel{
 
 		$this->data['contract_mandate_iban'] = $mandate->sepa_iban;
 		$this->data['contract_mandate_ref']  = $mandate->reference;
+	}
+
+
+	/**
+	 * Maps appropriate Company and SepaAccount data to current Invoice
+	 	* address
+	 	* creditor bank account data
+	 	* invoice footer data
+	 	* invoice template path
+	 *
+	 * @param 	Obj 	SepaAccount
+	 * @return 	Bool 	false - error (missing required data), true - success
+	 *
+	 * TODO: Build Company Data foreach Company at accCmd init and hold in Memory -> just set this data for every invoice then
+	 */
+	public function set_company_data($account)
+	{
+		$err_msg = '';
+
+		if (!$account) {
+			$err_msg = 'Missing account data for Invoice ('.$this->data['contract_id'].')';
+			ChannelLog::error('billing', $err_msg);
+			throw new Exception($err_msg);
+		}
+
+		if (!$account->template_invoice) {
+			$err_msg = 'Missing SepaAccount specific templates for Invoice';
+			ChannelLog::error('billing', $err_msg);
+			throw new Exception($err_msg);
+		}
+
+		$company = $account->company;
+
+		if (!$company || !$company->logo) {
+			$err_msg = $company ? "Missing Company's Logo ($company->name)" : 'No Company assigned to Account '.$account->name;
+			ChannelLog::error('billing', $err_msg);
+			throw new Exception($err_msg);
+		}
+
+		$this->data['company_account_institute'] = escape_latex_special_chars($account->institute);
+		$this->data['company_account_iban'] = $account->iban;
+		$this->data['company_account_bic']  = $account->bic;
+		$this->data['company_creditor_id']  = $account->creditorid;
+		$this->data['invoice_headline'] 	= $account->invoice_headline ? escape_latex_special_chars($account->invoice_headline) : trans('messages.invoice');
+
+		$this->data = array_merge($this->data, $company->template_data());
+
+		$this->data['company_registration_court'] .= $this->data['company_registration_court_1'] ? $this->data['company_registration_court_1'].'\\\\' : '';
+		$this->data['company_registration_court'] .= $this->data['company_registration_court_2'] ? $this->data['company_registration_court_2'].'\\\\' : '';
+		$this->data['company_registration_court'] .= $this->data['company_registration_court_3'];
+
+		$this->data['company_logo']   = storage_path('app/'.$this->rel_logo_dir_path.$company->logo);
+		$this->template_invoice_fname = $account->template_invoice;
+		$this->template_cdr_fname 	  = $account->template_cdr;
+
+		return true;
 	}
 
 
@@ -306,62 +362,9 @@ class Invoice extends \BaseModel{
 
 		// set invoice text
 		// $this->data['invoice_text'] = $template.'\\\\'.'\begin{tabbing} \hspace{9em}\=\kill '.$text.' \end{tabbing}';
-		$this->data['invoice_msg'] = $template;
+		$this->data['invoice_msg'] = escape_latex_special_chars($template);
 		$this->data['invoice_text'] = '\begin{tabular} {@{}ll} \multicolumn{2}{@{}L{\textwidth}} {'.$template.'}\\\\'.$text.' \end{tabular}';
 
-	}
-
-	/**
-	 * Maps appropriate Company and SepaAccount data to current Invoice
-	 	* address
-	 	* creditor bank account data
-	 	* invoice footer data
-	 	* invoice template path
-	 *
-	 * @param 	Obj 	SepaAccount
-	 * @return 	Bool 	false - error (missing required data), true - success
-	 */
-	public function set_company_data($account)
-	{
-		$err_msg = '';
-
-		if (!$account) {
-			$err_msg = 'Missing account data for Invoice ('.$this->data['contract_id'].')';
-			ChannelLog::error('billing', $err_msg);
-			throw new Exception($err_msg);
-		}
-
-		if (!$account->template_invoice) {
-			$err_msg = 'Missing SepaAccount specific templates for Invoice';
-			ChannelLog::error('billing', $err_msg);
-			throw new Exception($err_msg);
-		}
-
-		$company = $account->company;
-
-		if (!$company || !$company->logo) {
-			$err_msg = $company ? "Missing Company's Logo ($company->name)" : 'No Company assigned to Account '.$account->name;
-			ChannelLog::error('billing', $err_msg);
-			throw new Exception($err_msg);
-		}
-
-		$this->data['company_account_institute'] = $account->institute;
-		$this->data['company_account_iban'] = $account->iban;
-		$this->data['company_account_bic']  = $account->bic;
-		$this->data['company_creditor_id']  = $account->creditorid;
-		$this->data['invoice_headline'] 	= $account->invoice_headline ? $account->invoice_headline : trans('messages.invoice');
-
-		$this->data = array_merge($this->data, $company->template_data());
-
-		$this->data['company_registration_court'] .= $this->data['company_registration_court_1'] ? $this->data['company_registration_court_1'].'\\\\' : '';
-		$this->data['company_registration_court'] .= $this->data['company_registration_court_2'] ? $this->data['company_registration_court_2'].'\\\\' : '';
-		$this->data['company_registration_court'] .= $this->data['company_registration_court_3'];
-
-		$this->data['company_logo']   = storage_path('app/'.$this->rel_logo_dir_path.$account->company->logo);
-		$this->template_invoice_fname = $account->template_invoice;
-		$this->template_cdr_fname 	  = $account->template_cdr;
-
-		return true;
 	}
 
 
@@ -485,17 +488,7 @@ class Invoice extends \BaseModel{
 		$template = str_replace('\\_', '_', $template);
 
 		foreach ($this->data as $key => $string)
-		{
-			// dont escape for latex concatenated strings in form of tables or tabulators and so on
-			if (!in_array($key, ['table_summary', 'invoice_text', 'cdr_table_positions', 'item_table_positions']))
-				$string = escape_latex_special_chars($string);
-
-			// escape underscores for pdflatex to work
-			if (strpos($string, 'logo') === false)
-				$string = str_replace('_', '\\_', $string);
-
 			$template = str_replace('{'.$key.'}', $string, $template);
-		}
 
 		return $template;
 	}
