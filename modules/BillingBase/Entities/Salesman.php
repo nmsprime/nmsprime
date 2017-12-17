@@ -39,18 +39,9 @@ class Salesman extends \BaseModel {
 		return '<i class="fa fa-vcard"></i>';
 	}
 
-
-	// link title in index view
-	public function view_index_label()
-	{
-		return ['index' => [$this->id, $this->lastname, $this->firstname],
-		        'index_header' => ['ID', 'Lastname', 'Firstname'],
-				'header' => $this->lastname." ".$this->firstname];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		return ['table' => $this->table,
 				'index_header' => [$this->table.'.id', $this->table.'.lastname', $this->table.'.firstname'],

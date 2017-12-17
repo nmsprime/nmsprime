@@ -16,6 +16,8 @@ use Acme\php\ArrayHelper;
  */
 class TreeTopographyController extends HfcBaseController {
 
+	protected $edit_left_md_size =12;
+
 	/*
 	 * Local tmp folder required for generating the kml files
 	 * (relative to /storage/app)
@@ -35,6 +37,8 @@ class TreeTopographyController extends HfcBaseController {
 	{
 		// the relative (to /storage/app) file path based on a random hash
 		$this->file = self::$path_rel.sha1(uniqid(mt_rand(), true)).'.kml';
+
+		return parent::__construct();
 	}
 
 

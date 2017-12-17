@@ -1,9 +1,8 @@
-@extends ('Layout.single')
+@extends ('Layout.split-nopanel')
 
 @section('content_left')
 
 <head>
-<meta http-equiv="refresh" content="60" >
 <meta http-equiv="Pragma" content="no-cache">
 
 <link href="{{asset('/modules/hfcbase/alert.css')}}" rel="stylesheet" type="text/css" media="screen" />
@@ -30,10 +29,8 @@
 <body>
 
 	@section('content_top')
-		{{ HTML::linkRoute('TreeErd.show', $view_header, [$field, $search]) }}
+		<li>{{ HTML::linkRoute('TreeErd.show', $view_header, [$field, $search]) }}</li>
 	@stop
-
-	@include ('hfcbase::Tree.search')
 
 	@DivOpen(12)
 		<img usemap="#tree{{$gid}}" src="{{asset("$file.svg")}}"></img>

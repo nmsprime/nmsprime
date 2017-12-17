@@ -28,7 +28,7 @@
 			@else
 				<font color="red">{{trans('messages.modem_offline')}}</font>
 			@endif
-			<!-- pings are appended dynamically here by javascript -->
+			{{-- pings are appended dynamically here by javascript --}}
 		</div>
 
 		<div class="tab-pane fade in" id="flood-ping">
@@ -36,10 +36,10 @@
 					<form route="$route" method="POST">Type:
 						<input type="hidden" name="_token" value="{{ csrf_token() }}"></input>
 						<select class="select2 form-control m-b-20" name="flood_ping" style="width : 100 %">
-							<option value="1">low load: 500 packets of 56 Byte</option> <!-- needs approximately 5 sec -->
-							<option value="2">average load: 1000 packets of 736 Byte</option> <!-- needs approximately 10 sec -->
-							<option value="3">big load: 2500 packets of 56 Byte</option> <!-- needs approximately 30 sec -->
-							<option value="4">huge load: 2500 packets of 1472 Byte</option> <!-- needs approximately 30 sec -->
+							<option value="1">low load: 500 packets of 56 Byte</option> {{-- needs approximately 5 sec --}}
+							<option value="2">average load: 1000 packets of 736 Byte</option> {{-- needs approximately 10 sec --}}
+							<option value="3">big load: 2500 packets of 56 Byte</option> {{-- needs approximately 30 sec --}}
+							<option value="4">huge load: 2500 packets of 1472 Byte</option> {{-- needs approximately 30 sec --}}
 						</select>
 
 				{{-- Form::open(['route' => ['ProvMon.flood_ping', $view_var->id]]) --}}
@@ -165,7 +165,7 @@
 @if ($realtime)
 	@foreach ($realtime['measure'] as $tablename => $table)
 		<h4>{{$tablename}}</h4>
-			@if ($tablename == "Downstream" || $tablename == "Upstream"  )
+			@if ( $tablename == "Upstream"  )
 			<div class="table-responsive">
 				<table class="table streamtable table-bordered" width="100%">
 					<thead>
@@ -244,31 +244,54 @@
 
 @section ('javascript')
 
-	<script type="text/javascript">
+<script type="text/javascript">
 
-		<?php if ($ip) : ?>
+@if ($ip)
+
+	$(document).ready(function() {
+
+		setTimeout(function() {
+
+			var source = new EventSource(" {{ route('ProvMon.realtime_ping', $ip) }}");
+
+			source.onmessage = function(e) {
+				// close connection
+				if (e.data == 'finished')
+				{
+					source.close();
+					return;
+				}
+
+				document.getElementById('ping-test').innerHTML += e.data;
+			}
+
+		}, 500);
+	});
+@endif
+</script>
+
+<script language="javascript">
+	$(document).ready(function() {
+		$('table.streamtable').DataTable(
 		{
-			$(document).ready(function() {
-
-				setTimeout(function() {
-
-					var source = new EventSource("<?php echo route('ProvMon.realtime_ping', $ip); ?>");
-
-					source.onmessage = function(e) {
-						// close connection
-						if (e.data == 'finished')
-						{
-							source.close();
-							return;
-						}
-
-						document.getElementById('ping-test').innerHTML += e.data;
-					}
-
-				}, 500);
-			});
-		}
-		<?php endif; ?>
-	</script>
+		{{-- Translate Datatables Base --}}
+			@include('datatables.lang')
+		responsive: {
+			details: {
+				type: 'column' {{-- auto resize the Table to fit the viewing device --}}
+			}
+		},
+		autoWidth: false,
+		paging: false,
+		info: false,
+		searching: false,
+		aoColumnDefs: [ {
+			className: 'control',
+			orderable: false,
+			targets:   [0]
+		} ]
+		});
+});
+</script>
 
 @stop

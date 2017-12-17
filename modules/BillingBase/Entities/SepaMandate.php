@@ -41,22 +41,10 @@ class SepaMandate extends \BaseModel {
 		return '<i class="fa fa-handshake-o"></i>';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		$bsclass = 'success';
-		$valid_to = $this->sepa_valid_to ? ' - '.$this->sepa_valid_to : '';
-
-		return ['index' => [$this->sepa_holder, $this->sepa_valid_from, $this->sepa_valid_to, $this->reference],
-		        'index_header' => ['Holder', 'From', 'To', 'Reference'],
-		        'bsclass' => $bsclass,
-		        'header' => $this->sepa_valid_from.$valid_to];
-	}
-
 
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 		$valid_to = $this->sepa_valid_to ? ' - '.$this->sepa_valid_to : '';

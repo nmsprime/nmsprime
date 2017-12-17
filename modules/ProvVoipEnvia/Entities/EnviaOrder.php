@@ -529,57 +529,7 @@ class EnviaOrder extends \BaseModel {
 		return '<i class="fa fa-shopping-cart"></i>';
 	}
 
-	// link title in index view
 	public function view_index_label()
-	{
-		// combine all possible orderstatus IDs with GUI colors
-		$colors = array();
-		foreach (self::$meta['states'] as $state) {
-			$colors[$state['orderstatus_id']] = $state['view_class'];
-		}
-
-		// this is used to group the orders by their escalation levels (so later on we can sort them by these levels)
-		$escalations = [
-			'success' => 0,
-			'info' => 1,
-			'warning' => 2,
-			'danger' => 3,
-		];
-
-		if (!boolval($this->orderstatus_id)) {
-			$bsclass = 'info';
-		}
-		else {
-	        $bsclass = $colors[$this->orderstatus_id];
-		}
-
-		$escalation_level = $escalations[$bsclass].' – '.$bsclass;
-
-		$contract_nr = $this->get_contract_nr();
-
-		$modem_id = $this->get_modem_id();
-
-		// show all order related phonenumbers
-		$phonenumber_nrs = $this->get_phonenumbers();
-
-		$enviacontract_nr = $this->get_enviacontract_ref();
-
-		$current = $this->get_user_interaction_necessary();
-
-		// add line breaks to make stuff fit better into table
-		// for the use of &shy; read https://css-tricks.com/almanac/properties/h/hyphenate/#article-header-id-2
-		$ordertype = $this->get_ordertype();
-
-		$orderstatus = $this->get_orderstatus();
-
-        return ['index' => [$ordertype, $orderstatus, $escalation_level, $contract_nr, $modem_id, $phonenumber_nrs, $enviacontract_nr, $this->created_at, $this->updated_at, $this->orderdate, $current],
-                'index_header' => ['Ordertype', 'Orderstatus', 'Escalation', 'Contract', 'Modem', 'Numbers', 'EnviaContract', 'Created at', 'Updated at', 'Orderdate', 'Needs action?'],
-                'bsclass' => $bsclass,
-				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
-		];
-	}
-
-	public function view_index_label_ajax()
 	{
 		// combine all possible orderstatus IDs with GUI colors
 		$colors = array();
@@ -597,7 +547,7 @@ class EnviaOrder extends \BaseModel {
         return ['table' => $this->table,
                 'index_header' => [$this->table.'.ordertype', $this->table.'.orderstatus', 'escalation_level', 'contract.number', 'modem.id', 'phonenumber.number', 'enviacontract.envia_contract_reference',  $this->table.'.created_at', $this->table.'.updated_at', $this->table.'.orderdate', 'enviaorder_current'],
 				'bsclass' => $bsclass,
-				'sortsearch' => ['phonenumbers'],
+				'sortsearch' => ['phonenumber.number'],
 				'eager_loading' => ['modem', 'contract', 'enviacontract', 'phonenumbers' ],
 				'edit' => ['ordertype' => 'get_ordertype', 'orderstatus'  => 'get_orderstatus', 'modem.id' => 'get_modem_id', 'contract.number' => 'get_contract_nr', 'enviacontract.envia_contract_reference' => 'get_enviacontract_ref', 'enviaorder_current' => 'get_user_interaction_necessary', 'phonenumber.number' => 'get_phonenumbers', 'escalation_level' => 'get_escalation_level'],
 				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,

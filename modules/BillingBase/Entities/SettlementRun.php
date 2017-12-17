@@ -46,21 +46,9 @@ class SettlementRun extends \BaseModel {
 		return '<i class="fa fa-file-pdf-o"></i>';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		$bsclass = $this->get_bsclass();
-
-		return ['index' => [$this->year, $this->month, $this->created_at->toDateString(), $this->verified ? 'Yes' : 'No'], //$this->created_at->__get('day')],
-		        'index_header' => ['Year', 'Month', 'Created At', 'Verified'],
-				'bsclass' => $bsclass,
-				'order_by' => ['id' => 'desc'],
-		        'header' => $this->year.' - '.$this->month.' - '.$this->created_at->__get('day')];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 		$day = (isset($this->created_at)) ? $this->created_at : '';

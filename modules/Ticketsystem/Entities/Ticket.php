@@ -30,25 +30,6 @@ class Ticket extends \BaseModel {
 		$bsclass = $this->get_bsclass();
 
 		return [
-			'index' => [$this->id, $this->name,
-				\App\Http\Controllers\BaseViewController::translate_view($this->type, 'Ticket_Type'),
-				\App\Http\Controllers\BaseViewController::translate_view($this->priority, 'Ticket_Priority'),
-				\App\Http\Controllers\BaseViewController::translate_view($this->state, 'Ticket_State'),
-				$this->user->first_name.' '.$this->user->last_name,
-				$this->created_at,
-				$this->get_assigned_users(),
-			],
-			'index_header' => ['Ticket Id', 'Title', 'Type', 'Priority', 'State', 'Created by', 'Created at', 'Assigned Users'],
-			'header' => $this->id . ' - ' . $this->name,
-			'bsclass' => $bsclass
-		];
-	}
-
-	public function view_index_label_ajax()
-	{
-		$bsclass = $this->get_bsclass();
-
-		return [
 			'table' => $this->table,
 			'index_header' => [
 				$this->table . '.id',
