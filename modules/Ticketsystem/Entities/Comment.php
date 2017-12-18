@@ -18,11 +18,6 @@ class Comment extends \BaseModel {
 		return '<i class="fa fa-commenting-o"></i>';
 	}
 
-	public function index_list()
-	{
-		return $this->orderBy('id', 'desc')->get();
-	}
-
 	public function view_index_label()
 	{
 		return [
