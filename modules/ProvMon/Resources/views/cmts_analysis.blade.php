@@ -41,9 +41,8 @@
 
 
 @section('content_realtime')
-	@if ($realtime)
-		<font color="green"><b>{{$realtime['forecast']}}</b></font><br>
-		@foreach ($realtime['measure'] as $tablename => $table)
+@if ($realtime)
+	@foreach ($realtime['measure'] as $tablename => $table)
 		<h4>{{$tablename}}</h4>
 			@if ($tablename == "Downstream" || $tablename == "Upstream" )
 			<div class="table-responsive">
@@ -66,17 +65,18 @@
 						<?php $max = count(current($table)); ?>
 						@foreach(current($table) as $i => $dummy)
 						<tr>
-							<td width="20"> </td>
-							<td width="20"> {{ $i }}</td>
+							<td width="20"></td>
+							<td width="20"> {{ $i+1 }}</td>
 							@foreach ($table as $colheader => $colarray)
 								@if ($colheader != "Operational CHs %")
 									<?php
+//TODO Christian, please clean up
 										if(!isset($colarray[$i]))
 											continue;
-										$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "SNR dB";
+										$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "Modulation Profile";
 										if(!isset($table[$mod][$i]))
 										        continue;
-										switch ( \App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), '64qam' ,Str::lower($colheader),htmlspecialchars($colarray[$i])) ){
+										switch ( \App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), Str::lower($table[$mod][$i]) ,Str::lower($colheader),htmlspecialchars($colarray[$i])) ){
 										case 0:
 												$color = "success";
 												break;
@@ -90,8 +90,7 @@
 												$color = "";
 										}
 									?>
-									<td class="text-center {{ $color }}"> <font color="grey"> {{ $colarray[$i] }} </font> </td>
-
+								<td class="text-center {{ $color }}"> <font color="grey"> {{ htmlspecialchars( $colarray[$i] ) }} </font> </td>
 								@endif
 							@endforeach
 						</tr>
@@ -116,9 +115,9 @@
 			</table>
 			@endif
 	@endforeach
-	@else
-		<font color="red">{{trans('messages.modem_offline')}}</font>
-	@endif
+@else
+  <font color="red">{{trans('messages.modem_offline')}}</font>
+@endif
 @stop
 
 @section ('javascript')

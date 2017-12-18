@@ -35,7 +35,7 @@
 		@endif
 	</div>
 
-	<div class="row ui-sortable">
+	<div class="col-md-12 ui-sortable">
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'md' => 12, 'i' => 3))
 	</div>
 
