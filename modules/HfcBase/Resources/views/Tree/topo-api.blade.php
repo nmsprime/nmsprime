@@ -303,9 +303,11 @@ function map_kml_load ()
 {
 	load(0, "{{asset($file)}}", "Infrastructure");
 
-@foreach ($kmls as $id => $kml)
-	load({{$id+10}}, "{{asset($kml['file'])}}", "{{$kml['descr']}}");
-@endforeach
+@if (isset($kmls))
+	@foreach ($kmls as $id => $kml)
+		load({{$id+10}}, "{{asset($kml['file'])}}", "{{$kml['descr']}}");
+	@endforeach
+@endif
 }
 
 
