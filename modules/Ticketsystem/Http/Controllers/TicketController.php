@@ -5,8 +5,6 @@ use Modules\Ticketsystem\Entities\TicketType;
 
 class TicketController extends \BaseController {
 
-	protected $index_datatables_ajax_enabled = true;
-
 	public function view_form_fields($model = null)
 	{
 		if (!$model)

@@ -9,8 +9,6 @@ use Modules\ProvVoip\Entities\PhoneTariff;
 
 class ProductController extends \BaseController {
 
-	protected $index_datatables_ajax_enabled = true;
-
     /**
      * defines the formular fields for the edit and create view
      */
