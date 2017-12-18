@@ -27,11 +27,6 @@ class NumberRange extends \BaseModel {
 		return '<i class="fa fa-globe"></i>';
 	}
 
-	public function index_list()
-	{
-		return $this->orderBy('id', 'asc')->get();
-	}
-
 	public function view_index_label()
 	{
 		return [
