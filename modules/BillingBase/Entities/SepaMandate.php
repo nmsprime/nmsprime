@@ -53,7 +53,7 @@ class SepaMandate extends \BaseModel {
 				'index_header' => [$this->table.'.sepa_holder', $this->table.'.sepa_valid_from', $this->table.'.sepa_valid_to', $this->table.'.reference'],
 				'bsclass' => $bsclass,
 				'order_by' => ['0' => 'asc'],
-				'header' =>  $this->lastname." ".$this->firstname];
+				'header' =>  $this->sepa_iban];
 	}
 
 
