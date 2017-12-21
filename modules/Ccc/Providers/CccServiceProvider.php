@@ -17,12 +17,13 @@ class CccServiceProvider extends ServiceProvider {
 	 */
 	protected $commands = [
 		'Modules\Ccc\Console\CreateConnectionInformations',
+		'Modules\Ccc\Console\ForwardUpdate',
 	];
 
 
 	/**
 	 * Boot the application events.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function boot()
@@ -38,13 +39,13 @@ class CccServiceProvider extends ServiceProvider {
 	 * @return void
 	 */
 	public function register()
-	{		
+	{
 		$this->commands($this->commands);
 	}
 
 	/**
 	 * Register config.
-	 * 
+	 *
 	 * @return void
 	 */
 	protected function registerConfig()
@@ -59,7 +60,7 @@ class CccServiceProvider extends ServiceProvider {
 
 	/**
 	 * Register views.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function registerViews()
@@ -79,7 +80,7 @@ class CccServiceProvider extends ServiceProvider {
 
 	/**
 	 * Register translations.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function registerTranslations()
