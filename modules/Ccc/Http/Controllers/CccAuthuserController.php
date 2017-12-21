@@ -203,16 +203,14 @@ class CccAuthuserController extends \BaseController {
 
 		$costcenter = $contract->costcenter;
 
-		if (!is_object($costcenter))
-		{
+		if (!is_object($costcenter)) {
 			Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - no CostCenter assigned', [$contract->id]);
 			return;
 		}
 
 		$sepa_account = $costcenter->sepaaccount;
 
-		if (!is_object($sepa_account))
-		{
+		if (!is_object($sepa_account)) {
 			Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - CostCenter has no SepaAccount assigned', ['Costcenter' => $costcenter->name]);
 			return;
 		}
@@ -224,8 +222,7 @@ class CccAuthuserController extends \BaseController {
 
 		$company = $sepa_account->company;
 
-		if (!is_object($company))
-		{
+		if (!is_object($company)) {
 			Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
 			return;
 		}
