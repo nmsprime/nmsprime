@@ -142,10 +142,7 @@ class CccAuthuserController extends \BaseController {
 		// Replace placeholder by value
 		$template = str_replace('\\_', '_', $template);
 		foreach ($this->data as $key => $string)
-		{
-			$string = escape_latex_special_chars($string);
 			$template = str_replace('{'.$key.'}', $string, $template);
-		}
 
 		File::put($dir_path.$filename, $template);
 
@@ -187,10 +184,10 @@ class CccAuthuserController extends \BaseController {
 	 */
 	private function fill_template_data($login_data, $contract)
 	{
-		$this->data['contract_nr'] 		  = $contract->number;
-		$this->data['contract_firstname'] = $contract->firstname;
-		$this->data['contract_lastname']  = $contract->lastname;
-		$this->data['contract_street'] 	  = $contract->street;
+		$this->data['contract_nr'] 		  = escape_latex_special_chars($contract->number);
+		$this->data['contract_firstname'] = escape_latex_special_chars($contract->firstname);
+		$this->data['contract_lastname']  = escape_latex_special_chars($contract->lastname);
+		$this->data['contract_street'] 	  = escape_latex_special_chars($contract->street);
 		$this->data['contract_housenumber'] = $contract->house_number;
 		$this->data['contract_zip'] 	  = $contract->zip;
 		$this->data['contract_city'] 	  = $contract->city;
@@ -216,7 +213,7 @@ class CccAuthuserController extends \BaseController {
 		}
 
 		$this->data['company_creditor_id']  = $sepa_account->creditorid;
-		$this->data['company_account_institute'] = $sepa_account->institute;
+		$this->data['company_account_institute'] = escape_latex_special_chars($sepa_account->institute);
 		$this->data['company_account_iban'] = $sepa_account->iban;
 		$this->data['company_account_bic']  = $sepa_account->bic;
 
