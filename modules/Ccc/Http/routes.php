@@ -3,7 +3,7 @@
 // This is done inside admin GUI
 BaseRoute::group([], function() {
 
-	// Global Config - TODO: 
+	// Global Config - TODO:
 	BaseRoute::resource('Ccc', 'Modules\Ccc\Http\Controllers\CccController');
 
 	// Contract: Download Connection Info
@@ -24,11 +24,12 @@ Route::group(['middleware' => 'ccc.base', 'prefix' => 'customer'], function () {
 
 	// TODO: add CCC internal required routing stuff
 
+	// Home Route, This will redirect depending on valid Login
+	Route::get('customer', array('as' => 'CHome', 'uses' => 'Modules\Ccc\Http\Controllers\AuthController@home'));
+
 });
 
 
-// Home Route, This will redirect depending on valid Login
-Route::get('customer', array('as' => 'CHome', 'uses' => 'Modules\Ccc\Http\Controllers\AuthController@home'));
 
 // Auth => login form
 Route::get('customer/auth/login', array('as' => 'CustomerAuth.login', 'uses' => 'Modules\Ccc\Http\Controllers\AuthController@showLoginForm'));
