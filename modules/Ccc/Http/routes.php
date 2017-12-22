@@ -23,12 +23,11 @@ Route::group(['middleware' => 'ccc.base', 'prefix' => 'customer'], function () {
 	Route::get('home/download/{invoice}', array('as' => 'Customer.Download', 'uses' => 'Modules\Ccc\Http\Controllers\CccAuthuserController@download'));
 
 	// TODO: add CCC internal required routing stuff
-
-	// Home Route, This will redirect depending on valid Login
-	Route::get('customer', array('as' => 'CHome', 'uses' => 'Modules\Ccc\Http\Controllers\AuthController@home'));
-
 });
 
+
+// Home Route, This will redirect depending on valid Login
+Route::get('customer', array('as' => 'CHome', 'uses' => 'Modules\Ccc\Http\Controllers\AuthController@home'));
 
 
 // Auth => login form
