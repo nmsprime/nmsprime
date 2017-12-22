@@ -119,7 +119,7 @@ class Company extends \BaseModel {
 
 				continue;
 			}
-			else if (!in_array($key, ['zip', 'conn_info_template_fn']))
+			else if (!in_array($key, ['zip', 'conn_info_template_fn', 'logo']))
 				$value = escape_latex_special_chars($value);
 
 			$data[$class.'_'.$key] = $value;
