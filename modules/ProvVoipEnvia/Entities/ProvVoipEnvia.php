@@ -4659,8 +4659,8 @@ class ProvVoipEnvia extends \BaseModel {
 
 				// check relations to phonenumbers
 				foreach (PhoneNumber::where('contract_external_id', '=', $xml->contractreference)->get() as $phonenumber) {
-					if (!$envia->phonenumbers->contains($phonenumber->id)) {
-						$envia->phonenumbers()->attach($phonenumber->id);
+					if (!$order->phonenumbers->contains($phonenumber->id)) {
+						$order->phonenumbers()->attach($phonenumber->id);
 					}
 				}
 				$order_changed = True;
