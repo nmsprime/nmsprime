@@ -22,7 +22,8 @@ class CccBaseMiddleware {
 			}
 		}
 		catch (AuthExceptions $ex) {
-			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
+			/* return \View::make('auth.denied', array('error_msg' => $ex->getMessage())); */
+			abort(403, $ex->getMessage());
 		}
 
 		return $next($request);
