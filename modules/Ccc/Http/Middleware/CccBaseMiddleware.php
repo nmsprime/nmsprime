@@ -18,10 +18,10 @@ class CccBaseMiddleware {
 		try {
 			// no user logged in
 			if (is_null(\Auth::guard('ccc')->user())) {
-				throw new AuthExceptions('Login Required');
+				throw new AuthExceptions('Login Required.');
 			}
 		}
-		catch (PermissionDeniedError $ex) {
+		catch (AuthExceptions $ex) {
 			return View::make('auth.denied', array('error_msg' => $ex->getMessage()));
 		}
 
