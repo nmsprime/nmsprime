@@ -2151,9 +2151,11 @@ class ProvVoipEnvia extends \BaseModel {
 		$inner_xml = $this->xml->addChild('account_data');
 
 		$fields_account = array(
-			'porting' => 'porting_in',
 			'orderdate' => 'activation_date',
 		);
+		if ($this->phonenumbermanagement->porting_in) {
+			$fields_account['porting'] = 'porting_in';
+		}
 
 		$this->_add_fields($inner_xml, $fields_account, $this->phonenumbermanagement);
 		// add callnumbers
