@@ -367,7 +367,8 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// get all phonenumbers related to $this
 		if ($this->phonenumber->exists) {
-			$phonenumbers = [$this->phonenumber];
+			// $phonenumbers = [$this->phonenumber]; => check for side effects: using phonenumbers on modem to be able to create voip account
+			$phonenumbers = $this->modem->related_phonenumbers();
 		}
 		elseif ($this->modem->exists) {
 			$phonenumbers = $this->modem->related_phonenumbers();
@@ -621,11 +622,13 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// “normal“ jobs
 			$phonenumbers_to_create = '&amp;phonenumbers_to_create=';
-			array_push($ret, array(
-				'linktext' => 'Create contract',
-				'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id.$phonenumbers_to_create,
-				'help' => "Creates a envia TEL contract (= telephone connection)",
-			));
+			if (!$this->contract_created) {
+				array_push($ret, array(
+					'linktext' => 'Create contract',
+					'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id.$phonenumbers_to_create,
+					'help' => "Creates a envia TEL contract (= telephone connection)",
+				));
+			}
 
 			// contract can be relocated if created; available with envia TEL API version 1.4
 			if ($this->contract_created) {
@@ -2148,9 +2151,11 @@ class ProvVoipEnvia extends \BaseModel {
 		$inner_xml = $this->xml->addChild('account_data');
 
 		$fields_account = array(
-			'porting' => 'porting_in',
 			'orderdate' => 'activation_date',
 		);
+		if ($this->phonenumbermanagement->porting_in) {
+			$fields_account['porting'] = 'porting_in';
+		}
 
 		$this->_add_fields($inner_xml, $fields_account, $this->phonenumbermanagement);
 		// add callnumbers
@@ -2408,6 +2413,7 @@ class ProvVoipEnvia extends \BaseModel {
 					'contract_change_tariff',
 					'contract_change_variation',
 					'contract_relocate',
+					'voip_account_create',
 					]
 				)
 				||
@@ -2437,7 +2443,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// no reference found
 			if (!$external_contract_references) {
-				throw new XmlCreationError('No EnviaOrder ID (contract_external_id) found. Cannot proceed.');
+				throw new XmlCreationError('No EnviaContract ID (contract_external_id) found. Cannot proceed.');
 			}
 
 			// TODO: implement logic to relocate more than one contract attached to the current modem!!
@@ -2454,7 +2460,7 @@ class ProvVoipEnvia extends \BaseModel {
 		}
 
 		if (!$external_contract_reference) {
-			throw new XmlCreationError('No EnviaOrder ID (contract_external_id) found. Cannot proceed.');
+			throw new XmlCreationError('No EnviaContract ID (contract_external_id) found. Cannot proceed.');
 		}
 
 		$inner_xml->addChild('contractreference', $external_contract_reference);
