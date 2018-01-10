@@ -1,7 +1,7 @@
 <?php namespace Modules\Ccc\Http\Middleware;
 
 use Closure;
-use App\Exceptions\AuthExceptions;
+use App\Exceptions\AuthException;
 
 
 class CccBaseMiddleware {
@@ -18,10 +18,10 @@ class CccBaseMiddleware {
 		try {
 			// no user logged in
 			if (is_null(\Auth::guard('ccc')->user())) {
-				throw new AuthExceptions('Login Required.');
+				throw new AuthException('Login Required.');
 			}
 		}
-		catch (AuthExceptions $ex) {
+		catch (AuthException $ex) {
 			$msg = "AUTH failed: ";
 			$msg .= \Request::getClientIP()." tried to access ".\Request::getRequestUri();
 			$msg .= " (".$ex->getMessage().")";
