@@ -247,50 +247,13 @@ class Invoice extends \BaseModel{
 	 *
 	 * @param 	Obj 	SepaAccount
 	 * @return 	Bool 	false - error (missing required data), true - success
-	 *
-	 * TODO: Build Company Data foreach Company at accCmd init and hold in Memory -> just set this data for every invoice then
 	 */
 	public function set_company_data($account)
 	{
-		$err_msg = '';
+		$this->data = array_merge($this->data, \Modules\BillingBase\Providers\CompanyData::get($account->id));
 
-		if (!$account) {
-			$err_msg = 'Missing account data for Invoice ('.$this->data['contract_id'].')';
-			ChannelLog::error('billing', $err_msg);
-			throw new Exception($err_msg);
-		}
-
-		if (!$account->template_invoice) {
-			$err_msg = 'Missing SepaAccount specific templates for Invoice';
-			ChannelLog::error('billing', $err_msg);
-			throw new Exception($err_msg);
-		}
-
-		$company = $account->company;
-
-		if (!$company || !$company->logo) {
-			$err_msg = $company ? "Missing Company's Logo ($company->name)" : 'No Company assigned to Account '.$account->name;
-			ChannelLog::error('billing', $err_msg);
-			throw new Exception($err_msg);
-		}
-
-		$this->data['company_account_institute'] = escape_latex_special_chars($account->institute);
-		$this->data['company_account_iban'] = $account->iban;
-		$this->data['company_account_bic']  = $account->bic;
-		$this->data['company_creditor_id']  = $account->creditorid;
-		$this->data['invoice_headline'] 	= $account->invoice_headline ? escape_latex_special_chars($account->invoice_headline) : trans('messages.invoice');
-
-		$this->data = array_merge($this->data, $company->template_data());
-
-		$this->data['company_registration_court'] .= $this->data['company_registration_court_1'] ? $this->data['company_registration_court_1'].'\\\\' : '';
-		$this->data['company_registration_court'] .= $this->data['company_registration_court_2'] ? $this->data['company_registration_court_2'].'\\\\' : '';
-		$this->data['company_registration_court'] .= $this->data['company_registration_court_3'];
-
-		$this->data['company_logo']   = storage_path('app/'.$this->rel_logo_dir_path.$company->logo);
 		$this->template_invoice_fname = $account->template_invoice;
 		$this->template_cdr_fname 	  = $account->template_cdr;
-
-		return true;
 	}
 
 
