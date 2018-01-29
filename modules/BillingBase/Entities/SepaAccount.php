@@ -216,16 +216,18 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function add_booking_record($contract, $mandate, $charge, $conf)
 	{
+		$german = \App::getLocale() == 'de';
+
 		$data = array(
 			'Contractnr'	=> $contract->number,
 			'Invoicenr' 	=> $this->_get_invoice_nr_formatted(),
-			'Date' 			=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
+			'Date' 			=> $german ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
 			'RCD' 			=> $this->rcd,
 			'Cost Center' 	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
 			'Description' 	=> '',
-			'Net' 			=> ($this->_get_billing_lang() == 'de') ? number_format($charge['net'], 2 , ',' , '.' ) : number_format($charge['net'], 2 , '.' , ',' ),
-			'Tax' 			=> $charge['tax'],
-			'Gross' 		=> ($this->_get_billing_lang() == 'de') ? number_format($charge['net'] + $charge['tax'], 2 , ',' , '.' ) : number_format($charge['net'] + $charge['tax'], 2 , '.' , ',' ),
+			'Net' 			=> $german ? number_format($charge['net'], 2 , ',' , '.' ) : number_format($charge['net'], 2 , '.' , ',' ),
+			'Tax' 			=> $german ? number_format($charge['tax'], 2 , ',' , '.' ) : number_format($charge['tax'], 2 , '.' , ',' ),
+			'Gross' 		=> $german ? number_format($charge['net'] + $charge['tax'], 2 , ',' , '.' ) : number_format($charge['net'] + $charge['tax'], 2 , '.' , ',' ),
 			'Currency' 		=> $conf->currency ? $conf->currency : 'EUR',
 			'Firstname' 	=> $contract->firstname,
 			'Lastname' 		=> $contract->lastname,
@@ -265,7 +267,7 @@ class SepaAccount extends \BaseModel {
 			'Cost Center'   => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
 			'Count'			=> $count,
 			'Description'   => 'Telephone Calls',
-			'Price' 		=> $this->_get_billing_lang() == 'de' ? number_format($charge, 2, ',', '.') : $charge,
+			'Price' 		=> $this->_get_billing_lang() == 'de' ? number_format($charge, 2, ',', '.') : number_format($charge, 2, '.', ','),
 			'Firstname'		=> $contract->firstname,
 			'Lastname' 		=> $contract->lastname,
 			'Street' 		=> $contract->street,
