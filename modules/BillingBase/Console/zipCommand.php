@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\BillingBase\Console;
 
 
@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\Invoice;
 
+use Carbon\Carbon;
 use Storage;
 
 class zipCommand extends Command {
@@ -51,22 +52,21 @@ class zipCommand extends Command {
 		$year  = $this->argument('year');
 		$month = $this->argument('month');
 
-		$time = $year && $month ? strtotime($year.'-'.$month) : strtotime('second day last month');
-		$cdr_time = $offset ? strtotime("second day -$offset month", $time) : $time;
+		$target_t = $year && $month ? Carbon::create($year, $month) : Carbon::create()->subMonth();
 
-		\ChannelLog::info('billing', 'Zip accounting files for Month '.date('Y-m', $time));
+		$cdr_target_t = clone $target_t;
+		$cdr_target_t->subMonthNoOverflow($offset);
+		$acc_files_dir_abs_path = storage_path('app/data/billingbase/accounting/') . $target_t->format('Y-m');
 
-		$dir_abs_path 				= storage_path('app/data/billingbase');
-		$dir_abs_path_acc_files 	= $dir_abs_path.'/accounting/'.date('Y-m', $time);
-		// $dir_abs_path_invoice_files = $dir_abs_path.'/invoice';
+		\ChannelLog::debug('billing', 'Zip accounting files for Month '.$target_t->toDateString());
 
 		// find all invoices and concatenate them
 		// NOTE: This probably has to be replaced by DB::table for more than 10k contracts as Eloquent gets too slow then
 		$invoices = Invoice::where('type', '=', 'Invoice')
-			->where('year', '=', date('Y', $time))->where('month', '=', date('m', $time))
-			->orWhere(function ($query) use ($cdr_time) { $query
+			->where('year', '=', $target_t->__get('year'))->where('month', '=', $target_t->__get('month'))
+			->orWhere(function ($query) use ($cdr_target_t) { $query
 				->where('type', '=', 'CDR')
-				->where('year', '=', date('Y', $cdr_time))->where('month', '=', date('m', $cdr_time));})
+				->where('year', '=', $cdr_target_t->__get('year'))->where('month', '=', $cdr_target_t->__get('month'));})
 			->join('contract as c', 'c.id', '=', 'invoice.contract_id')
 			->orderBy('c.number', 'desc')->orderBy('invoice.type')
 			->get()->all();
@@ -75,13 +75,15 @@ class zipCommand extends Command {
 		foreach ($invoices as $inv)
 			$files .= $inv->get_invoice_dir_path().$inv->filename.' ';
 
-		// $invoices 	= sprintf('%s.pdf', date('Y_m', $time));
-		// $cdrs 		= sprintf('%s_cdr.pdf', date('Y_m', $cdr_time));
+		// $invoices 	= sprintf('%s.pdf', $target_t->format('Y-m'));
+		// $cdrs 		= sprintf('%s_cdr.pdf', $cdr_target_t->format('Y-m'));
 		// $tmp 		= exec("find $dir_abs_path_invoice_files -type f -name $invoices -o -name $cdrs | sort -r", $files, $ret);
 		// $files = implode(' ', $files);
 
 		$fname = \App\Http\Controllers\BaseViewController::translate_label('Invoices');
-		$out = exec("gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=$dir_abs_path_acc_files/$fname.pdf $files", $output, $ret);
+		$out = exec("gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=$acc_files_dir_abs_path/$fname.pdf $files", $output, $ret);
+
+		echo "Concat all Invoices and CDRs to $acc_files_dir_abs_path/$fname.pdf\n";
 
 		// NOTE: This is an indirect check if all invoices where created correctly as this is actually not possible while
 		// executing pdflatex in background (see Invoice)
@@ -93,11 +95,11 @@ class zipCommand extends Command {
 			\ChannelLog::info('billing', 'Concatenate all Invoice files to one PDF: Success!');
 
 		// Zip all
-		$filename = date('Y_m', $time).'.zip';
-		chdir($dir_abs_path_acc_files);
+		$filename = $target_t->format('Y-m').'.zip';
+		chdir($acc_files_dir_abs_path);
 		system("zip -r $filename *");
-		system('chmod -R 0700 '.$dir_abs_path_acc_files);
-		system('chown -R apache '.$dir_abs_path_acc_files);
+		system('chmod -R 0700 '.$acc_files_dir_abs_path);
+		system('chown -R apache '.$acc_files_dir_abs_path);
 	}
 
 
