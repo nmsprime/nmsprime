@@ -21,6 +21,7 @@ class Item extends \BaseModel {
 
 		return array(
 			// 'name' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
+			'product_id' 	=> 'required|numeric|Min:1',
 			'valid_from'	=> 'date',	//|in_future ??
 			'valid_to'		=> 'date',
 			'credit_amount' => 'required_if:product_id,'.$credit_ids,

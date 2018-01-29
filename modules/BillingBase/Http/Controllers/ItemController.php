@@ -66,7 +66,7 @@ class ItemController extends \BaseController {
 	public function prepare_input($data)
 	{
 		// $data['credit_amount'] = $data['credit_amount'] ? abs($data['credit_amount']) : $data['credit_amount'];
-		$type = Product::findOrFail($data['product_id'])->type;
+		$type = ($p = Product::find($data['product_id'])) ? $p->type : '';
 
 		// set default valid from date to tomorrow for this product types
 		// specially for Voip: Has to be created externally – and this will not be done today…
@@ -116,7 +116,7 @@ class ItemController extends \BaseController {
 		{
 			$c = Contract::find($data['contract_id']);
 			$p = Product::find($data['product_id']);
-			$tariff = $c->get_valid_tariff($p->type);
+			$tariff = $p ? $c->get_valid_tariff($p->type) : null;
 
 			if ($tariff)
 			{
@@ -126,8 +126,6 @@ class ItemController extends \BaseController {
 				$rules['valid_from'] .= $tariff->valid_to && $tariff->valid_to != '0000-00-00' ? $tariff->valid_to : date('Y-m-d', $start);
 			}
 		}
-
-		// dd($rules, $data);
 
 		return parent::prepare_rules($rules, $data);
 	}
