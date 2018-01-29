@@ -218,6 +218,9 @@ class SepaAccount extends \BaseModel {
 	{
 		$german = \App::getLocale() == 'de';
 
+		$net = round($charge['net'], 2);
+		$tax = round($charge['tax'], 2);
+
 		$data = array(
 			'Contractnr'	=> $contract->number,
 			'Invoicenr' 	=> $this->_get_invoice_nr_formatted(),
@@ -225,9 +228,9 @@ class SepaAccount extends \BaseModel {
 			'RCD' 			=> $this->rcd,
 			'Cost Center' 	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
 			'Description' 	=> '',
-			'Net' 			=> $german ? number_format($charge['net'], 2 , ',' , '.' ) : number_format($charge['net'], 2 , '.' , ',' ),
-			'Tax' 			=> $german ? number_format($charge['tax'], 2 , ',' , '.' ) : number_format($charge['tax'], 2 , '.' , ',' ),
-			'Gross' 		=> $german ? number_format($charge['net'] + $charge['tax'], 2 , ',' , '.' ) : number_format($charge['net'] + $charge['tax'], 2 , '.' , ',' ),
+			'Net' 			=> $german ? number_format($net, 2 , ',' , '.' ) : number_format($net, 2 , '.' , ',' ),
+			'Tax' 			=> $german ? number_format($tax, 2 , ',' , '.' ) : number_format($tax, 2 , '.' , ',' ),
+			'Gross' 		=> $german ? number_format($net + $tax, 2 , ',' , '.' ) : number_format($net + $tax, 2 , '.' , ',' ),
 			'Currency' 		=> $conf->currency ? $conf->currency : 'EUR',
 			'Firstname' 	=> $contract->firstname,
 			'Lastname' 		=> $contract->lastname,
@@ -320,7 +323,7 @@ class SepaAccount extends \BaseModel {
 	 * @param float 	$charge
 	 * @param array 	$dates 		last run info is important for transfer type
 	 */
-	public function add_sepa_transfer($mandate, $charge, $dates)
+	public function add_sepa_transfer($mandate, $charge)
 	{
 		if ($charge == 0)
 			return;
@@ -332,7 +335,7 @@ class SepaAccount extends \BaseModel {
 		if ($charge < 0)
 		{
 			$data = array(
-				'amount'                => $charge * (-1),
+				'amount'                => round($charge * (-1), 2),
 				'creditorIban'          => $mandate->sepa_iban,
 				'creditorBic'           => $mandate->sepa_bic,
 				'creditorName'          => $mandate->sepa_holder,
@@ -347,7 +350,7 @@ class SepaAccount extends \BaseModel {
 		// Debits
 		$data = array(
 			'endToEndId'			=> 'RG '.$this->_get_invoice_nr_formatted(),
-			'amount'                => $charge,
+			'amount'                => round($charge, 2),
 			'debtorIban'            => $mandate->sepa_iban,
 			'debtorBic'             => $mandate->sepa_bic,
 			'debtorName'            => $mandate->sepa_holder,
@@ -370,7 +373,7 @@ class SepaAccount extends \BaseModel {
 	 	* the Accounting Record Files (Item/Tariff)
 	 	* the Booking Record Files (Sepa/No Sepa)
 	 *
-	 * @author Nino Ryschavy, Christian Schramm
+	 * @author Nino Ryschawy, Christian Schramm
 	 * edit: filenames are language specific
 	 */
 	private function make_billing_record_files()
@@ -463,7 +466,6 @@ class SepaAccount extends \BaseModel {
 
 				// Retrieve the resulting XML
 				$file = str_sanitize($this->dir.$this->name.'/DD_'.$type.'.xml');
-				// $data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
 				Storage::put($file, $directDebit->asXML());
 
 				$this->_log("sepa direct debit $type xml", $file);

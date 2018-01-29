@@ -265,9 +265,9 @@ class Invoice extends \BaseModel{
 		$tax_percent = $tax ? $this->tax : 0;
 		$tax_percent .= '\%';
 
-		$total  = sprintf("%01.2f", $net + $tax);
-		$net 	= sprintf("%01.2f", $net);
-		$tax 	= sprintf("%01.2f", $tax);
+		$net   = number_format($net, 2);
+		$tax   = number_format($tax, 2);
+		$total = number_format($net + $tax, 2);
 
 		$this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.$net.$this->currency.'\\\\';
 		$this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$tax.$this->currency.'\\\\';
@@ -441,6 +441,8 @@ class Invoice extends \BaseModel{
 		// Replace placeholder by value
 		$template = $this->_replace_placeholder($template);
 
+		// ChannelLog::debug('billing', 'Store '. $this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"});
+
 		// Create tex file(s)
 		Storage::put($this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"}, $template);
 	}
@@ -467,9 +469,6 @@ class Invoice extends \BaseModel{
 		$file_paths['Invoice']  = $this->get_invoice_dir_path().$this->filename_invoice;
 		$file_paths['CDR'] 		= $this->get_invoice_dir_path().$this->filename_cdr;
 
-		// if ($this->data['contract_id'] == 500027)
-		// dd($file_paths);
-
 		foreach ($file_paths as $key => $file)
 		{
 			if (is_file($file))
@@ -492,7 +491,7 @@ class Invoice extends \BaseModel{
 				}
 
 				// echo "Successfully created $key in $file\n";
-				ChannelLog::debug('billing', "Successfully created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
+				ChannelLog::debug('billing', "Created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
 			}
 		}
 

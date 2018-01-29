@@ -163,18 +163,16 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$costcenter = $item->get_costcenter();
 				$acc 		= $sepa_accs->find($costcenter->sepaaccount_id);
 
-				// increase invoice nr of sepa account, increase charge for account by price, calculate tax
-				if (isset($c->charge[$acc->id]))
+				// increase invoice nr of sepa account
+				if (!isset($c->charge[$acc->id]))
 				{
-					$c->charge[$acc->id]['net'] += $item->charge;
-					$c->charge[$acc->id]['tax'] += $item->product->tax ? $item->charge * $conf->tax/100 : 0;
-				}
-				else
-				{
-					$c->charge[$acc->id]['net'] = $item->charge;
-					$c->charge[$acc->id]['tax'] = $item->product->tax ? $item->charge * $conf->tax/100 : 0;
+					$c->charge[$acc->id] = ['net' => 0, 'tax' => 0];
 					$acc->invoice_nr += 1;
 				}
+
+				// increase charge for account by price, calculate tax
+				$c->charge[$acc->id]['net'] += $item->charge;
+				$c->charge[$acc->id]['tax'] += $item->product->tax ? $item->charge * $conf->tax/100 : 0;
 
 				$item->charge = round($item->charge, 2);
 
@@ -241,9 +239,6 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 			foreach ($c->charge as $acc_id => $value)
 			{
-				$value['net'] = round($value['net'], 2);
-				$value['tax'] = round($value['tax'], 2);
-
 				$acc = $sepa_accs->find($acc_id);
 
 				$mandate_specific = $c->get_valid_mandate('now', $acc->id);
@@ -262,7 +257,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 					continue;
 				}
 
-				$acc->add_sepa_transfer($mandate, $value['net'] + $value['tax'], $this->dates);
+				$acc->add_sepa_transfer($mandate, $value['net'] + $value['tax']);
 			}
 
 		} // end of loop over contracts
@@ -270,7 +265,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		echo "\n";
 
 		// avoid deleting temporary latex files before last invoice was built (multiple threads are used)
-		// and wait for all invoice pdfs to be created for concatenate them in zip command in _make_billing_files()
+		// and wait for all invoice pdfs to be created for concatenation in zipCommand@_make_billing_files()
 		usleep(200000);
 
 		$this->_make_billing_files($sepa_accs, $salesmen);
@@ -340,10 +335,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				}
 
 				$nr = AccountingRecord::where('sepa_account_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
-				if (is_object($nr))
-					$acc->invoice_nr = $nr->invoice_nr;
-				else
-					$acc->invoice_nr = $acc->invoice_nr_start;
+
+				$acc->invoice_nr = is_object($nr) ? $nr->invoice_nr : $acc->invoice_nr_start;
 			}
 		}
 		// first run for this system
@@ -383,7 +376,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		}
 
 		// create zip file
-		echo "ZIP all Files";
+		echo "ZIP all Files\n";
 		\Artisan::call('billing:zip');
 	}
 

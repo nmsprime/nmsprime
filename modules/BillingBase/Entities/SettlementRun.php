@@ -74,7 +74,7 @@ class SettlementRun extends \BaseModel {
 	public function set_index_delete()
 	{
 		if ($this->verified)
-				$this->index_delete_disabled = true;
+			$this->index_delete_disabled = true;
 	}
 
 	public function created_at_toDateString()
@@ -125,6 +125,8 @@ class SettlementRun extends \BaseModel {
 	{
 		if (!is_dir($this->get_files_dir()))
 			return [];
+
+		$arr = [];
 
 		$files = \File::allFiles($this->get_files_dir());
 
