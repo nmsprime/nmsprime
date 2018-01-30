@@ -204,7 +204,8 @@ class SepaAccount extends \BaseModel {
 				break;
 		}
 
-		return;
+		if ((count($this->acc_recs['tariff']) + count($this->acc_recs['item'])) >= 1000)
+			$this->write_billing_record_files();
 	}
 
 
@@ -376,7 +377,7 @@ class SepaAccount extends \BaseModel {
 	 * @author Nino Ryschawy, Christian Schramm
 	 * edit: filenames are language specific
 	 */
-	private function make_billing_record_files()
+	private function write_billing_record_files()
 	{
 		$files['accounting'] = $this->acc_recs;
 		$files['booking'] 	 = $this->book_recs;
@@ -391,26 +392,31 @@ class SepaAccount extends \BaseModel {
 				$accounting = BaseViewController::translate_label($key1);
 				$rec 		= $this->_get_billing_lang() == 'de' ? '' : '_records';
 
-				$file = $this->dir.$this->name.'/'.$accounting.'_'.BaseViewController::translate_label($key).$rec.'.txt';
-				$file = str_sanitize($file);
+				$fn = str_sanitize($this->dir.$this->name.'/'.$accounting.'_'.BaseViewController::translate_label($key).$rec.'.txt');
 
-				// initialise record files with Column names as first line
-				$keys = [];
-				foreach (array_keys($records[0]) as $col)
-					$keys[] = BaseViewController::translate_label($col);
-				Storage::put($file, implode("\t", $keys));
+				// echo "write ".count($records)." [".count($this->{($key1 == 'accounting' ? 'acc_recs' : 'book_recs')}[$key]) ."] to file $fn\n";
+
+				if (!Storage::exists($fn))
+				{
+					// initialise record files with Column names as first line
+					$keys = [];
+					foreach (array_keys($records[0]) as $col)
+						$keys[] = BaseViewController::translate_label($col);
+					Storage::put($fn, implode("\t", $keys));
+				}
 
 				$data = [];
 				foreach ($records as $value)
-					array_push($data, implode("\t", $value)."\n");
+					array_push($data, implode("\t", $value));
 
-				Storage::append($file, implode($data));
+				Storage::append($fn, implode("\n", $data));
 
-				$this->_log("$key1 $key records", $file);
+				// free memory
+				$this->{($key1 == 'accounting' ? 'acc_recs' : 'book_recs')}[$key] = null;
+
+				$this->_log("$key1 $key records", $fn);
 			}
 		}
-
-		return;
 	}
 
 
@@ -541,7 +547,7 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function make_billing_files()
 	{
-		$this->make_billing_record_files();
+		$this->write_billing_record_files();
 
 		if ($this->sepa_xml['debits'])
 			$this->make_debit_file();
