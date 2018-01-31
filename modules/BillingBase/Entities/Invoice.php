@@ -342,6 +342,9 @@ class Invoice extends \BaseModel{
 		$this->time_cdr = $time_cdr = $conf->cdr_offset ? strtotime('-'.($conf->cdr_offset+1).' month') : strtotime('first day of last month');
 		$this->data['cdr_month'] = date('m/Y', $time_cdr);
 
+		// TODO: customer can request to show his tel nrs cut by the 3 last nrs (TKG §99 (1))
+		// TODO: dont show target nrs that have to stay anonym (church, mental consultation, ...) (TKG §99 (2))
+
 		$sum = $count = 0;
 		foreach ($cdrs as $entry)
 		{
@@ -550,17 +553,19 @@ class Invoice extends \BaseModel{
 	 */
 	public static function cleanup()
 	{
-		if (\Config::get('database.default') == 'mysql')
-			$query = Invoice::where('type', '=', 'CDR')->whereRaw("CONCAT_WS('', year, '-', LPAD(month, 2 ,0), '-', '01') < '".date('Y-m-01', strtotime('-'.(BillingBase::first()->cdr_offset + 6).'month'))."'");
-		else
-		{
-			\Log::error('Missing Query in Modules\BillingBase\Entities\Invoice@cleanup for Database '.\Config::get('database.default'));
-			return;
-		}
+		$conf = BillingBase::first();
+
+		$period = $conf->cdr_retention_period; 				// retention period - total months CDRs should be kept
+		$offset = $conf->cdr_offset;
+		$target_time_o = \Carbon\Carbon::create()->subMonthsNoOverflow($offset + $period);
+
+		\Log::info("Delete all CDRs older than $period Months");
+
+		$query = Invoice::where('type', '=', 'CDR')
+				->where('year', '<=', $target_time_o->__get('year'))
+				->where('month', '<', $target_time_o->__get('month'));
 
 		$cdrs = $query->get();
-
-		\Log::info('Delete all CDRs older than 6 Months');
 
 		foreach ($cdrs as $cdr)
 		{
@@ -570,6 +575,16 @@ class Invoice extends \BaseModel{
 		}
 
 		$query->delete();
+
+		// Delete all CDR CSVs older than $period months
+		\App::setLocale($conf->userlang);
+
+		$path = storage_path("app/data/billingbase/accounting/").$target_time_o->format('Y-m').'/';
+		$target_time_o->subMonthNoOverflow($offset);
+		$fn = \App\Http\Controllers\BaseViewController::translate_label('Call Data Record')."_".$target_time_o->format('Y_m').'.csv';
+
+		if (is_file($path.$fn))
+			unlink($path.$fn);
 	}
 
 
