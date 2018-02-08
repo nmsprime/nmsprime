@@ -66,7 +66,7 @@
 
 	@if ($ping)
 		<?php
-			$color = isset($ping[1]) ? "green" : "orange";
+			$color = isset($ping[1]) ? "success" : "warning";
 			$text  = isset($ping[1]) ? "$type is Online" : trans('messages.device_probably_online', ['type' => $type]);
 		?>
 		<font color="{{$color}}"><b>{{$text}}</b></font><br>

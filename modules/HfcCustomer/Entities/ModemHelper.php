@@ -60,9 +60,9 @@ class ModemHelper extends \BaseModel {
 
 	public static function ms_state_to_color ($s)
 	{
-		if ($s == 'OK')       return 'green';
-		if ($s == 'WARNING')  return 'yellow';
-		if ($s == 'CRITICAL') return 'red';
+		if ($s == 'OK')       return 'success';
+		if ($s == 'WARNING')  return 'warning';
+		if ($s == 'CRITICAL') return 'danger';
 
 		return -1;
 	}

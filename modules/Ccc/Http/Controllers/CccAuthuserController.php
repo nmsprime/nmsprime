@@ -318,7 +318,7 @@ class CccAuthuserController extends \BaseController {
 
 			if ($validator->fails())
 			{
-				return \Redirect::back()->withErrors($validator)->withInput()->with('message', 'please correct the following errors')->with('message_color', 'red');
+				return \Redirect::back()->withErrors($validator)->withInput()->with('message', 'please correct the following errors')->with('message_color', 'danger');
 			}
 
 			if (isset($email))

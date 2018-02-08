@@ -174,13 +174,13 @@ class TreeErdController extends HfcBaseController {
 			#
 			# Amplifier - what?? - all types are considered here
 			#
-			$color = 'green';
+			$color = 'success';
 			if ($state == 'warning')
-				$color = 'yellow';
+				$color = 'warning';
 			if ($state == 'danger')
-				$color = 'red';
+				$color = 'danger';
 			if ($state == 'info')
-				$color = 'blue';
+				$color = 'info';
 
 			// why are elements with parent->id == 1 blue ?? - what is distinction made for?
 			if ($parent == NULL || $parent->id == 1)
@@ -223,12 +223,12 @@ class TreeErdController extends HfcBaseController {
 			$style = "style=bold";
 			if ($type == 'NODE')
 			{
-				$color = 'blue';
+				$color = 'info';
 				$style='';
 			}
 			if ($type == 'AMP' || $type == 'CLUSTER' || $tp == 'FOSTRA')
 			{
-				$color = 'red';
+				$color = 'danger';
 				$style='';
 			}
 
