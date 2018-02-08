@@ -485,7 +485,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		foreach ($csv as $line)
 		{
 			$line = str_getcsv($line, ';');
-			$customer_nr 	= intval(str_replace('002-', '', $line[0]));
+			$customer_nr 	= intval(str_replace(['002-', '010-'], '', $line[0]));
 			$calling_number = $line[3];
 			$called_number  = $line[7];
 
