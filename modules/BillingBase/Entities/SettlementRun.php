@@ -75,6 +75,8 @@ class SettlementRun extends \BaseModel {
 	{
 		if ($this->verified)
 				$this->index_delete_disabled = true;
+
+		return $this->index_delete_disabled;
 	}
 
 	public function created_at_toDateString()
