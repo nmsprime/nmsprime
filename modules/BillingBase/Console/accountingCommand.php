@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\BillingBase\Console;
 
 use Illuminate\Console\Command;
@@ -40,7 +40,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
 	protected $dir 			= 'data/billingbase/accounting/'; 				// relative to storage/app/ - Note: completed by month in constructor!
-	
+
 	protected $dates;					// offen needed time strings for faster access - see constructor
 
 
@@ -100,7 +100,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
 
-		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter')->get();		// eager loading for better performance
+		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter', 'sepamandates')->get();		// eager loading for better performance
 		$salesmen 	= Salesman::all();
 
 		if (!isset($sepa_accs[0])) {
@@ -118,7 +118,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		echo "Create Invoices:\n";
 		$num = count($contracts);
-		// if not called silent via queues
+		// if not called silently via queues
 		if ($this->output)
 			$bar = $this->output->createProgressBar($num);
 
@@ -127,34 +127,29 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		 */
 		foreach ($contracts as $i => $c)
 		{
-			// progress bar - workaround as progress bar is not shown when cmd is called 
+			// progress bar - workaround as progress bar is not shown when cmd is called
 			// from observer or throws exception when called via queue
 			if ($this->output)
 				$bar->advance();
 			else
 				echo ($i + 1)."/$num [$c->id]\r";
 
-			// Skip invalid contracts
-			if (!$c->check_validity('yearly') && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
-				Log::info('billing', "Contract $c->number [$c->id] is invalid for current year");
-				continue;
-			}
-
 			if (!$c->create_invoice) {
 				Log::info('billing', "Create invoice for Contract $c->number [$c->id] is off");
 				continue;
 			}
 
-			if(!$c->costcenter) {
+			if (!$c->costcenter) {
 				Log::error('billing', "Contract $c->number [$c->id] has no CostCenter assigned - Stop execution");
-				throw new Exception("Contract $c->number [$c->id] has no CostCenter assigned", 1);
+				throw new \Exception("Contract $c->number [$c->id] has no CostCenter assigned", 1);
 				continue;
 			}
 
-			// init contract temp variables
-			$charge 	= []; 					// total costs for this month for current contract
-			// expires is checked in Item & SepaAccount
-			$c->expires = date('Y-m-01', strtotime($c->contract_end)) == $this->dates['lastm_01'];
+			// Skip invalid contracts
+			if (!$c->check_validity('yearly') && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
+				Log::info('billing', "Contract $c->number [$c->id] is invalid for current year");
+				continue;
+			}
 
 
 			/*
@@ -164,7 +159,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			{
 				// skip items that are related to a deleted product
 				if (!isset($item->product)) {
-					Log::warning('billing', "Product $item->accounting_text was deleted", [$c->id]);
+					Log::error('billing', "Product of $item->accounting_text was deleted", [$c->id]);
+					throw new \Exception("Product of $item->accounting_text was deleted");
 					continue;
 				}
 
@@ -206,14 +202,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			} // end of item loop
 
 
-			// get actual valid sepa mandate
-			$mandate = $c->get_valid_mandate();
-
-			if (!$mandate)
-				Log::info('billing', "Contract $c->number [$c->id] has no valid sepa mandate");
-
-
-			// Add Call Data Records - calculate charge and count
+			/**
+			 * Add Call Data Records - calculate charge and count
+			 */
 			$charge = $calls = $id = 0;
 
 			if (isset($cdrs[$c->id]))
@@ -239,8 +230,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				}
 				else
 				{
-					// this case should never happen
-					Log::alert('billing', 'Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
+					// this case should only happen when contract/voip tarif ended and deferred CDRs are calculated
+					Log::notice('billing', 'Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
 					$c->charge[$acc->id]['net'] = $charge;
 					$c->charge[$acc->id]['tax'] = $charge * $conf->tax/100;
 					$acc->invoice_nr += 1;
@@ -255,23 +246,35 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$acc->add_invoice_cdr($c, $cdrs[$id], $conf, $settlementrun_id);
 			}
 
+			/*
+			 * Add contract specific data for accounting files
+			 */
 
-			// Add contract specific data for accounting files
+			// get actual globally valid sepa mandate (valid for all CostCenters/SepaAccounts)
+			$mandate_global = $c->get_valid_mandate();
+
 			foreach ($c->charge as $acc_id => $value)
 			{
 				$value['net'] = round($value['net'], 2);
 				$value['tax'] = round($value['tax'], 2);
 
 				$acc = $sepa_accs->find($acc_id);
+
+				$mandate_specific = $c->get_valid_mandate('now', $acc->id);
+				$mandate = $mandate_specific ? : $mandate_global;
+
 				$acc->add_booking_record($c, $mandate, $value, $conf);
-				$acc->add_invoice_data($c, $mandate, $value);
+				$acc->set_invoice_data($c, $mandate, $value);
 
 				// create invoice pdf already - this task is the most timeconsuming and therefore threaded!
-				$acc['invoices'][$c->id]->make_invoice();
+				$acc->invoices[$c->id]->make_invoice();
+				unset($acc->invoices[$c->id]);
 
 				// skip sepa part if contract has no valid mandate
-				if (!$mandate)
+				if (!$mandate) {
+					Log::info('billing', "Contract $c->number [$c->id] has no valid sepa mandate for SepaAccount $acc->name [$acc->id]");
 					continue;
+				}
 
 				$acc->add_sepa_transfer($mandate, $value['net'] + $value['tax'], $this->dates);
 			}
@@ -311,7 +314,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		if (is_dir(storage_path('app/'.$this->dir)))
 			SettlementRunController::directory_cleanup($this->dir);
 		else
-			mkdir(storage_path('app/'.$this->dir, 0700, true));
+			mkdir(storage_path('app/'.$this->dir), 0700, true);
 
 		// Salesmen
 		$prod_types = Product::getPossibleEnumValues('type');
@@ -414,7 +417,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	/**
 	 * Calls cdrCommand to get Call data records from Provider and formats relevant data to structured array
 	 *
-	 * @return array 	[contract_id => [phonr_nr, time, duration, ...], 
+	 * @return array 	[contract_id => [phonr_nr, time, duration, ...],
 	 *					 next_contract_id => [...],
 	 * 					 ...]
 	 *					on success, else 2 dimensional empty array
@@ -454,24 +457,24 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 
 	/**
-	 * Parse Envia CSV and Check if customerNr to Phonenr assignment exists
+	 * Parse envia TEL CSV and Check if customerNr to Phonenr assignment exists
 	 *
 	 * @return array  [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
 	 */
 	protected function _parse_envia_csv($filepath)
 	{
-		Log::debug('billing', 'Parse Envia Call Data Records CSV');
+		Log::debug('billing', 'Parse envia TEL Call Data Records CSV');
 
 		$csv = is_file($filepath) ? file($filepath) : null;
 
 		if (!$csv)
 			return array(array());
 
-		/* 
+		/*
 		 * Order existing phonenumbers in format 03735 739822 (prefix, number) to contract id/number as structured array:
 		 * 		[pn1 => [id, num], pn2 => [...], ...]
 		 * needed to check later if customer can really have made these calls (if customer number to phonenumber assignment is correct)
-		 * NOTE: customer number here means the envia customer number that corresponds to id OR number in the laravel database
+		 * NOTE: customer number here means the envia customer number that corresponds to id OR number in our database
 		 */
 		$phonenumbers_db = \DB::table('phonenumber')
 			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
@@ -509,8 +512,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			if (!isset($customer_nrs[$calling_number]))
 			{
 				if (in_array($customer_nr, $customer_nrs_array)) {
-					Log::error('billing', "Calling Number [$calling_number] does not exist in laravel DB for customer number $customer_nr! Exit");
-					throw new \Exception("Calling Number [$calling_number] does not exist in laravel DB for customer number $customer_nr! Exit");
+					Log::error('billing', "Calling Number [$calling_number] does not exist in our DB for customer number $customer_nr! Exit");
+					throw new \Exception("Calling Number [$calling_number] does not exist in our DB for customer number $customer_nr! Exit");
 				}
 
 				if ($logged != $calling_number) {
@@ -595,13 +598,15 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		}
 
 		return $data;
-	}	
+	}
 
 
 	/**
 	 * Instantiates an Array of all necessary date formats needed during execution of this Command
 	 *
 	 * Also needed in Item::calculate_price_and_span and in DashboardController!!
+	 *
+	 * TODO: Maybe implement this as service Provider or just dont use it
 	 */
 	public static function create_dates_array()
 	{

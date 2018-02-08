@@ -47,9 +47,15 @@ class GlobalConfig extends BaseModel {
 	 */
 	public function version ()
 	{
-		$version = exec("rpm -q lara-base --queryformat '%{version}'");
+		$version = exec("rpm -q nmsprime-base --queryformat '%{version}'");
 		if (preg_match('/not installed/', $version))
-			$version = 'GIT: '.exec('cd '.app_path().' && git rev-parse --abbrev-ref HEAD').' - '.exec('cd '.app_path().' && git rev-parse --short HEAD');
+		{
+			$branch = exec('cd '.app_path().' && git rev-parse --abbrev-ref HEAD');
+			$commit = exec('cd '.app_path().' && git rev-parse --short HEAD');
+			$github = 'https://github.com/schmto/nmsprime/commits/'.exec('cd '.app_path().' && git rev-parse HEAD');
+
+			$version = '<b>GIT</b>: '.$branch.' - '.'<a target=_blank href='.$github.'>'.$commit.'</a>';
+		}
 
 		return $version;
 	}

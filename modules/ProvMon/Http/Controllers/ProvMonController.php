@@ -26,6 +26,7 @@ class ProvMonController extends \BaseController {
 
 	protected $domain_name = "";
 	protected $modem = null;
+	protected $edit_left_md_size = 12;
 
 	public function __construct()
 	{
@@ -48,8 +49,6 @@ class ProvMonController extends \BaseController {
 
 		if (isset($modem->mtas[0]))
 			array_push($a, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => [$id]]);
-
-		array_push($a, ['name' => 'Logging', 'route' => 'GuiLog.filter', 'link' => ['model_id' => $modem->id, 'model' => 'Modem']]);
 
 		return $a;
 	}
@@ -191,10 +190,10 @@ class ProvMonController extends \BaseController {
 	 * Flood ping
 	 *
 	 * NOTE:
-	 * --- add /etc/sudoers.d/nms-lara ---
+	 * --- add /etc/sudoers.d/nms-nmsprime ---
 	 * Defaults:apache        !requiretty
 	 * apache  ALL=(root) NOPASSWD: /usr/bin/ping
-	 * --- /etc/sudoers.d/nms-lara ---
+	 * --- /etc/sudoers.d/nms-nmsprime ---
 	 *
 	 * @param hostname  the host to send a flood ping
 	 * @return flood ping exec result
@@ -334,7 +333,8 @@ class ProvMonController extends \BaseController {
 		$lease = $this->validate_lease($lease, $type);
 
 		// configfile
-		$configfile = file("/tftpboot/mta/$mta->hostname.conf");
+		$cf_path = "/tftpboot/mta/$mta->hostname.conf";
+		$configfile = is_file($cf_path) ? file($cf_path) : null;
 
 		// log
 		$ip = gethostbyname($mta->hostname);
@@ -511,10 +511,12 @@ end:
 		} catch (\Exception $e) {
 			if (strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false ||
 				strpos($e->getMessage(), "No response from") !== false)
-			return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
+				return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
+			else if (strpos($e->getMessage(), "Error in packet at") !== false)
+                                $docsis = 1;
 		}
 
-		$cmts = $this->get_cmts($ip);
+		$cmts = Modem::get_cmts($ip);
 		$sys = [];
 		// these values are not important for cacti, so only retrieve them on the analysis page
 		if(!$cacti) {
@@ -525,17 +527,21 @@ end:
 			$sys['CMTS']     = [$cmts->hostname];
 			$ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
 			$us['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2'), 1000000);
-			$us['Width MHz']     = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'), 1000000);
 			$us['Modulation Profile'] = $this->_docsis_modulation($cmts->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
 		}
 
 		// Downstream
 		$ds['Modulation']    = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
 		$ds['Power dBmV']    = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));
-		$ds['MER dB']        = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
+		try {
+			$ds['MER dB'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.24.1.1'));
+		} catch (\Exception $e) {
+			$ds['MER dB'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
+		}
 		$ds['Microreflection -dBc'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6');
 
 		// Upstream
+		$us['Width MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'), 1000000);
 		if ($docsis >= 4) $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
 		else              $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
 		$us['SNR dB'] = $cmts->get_us_snr($ip);
@@ -590,10 +596,7 @@ end:
 			if ($r > 10)
 				// maximum actual power is 10 dB
 				$r = 10;
-			if ($cmts->company == 'Casa')
-				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
-			if ($cmts->company == 'Cisco')
-				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.9.9.116.1.4.1.1.6.$idx", 'i', 10 * $r);
+			snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
 
 			array_push($rx_pwr, $r);
 		}
@@ -631,33 +634,27 @@ end:
 		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)];
 
 		$i = 0;
-		foreach(snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2') as $id => $freq)
-		{
+		foreach(snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2') as $id => $freq) {
 			$id = end((explode('.', $id)));
 			$us['Cluster'][$i] = snmpget($cmts->ip, $com, ".1.3.6.1.2.1.31.1.1.1.18.$id");
+			/* if utilization is always zero, DOCS-IF-MIB::docsIfCmtsChannelUtilizationInterval must be set to a non-zero value */
+			$us['Avg Utilization %'][$i] = array_sum(snmpwalk($cmts->ip, $com, ".1.3.6.1.2.1.10.127.1.3.9.1.3.$id"));
 			$us['If Id'][$i] = $id;
 			$us['Frequency MHz'][$i] = $freq / 1000000;
 			$i++;
 		}
-
 		$us['SNR dB'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
-
-		if ($cmts->company == 'Casa')
+		try {
 			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
-		if ($cmts->company == 'Cisco') {
-			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.9.9.116.1.4.1.1.6'));
-			$us['Avg Utilization %'] = snmpwalk($cmts->ip, $com, ".1.3.6.1.4.1.9.9.116.1.4.1.1.7");
+		}
+		catch (\Exception $e) {
 		}
 
 		// unset unused interfaces, as we don't want to show them on the web gui
 		foreach ($us['Frequency MHz'] as $key => $freq)
-		{
 			if ($us['SNR dB'][$key] == 0)
-			{
 				foreach ($us as $entry => $arr)
 					unset($us[$entry][$key]);
-			}
-		}
 
 		if($ctrl && isset($us['Rx Power dBmV']))
 			$us['Rx Power dBmV'] = $this->_set_new_rx_power($cmts, $cmts->get_rw_community(), $us);
@@ -667,32 +664,8 @@ end:
 
 		$ret['System'] = $sys;
 		$ret['Upstream'] = $us;
-		return $ret;
-	}
 
-	/**
-	 * Get CMTS for a registered CM
-	 *
-	 * @param ip:	ip address of cm
-	 *
-	 * @author Nino Ryschawy
-	 */
-	static public function get_cmts($ip)
-	{
-		$validator = new \Acme\Validators\ExtendedValidator;
-		foreach(IpPool::all() as $pool)
-		{
-			$net[0] = $pool->net;
-			$net[1] = $pool->netmask;
-			if ($validator->validateIpInRange(0, $ip, $net))
-			{
-				$cmts_id = $pool->cmts_id;
-				break;
-			}
-		}
-		if (isset($cmts_id))
-			return Cmts::find($cmts_id);
-		return null;
+		return $ret;
 	}
 
 

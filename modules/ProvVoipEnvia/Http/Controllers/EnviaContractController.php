@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\View;
 use Modules\ProvVoipEnvia\Entities\EnviaContract;
 use Modules\ProvVoip\Entities\PhonenumberManagement;
 use Modules\ProvVoip\Entities\Phonenumber;
+use Modules\ProvVoip\Entities\Phonetariff;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvBase\Entities\Contract;
 
@@ -28,13 +29,13 @@ class EnviaContractController extends \BaseController {
 		$ret = [
 			array('form_type' => 'text', 'name' => 'external_creation_date', 'description' => 'Creation date', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'external_termination_date', 'description' => 'Termination date', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'envia_customer_reference', 'description' => 'Envia customer ID', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'envia_contract_reference', 'description' => 'Envia contract ID', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'envia_customer_reference', 'description' => 'envia TEL customer ID', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'envia_contract_reference', 'description' => 'envia TEL contract ID', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'state', 'description' => 'State', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'start_date', 'description' => 'Start date', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'end_date', 'description' => 'End date', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'prev_id', 'description' => 'Previous Envia contract ID', 'options' => ['readonly']),
-			array('form_type' => 'text', 'name' => 'next_id', 'description' => 'Next Envia contract ID', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'prev_id', 'description' => 'Previous envia TEL contract ID', 'options' => ['readonly']),
+			array('form_type' => 'text', 'name' => 'next_id', 'description' => 'Next envia TEL contract ID', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'lock_level', 'description' => 'Lock level', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'method', 'description' => 'Method', 'options' => ['readonly']),
 			array('form_type' => 'text', 'name' => 'sla_id', 'description' => 'SLA ID', 'options' => ['readonly']),
@@ -54,7 +55,7 @@ class EnviaContractController extends \BaseController {
 	 *
 	 * Here we inject the following data:
 	 *	- information about needed/possible user actions
-	 *	- mailto: link to Envia support as additional data
+	 *	- mailto: link to envia TEL support as additional data
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -72,6 +73,4 @@ class EnviaContractController extends \BaseController {
 	/* { */
 	/* 	return view('provvoipenvia::index'); */
 	/* } */
-
-
 }

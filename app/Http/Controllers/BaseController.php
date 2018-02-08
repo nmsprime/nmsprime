@@ -35,6 +35,8 @@ class BaseController extends Controller {
 	protected $save_button = 'Save';
 	protected $force_restart_button = 'Force Restart';
 	protected $relation_create_button = 'Create';
+
+	// if set to true a create button on index view is available
 	protected $index_create_allowed = true;
 	protected $index_delete_allowed = true;
 
@@ -44,6 +46,8 @@ class BaseController extends Controller {
 
 	protected $edit_view_save_button = true;
 	protected $edit_view_force_restart_button = false;
+
+	protected $index_tree_view = false;
 
 
 
@@ -95,7 +99,7 @@ class BaseController extends Controller {
 				'route' => $class_name.'.edit',
 				'link' => ['model_id' => $view_var->id, 'model' => $class_name]
 			],
-	];
+		];
 	}
 
 
@@ -103,6 +107,7 @@ class BaseController extends Controller {
 	{
 		$classname = \NamespaceController::get_model_name();
 
+		// Rewrite model to check with new assigned Model
 		if (!$classname)
 			return null;
 
@@ -211,6 +216,12 @@ class BaseController extends Controller {
 				(in_array(\Str::lower($data[$field['name']]), ["on", "checked"]))
 			) {
 				$data['active'] = "1";
+			}
+
+			// multiple select?
+			if ($field['form_type'] == 'select' && isset($field['options']['multiple'])) {
+				$field['name'] = str_replace('[]', '', $field['name']);
+				continue; 			// multiselects will have array in data so don't trim
 			}
 
 			// trim all inputs as default
@@ -371,7 +382,7 @@ class BaseController extends Controller {
 			$a['edit_right_md_size'] = $this->edit_right_md_size;
 
 		if (!isset($a['html_title']))
-			$a['html_title'] = "NMS – ".\NamespaceController::module_get_pure_model_name();
+			$a['html_title'] = 'NMS Prime - '.\App\Http\Controllers\BaseViewController::translate_view(\NamespaceController::module_get_pure_model_name(),'Header');
 
 		$a['save_button'] = $this->save_button;
 		$a['force_restart_button'] = $this->force_restart_button;
@@ -478,22 +489,23 @@ class BaseController extends Controller {
 	/**
 	 * Display a listing of all objects of the calling model
 	 *
-	 * @return Response
+	 * @return View
 	 */
 	public function index()
 	{
-		$model = static::get_model_obj();
-
-		if ($model->index_datatables_ajax_enabled)
-			$view_var   = $model->first();
-		else
-			$view_var   = $model->index_list();
-
-		$view_header = \App\Http\Controllers\BaseViewController::translate_view('Overview','Header');
-		$headline  	= \App\Http\Controllers\BaseViewController::translate_view( $model->view_headline(), 'Header' , 2 );
-		$b_text		= $model->view_headline();
+		$model 			= static::get_model_obj();
+		$headline  		= \App\Http\Controllers\BaseViewController::translate_view( $model->view_headline(), 'Header' , 2 );
+		$view_header 	= \App\Http\Controllers\BaseViewController::translate_view('Overview','Header');
 		$create_allowed = static::get_controller_obj()->index_create_allowed;
 		$delete_allowed = static::get_controller_obj()->index_delete_allowed;
+
+		if ($this->index_tree_view)
+		{
+			$view_var = $model::where('parent_id', 0)->get();
+			$undeletables = $model::undeletables();
+
+			return View::make ('Generic.tree', $this->compact_prep_view(compact('headline', 'view_header', 'view_var', 'create_allowed', 'undeletables')));
+		}
 
 		$view_path = 'Generic.index';
 		if (View::exists(\NamespaceController::get_view_name().'.index'))
@@ -502,7 +514,7 @@ class BaseController extends Controller {
 		// TODO: show only entries a user has at view rights on model and net!!
 		Log::warning('Showing only index() elements a user can access is not yet implemented');
 
-		return View::make ($view_path, $this->compact_prep_view(compact('headline','view_header', 'model','view_var', 'create_allowed', 'delete_allowed', 'b_text')));
+		return View::make ($view_path, $this->compact_prep_view(compact('headline','view_header', 'model', 'create_allowed', 'delete_allowed')));
 	}
 
 	/**
@@ -549,17 +561,20 @@ class BaseController extends Controller {
 		$validator  = Validator::make($data, $rules);
 		$data 		= $controller->prepare_input_post_validation ($data);
 
-		if ($validator->fails())
-		{
-			return Redirect::back()->withErrors($validator)->withInput()->with('message', 'please correct the following errors')->with('message_color', 'red');
+		if ($validator->fails()) {
+			return Redirect::back()->withErrors($validator)->withInput()->with('message', 'please correct the following errors')->with('message_color', 'danger');
 		}
 
-		$id = $obj::create($data)->id;
+		$obj = $obj::create($data);
 
+		// Add N:M Relations
+		self::_set_many_to_many_relations($obj, $data);
+
+		$id  = $obj->id;
 		if (!$redirect)
 			return $id;
 
-		return Redirect::route(\NamespaceController::get_route_name().'.edit', $id)->with('message', 'Created!')->with('message_color', 'blue');
+		return Redirect::route(\NamespaceController::get_route_name().'.edit', $id)->with('message', 'Created!')->with('message_color', 'success');
 	}
 
 
@@ -631,10 +646,9 @@ class BaseController extends Controller {
 		$validator = Validator::make($data, $rules);
 		$data      = $controller->prepare_input_post_validation ($data);
 
-		if ($validator->fails())
-		{
+		if ($validator->fails()) {
 			Log::info ('Validation Rule Error: '.$validator->errors());
-			return Redirect::back()->withErrors($validator)->withInput()->with('message', 'please correct the following errors')->with('message_color', 'red');
+			return Redirect::back()->withErrors($validator)->withInput()->with('message', 'please correct the following errors')->with('message_color', 'danger');
 		}
 
 		// update timestamp, this forces to run all observer's
@@ -648,9 +662,12 @@ class BaseController extends Controller {
 		//       without updated_at field. So we globally use a guarded field from now, to use the update timestamp
 		$obj->update($data);
 
+		// Add N:M Relations
+		self::_set_many_to_many_relations($obj, $data);
+
 		// error msg created while observer execution
 		$msg = \Session::has('error') ? \Session::get('error') : 'Updated';
-		$color = \Session::has('error') ? 'orange' : 'blue';
+		$color = \Session::has('error') ? 'warning' : 'info';
 
 		$route_model = \NamespaceController::get_route_name();
 
@@ -660,6 +677,51 @@ class BaseController extends Controller {
 		return Redirect::route($route_model.'.edit', $id)->with('message', $msg)->with('message_color', $color);
 	}
 
+
+	/**
+	 * Store Many to Many Relations in Pivot table
+	 *
+	 * IMPORTANT NOTES:
+	 *	 To assign a model to the pivot table we need an extra multiselect field in the controllers
+	 *	 	view_form_fields() that must be mentioned inside the guarded array of the model!
+	 *	 The multiselect's field name must be in form of the models relation function and a concatenated '_ids'
+	 *		like: '<relation-function>_ids' , e.g. 'users_ids' for the multiselect in Tickets view to assign users
+	 *
+	 * @param Object 	The Object to store/update
+	 * @param Array 	Input Data
+	 *
+	 * @author Nino Ryschawy
+	 */
+	private static function _set_many_to_many_relations($obj, $data)
+	{
+		if (!$obj->guarded)
+			return;
+
+		foreach ($obj->guarded as $field)
+		{
+			if (!isset($data[$field]) || !is_array($data[$field]))
+				continue;
+
+			// relation-function_id
+			$func = explode('_', $field)[0];
+
+			$attached = $obj->$func->pluck('id')->all();
+
+			// attach new assignments
+			foreach ($data[$field] as $rel_id)
+			{
+				if (!in_array($rel_id, $attached))
+					$obj->$func()->attach($rel_id, ['created_at' => date('Y-m-d H:i:s')]);
+			}
+
+			// detach removed assignments (from selected multiselect options)
+			foreach ($attached as $rel_id)
+			{
+				if (!in_array($rel_id, $data[$field]))
+					$obj->$func()->detach($rel_id);
+			}
+		}
+	}
 
 
 	/**
@@ -678,31 +740,33 @@ class BaseController extends Controller {
 		if ($id == 0)
 		{
 			// Error Message when no Model is specified - NOTE: delete_message must be an array of the structure below !
-			if (!isset(Input::all()['ids']))
+			if (!Input::get('ids'))
 				return Redirect::back()->with('delete_message', ['message' => 'No Entry For Deletion specified', 'class' => \NamespaceController::get_route_name(), 'color' => 'red']);
 
-			foreach (Input::all()['ids'] as $id => $val) {
+			$obj = static::get_model_obj();
+
+			foreach (Input::get('ids') as $id => $val) {
 				$to_delete++;
-				if (static::get_model_obj()->findOrFail($id)->delete()) {
+				if ($obj->findOrFail($id)->delete()) {
 					$deleted++;
 				}
 			}
-
 		}
 		else {
 			$to_delete++;
-			if (static::get_model_obj()->findOrFail($id)->delete()) {
+			$obj = static::get_model_obj();
+			if ($obj->findOrFail($id)->delete()) {
 				$deleted++;
 			}
 		}
-
+		$obj = isset($obj) ? $obj : static::get_model_obj();
 		$class = \NamespaceController::get_route_name();
 
-		if ($deleted == 0) {
+		if (!$deleted && !$obj->force_delete) {
 			$message = 'Could not delete '.$class;
 			$color = 'red';
 		}
-		elseif ($deleted == $to_delete) {
+		elseif (($deleted == $to_delete) || $obj->force_delete) {
 			$message = 'Successful deleted '.$class;
 			$color = 'blue';
 		}
@@ -713,6 +777,28 @@ class BaseController extends Controller {
 
 		return Redirect::back()->with('delete_message', ['message' => $message, 'class' => $class, 'color' => $color]);
 	}
+
+
+	/**
+	 * Detach a pivot entry of an n-m relationship
+	 *
+	 * @param 	id 			Integer 	Model ID the relational model is attached to
+	 * @param 	function 	String 		Function Name of the N-M Relation
+	 * @return 	Response 	Object 		Redirect back
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public function detach($id, $function)
+	{
+		$model = \NamespaceController::get_model_name();
+		$model = $model::find($id);
+
+		if (\Input::has('ids'))
+			$model->{$function}()->detach(array_keys(\Input::get('ids')));
+
+		return \Redirect::back();
+	}
+
 
 	public function dump($id) {
 		return static::get_model_obj()->findOrFail($id);
@@ -800,7 +886,7 @@ class BaseController extends Controller {
 		$model = NamespaceController::get_model_name();
 		$data .= self::_create_index_view_data($model::get_tree_list());
 
-		// $data .= '</ul></div>';
+		// $data .= '</ul></div></div>';
 
 		return $data;
 	}
@@ -940,12 +1026,25 @@ class BaseController extends Controller {
 		return array_reverse($logs);
 	}
 
-
 	/**
      * Process datatables ajax request.
 	 *
      * For Performance tests and fast Copy and Paste: $start = microtime(true) and $end = microtime(true);
-     *
+	 * calls view_index_label() which determines how datatables are configured
+	 * you can find examples in every model with index page
+	 * Documentation is written here, because this seems like the first place to look for it
+	 * @param table - tablename of model
+	 * @param index_header - array like [$table.'.column1' , $table.'.column2', ..., 'foreigntable1.column1', 'foreigntable2.column1', ..., 'customcolumn']
+	 * order in index_header is important and datatables will have the column order given here
+	 * @param bsclass - defines a Bootstrap class for colering the Rows
+	 * @param header - defines whats written in Breadcrumbs Header at Edit and Create Pages
+	 * @param edit - array like [$table.'.column1' => 'customfunction', 'foreigntable.column' => 'customfunction', 'customcolumn' => 'customfunction']
+	 * customfunction will be called for every element in table.column, foreigntable.column or customcolumn
+	 * CAREFUL customcolumn will not be sortable or searchable - to use them anyways use the sortsearch key
+	 * @param eager_loading array like [foreigntable1, foreigntable2, ...] - eager load foreign tables
+	 * @param order_by array like ['0' => 'asc'] - order table by id in ascending order, ['1' => 'desc'] - order table after first column in descending order
+	 * @param sortsearch array like ['customcolumn' => 'false'] prevents that user is able to sort what is impossible => prevent errors
+	 *
 	 * @return \Illuminate\Http\JsonResponse
 	 *
 	 * @author Christian Schramm
@@ -953,35 +1052,36 @@ class BaseController extends Controller {
     public function index_datatables_ajax()
     {
 		$model = static::get_model_obj();
-		$index_label_array =  $model->view_index_label_ajax();
+		$dt_config =  $model->view_index_label();
 
-		$header_fields = $index_label_array['index_header'];
-		$edit_column_data = isset($index_label_array['edit']) ? $index_label_array['edit'] : [];
-		$eager_loading_tables = isset($index_label_array['eager_loading']) ? $index_label_array['eager_loading'] : [];
+		$header_fields = $dt_config['index_header'];
+		$edit_column_data = isset($dt_config['edit']) ? $dt_config['edit'] : [];
+		$filter_column_data = isset($dt_config['filter']) ? $dt_config['filter'] : [];
+		$eager_loading_tables = isset($dt_config['eager_loading']) ? $dt_config['eager_loading'] : [];
 
-		!array_has($header_fields, $index_label_array['table'].'.id') ? array_push($header_fields, 'id') : null; // if no id Column is drawn, draw it to generate links with id
+		!array_has($header_fields, $dt_config['table'].'.id') ? array_push($header_fields, 'id') : null; // if no id Column is drawn, draw it to generate links with id
 
 		if (empty($eager_loading_tables) ){ //use eager loading only when its needed
-			$eloquent_query = $model::select($index_label_array['table'].'.*');
-			$first_column = substr(head($header_fields), strlen($index_label_array["table"]) + 1);
+			$request_query = $model::select($dt_config['table'].'.*');
+			$first_column = substr(head($header_fields), strlen($dt_config["table"]) + 1);
 		} else {
-			$eloquent_query = $model::with($eager_loading_tables)->select($index_label_array['table'].'.*'); //eager loading | select($select_column_data);
-			if (starts_with(head($header_fields), $index_label_array["table"]))
-				$first_column = substr(head($header_fields), strlen($index_label_array["table"]) + 1);
+			$request_query = $model::with($eager_loading_tables)->select($dt_config['table'].'.*'); //eager loading | select($select_column_data);
+			if (starts_with(head($header_fields), $dt_config["table"]))
+				$first_column = substr(head($header_fields), strlen($dt_config["table"]) + 1);
 			else
 				$first_column = head($header_fields);
 		}
 
-		$DT = Datatables::of($eloquent_query);
-		$DT ->addColumn('responsive', "")
-			->addColumn('checkbox', "");
+		$DT = Datatables::of($request_query);
+		$DT ->addColumn('responsive', '')
+			->addColumn('checkbox', '');
 
-		foreach ($edit_column_data as $column => $functionname) {
-			$DT->editColumn($column, function($object) use ($functionname) {
-				return $object->$functionname();
+		foreach ($filter_column_data as $column => $custom_query) {
+			$DT->filterColumn($column, function($query, $keyword) use ($custom_query) {
+				$query->whereRaw( $custom_query, ["%{$keyword}%"]);
 			});
 		};
-			
+
 		$DT	->editColumn('checkbox', function ($object) {
 				return "<input style='simple' align='center' class='' name='ids[".$object->id."]' type='checkbox' value='1' ".
 				($object->index_delete_disabled ? "disabled" : '').">";
@@ -990,6 +1090,20 @@ class BaseController extends Controller {
 				return '<a href="'.route(\NamespaceController::get_route_name().'.edit', $object->id).'"><strong>'.
 				$object->view_icon().array_get($object, $first_column).'</strong></a>';
 			});
+
+		foreach ($edit_column_data as $column => $functionname) {
+			if($column == $first_column)
+			{
+			$DT->editColumn($column, function($object) use ($functionname) {
+				return '<a href="'.route(\NamespaceController::get_route_name().'.edit', $object->id).'"><strong>'.
+				$object->view_icon().$object->$functionname().'</strong></a>';
+			});
+			} else {
+			$DT->editColumn($column, function($object) use ($functionname) {
+				return $object->$functionname();
+			});
+		}
+		};
 
 		$DT	->setRowClass(function ($object) {
 			$bsclass = isset($object->view_index_label()['bsclass']) ? $object->view_index_label()['bsclass'] : 'info';

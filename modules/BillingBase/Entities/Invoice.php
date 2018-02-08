@@ -31,16 +31,9 @@ class Invoice extends \BaseModel{
 		return 'Invoices';
 	}
 
-	public function view_index_label()
+	public static function view_icon()
 	{
-		$bsclass = 'info';
-
-		$type = $this->type == 'Invoice' ? '' : ' ('.trans('messages.Call Data Record').')';
-
-		return ['index' => [$this->type, $this->year, $this->month],
-				'index_header' => ['Type', 'Year', 'Month'],
-				'bsclass' => $bsclass,
-				'header' => $this->year.' - '.$this->month.$type];
+		return '<i class="fa fa-id-card-o"></i>';
 	}
 
 	/**
@@ -104,7 +97,7 @@ class Invoice extends \BaseModel{
 	 */
 	public $data = array(
 
-		// Company
+		// Company - NOTE: Set by Company->template_data()
 		'company_name'			=> '',
 		'company_street'		=> '',
 		'company_zip'			=> '',
@@ -165,14 +158,6 @@ class Invoice extends \BaseModel{
 	);
 
 
-	public function __construct($attributes = array())
-	{
-		$this->filename_invoice = self::_get_invoice_filename();
-
-		parent::__construct($attributes);
-	}
-
-
 	public function get_invoice_dir_path()
 	{
 		return storage_path('app/'.$this->rel_storage_invoice_dir.$this->contract_id.'/');
@@ -189,9 +174,11 @@ class Invoice extends \BaseModel{
 	}
 
 	/**
-	 * @return String 	Invoice Filename without extension (like .pdf)
+	 * @return String 	Date part of the invoice filename
+	 *
+	 * NOTE: This has to be adapted if we want support creating invoices for multiple months in the past
 	 */
-	private static function _get_invoice_filename()
+	private static function _get_invoice_filename_date_part()
 	{
 		return date('Y_m', strtotime('first day of last month'));
 	}
@@ -212,17 +199,18 @@ class Invoice extends \BaseModel{
 		$this->data['contract_id'] 			= $contract->id;
 		$this->contract_id 		 			= $contract->id;
 		$this->data['contract_nr'] 			= $contract->number;
-		$this->data['contract_firstname'] 	= $contract->firstname;
-		$this->data['contract_lastname'] 	= $contract->lastname;
-		$this->data['contract_company'] 	= $contract->company;
-		$this->data['contract_street'] 		= $contract->street.' '.$contract->house_number;
+		$this->data['contract_firstname'] 	= escape_latex_special_chars($contract->firstname);
+		$this->data['contract_lastname'] 	= escape_latex_special_chars($contract->lastname);
+		$this->data['contract_company'] 	= escape_latex_special_chars($contract->company);
+		$this->data['contract_street'] 		= escape_latex_special_chars($contract->street.' '.$contract->house_number);
 		$this->data['contract_zip'] 		= $contract->zip;
-		$this->data['contract_city'] 		= $contract->city;
-		$this->data['contract_address'] 	= ($contract->company ? "$contract->company\\\\" : '') . ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . $this->data['contract_street'] . "\\\\$contract->zip $contract->city";
+		$this->data['contract_city'] 		= escape_latex_special_chars($contract->city);
+		$this->data['contract_address'] 	= ($contract->company ? $this->data['contract_company']."\\\\" : '') . ($contract->academic_degree ? escape_latex_special_chars($contract->academic_degree)." " : '') . $this->data['contract_firstname'].' '.$this->data['contract_lastname']."\\\\" . $this->data['contract_street'] . "\\\\$contract->zip ".$this->data['contract_city'];
 
 		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
 		$this->data['date_invoice'] = date('d.m.Y', strtotime('last day of last month'));
+		$this->filename_invoice 	= $this->filename_invoice ? : self::_get_invoice_filename_date_part().'_'.str_replace('/', '_', $invoice_nr);
 
 		// Note: Add other currencies here
 		$this->currency	= strtolower($config->currency) == 'eur' ? '€' : $config->currency;
@@ -236,7 +224,7 @@ class Invoice extends \BaseModel{
 		// $count = $item->count ? $item->count : 1;
 		$price  = sprintf("%01.2f", round($item->charge/$item->count, 2));
 		$sum 	= sprintf("%01.2f", $item->charge);
-		$this->data['item_table_positions'] .= $item->count.' & '.$item->invoice_description.' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
+		$this->data['item_table_positions'] .= $item->count.' & '.escape_latex_special_chars($item->invoice_description).' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
 	}
 
 
@@ -247,6 +235,62 @@ class Invoice extends \BaseModel{
 
 		$this->data['contract_mandate_iban'] = $mandate->sepa_iban;
 		$this->data['contract_mandate_ref']  = $mandate->reference;
+	}
+
+
+	/**
+	 * Maps appropriate Company and SepaAccount data to current Invoice
+	 	* address
+	 	* creditor bank account data
+	 	* invoice footer data
+	 	* invoice template path
+	 *
+	 * @param 	Obj 	SepaAccount
+	 * @return 	Bool 	false - error (missing required data), true - success
+	 *
+	 * TODO: Build Company Data foreach Company at accCmd init and hold in Memory -> just set this data for every invoice then
+	 */
+	public function set_company_data($account)
+	{
+		$err_msg = '';
+
+		if (!$account) {
+			$err_msg = 'Missing account data for Invoice ('.$this->data['contract_id'].')';
+			ChannelLog::error('billing', $err_msg);
+			throw new Exception($err_msg);
+		}
+
+		if (!$account->template_invoice) {
+			$err_msg = 'Missing SepaAccount specific templates for Invoice';
+			ChannelLog::error('billing', $err_msg);
+			throw new Exception($err_msg);
+		}
+
+		$company = $account->company;
+
+		if (!$company || !$company->logo) {
+			$err_msg = $company ? "Missing Company's Logo ($company->name)" : 'No Company assigned to Account '.$account->name;
+			ChannelLog::error('billing', $err_msg);
+			throw new Exception($err_msg);
+		}
+
+		$this->data['company_account_institute'] = escape_latex_special_chars($account->institute);
+		$this->data['company_account_iban'] = $account->iban;
+		$this->data['company_account_bic']  = $account->bic;
+		$this->data['company_creditor_id']  = $account->creditorid;
+		$this->data['invoice_headline'] 	= $account->invoice_headline ? escape_latex_special_chars($account->invoice_headline) : trans('messages.invoice');
+
+		$this->data = array_merge($this->data, $company->template_data());
+
+		$this->data['company_registration_court'] .= $this->data['company_registration_court_1'] ? $this->data['company_registration_court_1'].'\\\\' : '';
+		$this->data['company_registration_court'] .= $this->data['company_registration_court_2'] ? $this->data['company_registration_court_2'].'\\\\' : '';
+		$this->data['company_registration_court'] .= $this->data['company_registration_court_3'];
+
+		$this->data['company_logo']   = storage_path('app/'.$this->rel_logo_dir_path.$company->logo);
+		$this->template_invoice_fname = $account->template_invoice;
+		$this->template_cdr_fname 	  = $account->template_cdr;
+
+		return true;
 	}
 
 
@@ -318,62 +362,9 @@ class Invoice extends \BaseModel{
 
 		// set invoice text
 		// $this->data['invoice_text'] = $template.'\\\\'.'\begin{tabbing} \hspace{9em}\=\kill '.$text.' \end{tabbing}';
-		$this->data['invoice_msg'] = $template;
+		$this->data['invoice_msg'] = escape_latex_special_chars($template);
 		$this->data['invoice_text'] = '\begin{tabular} {@{}ll} \multicolumn{2}{@{}L{\textwidth}} {'.$template.'}\\\\'.$text.' \end{tabular}';
 
-	}
-
-	/**
-	 * Maps appropriate Company and SepaAccount data to current Invoice
-	 	* address
-	 	* creditor bank account data
-	 	* invoice footer data
-	 	* invoice template path
-	 *
-	 * @param 	Obj 	SepaAccount
-	 * @return 	Bool 	false - error (missing required data), true - success
-	 */
-	public function set_company_data($account)
-	{
-		$err_msg = '';
-
-		if (!$account) {
-			$err_msg = 'Missing account data for Invoice ('.$this->data['contract_id'].')';
-			ChannelLog::error('billing', $err_msg);
-			throw new Exception($err_msg);
-		}
-
-		if (!$account->template_invoice) {
-			$err_msg = 'Missing SepaAccount specific templates for Invoice';
-			ChannelLog::error('billing', $err_msg);
-			throw new Exception($err_msg);
-		}
-
-		$company = $account->company;
-
-		if (!$company || !$company->logo) {
-			$err_msg = $company ? "Missing Company's Logo ($company->name)" : 'No Company assigned to Account '.$account->name;
-			ChannelLog::error('billing', $err_msg);
-			throw new Exception($err_msg);
-		}
-
-		$this->data['company_account_institute'] = $account->institute;
-		$this->data['company_account_iban'] = $account->iban;
-		$this->data['company_account_bic']  = $account->bic;
-		$this->data['company_creditor_id']  = $account->creditorid;
-		$this->data['invoice_headline'] 	= $account->invoice_headline ? $account->invoice_headline : trans('messages.invoice');
-
-		$this->data = array_merge($this->data, $company->template_data());
-
-		$this->data['company_registration_court'] .= $this->data['company_registration_court_1'] ? $this->data['company_registration_court_1'].'\\\\' : '';
-		$this->data['company_registration_court'] .= $this->data['company_registration_court_2'] ? $this->data['company_registration_court_2'].'\\\\' : '';
-		$this->data['company_registration_court'] .= $this->data['company_registration_court_3'];
-
-		$this->data['company_logo']   = storage_path('app/'.$this->rel_logo_dir_path.$account->company->logo);
-		$this->template_invoice_fname = $account->template_invoice;
-		$this->template_cdr_fname 	  = $account->template_cdr;
-
-		return true;
 	}
 
 
@@ -396,7 +387,7 @@ class Invoice extends \BaseModel{
 			$count++;
 		}
 
-		$sum = sprintf("%01.2f", $sum); 	// round($sum, 2)
+		$sum = sprintf("%01.2f", $sum);
 
 		$this->data['cdr_charge'] = $sum;
 		$this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'. $sum . '}\\\\';
@@ -439,7 +430,6 @@ class Invoice extends \BaseModel{
 		$this->_create_pdfs();
 
 		system('chown -R apache '.$dir);
-
 	}
 
 
@@ -467,7 +457,6 @@ class Invoice extends \BaseModel{
 		self::create($data);
 	}
 
-
 	/**
 	 * Creates Tex File of Invoice or CDR
 	 * replaces all '\_' and all fields of data array that are set by it's value
@@ -489,30 +478,17 @@ class Invoice extends \BaseModel{
 		// Replace placeholder by value
 		$template = $this->_replace_placeholder($template);
 
-
 		// Create tex file(s)
 		Storage::put($this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"}, $template);
-		// echo 'Stored tex file in '.storage_path('app/'.$this->rel_storage_invoice_dir.$this->filename_invoice)."\n";
 	}
 
 
 	private function _replace_placeholder($template)
 	{
-		// var_dump($this->data['invoice_nr']);
 		$template = str_replace('\\_', '_', $template);
 
 		foreach ($this->data as $key => $string)
-		{
-			// dont escape for latex concatenated strings in form of tables or tabulators and so on
-			if (!in_array($key, ['table_summary', 'invoice_text', 'cdr_table_positions', 'item_table_positions']))
-				$string = escape_latex_special_chars($string);
-
-			// escape underscores for pdflatex to work
-			if (strpos($string, 'logo') === false)
-				$string = str_replace('_', '\\_', $string);
-
 			$template = str_replace('{'.$key.'}', $string, $template);
-		}
 
 		return $template;
 	}
@@ -554,11 +530,6 @@ class Invoice extends \BaseModel{
 
 				// echo "Successfully created $key in $file\n";
 				ChannelLog::debug('billing', "Successfully created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
-
-				// Deprecated: remove temporary files - This is done by remove_templatex_files() now after all pdfs were created simultaniously by multiple threads
-				// unlink($file);
-				// unlink($file.'.aux');
-				// unlink($file.'.log');
 			}
 		}
 
@@ -592,11 +563,7 @@ class Invoice extends \BaseModel{
 	 */
 	public static function delete_current_invoices()
 	{
-		$invoice_fname  = self::_get_invoice_filename().'.pdf';
-		$cdr_fname 		= self::_get_cdr_filename().'.pdf';
-
-		$query = Invoice::where('filename', '=', $invoice_fname)->orWhere('filename', '=', $cdr_fname)->whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
-
+		$query 	  = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
 		$invoices = $query->get();
 
 		// Delete PDFs
@@ -622,7 +589,7 @@ class Invoice extends \BaseModel{
 	public static function cleanup()
 	{
 		if (\Config::get('database.default') == 'mysql')
-			$query = Invoice::where('type', '=', 'CDR')->whereRaw("CONCAT_WS('', year, '-', LPAD(month, 2 ,0), '-', '01') < '".date('Y-m-01', strtotime('-6 month'))."'");
+			$query = Invoice::where('type', '=', 'CDR')->whereRaw("CONCAT_WS('', year, '-', LPAD(month, 2 ,0), '-', '01') < '".date('Y-m-01', strtotime('-'.(BillingBase::first()->cdr_offset + 6).'month'))."'");
 		else
 		{
 			\Log::error('Missing Query in Modules\BillingBase\Entities\Invoice@cleanup for Database '.\Config::get('database.default'));

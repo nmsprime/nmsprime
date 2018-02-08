@@ -14,6 +14,19 @@ class ProvVoipEnviaServiceProvider extends ServiceProvider {
 	protected $defer = false;
 
 	/**
+	 * The artisan commands provided by this module
+	 */
+	protected $commands = [
+		'\Modules\ProvVoipEnvia\Console\EnviaContractGetterCommand',
+		'\Modules\ProvVoipEnvia\Console\EnviaContractReferenceGetterCommand',
+		'\Modules\ProvVoipEnvia\Console\EnviaCustomerReferenceGetterCommand',
+		'\Modules\ProvVoipEnvia\Console\EnviaCustomerReferenceFromCSVUpdaterCommand',
+		'\Modules\ProvVoipEnvia\Console\EnviaOrderUpdaterCommand',
+		'\Modules\ProvVoipEnvia\Console\EnviaOrderProcessorCommand',
+		'\Modules\ProvVoipEnvia\Console\VoiceDataUpdaterCommand',
+		];
+
+	/**
 	 * Register the service provider.
 	 *
 	 * @return void
@@ -21,6 +34,7 @@ class ProvVoipEnviaServiceProvider extends ServiceProvider {
 	public function register()
 	{
 		\View::addNamespace('provvoipenvia', __DIR__.'/../Resources/views');
+		$this->commands($this->commands);
 	}
 
 	/**

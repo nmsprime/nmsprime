@@ -10,11 +10,30 @@ use Modules\ProvVoip\Entities\TRCClass;
 
 class PhonenumberManagementController extends \BaseController {
 
-
 	/**
 	 * if set to true a create button on index view is available - set to true in BaseController as standard
 	 */
     protected $index_create_allowed = false;
+
+
+	/**
+	 * Extend create: check if a phonenumber exists to attach this management to
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function create() {
+
+		if (
+			(!\Input::has('phonenumber_id'))
+			||
+			!(Phonenumber::find(\Input::get('phonenumber_id')))
+		) {
+			$this->edit_view_save_button = false;
+			\Session::push('tmp_error_above_form', 'Cannot create phonenumbermanagement – phonenumber ID missing or phonenumber not found');
+		}
+
+		return parent::create();
+	}
 
 
     /**
@@ -29,7 +48,14 @@ class PhonenumberManagementController extends \BaseController {
 
 		// in most cases the subscriber is identical to contract partner ⇒ on create we prefill these values with data from contract
 		if (!$model->exists) {
-			$phonenumber = Phonenumber::findOrFail(\Input::get('phonenumber_id'));
+
+			if (
+				(!\Input::has('phonenumber_id'))
+				||
+				!($phonenumber = Phonenumber::find(\Input::get('phonenumber_id')))
+			) {
+				return [];
+			}
 			$contract = $phonenumber->mta->modem->contract;
 
 			$init_values = array(
@@ -266,7 +292,7 @@ class PhonenumberManagementController extends \BaseController {
 
 
 	/**
-	 * Get all management jobs for Envia
+	 * Get all management jobs for envia TEL
 	 *
 	 * @author Patrick Reichel
 	 * @param $phonenumbermanagement current phonenumbermanagement object
@@ -276,7 +302,7 @@ class PhonenumberManagementController extends \BaseController {
 
 		$provvoipenvia = new \Modules\ProvVoipEnvia\Entities\ProvVoipEnvia();
 
-		// check if user has the right to perform actions against Envia API
+		// check if user has the right to perform actions against envia TEL API
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		return $provvoipenvia->get_jobs_for_view($phonenumbermanagement, 'phonenumbermanagement');

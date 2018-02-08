@@ -26,7 +26,7 @@ class ModemController extends \BaseController {
 			list($model['x'], $model['y']) = $pos;
 
 		$installation_address_change_date_options = ['placeholder' => 'YYYY-MM-DD'];
-		// check if installation_address_change_date is readonly (address change has been sent to Envia API)
+		// check if installation_address_change_date is readonly (address change has been sent to envia TEL API)
 		if (
 			($model['installation_address_change_date'])
 			&&
@@ -54,10 +54,10 @@ class ModemController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'mac', 'description' => 'MAC Address', 'options' => ['placeholder' => 'AA:BB:CC:DD:EE:FF'], 'help' => trans('helper.mac_formats')),
 			array('form_type' => 'select', 'name' => 'configfile_id', 'description' => 'Configfile', 'value' => $model->html_list($model->configfiles(), 'name')),
 			array('form_type' => 'checkbox', 'name' => 'public', 'description' => 'Public CPE', 'value' => '1'),
-			array('form_type' => 'checkbox', 'name' => 'network_access', 'description' => 'Network Access', 'value' => '1', 'help' => trans('helper.Modem_NetworkAccess'))
+			array('form_type' => 'checkbox', 'name' => 'network_access', 'description' => 'Network Access', 'value' => '1', 'help' => trans('helper.Modem_NetworkAccess')),
 			);
 
-		$b = \PPModule::is_active('billingbase') ? 
+		$b = \PPModule::is_active('billingbase') ?
 			array(array('form_type' => 'text', 'name' => 'qos_id', 'description' => 'QoS', 'hidden' => 1, 'space' => '1'))
 			:
 			array(array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'QoS', 'value' => $model->html_list($model->qualities(), 'name'), 'space' => '1'));
@@ -86,7 +86,7 @@ class ModemController extends \BaseController {
 
 			array('form_type' => 'text', 'name' => 'x', 'description' => 'Geopos X', 'html' =>
 				"<div class=col-md-12 style='background-color:whitesmoke'>
-				<div class=form-group><label for=x class='col-md-4 control-label' style='margin-top: 10px;'>$geopos</label>
+				<div class='form-group row'><label for=x class='col-md-4 control-label' style='margin-top: 10px;'>$geopos</label>
 				<div class=col-md-3><input class=form-control name=x type=text value='".$model['x']."' id=x style='background-color:whitesmoke'></div>"),
 			array('form_type' => 'text', 'name' => 'y', 'description' => 'Geopos Y', 'html' =>
 				"<div class=col-md-3><input class=form-control name=y type=text value='".$model['y']."' id=y style='background-color:whitesmoke'></div>
@@ -106,7 +106,7 @@ class ModemController extends \BaseController {
 
 
 	/**
-	 * Get all management jobs for Envia
+	 * Get all management jobs for envia TEL
 	 *
 	 * @author Patrick Reichel
 	 * @param $modem current modem object
@@ -116,7 +116,7 @@ class ModemController extends \BaseController {
 
 		$provvoipenvia = new \Modules\ProvVoipEnvia\Entities\ProvVoipEnvia();
 
-		// check if user has the right to perform actions against Envia API
+		// check if user has the right to perform actions against envia TEL API
 		// if not: don't show any actions
 		try {
 			\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');

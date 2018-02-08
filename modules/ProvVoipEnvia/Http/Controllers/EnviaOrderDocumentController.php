@@ -40,7 +40,7 @@ class EnviaOrderDocumentController extends \BaseController {
 		$enviaorder_id = \Input::get('enviaorder_id', null);
 		/* dd($model); */
 		$ret = array(
-			array('form_type' => 'select', 'name' => 'enviaorder_id', 'description' => 'Envia Order', 'hidden' => '1', 'init_value' => $enviaorder_id),
+			array('form_type' => 'select', 'name' => 'enviaorder_id', 'description' => 'envia TEL Order', 'hidden' => '1', 'init_value' => $enviaorder_id),
 			array('form_type' => 'select', 'name' => 'document_type', 'description' => 'Document type', 'value' => EnviaOrderDocument::getPossibleEnumValues('document_type')),
 			array('form_type' => 'file', 'name' => 'document_upload', 'description' => 'Upload document', 'help' => 'Max. filesize: 3MB; .doc|.docx|.jpg|.pdf.|.tif|.xls'),
 		);
@@ -72,7 +72,7 @@ class EnviaOrderDocumentController extends \BaseController {
 	 */
 	public function show($id) {
 
-		// check if user has the right to perform actions against Envia API
+		// check if user has the right to perform actions against envia TEL API
 		\App\Http\Controllers\BaseAuthController::auth_check('view', \NamespaceController::get_model_name());
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
@@ -97,13 +97,13 @@ class EnviaOrderDocumentController extends \BaseController {
 
 	public function edit($id) {
 
-		// check if user has the right to perform actions against Envia API
+		// check if user has the right to perform actions against envia TEL API
 		\App\Http\Controllers\BaseAuthController::auth_check('edit', \NamespaceController::get_model_name());
 		\App\Http\Controllers\BaseAuthController::auth_check('edit', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$document = EnviaOrderDocument::findOrFail($id);
 
-		// if still not uploaded to Envia (that means there is no order id for this upload) => send to API
+		// if still not uploaded to envia TEL (that means there is no order id for this upload) => send to API
 		if (!boolval($document->upload_order_id)) {
 
 			// we realize this using redirect

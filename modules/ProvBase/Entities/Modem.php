@@ -42,26 +42,9 @@ class Modem extends \BaseModel {
 		return '<i class="fa fa-hdd-o"></i>';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		$us_pwr = $this->get_us_pwr();
-		$bsclass = $this->get_bsclass();
-
-		$configfile = $this->configfile ? $this->configfile->name : '';
-		//d($this->contract->district );
-		//$valid 		= $this->contract->check_validity('Now') ? 'yes' : 'no';
-		$valid = 'yes';
-
-		return ['index' => [$this->id, $this->mac, $configfile, $this->name, $this->lastname, $this->city, $this->street, '', $us_pwr, \App\Http\Controllers\BaseViewController::translate_label($valid)],
-		        'index_header' => ['Modem Number', 'MAC address', 'Configfile', 'Name', 'Lastname', 'City', 'Street', 'District', 'US level', 'Contract valid'],
-		        'bsclass' => $bsclass,
-				'header' => $this->id.' - '.$this->mac.($this->name ? ' - '.$this->name : '')];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 
@@ -71,7 +54,8 @@ class Modem extends \BaseModel {
 				'header' => $this->id.' - '.$this->mac.($this->name ? ' - '.$this->name : ''),
 				'edit' => ['us_pwr' => 'get_us_pwr', 'contract_valid' => 'get_contract_valid'],
 				'eager_loading' => ['configfile','contract'],
-				'sortsearch' => ['contract_valid' => 'false'] ]; // TO DO -> find reason for error
+				'sortsearch' => ['contract_valid' => 'false'],
+				'order_by' => ['0' => 'desc'], ];
 	}
 
 	public function get_bsclass()
@@ -93,19 +77,13 @@ class Modem extends \BaseModel {
 
 	public function get_contract_valid()
 	{
-		return $this->contract->check_validity('Now') ? 'yes' : 'no';
+		return $this->contract->check_validity('Now') ? \App\Http\Controllers\BaseViewController::translate_label('yes') : \App\Http\Controllers\BaseViewController::translate_label('no');
 	}
 
 	public function get_us_pwr()
 	{
 		return $this->us_pwr.' dBmV';
 	}
-
-	public function index_list()
-	{
-		return $this->orderBy('id', 'desc')->with('configfile')->get();
-	}
-
 
 	/**
 	 * return all Configfile Objects for CMs
@@ -121,7 +99,7 @@ class Modem extends \BaseModel {
 	 */
 	public function qualities ()
 	{
-		return DB::table('qos')->whereNull('deleted_at')->get();
+		return \DB::table('qos')->whereNull('deleted_at')->get();
 	}
 
 
@@ -183,19 +161,13 @@ class Modem extends \BaseModel {
 
 	public function mtas()
 	{
-		if (\PPModule::is_active('ProvVoip'))
-			return $this->hasMany('Modules\ProvVoip\Entities\Mta');
-
-		return null;
+		return $this->hasMany('Modules\ProvVoip\Entities\Mta');
 	}
 
 	// TODO: rename to device - search for all places where this function is used
 	public function tree()
 	{
-		if (\PPModule::is_active('HfcReq'))
-			return $this->belongsTo('Modules\HfcReq\Entities\NetElement');
-
-		return null;
+		return $this->belongsTo('Modules\HfcReq\Entities\NetElement');
 	}
 
 
@@ -222,13 +194,16 @@ class Modem extends \BaseModel {
 		{
 			$ret['dummy']['EnviaContract']['class'] = 'EnviaContract';
 			$ret['dummy']['EnviaContract']['relation'] = $this->enviacontracts;
+			$ret['dummy']['EnviaContract']['options']['hide_create_button'] = 1;
+			$ret['dummy']['EnviaContract']['options']['hide_delete_button'] = 1;
 
 			$ret['dummy']['EnviaOrder']['class'] = 'EnviaOrder';
 			$ret['dummy']['EnviaOrder']['relation'] = $this->_envia_orders;
+			$ret['envia TEL']['EnviaOrder']['options']['delete_button_text'] = 'Cancel order at envia TEL';
 
 			// TODO: auth - loading controller from model could be a security issue ?
-			$ret['dummy']['Envia API']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
-			$ret['dummy']['Envia API']['view']['vars']['extra_data'] = \Modules\ProvBase\Http\Controllers\ModemController::_get_envia_management_jobs($this);
+			$ret['dummy']['envia TEL API']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
+			$ret['dummy']['envia TEL API']['view']['vars']['extra_data'] = \Modules\ProvBase\Http\Controllers\ModemController::_get_envia_management_jobs($this);
 		}
 
 		return $ret;
@@ -253,8 +228,8 @@ class Modem extends \BaseModel {
 	/**
 	 * Define global constants for dhcp config files of modems (private and public)
 	 */
-	const CONF_FILE_PATH = '/etc/dhcp/nms/modems-host.conf';
-	const CONF_FILE_PATH_PUB = '/etc/dhcp/nms/modems-clients-public.conf';
+	const CONF_FILE_PATH = '/etc/dhcp/nmsprime/modems-host.conf';
+	const CONF_FILE_PATH_PUB = '/etc/dhcp/nmsprime/modems-clients-public.conf';
 
 
 	/**
@@ -270,7 +245,7 @@ class Modem extends \BaseModel {
 
 		$ret = 'host cm-'.$this->id.' { hardware ethernet '.$this->mac.'; filename "cm/cm-'.$this->id.'.cfg"; ddns-hostname "cm-'.$this->id.'";';
 
-		if(count($this->mtas))
+		if (\PPModule::is_active('provvoip') && count($this->mtas))
 			$ret .= ' option ccc.dhcp-server-1 '.ProvBase::first()->provisioning_server.';';
 
 		$ret .= "}\n";
@@ -376,7 +351,7 @@ class Modem extends \BaseModel {
 		{
 			// try to add file if it doesnt exist
 			Log::info('Missing DHCPD Configfile '.self::CONF_FILE_PATH);
-			if (File::put('', self::CONF_FILE_PATH) === false)
+			if (File::put(self::CONF_FILE_PATH, '') === false)
 			{
 				Log::alert('Error writing to DHCPD Configfile: '.self::CONF_FILE_PATH);
 				return;
@@ -416,7 +391,7 @@ class Modem extends \BaseModel {
 			else
 			{
 				Log::info('Missing DHCPD Configfile '.self::CONF_FILE_PATH_PUB);
-				if (File::put('', self::CONF_FILE_PATH_PUB) === false)
+				if (File::put(self::CONF_FILE_PATH_PUB, '') === false)
 					Log::alert('Error writing to DHCPD Configfile: '.self::CONF_FILE_PATH_PUB);
 			}
 
@@ -472,20 +447,38 @@ class Modem extends \BaseModel {
 		if (!$cf)
 			return false;
 
-		$text = "Main\n{\n\t".$cf->text_make($modem, "modem")."\n}";
-		$ret  = File::put($cf_file, $text);
+		// Evaluate network access (NA) and MaxCPE count
+		// Note: NA becomes only zero when there are no mta's and modems NA is false (e.g. no internet tariff)
+		$cpe_cnt = \Modules\ProvBase\Entities\ProvBase::first()->max_cpe;
+		$max_cpe = $cpe_cnt ? : 2; 		// default 2
+		$network_access = 1;
+
+		if (count($this->mtas))
+			$max_cpe = count($this->mtas) + (($this->contract->telephony_only || !$this->network_access) ? 0 : $max_cpe);
+		else if (!$this->network_access)
+			$network_access = 0;
+
+		// MaxCPE MUST be between 1 and 254 according to the standard
+		if ($max_cpe > 254)
+			$max_cpe = 254;
 
 
-		if ($ret === false)
-				die("Error writing to file");
+		// make text and write to file
+		$conf = "\tNetworkAccess $network_access;\n";
+		$conf .= "\tMaxCPE $max_cpe;\n";
+		foreach ($this->mtas as $mta)
+			$conf .= "\tCpeMacAddress $mta->mac;\n";
+
+		$text = "Main\n{\n".$conf.$cf->text_make($modem, "modem")."\n}";
+
+		if (File::put($cf_file, $text) === false)
+			die("Error writing to file");
 
 		Log::info('Configfile Update for Modem: '.$this->hostname);
-		Log::debug("configfile: /usr/local/bin/docsis -e $cf_file $dir/../keyfile $cfg_file");
-		// if (file_exists($cfg_file))
-		//	 unlink($cfg_file);
+		Log::debug("configfile: docsis -e $cf_file $dir../keyfile $cfg_file");
 
 		// "&" to start docsis process in background improves performance but we can't reliably proof if file exists anymore
-		exec("/usr/local/bin/docsis -e $cf_file $dir/../keyfile $cfg_file >/dev/null 2>&1 &", $out);
+		exec("docsis -e $cf_file $dir../keyfile $cfg_file >/dev/null 2>&1 &", $out);
 
 		// change owner in case command was called from command line via php artisan nms:configfile that changes owner to root
 		system('/bin/chown -R apache /tftpboot/cm');
@@ -530,6 +523,36 @@ class Modem extends \BaseModel {
 		}
 	}
 
+
+	/**
+	 * Get CMTS a CM is registered on
+	 *
+	 * @param  String 	ip 		address of cm
+	 * @return Object 	CMTS
+	 *
+	 * @author Nino Ryschawy
+	 */
+	static public function get_cmts($ip)
+	{
+		$validator = new \Acme\Validators\ExtendedValidator;
+
+		$ippools = IpPool::where('type', '=', 'CM')->get();
+
+		foreach ($ippools as $pool)
+		{
+			if ($validator->validateIpInRange(0, $ip, [$pool->net, $pool->netmask])) {
+				$cmts_id = $pool->cmts_id;
+				break;
+			}
+		}
+
+		if (isset($cmts_id))
+			return Cmts::find($cmts_id);
+
+		return null;
+	}
+
+
 	/**
 	 * Restarts modem through snmpset
 	 */
@@ -543,7 +566,7 @@ class Modem extends \BaseModel {
 		{
 			$config = ProvBase::first();
 			$fqdn 	= $this->hostname.'.'.$config->domain_name;
-			$cmts 	= ProvMonController::get_cmts(gethostbyname($fqdn));
+			$cmts 	= Modem::get_cmts(gethostbyname($fqdn));
 			$mac 	= $mac_changed ? $this->getOriginal('mac') : $this->mac;
 			$mac_oid = implode('.', array_map('hexdec', explode(':', $mac)));
 
@@ -571,7 +594,7 @@ class Modem extends \BaseModel {
 			}
 			else {
 				// Inform and log for all other exceptions
-				\Session::push('tmp_info_above_form', 'Unexpected exception: '.$e->getMessage());
+				\Session::push('tmp_error_above_form', 'Unexpected exception: '.$e->getMessage());
 				\Log::error("Unexpected exception restarting modem ".$this->id." (".$this->mac."): ".$e->getMessage()." => ".$e->getTraceAsString());
 				\Session::flash('error', '');
 			}
@@ -981,38 +1004,6 @@ class Modem extends \BaseModel {
 
 
 	/**
-	 * Before deleting a modem and all children we have to check some things
-	 *
-	 * @author Patrick Reichel
-	 */
-	public function delete() {
-
-		// deletion of modems with attached phonenumbers is not allowed with enabled Envia module
-		// prevent user from (recursive and implicite) deletion of phonenumbers before termination at Envia!!
-		// we have to check this here as using ModemObserver::deleting() with return false does not prevent the monster from deleting child model instances!
-		if (\PPModule::is_active('ProvVoipEnvia')) {
-			if ($this->has_phonenumbers_attached()) {
-
-				// check from where the deletion request has been triggered and set the correct var to show information
-				$prev = explode('?', \URL::previous())[0];
-				$prev = \Str::lower($prev);
-				$msg = "You are not allowed to delete a modem with attached phonenumbers!";
-				if (\Str::endsWith($prev, 'edit')) {
-					\Session::push('tmp_info_above_relations', $msg);
-				}
-				elseif (\Str::endsWith($prev, 'modem')) {
-					\Session::push('tmp_info_above_index_list', $msg);
-				}
-
-				return false;
-			}
-		}
-
-		// when arriving here: start the standard deletion procedure
-		return parent::delete();
-	}
-
-	/**
 	 * Calculates the great-circle distance between this and $modem, with
 	 * the Haversine formula.
 	 *
@@ -1039,7 +1030,7 @@ class Modem extends \BaseModel {
 	}
 
 	/**
-	 * Clean modem from all Envia related data – call this e.g. if you delete the last number from this modem.
+	 * Clean modem from all envia TEL related data – call this e.g. if you delete the last number from this modem.
 	 * We have to do this to avoid problems in case we want to install this modem at another customer
 	 *
 	 * @author Patrick Reichel
@@ -1123,7 +1114,7 @@ class ModemObserver
 	{
 		Log::debug(__METHOD__." started for ".$modem->hostname);
 
-		// reminder: on active Envia module: moving modem to other contract is not allowed!
+		// reminder: on active envia TEL module: moving modem to other contract is not allowed!
 		// check if this is running if you decide to implement moving of modems to other contracts
 		// watch Ticket LAR-106
 		if (\PPModule::is_active('ProvVoipEnvia')) {
@@ -1181,9 +1172,9 @@ class ModemObserver
 
 
 		// ATTENTION:
-		// If we ever think about moving modems to other contracts we have to delete Envia related stuff, too –
+		// If we ever think about moving modems to other contracts we have to delete envia TEL related stuff, too –
 		// check contract_ext* and installation_address_change_date
-		// moving then should only be allowed without attached phonenumbers and terminated Envia contract!
+		// moving then should only be allowed without attached phonenumbers and terminated envia TEL contract!
 		// cleaner in Patrick's opinion would be to delete and re-create the modem
 	}
 

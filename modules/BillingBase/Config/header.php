@@ -18,6 +18,9 @@ return array(
 		'icon'	=> 'fa-industry'],
 	'Salesmen' =>
 		['link'	=> 'Salesman.index',
-		'icon' => 'fa-vcard']
+		'icon' => 'fa-vcard'],
+	'Number Range' =>
+		['link'	=> 'NumberRange.index',
+		'icon' => 'fa-globe']
 	]
 );

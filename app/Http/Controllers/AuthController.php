@@ -107,16 +107,36 @@ class AuthController extends Controller {
 		if(!is_null($this->login_page))
 			return Redirect::to($this->prefix.'/'.$this->login_page);
 
+		$roles = \Auth::user()->roles;
+
+		if (!count($roles))
+			return \View::make('auth.denied')->with('message', 'No roles assigned. Please contact your administrator.');
+
 		// TODO: return to dashboard, but via $login_page variable !
 		// If ProvBase is not installed redirect to Config Page
 		$bm = new \BaseModel;
-		if (!\PPModule::is_active ('ProvBase'))
-			return Redirect::to($this->prefix.'/Config');
 
 		// Redirect to Default Page
 		// TODO: Redirect to a global overview page
-//		return Redirect::to($this->prefix.'/Contract');
-		return Redirect::to($this->prefix . '/Dashboard');
+		if (!\PPModule::is_active('Dashboard')) {
+			if (
+				(\PPModule::is_active('Provbase') && !\Auth::user()->has_permissions('ProvBase', 'Contract')) ||
+				(!\PPModule::is_active('ProvBase'))
+			) {
+				if (
+					(\PPModule::is_active('HfcReq') && !\Auth::user()->has_permissions('HfcReq', 'NetElement')) ||
+					(!\PPModule::is_active('HfcReq'))
+				) {
+					return Redirect::to($this->prefix.'/Config');
+				} else {
+					return Redirect::to($this->prefix.'/NetElement');
+				}
+			} else {
+				return Redirect::to($this->prefix.'/Contract');
+			}
+		} else {
+			return Redirect::to($this->prefix . '/Dashboard');
+		}
 	}
 
 
@@ -210,6 +230,6 @@ class AuthController extends Controller {
 	 */
 	public function denied()
 	{
-		return \View::make('auth.denied');
+		return \View::make('auth.denied')->with('message', 'Test');
 	}
 }

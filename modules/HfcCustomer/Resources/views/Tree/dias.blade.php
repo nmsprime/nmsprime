@@ -20,6 +20,7 @@
                                 <form action="" method="GET">
                                         From:<input type="text" name="from" value={{$mon['from']}}>
                                         To:<input type="text" name="to" value={{$mon['to']}}>
+                                        <input type="hidden" name="row" value={{$mon['row']}}>
                                         <input type="submit" value="Submit">
                                 </form>
                                 </td></tr>

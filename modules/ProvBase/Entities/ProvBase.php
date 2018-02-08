@@ -13,13 +13,15 @@ class ProvBase extends \BaseModel {
 	public $name = 'Provisioning Basic Config';
 
 	// Don't forget to fill this array
-	protected $fillable = ['provisioning_server', 'ro_community', 'rw_community', 'domain_name', 'notif_mail', 'dhcp_def_lease_time', 'dhcp_max_lease_time', 'startid_contract', 'startid_modem', 'startid_endpoint'];
+	// protected $fillable = ['provisioning_server', 'ro_community', 'rw_community', 'domain_name', 'notif_mail', 'dhcp_def_lease_time', 'dhcp_max_lease_time', 'startid_contract', 'startid_modem', 'startid_endpoint'];
 
 	// Add your validation rules here
 	public static function rules($id = null)
 	{
 		return array(
 			'provisioning_server' => 'ip',
+			// TODO: Add max_cpe rule when validation errors are displayed again
+			// 'max_cpe' => 'numeric|min:1|max:254',
 		);
 	}
 
@@ -52,6 +54,17 @@ class ProvBase extends \BaseModel {
         ProvBase::observe(new \App\SystemdObserver);
     }
 
+	/*
+	 * Return true if $this->prov_ip is online, otherwise false
+	 * This implies that the Mgmt Interface is setup correctly
+	 */
+	public static function prov_ip_online ()
+	{
+		// Ping: Only check if device is online
+		exec ('sudo ping -c1 -i0 -w1 '.ProvBase::first()->provisioning_server, $ping, $ret);
+		return $ret ? false : true;
+	}
+
 
     /**
 	 * Create the global configuration file for DHCP Server from Global Config Parameters
@@ -61,7 +74,7 @@ class ProvBase extends \BaseModel {
      */
     public function make_dhcp_glob_conf()
     {
-		$file_dhcp_conf = '/etc/dhcp/nms/global.conf';
+		$file_dhcp_conf = '/etc/dhcp/nmsprime/global.conf';
 
 		$data = 'ddns-domainname "'.$this->domain_name.'.";'."\n";
 		$data .= 'option domain-name "'.$this->domain_name.'";'."\n";
@@ -73,7 +86,8 @@ class ProvBase extends \BaseModel {
 		$data .= 'option time-servers '.$this->provisioning_server.";\n";
 		$data .= 'option time-offset '.date('Z').";\n";
 
-		$data .= "\n# zone\nzone ".$this->domain_name." {\n\tprimary ".$this->provisioning_server.";\n\tkey dhcpupdate;\n}\n";
+		$data .= "\n# zone\nzone ".$this->domain_name." {\n\tprimary 127.0.0.1;\n\tkey dhcpupdate;\n}\n";
+		$data .= "\n# reverse zone\nzone in-addr.arpa {\n\tprimary 127.0.0.1;\n\tkey dhcpupdate;\n}\n";
 
 		if (\PPModule::is_active('provvoip'))
 		{
@@ -105,7 +119,7 @@ class ProvBase extends \BaseModel {
 				$hostname = $hostname[0];
 
 			$fqdn = $hostname.'.'.$this->domain_name;
-	
+
 			system('sudo hostnamectl set-hostname '.escapeshellarg($fqdn), $ret);
 
 			if ($ret != 0)
@@ -148,6 +162,8 @@ class ProvBaseObserver
     public function updated($model)
     {
         $model->make_dhcp_glob_conf();
+
+        // TODO: if max_cpe was changed -> make all Modem Configfiles via Queue Job as this will take a long time (Nino)
     }
 
 }

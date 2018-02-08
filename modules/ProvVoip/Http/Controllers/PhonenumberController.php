@@ -58,7 +58,7 @@ class PhonenumberController extends \BaseController {
 
 			$active_checkbox = array('form_type' => 'checkbox', 'name' => 'active', 'description' => 'Active', 'html' =>
 				'<div class="col-md-12" style="background-color:white">
-					<div class="form-group"><label for="active" style="margin-top: 10px;" class="col-md-4 control-label">Active</label>
+					<div class="form-group row"><label for="active" style="margin-top: 10px;" class="col-md-4 control-label">Active</label>
 						<div class="col-md-7">
 							<input name="active" type="hidden" id="active" value="'.$active_state.'">
 							'.$active_symbol.'
@@ -168,7 +168,7 @@ class PhonenumberController extends \BaseController {
 
 
 	/**
-	 * Get all management jobs for Envia
+	 * Get all management jobs for envia TEL
 	 *
 	 * @author Patrick Reichel
 	 * @param $phonenumber current phonenumber object
@@ -178,7 +178,7 @@ class PhonenumberController extends \BaseController {
 
 		$provvoipenvia = new \Modules\ProvVoipEnvia\Entities\ProvVoipEnvia();
 
-		// check if user has the right to perform actions against Envia API
+		// check if user has the right to perform actions against envia TEL API
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		return $provvoipenvia->get_jobs_for_view($phonenumber, 'phonenumber');

@@ -1,7 +1,7 @@
 {
     "name": "ProvVoipEnvia",
     "alias": "provvoipenvia",
-    "description": "",
+    "description": "envia TEL API",
     "icon": "fa-volume-control-phone",
     "keywords": [],
     "active": 1,

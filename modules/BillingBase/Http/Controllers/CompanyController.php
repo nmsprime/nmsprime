@@ -1,13 +1,12 @@
 <?php
-namespace Modules\Billingbase\Http\Controllers;
+namespace Modules\BillingBase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
-use Modules\Billingbase\Entities\Company;
+use Modules\BillingBase\Entities\Company;
 use Input;
 
 class CompanyController extends \BaseController {
 
-	protected $edit_left_md_size = 7;
 
 	/**
 	 * defines the formular fields for the edit and create view

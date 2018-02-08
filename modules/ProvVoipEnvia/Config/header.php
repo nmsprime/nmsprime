@@ -1,11 +1,11 @@
 <?php
 
 return array(
-	['Envia orders' =>
+	['envia TEL orders' =>
 		['link'	=> 'EnviaOrder.index',
 		'icon'	=> 'fa-shopping-cart']
 	],
-	['Envia contracts' =>
+	['envia TEL contracts' =>
 		['link'	=> 'EnviaContract.index',
 		'icon'	=> 'fa-handshake-o']
 	]

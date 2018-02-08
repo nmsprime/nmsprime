@@ -32,31 +32,33 @@ class CostCenter extends \BaseModel {
 
 	public static function view_icon()
 	{
-		return '<i class="fa fa-creative-commons"></i>'; 
-	}
-
-	// link title in index view
-	public function view_index_label()
-	{
-		return ['index' => [$this->name, $this->number, $this->sepaaccount ? $this->sepaaccount->name : ''],
-				'index_header' => ['Name', 'Number', 'SEPA Account'],
-				'header' => $this->name];
+		return '<i class="fa fa-creative-commons"></i>';
 	}
 
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		return ['table' => $this->table,
 				'index_header' => [$this->table.'.name', $this->table.'.number', 'sepaaccount.name'],
 				'header' =>  $this->name,
-				'orderBy' => ['0' => 'asc'],  // columnindex => direction
+				'order_by' => ['0' => 'asc'],  // columnindex => direction
 				'eager_loading' => ['sepaaccount']];
 	}
 
 	public function view_belongs_to ()
 	{
 		return $this->sepaaccount;
+	}
+
+	public function view_has_many()
+	{
+		$ret = array();
+
+		$ret['Edit']['NumberRange']['class'] = 'NumberRange';
+		$ret['Edit']['NumberRange']['relation'] = $this->numberranges;
+
+		return $ret;
 	}
 
 	/**
@@ -72,7 +74,10 @@ class CostCenter extends \BaseModel {
 		return $this->hasMany('Modules\BillingBase\Entities\Item');
 	}
 
-
+	public function numberranges()
+	{
+		return $this->hasMany('Modules\BillingBase\Entities\NumberRange', 'costcenter_id');
+	}
 
 	/**
 	 * Returns billing month with leading zero - Note: if not set June is set as default

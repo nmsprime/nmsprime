@@ -2,7 +2,7 @@
 
 namespace Modules\ProvVoip\Entities;
 
-// Model not found? execute composer dump-autoload in lara root dir
+// Model not found? execute composer dump-autoload in nmsprime root dir
 class CarrierCode extends \BaseModel {
 
     // The associated SQL table for this Model
@@ -47,7 +47,7 @@ class CarrierCode extends \BaseModel {
 		// TODO: maybe this list should not be hardcoded – can come from configuration dialog or out of .env?
 		if (\PPModule::is_active('ProvVoipEnvia')) {
 			$favorite_carriers = array(
-				'D057', // EnviaTel; has to be used if no porting is wanted (new number from EnviaTel)
+				'D057', // envia TEL; has to be used if no porting is wanted (new number from envia TEL)
 				'D001', // Telekom
 				'D201', // 1&1
 			);

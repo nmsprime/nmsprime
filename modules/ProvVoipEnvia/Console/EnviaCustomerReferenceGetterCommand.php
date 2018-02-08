@@ -25,10 +25,10 @@ class EnviaCustomerReferenceGetterCommand extends Command {
 	/**
 	 * The console command description.
 	 */
-	protected $description = 'Get missing Envia customer references and write to contracts';
+	protected $description = 'Get missing envia TEL customer references and write to contracts';
 
 	/**
-	 * Array containing the contracts we want to get the Envia customer references for
+	 * Array containing the contracts we want to get the envia TEL customer references for
 	 */
 	protected $contracts_to_get_customer_reference_for = array();
 
@@ -68,7 +68,7 @@ class EnviaCustomerReferenceGetterCommand extends Command {
 	}
 
 	/**
-	 * Collect all contracts we want to get Envia customer reference for
+	 * Collect all contracts we want to get envia TEL customer reference for
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -109,7 +109,7 @@ class EnviaCustomerReferenceGetterCommand extends Command {
 	}
 
 	/**
-	 * Get all Envia customer references for the contracts
+	 * Get all envia TEL customer references for the contracts
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -137,7 +137,7 @@ class EnviaCustomerReferenceGetterCommand extends Command {
 
 			}
 			catch (Exception $ex) {
-				Log::error("Exception getting Envia customer reference for contract ".$contract_id."): ".$ex->getMessage()." => ".$ex->getTraceAsString());
+				Log::error("Exception getting envia TEL customer reference for contract ".$contract_id."): ".$ex->getMessage()." => ".$ex->getTraceAsString());
 			}
 		}
 	}

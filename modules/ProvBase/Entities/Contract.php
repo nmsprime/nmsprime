@@ -5,6 +5,7 @@ namespace Modules\ProvBase\Entities;
 use Modules\ProvBase\Entities\Qos;
 use Modules\BillingBase\Entities\SettlementRun;
 use Modules\BillingBase\Entities\Invoice;
+use Modules\BillingBase\Entities\NumberRange;
 
 class Contract extends \BaseModel {
 
@@ -23,8 +24,8 @@ class Contract extends \BaseModel {
 	// TODO: dependencies of active modules (billing)
 	public static function rules($id = null)
 	{
-		return array(
-			'number' => 'integer|unique:contract,number,'.$id.',id,deleted_at,NULL',
+		$rules = array(
+			'number' => 'string|unique:contract,number,'.$id.',id,deleted_at,NULL',
 			'number2' => 'string|unique:contract,number2,'.$id.',id,deleted_at,NULL',
 			'number3' => 'string|unique:contract,number3,'.$id.',id,deleted_at,NULL',
 			'number4' => 'string|unique:contract,number4,'.$id.',id,deleted_at,NULL',
@@ -38,10 +39,13 @@ class Contract extends \BaseModel {
 			'birthday' => 'required|date',
 			'contract_start' => 'date',
 			'contract_end' => 'dateornull', // |after:now -> implies we can not change stuff in an out-dated contract
-			'sepa_iban' => 'iban',
-			'sepa_bic' => 'bic',
-			'costcenter_id' => 'required|numeric|min:1',
-			);
+		);
+
+		if (\PPModule::is_active('billingbase')) {
+			$rules['costcenter_id'] = 'required|numeric|min:1';
+		}
+
+		return $rules;
 	}
 
 
@@ -57,41 +61,44 @@ class Contract extends \BaseModel {
 		return '<i class="fa fa-address-book-o"></i>';
 	}
 
-	// link title in index view
+	// AJAX Index list function
+	// generates datatable content and classes for model
 	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 
-		$costcenter = $this->costcenter ? $this->costcenter->name : '';
-
-		return ['index' => [$this->number, $this->firstname, $this->lastname, $this->zip, $this->city, $this->street, $this->house_number, $this->district, $this->contract_start, $this->contract_end, $costcenter],
-				'index_header' => ['Contract Nr', 'Firstname', 'Lastname', 'Postcode', 'City', 'Street', 'House Nr', 'District', 'Start Date', 'End Date', 'CostCenter'],
-				'bsclass' => $bsclass,
-				'header' => $this->number.' '.$this->firstname.' '.$this->lastname];
-	}
-
-	// AJAX Index list function
-	// generates datatable content and classes for model
-	public function view_index_label_ajax()
-	{
-		$bsclass = $this->get_bsclass();
-
 		return ['table' => $this->table,
-				'index_header' => [$this->table.'.number', $this->table.'.firstname', $this->table.'.lastname', $this->table.'.zip', $this->table.'.city', $this->table.'.street', $this->table.'.house_number', $this->table.'.district', $this->table.'.contract_start', $this->table.'.contract_end'],
+				'index_header' => [$this->table.'.number', $this->table.'.firstname', $this->table.'.lastname', $this->table.'.zip', $this->table.'.city', $this->table.'.street', $this->table.'.house_number', $this->table.'.district', $this->table.'.contract_start', $this->table.'.contract_end', 'costcenter.name'],
 				'header' =>  $this->number.' '.$this->firstname.' '.$this->lastname,
 				'bsclass' => $bsclass,
-				'orderBy' => ['0' => 'asc']];
+				'eager_loading' => ['costcenter'],
+				'edit' => ['costcenter.name' => 'get_costcenter_name'],
+				'order_by' => ['0' => 'asc']];
 	}
 
 
-	public function get_bsclass() 
+	/**
+	 * @return String  Bootstrap Color Class
+	 */
+	public function get_bsclass()
 	{
 		$bsclass = 'success';
-		
-		if ($this->network_access == 0)
-			$bsclass = 'danger';
+
+		if (!$this->network_access)
+		{
+			$bsclass = 'active';
+
+			// '$this->id' to dont check when index table header is determined!
+			if ($this->id && $this->check_validity('now'))
+				$bsclass = 'warning';
+		}
 
 		return $bsclass;
+	}
+
+	public function get_costcenter_name()
+	{
+		return $costcenter = $this->costcenter ? $this->costcenter->name : trans('messages.noCC');
 	}
 
 	// View Relation.
@@ -114,30 +121,40 @@ class Contract extends \BaseModel {
 			$ret['Billing']['SepaMandate']['relation']  = $this->sepamandates;
 			$ret['Billing']['Invoice']['class'] 	= 'Invoice';
 			$ret['Billing']['Invoice']['relation']  = $this->invoices;
-			$ret['Billing']['Invoice']['options']['hide_delete_button'] = 0;
-			$ret['Billing']['Invoice']['options']['hide_create_button'] = 0;
+			$ret['Billing']['Invoice']['options']['hide_delete_button'] = 1;
+			$ret['Billing']['Invoice']['options']['hide_create_button'] = 1;
 		}
 
 		if (\PPModule::is_active('provvoipenvia'))
 		{
-			$ret['Envia']['EnviaContract']['class'] = 'EnviaContract';
-			$ret['Envia']['EnviaContract']['relation'] = $this->enviacontracts;
+			$ret['envia TEL']['EnviaContract']['class'] = 'EnviaContract';
+			$ret['envia TEL']['EnviaContract']['relation'] = $this->enviacontracts;
+			$ret['envia TEL']['EnviaContract']['options']['hide_create_button'] = 1;
+			$ret['envia TEL']['EnviaContract']['options']['hide_delete_button'] = 1;
 
-			$ret['Envia']['EnviaOrder']['class'] = 'EnviaOrder';
-			$ret['Envia']['EnviaOrder']['relation'] = $this->_envia_orders;
+			$ret['envia TEL']['EnviaOrder']['class'] = 'EnviaOrder';
+			$ret['envia TEL']['EnviaOrder']['relation'] = $this->_envia_orders;
+			$ret['envia TEL']['EnviaOrder']['options']['delete_button_text'] = 'Cancel order at envia TEL';
 
 			// TODO: auth - loading controller from model could be a security issue ?
-			$ret['Envia']['Envia API']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
-			$ret['Envia']['Envia API']['view']['vars']['extra_data'] = \Modules\ProvBase\Http\Controllers\ContractController::_get_envia_management_jobs($this);
+			$ret['envia TEL']['envia TEL API']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
+			$ret['envia TEL']['envia TEL API']['view']['vars']['extra_data'] = \Modules\ProvBase\Http\Controllers\ContractController::_get_envia_management_jobs($this);
 
-			// for better navigation: show modems also in Envia blade
-			$ret['Envia']['Modem']['class'] = 'Modem';
-			$ret['Envia']['Modem']['relation'] = $this->modems;
+			// for better navigation: show modems also in envia TEL blade
+			$ret['envia TEL']['Modem']['class'] = 'Modem';
+			$ret['envia TEL']['Modem']['relation'] = $this->modems;
 		}
 
 		if (\PPModule::is_active('ccc'))
 		{
 			$ret['Create Connection Infos']['Connection Information']['view']['view'] = 'ccc::prov.conn_info';
+		}
+
+		if (\PPModule::is_active('Ticketsystem'))
+		{
+			$tickets = $this->tickets;
+			if ($tickets->all())
+				$ret['Ticket']['Ticket'] = $tickets;
 		}
 
 		if (\PPModule::is_active('mail'))
@@ -175,12 +192,7 @@ class Contract extends \BaseModel {
 	 */
 	public function phonetariff_purchase() {
 
-		if ($this->voip_enabled) {
-			return $this->belongsTo('Modules\ProvVoip\Entities\PhoneTariff', 'purchase_tariff');
-		}
-		else {
-			return null;
-		}
+		return $this->belongsTo('Modules\ProvVoip\Entities\PhoneTariff', 'purchase_tariff');
 	}
 
 
@@ -189,12 +201,7 @@ class Contract extends \BaseModel {
 	 */
 	public function phonetariff_purchase_next() {
 
-		if ($this->voip_enabled) {
-			return $this->belongsTo('Modules\ProvVoip\Entities\PhoneTariff', 'next_purchase_tariff');
-		}
-		else {
-			return null;
-		}
+		return $this->belongsTo('Modules\ProvVoip\Entities\PhoneTariff', 'next_purchase_tariff');
 	}
 
 
@@ -203,12 +210,7 @@ class Contract extends \BaseModel {
 	 */
 	public function phonetariff_sale() {
 
-		if ($this->voip_enabled) {
-			return $this->belongsTo('Modules\ProvVoip\Entities\PhoneTariff', 'voip_id');
-		}
-		else {
-			return null;
-		}
+		return $this->belongsTo('Modules\ProvVoip\Entities\PhoneTariff', 'voip_id');
 	}
 
 
@@ -217,12 +219,7 @@ class Contract extends \BaseModel {
 	 */
 	public function phonetariff_sale_next() {
 
-		if ($this->voip_enabled) {
-			return $this->belongsTo('Modules\ProvVoip\Entities\PhoneTariff', 'next_voip_id');
-		}
-		else {
-			return null;
-		}
+		return $this->belongsTo('Modules\ProvVoip\Entities\PhoneTariff', 'next_voip_id');
 	}
 
 	/**
@@ -242,30 +239,22 @@ class Contract extends \BaseModel {
 
 	public function items()
 	{
-		if (\PPModule::is_active('billingbase'))
-			return $this->hasMany('Modules\BillingBase\Entities\Item');
-		return null;
+		return $this->hasMany('Modules\BillingBase\Entities\Item');
 	}
 
 	public function items_sorted_by_valid_from_desc()
 	{
-		if (\PPModule::is_active('billingbase'))
-			return $this->hasMany('Modules\BillingBase\Entities\Item')->orderBy('valid_from', 'desc');
-		return null;
+		return $this->hasMany('Modules\BillingBase\Entities\Item')->orderBy('valid_from', 'desc');
 	}
 
 	public function sepamandates()
 	{
-		if (\PPModule::is_active('billingbase'))
-			return $this->hasMany('Modules\BillingBase\Entities\SepaMandate');
-		return null;
+		return $this->hasMany('Modules\BillingBase\Entities\SepaMandate');
 	}
 
 	public function emails()
 	{
-		if (\PPModule::is_active('mail'))
-			return $this->hasMany('Modules\Mail\Entities\Email');
-		return null;
+		return $this->hasMany('Modules\Mail\Entities\Email');
 	}
 
 	public function get_email_count()
@@ -276,34 +265,30 @@ class Contract extends \BaseModel {
 
 	public function costcenter()
 	{
-		if (\PPModule::is_active('billingbase'))
-			return $this->belongsTo('Modules\BillingBase\Entities\CostCenter', 'costcenter_id');
-		return null;
+		return $this->belongsTo('Modules\BillingBase\Entities\CostCenter', 'costcenter_id');
 	}
 
 	public function salesman()
 	{
-		if (\PPModule::is_active('billingbase'))
-			return $this->belongsTo('Modules\BillingBase\Entities\Salesman');
-		return null;
+		return $this->belongsTo('Modules\BillingBase\Entities\Salesman');
 	}
 
 	public function invoices()
 	{
-		if (\PPModule::is_active('billingbase'))
-			return $this->hasMany('Modules\BillingBase\Entities\Invoice');
-			// $srs  = SettlementRun::where('verified', '=', '0')->get(['id'])->pluck('id')->all();
-			// $hide = $srs ? : 0;
-			// return $this->hasMany('Modules\BillingBase\Entities\Invoice')->where('contract_id', '=', $this->id)->where('settlementrun_id', '!=', [$hide]);
-
-		return null;
+		return $this->hasMany('Modules\BillingBase\Entities\Invoice');
+		// $srs  = SettlementRun::where('verified', '=', '0')->get(['id'])->pluck('id')->all();
+		// $hide = $srs ? : 0;
+		// return $this->hasMany('Modules\BillingBase\Entities\Invoice')->where('contract_id', '=', $this->id)->where('settlementrun_id', '!=', [$hide]);
 	}
 
 	public function cccauthuser()
 	{
-		if (\PPModule::is_active('ccc'))
-			return $this->hasOne('Modules\Ccc\Entities\CccAuthuser');
-		return null;
+		return $this->hasOne('Modules\Ccc\Entities\CccAuthuser');
+	}
+
+	public function tickets()
+	{
+		return $this->hasMany('Modules\Ticketsystem\Entities\Ticket');
 	}
 
 
@@ -558,14 +543,15 @@ class Contract extends \BaseModel {
 
 
 	/**
-	 * This enables/disables network_access based on existence of currently active items of types Internet and Voip
+	 * This enables/disables network/telephony access based on
+	 	* validity of contract
+	 	* existence of currently active items of types Internet and Voip
 	 *
-	 * Check also if contract is outdated
-	 *
-	 * @author Patrick Reichel
+	 * @author Patrick Reichel, Nino Ryschawy
 	 */
 	protected function _update_network_access_from_items() {
 
+		// check if DB update is required
 		$contract_changed = False;
 
 		$active_tariff_info_internet = $this->_get_valid_tariff_item_and_count('Internet');
@@ -573,49 +559,61 @@ class Contract extends \BaseModel {
 
 		$active_count_internet = $active_tariff_info_internet['count'];
 		$active_count_voip = $active_tariff_info_voip['count'];
-		$active_count_sum = $active_count_internet + $active_count_voip;
 
-		$active_item_internet = $active_tariff_info_internet['item'];
-		$active_item_voip = $active_tariff_info_voip['item'];
-
-
-		if ($active_count_sum == 0 || !$this->check_validity('Now')) {
-			// if there is no active item of type internet or voip or contract is outdated: disable network_access (if not already done)
-			if (boolval($this->network_access)) {
+		if (!$this->check_validity('Now'))
+		{
+			// invalid contract - disable every access
+			if ($this->network_access) {
 				$this->network_access = 0;
 				$contract_changed = True;
 				\Log::Info('daily: contract: disabling network_access based on active internet/voip items for contract '.$this->id);
 			}
+
+			if ($this->telephony_only) {
+				$this->telephony_only = 0;
+				$contract_changed = True;
+				\Log::info('daily: contract: Unset telephony_only as contract is invalid!', [$this->id]);
+			}
 		}
-		else {
-			// changes are only required if not active
-			if (!boolval($this->network_access)) {
-
-				// then we compare the startdate of the most current active internet/voip type item with today
-				// if the difference between the two dates is to big we assume that access has been disabled manually – we don't change the state in this case
-				// this follows the philosophy introduced by Torsten within method _update_network_access_from_contract (e.g. lack of payment)
-				// $now = \Carbon\Carbon::now();
-				// $starts = array();
-				// if ($active_item_internet) {
-				// 	array_push($starts, $this->_date_to_carbon($active_item_internet->valid_from));
-				// }
-				// if ($active_item_voip) {
-				// 	array_push($starts, $this->_date_to_carbon($active_item_voip->valid_from));
-				// }
-				// $start = max($starts);
-
-				// if (($start->diff($now)->days) <= 1) {
-					$this->network_access = 1;
-					$contract_changed = True;
-					\Log::Info('daily: contract: enabling network_access based on active internet/voip items for contract '.$this->id);
-				// }
+		else if (!$active_count_internet)
+		{
+			// valid contract, but no valid internet tariff
+			if ($this->network_access) {
+				$this->network_access = 0;
+				$contract_changed = True;
+				\Log::Info('daily: contract: disabling network_access based on active internet/voip items for contract '.$this->id);
 			}
 
+			if ($active_count_voip && !$this->telephony_only) {
+				$this->telephony_only = 1;
+				$contract_changed = True;
+				\Log::Info('daily: contract: switch to telephony_only', [$this->id]);
+			}
+
+			else if (!$active_count_voip && $this->telephony_only) {
+				$this->telephony_only = 0;
+				$contract_changed = True;
+				\Log::Info('daily: contract: switch from telephony_only to internet + telephony tariff', [$this->id]);
+			}
+		}
+		else
+		{
+			// valid contract and valid internet tariff
+			if ($this->telephony_only) {
+				$this->telephony_only = 0;
+				$contract_changed = True;
+				\Log::info('daily: contract: unset telephony_only as customer has internet tariff now', [$this->id]);
+			}
+
+			if (!$this->network_access) {
+				$this->network_access = 1;
+				$contract_changed = True;
+				\Log::Info('daily: contract: enabling network_access based on active internet/voip items for contract '.$this->id);
+			}
 		}
 
-		if ($contract_changed) {
+		if ($contract_changed)
 			$this->save();
-		}
 
 	}
 
@@ -846,7 +844,7 @@ class Contract extends \BaseModel {
 		$last 	= 0;
 		$tariff = null;			// item
 		$count = 0;
-// dd($prod_ids, $this->items);
+
 		foreach ($this->items as $item)
 		{
 			if (in_array($item->product->id, $prod_ids) && $item->check_validity('Now'))
@@ -1072,6 +1070,8 @@ class Contract extends \BaseModel {
 	 */
 	public function push_to_modems()
 	{
+		$changes = $this->getDirty();
+
 		// TODO: Speed-up: Could this be done with a single eloquent update statement ?
 		//       Note: This requires to use the Eloquent Context to run all Observers
 		//       an to rebuild and restart the involved modems
@@ -1080,6 +1080,11 @@ class Contract extends \BaseModel {
 			$modem->network_access = $this->network_access;
 			$modem->qos_id = $this->qos_id;
 			$modem->save();
+
+			if (isset($changes['telephony_only']) && !$modem->needs_restart()) {
+				$modem->restart_modem();
+				$modem->make_configfile();
+			}
 		}
 	}
 
@@ -1142,23 +1147,33 @@ class Contract extends \BaseModel {
 	/**
 	 * Returns valid sepa mandate for specific timespan
 	 *
-	 * @param String 	Timespan - LAST (!!) 'year'/'month' or 'now
-	 * @return Object 	Sepa Mandate
+	 * @param 	String 		Timespan - LAST (!!) 'year'/'month' or 'now
+	 * @param 	Integer 	If Set only Mandates related to specific SepaAccount are considered (related via CostCenter)
+	 * @return 	Object 		Valid Sepa Mandate with latest start date
 	 *
 	 * @author Nino Ryschawy
 	 */
-	public function get_valid_mandate($timespan = 'Now')
+	public function get_valid_mandate($timespan = 'now', $sepaaccount_id = 0)
 	{
 		$mandate = null;
 		$last 	 = 0;
 
 		foreach ($this->sepamandates as $m)
 		{
-			if (!is_object($m) || !$m->check_validity($timespan))
+			if (!is_object($m))
+				continue;
+
+			if ($m->disable || !$m->check_validity($timespan))
+				continue;
+
+			if ($m->costcenter xor $sepaaccount_id)
+				continue;
+
+			if ($sepaaccount_id && ($m->costcenter->sepaaccount->id != $sepaaccount_id))
 				continue;
 
 			if ($mandate)
-				\Log::warning("Multiple valid Sepa Mandates active for Contract ".$this->number, [$this->id]);
+				\Log::warning("SepaMandate: Multiple valid mandates active for Contract $this->number", [$this->id]);
 
 			$start = $m->get_start_time();
 
@@ -1187,12 +1202,8 @@ class Contract extends \BaseModel {
 class ContractObserver
 {
 
-	// Start contract numbers from 10000 - TODO: move to global config or remove this after creating number cycle MVC
-	protected $num = 490000;
-
 	public function creating($contract)
 	{
-		// Note: this is only needed when Billing Module is not active - TODO: proof with future static function
 		if (!\PPModule::is_active('billingbase'))
 		{
 			$contract->sepa_iban = strtoupper($contract->sepa_iban);
@@ -1200,24 +1211,15 @@ class ContractObserver
 		}
 	}
 
-
 	public function created($contract)
 	{
-		// Note: this only works here because id is not yet assigned in creating function
-		// $contract->number = $contract->number ? $contract->number : $contract->id - $this->num;
-		if (!$contract->number)
-		{
-			$contract->number = $contract->id - $this->num;
-			$contract->observer_enabled = false;
-			$contract->save();     			// forces to call the updating, saving, updated & saved method of the observer
-		}
-
 		$contract->push_to_modems(); 	// should not run, because a new added contract can not have modems..
 	}
 
 	public function updating($contract)
 	{
-		$contract->number = $contract->number ? : $contract->id - $this->num;
+		$original_number = $contract->getOriginal('number');
+		$original_costcenter_id = $contract->getOriginal('costcenter_id');
 
 		if (!\PPModule::is_active('billingbase'))
 		{
@@ -1238,13 +1240,13 @@ class ContractObserver
 			// Note: implement this commented way if there are more checkings for better code structure - but this reduces performance on one of the most used functions of the user!
 			// $changed_fields = $contract->getDirty();
 
-			// Note: isset is way faster regarding the performance than array_key_exists, but returns false if value of key is null which is not important here - See upmost comment on: http://php.net/manual/de/function.array-key-exists.php 
+			// Note: isset is way faster regarding the performance than array_key_exists, but returns false if value of key is null which is not important here - See upmost comment on: http://php.net/manual/de/function.array-key-exists.php
 			// if (isset($changed_fields['number']))
 			if ($contract->number != $contract['original']['number'])
 			{
 				// change customer information - take care - this automatically changes login psw of customer
 				if ($customer = $contract->cccauthuser)
-					$customer->update(); 
+					$customer->update();
 			}
 
 			// if (isset($changed_fields['contract_start']) || isset($changed_fields['contract_end']))

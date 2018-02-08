@@ -4,7 +4,14 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-class mpsCommand extends Command {
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Contracts\Bus\SelfHandling;
+use Illuminate\Contracts\Queue\ShouldQueue;
+
+class mpsCommand extends Command implements SelfHandling, ShouldQueue {
+
+	use InteractsWithQueue, SerializesModels;
 
 	/**
 	 * The console command name.
@@ -35,7 +42,7 @@ class mpsCommand extends Command {
 	 *
 	 * @return mixed
 	 */
-	public function fire()
+	public function handle()
 	{
 		// Refresh all MPS rules
 		\Modules\HfcCustomer\Entities\Mpr::refresh();

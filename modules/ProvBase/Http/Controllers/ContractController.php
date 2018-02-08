@@ -19,7 +19,7 @@ class ContractController extends \BaseController {
 
 	/**
 	 * Returns the List of Salesmen for the contract to choose from
-	 * 
+	 *
 	 * @return 	array 	$salesman
 	 */
 	private function _salesmen()
@@ -40,7 +40,7 @@ class ContractController extends \BaseController {
 		if (!$model)
 			$model = new Contract;
 
-		$r = $a = $b = $c = $d = [];
+		$r = $a = $b = $c1 = $c2 = $d = [];
 
 		// label has to be the same like column in sql table
 		$a = array(
@@ -58,17 +58,20 @@ class ContractController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'lastname', 'description' => 'Lastname', 'create' => '1', 'space' => '1'),
 			array('form_type' => 'text', 'name' => 'street', 'description' => 'Street', 'create' => '1', 'html' =>
 				"<div class=col-md-12 style='background-color:whitesmoke'>
-				<div class=form-group><label for=street class='col-md-4 control-label' style='margin-top: 10px;'>Street * and House Number</label>
-				<div class=col-md-5><input class=form-control name=street type=text value='".$model['street']."' id=street style='background-color:whitesmoke'></div>"),
+				<div class='form-group row'>
+					<label for=street class='col-md-4 control-label' style='margin-top: 10px;'>Street * and House Number</label>
+						<div class=col-md-5>
+							<input class='form-control' name='street' type=text value='".$model['street']."' id='street' style='background-color:whitesmoke'>
+						</div>"),
 			array('form_type' => 'text', 'name' => 'house_number', 'description' => 'House Number', 'create' => '1', 'html' =>
-				"<div class=col-md-2><input class=form-control name=house_number type=text value='".$model['house_number']."' id=house_number style='background-color:whitesmoke'></div>
+				"<div class=col-md-2><input class='form-control' name='house_number' type=text value='".$model['house_number']."' id='house_number' style='background-color:whitesmoke'></div>
 				</div></div>"),
 			array('form_type' => 'text', 'name' => 'zip', 'description' => 'Postcode', 'create' => '1'),
 			array('form_type' => 'text', 'name' => 'city', 'description' => 'City', 'create' => '1'),
 			array('form_type' => 'text', 'name' => 'district', 'description' => 'District', 'create' => '1'),
 			array('form_type' => 'text', 'name' => 'phone', 'description' => 'Phone'),
 			array('form_type' => 'text', 'name' => 'fax', 'description' => 'Fax'),
-			array('form_type' => 'text', 'name' => 'email', 'description' => 'E-Mail Address'), 
+			array('form_type' => 'text', 'name' => 'email', 'description' => 'E-Mail Address'),
 			array('form_type' => 'text', 'name' => 'birthday', 'description' => 'Birthday', 'create' => '1', 'space' => '1'),
 
 		);
@@ -85,17 +88,20 @@ class ContractController extends \BaseController {
 				/* array('form_type' => 'text', 'name' => 'voip_contract_start', 'description' => 'VoIP Contract Start'), */
 				/* array('form_type' => 'text', 'name' => 'voip_contract_end', 'description' => 'VoIP Contract End'), */
 				array('form_type' => 'select', 'name' => 'purchase_tariff', 'description' => 'Purchase tariff', 'value' => PhoneTariff::get_purchase_tariffs()),
-
 				array('form_type' => 'select', 'name' => 'voip_id', 'description' => 'Sale tariff', 'value' => PhoneTariff::get_sale_tariffs()),
 				/* array('form_type' => 'text', 'name' => 'next_voip_id', 'description' => 'Phone ID next month', 'space' => '1'), */
+				array('form_type' => 'checkbox', 'name' => 'telephony_only', 'description' => 'Telephony only', 'value' => '1', 'help' => 'Customer has only subscribed telephony, i.e. no internet access')
 			);
 		}
 
-		if (\PPModule::is_active('billingbase')) {
-
-			$c = array(
+		$c1 = array(
 				array('form_type' => 'text', 'name' => 'contract_start', 'description' => 'Contract Start'), // TODO: create default 'value' => date("Y-m-d")
 				array('form_type' => 'text', 'name' => 'contract_end', 'description' => 'Contract End'),
+			);
+
+		if (\PPModule::is_active('billingbase')) {
+
+			$c2 = array(
 				array('form_type' => 'checkbox', 'name' => 'create_invoice', 'description' => 'Create Invoice', 'value' => '1'),
 				array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center', 'value' => $this->_add_empty_first_element_to_options($model->html_list(CostCenter::all(), 'name'))),
 				array('form_type' => 'select', 'name' => 'salesman_id', 'description' => 'Salesman', 'value' => $this->_salesmen(), 'space' => '1'),
@@ -103,11 +109,12 @@ class ContractController extends \BaseController {
 				// NOTE: qos is required as hidden field to automatically create modem with correct contract qos class
 				// TODO: @Nino Ryschawy: please review and test while merging ..
 				array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'QoS', 'create' => '1', 'value' => $model->html_list(Qos::all(), 'name'), 'hidden' => 1),
+				array('form_type' => 'checkbox', 'name' => 'telephony_only', 'description' => 'Telephony only', 'value' => '1', 'help' => 'Customer has only subscribed telephony, i.e. no internet access', 'hidden' => 1)
 			);
 		}
 		else
 		{
-			$c = array(
+			$c2 = array(
 				array('form_type' => 'checkbox', 'name' => 'network_access', 'description' => 'Internet Access', 'value' => '1', 'create' => '1', 'checked' => 1),
 				array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'QoS', 'create' => '1', 'value' => $model->html_list(Qos::all(), 'name')),
 				array('form_type' => 'select', 'name' => 'next_qos_id', 'description' => 'QoS next month', 'value' => $this->_add_empty_first_element_to_options($model->html_list(Qos::all(), 'name'))),
@@ -120,12 +127,12 @@ class ContractController extends \BaseController {
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
 		);
 
-		return array_merge($a, $b, $c, $d);
+		return array_merge($a, $b, $c1, $c2, $d);
 	}
 
 
 	/**
-	 * Get all management jobs for Envia
+	 * Get all management jobs for envia TEL
 	 *
 	 * @author Patrick Reichel
 	 * @param $contract current contract object
@@ -135,7 +142,7 @@ class ContractController extends \BaseController {
 
 		$provvoipenvia = new \Modules\ProvVoipEnvia\Entities\ProvVoipEnvia();
 
-		// check if user has the right to perform actions against Envia API
+		// check if user has the right to perform actions against envia TEL API
 		// if not: don't show any actions
 		try {
 			\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
@@ -143,7 +150,6 @@ class ContractController extends \BaseController {
 		catch (PermissionDeniedError $ex) {
 			return null;
 		}
-
 		return $provvoipenvia->get_jobs_for_view($contract, 'contract');
 	}
 
@@ -155,6 +161,17 @@ class ContractController extends \BaseController {
 	{
 		$data['contract_start'] = $data['contract_start'] ? : date('Y-m-d');
 
+		if (!$data['number'] && \PPModule::is_active('billingbase'))
+		{
+			// generate contract number
+			$num = \Modules\BillingBase\Entities\NumberRange::get_new_number('contract', $data['costcenter_id']);
+
+			if ($num)
+				$data['number'] = $num;
+			else
+				session(['alert' => \App\Http\Controllers\BaseViewController::translate_view('Failure','Contract_Numberrange')]);
+		}
+
 		$data = parent::prepare_input($data);
 
 		// set this to null if no value is given
@@ -165,7 +182,6 @@ class ContractController extends \BaseController {
 			'voip_contract_end',
 		);
 		$data = $this->_nullify_fields($data, $nullable_fields);
-
 		return $data;
 	}
 
@@ -199,6 +215,5 @@ class ContractController extends \BaseController {
 
 		return $data;
 	}
-
-
 }
+

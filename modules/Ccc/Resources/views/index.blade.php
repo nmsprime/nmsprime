@@ -2,13 +2,12 @@
 
 @section('content_left')
 
-	<table class="table">
-		@foreach($invoices as $key => $invoice)
-			<?php $link = HTML::linkRoute('Customer.Download', $invoice->filename, ['invoice' => $invoice->id]); ?>
+	<table class="table table-bordered">
+		@foreach($invoice_links as $key => $link)
 			@if ($key % 2)
-				<td> {{ $link }} </td></tr>
+				<td class="{{$link['bsclass']}}" align="center"=> {{ $link['link'] }} </td></tr>
 			@else
-				<tr><td> {{ $link }} </td>
+				<tr><td class="{{$link['bsclass']}}" align="center"> {{ $link['link'] }} </td>
 			@endif
 		@endforeach
 	</table>
@@ -27,7 +26,7 @@
 
 @section('content')
 
-	@include ('bootstrap.panel', array ('content' => 'content_left', 'invoices' => $invoices, 'view_header' => trans('messages.Invoices'), 'md' => 4))
+	@include ('bootstrap.panel', array ('content' => 'content_left', 'invoice_links' => $invoice_links, 'view_header' => trans('messages.Invoices'), 'md' => 4))
 
 	@if (!$emails->isEmpty())
 		@include ('bootstrap.panel', array ('content' => 'content_emails', 'emails' => $emails, 'view_header' => App\Http\Controllers\BaseViewController::translate_label('E-Mail Address'), 'md' => 4))

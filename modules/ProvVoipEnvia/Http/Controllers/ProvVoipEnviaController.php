@@ -175,7 +175,7 @@ class ProvVoipEnviaController extends \BaseController {
 	 */
 	public function index() {
 
-		// check if user has the right to perform actions against Envia API
+		// check if user has the right to perform actions against envia TEL API
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$jobs = array(
@@ -345,7 +345,7 @@ class ProvVoipEnviaController extends \BaseController {
 
 
 	/**
-	 * Send data to Envia and process result.
+	 * Send data to envia TEL and process result.
 	 *
 	 * @author Patrick Reichel
 	 *
@@ -356,7 +356,7 @@ class ProvVoipEnviaController extends \BaseController {
 	 */
 	protected function _perform_request($url, $payload, $job) {
 
-		/* echo "<h3>We are not sending data to Envia yet! Will now exit…</h3>"; */
+		/* echo "<h3>We are not sending data to envia TEL yet! Will now exit…</h3>"; */
 		/* exit(); */
 
 		// perform the request and receive the result (meta and content)
@@ -596,7 +596,7 @@ class ProvVoipEnviaController extends \BaseController {
 		$ret = array();
 
 		$ret['plain_html'] = '';
-		$ret['plain_html'] .= "<h4>There was error creating XML to be sent to Envia:</h4>";
+		$ret['plain_html'] .= "<h4>There was error creating XML to be sent to envia TEL:</h4>";
 		$ret['plain_html'] .= "<h5>".$msg."</h5><br><br>";
 		$ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">Bring me back…</h5>';
 
@@ -648,7 +648,7 @@ class ProvVoipEnviaController extends \BaseController {
 
 	/**
 	 * Get confirmation to continue with chosen action.
-	 * Used for every job that changes data at Envia.
+	 * Used for every job that changes data at envia TEL.
 	 *
 	 * @author Patrick Reichel
 	 * @param $payload generated XML
@@ -660,14 +660,14 @@ class ProvVoipEnviaController extends \BaseController {
 		$ret = array();
 
 		$ret['plain_html'] = '';
-		$ret['plain_html'] .= "<h4>Data to be sent to Envia</h4>";
+		$ret['plain_html'] .= "<h4>Data to be sent to envia TEL</h4>";
 		$ret['plain_html'] .= "URL: ".$url."<br>";
 		$ret['plain_html'] .= "API version: ".$this->model->api_version_string."<br><br>";
 		$ret['plain_html'] .= "<pre>";
 		$ret['plain_html'] .= ProvVoipEnvia::prettify_xml($payload, True);
 		$ret['plain_html'] .= "</pre>";
 
-		$ret['plain_html'] .= "<h4>You are going to change data at Envia! Proceed?</h4>";
+		$ret['plain_html'] .= "<h4>You are going to change data at envia TEL! Proceed?</h4>";
 
 		$ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">NOOO! Please bring me back…</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
 
@@ -782,7 +782,7 @@ class ProvVoipEnviaController extends \BaseController {
 	 */
 	public function request($job) {
 
-		// check if user has the right to perform actions against Envia API
+		// check if user has the right to perform actions against envia TEL API
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		// check if a non standard return type is wanted
@@ -818,7 +818,7 @@ class ProvVoipEnviaController extends \BaseController {
 
 		// set some environmental vars
 		$origin = \Input::get('origin', \URL::to('/'));
-		$view_header = 'Request Envia';
+		$view_header = 'Request envia TEL';
 		$view_path = \NamespaceController::get_view_name().'.request';
 
 		// check if there should be an instant redirect – if so do so :-)
@@ -856,7 +856,7 @@ class ProvVoipEnviaController extends \BaseController {
 			$xml_creation_failed = True;
 			try {
 				// check if data is going to be sent – don't store XML created to be shown for confirmation request
-				// if the XML to create is for sending against Envia there should be a …&really=True within the GET params
+				// if the XML to create is for sending against envia TEL there should be a …&really=True within the GET params
 				$store_xml = \Input::get('really', False);
 				$payload = $this->model->get_xml($job, $store_xml);
 				$xml_creation_failed = False;
@@ -873,7 +873,7 @@ class ProvVoipEnviaController extends \BaseController {
 				$view_var = $this->_show_xml_creation_error($payload, $origin);
 			}
 			else {
-				// on jobs changing data at Envia: Ask if job shall be performed
+				// on jobs changing data at envia TEL: Ask if job shall be performed
 				// therefore show the generated XML
 				if (!\Input::get('really', False)) {
 					$view_var = $this->_show_confirmation_request($payload, $url, $origin);

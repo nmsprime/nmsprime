@@ -2,7 +2,7 @@
 
 namespace Modules\ProvVoip\Entities;
 
-// Model not found? execute composer dump-autoload in lara root dir
+// Model not found? execute composer dump-autoload in nmsprime root dir
 class PhonebookEntry extends \BaseModel {
 
     // The associated SQL table for this Model
@@ -128,20 +128,9 @@ class PhonebookEntry extends \BaseModel {
 		return 'Phonebook entry';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		$bsclass = $this->get_bsclass();
-
-        return ['index' => [$this->id],
-                'index_header' => ['ID'],
-                'bsclass' => $bsclass,
-                'header' => 'PhonebookEntry (id'.$this->id.')'];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 
@@ -151,7 +140,7 @@ class PhonebookEntry extends \BaseModel {
 				'bsclass' => $bsclass];
 	}
 
-	public function get_bsclass() 
+	public function get_bsclass()
 	{
 		$bsclass = 'success';
 
@@ -238,9 +227,9 @@ class PhonebookEntry extends \BaseModel {
 		if (\PPModule::is_active('provvoipenvia')) {
 
 			// TODO: auth - loading controller from model could be a security issue ?
-			$ret['Envia']['Envia API']['html'] = '<h4>Available Envia API jobs</h4>';
-			$ret['Envia']['Envia API']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
-			$ret['Envia']['Envia API']['view']['vars']['extra_data'] = \Modules\ProvVoip\Http\Controllers\PhonebookEntryController::_get_envia_management_jobs($this);
+			$ret['envia TEL']['envia TEL API']['html'] = '<h4>Available envia TEL API jobs</h4>';
+			$ret['envia TEL']['envia TEL API']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
+			$ret['envia TEL']['envia TEL API']['view']['vars']['extra_data'] = \Modules\ProvVoip\Http\Controllers\PhonebookEntryController::_get_envia_management_jobs($this);
 		}
 		else {
 			$ret = array();

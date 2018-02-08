@@ -1,6 +1,14 @@
 <?php
 
 return [
+/**
+ * Index Page - Datatables
+ */
+	'SortSearchColumn'				=> 'This Column cannot be searched or ordered.',
+	'PrintVisibleTable'				=> 'Prints the shown table. If the table is filtered make sure to select the \"All\" option to display everything. Loading can take a few seconds.',
+	'ExportVisibleTable'			=> 'Exports the shown table. If the table is filtered make sure to select the \"All\" option to display everything. Loading can take a few seconds.',
+	'ChangeVisibilityTable'			=> 'Select the columns that should be visible.',
+
  /**
   *	MODULE: BillingBase
   */
@@ -35,6 +43,10 @@ return [
 	//SalesmanController
 	'Salesman_ProductList'			=> 'Add all Product types he gets commission for - possible: ',
 
+	// SepaMandate
+	'sm_cc' 						=> 'If a cost center is assigned only products related to the same cost center will be charged of this account. Leave this field empty if all charges that can not be assigned to another SEPA-Mandate with specific cost center shall be debited of this account. Note: It is assumed that all emerging costs that can not be assigned to any SEPA-Mandate will be payed in cash!',
+	'sm_recur' 						=> 'Activate if there already have been transactions of this account before the creation of this mandate. Sets the status to recurring. Note: This flag is only considered on first transaction!',
+
 	//SepaAccountController
 	'SepaAccount_InvoiceHeadline'	=> 'Replaces Headline in Invoices created for this Costcenter',
 	'SepaAccount_InvoiceText'		=> 'The Text of the separate four \'Invoice Text\'-Fields is automatically chosen dependent on the total charge and SEPA Mandate and is set in the appropriate Invoice for the Customer. It is possible to use all data field keys of the Invoice Class as placeholder in the form of {fieldname} to build a kind of template. These are replaced by the actual value of the Invoice.',
@@ -61,10 +73,10 @@ return [
 	'parameter_html_frame' 			=> 'Doesn\'t have influences on SubOIDs in Tables (but on 3rd Dimensional Params!).',
 
  /**
-  *	MODULE: ProvBase	
+  *	MODULE: ProvBase
   */
  	//ModemController
-	'Modem_NetworkAccess'			=> 'Disable/Enable Network Access - Take Care: If Billing-Module is installed this Checkbox will be overwritten daily during check of valid Tariff Item when it was not enabled/checked manually',
+	'Modem_NetworkAccess'			=> 'Network Access for CPEs. (MTAs are not considered and will always go online when all other configurations are correct). Take care: With Billing-Module this checkbox will be overwritten by daily check if tariff changes.',
 	'Modem_InstallationAddressChangeDate'	=> 'In case of (physical) relocation of the modem: Add startdate for the new address here. If readonly there is a pending address change order at Envia.',
 	'contract_number' 				=> 'Attention - Customer login password is changed automatically on changing this field!',
 	'mac_formats'					=> "Allowed formats (case-insensitive):\n\n1) AA:BB:CC:DD:EE:FF\n2) AABB.CCDD.EEFF\n3) AABBCCDDEEFF",
@@ -96,4 +108,8 @@ return [
 	'a_d50' => 'Number of packets experiencing a packet delay variation (i.e. jitter) between 50ms and 70ms',
 	'a_d300' => 'Number of packets experiencing a packet delay variation (i.e. jitter) greater than 300ms',
 	'called' => 'Call direction from Callee to Caller',
+/**
+ * Module Ticketsystem
+ */
+	'assign_user' => 'Allowed to assign an user to a ticket.',
  ];

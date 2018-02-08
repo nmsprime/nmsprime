@@ -1,5 +1,5 @@
 <?php
-namespace Modules\Billingbase\Http\Controllers;
+namespace Modules\BillingBase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\Product;
@@ -20,16 +20,15 @@ class ItemController extends \BaseController {
 
 		$products = Product::select('id', 'type', 'name')->orderBy('type')->orderBy('name')->get()->all();
 
-		// $prods = $model->html_list($products, 'name');
 		$prods[0] = '';
 		foreach ($products as $p)
 			$prods[$p->id] = $p->type.' - '.$p->name;
 
+		$types = [];
 		foreach ($products as $p)
 			$types[$p->id] = $p->type;
 
 		// the options should start with a 0 entry which is chosen if nothing is given explicitely
-		// (watch $this->prepare_rules())
 		// don't use array_merge for this because that reassignes the index!
 		$ccs = $this->_add_empty_first_element_to_options($model->html_list(CostCenter::all(), 'name'));
 

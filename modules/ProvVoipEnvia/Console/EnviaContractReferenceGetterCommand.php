@@ -23,16 +23,16 @@ class EnviaContractReferenceGetterCommand extends Command {
 	/**
 	 * The console command description.
 	 */
-	protected $description = 'Get Envia contract references and write to phonenumbers {default|complete}';
+	protected $description = 'Get envia TEL contract references and write to phonenumbers {default|complete}';
 
 	/**
 	 * The signature (defining the optional argument)
 	 */
 	protected $signature = 'provvoipenvia:get_envia_contract_references
-							{mode=default : The mode to run in; give argument “complete” to get Envia references for all (activated and not deactivated) phonenumbers}';
+							{mode=default : The mode to run in; give argument “complete” to get envia TEL references for all (activated and not deactivated) phonenumbers}';
 
 	/**
-	 * Array containing the phonenumbers we want to get the Envia contract references for
+	 * Array containing the phonenumbers we want to get the envia TEL contract references for
 	 */
 	protected $phonenumbers_to_get_contract_reference_for = array();
 
@@ -75,7 +75,7 @@ class EnviaContractReferenceGetterCommand extends Command {
 	}
 
 	/**
-	 * Collect all phonenumbers we want to get Envia contract reference for
+	 * Collect all phonenumbers we want to get envia TEL contract reference for
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -112,7 +112,7 @@ class EnviaContractReferenceGetterCommand extends Command {
 					&&
 					($envia_contract->state = 'Aktiv')
 				) {
-					Log::debug("Skipping phonenumber ".$log_number.": Envia contract $envia_contract->id is active.");
+					Log::debug("Skipping phonenumber ".$log_number.": envia TEL contract $envia_contract->id is active.");
 					continue;
 				}
 			}
@@ -148,7 +148,7 @@ class EnviaContractReferenceGetterCommand extends Command {
 	}
 
 	/**
-	 * Get all Envia contract references for the phonenumbers
+	 * Get all envia TEL contract references for the phonenumbers
 	 *
 	 * @author Patrick Reichel
 	 */
@@ -172,7 +172,7 @@ class EnviaContractReferenceGetterCommand extends Command {
 
 			}
 			catch (Exception $ex) {
-				Log::error("Exception getting Envia contract reference for phonenumber ".$log_number."): ".$ex->getMessage()." => ".$ex->getTraceAsString());
+				Log::error("Exception getting envia TEL contract reference for phonenumber ".$log_number."): ".$ex->getMessage()." => ".$ex->getTraceAsString());
 			}
 		}
 	}

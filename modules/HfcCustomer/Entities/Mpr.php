@@ -39,23 +39,14 @@ class Mpr extends \BaseModel {
 		return '<i class="fa fa-compass"></i>';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		return ['index' => [$this->name, $this->netelement ? $this->netelement->name : 'unknown'],
-				'index_header' => ['Name', 'Belongs To'],
-				'header' => $this->name];
-
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		return ['table' => $this->table,
 				'index_header' => [$this->table.'.name', 'netelement.name'],
 				'header' =>  $this->name,
-				'orderBy' => ['0' => 'asc'], // columnindex => direction
+				'order_by' => ['0' => 'asc'], // columnindex => direction
 				'eager_loading' => ['netelement']];
 	}
 
@@ -93,10 +84,11 @@ class Mpr extends \BaseModel {
 	 */
 	public function view_has_many()
 	{
-		return array(
-			'MprGeopos' => $this->mprgeopos
-		);
+		$ret['Edit']['MprGeopos']['class'] = 'MprGeopos';
+		$ret['Edit']['MprGeopos']['relation'] = $this->mprgeopos;
+		$ret['Edit']['MprGeopos']['options']['hide_create_button'] = 1;
 
+		return $ret;
 	}
 
 
@@ -267,10 +259,10 @@ class Mpr extends \BaseModel {
  */
 class MprObserver
 {
-	// unlike MprGeoposObserver we only hook into 'updated' here, as Mpr::refresh will already
+	// unlike MprGeoposObserver we only hook into 'updated' here, as MpsCommand will already
 	// be called in MprGeoposObserver if MPRs (including their geopos) are created or deleted
 	public function updated($modem)
 	{
-		Mpr::refresh();
+		\Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
 	}
 }

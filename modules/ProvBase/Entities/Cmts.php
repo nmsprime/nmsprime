@@ -33,20 +33,9 @@ class Cmts extends \BaseModel {
 		return '<i class="fa fa-server"></i>';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		$bsclass = $this->get_bsclass();
-
-		return ['index' => [$this->id, $this->hostname, $this->ip, $this->company, $this->type],
-				'index_header' => ['ID', 'Hostname', 'IP address', 'Company', 'Type'],
-				'bsclass' => $bsclass,
-				'header' => $this->hostname];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 
@@ -54,13 +43,13 @@ class Cmts extends \BaseModel {
 				'index_header' => [$this->table.'.id', $this->table.'.hostname', $this->table.'.ip', $this->table.'.company', $this->table.'.type'],
 				'header' =>  $this->hostname,
 				'bsclass' => $bsclass,
-				'orderBy' => ['0' => 'asc']];
+				'order_by' => ['0' => 'asc']];
 	}
 
 	public function get_bsclass()
 	{
 		$bsclass = 'success';
-	
+
 		// TODO: use cmts state value
 		if ($this->state == 1)
 			$bsclass = 'warning';
@@ -90,14 +79,150 @@ class Cmts extends \BaseModel {
 		return $this->hasMany('Modules\ProvBase\Entities\IpPool');
 	}
 
+	public function netelement ()
+	{
+		return $this->hasOne('Modules\HfcReq\Entities\NetElement', 'prov_device_id');
+	}
+
 	// returns all objects that are related to a cmts
 	public function view_has_many()
 	{
-		return array(
-			'IpPool' => $this->ippools
-		);
+		// related IP Pools
+		$ret['Base']['IpPool']['class'] = 'IpPool';
+		$ret['Base']['IpPool']['relation'] = $this->ippools;
+
+		// Routing page
+		$this->prep_cmts_config_page();
+		$ret['Base']['Config']['view']['vars'] = ['cb' => $this]; // cb .. CMTS blade
+		$ret['Base']['Config']['view']['view'] = 'provbase::Cmts.overview';
+
+		// rf card page
+		$this->prep_rfcard_page();
+		$ret['Base']['Cluster']['view']['vars'] = ['rf' => $this]; // rf .. RF card blade
+		$ret['Base']['Cluster']['view']['view'] = 'provbase::Rfcardblade.overview';
+		// uncomment: to use default blade instead
+		//$ret['Base']['NetElement']['class'] = 'NetElement';
+		//$ret['Base']['NetElement']['relation'] = $this->clusters;
+
+		return $ret;
 	}
 
+
+	/*
+	 * Return the CMTS config as clear text
+	 */
+	public function get_raw_cmts_config()
+	{
+		$view_var = $this;
+		$cb = $this;
+
+		return strip_tags(view('provbase::Cmtsblade.'.strtolower($this->company), compact('cb', 'view_var'))->render());
+	}
+
+
+	/*
+	 * create a cisco encrypted password, like $1$fUW9$EAwpFkkbCTUUK8MpRS1sI0
+	 *
+	 * See: https://serverfault.com/questions/26188/code-to-generate-cisco-secret-password-hashes/46399
+	 *
+	 * NOTE: dont encrypt if CMTS_SAVE_ENCRYPTED_PASSWORDS is set in env file
+	 */
+	public function create_cisco_encrypt ($psw)
+	{
+		// Dont encrypt password, it is still encrypted
+		if (env('CMTS_SAVE_ENCRYPTED_PASSWORDS', false))
+			return $psw;
+
+		exec ('openssl passwd -salt `openssl rand -base64 3` -1 "'.$psw.'"', $output);
+		return $output[0];
+	}
+
+
+	/*
+	 * CMTS Config Page:
+	 * Prepare Cmts Config Variables
+	 *
+	 * They are required in Cmtsblade's
+	 *
+	 * NOTE: this will fit 90% of generic installations
+	 */
+	public function prep_cmts_config_page()
+	{
+		// password section
+		$this->enable_secret = $this->create_cisco_encrypt(env('CMTS_ENABLE_SECRET', 'admin'));
+		$this->admin_psw = $this->create_cisco_encrypt(env('CMTS_ADMIN_PASSWORD', 'admin'));
+		// NOTE: this is quit insecure and should be a different psw that the encrypted ones above!
+		$this->vty_psw = env('CMTS_VTY_PASSWORD', 'adminvty');
+
+		// type specific settings
+		switch ($this->type) {
+			case 'ubr7225':
+				$this->interface = 'GigabitEthernet0/1';
+				break;
+
+			case 'ubr10k':
+				$this->interface = 'GigabitEthernet1/0/0';
+				break;
+
+			default:
+				$this->interface = 'GigabitEthernet0/1';
+				break;
+		}
+
+		// get provisioning IP and interface
+		$this->prov_ip = ProvBase::first()->provisioning_server;
+		exec ('ip a | grep '.$this->prov_ip.' | tr " " "\n" | tail -n1', $prov_if);
+		$this->prov_if = (isset($prov_if[0]) ? $prov_if[0] : 'eth');
+
+		$this->domain = ProvBase::first()->domain_name;
+		$this->router_ip = env('CMTS_DEFAULT_GW', '10.255.0.254');
+		$this->netmask = env('CMTS_IP_NETMASK', '255.255.255.0');
+		$this->tf_net_1 = env('CMTS_TRANSFER_NET', '10.255.0.1'); // servers with /24
+		$this->nat_ip = env('CMTS_NAT_IP', '10.255.0.2'); // second server ip is mostlikely NAT
+
+		$this->snmp_ro = $this->get_ro_community();
+		$this->snmp_rw = $this->get_rw_community();
+
+		// Help section: onhover
+		$this->enable_secret = '<span title="CMTS_ENABLE_SECRET and CMTS_SAVE_ENCRYPTED_PASSWORDS"><b>'.$this->enable_secret.'</b></span>';
+		$this->admin_psw = '<span title="CMTS_ADMIN_PASSWORD and CMTS_SAVE_ENCRYPTED_PASSWORDS"><b>'.$this->admin_psw.'</b></span>';
+		$this->vty_psw = '<span title="CMTS_VTY_PASSWORD"><b>'.$this->vty_psw.'</b></span>';
+		$this->prov_ip = '<span title="Set in Global Config Page / Provisioning / Provisioning Server IP"><b>'.$this->prov_ip.'</b></span>';
+		$this->interface = '<span title="Depending on CMTS Device Company and Type"><b>'.$this->interface.'</b></span>';
+		$this->domain = '<span title="Set in Global Config Page / Provisioning / Domain Name"><b>'.$this->domain.'</b></span>';
+		$this->router_ip = '<span title="CMTS_DEFAULT_GW"><b>'.$this->router_ip.'</b></span>';
+		$this->netmask = '<span title="CMTS_IP_NETMASK"><b>'.$this->netmask.'</b></span>';
+		$this->tf_net_1 = '<span title="CMTS_TRANSFER_NET"><b>'.$this->tf_net_1.'</b></span>';
+		$this->nat_ip = '<span title="CMTS_NAT_IP"><b>'.$this->nat_ip.'</b></span>';
+		$this->snmp_ro = '<span title="Set in CMTS page or Global Config Page / Provisioning if empty in CMTS page"><b>'.$this->snmp_ro.'</b></span>';
+		$this->snmp_rw = '<span title="Set in CMTS page or Global Config Page / Provisioning if empty in CMTS page"><b>'.$this->snmp_rw.'</b></span>';
+	}
+
+
+	/*
+	 * CMTS Config Page:
+	 * Prepare Cmts Config Variables
+	 *
+	 * They are required in Cmtsblade's
+	 *
+	 * NOTE: this will fit 90% of generic installations
+	 */
+	public function prep_rfcard_page()
+	{
+		$netelement = $this->netelement;
+
+		$clusters = [];
+		if($netelement)
+		{
+			foreach (\Modules\HfcReq\Entities\NetElement::where('cmts', '=', $netelement->id)->get() as $ne)
+			{
+				if ($ne->get_base_netelementtype() == 2)
+					$clusters[$ne->id] = $ne;
+			}
+		}
+
+		$this->clusters = $clusters;
+	}
 
 	/**
 	 * Get SNMP read-only community string
@@ -136,29 +261,70 @@ class Cmts extends \BaseModel {
 	 */
 	public function get_us_snr($ip)
 	{
-		// find oid of corresponding modem on cmts and get the snr
-		$conf = snmp_get_valueretrieval();
+		$fn = "data/provbase/us_snr/$this->hostname.json";
+
+		if (!\Storage::exists($fn)) {
+			\Log::error("Missing Modem US SNR json file of CMTS $this->hostname [$this->id]");
+			return ['SNR not found'];
+		}
+
+		$snrs = json_decode(\Storage::get($fn), true);
+
+		if(array_key_exists($ip, $snrs))
+			return $snrs[$ip];
+
+		return ['SNR not found'];
+	}
+
+
+	/**
+	 * Store US SNR values for all modems once every 5 minutes
+	 * this greatly reduces the cpu load on the cmts
+	 *
+	 * @author Ole Ernst
+	 * @author Nino Ryschawy  - D2.0 Extension
+	 */
+	public function store_us_snrs()
+	{
+		$ret = [];
 		$com = $this->get_ro_community();
 
-		// we need to change the value retrievel for snmprealwalk()
-		snmp_set_valueretrieval(SNMP_VALUE_OBJECT);
-		try
-		{
-			$modem_ips = snmprealwalk($this->ip, $com, '1.3.6.1.4.1.4491.2.1.20.1.3.1.5');
+		snmp_set_valueretrieval(SNMP_VALUE_LIBRARY);
+		snmp_set_quick_print(true);
+
+		\Log::info("CMTS $this->hostname: Store CM US SNRs");
+
+		try {
+			// DOCS-IF3-MIB::docsIf3CmtsCmRegStatusIPv4Addr, ...
+			$ips = snmp2_real_walk($this->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.3.1.5');
+			$snrs = snmp2_real_walk($this->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.4.1.4');
+
+			foreach ($ips as $i_key => $i_val) {
+				$i_key = last(explode('.', $i_key));
+				$tmp = array_filter($snrs, function($s_key) use($i_key) {
+						return strpos($s_key, $i_key) !== false;
+				}, ARRAY_FILTER_USE_KEY);
+				$ret[long2ip(hexdec($i_val))] = ArrayHelper::ArrayDiv(array_values($tmp));
+			}
+
+		} catch (\Exception $e) {
+			if (strpos($e->getMessage(), 'No Such Object available on this agent at this OID') === false)
+					throw $e;
+
+			// try DOCSIS2.0 - DOCS-IF-MIB::docsIfCmtsCmStatusIpAddress, ...
+			$ips = snmp2_real_walk($this->ip, $com, '.1.3.6.1.2.1.10.127.1.3.3.1.3');
+			$snrs = snmp2_real_walk($this->ip, $com, '.1.3.6.1.2.1.10.127.1.3.3.1.13');
+
+			foreach ($ips as $i_key => $i_val) {
+				$i_key = last(explode('.', $i_key));
+				$tmp = array_filter($snrs, function($s_key) use($i_key) {
+						return strpos($s_key, $i_key) !== false;
+				}, ARRAY_FILTER_USE_KEY);
+				$ret[$i_val] = ArrayHelper::ArrayDiv(array_values($tmp));
+			}
 		}
-		catch(\Exception $e)
-		{
-			snmp_set_valueretrieval($conf);
-			return ['No response of CMTS'];
-		}
-		snmp_set_valueretrieval($conf);
-		foreach ($modem_ips as $oid => $value)
-		{
-			$cmts_cm_ip = long2ip('0x'.str_replace(["\"", " "], '', $value->value));
-			if ($cmts_cm_ip == $ip)
-				return ArrayHelper::ArrayDiv(snmpwalk($this->ip, $com, str_replace('.1.3.6.1.4.1.4491.2.1.20.1.3.1.5', '1.3.6.1.4.1.4491.2.1.20.1.4.1.4', $oid)));
-		}
-		return ['Could not find CMTS'];
+
+		\Storage::put("data/provbase/us_snr/$this->hostname.json", json_encode($ret));
 	}
 
 
@@ -202,8 +368,8 @@ class Cmts extends \BaseModel {
 	 */
 	public function make_dhcp_conf ()
 	{
-		$file_dhcp_conf = '/etc/dhcp/dhcpd.conf';
-		$file = '/etc/dhcp/nms/cmts_gws/'.$this->hostname.'.conf';
+		$file_dhcp_conf = '/etc/dhcp/nmsprime/cmts_gws.conf';
+		$file = '/etc/dhcp/nmsprime/cmts_gws/'.$this->hostname.'.conf';
 
 		if ($this->id == 0)
 			return -1;
@@ -339,7 +505,7 @@ _exit:
 	public function delete_cmts()
 	{
 
-		$file = '/etc/dhcp/nms/cmts_gws/'.$this->hostname.'.conf';
+		$file = '/etc/dhcp/nmsprime/cmts_gws/'.$this->hostname.'.conf';
 		if (file_exists($file)) unlink($file);
 
 		$lines = file('/etc/dhcp/dhcpd.conf');
@@ -371,7 +537,7 @@ _exit:
 	public static function del_cmts_includes()
 	{
 		$file_path   = '/etc/dhcp/dhcpd.conf';
-		$include_str = '/etc/dhcp/nms/cmts_gws/';
+		$include_str = '/etc/dhcp/nmsprime/cmts_gws/';
 
 		// copy file as backup
 		copy($file_path, $file_path.'_backup');
@@ -428,6 +594,9 @@ class CmtsObserver
 		if (\PPModule::is_active ('ProvMon'))
 			\Artisan::call('nms:cacti', ['--modem-id' => 0, '--cmts-id' => $cmts->id]);
 		$cmts->make_dhcp_conf();
+
+		// write CMTS config to /tftpboot/cmts
+		File::put('/tftpboot/cmts/'.$cmts->hostname.'.cfg', $cmts->get_raw_cmts_config());
 	}
 
 	public function updating($cmts)
@@ -439,6 +608,9 @@ class CmtsObserver
 	public function updated($cmts)
 	{
 		$cmts->make_dhcp_conf();
+
+		// write CMTS config to /tftpboot/cmts
+		File::put('/tftpboot/cmts/'.$cmts->hostname.'.cfg', $cmts->get_raw_cmts_config());
 	}
 
 	public function deleted($cmts)

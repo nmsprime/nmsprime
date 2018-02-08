@@ -2,13 +2,16 @@
 
 namespace Modules\HfcReq\Entities;
 
+use Modules\HfcBase\Entities\IcingaObjects;
+
 class NetElement extends \BaseModel {
 
 	// The associated SQL table for this Model
 	public $table = 'netelement';
 
+	public $guarded = ['kml_file_upload'];
 
-	public $kml_path = 'app/data/hfcbase/kml/static';
+	public $kml_path = 'app/data/hfcbase/kml_static';
 	private $max_parents = 25;
 
 	// Add your validation rules here
@@ -33,18 +36,6 @@ class NetElement extends \BaseModel {
 	}
 
 
-	/*
-	 * View Specific Stuff
-	 */
-
-	// Eager load Models so that only one Database Request is made when accessing type property (name of relational model netelementtype)
-	public function index_list()
-	{
-		$eager_loading_model = new NetElementType;
-
-		return $this->/*orderBy('parent_id')->*/orderBy('id')->with($eager_loading_model->table)->get();
-	}
-
 	// Name of View
 	public static function view_headline()
 	{
@@ -54,7 +45,7 @@ class NetElement extends \BaseModel {
 	// View Icon
   public static function view_icon()
   {
-    return '<i class="fa fa-object-ungroup"></i>'; 
+    return '<i class="fa fa-object-ungroup"></i>';
   }
 
 	// Relations
@@ -88,23 +79,9 @@ class NetElement extends \BaseModel {
 		return $ret;
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		$bsclass = $this->get_bsclass();
-		$type = $this->get_elementtype_name();
-
-
-		// TODO: complete list
-		return ['index' => [$this->id, $type, $this->name, $this->ip, $this->state, $this->pos],
-				'index_header' => ['ID', 'Type', 'Name', 'IP', 'State', 'Position'],
-				'bsclass' => $bsclass,
-				'header' => $this->id.' - '.$this->name];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 
@@ -112,29 +89,33 @@ class NetElement extends \BaseModel {
 				'index_header' => [$this->table.'.id', 'netelementtype.name', $this->table.'.name',  $this->table.'.ip', $this->table.'.pos'],
 				'header' =>  $this->id.' - '.$this->name,
 				'bsclass' => $bsclass,
-				'orderBy' => ['0' => 'asc'],
+				'order_by' => ['0' => 'asc'],
 				'eager_loading' => ['netelementtype'],
 				'edit' => ['netelementtype.name' => 'get_elementtype_name']];
 	}
 
 	public function get_bsclass()
 	{
-		$bsclass = 'success';
-		$type = $this->get_elementtype_name();
+		if (in_array($this->get_elementtype_name(), NetElementType::$undeletables))
+			return 'info';
 
-		if (in_array($type, NetElementType::$undeletables))
-			$bsclass = 'info';
-		else if ($this->state == 'YELLOW')
-			$bsclass = 'warning';
-		else if ($this->state == 'RED')
-			$bsclass = 'danger';
-		return $bsclass;
+		if(!IcingaObjects::db_exists())
+			return 'warning';
+
+		$tmp = $this->icingaobjects;
+		if($tmp && $tmp->is_active) {
+			$tmp = $tmp->icingahoststatus;
+			if($tmp)
+				return $tmp->last_hard_state ? 'danger' : 'success';
+		}
+
+		return 'warning';
 	}
 
 	public function get_elementtype_name()
 	{
 	$type = $this->netelementtype ? $this->netelementtype->name : '';
-	
+
 	return $type;
 	}
 
@@ -149,24 +130,18 @@ class NetElement extends \BaseModel {
 	 */
 	public function modems()
 	{
-		if (\PPModule::is_active('ProvBase'))
-			return $this->hasMany('Modules\ProvBase\Entities\Modem', 'netelement_id');
-
-		return null;
+		return $this->hasMany('Modules\ProvBase\Entities\Modem', 'netelement_id');
 	}
 
 	// Relation to MPRs Modem Positioning Rules
 	public function mprs()
 	{
-		if (\PPModule::is_active('HfcCustomer'))
-			return $this->hasMany('Modules\HfcCustomer\Entities\Mpr', 'netelement_id');
-
-		return null;
+		return $this->hasMany('Modules\HfcCustomer\Entities\Mpr', 'netelement_id');
 	}
 
 	public function snmpvalues()
 	{
-		return \PPModule::is_active('HfcSnmp') ? $this->hasMany('Modules\HfcSnmp\Entities\SnmpValue', 'netelement_id') : null;
+		return $this->hasMany('Modules\HfcSnmp\Entities\SnmpValue', 'netelement_id');
 	}
 
 	public function netelementtype()
@@ -176,12 +151,13 @@ class NetElement extends \BaseModel {
 
 	public function indices()
 	{
-		if (\PPModule::is_active('HfcSnmp'))
-			return $this->hasMany('Modules\HfcSnmp\Entities\Indices', 'netelement_id');
+		return $this->hasMany('Modules\HfcSnmp\Entities\Indices', 'netelement_id');
 	}
 
-
-
+	public function icingaobjects()
+	{
+		return $this->hasOne('Modules\HfcBase\Entities\IcingaObjects', 'name1')->where('objecttype_id', '=', '1');
+	}
 
 	public function get_parent ()
 	{
@@ -220,7 +196,7 @@ class NetElement extends \BaseModel {
 		$net_id = array_search('Net', NetElementType::$undeletables);
 
 		return NetElement::where('netelementtype_id', '=', $net_id)->get();
-   
+
 		// return NetElement::where('type', '=', 'NET')->get();
 	}
 
@@ -290,6 +266,11 @@ class NetElement extends \BaseModel {
 		return $this->_get_native_helper('Net');
 	}
 
+	public function get_native_cmts ()
+	{
+		return $this->_get_native_helper('Cmts');
+	}
+
 	// TODO: depracted, remove
 	public function get_layer_level($layer='')
 	{
@@ -326,13 +307,15 @@ class NetElement extends \BaseModel {
 			$debug = "nms: netelement - rebuild net and cluster index $i of $num - id ".$netelement->id;
 			\Log::debug($debug);
 
-			$netelement->update(['net' => $netelement->get_native_net(), 'cluster' => $netelement->get_native_cluster()]);
+			$netelement->update(['net' => $netelement->get_native_net(),
+								 'cluster' => $netelement->get_native_cluster(),
+								 'cmts' => $netelement->get_native_cmts()]);
 
 			if ($call_from_cmd == 1)
 				echo "$debug\r"; $i++;
 
 			if ($call_from_cmd == 2)
-				echo "\n$debug - net:".$netelement->net.', clu:'.$netelement->cluster;
+				echo "\n$debug - net:".$netelement->net.', clu:'.$netelement->cluster.', cmts:'.$netelement->cmts;
 
 		}
 
@@ -354,6 +337,51 @@ class NetElement extends \BaseModel {
 	public function is_type_cluster()
 	{
 		return $this->netelementtype_id == array_search('Cluster', NetElementType::$undeletables);
+	}
+
+	public function is_type_cmts()
+	{
+		if (!$this->netelementtype)
+			return false;
+
+		return ($this->netelementtype->get_core_type() == 3); // 3 .. is core element for cmts
+	}
+
+
+	/**
+	 * Return the base NetElementType id
+	 *
+	 * @param
+	 * @return integer [1: Net, 2: Cluster, 3: Cmts, 4: Amp, 5: Node, 6: Data]
+	 */
+	public function get_base_netelementtype()
+	{
+		return $this->netelementtype->get_base_type();
+	}
+
+	/**
+	 * Return hard coded $this->options array
+	 * NOTE: this is of course type dependent
+	 *
+	 * @param
+	 * @return array()
+	 */
+	public function get_options_array()
+	{
+		if ($this->get_base_netelementtype() == 2) // cluster
+			return array(
+				'0' => '8x4', // default
+				'81' => '8x1',
+				'82' => '8x2',
+				'84' => '8x4',
+				'88' => '8x8',
+				'124' => '12x4',
+				'128' => '12x8',
+				'164' => '16x4',
+				'168' => '16x8'
+			);
+
+		return [];
 	}
 
 }

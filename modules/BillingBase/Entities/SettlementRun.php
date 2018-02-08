@@ -46,21 +46,9 @@ class SettlementRun extends \BaseModel {
 		return '<i class="fa fa-file-pdf-o"></i>';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		$bsclass = $this->get_bsclass();
-
-		return ['index' => [$this->year, $this->month, $this->created_at->toDateString(), $this->verified ? 'Yes' : 'No'], //$this->created_at->__get('day')],
-		        'index_header' => ['Year', 'Month', 'Created At', 'Verified'],
-				'bsclass' => $bsclass,
-				'orderBy' => ['id' => 'desc'],
-		        'header' => $this->year.' - '.$this->month.' - '.$this->created_at->__get('day')];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 		$day = (isset($this->created_at)) ? $this->created_at : '';
@@ -69,7 +57,7 @@ class SettlementRun extends \BaseModel {
 				'index_header' => [$this->table.'.year', $this->table.'.month',  $this->table.'.created_at', 'verified'],
 				'header' =>  $this->year.' - '.$this->month.' - '.$day ,
 				'bsclass' => $bsclass,
-				'orderBy' => ['0' => 'desc'],
+				'order_by' => ['0' => 'desc'],
 				'edit' => ['verified' => 'run_verified', 'checkbox' => 'set_index_delete', 'created_at' => 'created_at_toDateString' ]];
 	}
 
@@ -78,7 +66,7 @@ class SettlementRun extends \BaseModel {
 		return $this->verified ? 'info' : 'warning';
 	}
 
-	public function run_verified() 
+	public function run_verified()
 	{
 		return  $this->verified ? 'Yes' : 'No';
 	}
@@ -92,29 +80,16 @@ class SettlementRun extends \BaseModel {
 	public function created_at_toDateString()
 	{
 		return ($this->created_at->toDateString());
-		
-	}
 
-	public function index_list()
-	{
-		$srs = $this->orderBy('id', 'desc')->get();
-
-		foreach ($srs as $key => $sr)
-		{
-			if ($sr->verified)
-				$sr->index_delete_disabled = true;
-		}
-
-		return $srs;
 	}
 
 	public function view_has_many()
 	{
-		$ret['Files']['Files']['view']['view'] = 'billingbase::settlementrun';
+		$ret['Files']['Files']['view']['view'] = 'billingbase::SettlementRun.files';
 		$ret['Files']['Files']['view']['vars'] = $this->accounting_files();
 
 		// NOTE: logs are fetched in SettlementRunController::edit
-		$ret['Files']['Logs']['view']['view'] = 'billingbase::logs';
+		$ret['Files']['Logs']['view']['view'] = 'billingbase::SettlementRun.logs';
 		$ret['Files']['Logs']['view']['vars']['md_size'] = 12;
 
 		return $ret;
@@ -123,7 +98,7 @@ class SettlementRun extends \BaseModel {
 
 	public function get_files_dir()
 	{
-		return storage_path('app/data/billingbase/accounting/'.$this->year.'-'.sprintf('%02d', $this->month));		
+		return storage_path('app/data/billingbase/accounting/'.$this->year.'-'.sprintf('%02d', $this->month));
 	}
 
 	public static function get_last_run()
