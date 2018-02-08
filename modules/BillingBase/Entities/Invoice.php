@@ -155,6 +155,12 @@ class Invoice extends \BaseModel{
 		'table_sum_tax' 		=> '', 			// The tax
 		'table_sum_charge_total' => '', 		// total charge - with tax
 
+		// Cancelation Dates - as prescribed by law from 2018-01-01
+		'start_of_term' 	=> '', 				// contract start
+		'maturity' 			=> '', 				// Tariflaufzeit
+		'end_of_term' 		=> '', 				// Aktuelles Vertragsende
+		'period_of_notice' 	=> '', 				// Kündigungsfrist
+		'last_cancel_date' 	=> '', 				// letzter Kündigungszeitpunkt der aktuellen Laufzeit, if empty -> contract was already canceled!
 	);
 
 
@@ -194,6 +200,15 @@ class Invoice extends \BaseModel{
 	}
 
 
+	/**
+	 * @param String
+	 */
+	public static function german_dateformat($date)
+	{
+		return $date ? date('d.m.Y', strtotime($date)) : $date;
+	}
+
+
 	public function add_contract_data($contract, $config, $invoice_nr)
 	{
 		$this->data['contract_id'] 			= $contract->id;
@@ -206,6 +221,7 @@ class Invoice extends \BaseModel{
 		$this->data['contract_zip'] 		= $contract->zip;
 		$this->data['contract_city'] 		= escape_latex_special_chars($contract->city);
 		$this->data['contract_address'] 	= ($contract->company ? $this->data['contract_company']."\\\\" : '') . ($contract->academic_degree ? escape_latex_special_chars($contract->academic_degree)." " : '') . $this->data['contract_firstname'].' '.$this->data['contract_lastname']."\\\\" . $this->data['contract_street'] . "\\\\$contract->zip ".$this->data['contract_city'];
+		$this->data['start_of_term'] 		= \App::getLocale() == 'de' ? self::german_dateformat($contract->contract_start) : $contract->contract_start;
 
 		$this->data['rcd'] 			= $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
 		$this->data['invoice_nr'] 	= $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
@@ -221,10 +237,56 @@ class Invoice extends \BaseModel{
 
 	public function add_item($item)
 	{
-		// $count = $item->count ? $item->count : 1;
-		$price  = sprintf("%01.2f", round($item->charge/$item->count, 2));
-		$sum 	= sprintf("%01.2f", $item->charge);
+		$count = $item->count ? $item->count : 1;
+		$price = sprintf("%01.2f", round($item->charge/$item->count, 2));
+		$sum   = sprintf("%01.2f", $item->charge);
 		$this->data['item_table_positions'] .= $item->count.' & '.escape_latex_special_chars($item->invoice_description).' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
+
+		/* Set:
+			* Beginn of Internet Item 		- moved to add contract data
+			* actual End Date
+			* period of notice
+			* latest date of cancelation
+		*/
+		if (!$item->product->type == 'Internet')
+			return;
+
+		// if ($this->data['start_of_term'] && ($this->data['start_of_term'] > $item->valid_from))
+		// Return if cancelation dates where already determined
+		if ($this->data['end_of_term'])
+			return;
+
+		// Contract already canceled
+		if ($item->contract->get_end_time())
+		{
+			$ret = array(
+				'end_of_term' => $item->contract->contract_end,
+				'cancelation_day' => '',
+				);
+		}
+		// Get next cancelation date
+		else
+			$ret = $item->next_cancel_date();
+
+		// Set period of notice and maturity string
+		$nr   = preg_replace( '/[^0-9]/', '', $item->product->period_of_notice ? : Product::$pon);
+		$span = str_replace($nr, '', $item->product->period_of_notice ? : Product::$pon);
+		$txt_pon = $nr .' '. trans_choice("messages.$span", $nr) .($item->product->maturity ? '' : ' '.trans('messages.eom'));
+
+		$nr   = preg_replace( '/[^0-9]/', '', $item->product->maturity ? : Product::$maturity);
+		$span = str_replace($nr, '', $item->product->maturity ? : Product::$maturity);
+		$txt_m = $nr .' '. trans_choice("messages.$span", $nr);
+
+		$german = \App::getLocale() == 'de';
+
+		$cancel_dates = [
+			'end_of_term' => $german ? self::german_dateformat($ret['end_of_term']) : $ret['end_of_term'],
+			'maturity' 		=> $txt_m,
+			'period_of_notice' => $txt_pon,
+			'last_cancel_date' => $german ? self::german_dateformat($ret['cancelation_day']) : $ret['cancelation_day'],
+		];
+
+		$this->data = array_merge($this->data, $cancel_dates);
 	}
 
 
