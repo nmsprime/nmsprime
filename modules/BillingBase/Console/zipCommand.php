@@ -40,6 +40,7 @@ class zipCommand extends Command {
 	 * Execute the console command
 	 * Find all Files for last or specified month and Package them - stored in appropriate accounting directory
 	 * NOTE: this Command is called in accounting Command!
+	 * ATTENTION: As is PDF Concatenation should scale up to appr. 3 million Invoices+CDRs
 	 *
 	 * @author Nino Ryschawy
 	 *
@@ -47,7 +48,9 @@ class zipCommand extends Command {
 	 */
 	public function fire()
 	{
-		$offset = intval(BillingBase::first()->cdr_offset);
+		$conf = BillingBase::first();
+		$offset = intval($conf->cdr_offset);
+		\App::setLocale($conf->userlang);
 
 		$year  = $this->argument('year');
 		$month = $this->argument('month');
@@ -56,7 +59,7 @@ class zipCommand extends Command {
 
 		$cdr_target_t = clone $target_t;
 		$cdr_target_t->subMonthNoOverflow($offset);
-		$acc_files_dir_abs_path = storage_path('app/data/billingbase/accounting/') . $target_t->format('Y-m');
+		$acc_files_dir_abs_path = storage_path('app/data/billingbase/accounting/') . $target_t->format('Y-m').'/';
 
 		\ChannelLog::debug('billing', 'Zip accounting files for Month '.$target_t->toDateString());
 
@@ -71,37 +74,89 @@ class zipCommand extends Command {
 			->orderBy('c.number', 'desc')->orderBy('invoice.type')
 			->get()->all();
 
+		// Attention: Ghost script argument length (strlen($files)) must be less than 131k chars long
+		// TODO: Check if strlen is server dependent
 		$files = '';
+		$tmp_pdfs = [];
+		$i = $k = 0;
+		$split = 1000;
+		$num = count($invoices);
+		$num = $num >= $split ? ((int) ($num / $split)) + 1 + ($num % $split ? 1 : 0) : null;
+
+		if ($this->output && $num)
+			$bar = $this->output->createProgressBar($num);
+
+		// NOTE: Splitting the invoice creation dramatically reduces performance of this command
+		// Maybe another tool than gs can handle a longer argument length??
 		foreach ($invoices as $inv)
+		{
+			$i++;
 			$files .= $inv->get_invoice_dir_path().$inv->filename.' ';
+			// $files .= $inv->contract_id.'/'.$inv->filename.' ';
 
-		// $invoices 	= sprintf('%s.pdf', $target_t->format('Y-m'));
-		// $cdrs 		= sprintf('%s_cdr.pdf', $cdr_target_t->format('Y-m'));
-		// $tmp 		= exec("find $dir_abs_path_invoice_files -type f -name $invoices -o -name $cdrs | sort -r", $files, $ret);
-		// $files = implode(' ', $files);
+			if ($i == $split)
+			{
+				// create temporary PDFs and concat them later to not violate argument length restriction
+				$tmp_fn = storage_path('app/tmp/').'tmp_inv_'.$k.'.pdf';
+				$tmp_pdfs[] = $tmp_fn;
 
-		$fname = \App\Http\Controllers\BaseViewController::translate_label('Invoices');
-		$out = exec("gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=$acc_files_dir_abs_path/$fname.pdf $files", $output, $ret);
+				concat_pdfs($files, $tmp_fn);
 
-		echo "Concat all Invoices and CDRs to $acc_files_dir_abs_path/$fname.pdf\n";
+				$k++;
+				if ($this->output)
+					$bar->advance();
+
+				$i = 0;
+				$files = '';
+			}
+		}
+
+		if ($tmp_pdfs)
+		{
+			if ($files)
+			{
+				$tmp_fn = storage_path('app/tmp/').'tmp_inv_'.$k.'.pdf';
+				$tmp_pdfs[] = $tmp_fn;
+
+				concat_pdfs($files, $tmp_fn);
+
+				if ($this->output)
+					$bar->advance();
+			}
+
+			$files = implode(' ', $tmp_pdfs);
+		}
+
+		$fname = \App\Http\Controllers\BaseViewController::translate_label('Invoices').'.pdf';
 
 		// NOTE: This is an indirect check if all invoices where created correctly as this is actually not possible while
 		// executing pdflatex in background (see Invoice)
-		if ($ret != 0) {
-			$text = "Could not concatenate invoice files! $out - ".(isset($output[0]) ? $output[0] : '');
-			\ChannelLog::error('billing', $text, [$ret]);
-		}
-		else
-			\ChannelLog::info('billing', 'Concatenate all Invoice files to one PDF: Success!');
+		concat_pdfs($files, $acc_files_dir_abs_path.$fname);
 
-		// Zip all
+		if ($this->output && $num) {
+			$bar->advance();
+			echo "\n";
+		}
+
+		echo "Stored concatenated Invoices: $acc_files_dir_abs_path"."$fname\n";
+
+		// Zip all - suppress output of zip command
 		$filename = $target_t->format('Y-m').'.zip';
 		chdir($acc_files_dir_abs_path);
+
+		ob_start();
 		system("zip -r $filename *");
+		ob_end_clean();
+
 		system('chmod -R 0700 '.$acc_files_dir_abs_path);
 		system('chown -R apache '.$acc_files_dir_abs_path);
-	}
 
+		// delete temp files
+		foreach ($tmp_pdfs as $fn ) {
+			if (is_file($fn))
+				unlink($fn);
+		}
+	}
 
 
 	/**
