@@ -564,6 +564,9 @@ class Invoice extends \BaseModel{
 
 	/**
 	 * Removes the temporary latex files after all pdfs were created simultaniously by multiple threads
+	 * Test if all Invoices were created successfully
+	 *
+	 * @throws Exception 	when pdflatex was not able to create PDF from tex document for an invoice
 	 */
 	public static function remove_templatex_files()
 	{
@@ -571,12 +574,20 @@ class Invoice extends \BaseModel{
 
 		foreach ($invoices as $invoice)
 		{
-			$file = $invoice->get_invoice_dir_path().str_replace('.pdf', '', $invoice->filename);
-			if (is_file($file))
+			$fn = $invoice->get_invoice_dir_path().$invoice->filename;
+
+			if (is_file($fn))
 			{
-				unlink($file);
-				unlink($file.'.aux');
-				unlink($file.'.log');
+				$fn = str_replace('.pdf', '', $fn);
+				unlink($fn);
+				unlink($fn.'.aux');
+				unlink($fn.'.log');
+			}
+			else
+			{
+				// possible errors: syntax/filename/...
+				Log::error('billing', "Missing Invoice PDF ".$fn);
+				throw new Exception("Missing Invoice PDF ".$fn);
 			}
 		}
 	}

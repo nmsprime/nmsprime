@@ -268,8 +268,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		// and wait for all invoice pdfs to be created for concatenation in zipCommand@_make_billing_files()
 		usleep(200000);
 
-		$this->_make_billing_files($sepa_accs, $salesmen);
+		// while removing it's tested if all PDFs were created successfully
 		Invoice::remove_templatex_files();
+		$this->_make_billing_files($sepa_accs, $salesmen);
 	}
 
 
