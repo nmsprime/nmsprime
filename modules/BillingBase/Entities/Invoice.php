@@ -231,51 +231,38 @@ class Invoice extends \BaseModel{
 		// Note: Add other currencies here
 		$this->currency	= strtolower($config->currency) == 'eur' ? '€' : $config->currency;
 		$this->tax		= $config->tax;
-	}
-
-
-
-	public function add_item($item)
-	{
-		$count = $item->count ? $item->count : 1;
-		$price = sprintf("%01.2f", round($item->charge/$item->count, 2));
-		$sum   = sprintf("%01.2f", $item->charge);
-		$this->data['item_table_positions'] .= $item->count.' & '.escape_latex_special_chars($item->invoice_description).' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
 
 		/* Set:
-			* Beginn of Internet Item 		- moved to add contract data
-			* actual End Date
+			* actual end of term
 			* period of notice
-			* latest date of cancelation
+			* latest possible date of cancelation
 		*/
-		if (!$item->product->type == 'Internet')
-			return;
-
-		// if ($this->data['start_of_term'] && ($this->data['start_of_term'] > $item->valid_from))
-		// Return if cancelation dates where already determined
-		if ($this->data['end_of_term'])
-			return;
+		$txt_pon = $txt_m = '';
 
 		// Contract already canceled
-		if ($item->contract->get_end_time())
+		if ($contract->get_end_time())
 		{
 			$ret = array(
-				'end_of_term' => $item->contract->contract_end,
+				'end_of_term' => $contract->contract_end,
 				'cancelation_day' => '',
+				'tariff' => null,
 				);
 		}
 		// Get next cancelation date
 		else
-			$ret = $item->next_cancel_date();
+			$ret = $contract->get_next_cancel_date();
 
-		// Set period of notice and maturity string
-		$nr   = preg_replace( '/[^0-9]/', '', $item->product->period_of_notice ? : Product::$pon);
-		$span = str_replace($nr, '', $item->product->period_of_notice ? : Product::$pon);
-		$txt_pon = $nr .' '. trans_choice("messages.$span", $nr) .($item->product->maturity ? '' : ' '.trans('messages.eom'));
+		if ($ret['tariff'])
+		{
+			// Set period of notice and maturity string of last tariff
+			$nr   = preg_replace( '/[^0-9]/', '', $ret['tariff']->product->period_of_notice ? : Product::$pon);
+			$span = str_replace($nr, '', $ret['tariff']->product->period_of_notice ? : Product::$pon);
+			$txt_pon = $nr .' '. trans_choice("messages.$span", $nr) .($ret['tariff']->product->maturity ? '' : ' '.trans('messages.eom'));
 
-		$nr   = preg_replace( '/[^0-9]/', '', $item->product->maturity ? : Product::$maturity);
-		$span = str_replace($nr, '', $item->product->maturity ? : Product::$maturity);
-		$txt_m = $nr .' '. trans_choice("messages.$span", $nr);
+			$nr   = preg_replace( '/[^0-9]/', '', $ret['tariff']->product->maturity ? : Product::$maturity);
+			$span = str_replace($nr, '', $ret['tariff']->product->maturity ? : Product::$maturity);
+			$txt_m = $nr .' '. trans_choice("messages.$span", $nr);
+		}
 
 		$german = \App::getLocale() == 'de';
 
@@ -287,6 +274,16 @@ class Invoice extends \BaseModel{
 		];
 
 		$this->data = array_merge($this->data, $cancel_dates);
+	}
+
+
+
+	public function add_item($item)
+	{
+		$count = $item->count ? $item->count : 1;
+		$price = sprintf("%01.2f", round($item->charge/$item->count, 2));
+		$sum   = sprintf("%01.2f", $item->charge);
+		$this->data['item_table_positions'] .= $item->count.' & '.escape_latex_special_chars($item->invoice_description).' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
 	}
 
 

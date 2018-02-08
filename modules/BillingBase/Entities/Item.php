@@ -441,44 +441,19 @@ class Item extends \BaseModel {
 
 
 	/**
-	 * Get Contracts (Internet Tarifs) End of Term and last Day of possible Cancelation
-	 * Ende Vertragslaufzeit und letztes Kündigungsdatum
+	 * Get Tariffs End of Term and last Day of possible Cancelation
+	 * Ende Tariflaufzeit und letztes Kündigungsdatum
 	 *
 	 * @author Nino Ryschawy
 	 *
 	 * @return Array 	[End of Term, Last possible Cancelation Day]
 	 */
-	public function next_cancel_date()
+	public function get_next_cancel_date()
 	{
-		if ($this->contract->get_end_time())
-			throw new \Exception("Contract was already canceled. This should be handled before!");
-
 		$default_pon = Product::$pon; 				// Default period of notice
 
-		// ends - another tariff will follow most of the time
-		if ($this->get_end_time())
-		{
-			// get last tariff here and call this function recursively
-			$tariff = $this->contract->items()
-				->join('product as p', 'item.product_id', '=', 'p.id')
-				->where('type', '=', 'Internet')->where('valid_from', '>', $this->valid_from)
-				->where('valid_from_fixed', '=', 1)
-				->orderBy('valid_from', 'desc')
-				->first();
-
-			// if theres no tariff following this actually means a contract cancelation
-			if (!$tariff) {
-				return array(
-					'end_of_term' => $this->valid_to,
-					'cancelation_day' => null,
-					);
-			}
-
-			return $tariff->next_cancel_date();
-		}
-
 		// Tariff with maturity (m) (Laufzeit) but open end
-		else if ($this->product->maturity)
+		if ($this->product->maturity)
 		{
 			$end = \Carbon\Carbon::createFromFormat('Y-m-d', $this->valid_from);
 			$end->subDay();
@@ -497,9 +472,7 @@ class Item extends \BaseModel {
 				$cancel_day = self::_add_period($cancel_day, $this->product->maturity);
 			}
 		}
-
-		// open end no maturity
-		else if (!$this->get_end_time())
+		else
 		{
 			$end = \Carbon\Carbon::create();
 			$end = self::_add_period($end, $this->product->period_of_notice ? : $default_pon);
