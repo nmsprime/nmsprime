@@ -70,13 +70,21 @@ class SettlementRunController extends \BaseController {
 	{
 		$logs = $failed_jobs = [];
 		$sr   = SettlementRun::find($id);
-		$bool = (date('m') == $sr->created_at->__get('month')) && !$sr->verified;
+		$bool = true;
+		$job_queued = \DB::table('jobs')->where('payload', 'like', '%accountingCommand%')->get();
+		$job_queued = $job_queued ? $job_queued[0] : null;
+
+		if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified)
+			$bool = false;
 
 		// delete Session job id if job is done in case someone broke the tcp connection (close tab/window) manually
 		if (\Session::get('job_id')) {
 			if (!\DB::table('jobs')->find(\Session::get('job_id')))
 				\Session::remove('job_id');
 		}
+		// dont let multiple users create a lot of jobs
+		else if ($job_queued)
+			\Session::put('job_id', $job_queued->id);
 
 		// get error logs in case job failed and remove failed job from table
 		$failed_jobs = \DB::table('failed_jobs')->get();
@@ -110,25 +118,28 @@ class SettlementRunController extends \BaseController {
 		\Log::debug(__CLASS__ .'::'. __FUNCTION__);
 		$response = new \Symfony\Component\HttpFoundation\StreamedResponse(function() {
 
-			// Make Sleeptime dependent of Contract count - min 2 sec
-			// $num = DB::table('contract')->where('deleted_at', '=', null)->count();
-			// $sleep = (int) pow($num/10, 1/3);
-			// $sleep = $sleep < 2 ? 2 : $sleep;
-
 			$job = true;
 			while ($job)
 			{
 				$job = \DB::table('jobs')->find(\Session::get('job_id'));
+
+				// if ($job)
+				// 	\Log::debug('Job with ID '.$job->id.' running');
+
+				// TODO: Get state from file
+				$state = \Storage::exists('tmp/accCmdStatus') ? \Storage::get('tmp/accCmdStatus') : '';
+				echo "data: $state\n\n";
+				ob_flush(); flush();
+
 				sleep(3);
-				// sleep($sleep);
 			}
 
 			\Log::debug('SettlementRun Job ['. \Session::get('job_id').'] stopped');
 
 			\Session::remove('job_id');
 
-			// wait for job to land in failed jobs table - if it failed - wait max 20 seconds
-			$i 		 = 10;
+			// wait for job to land in failed jobs table - if it failed - wait max 14 seconds
+			$i 		 = 7;
 			$success = true;
 
 			while ($i && $success)

@@ -121,7 +121,11 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			if ($this->output)
 				$bar->advance();
 			else
-				echo ($i + 1)."/$num [$c->id]\r";
+			{
+				if (!($i % 20))
+					Storage::put('tmp/accCmdStatus', \App\Http\Controllers\BaseViewController::translate_label('Create Invoices').': '.((int) ($i/$num*100)).' %');
+				// echo ($i + 1)."/$num [$c->id][".(memory_get_usage()/1000000)."]\r";
+			}
 
 			if (!$c->create_invoice) {
 				Log::info('billing', "Create invoice for Contract $c->number [$c->id] is off");

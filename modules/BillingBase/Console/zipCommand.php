@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputArgument;
 
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\Invoice;
+use App\Http\Controllers\BaseViewController;
 
 use Carbon\Carbon;
 use Storage;
@@ -22,6 +23,18 @@ class zipCommand extends Command {
 	protected $name 		= 'billing:zip';
 	protected $description 	= 'Build Zip File file with all relevant Accounting Files for one specified Month';
 	protected $signature 	= 'billing:zip {year?} {month?}';
+
+	/**
+	 * @var Maximum number of files ghost script shall concatenate at once
+	 *
+	 * Take care: Ghost scripts argument length must not be exceeded when you change this number
+	 */
+	private $split = 1000;
+
+	/**
+	 * @var global var to store total number of splits to generate percentual output
+	 */
+	private $num;
 
 
 	/**
@@ -38,9 +51,9 @@ class zipCommand extends Command {
 
 	/**
 	 * Execute the console command
-	 * Find all Files for last or specified month and Package them - stored in appropriate accounting directory
+	 *
+	 * Package all Files in accounting directory if specified month (or last month as default)
 	 * NOTE: this Command is called in accounting Command!
-	 * ATTENTION: As is PDF Concatenation should scale up to appr. 3 million Invoices+CDRs
 	 *
 	 * @author Nino Ryschawy
 	 *
@@ -63,7 +76,8 @@ class zipCommand extends Command {
 
 		\ChannelLog::debug('billing', 'Zip accounting files for Month '.$target_t->toDateString());
 
-		// find all invoices and concatenate them
+
+		// Get all invoices
 		// NOTE: This probably has to be replaced by DB::table for more than 10k contracts as Eloquent gets too slow then
 		$invoices = Invoice::where('type', '=', 'Invoice')
 			->where('year', '=', $target_t->__get('year'))->where('month', '=', $target_t->__get('month'))
@@ -74,71 +88,41 @@ class zipCommand extends Command {
 			->orderBy('c.number', 'desc')->orderBy('invoice.type')
 			->get()->all();
 
-		// Attention: Ghost script argument length (strlen($files)) must be less than 131k chars long
-		// TODO: Check if strlen is server dependent
-		$files = '';
-		$tmp_pdfs = [];
-		$i = $k = 0;
-		$split = 1000;
-		$num = count($invoices);
-		$num = $num >= $split ? ((int) ($num / $split)) + 1 + ($num % $split ? 1 : 0) : null;
-
-		if ($this->output && $num)
-			$bar = $this->output->createProgressBar($num);
-
-		// NOTE: Splitting the invoice creation dramatically reduces performance of this command
-		// Maybe another tool than gs can handle a longer argument length??
 		foreach ($invoices as $inv)
-		{
-			$i++;
-			$files .= $inv->get_invoice_dir_path().$inv->filename.' ';
-			// $files .= $inv->contract_id.'/'.$inv->filename.' ';
+			$files[] = $inv->get_invoice_dir_path().$inv->filename;
 
-			if ($i == $split)
-			{
-				// create temporary PDFs and concat them later to not violate argument length restriction
-				$tmp_fn = storage_path('app/tmp/').'tmp_inv_'.$k.'.pdf';
-				$tmp_pdfs[] = $tmp_fn;
+		// Prepare and start output
+		$num = count($files);
+		$this->num = $num >= $this->split ? ((int) ($num / $this->split)) + 1 + ($num % $this->split ? 1 : 0) : null;
 
-				concat_pdfs($files, $tmp_fn);
+		if ($this->output)
+			$this->bar = $this->output->createProgressBar($this->num);
 
-				$k++;
-				if ($this->output)
-					$bar->advance();
+		if ($this->output)
+			$this->bar->start();
 
-				$i = 0;
-				$files = '';
-			}
-		}
+		Storage::put('tmp/accCmdStatus', BaseViewController::translate_label('Zip Files').': 0 %');
 
-		if ($tmp_pdfs)
-		{
-			if ($files)
-			{
-				$tmp_fn = storage_path('app/tmp/').'tmp_inv_'.$k.'.pdf';
-				$tmp_pdfs[] = $tmp_fn;
 
-				concat_pdfs($files, $tmp_fn);
+		/**
+		 * Concat Invoices
+		 */
+		$files = $this->_concat_split_pdfs($files);
 
-				if ($this->output)
-					$bar->advance();
-			}
+		$fname = BaseViewController::translate_label('Invoices').'.pdf';
 
-			$files = implode(' ', $tmp_pdfs);
-		}
-
-		$fname = \App\Http\Controllers\BaseViewController::translate_label('Invoices').'.pdf';
-
-		// NOTE: This is an indirect check if all invoices where created correctly as this is actually not possible while
-		// executing pdflatex in background (see Invoice)
+		// concat temporary files to final target file
 		concat_pdfs($files, $acc_files_dir_abs_path.$fname);
 
-		if ($this->output && $num) {
-			$bar->advance();
+		if ($this->output) {
+			$this->bar->advance();
 			echo "\n";
 		}
 
+
 		echo "Stored concatenated Invoices: $acc_files_dir_abs_path"."$fname\n";
+		Storage::put('tmp/accCmdStatus', BaseViewController::translate_label('Zip Files').': 99 %');
+
 
 		// Zip all - suppress output of zip command
 		$filename = $target_t->format('Y-m').'.zip';
@@ -148,14 +132,58 @@ class zipCommand extends Command {
 		system("zip -r $filename *");
 		ob_end_clean();
 
+
 		system('chmod -R 0700 '.$acc_files_dir_abs_path);
 		system('chown -R apache '.$acc_files_dir_abs_path);
 
 		// delete temp files
-		foreach ($tmp_pdfs as $fn ) {
+		foreach ($files as $fn ) {
 			if (is_file($fn))
 				unlink($fn);
 		}
+		Storage::delete('tmp/accCmdStatus');
+	}
+
+
+	/**
+	 * Split the number of Invoices to defined number (see global variable) and concat them to temporary files
+	 *
+	 * Note: This reduces performance dramatically, but is necessary to make sure the order of invoices
+	 * is kept and the argument length limit for ghost script is not exceeded
+	 *
+	 * @param Array 	invoice files
+	 */
+	private function _concat_split_pdfs($files)
+	{
+		static $count = 0;
+
+		if (count($files) < $this->split)
+			return $files;
+
+		$arr = array_chunk($files, $this->split);
+
+		// recursive splitting
+		if (count($arr) > $this->split)
+		{
+			foreach ($arr as $files2)
+				$tmp_pdfs = $this->_concat_split_pdfs($files2);
+		}
+
+		foreach ($arr as $files2)
+		{
+			$tmp_fn = storage_path('app/tmp/').'tmp_inv_'.$count.'.pdf';
+			$tmp_pdfs[] = $tmp_fn;
+			$count++;
+
+			concat_pdfs($files2, $tmp_fn);
+
+			// Status update
+			Storage::put('tmp/accCmdStatus', BaseViewController::translate_label('Zip Files').': '.((int) ($count/$this->num*100)).' %');
+			if ($this->output)
+				$this->bar->advance();
+		}
+
+		return $tmp_pdfs;
 	}
 
 
