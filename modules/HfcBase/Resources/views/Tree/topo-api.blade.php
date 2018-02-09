@@ -1,5 +1,4 @@
 <script type="text/javascript">
-
 /*
  * Global Vars
  */
@@ -9,7 +8,6 @@ var Layers = [];
 var select;
 
 var global_url = '{{BaseRoute::get_base_url()}}/';
-
 
 /*
  * Google Cards
@@ -260,6 +258,8 @@ function load (id, link, name)
         map.addLayers([Layers[id]]);
         // auto zoom kml Layer
         Layers[0].events.register('loadend', Layers[0], function(evt){map.zoomToExtent(Layers[0].getDataExtent())});
+
+        heat_map();
 }
 
 
@@ -375,4 +375,24 @@ function init_for_customer ()
 	clk_init_2();
 }
 
+function heat_map()
+{
+	var mymap = L.map('mapid').setView([50.6504, 13.1623],13);
+
+	var baseLayer = L.tileLayer(
+	  'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+	    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
+	    maxZoom: 18,
+	    id: 'mapbox.streets',
+	    accessToken: 'your.mapbox.access.token'
+	  }).addTo(mymap);
+	var marker = L.marker([50.6504, 13.1623]).addTo(mymap);
+	var heat = 	L.heatLayer(<?php echo json_encode($dim);?>, {
+				minOpacity:0.7, maxZoom:18, radius:12, blur: 20, max: 1.0,
+				gradient: {0.1: 'lime', 0.65: 'orange', 1: 'red'}
+			}).addTo(mymap);
+}
+
 </script>
+
+

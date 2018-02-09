@@ -82,8 +82,19 @@ class TreeTopographyController extends HfcBaseController
         $view_header = 'Topography';
         $body_onload = 'init_for_map';
 
+		//temporary heat map data @author: John Adebayo
+		$dim = [];
+		foreach (\Modules\ProvBase\Entities\Modem::all() as $modem => $value) {
+			$temp = round($value['tdr'] / 111111.1, 4);
+				for ($i=0; $i <= 360 ; $i+=30) {
+					$dim[] = $temp * cos($i) + $value['y'];
+					$dim[] = $temp * sin($i) + $value['x'];
+				}
+			}
+		$dim = array_chunk($dim, 2);
+
         return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact(
-            'file', 'tabs', 'field', 'search', 'mpr', 'kmls', 'body_onload', 'view_header', 'route_name'
+            'file', 'tabs', 'field', 'search', 'mpr', 'kmls', 'body_onload', 'view_header', 'route_name', 'dim'
         )));
     }
 
