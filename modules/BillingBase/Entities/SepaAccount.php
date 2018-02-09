@@ -204,7 +204,8 @@ class SepaAccount extends \BaseModel {
 				break;
 		}
 
-		return;
+		if ((count($this->acc_recs['tariff']) + count($this->acc_recs['item'])) >= 1000)
+			$this->write_billing_record_files();
 	}
 
 
@@ -216,16 +217,21 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function add_booking_record($contract, $mandate, $charge, $conf)
 	{
+		$german = \App::getLocale() == 'de';
+
+		$net = round($charge['net'], 2);
+		$tax = round($charge['tax'], 2);
+
 		$data = array(
 			'Contractnr'	=> $contract->number,
 			'Invoicenr' 	=> $this->_get_invoice_nr_formatted(),
-			'Date' 			=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
+			'Date' 			=> $german ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
 			'RCD' 			=> $this->rcd,
 			'Cost Center' 	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
 			'Description' 	=> '',
-			'Net' 			=> ($this->_get_billing_lang() == 'de') ? number_format($charge['net'], 2 , ',' , '.' ) : number_format($charge['net'], 2 , '.' , ',' ),
-			'Tax' 			=> $charge['tax'],
-			'Gross' 		=> ($this->_get_billing_lang() == 'de') ? number_format($charge['net'] + $charge['tax'], 2 , ',' , '.' ) : number_format($charge['net'] + $charge['tax'], 2 , '.' , ',' ),
+			'Net' 			=> $german ? number_format($net, 2 , ',' , '.' ) : number_format($net, 2 , '.' , ',' ),
+			'Tax' 			=> $german ? number_format($tax, 2 , ',' , '.' ) : number_format($tax, 2 , '.' , ',' ),
+			'Gross' 		=> $german ? number_format($net + $tax, 2 , ',' , '.' ) : number_format($net + $tax, 2 , '.' , ',' ),
 			'Currency' 		=> $conf->currency ? $conf->currency : 'EUR',
 			'Firstname' 	=> $contract->firstname,
 			'Lastname' 		=> $contract->lastname,
@@ -265,7 +271,7 @@ class SepaAccount extends \BaseModel {
 			'Cost Center'   => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
 			'Count'			=> $count,
 			'Description'   => 'Telephone Calls',
-			'Price' 		=> $this->_get_billing_lang() == 'de' ? number_format($charge, 2, ',', '.') : $charge,
+			'Price' 		=> $this->_get_billing_lang() == 'de' ? number_format($charge, 2, ',', '.') : number_format($charge, 2, '.', ','),
 			'Firstname'		=> $contract->firstname,
 			'Lastname' 		=> $contract->lastname,
 			'Street' 		=> $contract->street,
@@ -318,7 +324,7 @@ class SepaAccount extends \BaseModel {
 	 * @param float 	$charge
 	 * @param array 	$dates 		last run info is important for transfer type
 	 */
-	public function add_sepa_transfer($mandate, $charge, $dates)
+	public function add_sepa_transfer($mandate, $charge)
 	{
 		if ($charge == 0)
 			return;
@@ -330,7 +336,7 @@ class SepaAccount extends \BaseModel {
 		if ($charge < 0)
 		{
 			$data = array(
-				'amount'                => $charge * (-1),
+				'amount'                => round($charge * (-1), 2),
 				'creditorIban'          => $mandate->sepa_iban,
 				'creditorBic'           => $mandate->sepa_bic,
 				'creditorName'          => $mandate->sepa_holder,
@@ -345,7 +351,7 @@ class SepaAccount extends \BaseModel {
 		// Debits
 		$data = array(
 			'endToEndId'			=> 'RG '.$this->_get_invoice_nr_formatted(),
-			'amount'                => $charge,
+			'amount'                => round($charge, 2),
 			'debtorIban'            => $mandate->sepa_iban,
 			'debtorBic'             => $mandate->sepa_bic,
 			'debtorName'            => $mandate->sepa_holder,
@@ -368,10 +374,10 @@ class SepaAccount extends \BaseModel {
 	 	* the Accounting Record Files (Item/Tariff)
 	 	* the Booking Record Files (Sepa/No Sepa)
 	 *
-	 * @author Nino Ryschavy, Christian Schramm
+	 * @author Nino Ryschawy, Christian Schramm
 	 * edit: filenames are language specific
 	 */
-	private function make_billing_record_files()
+	private function write_billing_record_files()
 	{
 		$files['accounting'] = $this->acc_recs;
 		$files['booking'] 	 = $this->book_recs;
@@ -386,26 +392,31 @@ class SepaAccount extends \BaseModel {
 				$accounting = BaseViewController::translate_label($key1);
 				$rec 		= $this->_get_billing_lang() == 'de' ? '' : '_records';
 
-				$file = $this->dir.$this->name.'/'.$accounting.'_'.BaseViewController::translate_label($key).$rec.'.txt';
-				$file = str_sanitize($file);
+				$fn = str_sanitize($this->dir.$this->name.'/'.$accounting.'_'.BaseViewController::translate_label($key).$rec.'.txt');
 
-				// initialise record files with Column names as first line
-				$keys = [];
-				foreach (array_keys($records[0]) as $col)
-					$keys[] = BaseViewController::translate_label($col);
-				Storage::put($file, implode("\t", $keys));
+				// echo "write ".count($records)." [".count($this->{($key1 == 'accounting' ? 'acc_recs' : 'book_recs')}[$key]) ."] to file $fn\n";
+
+				if (!Storage::exists($fn))
+				{
+					// initialise record files with Column names as first line
+					$keys = [];
+					foreach (array_keys($records[0]) as $col)
+						$keys[] = BaseViewController::translate_label($col);
+					Storage::put($fn, implode("\t", $keys));
+				}
 
 				$data = [];
 				foreach ($records as $value)
-					array_push($data, implode("\t", $value)."\n");
+					array_push($data, implode("\t", $value));
 
-				Storage::append($file, implode($data));
+				Storage::append($fn, implode("\n", $data));
 
-				$this->_log("$key1 $key records", $file);
+				// free memory
+				$this->{($key1 == 'accounting' ? 'acc_recs' : 'book_recs')}[$key] = null;
+
+				$this->_log("$key1 $key records", $fn);
 			}
 		}
-
-		return;
 	}
 
 
@@ -461,7 +472,6 @@ class SepaAccount extends \BaseModel {
 
 				// Retrieve the resulting XML
 				$file = str_sanitize($this->dir.$this->name.'/DD_'.$type.'.xml');
-				// $data = str_replace('pain.008.002.02', 'pain.008.003.02', $directDebit->asXML());
 				Storage::put($file, $directDebit->asXML());
 
 				$this->_log("sepa direct debit $type xml", $file);
@@ -537,7 +547,7 @@ class SepaAccount extends \BaseModel {
 	 */
 	public function make_billing_files()
 	{
-		$this->make_billing_record_files();
+		$this->write_billing_record_files();
 
 		if ($this->sepa_xml['debits'])
 			$this->make_debit_file();

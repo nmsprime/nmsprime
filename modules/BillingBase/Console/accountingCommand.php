@@ -36,12 +36,14 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 *
 	 * @var string
 	 */
-	public $name 		= 'billing:accounting';
+	public $name 			= 'billing:accounting';
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
 	protected $dir 			= 'data/billingbase/accounting/'; 				// relative to storage/app/ - Note: completed by month in constructor!
 
 	protected $dates;					// offen needed time strings for faster access - see constructor
+
+	protected $sr;
 
 
 	/**
@@ -49,10 +51,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 *
 	 * @return void
 	 */
-	public function __construct()
+	public function __construct(SettlementRun $sr)
 	{
-		$this->dates = self::create_dates_array();
-		$this->dir .= date('Y-m', strtotime('first day of last month')).'/';
+		$this->sr = $sr;
 
 		parent::__construct();
 	}
@@ -60,40 +61,28 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 
 	/**
-	 * Execute the console command: Create Invoices, Sepa xml file(s), Accounting and Booking record file(s)
+	 * Execute the console command
 	 *
-	 * TODO: add to app/Console/Kernel.php -> run monthly()->when(function(){ date('Y-m-d') == date('Y-m-10')}) for tenth day in month
+	 * Create Invoices, Sepa xml file(s), Accounting and Booking record file(s)
 	 */
 	public function handle()
 	{
 		// $start = microtime(true);
+		$this->dates = self::create_dates_array();
+		$this->dir .= date('Y-m', strtotime('first day of last month')).'/';
 
-		if (\App::runningInConsole())
-		{
-			Log::debug('billing', ' #####    Start Accounting Command from Console   #####');
-			// create/update settlementrun model when we run from console
-			$sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->get()->all();
+		// Determine SR (SettlementRun) ID as this is necessary to create relation between Invoice & SR
+		if (!$this->sr->getAttribute('id'))
+			$this->sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->first();
 
-			if (!$sr)
-			{
-				Log::debug('billing', 'Add new SettlementRun and Return as Observer will call this Cmd again');
-				SettlementRun::create(['year' => $this->dates['Y'], 'month' => $this->dates['lastm']]);
-				return;
-			}
-			else
-			{
-				$sr = $sr[0];
-				$settlementrun_id = $sr->id;
-				$sr->update(['updated_at' => date('Y-m-d H:i:s')]);
-				Log::debug('billing', 'Update existing SettlementRun', [$sr->id]);
-			}
-		}
-		else
+		if (!$this->sr || !$this->sr->getAttribute('id'))
 		{
-			Log::debug('billing', ' #####    Start Accounting Command via GUI   #####');
-			$settlementrun_id = SettlementRun::orderBy('id', 'desc')->get()->first()->id;
-			Log::debug('billing', 'SettlementRun already created through GUI');
+			// Note: create will run the observer that calls this command again with this SR
+			SettlementRun::create(['year' => $this->dates['Y'], 'month' => $this->dates['lastm']]);
+			exit(0);
 		}
+
+		Log::debug('billing', ' #####    Start Accounting Command   #####');
 
 		// Fetch all Data from Database
 		echo "Get all Data from Database\n";
@@ -132,7 +121,11 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			if ($this->output)
 				$bar->advance();
 			else
-				echo ($i + 1)."/$num [$c->id]\r";
+			{
+				if (!($i % 20))
+					Storage::put('tmp/accCmdStatus', \App\Http\Controllers\BaseViewController::translate_label('Create Invoices').': '.((int) ($i/$num*100)).' %');
+				// echo ($i + 1)."/$num [$c->id][".(memory_get_usage()/1000000)."]\r";
+			}
 
 			if (!$c->create_invoice) {
 				Log::info('billing', "Create invoice for Contract $c->number [$c->id] is off");
@@ -174,18 +167,16 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$costcenter = $item->get_costcenter();
 				$acc 		= $sepa_accs->find($costcenter->sepaaccount_id);
 
-				// increase invoice nr of sepa account, increase charge for account by price, calculate tax
-				if (isset($c->charge[$acc->id]))
+				// increase invoice nr of sepa account
+				if (!isset($c->charge[$acc->id]))
 				{
-					$c->charge[$acc->id]['net'] += $item->charge;
-					$c->charge[$acc->id]['tax'] += $item->product->tax ? $item->charge * $conf->tax/100 : 0;
-				}
-				else
-				{
-					$c->charge[$acc->id]['net'] = $item->charge;
-					$c->charge[$acc->id]['tax'] = $item->product->tax ? $item->charge * $conf->tax/100 : 0;
+					$c->charge[$acc->id] = ['net' => 0, 'tax' => 0];
 					$acc->invoice_nr += 1;
 				}
+
+				// increase charge for account by price, calculate tax
+				$c->charge[$acc->id]['net'] += $item->charge;
+				$c->charge[$acc->id]['tax'] += $item->product->tax ? $item->charge * $conf->tax/100 : 0;
 
 				$item->charge = round($item->charge, 2);
 
@@ -195,7 +186,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 				// add item to accounting records of account, invoice and salesman
 				$acc->add_accounting_record($item);
-				$acc->add_invoice_item($item, $conf, $settlementrun_id);
+				$acc->add_invoice_item($item, $conf, $this->sr->id);
 				if ($c->salesman_id)
 					$salesmen->find($c->salesman_id)->add_item($item);
 
@@ -223,19 +214,16 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 				// increase charge for booking record
 				// Keep this order in case we need to increment the invoice nr if only cdrs are charged for this contract
-				if (isset($c->charge[$acc->id]))
-				{
-					$c->charge[$acc->id]['net'] += $charge;
-					$c->charge[$acc->id]['tax'] += $charge * $conf->tax/100;
-				}
-				else
+				if (!isset($c->charge[$acc->id]))
 				{
 					// this case should only happen when contract/voip tarif ended and deferred CDRs are calculated
 					Log::notice('billing', 'Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
-					$c->charge[$acc->id]['net'] = $charge;
-					$c->charge[$acc->id]['tax'] = $charge * $conf->tax/100;
+					$c->charge[$acc->id] = ['net' => 0, 'tax' => 0];
 					$acc->invoice_nr += 1;
 				}
+
+				$c->charge[$acc->id]['net'] += $charge;
+				$c->charge[$acc->id]['tax'] += $charge * $conf->tax/100;
 
 				// accounting record
 				$rec = new AccountingRecord;
@@ -243,7 +231,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$acc->add_cdr_accounting_record($c, $charge, $calls);
 
 				// invoice
-				$acc->add_invoice_cdr($c, $cdrs[$id], $conf, $settlementrun_id);
+				$acc->add_invoice_cdr($c, $cdrs[$id], $conf, $this->sr->id);
 			}
 
 			/*
@@ -255,9 +243,6 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 			foreach ($c->charge as $acc_id => $value)
 			{
-				$value['net'] = round($value['net'], 2);
-				$value['tax'] = round($value['tax'], 2);
-
 				$acc = $sepa_accs->find($acc_id);
 
 				$mandate_specific = $c->get_valid_mandate('now', $acc->id);
@@ -276,7 +261,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 					continue;
 				}
 
-				$acc->add_sepa_transfer($mandate, $value['net'] + $value['tax'], $this->dates);
+				$acc->add_sepa_transfer($mandate, $value['net'] + $value['tax']);
 			}
 
 		} // end of loop over contracts
@@ -284,11 +269,12 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		echo "\n";
 
 		// avoid deleting temporary latex files before last invoice was built (multiple threads are used)
-		// and wait for all invoice pdfs to be created for concatenate them in zip command in _make_billing_files()
+		// and wait for all invoice pdfs to be created for concatenation in zipCommand@_make_billing_files()
 		usleep(200000);
 
-		$this->_make_billing_files($sepa_accs, $salesmen);
+		// while removing it's tested if all PDFs were created successfully
 		Invoice::remove_templatex_files();
+		$this->_make_billing_files($sepa_accs, $salesmen);
 	}
 
 
@@ -354,10 +340,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				}
 
 				$nr = AccountingRecord::where('sepa_account_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
-				if (is_object($nr))
-					$acc->invoice_nr = $nr->invoice_nr;
-				else
-					$acc->invoice_nr = $acc->invoice_nr_start;
+
+				$acc->invoice_nr = is_object($nr) ? $nr->invoice_nr : $acc->invoice_nr_start;
 			}
 		}
 		// first run for this system
@@ -397,7 +381,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		}
 
 		// create zip file
-		echo "ZIP all Files";
+		echo "ZIP all Files\n";
 		\Artisan::call('billing:zip');
 	}
 
@@ -505,7 +489,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		foreach ($csv as $line)
 		{
 			$line = str_getcsv($line, ';');
-			$customer_nr 	= intval(str_replace('002-', '', $line[0]));
+			$customer_nr 	= intval(str_replace(['002-', '010-'], '', $line[0]));
 			$calling_number = $line[3];
 			$called_number  = $line[7];
 

@@ -21,6 +21,7 @@ class Item extends \BaseModel {
 
 		return array(
 			// 'name' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
+			'product_id' 	=> 'required|numeric|Min:1',
 			'valid_from'	=> 'date',	//|in_future ??
 			'valid_to'		=> 'date',
 			'credit_amount' => 'required_if:product_id,'.$credit_ids,
@@ -439,6 +440,105 @@ class Item extends \BaseModel {
 	}
 
 
+	/**
+	 * Get Tariffs End of Term and last Day of possible Cancelation
+	 * Ende Tariflaufzeit und letztes Kündigungsdatum
+	 *
+	 * @author Nino Ryschawy
+	 *
+	 * @return Array 	[End of Term, Last possible Cancelation Day]
+	 */
+	public function get_next_cancel_date()
+	{
+		$default_pon = Product::$pon; 				// Default period of notice
+
+		// Tariff with maturity (m) (Laufzeit) but open end
+		if ($this->product->maturity)
+		{
+			$end = \Carbon\Carbon::createFromFormat('Y-m-d', $this->valid_from);
+			$end->subDay();
+
+			// add maturity period until the tarif end time is in future
+			do {
+				$end = self::_add_period($end, $this->product->maturity);
+			} while ($end->toDateString() < date('Y-m-01', strtotime('first day of last month')));
+
+			// get last day of period of notice (pon)
+			$cancel_day = self::_add_period(clone $end, $this->product->period_of_notice ? : $default_pon, 'sub');
+
+			// period of notice expired - extend runtime - Kündigungsfrist abgelaufen
+			if ($cancel_day->isPast()) {
+				$end = self::_add_period($end, $this->product->maturity);
+				$cancel_day = self::_add_period($cancel_day, $this->product->maturity);
+			}
+		}
+		else
+		{
+			$end = \Carbon\Carbon::create();
+			$end = self::_add_period($end, $this->product->period_of_notice ? : $default_pon);
+			$end->lastOfMonth();
+
+			$cancel_day = self::_add_period(clone $end, $this->product->period_of_notice ? : $default_pon, 'sub');
+
+			// period of notice expired - extend runtime
+			if ($cancel_day->isPast()) {
+				$end->addMonthNoOverflow();
+				$cancel_day->addMonthNoOverflow();
+			}
+		}
+
+		return array(
+			'end_of_term' => $end->toDateString(),
+			'cancelation_day' => $cancel_day->toDateString(),
+			);
+	}
+
+	/**
+	 * Add a time period to a time object
+	 *
+	 * @author Nino Ryschawy
+	 *
+	 * @param Object 	current datetime
+	 * @param String 	e.g. 14D|3M|1Y (14 days|3 month|1 year)
+	 * @param String 	subtract or add time period
+	 */
+	private static function _add_period(\Carbon\Carbon $dt, $period, $method = 'add')
+	{
+		// split nr from timespan
+		$nr = preg_replace( '/[^0-9]/', '', $period);
+		$span = str_replace($nr, '', $period);
+
+		$d = $dt->__get('day');
+		$m = $dt->__get('month');
+
+		switch ($span)
+		{
+			case 'D':
+				$dt->{$method.'Day'}($nr); break;
+
+			case 'M':
+				// handle last day of february
+				$is_last = ($m == 2) && (($d == 28 && !$dt->isLeapYear()) || ($d == 29 && !$dt->isLeapYear()));
+
+				$dt->{$method.'MonthNoOverflow'}($nr);
+
+				if ($is_last)
+					$dt->lastOfMonth();
+
+				break;
+
+			case 'Y':
+				// handle last day of february
+				if ($d == 29 && $m == 2 && ($nr % 4))
+					$dt->subDay();
+
+				$dt->{$method.'Year'}($nr);
+
+				break;
+		}
+
+		return $dt;
+	}
 
 }
 

@@ -23,7 +23,7 @@ class BillingBaseServiceProvider extends ServiceProvider {
 
 	/**
 	 * Boot the application events.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function boot()
@@ -41,11 +41,14 @@ class BillingBaseServiceProvider extends ServiceProvider {
 	public function register()
 	{
 		$this->commands($this->commands);
+
+		// $this->mergeConfigFrom(__DIR__ . '/../Config/dates.php', 'dates');
+		$this->app->bind('companydata', 'Modules\BillingBase\Providers\CompanyDataProvider');
 	}
 
 	/**
 	 * Register config.
-	 * 
+	 *
 	 * @return void
 	 */
 	protected function registerConfig()
@@ -60,7 +63,7 @@ class BillingBaseServiceProvider extends ServiceProvider {
 
 	/**
 	 * Register views.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function registerViews()
@@ -80,7 +83,7 @@ class BillingBaseServiceProvider extends ServiceProvider {
 
 	/**
 	 * Register translations.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function registerTranslations()
