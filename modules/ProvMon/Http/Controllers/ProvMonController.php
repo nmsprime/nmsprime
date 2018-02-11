@@ -128,9 +128,8 @@ class ProvMonController extends \BaseController {
 		if (!$log)
 		{
 			$files = glob('/var/log/messages-*');
-			$file  = max($files);
-
-			exec ("egrep -i ".$search.' '.$file.' '.$grep_pipes, $log);
+			if (!empty($files))
+				exec ("egrep -i ".$search.' '.max($files).' '.$grep_pipes, $log);
 		}
 
 		return $log;
@@ -589,6 +588,7 @@ end:
 			if($us['SNR dB'][$i] == 0)
 				continue;
 			// the reference SNR is 24 dB
+			// $r = round(/*$us['Rx Power dBmV'][$i] +*/ 25 - $us['SNR dB'][$i]);
 			$r = round($us['Rx Power dBmV'][$i] + 24 - $us['SNR dB'][$i]);
 			if ($r < 0)
 				// minimum actual power is 0 dB
@@ -596,6 +596,9 @@ end:
 			if ($r > 10)
 				// maximum actual power is 10 dB
 				$r = 10;
+
+			$tmp = $us['SNR dB'][$i];
+			echo("+$r\t($tmp)\n");
 			snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
 
 			array_push($rx_pwr, $r);

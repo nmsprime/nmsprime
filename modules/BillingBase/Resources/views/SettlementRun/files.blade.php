@@ -12,6 +12,7 @@
 		@if (\Session::get('job_id'))
 			{{-- accountingCommand running --}}
 			<div class="alert alert-warning fade in m-b-15">{{ trans('messages.accCmd_processing') }}</div>
+      <div id="state"></div>
 		@else
 			@foreach($relation['view']['vars'] as $sepaacc => $files)
 				@DivOpen(6)
@@ -43,6 +44,8 @@
 					{
 						if (e.data == 'reload')
 							location.reload();
+						else
+							document.getElementById('state').innerHTML = e.data;
 					}
 
 				}, 500);

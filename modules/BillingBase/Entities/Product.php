@@ -4,12 +4,22 @@ namespace Modules\BillingBase\Entities;
 
 use DB;
 use Modules\BillingBase\Entities\SepaAccount;
-//use Modules\BillingBase\Entities\Product;
 
 class Product extends \BaseModel {
 
 	// The associated SQL table for this Model
 	public $table = 'product';
+
+	/**
+	 * The default Period of Notice (14 days) and maturity for products where string is not set in DB
+	 * (needed for Invoice creation during SettlementRun)
+	 *
+	 * @var String 	pon
+	 * @var String  maturity
+	 */
+	public static $pon = '14D';
+	public static $maturity = '1M';
+
 
 	// Add your validation rules here
 	public static function rules($id = null)
@@ -23,6 +33,8 @@ class Product extends \BaseModel {
 			'voip_purchase_tariff_id' => 'required_if:type,Voip',
 			'qos_id' => 'required_if:type,Internet',
 			'price'  => 'required_if:type,Internet,Voip,TV,Other,Device,Mixed',
+			'maturity' => 'regex:/^\d+[dDmMyY]$/',
+			'period_of_notice' => 'regex:/^\d+[dDmMyY]$/',
 		);
 	}
 

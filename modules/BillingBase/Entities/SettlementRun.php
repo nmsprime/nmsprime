@@ -133,6 +133,8 @@ class SettlementRun extends \BaseModel {
 		if (!is_dir($this->get_files_dir()))
 			return [];
 
+		$arr = [];
+
 		$files = \File::allFiles($this->get_files_dir());
 
 		//order files
@@ -189,13 +191,15 @@ class SettlementRunObserver
 			return;
 
 		// NOTE: Make sure that we use Database Queue Driver - See .env!
-		$job_id = \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
+		$job_id = \Queue::push(new \Modules\BillingBase\Console\accountingCommand($settlementrun));
 		// \Artisan::call('billing:accounting', ['--debug' => 1]);
 		\Session::put('job_id', $job_id);
 	}
 
 	public function updated($settlementrun)
 	{
+		if (\Input::has('rerun'))
+	 		\Session::put('job_id', \Queue::push(new \Modules\BillingBase\Console\accountingCommand($settlementrun)));
 	}
 
 	public function deleted($settlementrun)

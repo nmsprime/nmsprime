@@ -365,7 +365,7 @@ class DashboardController extends BaseController
 			$state = $element->get_bsclass();
 			if ($state == 'success' || $state == 'info')
 				continue;
-			if(!isset($element->icingaobjects->icingahoststatus) || !$element->icingaobjects->is_active)
+			if(!isset($element->icingaobjects->icingahoststatus) || $element->icingaobjects->icingahoststatus->problem_has_been_acknowledged || !$element->icingaobjects->is_active)
 				continue;
 
 			$status = $element->icingaobjects->icingahoststatus;

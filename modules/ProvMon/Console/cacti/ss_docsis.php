@@ -24,11 +24,52 @@ $app = require_once '/var/www/nmsprime/bootstrap/app.php';
 $app->make('Illuminate\Contracts\Http\Kernel')->handle(Illuminate\Http\Request::capture());
 $GLOBALS['controller'] = $app->make('Modules\ProvMon\Http\Controllers\ProvMonController');
 
-function ss_docsis_avg($a) {
+function ss_docsis_isset_return(&$mixed)
+{
+	return (isset($mixed)) ? $mixed : null;
+}
+
+function ss_docsis_avg($a)
+{
+	if(empty($a))
+		return null;
+
 	return array_sum($a) / count($a);
 }
 
-function ss_docsis($hostname, $snmp_community) {
+function ss_docsis_stats($a, $name)
+{
+	if(empty($a))
+		return [
+			'min'.$name => null,
+			'avg'.$name => null,
+			'max'.$name => null,
+		];
+
+	return [
+		'min'.$name => min($a),
+		'avg'.$name => array_sum($a) / count($a),
+		'max'.$name => max($a),
+	];
+}
+
+function ss_docsis_snmp_sum($host, $com, $oid, $name)
+{
+	try {
+		$ret = snmp2_walk($host, $com, $oid);
+	} catch (\Exception $e) {
+		try {
+			$ret = snmpwalk($host, $com, $oid);
+		} catch (\Exception $e) {
+			return [$name => null];
+		}
+	}
+
+	return [$name => array_sum($ret)];
+}
+
+function ss_docsis($hostname, $snmp_community)
+{
 	$file = "/usr/share/cacti/rra/$hostname.json";
 	$rates = ['+8 hours', '+4 hours', '+10 minutes'];
 	$val = app()->call([$GLOBALS['controller'], 'realtime'], [$hostname, $snmp_community, gethostbyname($hostname), true]);
@@ -37,38 +78,32 @@ function ss_docsis($hostname, $snmp_community) {
 	if(!isset($preq['next']) || time() > $preq['next']) {
 		snmp_set_quick_print(TRUE);
 		snmp_set_valueretrieval(SNMP_VALUE_LIBRARY);
-		$tmp = snmp2_walk($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.2.2.1.17.2');
+		try {
+			$tmp = snmp2_walk($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.2.2.1.17.2');
+		} catch (\Exception $e) {
+			#do nothing
+		}
 		$preq['data'] = isset($tmp) ? preg_replace("/[^A-Fa-f0-9]/", '', reset($tmp)) : '';
-		$preq['width'] = ss_docsis_avg($val['Upstream']['Width MHz']) * 1000000;
+		$preq['width'] = ss_docsis_avg(ss_docsis_isset_return($val['Upstream']['Width MHz'])) * 1000000;
 		$preq['next'] = strtotime($rates[$preq['rate']]);
 		file_put_contents($file, json_encode($preq));
 	}
 
-	$arr = [
-		 'minDsPow' => min($val['Downstream']['Power dBmV']),
-		 'avgDsPow' => ss_docsis_avg($val['Downstream']['Power dBmV']),
-		 'maxDsPow' => max($val['Downstream']['Power dBmV']),
-		 'minMuRef' => min($val['Downstream']['Microreflection -dBc']),
-		 'avgMuRef' => ss_docsis_avg($val['Downstream']['Microreflection -dBc']),
-		 'maxMuRef' => max($val['Downstream']['Microreflection -dBc']),
-		 'minDsSNR' => min($val['Downstream']['MER dB']),
-		 'avgDsSNR' => ss_docsis_avg($val['Downstream']['MER dB']),
-		 'maxDsSNR' => max($val['Downstream']['MER dB']),
-		 'minUsPow' => min($val['Upstream']['Power dBmV']),
-		 'avgUsPow' => ss_docsis_avg($val['Upstream']['Power dBmV']),
-		 'maxUsPow' => max($val['Upstream']['Power dBmV']),
-		 'minUsSNR' => min($val['Upstream']['SNR dB']),
-		 'avgUsSNR' => ss_docsis_avg($val['Upstream']['SNR dB']),
-		 'maxUsSNR' => max($val['Upstream']['SNR dB']),
-		'T3Timeout' => array_sum(snmpwalk($hostname, $snmp_community, '1.3.6.1.2.1.10.127.1.2.2.1.12')),
-		'T4Timeout' => array_sum(snmpwalk($hostname, $snmp_community, '1.3.6.1.2.1.10.127.1.2.2.1.13')),
-		'Corrected' => array_sum(snmpwalk($hostname, $snmp_community, '1.3.6.1.2.1.10.127.1.1.4.1.3')),
-		'Uncorrectable' => array_sum(snmpwalk($hostname, $snmp_community, '1.3.6.1.2.1.10.127.1.1.4.1.4')),
-	];
+	$arr = array_merge(
+		ss_docsis_stats(ss_docsis_isset_return($val['Downstream']['Power dBmV']), 'DsPow'),
+		ss_docsis_stats(ss_docsis_isset_return($val['Downstream']['Microreflection -dBc']), 'MuRef'),
+		ss_docsis_stats(ss_docsis_isset_return($val['Downstream']['MER dB']), 'DsSNR'),
+		ss_docsis_stats(ss_docsis_isset_return($val['Upstream']['Power dBmV']), 'UsPow'),
+		ss_docsis_stats(ss_docsis_isset_return($val['Upstream']['SNR dB']), 'UsSNR'),
+		ss_docsis_snmp_sum($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.2.2.1.12', 'T3Timeout'),
+		ss_docsis_snmp_sum($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.2.2.1.13', 'T4Timeout'),
+		ss_docsis_snmp_sum($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.1.4.1.3', 'Corrected'),
+		ss_docsis_snmp_sum($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.1.4.1.4', 'Uncorrectable')
+	);
 
 	$result = '';
-	foreach ($arr as $key => $value) {
+	foreach ($arr as $key => $value)
 		$result = is_numeric($value) ? ($result . $key . ':' . $value . ' ') : ($result . $key . ':NaN ');
-	}
+
 	return trim($result);
 }
