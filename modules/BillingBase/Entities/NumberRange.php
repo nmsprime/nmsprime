@@ -31,8 +31,8 @@ class NumberRange extends \BaseModel {
 	{
 		return [
 			'table' => $this->table,
-			'index_header' => [$this->table . '.id', $this->table . '.name', $this->table . '.prefix', $this->table . '.suffix', $this->table . '.start', $this->table . '.end', $this->table . '.type', $this->table . '.costcenter.name'],
-			'header' => $this->table . 'id' . ' - ' . $this->table . 'name',
+			'index_header' => [$this->table . '.id', $this->table . '.name', $this->table . '.prefix', $this->table . '.suffix', $this->table . '.start', $this->table . '.end', $this->table . '.type', 'costcenter.name'],
+			'header' => $this->id.' - '.$this->name,
 			'order_by' => ['0' => 'asc'],
 			'eager_loading' => ['costcenter']
 		];
