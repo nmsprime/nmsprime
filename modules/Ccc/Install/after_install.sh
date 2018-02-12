@@ -1,3 +1,4 @@
+dir="/var/www/nmsprime"
 env="/etc/nmsprime/env/ccc.env"
 ccc_pw=$(pwgen 12 1) # SQL password for user nmsprime_ccc
 
@@ -16,3 +17,7 @@ systemctl reload httpd
 chgrp -R apache /etc/nmsprime/env
 chmod -R o-rwx /etc/nmsprime/env
 chmod -R g-w /etc/nmsprime/env
+
+# create directories
+mkdir -p "$dir/storage/app/config/ccc/template"
+chown -R apache "$dir/storage/"
