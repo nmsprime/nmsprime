@@ -53,12 +53,17 @@ class SettlementRun extends \BaseModel {
 		$bsclass = $this->get_bsclass();
 		$day = (isset($this->created_at)) ? $this->created_at : '';
 
-		return ['table' => $this->table,
-				'index_header' => [$this->table.'.year', $this->table.'.month',  $this->table.'.created_at', 'verified'],
-				'header' =>  $this->year.' - '.$this->month.' - '.$day ,
-				'bsclass' => $bsclass,
-				'order_by' => ['0' => 'desc'],
-				'edit' => ['verified' => 'run_verified', 'checkbox' => 'set_index_delete', 'created_at' => 'created_at_toDateString' ]];
+		return ['table' 		=> $this->table,
+				'index_header' 	=> [$this->table.'.year',
+									$this->table.'.month',
+									$this->table.'.created_at',
+									'verified', ],
+				'header' 		=>  $this->year.' - '.$this->month.' - '.$day ,
+				'bsclass' 		=> $bsclass,
+				'order_by' 		=> ['0' => 'desc'],
+				'edit' 			=> ['verified' => 'run_verified',
+									'created_at' => 'created_at_toDateString' ]
+				];
 	}
 
 	public function get_bsclass()
@@ -74,7 +79,9 @@ class SettlementRun extends \BaseModel {
 	public function set_index_delete()
 	{
 		if ($this->verified)
-			$this->index_delete_disabled = true;
+				$this->index_delete_disabled = true;
+
+		return $this->index_delete_disabled;
 	}
 
 	public function created_at_toDateString()

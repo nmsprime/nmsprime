@@ -142,7 +142,7 @@
 		// line chart contracts
 		var chart_data_contracts = {{ $view['contracts'] ? json_encode($data['contracts']['chart']) : '{}' }};
 
-		if (chart_data_contracts.length != 0) {
+		if (Object.getOwnPropertyNames(chart_data_contracts).length != 0) {
 
 			var labels = chart_data_contracts['labels'];
 			var contracts = chart_data_contracts['contracts'];
@@ -175,7 +175,7 @@
 		// bar chart income
 		var chart_data_income = {{ $view['income'] ? json_encode($data['income']['chart']) : '{}' }};
 
-		if (chart_data_income.length != 0) {
+		if (Object.getOwnPropertyNames(chart_data_income).length != 0) {
 
 			var labels = chart_data_income['labels'];
 			var incomes = chart_data_income['data'];
