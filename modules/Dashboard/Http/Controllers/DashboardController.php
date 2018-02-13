@@ -59,7 +59,7 @@ class DashboardController extends BaseController
 		$income = $hfc = false;
 
 		// check user permissions
-		foreach (\Auth::user()->roles() as $role)
+		foreach (\Auth::user()->roles as $role)
 		{
 			if (\PPModule::is_active('billingbase'))
 			{
