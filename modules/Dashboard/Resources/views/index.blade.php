@@ -122,7 +122,7 @@
 				@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 4, 'height' => 'auto'))
 			@endif
 
-			@if ($view['tickets'])
+			@if ($view['tickets'] && $data['tickets']['total'])
 				@section ('ticket_table')
 					@include('dashboard::panels.ticket_table')
 				@stop
