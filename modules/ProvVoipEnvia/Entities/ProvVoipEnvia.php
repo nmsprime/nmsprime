@@ -3634,11 +3634,11 @@ class ProvVoipEnvia extends \BaseModel {
 		$update_envia_contract = False;
 
 		if(!boolval($this->contract->customer_external_id)) {
-			$this->contract->customer_external_id = $xml->customerreference;
-			$this->contract->save();
 			$msg = "Setting external customer id for contract ".$this->contract->id." to ".$xml->customerreference;
 			$out .= "<b>$msg</b>";
 			Log::info($msg);
+			$this->contract->customer_external_id = $xml->customerreference;
+			$this->contract->save();
 			$update_envia_contract = True;
 		}
 		elseif ($this->contract->customer_external_id == $xml->customerreference) {
@@ -3646,9 +3646,13 @@ class ProvVoipEnvia extends \BaseModel {
 			$update_envia_contract = True;
 		}
 		else {
-			$msg = "Returned envia TEL customer reference for contract ".$this->contract->id." (".$xml->customerreference.") does not match our database entry (".$this->contract->customer_external_id.")";
-			Log::error($msg);
-			$out .= "<b>ERROR: $msg</b>";
+			// this can happen with customers that switched from another reseller to us – force overwriting with correct reference
+			$msg = "Changing envia TEL customer reference from ".$this->contract->customer_external_id." to ".$xml->customerreference;
+			Log::warning($msg);
+			$out .= "<b>WARNING: $msg</b>";
+			$this->contract->customer_external_id = $xml->customerreference;
+			$this->contract->save();
+			$update_envia_contract = True;
 		}
 
 		// update data in enviacontract if this seems to be save
