@@ -36,6 +36,11 @@ class Invoice extends \BaseModel{
 		return '<i class="fa fa-id-card-o"></i>';
 	}
 
+	public function view_index_label()
+	{
+		return $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT);
+	}
+
 	/**
 	 * Relations
 	 */
