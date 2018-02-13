@@ -356,9 +356,9 @@ end:
 	public function cmts_analysis($id)
 	{
 		$ping = $lease = $log = $dash = $realtime = $monitoring = $type = $flood_ping = null;
-		$modem = $this->modem ? $this->modem : Cmts::find($id);
-		$ip = $modem->ip;
-		$view_var = $modem; // for top header
+		$cmts = Cmts::find($id);
+		$ip   = $cmts->ip;
+		$view_var = $cmts; // for top header
 
 		// Ping: Send 5 request's at once with max timeout of 1 second
 		exec ('sudo ping -c5 -i0 -w1 '.$ip, $ping);
@@ -368,11 +368,11 @@ end:
 		// Realtime Measure
 		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
 		{
-			$realtime['measure']  = $this->realtime_cmts($modem, $modem->get_ro_community());
+			$realtime['measure']  = $this->realtime_cmts($cmts, $cmts->get_ro_community());
 			$realtime['forecast'] = 'TODO';
 		}
 
-		$host_id = $this->monitoring_get_host_id($modem);
+		$host_id = $this->monitoring_get_host_id($cmts);
 
 		$panel_right =  [
 			['name' => 'Edit', 'route' => 'Cmts.edit', 'link' => [$id]],
