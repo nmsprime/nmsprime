@@ -12,7 +12,7 @@
 		@if (\Session::get('job_id'))
 			{{-- accountingCommand running --}}
 			<div class="alert alert-warning fade in m-b-15">{{ trans('messages.accCmd_processing') }}</div>
-      <div id="state"></div>
+			<div id="state" class="col-12"></div>
 		@else
 			@foreach($relation['view']['vars'] as $sepaacc => $files)
 				@DivOpen(6)
@@ -25,7 +25,7 @@
 				@DivClose()
 			@endforeach
 		@endif
-	
+
 	</div>
 @endif
 
