@@ -137,9 +137,11 @@ class zipCommand extends Command {
 		system('chown -R apache '.$acc_files_dir_abs_path);
 
 		// delete temp files
-		foreach ($files as $fn ) {
-			if (is_file($fn))
-				unlink($fn);
+		if (count($files) >= $this->split) {
+			foreach ($files as $fn ) {
+				if (is_file($fn))
+					unlink($fn);
+			}
 		}
 		Storage::delete('tmp/accCmdStatus');
 	}
