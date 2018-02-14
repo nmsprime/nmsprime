@@ -99,7 +99,7 @@ class NumberRange extends \BaseModel {
 		$numberranges = NumberRange::where('type', '=', 'contract')->where('costcenter_id', $costcenter_id)->orderBy('id')->get();
 
 		if (!$numberranges) {
-			\Log::alert("No NumberRange assigned to CostCenter [$costcenter_id]!");
+			// \Log::info("No NumberRange assigned to CostCenter [$costcenter_id]!");
 			return null;
 		}
 
