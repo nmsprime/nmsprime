@@ -215,6 +215,21 @@ class EnviaOrder extends \BaseModel {
 
 	);
 
+
+	/**
+	 * Constructor
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function __construct() {
+
+		parent::__construct();
+
+		// preserve currently set show filter for later use in datatable calls
+		$this->store_index_show_filter_in_session();
+	}
+
+
 	// Add your validation rules here
 	public static function rules($id=null) {
 
@@ -546,6 +561,16 @@ class EnviaOrder extends \BaseModel {
 			$bsclass = $colors[$this->orderstatus_id];
 		}
 
+		// get the current show filter
+		// as we called */EnviaOrder/datatables we have to get this information from session
+		$show_filter = \Session::get('enviaorder_show_filter', 'all');
+		if ($show_filter == 'all') {
+			$where_clauses = [];
+		}
+		else {
+			$where_clauses = [self::get_user_interaction_needing_enviaorder_where_clause()];
+		}
+
         return ['table' => $this->table,
                 'index_header' => [$this->table.'.ordertype', $this->table.'.orderstatus', 'escalation_level', 'contract.number', 'modem.id', 'phonenumber.number', 'enviacontract.envia_contract_reference',  $this->table.'.created_at', $this->table.'.updated_at', $this->table.'.orderdate', 'enviaorder_current'],
 				'bsclass' => $bsclass,
@@ -553,6 +578,7 @@ class EnviaOrder extends \BaseModel {
 				'eager_loading' => ['modem', 'contract', 'enviacontract', 'phonenumbers' ],
 				'edit' => ['ordertype' => 'get_ordertype', 'orderstatus'  => 'get_orderstatus', 'modem.id' => 'get_modem_id', 'contract.number' => 'get_contract_nr', 'enviacontract.envia_contract_reference' => 'get_enviacontract_ref', 'enviaorder_current' => 'get_user_interaction_necessary', 'phonenumber.number' => 'get_phonenumbers', 'escalation_level' => 'get_escalation_level'],
 				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
+				'where_clauses' => $where_clauses,
 		];
 	}
 
@@ -707,11 +733,20 @@ class EnviaOrder extends \BaseModel {
 	}
 
 	/**
-	 * Prepare the list of orders to be shown on index page
+	 * Get the filter to use for index view (used to show only user interaction needing orders).
+	 *
+	 * To make the filter information available in datatables (called by EnviaOrder/datatables without our custom GET param)
+	 * we use the session.
 	 *
 	 * @author Patrick Reichel
 	 */
-	public function index_list() {
+	public function store_index_show_filter_in_session() {
+
+		// first: check context
+		// if called by datatables: do nothing
+		if (\Str::contains(\URL::current(), '/EnviaOrder/datatables')) {
+			return;
+		}
 
 		// array containing all implemented filters
 		// later used as whitelist for given show_filter param
@@ -726,25 +761,7 @@ class EnviaOrder extends \BaseModel {
 			$filter = 'all';
 		}
 
-		// sort them by their last change date, latest date first
-		$orders =  $this->orderBy('updated_at', 'desc')->get();
-
-		// all shall be shown: return as is
-		if ($filter == 'all') {
-			return $orders;
-		}
-
-		// remove all orders from collection where no user interaction is necessary
-		foreach ($orders as $key => $order) {
-			if (!$order->user_interaction_necessary()) {
-				$orders->forget($key);
-			}
-		}
-
-		// reset the keys to integers 0…n-1 (table header in index view is built from $view_var[0])
-		$orders = array_flatten($orders);
-
-		return $orders;
+		\Session::put('enviaorder_show_filter', $filter);
 	}
 
 
@@ -930,13 +947,24 @@ class EnviaOrder extends \BaseModel {
 
 
 	/**
+	 * @author Patrick Reichel
+	 */
+	public static function get_user_interaction_needing_enviaorder_where_clause() {
+
+		$where_clause = '(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND ((orderstatus_id != 1000) OR ((orderstatus_id IS NULL) AND (orderstatus NOT LIKE "in Bearbeitung")))';
+
+		return $where_clause;
+	}
+
+
+	/**
 	 * For use in layout view: get number of user interaction needing orders
 	 *
 	 * @author Patrick Reichel
 	 */
 	public static function get_user_interaction_needing_enviaorder_count() {
 
-		$count = EnviaOrder::whereRaw('(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND ((orderstatus_id != 1000) OR ((orderstatus_id IS NULL) AND (orderstatus NOT LIKE "in Bearbeitung")))')->count();
+		$count = EnviaOrder::whereRaw(self::get_user_interaction_needing_enviaorder_where_clause())->count();
 
 		return $count;
 	}
