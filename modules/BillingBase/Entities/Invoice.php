@@ -38,7 +38,9 @@ class Invoice extends \BaseModel{
 
 	public function view_index_label()
 	{
-		return $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT);
+		$type = $this->type == 'CDR' ? ' ('.trans('messages.Call Data Record').')' : '';
+
+		return $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT). $type;
 	}
 
 	/**
