@@ -29,7 +29,7 @@ class CompanyDataProvider {
 			$err_msg = '';
 
 			if (!$acc->template_invoice)
-				\Log::error('Missing SepaAccount specific templates for Invoice');
+				\ChannelLog::error('billing', 'Missing SepaAccount specific templates for Invoice');
 
 			$data['company_account_institute'] = escape_latex_special_chars($acc->institute);
 			$data['company_account_iban'] = $acc->iban;
@@ -41,7 +41,7 @@ class CompanyDataProvider {
 
 			if (!$company || !$company->logo) {
 				$err_msg = $company ? "Missing Company's Logo ($company->name)" : 'No Company assigned to Account '.$acc->name;
-				\Log::error($err_msg);
+				\ChannelLog::error('billing', $err_msg);
 				continue;
 			}
 
