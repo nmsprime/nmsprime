@@ -114,16 +114,20 @@ class ItemController extends \BaseController {
 		// - otherwise after end date of old tariff - does it?
 		if (\Str::contains(\URL::previous(), '/Item/create'))
 		{
-			$c = Contract::find($data['contract_id']);
 			$p = Product::find($data['product_id']);
-			$tariff = $p ? $c->get_valid_tariff($p->type) : null;
 
-			if ($tariff)
+			if (in_array($p->type, ['Internet', 'Voip', 'TV']))
 			{
-				// check if date is after today
-				$start = $tariff->get_start_time();
-				$rules['valid_from'] .= '|after:';
-				$rules['valid_from'] .= $tariff->valid_to && $tariff->valid_to != '0000-00-00' ? $tariff->valid_to : date('Y-m-d', $start);
+				$c = Contract::find($data['contract_id']);
+				$tariff = $p ? $c->get_valid_tariff($p->type) : null;
+
+				if ($tariff)
+				{
+					// check if date is after today
+					$start = $tariff->get_start_time();
+					$rules['valid_from'] .= '|after:';
+					$rules['valid_from'] .= $tariff->valid_to && $tariff->valid_to != '0000-00-00' ? $tariff->valid_to : date('Y-m-d', $start);
+				}
 			}
 		}
 
