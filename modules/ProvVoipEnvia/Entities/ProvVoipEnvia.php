@@ -2604,7 +2604,10 @@ class ProvVoipEnvia extends \BaseModel {
 		$add_func = function($xml, $xml_field, $payload) {
 			$cur_node = $xml->addChild($xml_field, $payload);
 			if ((is_null($payload)) || ($payload === "")) {
-				$cur_node->addAttribute('nil', 'true');
+				// XML for phonebook entry related stuff do not have a nil attribute
+				if (!\Str::startswith($this->job, 'phonebookentry_')) {
+					$cur_node->addAttribute('nil', 'true');
+				}
 			};
 		};
 
