@@ -221,9 +221,9 @@ class EnviaOrder extends \BaseModel {
 	 *
 	 * @author Patrick Reichel
 	 */
-	public function __construct() {
+	public function __construct($attributes = array()) {
 
-		parent::__construct();
+		parent::__construct($attributes);
 
 		// preserve currently set show filter for later use in datatable calls
 		$this->store_index_show_filter_in_session();
