@@ -27,7 +27,7 @@ class CostCenterController extends \BaseController {
 		return array(
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name'),
 			array('form_type' => 'text', 'name' => 'number', 'description' => 'Number'),
-			array('form_type' => 'select', 'name' => 'sepaaccount_id', 'description' => 'Associated SEPA Account', 'value' => $list),
+			array('form_type' => 'select', 'name' => 'sepaaccount_id', 'description' => 'Associated SEPA Account', 'value' => $list, 'hidden' => 0),
 			array('form_type' => 'select', 'name' => 'billing_month', 'description' => 'Month to create Bill', 'value' => $months, 'help' => trans('helper.CostCenter_BillingMonth')),
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
 		);
