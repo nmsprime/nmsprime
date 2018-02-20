@@ -104,8 +104,8 @@ class ProvMonController extends \BaseController {
 		// TODO: Dash / Forecast
 
 		$panel_right = $this->prep_sidebar($id);
-
 		$view_header = 'ProvMon-Analyses';
+
 		// View
 		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header')));
 	}
