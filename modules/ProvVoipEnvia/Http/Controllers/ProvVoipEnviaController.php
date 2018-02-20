@@ -41,9 +41,7 @@ class ProvVoipEnviaController extends \BaseController {
 		}
 
 		// build base URL of the envia API
-		$domain = isset($_ENV['PROVVOIPENVIA__REST_API_URL']) ? $_ENV['PROVVOIPENVIA__REST_API_URL'] : '';
-		$sub_url = '/api/rest/v1/';
-		$this->base_url = $domain.$sub_url;
+		$this->base_url = isset($_ENV['PROVVOIPENVIA__REST_API_URL']) ? $_ENV['PROVVOIPENVIA__REST_API_URL'] : '';
 
 		parent::__construct();
 	}
