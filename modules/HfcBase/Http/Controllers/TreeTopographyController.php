@@ -257,7 +257,7 @@ class TreeTopographyController extends HfcBaseController {
 
 							$num  = $modem_helper::ms_num("netelement_id = $id");
 							$numa = $modem_helper::ms_num_all("netelement_id = $id");
-							$pro  = round(100 * $num / $numa,0);
+							$pro  = $numa ? round(100 * $num / $numa, 0) : 0;
 							$cri  = $modem_helper::ms_cri("netelement_id = $id");
 							$avg  = $modem_helper::ms_avg("netelement_id = $id");
 							$url  = \BaseRoute::get_base_url()."/Customer/netelement_id/$id";
