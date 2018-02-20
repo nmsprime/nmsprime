@@ -40,8 +40,13 @@ class ProvVoipEnviaController extends \BaseController {
 			$this->entry_method = '';
 		}
 
-		// build base URL of the envia API
+		// get base URL of the envia API and append slash (if not ending with one)
 		$this->base_url = isset($_ENV['PROVVOIPENVIA__REST_API_URL']) ? $_ENV['PROVVOIPENVIA__REST_API_URL'] : '';
+		$this->base_url = isset($_ENV['PROVVOIPENVIA__REST_API_URL']) ? $_ENV['PROVVOIPENVIA__REST_API_URL'] : '';
+		if (($this->base_url) && (!\Str::endswith($this->base_url, '/'))) {
+			$this->base_url .= '/';
+		}
+
 
 		parent::__construct();
 	}
