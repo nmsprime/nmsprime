@@ -5,6 +5,8 @@ use Modules\Ticketsystem\Entities\TicketType;
 
 class TicketController extends \BaseController {
 
+	protected $many_to_many = ['users_ids', 'tickettypes_ids'];
+
 	public function view_form_fields($model = null)
 	{
 		if (!$model)
