@@ -42,7 +42,7 @@
 		</div>
 		<ul class="nav nav-pills align-self-end ml-auto">
 			<?php
-				$par = Route::getCurrentRoute()->parameters();
+				$par = array_merge(Route::getCurrentRoute()->parameters(), \Input::all());
 				$cur_row = \Input::has('row') ? \Input::get('row') : 'us_pwr';
 				foreach (['us_pwr' => 'US Power', 'us_snr' => 'US SNR', 'ds_pwr' => 'DS Power', 'ds_snr' => 'DS SNR'] as $key => $val) {
 					$par['row'] = $key;
