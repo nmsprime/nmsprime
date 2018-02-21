@@ -919,11 +919,14 @@ end:
 	 */
 	public static function monitoring_get_host_id($modem)
 	{
-		// Connect to Cacti DB
-		$cacti = \DB::connection('mysql-cacti');
+		try {
+			$ret = \Schema::connection('mysql-cacti')->hasTable('host');
+		} catch (\PDOException $e) {
+			return false;
+		}
 
 		// Get Cacti Host ID to $modem
-		$host  = $cacti->table('host')->where('description', '=', $modem->hostname)->select('id')->first();
+		$host  = \DB::connection('mysql-cacti')->table('host')->where('description', '=', $modem->hostname)->select('id')->first();
 		if (!isset($host))
 			return false;
 
