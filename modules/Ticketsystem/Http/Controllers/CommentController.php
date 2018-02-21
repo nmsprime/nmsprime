@@ -12,7 +12,7 @@ class CommentController extends \BaseController {
 	{
 		return array(
 			array('form_type' => 'textarea', 'name' => 'comment', 'description' => 'Comment'),
-			array('form_type' => 'text', 'name' => 'ticket_id', 'hidden' => 1, 'value' => 1),
+			array('form_type' => 'text', 'name' => 'ticket_id', 'hidden' => 1),
 			array('form_type' => 'text', 'name' => 'user_id', 'hidden' => 1, 'init_value' => \Auth::user()->id),
 		);
 	}
