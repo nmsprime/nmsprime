@@ -95,48 +95,38 @@
 		<div class="row">
 
 			@if($netelements)
-				@DivOpen(6)
-					@section ('impaired_netelements')
-						@include('dashboard::panels.impaired_netelements')
-					@stop
-					@include ('bootstrap.panel', array ('content' => "impaired_netelements", 'view_header' => 'Impaired Netelements', 'height' => 'auto'))
-				@DivClose()
+				@section ('impaired_netelements')
+					@include('dashboard::panels.impaired_netelements')
+				@stop
+				@include ('bootstrap.panel', array ('content' => "impaired_netelements", 'view_header' => 'Impaired Netelements', 'md' => 6, 'height' => 'auto'))
 			@endif
 
 			@if($services)
-				@DivOpen(6)
-					@section ('impaired_services')
-						@include('dashboard::panels.impaired_services')
-					@stop
-					@include ('bootstrap.panel', array ('content' => "impaired_services", 'view_header' => 'Impaired Services', 'height' => 'auto'))
-				@DivClose()
+				@section ('impaired_services')
+					@include('dashboard::panels.impaired_services')
+				@stop
+				@include ('bootstrap.panel', array ('content' => "impaired_services", 'view_header' => 'Impaired Services', 'md' => 6, 'height' => 'auto'))
 			@endif
 
 			@if ($view['contracts'])
-				@DivOpen(8)
-					@section ('contract_analytics')
-						@include('dashboard::panels.contract_analytics')
-					@stop
-					@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => 'Contract Analytics', 'height' => 'auto'))
-				@DivClose()
+				@section ('contract_analytics')
+					@include('dashboard::panels.contract_analytics')
+				@stop
+				@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => 'Contract Analytics', 'md' => 8, 'height' => 'auto'))
 			@endif
 
 			@if ($view['income'])
-				@DivOpen(4)
-					@section ('income_analytics')
-						@include('dashboard::panels.income_analytics')
-					@stop
-					@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'height' => 'auto'))
-				@DivClose()
+				@section ('income_analytics')
+					@include('dashboard::panels.income_analytics')
+				@stop
+				@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 4, 'height' => 'auto'))
 			@endif
 
 			@if ($view['tickets'] && $data['tickets']['total'])
-				@DivOpen(4)
-					@section ('ticket_table')
-						@include('dashboard::panels.ticket_table')
-					@stop
-					@include ('bootstrap.panel', array ('content' => "ticket_table", 'view_header' => trans('messages.dashbrd_ticket'), 'height' => 'auto'))
-				@DivClose()
+				@section ('ticket_table')
+					@include('dashboard::panels.ticket_table')
+				@stop
+				@include ('bootstrap.panel', array ('content' => "ticket_table", 'view_header' => trans('messages.dashbrd_ticket'), 'md' => 4, 'height' => 'auto'))
 			@endif
 
 		</div>
