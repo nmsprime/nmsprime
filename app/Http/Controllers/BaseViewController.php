@@ -184,6 +184,7 @@ class BaseViewController extends Controller {
 			} else
 				$field['field_value'] = $model[$field['name']];
 
+			// NOTE: Input::get should actually include $_POST global var and $_GET!!
 			// 4.(sub-task) auto-fill all field_value's with HTML Input
 			if (\Input::get($field['name']))
 				$field['field_value'] = \Input::get($field['name']);
@@ -251,9 +252,6 @@ class BaseViewController extends Controller {
 		$color_array = ['whitesmoke', 'gainsboro'];
 		$color = $color_array[0];
 
-		// prepare form fields
-		// $fields = static::prepare_form_fields($_fields, $model);
-
 		// foreach fields
 		foreach ($fields as $field)
 		{
@@ -277,7 +275,10 @@ class BaseViewController extends Controller {
 					$hidden == 1) // hide globally?
 				)
 					{
-						$s .= \Form::hidden ($field["name"], $field['field_value']);
+						// For hidden fields it's also important that default values are set
+						$value = ($field['field_value'] === null) && isset($field['value']) ? $field['value'] : $field['field_value'];
+						// Note: setting a selection by giving an array doesnt make sense as you can not choose anyway - it also would throw an exception as it's not allowed for hidden fields
+						$s .= \Form::hidden ($field["name"], is_array($value) ? '' : $value);
 						goto finish;
 					}
 			}
@@ -696,12 +697,10 @@ finish:
 		}
 
 		// Base Link to Index Table in front of all relations
-// <<<<<<< HEAD
 		// if (in_array($route_name, BaseController::get_config_modules()))	// parse: Global Config requires own link
 		// 	$s = \HTML::linkRoute('Config.index', BaseViewController::translate_view('Global Configurations', 'Header')).': '.$s;
 		// else if (Route::has($route_name.'.index'))
 		// 	$s = \HTML::linkRoute($route_name.'.index', $route_name).': '.$s;
-// =======
 		if (in_array($route_name, BaseController::get_config_modules())) {	// parse: Global Config requires own link
 			$breadcrumb_path_base = "<li class='active'>".static::__link_route_html('Config.index', static::__get_view_icon($view_var).BaseViewController::translate_view('Global Configurations', 'Header'))."</li>";
 		}

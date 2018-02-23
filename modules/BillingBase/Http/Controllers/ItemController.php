@@ -37,16 +37,18 @@ class ItemController extends \BaseController {
 		for ($i=1; $i < 99; $i++)
 			$cnt[$i] = $i;
 
+		// bool var to show/hide valid_from/to_fixed fields
+		$fluid = !BillingBase::first()->fluid_valid_dates;
 
 		// label has to be the same like column in sql table
 		$fields = array(
-			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'value' => $model->contract(), 'hidden' => '1'),
+			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'hidden' => '1'),
 			array('form_type' => 'select', 'name' => 'product_id', 'description' => 'Product', 'value' => $prods, 'select' => $types, 'help' => trans('helper.Item_ProductId')),
 			array('form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt, 'select' => 'Device Other TV'),
-			array('form_type' => 'text', 'name' => 'valid_from', 'description' => 'Valid from', 'options' => ['placeholder' => 'YYYY-MM-DD'], 'help' => trans('helper.Item_ValidFrom')),
-			array('form_type' => 'checkbox', 'name' => 'valid_from_fixed', 'description' => 'Valid from fixed', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidFromFixed')),
+			array('form_type' => 'text', 'name' => 'valid_from', 'description' => 'Start date', 'options' => ['placeholder' => 'YYYY-MM-DD'], 'help' => trans('helper.Item_ValidFrom')),
+			array('form_type' => 'checkbox', 'name' => 'valid_from_fixed', 'description' => 'Active from start date', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidFromFixed'), 'hidden' => $fluid, 'checked' => 1, 'value' => 1),
 			array('form_type' => 'text', 'name' => 'valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD']),
-			array('form_type' => 'checkbox', 'name' => 'valid_to_fixed', 'description' => 'Valid to fixed', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidToFixed')),
+			array('form_type' => 'checkbox', 'name' => 'valid_to_fixed', 'description' => 'Valid to fixed', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidToFixed'), 'hidden' => $fluid, 'checked' => 1, 'value' => 1),
 			array('form_type' => 'text', 'name' => 'credit_amount', 'description' => 'Credit Amount', 'select' => 'Credit', 'help' => trans('helper.Item_CreditAmount')),
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
 			array('form_type' => 'text', 'name' => 'accounting_text', 'description' => 'Accounting Text (optional)')

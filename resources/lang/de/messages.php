@@ -133,14 +133,15 @@ return [
 	//Billing
 	'accCmd_processing' 		=> 'Der Abrechnungslauf wird erstellt. Bitte warten Sie bis der Prozess abgeschlossen ist.',
 	'CDR retention period' 		=> 'Aufbewahrungsfrist für Einzelverbindungsnachweise',
-	'Day of Requested Collection Date'	=> 'Monatlicher Abrechungstag',
+	'Day of Requested Collection Date'	=> 'Monatlicher Abrechnungstag',
 	'Tax in %'					=> 'Mehrwertsteuer in %',
 	'Invoice Number Start'		=> 'Start Nummerierung Rechnungen',
 	'Split Sepa Transfer-Types'	=> 'SEPA-Transfertypen aufteilen?',
-	'Mandate Reference'			=> 'Mandatrefferenz',
+	'Mandate Reference'			=> 'Mandatsrefferenz',
 	'e.g.: String - {number}'	=> 'z.Bsp.: Sring - {Nummer}',
 	'Item Termination only end of month'=> 'Posten nur am ende des Monats kündigen?',
-	'Language for Accounting command'	=> 'Sprache für Abrechnungslauf-Befehl',
+	'Language for settlement run' => 'Sprache für Abrechnungslauf',
+	'Uncertain start/end dates for tariffs' => 'Ungewisse Tarif-Start-/Enddaten',
 	//CCC
 	'Connection Info Template'	=> 'Vorlage für Verbingungsinformationen',
 	'Upload Template'			=> 'Vorlage hochladen',
@@ -187,10 +188,12 @@ return [
 	'Items'						=> 'Posten',
 	'missing_product'			=> 'Fehlendes Produkt!',
 	'Product'					=> 'Produkt',
-	'Valid from'				=> 'Gültig ab',
-	'Valid to'					=> 'Gültig bis',
-	'Valid from fixed'			=> 'Gültig ab fest',
-	'Valid to fixed'			=> 'Gültig bis fest',
+	'Start date' 				=> 'Startdatum',
+	'Active from start date' 	=> 'Ab Startdatum aktiv',
+	'Valid from'				=> 'Startdatum',
+	'Valid to'					=> 'Enddatum',
+	'Valid from fixed'			=> 'Ab Startdatum aktiv',
+	'Valid to fixed'			=> 'Festes Enddatum',
 	//Modems
 	'Configfile'				=> 'Konfigurationsdatei',
 	'Mta'						=> 'MTA',
@@ -219,6 +222,7 @@ return [
 //
 //Billing Base
 //
+
 	//Product Entry
 	'Billing Cycle'				=> 'Abrechungszyklus',
 	'Bundled with VoIP product?'=> 'Mit VoIP-Produkt verknüpft?',
