@@ -103,7 +103,7 @@
 
 			@if($services)
 				@section ('impaired_services')
-						@include('dashboard::panels.impaired_services')
+					@include('dashboard::panels.impaired_services')
 				@stop
 				@include ('bootstrap.panel', array ('content' => "impaired_services", 'view_header' => 'Impaired Services', 'md' => 6, 'height' => 'auto'))
 			@endif
