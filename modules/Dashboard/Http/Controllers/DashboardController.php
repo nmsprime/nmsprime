@@ -255,19 +255,21 @@ class DashboardController extends BaseController
 	 */
 	public static function save_contracts_to_json()
 	{
-		$i = 13;
-		$contracts = array();
+		$i = 12;
+		$time = \Carbon\Carbon::create();
 
-		while($i > 1)
+		while($i)
 		{
-			$i--;
-			$time = strtotime("second day -$i month");
+			$labels[] 	 = $time->format('m/Y');
+			$contracts[] = self::count_contracts($time->format('Y-m-01'));
 
-			$contracts['labels'][] = date('m/Y', $time);
-			$contracts['contracts'][] = self::count_contracts(date('Y-m-01', $time));
+			$time->subMonthNoOverflow();
+			$i--;
 		}
 
-		\Storage::disk('chart-data')->put('contracts.json', json_encode($contracts));
+		$array = ['contracts' => array_reverse($contracts), 'labels' => array_reverse($labels)];
+
+		\Storage::disk('chart-data')->put('contracts.json', json_encode($array));
 	}
 
 	/**
