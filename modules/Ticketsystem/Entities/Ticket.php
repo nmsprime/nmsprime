@@ -105,6 +105,10 @@ class Ticket extends \BaseModel {
 		return $bs_class;
 	}
 
+
+	/*
+	 * Relation Views
+	 */
 	public function view_has_many()
 	{
 		$ret = array();
@@ -120,6 +124,12 @@ class Ticket extends \BaseModel {
 
 		return $ret;
 	}
+
+	public function view_belongs_to ()
+	{
+		return $this->contract;
+	}
+
 
 	/**
 	 * Relations
