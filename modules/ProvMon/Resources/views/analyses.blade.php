@@ -182,7 +182,9 @@
 
 			@section('mycharts')
 			<script>
-			window.onload = (function(_event){
+			//console.log(john);
+			window.onload = (function(){
+				setTimeout(function(_event){
 					var ctx = document.getElementById("timeChart").getContext('2d');
 					var ctx2 = document.getElementById("fftChart").getContext('2d');
 					var js_energy = [<?php echo '"'.implode('","', $preeq['energy']).'"' ?>];
@@ -236,6 +238,7 @@
 						options: {scales: { yAxes: [{display: true,scaleLabel: {display: true,labelString: 'Energy'},gridLines: {drawOnChartArea: false}}],
 											xAxes: [{display: true,scaleLabel: {display: true,labelString: 'Tap'},}]},}
 					});
+				},1000);
 			});
 			</script>
 			@stop
