@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Modules\BillingBase\Console;
 
 use Illuminate\Console\Command;
@@ -78,6 +78,8 @@ class cdrCommand extends Command {
 
 		else
 			throw new Exception('Missing Reseller Data in Environment File!');
+
+		echo "Stored CDRs in $this->target_dir/$this->target_file\n";
 
 		// chown in case command was called from commandline as root
 		system('chown -R apache '.storage_path('app/data/billingbase/'));
