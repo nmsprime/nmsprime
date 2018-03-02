@@ -23,6 +23,7 @@ class CccAuthuserController extends \BaseController {
 	 */
 	private $data = array(
 
+		'contract_address' 		=> '', 			// company, degree, name, street + nr, city
 		'contract_nr' 			=> '',
 		'contract_firstname' 	=> '',
 		'contract_lastname' 	=> '',
@@ -190,8 +191,8 @@ class CccAuthuserController extends \BaseController {
 		$this->data['contract_street'] 	  = escape_latex_special_chars($contract->street);
 		$this->data['contract_housenumber'] = $contract->house_number;
 		$this->data['contract_zip'] 	  = $contract->zip;
-		$this->data['contract_city'] 	  = $contract->city;
-		$this->data['contract_address']   = ($contract->company ? "$contract->company\\\\" : '') . ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . $contract->street.' '.$contract->house_number . "\\\\$contract->zip $contract->city";
+		$this->data['contract_city'] 	  = escape_latex_special_chars($contract->city);
+		$this->data['contract_address']   = ($contract->company ? escape_latex_special_chars($contract->company)."\\\\" : '') . ($contract->academic_degree ? "$contract->academic_degree " : '') . ($this->data['contract_firstname'].' '.$this->data['contract_lastname']."\\\\") . $this->data['contract_street'].' '.$this->data['contract_housenumber']. "\\\\$contract->zip ".$this->data['contract_city'];
 		$this->data['login_name'] 		  = $login_data['login_name'];
 		$this->data['psw'] 				  = $login_data['password'];
 
