@@ -64,7 +64,7 @@
 						@foreach(current($table) as $i => $dummy)
 						<tr>
 							<td width="20"></td>
-							<td width="20"> {{ $i+1 }}</td>
+							<td width="20"> {{$i}}</td>
 							@foreach ($table as $colheader => $colarray)
 								<?php
 //TODO Christian, please clean up
