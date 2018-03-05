@@ -93,40 +93,39 @@
 
 		<!-- Panels -->
 		<div class="row">
-
 			@if($netelements)
 				@section ('impaired_netelements')
 					@include('dashboard::panels.impaired_netelements')
 				@stop
-				@include ('bootstrap.panel', array ('content' => "impaired_netelements", 'view_header' => 'Impaired Netelements', 'md' => 6, 'height' => 'auto'))
+				@include ('bootstrap.panel', array ('content' => "impaired_netelements", 'view_header' => 'Impaired Netelements', 'md' => 6, 'height' => 'auto', 'i' => '1'))
 			@endif
 
 			@if($services)
 				@section ('impaired_services')
 					@include('dashboard::panels.impaired_services')
 				@stop
-				@include ('bootstrap.panel', array ('content' => "impaired_services", 'view_header' => 'Impaired Services', 'md' => 6, 'height' => 'auto'))
+				@include ('bootstrap.panel', array ('content' => "impaired_services", 'view_header' => 'Impaired Services', 'md' => 6, 'height' => 'auto', 'i' => '2'))
 			@endif
 
 			@if ($view['contracts'])
 				@section ('contract_analytics')
 					@include('dashboard::panels.contract_analytics')
 				@stop
-				@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => 'Contract Analytics', 'md' => 8, 'height' => 'auto'))
+				@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => 'Contract Analytics', 'md' => 8, 'height' => 'auto', 'i' => '3'))
 			@endif
 
 			@if ($view['income'])
 				@section ('income_analytics')
 					@include('dashboard::panels.income_analytics')
 				@stop
-				@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 4, 'height' => 'auto'))
+				@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 4, 'height' => 'auto', 'i' => '4'))
 			@endif
 
 			@if ($view['tickets'] && $data['tickets']['total'])
 				@section ('ticket_table')
 					@include('dashboard::panels.ticket_table')
 				@stop
-				@include ('bootstrap.panel', array ('content' => "ticket_table", 'view_header' => trans('messages.dashbrd_ticket'), 'md' => 4, 'height' => 'auto'))
+				@include ('bootstrap.panel', array ('content' => "ticket_table", 'view_header' => trans('messages.dashbrd_ticket'), 'md' => 4, 'height' => 'auto', 'i' => '5'))
 			@endif
 
 		</div>
