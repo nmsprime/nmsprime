@@ -105,8 +105,9 @@ class ProvMonController extends \BaseController {
 
 		$panel_right = $this->prep_sidebar($id);
 
+		$view_header = 'ProvMon-Analyses';
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header')));
 	}
 
 
@@ -298,7 +299,9 @@ class ProvMonController extends \BaseController {
 
 		$panel_right = $this->prep_sidebar($id);
 
-		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
+		$view_header = 'Provmon-CPE';
+
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var', 'view_header')));
 	}
 
 	/**
@@ -346,7 +349,9 @@ class ProvMonController extends \BaseController {
 end:
 		$panel_right = $this->prep_sidebar($id);
 
-		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'configfile', 'view_var')));
+		$view_header = 'Provmon-MTA';
+
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'configfile', 'view_var', 'view_header')));
 	}
 
 
@@ -379,7 +384,9 @@ end:
 			['name' => 'Analysis', 'route' => 'ProvMon.cmts', 'link' => [$id]]
 		];
 
-		return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var')));
+		$view_header = 'Provmon-CMTS';
+
+		return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var', 'view_header')));
 	}
 
 	/**

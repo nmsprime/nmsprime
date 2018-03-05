@@ -136,9 +136,10 @@
 
 <script src="{{asset('components/assets-admin/plugins/chart/Chart.min.js')}}"></script>
 
-<script type="text/javascript">
+@section('javascript')
+<script language="javascript">
 
-	window.onload = function() {
+	$(window).on('localstorage-position-loaded load', function() {
 		// line chart contracts
 		var chart_data_contracts = {{ $view['contracts'] ? json_encode($data['contracts']['chart']) : '{}' }};
 
@@ -209,5 +210,6 @@
 				}
 			});
 		}
-	}
+	});
 </script>
+@stop

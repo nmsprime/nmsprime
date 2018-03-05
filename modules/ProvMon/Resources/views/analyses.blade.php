@@ -294,5 +294,5 @@
 		});
 });
 </script>
-
+@include('Generic.handlePanel')
 @stop

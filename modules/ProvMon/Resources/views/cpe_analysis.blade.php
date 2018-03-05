@@ -16,7 +16,7 @@
 		@foreach ($lease['text'] as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>
@@ -34,7 +34,7 @@
 		@foreach ($log as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>
@@ -73,7 +73,7 @@
 		@foreach ($ping as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>
@@ -85,3 +85,8 @@
 	@endif
 
 @stop
+
+@section('javascript')
+{
+	@include('Generic.handlePanel')
+}
