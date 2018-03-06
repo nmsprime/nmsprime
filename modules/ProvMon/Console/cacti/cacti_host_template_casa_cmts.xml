@@ -20,7 +20,7 @@
 						<data_template_rrd_id>hash_080025f704e2388bc722e688c5d53f1a9568d5</data_template_rrd_id>
 					</item_000>
 					<item_001>
-						<snmp_field_name>ifUpChannelPowerCasa</snmp_field_name>
+						<snmp_field_name>ifUpChannelPower</snmp_field_name>
 						<data_template_id>hash_010025b7dd134cc76823063e6ec74cb250ce2a</data_template_id>
 						<data_template_rrd_id>hash_08002583d0cbf33b9d275572f064f013a42108</data_template_rrd_id>
 					</item_001>
@@ -505,6 +505,6 @@
 	</hash_05002583b5885f3c21d20dc269baa2faf7fb69>
 	<hash_060025304a778405392f878a6db435afffc1e9>
 		<name>Load Average</name>
-		<gprint_text>%8.2lf</gprint_text>
+		<gprint_text>%4.2lf</gprint_text>
 	</hash_060025304a778405392f878a6db435afffc1e9>
 </cacti>

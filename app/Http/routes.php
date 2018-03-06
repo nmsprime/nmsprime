@@ -12,7 +12,7 @@
 */
 
 // Home Route
-Route::get('', array('as' => 'Home', 'uses' => 'WelcomeController@index'));
+Route::get('', array('as' => 'Home', 'uses' => 'WelcomeController@index', 'middleware' => 'home'));
 
 
 /*
@@ -43,15 +43,14 @@ BaseRoute::group([], function() {
 
 	BaseRoute::resource('Authuser', 'AuthuserController');
 	BaseRoute::resource('Authrole', 'AuthroleController');
-	Route::post('Authuser/{id}/AssignRole', ['as' => 'AssignRole.add', 'uses' => 'AuthuserController@assign_roles']);
-	Route::post('Authuser/DeleteRole', ['as' => 'AssignRole.delete', 'uses' => 'AuthuserController@delete_assigned_roles']);
-	Route::post('Authrole/UpdatePermission', ['as' => 'Permission.update', 'uses' => 'AuthroleController@update_permission']);
-	Route::post('Authrole/AssignPermission', ['as' => 'Permission.assign', 'uses' => 'AuthroleController@assign_permission']);
-	Route::post('Authrole/DeletePermission', ['as' => 'Permission.delete', 'uses' => 'AuthroleController@delete_permission']);
+	BaseRoute::post('Authuser/detach/{id}/{func}', ['as' => 'Authuser.detach', 'uses' => 'AuthuserController@detach']);
+	BaseRoute::post('Authrole/UpdatePermission', ['as' => 'Permission.update', 'uses' => 'AuthroleController@update_permission']);
+	BaseRoute::post('Authrole/AssignPermission', ['as' => 'Permission.assign', 'uses' => 'AuthroleController@assign_permission']);
+	BaseRoute::post('Authrole/DeletePermission', ['as' => 'Permission.delete', 'uses' => 'AuthroleController@delete_permission']);
 
 	BaseRoute::get('Config', array('as' => 'Config.index', 'uses' => 'GlobalConfigController@index'));
 	BaseRoute::resource('GlobalConfig', 'GlobalConfigController');
 	BaseRoute::resource('GuiLog', 'GuiLogController');
-	Route::get('Guilog/FilterRecords', ['as' => 'GuiLog.filter', 'uses' => 'GuiLogController@filter']);
+	BaseRoute::get('Guilog/FilterRecords', ['as' => 'GuiLog.filter', 'uses' => 'GuiLogController@filter']);
 
 });

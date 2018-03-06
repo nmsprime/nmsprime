@@ -4,12 +4,22 @@ namespace Modules\BillingBase\Entities;
 
 use DB;
 use Modules\BillingBase\Entities\SepaAccount;
-//use Modules\BillingBase\Entities\Product;
 
 class Product extends \BaseModel {
 
 	// The associated SQL table for this Model
 	public $table = 'product';
+
+	/**
+	 * The default Period of Notice (14 days) and maturity for products where string is not set in DB
+	 * (needed for Invoice creation during SettlementRun)
+	 *
+	 * @var String 	pon
+	 * @var String  maturity
+	 */
+	public static $pon = '14D';
+	public static $maturity = '1M';
+
 
 	// Add your validation rules here
 	public static function rules($id = null)
@@ -23,6 +33,8 @@ class Product extends \BaseModel {
 			'voip_purchase_tariff_id' => 'required_if:type,Voip',
 			'qos_id' => 'required_if:type,Internet',
 			'price'  => 'required_if:type,Internet,Voip,TV,Other,Device,Mixed',
+			'maturity' => 'regex:/^\d+[dDmMyY]$/',
+			'period_of_notice' => 'regex:/^\d+[dDmMyY]$/',
 		);
 	}
 
@@ -43,20 +55,9 @@ class Product extends \BaseModel {
 		return '<i class="fa fa-th-list"></i>';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		$bsclass = $this->get_bsclass();
-
-		return ['index' => [$this->type, $this->name, $this->price],
-		        'index_header' => ['Type', 'Name', 'Price'],
-		        'bsclass' => $bsclass,
-		        'header' => $this->type.' - '.$this->name.' | '.$this->price.' €'];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 
@@ -64,11 +65,11 @@ class Product extends \BaseModel {
 				'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price'],
 				'header' =>  $this->type.' - '.$this->name.' | '.$this->price.' €',
 				'bsclass' => $bsclass,
-				'orderBy' => ['0' => 'asc']];  // columnindex => direction
+				'order_by' => ['0' => 'asc']];  // columnindex => direction
 	}
 
 	public function get_bsclass(){
-		
+
 		switch ($this->type)
 		{
 			case 'Internet':	$bsclass = 'info'; break; // online
@@ -131,31 +132,41 @@ class Product extends \BaseModel {
 
 	/**
 	 * Returns an array with all ids of a specific product type
-	 * Note: until now only Internet & Voip is needed
-	 * @param String/Enum 	product type
-	 * @return Array 		of id's
+	 *
+	 * NOTE: DB::table is approximately 100x faster than Eloquent here and this function
+	 *	is called for every Contract during daily_conversion
+	 *
+	 * @param 	String/Enum 	[internet|voip|tv]
+	 * @return 	Array
 	 *
 	 * @author Nino Ryschawy
 	 */
 	public static function get_product_ids($type)
 	{
-		switch ($type)
+		switch (strtolower($type))
 		{
-			case 'Internet':
-				$prod_ids = DB::table('product')->where('type', '=', $type)->where('qos_id', '!=', '0')->select('id')->get();
+			case 'internet':
+				$prod_ids = DB::table('product')->where('type', '=', $type)
+					->where('qos_id', '!=', '0')->where('deleted_at', '=', null)->select('id')->get();
+					// $prod_ids = Product::where('type', '=', 'Internet')->where('qos_id', '!=', '0')->select('id')->get()->pluck('id')->all();
 				break;
-			case 'Voip':
-				$prod_ids = DB::table('product')->where('type', '=', $type)->where('voip_sales_tariff_id', '!=', '0')->orWhere('voip_purchase_tariff_id', '!=', '0')->select('id')->get();
+
+			case 'voip':
+				$prod_ids = DB::table('product')
+					->where('deleted_at', '=', null)->where('type', '=', 'Voip')
+					->where(function ($query) { $query
+						->where('voip_sales_tariff_id', '!=', '0')
+						->orWhere('voip_purchase_tariff_id', '!=', '0');})
+					->select('id')->get();
 				break;
-			case 'TV':
-				$prod_ids = DB::table('product')->where('type', '=', 'TV')->select('id')->get();
-				goto make_list;
+
+			case 'tv':
+				$prod_ids = DB::table('product')->where('type', '=', 'TV')->where('deleted_at', '=', null)->select('id')->get();
+				break;
+
 			default:
 				return null;
 		}
-
-
-make_list:
 
 		$ids = array();
 

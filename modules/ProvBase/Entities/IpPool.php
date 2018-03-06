@@ -39,20 +39,9 @@ class IpPool extends \BaseModel {
 	  return '<i class="fa fa-tags"></i>';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		$bsclass = $this->get_bsclass();
-
-		return ['index' => [$this->id, $this->cmts->hostname, $this->type, $this->net, $this->netmask, $this->router_ip, $this->description],
-				'index_header' => ['ID', 'CMTS', 'Type of Pool', 'IP network', 'IP netmask', 'IP router', 'Description'],
-				'bsclass' => $bsclass,
-				'header' => $this->type.': '.$this->net.' / '.$this->netmask];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 
@@ -66,7 +55,7 @@ class IpPool extends \BaseModel {
 	public function get_bsclass()
 	{
 		$bsclass = 'success';
-			
+
 		if ($this->type == 'CPEPub')
 			$bsclass = 'warning';
 		if ($this->type == 'CPEPriv')
@@ -85,6 +74,62 @@ class IpPool extends \BaseModel {
 	{
 		return DB::table('cmts')->select('id', 'hostname')->get();
 	}
+
+
+	/*
+	 * Return the corresponding network size to the netmask,
+	 * e.g. 255.255.255.240 will return 28 as integer – means /28 netmask
+	 */
+	public function size ()
+	{
+		// this is crazy shit from http://php.net/manual/de/function.ip2long.php
+		$long = ip2long($this->netmask);
+		$base = ip2long('255.255.255.255');
+
+		return 32-log(($long ^ $base)+1,2);
+	}
+
+	/*
+	 * Returns true if provisioning route to $this pool exists, otherwise false
+	 */
+	public function ip_route_prov_exists()
+	{
+		return (strlen(exec ('ip route show '.$this->net.'/'.$this->size().' via '.$this->cmts->ip)) == 0 ? false : true);
+	}
+
+
+	/*
+	 * Return true if $this->router_ip is online, otherwise false
+	 * This implies that the CMTS Pool should be set correctly in the CMTS
+	 */
+	public function ip_route_online ()
+	{
+		// Ping: Only check if device is online
+		exec ('sudo ping -c1 -i0 -w1 '.$this->router_ip, $ping, $ret);
+		return $ret ? false : true;
+	}
+
+	/**
+	 * Return 'secondary' if this pool is not the first CM pool of the CMTS,
+	 * otherwise an empty string
+	 *
+	 * @return String
+	 *
+	 * @author Ole Ernst
+	 */
+	public function is_secondary ()
+	{
+		$cm_pools = $this->cmts->ippools->filter(function ($item) {
+			return $item->type == 'CM';
+		});
+
+		if($cm_pools->isEmpty() || $this->id != $cm_pools->first()->id)
+			return 'secondary';
+
+		return '';
+	}
+
+
 
 
 	/**

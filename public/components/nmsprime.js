@@ -31,8 +31,9 @@ var makeNavbarSearch = function() {
 	});
 };
 
-// Keep Sidebar open and Save State and Minify Status of Sidebar
-// @author: Christian Schramm
+/* Keep Sidebar open and Save State and Minify Status of Sidebar
+*  @author: Christian Schramm
+*/
 if (typeof(Storage) !== "undefined") {
     //save minified s_state
     var ministate = localStorage.getItem("minified-state");
@@ -50,14 +51,13 @@ if (typeof(Storage) !== "undefined") {
         $('#' + sitem).addClass("active");
         $('#' + sitem + ' .sub-menu ').css("display", "block");
         $('#' + chitem).addClass("active");
-
-        $('#sidebar .sub-menu li').click(function(event) {
-            localStorage.setItem("clicked-item", $(this).attr('id'));
-            localStorage.setItem("sidebar-item", $(this).parent().parent().attr('id'))
-        });
-    }
+	}
+		$('#sidebar .sub-menu li').click(function (event) {
+			localStorage.setItem("clicked-item", $(this).attr('id'));
+			localStorage.setItem("sidebar-item", $(this).closest('[data-sidebar=level1]').attr('id'));
+		});
 } else {
-  console.log("sorry, no Web Storage Support - Cant save State of Sidebar")
+  console.log("sorry, no Web Storage Support - Cant save State of Sidebar -please update your Browser")
 }
 
 
@@ -101,61 +101,6 @@ var saveTabPillState = function() {
 };
 
 
-// Generate jsTree
-// @author: Christian Schramm
-var makeJsTreeView = function() {
-  $('#jstree-default').jstree({
-      'plugins': [ "html_data", "checkbox", "wholerow", "types", "ui", "search", "state"],
-      "core": {
-          "dblclick_toggle": true,
-          "themes": {
-              "responsive": true,
-          }
-      },
-      "checkbox": {
-          "cascade": "",
-          "three_state": false,
-          "whole_node" : false,
-          "tie_selection" : false,
-          "real_checkboxes": true
-      },
-      "state" : { "filter" : function (k) { delete k.core.selected; return k; } },
-      "types": {
-          "cm":{
-            "icon": "fa fa-hdd-o text-warning fa-lg"
-          },
-          "mta": {
-            "icon": "fa fa-fax text-info fa-lg"
-          },
-          "default": {
-              "icon": "fa fa-file-code-o text-success fa-lg"
-          }
-      }
-  });
-
-
-  $('#jstree-default').on('select_node.jstree', function(e,data) {
-      var link = data.node.a_attr.href;
-      if (link != "#" && link != "javascript:;" && link != "") {
-          document.location.href = link;
-          return false;
-      }
-  });
-
-
-// trigger on Checkbox change and give
-// invisible form the name of selected id
-// @author: Christian Schramm
-
-  $('#jstree-default').on("check_node.jstree uncheck_node.jstree", function (e, data) {
-      if (data.node.state.checked) {
-        document.getElementById('myField'+ data.node.id).name = data.node.id;
-      } else {
-        document.getElementById('myField'+ data.node.id).name = '';
-      }
-  });
-};
-
 // Select2 Init - intelligent HTML select
 // Resize on Zoom to look always pretty
 // @author: Christian Schramm
@@ -191,7 +136,7 @@ $('.erd-popover').mousemove(
  *  - search in tr HTML code for an HTML "a" element and fetch the href attribute
  * INFO: - working directly with row element also adds a click object to checkbox entry, which disabled checkbox functionality
  */
-$('.datatable').click(function (e) {
+$('.datatable, .clickableRow').click(function (e) {
   if ($(e.target).hasClass('ClickableTd') && $(e.target).is('td')) {
     window.location = $(e.target.parentNode).find('a').attr("href");
   }
@@ -210,6 +155,19 @@ $('a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
   $($.fn.dataTable.tables(true)).DataTable().columns.adjust().responsive.recalc();
 });
 
+function rezizeTextareas() {
+  $('textarea').each(function () {
+    this.setAttribute('style', 'height:' + (this.scrollHeight + 5) + 'px;max-height: 1080px;');
+  }).on('input', function () {
+    var scrollLeft = window.pageXOffset ||
+      (document.documentElement || document.body.parentNode || document.body).scrollLeft;
+    var scrollTop = window.pageYOffset ||
+      (document.documentElement || document.body.parentNode || document.body).scrollTop;
+    this.style.height = "auto";
+    this.style.height = (this.scrollHeight + 10) + 'px';
+    window.scrollTo(scrollLeft, scrollTop);
+  });
+}
 
 var NMS = function () {
 	"use strict";
@@ -220,8 +178,8 @@ var NMS = function () {
 			makeNavbarSearch();
 			makeInputFitOnResize();
 			saveTabPillState();
-			makeJsTreeView();
       positionErdPopover();
+      rezizeTextareas();
 		},
   };
 }();

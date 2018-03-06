@@ -3,7 +3,8 @@
 BaseRoute::group([], function() {
 
 	BaseRoute::get('Customer/{field}/{search}', array('as' => 'CustomerTopo.show', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show'));
-	BaseRoute::post('Customer/prox', array('as' => 'CustomerTopo.show_prox', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_prox'));
+	BaseRoute::get('Customer/prox', array('as' => 'CustomerTopo.show_prox', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_prox'));
+	BaseRoute::get('Customer/bad', array('as' => 'CustomerTopo.show_bad', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_bad'));
 	BaseRoute::get('CustomerRect/{x1}/{x2}/{y1}/{y2}', array('as' => 'CustomerRect.show', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_rect'));
 	BaseRoute::get('CustomerPoly/{poly}', array('as' => 'CustomerPoly.show', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_poly'));
 	BaseRoute::get('CustomerModem/{topo_dia}/{ids}', array('as' => 'CustomerModem.show', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_modem_ids'));

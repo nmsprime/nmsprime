@@ -44,9 +44,10 @@ class SnmpController extends \BaseController{
 	 *
 	 * @author Torsten Schmidt
 	 */
-	public function init ($device = null)
+	public function init ($device = null, $index = 0)
 	{
 		$this->device = $device;
+		$this->index = $index ? [$index] : 0;
 
 		$this->snmp_def_mode();
 	}
@@ -65,19 +66,19 @@ class SnmpController extends \BaseController{
 	{
 		// Init NetElement Model & SnmpController
 		$netelem = NetElement::findOrFail($id);
-		$snmp 	 = new SnmpController;
-		$snmp->init ($netelem);
-		$snmp->index = $index ? [$index] : 0;
-
-// d(\HTML::linkRoute('NetElement.param_entry_edit', 'Controlling', [31, 0, 0]),
-// 	route('NetElement.param_entry_edit', [31, 238, 6851]));
+		$this->init ($netelem, $index);
 
 		$start = microtime(true);
-		// Get Html Form Fields for generic View - this includes the snmpwalk & updating snmpvalues
-		$params 	 = $index ? Parameter::where('parent_id', '=', $param_id)->where('third_dimension', '=', 1)->orderBy('id')->get()->all() : $snmp->device->netelementtype->parameters;
+
+		// GET SNMP values of NetElement
+		// TODO: check if netelement has a netelementtype -> exception for root elem
+		$params = $index ?
+			Parameter::where('parent_id', '=', $param_id)->where('third_dimension', '=', 1)->orderBy('id')->get()->all()
+			:
+			$this->device->netelementtype->parameters()->orderBy('html_frame')->orderBy('html_id')->orderBy('oid_id')->orderBy('id')->get()->all();
 
 		try {
-			$form_fields = $snmp->prep_form_fields($params);
+			$form_fields = $this->prep_form_fields($params);
 		} catch (\Exception $e) {
 			return self::handle_exception($e);
 		}
@@ -101,7 +102,7 @@ class SnmpController extends \BaseController{
 		$form_path   = 'Generic.form';
 		$form_update = 'NetElement.controlling_update';
 
-		$reload 	 = $snmp->device->netelementtype->page_reload_time ? : 0;
+		$reload 	 = $this->device->netelementtype->page_reload_time ? : 0;
 
 		return \View::make($view_path, $this->compact_prep_view(compact('view_var', 'view_header', 'form_path', 'panel_right', 'form_fields', 'form_update', 'route_name', 'headline', 'reload', 'param_id', 'index')));
 	}
@@ -152,7 +153,7 @@ class SnmpController extends \BaseController{
 	/**
 	 * Prepare Formular Fields for Controlling View of NetElement
 	 * This includes getting all SNMP Values from Device
-	 * 
+	 *
 	 * @return 	Array (Multidimensional)	Data for Generic Form View in Form [frame1 => [field1, field2, ...], frame2 => [...], ...]
 	 *
 	 * @author Torsten Schmidt, Nino Ryschawy
@@ -166,19 +167,18 @@ class SnmpController extends \BaseController{
 			return [];
 
 		// TODO: if device not reachable take already saved SnmpValues from Database but show a hint
-		// if (!$results) ...
-
-		$start = microtime(true);
+		if (!$this->device->ip)
+			return [];
 
 		foreach ($params as $param)
 		{
 			$oid = $param->oid;
-			$indices = [];
+			$indices = $this->index ? : [];
 
-			if ($param->indices && $param->indices->indices)
-				$indices = \Acme\php\ArrayHelper::str_to_array($param->indices->indices);
-			if ($this->index)
-				$indices = $this->index;
+			if (!$indices) {
+				$indices_o = $param->indices()->where('netelement_id', '=', $this->device->id)->first();
+				$indices = $indices_o ? explode(',', $indices_o->indices) : [];
+			}
 
 			// Table Param
 			if ($oid->oid_table)
@@ -214,7 +214,7 @@ class SnmpController extends \BaseController{
 					{
 						/* Save SnmpValue
 						 	NOTE: This takes way too much time
-							TODO: only add valueset to global variable for later multiupdate - for that we have to change indexing 
+							TODO: only add valueset to global variable for later multiupdate - for that we have to change indexing
 								  of field names because we wont get them as return value anymore
 						*/
 						$ret = $this->_snmp_value_set($suboid, $value, $index);
@@ -417,7 +417,7 @@ class SnmpController extends \BaseController{
 		// Table head for tables without indices and with rows that dont have all oids - Attention - normal table head is built first in next foreach!
 		if (count($oids) != $form_fields[key($form_fields)])
 		{
-			$s .= '<table class="table table-condensed">';
+			$s .= '<table class="table controllingtable table-condensed table-bordered d-table" id="datatable">';
 			$s .= '<thead><tr>';
 			$s .= '<th style="padding: 4px">Index</th>';
 
@@ -434,7 +434,7 @@ class SnmpController extends \BaseController{
 				}
 			}
 
-			$s .= '<tr></thead><tbody>';
+			$s .= '</tr></thead><tbody>';
 			$head = false;
 		}
 
@@ -449,7 +449,7 @@ class SnmpController extends \BaseController{
 				$s .= '<table class="table table-condensed">';
 				$s .= '<thead><tr>';
 				$s .= '<th>Index</th>';
-				
+
 				foreach ($oid_indices as $oid => $field)
 					$s .= '<th style="padding: 4px">'.$field['description'].'</th>';
 
@@ -531,10 +531,10 @@ class SnmpController extends \BaseController{
 			try {
 				// check if snmp version 2 is supported - use it - otherwise use version 1
 				snmp2_get($this->device->ip, $community, '1.3.6.1.2.1.1.1', $this->timeout, $this->retry);
-				
+
 				foreach ($indices as $index)
 					$results[$oid->oid.'.'.$index] = snmp2_get($this->device->ip, $community, $oid->oid.'.'.$index, $this->timeout, $this->retry);
-			} 
+			}
 			catch (\Exception $e) {
 				foreach ($indices as $index)
 					$results[$oid->oid.'.'.$index] = snmpget($this->device->ip, $community, $oid->oid.'.'.$index, $this->timeout, $this->retry);
@@ -577,7 +577,7 @@ class SnmpController extends \BaseController{
 				if ($param->third_dimension && !$this->index)
 					continue;
 
-				/* TODO: check with first walk how many indices exist, if this is approximately 3 or 4 (check performance!) times larger than 
+				/* TODO: check with first walk how many indices exist, if this is approximately 3 or 4 (check performance!) times larger than
 					the indices list then only get oid.index for each index
 					Note: snmpwalk -CE ends on this OID - makes it much faster
 					*/
@@ -615,7 +615,7 @@ class SnmpController extends \BaseController{
 			$oid_s = substr($oid_index, 0, strlen($oid_index) - strlen($index));
 			// $index = substr($index, 1);
 
-			// Exclude unwished indices - this is a workaround for the unimproved snmpwalk over all indices 
+			// Exclude unwished indices - this is a workaround for the unimproved snmpwalk over all indices
 			// we filter them temporarily here - TODO: Improve performance via better snmpwalk
 			if (!$param_selection)
 			{
@@ -921,7 +921,7 @@ class SnmpController extends \BaseController{
 	// 		'value' 		=> -100,
 	// 		'oid_index' 	=> '.0'],
 	// 		);
-	
+
 	// 	\DB::raw('insert into snmpvalue (netelement_id, oid_id, oid_index, value) VALUES (28, 760, 11, \'.0\'), (28, 757, -10, \'.0\') on duplicate key update value=VALUES(value)');
 	// }
 

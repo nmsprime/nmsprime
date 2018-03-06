@@ -23,6 +23,7 @@ class CccAuthuserController extends \BaseController {
 	 */
 	private $data = array(
 
+		'contract_address' 		=> '', 			// company, degree, name, street + nr, city
 		'contract_nr' 			=> '',
 		'contract_firstname' 	=> '',
 		'contract_lastname' 	=> '',
@@ -142,10 +143,7 @@ class CccAuthuserController extends \BaseController {
 		// Replace placeholder by value
 		$template = str_replace('\\_', '_', $template);
 		foreach ($this->data as $key => $string)
-		{
-			$string = escape_latex_special_chars($string);
 			$template = str_replace('{'.$key.'}', $string, $template);
-		}
 
 		File::put($dir_path.$filename, $template);
 
@@ -187,14 +185,14 @@ class CccAuthuserController extends \BaseController {
 	 */
 	private function fill_template_data($login_data, $contract)
 	{
-		$this->data['contract_nr'] 		  = $contract->number;
-		$this->data['contract_firstname'] = $contract->firstname;
-		$this->data['contract_lastname']  = $contract->lastname;
-		$this->data['contract_street'] 	  = $contract->street;
+		$this->data['contract_nr'] 		  = escape_latex_special_chars($contract->number);
+		$this->data['contract_firstname'] = escape_latex_special_chars($contract->firstname);
+		$this->data['contract_lastname']  = escape_latex_special_chars($contract->lastname);
+		$this->data['contract_street'] 	  = escape_latex_special_chars($contract->street);
 		$this->data['contract_housenumber'] = $contract->house_number;
 		$this->data['contract_zip'] 	  = $contract->zip;
-		$this->data['contract_city'] 	  = $contract->city;
-		$this->data['contract_address']   = ($contract->company ? "$contract->company\\\\" : '') . ($contract->academic_degree ? "$contract->academic_degree " : '') . "$contract->firstname $contract->lastname\\\\" . $contract->street.' '.$contract->house_number . "\\\\$contract->zip $contract->city";
+		$this->data['contract_city'] 	  = escape_latex_special_chars($contract->city);
+		$this->data['contract_address']   = ($contract->company ? escape_latex_special_chars($contract->company)."\\\\" : '') . ($contract->academic_degree ? "$contract->academic_degree " : '') . ($this->data['contract_firstname'].' '.$this->data['contract_lastname']."\\\\") . $this->data['contract_street'].' '.$this->data['contract_housenumber']. "\\\\$contract->zip ".$this->data['contract_city'];
 		$this->data['login_name'] 		  = $login_data['login_name'];
 		$this->data['psw'] 				  = $login_data['password'];
 
@@ -203,29 +201,26 @@ class CccAuthuserController extends \BaseController {
 
 		$costcenter = $contract->costcenter;
 
-		if (!is_object($costcenter))
-		{
+		if (!is_object($costcenter)) {
 			Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - no CostCenter assigned', [$contract->id]);
 			return;
 		}
 
 		$sepa_account = $costcenter->sepaaccount;
 
-		if (!is_object($sepa_account))
-		{
+		if (!is_object($sepa_account)) {
 			Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - CostCenter has no SepaAccount assigned', ['Costcenter' => $costcenter->name]);
 			return;
 		}
 
 		$this->data['company_creditor_id']  = $sepa_account->creditorid;
-		$this->data['company_account_institute'] = $sepa_account->institute;
+		$this->data['company_account_institute'] = escape_latex_special_chars($sepa_account->institute);
 		$this->data['company_account_iban'] = $sepa_account->iban;
 		$this->data['company_account_bic']  = $sepa_account->bic;
 
 		$company = $sepa_account->company;
 
-		if (!is_object($company))
-		{
+		if (!is_object($company)) {
 			Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
 			return;
 		}
@@ -251,17 +246,31 @@ class CccAuthuserController extends \BaseController {
 	public function show()
 	{
 		$invoices = \Auth::guard('ccc')->user()->contract->invoices;
+		$invoice_links = [];
 
-		// dont show unverified invoices
+		$bsclass = ['info', 'active'];
+		$start = $year = 0;
+
 		foreach ($invoices as $key => $invoice)
 		{
+			// dont show unverified invoices
 			if (!$invoice->settlementrun->verified)
-				unset($invoices[$key]);
+				continue;
+
+			if ($invoice->year != $year)
+				$start = ($start + 1) % 2;
+
+			$year = $invoice->year;
+
+			$invoice_links[] = array(
+					'link' => \HTML::linkRoute('Customer.Download', str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''), ['invoice' => $invoice->id]),
+					'bsclass' => $bsclass[$start],
+				);
 		}
 
 		$emails = \PPModule::is_active('mail') ? \Auth::guard('ccc')->user()->contract->emails : collect();
 
-		return \View::make('ccc::index', compact('invoices','emails'));
+		return \View::make('ccc::index', compact('invoice_links','emails'));
 	}
 
 
@@ -310,7 +319,7 @@ class CccAuthuserController extends \BaseController {
 
 			if ($validator->fails())
 			{
-				return \Redirect::back()->withErrors($validator)->withInput()->with('message', 'please correct the following errors')->with('message_color', 'red');
+				return \Redirect::back()->withErrors($validator)->withInput()->with('message', 'please correct the following errors')->with('message_color', 'danger');
 			}
 
 			if (isset($email))
@@ -326,7 +335,7 @@ class CccAuthuserController extends \BaseController {
 			return $this->show();
 		}
 
-		return \View::make('ccc::psw_update', $this->compact_prep_view(compact('email')));
+		return \View::make('ccc::psw_update', compact('email'));
 	}
 
 

@@ -22,15 +22,6 @@ class Salesman extends \BaseModel {
 		);
 	}
 
-	/*
-	 * Init Observers
-	 */
-	public static function boot()
-	{
-		Salesman::observe(new SalesmanObserver);
-		parent::boot();
-	}
-
 
 	/**
 	 * View related stuff
@@ -45,25 +36,16 @@ class Salesman extends \BaseModel {
 	// View Icon
 	public static function view_icon()
 	{
-		return '<i class="fa fa-vcard"></i>'; 
-	}
-
-
-	// link title in index view
-	public function view_index_label()
-	{
-		return ['index' => [$this->id, $this->lastname, $this->firstname],
-		        'index_header' => ['ID', 'Lastname', 'Firstname'],
-				'header' => $this->lastname." ".$this->firstname];
+		return '<i class="fa fa-vcard"></i>';
 	}
 
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		return ['table' => $this->table,
 				'index_header' => [$this->table.'.id', $this->table.'.lastname', $this->table.'.firstname'],
-				'orderBy' => ['0' => 'asc'],  // columnindex => direction
+				'order_by' => ['0' => 'asc'],  // columnindex => direction
 				'header' =>  $this->lastname." ".$this->firstname];
 	}
 
@@ -163,30 +145,6 @@ class Salesman extends \BaseModel {
 
 		Storage::append($this->get_storage_rel_filename(), $this->id."\t".$this->firstname.' '.$this->lastname."\t".$this->commission."\t".$this->total_commission."\t".round($this->total_commission * $this->commission / 100, 2)."\t".implode(', ', $items));
 		// echo "stored salesmen commissions in $file\n";
-	}
-
-
-
-}
-
-
-/**
- * Observer Class
- *
- * can handle   'creating', 'created', 'updating', 'updated',
- *              'deleting', 'deleted', 'saving', 'saved',
- *              'restoring', 'restored',
- */
-class SalesmanObserver
-{
-	public function creating($salesman)
-	{
-		$salesman->products = str_replace(['/', '|', ';'], ',', $salesman->products);
-	}
-
-	public function updating($salesman)
-	{
-		$salesman->products = str_replace(['/', '|', ';'], ',', $salesman->products);
 	}
 
 }

@@ -4,7 +4,7 @@ namespace Modules\ProvVoip\Entities;
 
 use Illuminate\Support\Collection;
 
-// Model not found? execute composer dump-autoload in lara root dir
+// Model not found? execute composer dump-autoload in nmsprime root dir
 class PhonenumberManagement extends \BaseModel {
 
 	// get functions for some address select options
@@ -12,6 +12,9 @@ class PhonenumberManagement extends \BaseModel {
 
     // The associated SQL table for this Model
     public $table = 'phonenumbermanagement';
+
+	// do not auto delete anything related to managements (ATM this can only be PhonebookEntries which will be deleted explicitely)
+	protected $delete_children = False;
 
 
 	// Add your validation rules here
@@ -73,18 +76,6 @@ class PhonenumberManagement extends \BaseModel {
 		$bsclass = $this->get_bsclass();
 		$header = isset($this->phonenumber) ? 'PhonenumberManagement ('.$this->phonenumber->prefix_number.'/'.$this->phonenumber->number.')' : '';
 
-        return ['index' => [$this->id],
-                'index_header' => ['ID'],
-                'bsclass' => $bsclass,
-                'header' => $header];
-	}
-
-	// link title in index view
-	public function view_index_label_ajax()
-	{
-		$bsclass = $this->get_bsclass();
-		$header = isset($this->phonenumber) ? 'PhonenumberManagement ('.$this->phonenumber->prefix_number.'/'.$this->phonenumber->number.')' : '';
-
         return ['table' => $this->table,
                 'index_header' => [$this->table.'.id'],
                 'bsclass' => $bsclass,
@@ -106,7 +97,7 @@ class PhonenumberManagement extends \BaseModel {
 	}
 
 	/**
-	 * The Envia contract the related phonenumber currently belongs to
+	 * The envia TEL contract the related phonenumber currently belongs to
 	 */
 	public function envia_contract()	{
 		if (!\PPModule::is_active('provvoipenvia')) {
@@ -161,11 +152,7 @@ class PhonenumberManagement extends \BaseModel {
 	 */
 	public function trc_class() {
 
-		if (\PPModule::is_active('provvoipenvia')) {
-			return $this->hasOne('Modules\ProvVoip\Entities\TRCClass', 'trcclass');
-		}
-
-		return null;
+		return $this->hasOne('Modules\ProvVoip\Entities\TRCClass', 'trcclass');
 	}
 
 	/**
@@ -208,33 +195,33 @@ class PhonenumberManagement extends \BaseModel {
 
 		if (\PPModule::is_active('provvoipenvia')) {
 
-			$ret['Envia']['EnviaOrder']['class'] = 'EnviaOrder';
-			$ret['Envia']['EnviaOrder']['relation'] = $this->_envia_orders;
-			$ret['Envia']['EnviaOrder']['options']['delete_button_text'] = 'Cancel order at Envia';
+			$ret['envia TEL']['EnviaOrder']['class'] = 'EnviaOrder';
+			$ret['envia TEL']['EnviaOrder']['relation'] = $this->_envia_orders;
+			$ret['envia TEL']['EnviaOrder']['options']['delete_button_text'] = 'Cancel order at envia TEL';
 
-			$ret['Envia']['EnviaContract']['class'] = 'EnviaContract';
+			$ret['envia TEL']['EnviaContract']['class'] = 'EnviaContract';
 			$enviacontracts = is_null($this->envia_contract) ? [] : [$this->envia_contract];
-			$ret['Envia']['EnviaContract']['relation'] = $enviacontracts;
-			$ret['Envia']['EnviaContract']['options']['hide_create_button'] = 1;
-			$ret['Envia']['EnviaContract']['options']['hide_delete_button'] = 1;
+			$ret['envia TEL']['EnviaContract']['relation'] = $enviacontracts;
+			$ret['envia TEL']['EnviaContract']['options']['hide_create_button'] = 1;
+			$ret['envia TEL']['EnviaContract']['options']['hide_delete_button'] = 1;
 
-			$ret['Envia']['PhonebookEntry']['class'] = 'PhonebookEntry';
+			$ret['envia TEL']['PhonebookEntry']['class'] = 'PhonebookEntry';
 
 			$relation = $this->phonebookentry;
 
 			// can be created if no one exists, can be deleted if one exists
 			if (is_null($relation)) {
-				$ret['Envia']['PhonebookEntry']['relation'] = new Collection();
-				$ret['Envia']['PhonebookEntry']['options']['hide_delete_button'] = 1;
+				$ret['envia TEL']['PhonebookEntry']['relation'] = new Collection();
+				$ret['envia TEL']['PhonebookEntry']['options']['hide_delete_button'] = 1;
 			}
 			else {
-				$ret['Envia']['PhonebookEntry']['relation'] = [$relation];
-				$ret['Envia']['PhonebookEntry']['options']['hide_create_button'] = 1;
+				$ret['envia TEL']['PhonebookEntry']['relation'] = [$relation];
+				$ret['envia TEL']['PhonebookEntry']['options']['hide_create_button'] = 1;
 			}
 
 			// TODO: auth - loading controller from model could be a security issue ?
-			$ret['Envia']['Envia API']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
-			$ret['Envia']['Envia API']['view']['vars']['extra_data'] = \Modules\ProvVoip\Http\Controllers\PhonenumberManagementController::_get_envia_management_jobs($this);
+			$ret['envia TEL']['envia TEL API']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
+			$ret['envia TEL']['envia TEL API']['view']['vars']['extra_data'] = \Modules\ProvVoip\Http\Controllers\PhonenumberManagementController::_get_envia_management_jobs($this);
 		}
 		else {
 			$ret = array();
@@ -242,6 +229,62 @@ class PhonenumberManagement extends \BaseModel {
 
 		return $ret;
 	}
+
+
+	/**
+	 * Before deleting a phonenumbermanagement we have to check some things
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function delete() {
+
+		// with activated envia TEL module we have to perform some extra checks
+		// we have to check this here as using ModemObserver::deleting() with return false does not prevent the monster from deleting child model instances!
+		if (\PPModule::is_active('ProvVoipEnvia')) {
+
+			// check from where the deletion request has been triggered and set the correct var to show information
+			$prev = explode('?', \URL::previous())[0];
+			$prev = \Str::lower($prev);
+
+			// check if there is a not completely terminated envia TEL contract related to this management
+			if ($this->envia_contract) {
+				if (in_array($this->envia_contract->state, ['Aktiv', 'In Realisierung'])) {
+					$msg = "Cannot delete PhonenumberManagement $this->id: There is an active or pending envia TEL contract";
+					if (\Str::endsWith($prev, 'edit')) {
+						\Session::push('tmp_error_above_relations', $msg);
+					}
+					else {
+						\Session::push('tmp_error_above_index_list', $msg);
+					}
+					return false;
+				}
+				if (in_array($this->envia_contract->state, ['Gekündigt', ])) {
+					if ($this->envia_contract->end_date <= \Carbon\Carbon::now()->toDateTimeString()) {
+						$msg = "Cannot delete PhonenumberManagement $this->id: There is an envia TEL contract with enddate greater or equal than today";
+						if (\Str::endsWith($prev, 'edit')) {
+							\Session::push('tmp_error_above_relations', $msg);
+						}
+						else {
+							\Session::push('tmp_error_above_index_list', $msg);
+						}
+						return false;
+					}
+				}
+			}
+
+			// check start and end dates
+
+			// remove PhonebookEntry if one
+			if ($this->phonebookentry) {
+				$this->phonebookentry->delete();
+			}
+		}
+
+
+		// when arriving here: start the standard deletion procedure
+		return parent::delete();
+	}
+
 
 	/**
 	 * BOOT:

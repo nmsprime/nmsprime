@@ -86,12 +86,12 @@ function map_mps_init()
 	foreach ($_mpr as $id => $mpr)
 	{
 		if (count($mpr) == 2) {
-			echo "bounds = new OpenLayers.Bounds();";
+			echo "\t\t\t\tbounds = new OpenLayers.Bounds();";
 			foreach($mpr as $coord)
 				echo "bounds.extend(new OpenLayers.LonLat($coord[0], $coord[1]));";
 			echo "
 				bounds.transform(new OpenLayers.Projection(\"EPSG:4326\"),map.getProjectionObject());
-				vectors.addFeatures([new OpenLayers.Feature.Vector(bounds.toGeometry(), {id: $id})]);";
+				vectors.addFeatures([new OpenLayers.Feature.Vector(bounds.toGeometry(), {id: $id})]);\n";
 
 		} elseif (count($mpr) > 2) {
 			echo "
@@ -100,7 +100,7 @@ function map_mps_init()
 				new OpenLayers.Geometry.LinearRing([";
 			foreach ($mpr as $coord)
 				echo "new OpenLayers.Geometry.Point($coord[0], $coord[1]),";
-			echo "]).transform(new OpenLayers.Projection(\"EPSG:4326\"), map.getProjectionObject())]), {id: $id})]);";
+			echo "]).transform(new OpenLayers.Projection(\"EPSG:4326\"), map.getProjectionObject())]), {id: $id})]);\n";
 		}
 	}
 
@@ -301,34 +301,13 @@ function load (id, link, name)
 
 function map_kml_load ()
 {
-
 	load(0, "{{asset($file)}}", "Infrastructure");
 
-<?php
-
-	if (0)
-	{
-		#
-		# Load static KML files
-		#
-		include_once ('include.php');
-		__include('mysql.php');
-		_mysql_connect();
-
-		$id = $_GET['kml'];
-		$ext = mysql_query("SELECT id, kml_file, name FROM tree WHERE cluster = $id OR id = $id AND deleted = 0");
-		$i = 1;
-
-		while ($row = mysql_fetch_assoc($ext))
-		{
-			$id = $row['id'];
-			$name = $row['name'];
-			if ($row['kml_file'] != '')
-				echo "\n\tload(1, \"static/$id.kml\", \"Details: $name\");\n\n";
-		}
-	}
-
-?>
+@if (isset($kmls))
+	@foreach ($kmls as $id => $kml)
+		load({{$id+10}}, "{{asset($kml['file'])}}", "{{$kml['descr']}}");
+	@endforeach
+@endif
 }
 
 
@@ -372,24 +351,30 @@ function toggleControl(element) {
 		select.deactivate();
 }
 
-function getPolyStr(str, geo, end) {
+function getPolyStr(geo) {
+	var str = '';
 	var vertices = geo.transform(map.getProjectionObject(), new OpenLayers.Projection("EPSG:4326")).getVertices();
 	for (var i = 0; i < vertices.length; i++) {
 		if(i) str += ';';
 		str += vertices[i].x + ';' + vertices[i].y;
 	}
-	return str + end;
+	return str;
 }
 
 function savePolygonMPR(geo) {
-	str = getPolyStr('<li><a href="' + global_url + 'CustomerPoly/', geo, '">Show Customer in Polygon</a></li>');
-	str += getPolyStr('<li><a href="' + global_url + 'Mpr/create?value=', geo, '">Add Modem Positioning Rule</a></li>');
+	polystr = getPolyStr(geo);
+	str = '<li><a href="' + global_url + 'CustomerPoly/' + polystr + '">Show Customer in Polygon</a></li>';
+	str += '<li><a href="' + global_url + 'Mpr/create?value=' + polystr + '">Add Modem Positioning Rule</a></li>';
 	alert('Modem Positioning System', str, {width:500});
 }
 
 function onAfterFeatureModified(event) {
-	str = getPolyStr('', event.feature.geometry, '');
-	<?php echo 'window.location = "' . route('Mpr.update_geopos', ['%id', '%str']) . "\".replace('%id', event.feature.attributes.id).replace('%str', str)"; ?>;
+	if (confirm ("Modify Polygon %id?".replace('%id', event.feature.attributes.id))) {
+		str = getPolyStr(event.feature.geometry);
+		<?php echo 'window.location = "' . route('Mpr.update_geopos', ['%id', '%str']) . "\".replace('%id', event.feature.attributes.id).replace('%str', str)"; ?>;
+	} else {
+		location.reload();
+	}
 }
 
 /*

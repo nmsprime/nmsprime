@@ -16,6 +16,7 @@ use Acme\php\ArrayHelper;
  */
 class TreeErdController extends HfcBaseController {
 
+	protected $edit_left_md_size =12;
 	/*
 	 * Local tmp folder required for generating the images
 	 * relative (to /storage/app)
@@ -27,7 +28,6 @@ class TreeErdController extends HfcBaseController {
 
 	// SVG image size setting
 	private $graph_size = '(*,*)';
-
 
     /*
      * check if $s is a valid geoposition
@@ -50,6 +50,8 @@ class TreeErdController extends HfcBaseController {
     	// Note: we create several files with differnt endings *.dot, *.svg, *.map
 		// the relative (to /storage/app) file path based on a random hash
 		$this->file = self::$path_rel.sha1(uniqid(mt_rand(), true));
+
+		return parent::__construct();
     }
 
 
@@ -158,7 +160,7 @@ class TreeErdController extends HfcBaseController {
 			$id 	= $netelem->id;
 			$name 	= $netelem->name;
 			$type 	= $netelem->netelementtype->name;
-			$state  = $netelem->state;
+			$state  = $netelem->get_bsclass();
 			$ip   	= $netelem->ip;
 			$p2   	= $netelem->pos;
 			$parent = $netelem->get_parent();
@@ -172,15 +174,12 @@ class TreeErdController extends HfcBaseController {
 			#
 			# Amplifier - what?? - all types are considered here
 			#
-			// if ($ip == '')
-				$color = 'green';
-			// if ($state == 'OK' || $state == '')
-				// $color = 'green';
-			if ($state == 'YELLOW')
+			$color = 'green';
+			if ($state == 'warning')
 				$color = 'yellow';
-			if ($state == 'RED')
+			if ($state == 'danger')
 				$color = 'red';
-			if ($state == 'BLUE')
+			if ($state == 'info')
 				$color = 'blue';
 
 			// why are elements with parent->id == 1 blue ?? - what is distinction made for?

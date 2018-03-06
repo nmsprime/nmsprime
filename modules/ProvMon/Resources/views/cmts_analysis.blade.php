@@ -17,7 +17,7 @@
 		<font color="red">{{trans('messages.modem_no_diag')}}</font><br>
 		{{ trans('messages.modem_monitoring_error') }}
 	@endif
-
+	@include('provmon::cacti-height')
 @stop
 
 @section('content_ping')
@@ -41,30 +41,103 @@
 
 
 @section('content_realtime')
-	@if ($realtime)
+@if ($realtime)
+	@foreach ($realtime['measure'] as $tablename => $table)
+		<h4>{{$tablename}}</h4>
+			@if ($tablename == "Downstream" || $tablename == "Upstream" )
+			<div class="table-responsive">
+				<table class="table streamtable table-bordered" width="100%">
+					<thead>
+						<tr class="active">
+							<th> </th>
+							<th>#</th>
+							@foreach (array_keys($table) as $colheader)
+								@if ($colheader == "Modulation Profile")
+									<th class="text-center">Modulation</th>
+								@else
+									<th class="text-center">{{$colheader}}</th>
+								@endif
+							@endforeach
+						</tr>
+					</thead>
+					<tbody>
+						@foreach(current($table) as $i => $dummy)
+						<tr>
+							<td width="20"></td>
+							<td width="20"> {{$i}}</td>
+							@foreach ($table as $colheader => $colarray)
+								<?php
+//TODO Christian, please clean up
+									if(!isset($colarray[$i]))
+										continue;
 
-		<font color="green"><b>{{$realtime['forecast']}}</b></font><br>
-
-		@foreach ($realtime['measure'] as $tablename => $table)
-			<h5>{{$tablename}}</h5>
-			<table width="100%">
-				@foreach ($table as $rowname => $row)
-					<tr>
-						<th width="120px">
-							{{$rowname}}
-						</th>
-
-						@foreach ($row as $linename => $line)
-							<td>
-								 <font color="grey">{{htmlspecialchars($line)}}</font>
-							</td>
+									// NOTE: Colorization is done by assuming Modulation 64 QAM - Make it dependent of Modulation Profile ??
+									switch (\App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), '64qam', Str::lower($colheader),htmlspecialchars($colarray[$i])) ){
+										case 0:
+												$color = "success";
+												break;
+										case 1:
+												$color = "warning";
+												break;
+										case 2:
+												$color = "danger";
+												break;
+										default:
+												$color = "";
+									}
+								?>
+							<td class="text-center {{ $color }}"> <font color="grey"> {{ htmlspecialchars( $colarray[$i] ) }} </font> </td>
+							@endforeach
+						</tr>
 						@endforeach
-					</tr>
-				@endforeach
+					</tbody>
+				</table>
+			</div>
+			@else
+			<table class="table">
+			@foreach ($table as $rowname => $row)
+				<tr>
+					<th width="15%">
+						{{$rowname}}
+					</th>
+					@foreach ($row as $linename => $line)
+						<td>
+							<font color="grey">{{htmlspecialchars($line)}}</font>
+						</td>
+					@endforeach
+				</tr>
+			@endforeach
 			</table>
-		@endforeach
+			@endif
+	@endforeach
+@else
+  <font color="red">{{trans('messages.modem_offline')}}</font>
+@endif
+@stop
 
-	@else
-		<font color="red">{{trans('messages.modem_offline')}}</font>
-	@endif
+@section ('javascript')
+<script language="javascript">
+	$(document).ready(function() {
+		$('table.streamtable').DataTable(
+		{
+		{{-- Translate Datatables Base --}}
+			@include('datatables.lang')
+		responsive: {
+			details: {
+				type: 'column' {{-- auto resize the Table to fit the viewing device --}}
+			}
+		},
+		autoWidth: false,
+		paging: false,
+		info: false,
+		searching: false,
+		aoColumnDefs: [ {
+			className: 'control',
+			orderable: false,
+			targets:   [0]
+		} ]
+		});
+});
+</script>
+@include('Generic.handlePanel')
 @stop

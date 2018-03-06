@@ -52,34 +52,64 @@ return [
 			'prefix'   => '',
 		],
 
-		// TODO: don't use root sql user to access lara DB
-		//       we should use a separate user for this.
+		// NMS Prime default connection
 		'mysql' => [
 			'driver'    => 'mysql',
 			'host'      => env('DB_HOST', 'localhost'),
-			'database'  => env('DB_DATABASE', 'forge'),
-			'username'  => env('DB_USERNAME', 'forge'),
+			'database'  => env('DB_DATABASE', 'nmsprime'),
+			'username'  => env('DB_USERNAME', 'nmsprime'),
 			'password'  => env('DB_PASSWORD', ''),
-			'charset'   => 'utf8',
-			'collation' => 'utf8_unicode_ci',
+			'charset'   => 'utf8mb4',
+			'collation' => 'utf8mb4_unicode_ci',
 			'prefix'    => '',
 			'strict'    => false,
 		],
 
-		// TODO: adapt ENV settings to access cacti DB with
-		//       the installed Cacti user and not with root
+		// A mysql root connection
+		// @NOTE: This could be useful when running special cmds on SQL table
+		//       where advanced permissions are required.
+		// @IMPORTNANT: make as less as possible use of this. Especially in normal code!
+		'mysql-root' => [
+			'driver'    => 'mysql',
+			'host'      => env('ROOT_DB_HOST', 'localhost'),
+			'database'  => env('ROOT_DB_DATABASE', 'nmsprime'),
+			'username'  => env('ROOT_DB_USERNAME', 'root'),
+			'password'  => env('ROOT_DB_PASSWORD', ''),
+			'charset'   => 'utf8mb4',
+			'collation' => 'utf8mb4_unicode_ci',
+			'prefix'    => '',
+			'strict'    => false,
+		],
+
+		// Config Host connection.
+		// @NOTE: This could be used to fetch config tables (like configfiles) from a global NMS Prime system
+		'mysql-config' => [
+			'driver'    => 'mysql',
+			'host'      => env('DB_CONFIG_HOST', env('DB_HOST', 'localhost')),
+			'database'  => env('DB_CONFIG_DATABASE', env('DB_DATABASE', 'nmsprime')),
+			'username'  => env('DB_CONFIG_USERNAME',  env('DB_USERNAME', 'nmsprime')),
+			'password'  => env('DB_CONFIG_PASSWORD', env('DB_PASSWORD', '')),
+			'charset'   => 'utf8mb4',
+			'collation' => 'utf8mb4_unicode_ci',
+			'prefix'    => '',
+			'strict'    => false,
+		],
+
+		// mysql cacti connection
 		'mysql-cacti' => [
 			'driver'    => 'mysql',
-			'host'      => env('DB_HOST', 'localhost'),
-			'database'  => 'cacti',
-			'username'  => env('DB_USERNAME', 'forge'),
-			'password'  => env('DB_PASSWORD', ''),
-			'charset'   => 'utf8',
-			'collation' => 'utf8_unicode_ci',
+			'host'      => env('CACTI_DB_HOST', 'localhost'),
+			'database'  => env('CACTI_DB_DATABASE', 'cacti'),
+			'username'  => env('CACTI_DB_USERNAME', 'cactiuser'),
+			'password'  => env('CACTI_DB_PASSWORD', ''),
+			'charset'   => 'latin1',
+			'collation' => 'latin1_swedish_ci',
 			'prefix'    => '',
 			'strict'    => false,
 		],
 
+		// for km3 import command only
+		// @note: 'php artisan nms:import'
 		'pgsql-km3' => [
 			'driver'   => 'pgsql',
 			'host'     => env('DB_IMPORT_HOST', 'localhost'),
@@ -93,14 +123,15 @@ return [
 			'schema'   => 'public',
 		],
 
+		// mysql CCC connection
 		'mysql-ccc' => [
 			'driver'    => 'mysql',
 			'host'      => env('CCC_DB_HOST', env('DB_HOST', 'localhost')),
 			'database'  => env('CCC_DB_DATABASE', env('DB_DATABASE', 'forge')),
 			'username'  => env('CCC_DB_USERNAME', env('DB_USERNAME', '')),
 			'password'  => env('CCC_DB_PASSWORD', env('DB_PASSWORD', '')),
-			'charset'   => 'utf8',
-			'collation' => 'utf8_unicode_ci',
+			'charset'   => 'utf8mb4',
+			'collation' => 'utf8mb4_unicode_ci',
 			'prefix'    => '',
 			'strict'    => false,
 		],
@@ -114,6 +145,7 @@ return [
 			'prefix'   => '',
 		],
 
+		// mysql voip monitoring
 		'mysql-voipmonitor' => [
 			'driver'    => 'mysql',
 			'host'      => env('VOIPMONITOR_DB_HOST', env('DB_HOST', 'localhost')),
@@ -121,8 +153,21 @@ return [
 
 			'username'  => env('VOIPMONITOR_DB_USERNAME', env('DB_USERNAME', 'root')),
 			'password'  => env('VOIPMONITOR_DB_PASSWORD', env('DB_PASSWORD', '')),
-			'charset'   => 'utf8',
-			'collation' => 'utf8_unicode_ci',
+			'charset'   => 'latin1',
+			'collation' => 'latin1_swedish_ci',
+			'prefix'    => '',
+			'strict'    => false,
+		],
+
+		// mysql icinga/nagios connection
+		'mysql-icinga2' => [
+			'driver'    => 'mysql',
+			'host'      => env('ICINGA2_DB_HOST', env('DB_HOST', 'localhost')),
+			'database'  => env('ICINGA2_DB_DATABASE', 'icinga2'),
+			'username'  => env('ICINGA2_DB_USERNAME', env('DB_USERNAME', 'icinga2user')),
+			'password'  => env('ICINGA2_DB_PASSWORD', env('DB_PASSWORD', '')),
+			'charset'   => 'latin1',
+			'collation' => 'latin1_swedish_ci',
 			'prefix'    => '',
 			'strict'    => false,
 		],

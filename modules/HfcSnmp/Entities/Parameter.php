@@ -35,26 +35,12 @@ class Parameter extends \BaseModel {
 	// View Icon
 	public static function view_icon()
 	{
-	  return '<i class="fa fa-dot-circle-o"></i>'; 
+	  return '<i class="fa fa-dot-circle-o"></i>';
 	}
-	
-	// link title in index view
-	public function view_index_label()
-	{
-		$header = $this->oid->name_gui ? : $this->oid->name;
-		$header .= ' - '.$this->oid->oid;
 
-		$bsclass = $this->get_bsclass();
-
-		return ['index' => [$this->oid->name, $this->oid->oid, $this->oid->access],
-				'index_header' => ['Name', 'OID', 'Access'],
-				'bsclass' => $bsclass,
-				'header' => $header];
-	}
-	
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$header = isset($this->oid) ? $this->oid->name : '' ;
 		$header .= isset($this->oid) ? ' - '.$this->oid->oid : '';
@@ -64,11 +50,11 @@ class Parameter extends \BaseModel {
 		return ['table' => $this->table,
 				'index_header' => ['oid.name', 'oid.oid',  'oid.access'],
 				'header' =>  $header,
-				'orderBy' => ['1' => 'asc'],
+				'order_by' => ['1' => 'asc'],
 				'eager_loading' => ['oid']];
 	}
 
-	public function get_bsclass() 
+	public function get_bsclass()
 	{
 		$bsclass = 'success';
 
@@ -76,14 +62,6 @@ class Parameter extends \BaseModel {
 			$bsclass = 'danger';
 
 		return $bsclass;
-	}
-
-
-	public function index_list()
-	{
-		$eager_loading_model = new OID;
-
-		return $this->orderBy('id')->with($eager_loading_model->table)->get();
 	}
 
 	public function view_has_many()

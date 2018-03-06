@@ -3,7 +3,7 @@
 </div>
 
 
-    <!-- begin #header -->
+    {{-- begin #header --}}
     <div id="header" class="header navbar navbar-default navbar-fixed-top">
       <!-- begin container-fluid -->
       <div class="container-fluid">
@@ -47,5 +47,5 @@
       </div>
       <!-- end container-fluid -->
     </div>
-    <!-- end #header -->
-
+    {{-- end #header --}}
+</div>

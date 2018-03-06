@@ -18,11 +18,6 @@ class CreateCmtsTable extends BaseMigration {
 	 */
 	public function up()
 	{
-		$dir = '/etc/dhcp/nms/cmts_gws';
-		if (!is_dir($dir))
-			mkdir($dir, 0700, true);
-		system('chown -R apache /etc/dhcp/');
-
 		Schema::create($this->tablename, function(Blueprint $table)
 		{
 			$this->up_table_generic($table);
@@ -56,19 +51,15 @@ class CreateCmtsTable extends BaseMigration {
 	 */
 	public function down()
 	{
-		$c = Cmts::first();
-		if ($c) 
-			$c->del_cmts_includes();
+		// empty CMTS includes
+		file_put_contents(Cmts::$cmts_include_path.'.conf', '');
 
 		Schema::drop($this->tablename);
 
 		// remove all through dhcpCommand created cmts config files
-		$files = glob('/etc/dhcp/nms/cmts_gws/*');		// get all files in dir
-		foreach ($files as $file)
-		{
+		foreach (glob(Cmts::$cmts_include_path.'/*') as $file)
 			if(is_file($file))
 				unlink($file);
-		}
 	}
 
 }

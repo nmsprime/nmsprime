@@ -31,7 +31,7 @@ class CccAuthuser extends \BaseModel implements AuthenticatableContract, CanRese
 
 	/**
 	 * Overwrite Eloquent Function
-	 * NOTE: We can not overwrite save()-function here as it is called on logout what in consequence changes the password 
+	 * NOTE: We can not overwrite save()-function here as it is called on logout what in consequence changes the password
 	 * of the user and a new login isnt possible anymore
 	 *
 	 * @return array  	login data

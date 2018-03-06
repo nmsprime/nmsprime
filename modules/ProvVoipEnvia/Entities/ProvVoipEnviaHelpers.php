@@ -3,7 +3,7 @@
 namespace Modules\ProvVoipEnvia\Entities;
 
 
-// Model not found? execute composer dump-autoload in lara root dir
+// Model not found? execute composer dump-autoload in nmsprime root dir
 class ProvVoipEnviaHelpers {
 
 
@@ -84,7 +84,12 @@ class ProvVoipEnviaHelpers {
 
 		$row= array();
 
-		array_push($row, '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a>');
+		if (is_null($contract->deleted_at)) {
+			array_push($row, '<a href="'.\URL::route("Contract.edit", array("Contract" => $contract->id)).'">'.$contract->number.'</a>');
+		}
+		else {
+			array_push($row, "<s>$contract->number</s>");
+		}
 
 		$tmp_address = "";
 		$tmp_address .= (boolval($contract->company) ? $contract->company.",<br>" : "");
@@ -187,7 +192,12 @@ class ProvVoipEnviaHelpers {
 
 		$row = array();
 
-		array_push($row, '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->mac.'</a>');
+		if (is_null($modem->deleted_at)) {
+			array_push($row, '<a href="'.\URL::route("Modem.edit", array("Modem" => $modem->id)).'">'.$modem->mac.'</a>');
+		}
+		else {
+			array_push($row, "<s>$modem->mac</s>");
+		}
 		array_push($row, $modem->hostname);
 
 		$tmp_address = "";
@@ -321,7 +331,7 @@ class ProvVoipEnviaHelpers {
 		$data = array();
 
 		$head = array(
-			'Envia contract ID',
+			'envia TEL contract ID',
 			'State',
 			'Start date',
 			'End date',

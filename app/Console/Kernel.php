@@ -2,17 +2,6 @@
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use \Modules\HfcBase\Http\Controllers\TreeErdController;
-use \Modules\HfcBase\Http\Controllers\TreeTopographyController;
-use \Modules\HfcCustomer\Http\Controllers\CustomerTopoController;
-use \Modules\ProvVoip\Console\CarrierCodeDatabaseUpdaterCommand;
-use \Modules\ProvVoip\Console\EkpCodeDatabaseUpdaterCommand;
-use \Modules\ProvVoip\Console\TRCClassDatabaseUpdaterCommand;
-use \Modules\ProvVoip\Console\PhonenumberCommand;
-use \Modules\ProvVoipEnvia\Console\EnviaOrderUpdaterCommand;
-use \Modules\ProvVoipEnvia\Console\EnviaContractReferenceGetterCommand;
-use \Modules\ProvVoipEnvia\Console\EnviaCustomerReferenceGetterCommand;
-use \Modules\ProvVoipEnvia\Console\EnviaCustomerReferenceFromCSVUpdaterCommand;
 
 class Kernel extends ConsoleKernel {
 
@@ -25,20 +14,9 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\Inspire',
 		'App\Console\Commands\TimeDeltaChecker',
 		'App\Console\Commands\StorageCleaner',
-		'\Modules\ProvVoip\Console\CarrierCodeDatabaseUpdaterCommand',
-		'\Modules\ProvVoip\Console\EkpCodeDatabaseUpdaterCommand',
-		'\Modules\ProvVoip\Console\PhonenumberCommand',
-		'\Modules\ProvVoip\Console\TRCClassDatabaseUpdaterCommand',
-		'\Modules\ProvVoipEnvia\Console\EnviaContractGetterCommand',
-		'\Modules\ProvVoipEnvia\Console\EnviaContractReferenceGetterCommand',
-		'\Modules\ProvVoipEnvia\Console\EnviaCustomerReferenceGetterCommand',
-		'\Modules\ProvVoipEnvia\Console\EnviaCustomerReferenceFromCSVUpdaterCommand',
-		'\Modules\ProvVoipEnvia\Console\EnviaOrderUpdaterCommand',
-		'\Modules\ProvVoipEnvia\Console\EnviaOrderProcessorCommand',
-		'\Modules\ProvVoipEnvia\Console\VoiceDataUpdaterCommand',
 		'App\Console\Commands\authCommand',
-		'App\Console\Commands\install',
 		'App\Console\Commands\EnsureQueueListenerIsRunning',
+		'App\Console\Commands\addDefaultRolesCommand',
 	];
 
 
@@ -65,9 +43,10 @@ class Kernel extends ConsoleKernel {
 		// define some helpers
 		$is_first_day_of_month = (date('d') == '01') ? True : False;
 
-		$schedule->command('queue:checkup')->everyTenMinutes(); //cron("1,16,31,46 * * * * *");
+		$schedule->command('queue:checkup')->everyMinute();
 
 		$schedule->call('\Modules\ProvBase\Http\Controllers\DashboardController@save_income_to_json')->dailyAt('00:07');
+		$schedule->call('\Modules\Dashboard\Http\Controllers\DashboardController@save_contracts_to_json')->hourly();
 
 
 		// Remove all Log Entries older than 90 days
@@ -99,19 +78,19 @@ class Kernel extends ConsoleKernel {
 				->dailyAt('00:01');
 				/* ->everyMinute(); */
 
-			// Get Envia customer reference for contracts without this information
+			// Get envia TEL customer reference for contracts without this information
 			$schedule->command('provvoipenvia:get_envia_customer_references')
 				->dailyAt('01:13');
 
-			// Get/update Envia contracts
+			// Get/update envia TEL contracts
 			$schedule->command('provvoipenvia:get_envia_contracts_by_customer')
 				->dailyAt('01:18');
 
-			// Process Envia orders (do so after getting envia contracts)
+			// Process envia TEL orders (do so after getting envia contracts)
 			$schedule->command('provvoipenvia:process_envia_orders')
 				->dailyAt('03:18');
 
-			// Get Envia contract reference for phonenumbers without this information or inactive linked envia contract
+			// Get envia TEL contract reference for phonenumbers without this information or inactive linked envia contract
 			// on first of a month: run in complete mode
 			// do so after provvoipenvia:process_envia_orders as we need the old references there
 			if ($is_first_day_of_month) {
@@ -141,9 +120,12 @@ class Kernel extends ConsoleKernel {
 			// Rebuid all Configfiles
 			// $schedule->command('nms:configfile')->dailyAt('00:50')->withoutOverlapping();
 
-			// TODO: Reload DHCP on clock change (daylight saving) - last sunday in march, last sunday in october
+			// Reload DHCP on clock change (daylight saving)
 			// [0] minute, [1] hour, [2] day, [3] month, [4] day of week, [5] year
-			$schedule->command('nms:dhcp')->cron('0 4 24,25,26,27,28,29,30,31 3,10 0 *');
+			$day1 = date('d', strtotime('last sunday of march'));
+			$day2 = date('d', strtotime('last sunday of oct'));
+			$schedule->command('nms:dhcp')->cron("0 4 $day1 3 0 *");
+			$schedule->command('nms:dhcp')->cron("0 4 $day2 10 0 *");
 
 			// Contract - network access, item dates, internet (qos) & voip tariff changes
 			// important!! daily conversion has to be run BEFORE monthly conversion
@@ -152,6 +134,10 @@ class Kernel extends ConsoleKernel {
 			// TODO: ckeck if this is really needed
 			$schedule->command('nms:contract daily')->daily()->at('00:03');
 			$schedule->command('nms:contract monthly')->monthly()->at('00:13');
+			$schedule->call(function () {
+				foreach (\Modules\ProvBase\Entities\Cmts::all() as $cmts)
+					$cmts->store_us_snrs();
+			})->everyFiveMinutes();
 		}
 
 		// Clean Up of HFC Base
@@ -159,8 +145,8 @@ class Kernel extends ConsoleKernel {
 		{
 			// Rebuid all Configfiles
 			$schedule->call(function () {
-				\Storage::deleteDirectory(TreeTopographyController::$path_rel);
-				\Storage::deleteDirectory(TreeErdController::$path_rel);
+				\Storage::deleteDirectory(\Modules\HfcBase\Http\Controllers\TreeTopographyController::$path_rel);
+				\Storage::deleteDirectory(\Modules\HfcBase\Http\Controllers\TreeErdController::$path_rel);
 			})->hourly();
 		}
 
@@ -169,20 +155,20 @@ class Kernel extends ConsoleKernel {
 		{
 			// Rebuid all Configfiles
 			$schedule->call(function () {
-				\Storage::deleteDirectory(CustomerTopoController::$path_rel);
+				\Storage::deleteDirectory(\Modules\HfcCustomer\Http\Controllers\CustomerTopoController::$path_rel);
 			})->hourly();
 
 			// Modem Positioning System
 			$schedule->command('nms:mps')->daily();
 
-			$schedule->command('nms:modem-refresh')->everyFiveMinutes()->withoutOverlapping();
+			$schedule->command('nms:modem-refresh')->everyFiveMinutes();
 		}
 
 
 		// Automatic Power Control based on measured SNR
 		if (\PPModule::is_active ('ProvMon'))
 		{
-			$schedule->command('nms:apc')->everyFiveMinutes()->withoutOverlapping();
+			$schedule->command('nms:apc')->everyMinute();
 			$schedule->command('nms:cacti')->daily();
 		}
 

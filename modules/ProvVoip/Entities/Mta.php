@@ -9,7 +9,7 @@ use Modules\ProvBase\Entities\Modem;
 use Modules\ProvBase\Entities\Configfile;
 use Modules\ProvBase\Entities\ProvBase;
 
-// Model not found? execute composer dump-autoload in lara root dir
+// Model not found? execute composer dump-autoload in nmsprime root dir
 class Mta extends \BaseModel {
 
 	// The associated SQL table for this Model
@@ -20,7 +20,7 @@ class Mta extends \BaseModel {
 	public static function rules($id=null)
 	{
 		return array(
-			'mac' => 'required|mac', //|unique:mta,mac',
+			'mac' => 'required|mac|unique:mta,mac,'.$id.',id,deleted_at,NULL', //|unique:mta,mac',
 			'modem_id' => 'required|exists:modem,id|min:1',
 			'configfile_id' => 'required|exists:configfile,id|min:1',
 			// 'hostname' => 'required|unique:mta,hostname,'.$id,
@@ -44,27 +44,9 @@ class Mta extends \BaseModel {
 		return '<i class="fa fa-fax"></i>';
 	}
 
-	// link title in index view
-	public function view_index_label()
-	{
-		$bsclass = $this->get_bsclass();
-		$cf_name = 'No Configfile assigned';
-
-		if (isset($this->configfile))
-			$cf_name = $this->configfile->name;
-
-		// TODO: use mta states.
-		//       Maybe use fast ping to test if online in this function?
-
-		return ['index' => [$this->hostname, $this->mac, $this->type, $cf_name],
-				'index_header' => ['Name', 'MAC', 'Type', 'Configfile'],
-				'bsclass' => $bsclass,
-				'header' => $this->hostname.' - '.$this->mac];
-	}
-
 	// AJAX Index list function
 	// generates datatable content and classes for model
-	public function view_index_label_ajax()
+	public function view_index_label()
 	{
 		$bsclass = $this->get_bsclass();
 
@@ -72,7 +54,7 @@ class Mta extends \BaseModel {
 				'index_header' => [$this->table.'.hostname', $this->table.'.mac', $this->table.'.type', 'configfile.name'],
 				'header' => $this->hostname.' - '.$this->mac,
 				'bsclass' => $bsclass,
-				'orderBy' => ['3' => 'asc'],
+				'order_by' => ['3' => 'asc'],
                 'edit' => ['configfile.name' => 'has_configfile_assigned'],
 				'eager_loading' => ['configfile']];
 	}
@@ -175,9 +157,9 @@ class Mta extends \BaseModel {
 			goto _failed;
 		}
 
-		Log::info("/usr/local/bin/docsis -eu -p $conf_file $cfg_file");
+		Log::info("docsis -eu -p $conf_file $cfg_file");
 		// "&" to start docsis process in background improves performance but we can't reliably proof if file exists anymore
-		exec     ("/usr/local/bin/docsis -eu -p $conf_file $cfg_file >/dev/null 2>&1 &", $out);
+		exec     ("docsis -eu -p $conf_file $cfg_file >/dev/null 2>&1 &", $out);
 
 		// this only is valid when we dont execute docsis in background
 		// if (!file_exists($cfg_file))
@@ -233,7 +215,7 @@ _failed:
 	/**
 	 * Define DHCP Config File for MTA's
 	 */
-	const CONF_FILE_PATH = '/etc/dhcp/nms/mta.conf';
+	const CONF_FILE_PATH = '/etc/dhcp/nmsprime/mta.conf';
 
 	/**
 	 * Writes all mta entries to dhcp configfile
@@ -267,10 +249,7 @@ _failed:
 	{
 		Log::debug(__METHOD__." started");
 
-		$orig = $this->getOriginal();
-
-		if (!file_exists(self::CONF_FILE_PATH))
-		{
+		if (!file_exists(self::CONF_FILE_PATH))	{
 			Log::critical('Missing DHCPD Configfile '.self::CONF_FILE_PATH);
 			return;
 		}
@@ -281,26 +260,20 @@ _failed:
 		if (!flock($fp, LOCK_EX))
 			Log::error('Could not get exclusive lock for '.self::CONF_FILE_PATH);
 
-
-		$replace = $orig ? $orig['mac'] : $this->mac;
-		// $conf = File::get(self::CONF_FILE_PATH);
+		$replace = "host $this->hostname";
 		$conf = file(self::CONF_FILE_PATH);
 
 		foreach ($conf as $key => $line)
 		{
-			if (strpos($line, $replace))
-			{
+			if (strpos($line, $replace) !== false) {
 				unset($conf[$key]);
 				break;
 			}
 		}
-		// dont replace directly as this wouldnt add the entry for a new created mta
-		// $conf = str_replace($replace, '', $conf);
+
+		// Note: dont replace directly as this wouldnt add the entry for a new created mta
 		if (!$delete)
-		{
-			$data 	= 'host mta-'.$this->id.' { hardware ethernet '.$this->mac.'; filename "mta/mta-'.$this->id.'.cfg"; ddns-hostname "mta-'.$this->id.'"; option host-name "'.$this->id.'"; }'."\n";
-			$conf[] = $data;
-		}
+			$conf[] = 'host mta-'.$this->id.' { hardware ethernet '.$this->mac.'; filename "mta/mta-'.$this->id.'.cfg"; ddns-hostname "mta-'.$this->id.'"; option host-name "'.$this->id.'"; }'."\n";
 
 		Modem::_write_dhcp_file(self::CONF_FILE_PATH, implode($conf));
 
@@ -368,7 +341,7 @@ _failed:
 			}
 			else {
 				// Inform and log for all other exceptions
-				\Session::push('tmp_info_above_form', 'Unexpected exception: '.$e->getMessage());
+				\Session::push('tmp_error_above_form', 'Unexpected exception: '.$e->getMessage());
 				\Log::error("Unexpected exception restarting MTA ".$this->id." (".$this->mac."): ".$e->getMessage()." => ".$e->getTraceAsString());
 				\Session::flash('error', '');
 			}
@@ -407,8 +380,10 @@ class MtaObserver
 		// only make configuration files when relevant data was changed
 		if ($modifications)
 		{
-			if (array_key_exists('mac', $modifications))
+			if (array_key_exists('mac', $modifications)){
 				$mta->make_dhcp_mta();
+				$mta->modem->make_configfile();
+			}
 
 			$mta->make_configfile();
 		}
@@ -421,6 +396,7 @@ class MtaObserver
 		$mta->make_dhcp_mta(true);
 		$mta->modem->make_dhcp_cm(false, true);
 		$mta->delete_configfile();
+		$mta->modem->make_configfile();
 		$mta->modem->restart_modem();
 	}
 }

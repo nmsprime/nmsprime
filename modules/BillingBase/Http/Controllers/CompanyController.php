@@ -1,13 +1,12 @@
 <?php
-namespace Modules\Billingbase\Http\Controllers;
+namespace Modules\BillingBase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
-use Modules\Billingbase\Entities\Company;
+use Modules\BillingBase\Entities\Company;
 use Input;
 
 class CompanyController extends \BaseController {
 
-	protected $edit_left_md_size = 7;
 
 	/**
 	 * defines the formular fields for the edit and create view
@@ -66,12 +65,10 @@ class CompanyController extends \BaseController {
 	public function store($redirect = true)
 	{
 		// check and handle uploaded firmware files
-		$this->handle_file_upload('logo', storage_path('/app/config/billingbase/logo/'));
+		$this->handle_file_upload('logo', storage_path('app/config/billingbase/logo/'));
 
 		if (\PPModule::is_active('ccc'))
-		{
-			$this->handle_file_upload('logo', storage_path('/app/config/ccc/template/'));
-		}
+			$this->handle_file_upload('conn_info_template_fn', storage_path('app/config/ccc/template/'));
 
 		// finally: call base method
 		return parent::store();
@@ -79,12 +76,10 @@ class CompanyController extends \BaseController {
 
 	public function update($id)
 	{
-		$this->handle_file_upload('logo', storage_path('/app/config/billingbase/logo/'));
+		$this->handle_file_upload('logo', storage_path('app/config/billingbase/logo/'));
 
 		if (\PPModule::is_active('ccc'))
-		{
-			$this->handle_file_upload('conn_info_template_fn', storage_path('/app/config/ccc/template/'));
-		}
+			$this->handle_file_upload('conn_info_template_fn', storage_path('app/config/ccc/template/'));
 
 		return parent::update($id);
 	}

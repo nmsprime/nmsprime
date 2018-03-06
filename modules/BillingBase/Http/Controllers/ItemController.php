@@ -1,5 +1,5 @@
 <?php
-namespace Modules\Billingbase\Http\Controllers;
+namespace Modules\BillingBase\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\Product;
@@ -20,16 +20,15 @@ class ItemController extends \BaseController {
 
 		$products = Product::select('id', 'type', 'name')->orderBy('type')->orderBy('name')->get()->all();
 
-		// $prods = $model->html_list($products, 'name');
 		$prods[0] = '';
 		foreach ($products as $p)
 			$prods[$p->id] = $p->type.' - '.$p->name;
 
+		$types = [];
 		foreach ($products as $p)
 			$types[$p->id] = $p->type;
 
 		// the options should start with a 0 entry which is chosen if nothing is given explicitely
-		// (watch $this->prepare_rules())
 		// don't use array_merge for this because that reassignes the index!
 		$ccs = $this->_add_empty_first_element_to_options($model->html_list(CostCenter::all(), 'name'));
 
@@ -38,16 +37,18 @@ class ItemController extends \BaseController {
 		for ($i=1; $i < 99; $i++)
 			$cnt[$i] = $i;
 
+		// bool var to show/hide valid_from/to_fixed fields
+		$fluid = !BillingBase::first()->fluid_valid_dates;
 
 		// label has to be the same like column in sql table
 		$fields = array(
-			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'value' => $model->contract(), 'hidden' => '1'),
+			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'hidden' => '1'),
 			array('form_type' => 'select', 'name' => 'product_id', 'description' => 'Product', 'value' => $prods, 'select' => $types, 'help' => trans('helper.Item_ProductId')),
 			array('form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt, 'select' => 'Device Other TV'),
-			array('form_type' => 'text', 'name' => 'valid_from', 'description' => 'Valid from', 'options' => ['placeholder' => 'YYYY-MM-DD'], 'help' => trans('helper.Item_ValidFrom')),
-			array('form_type' => 'checkbox', 'name' => 'valid_from_fixed', 'description' => 'Valid from fixed', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidFromFixed')),
+			array('form_type' => 'text', 'name' => 'valid_from', 'description' => 'Start date', 'options' => ['placeholder' => 'YYYY-MM-DD'], 'help' => trans('helper.Item_ValidFrom')),
+			array('form_type' => 'checkbox', 'name' => 'valid_from_fixed', 'description' => 'Active from start date', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidFromFixed'), 'hidden' => $fluid, 'checked' => 1, 'value' => 1),
 			array('form_type' => 'text', 'name' => 'valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD']),
-			array('form_type' => 'checkbox', 'name' => 'valid_to_fixed', 'description' => 'Valid to fixed', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidToFixed')),
+			array('form_type' => 'checkbox', 'name' => 'valid_to_fixed', 'description' => 'Valid to fixed', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidToFixed'), 'hidden' => $fluid, 'checked' => 1, 'value' => 1),
 			array('form_type' => 'text', 'name' => 'credit_amount', 'description' => 'Credit Amount', 'select' => 'Credit', 'help' => trans('helper.Item_CreditAmount')),
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
 			array('form_type' => 'text', 'name' => 'accounting_text', 'description' => 'Accounting Text (optional)')
@@ -67,7 +68,7 @@ class ItemController extends \BaseController {
 	public function prepare_input($data)
 	{
 		// $data['credit_amount'] = $data['credit_amount'] ? abs($data['credit_amount']) : $data['credit_amount'];
-		$type = Product::findOrFail($data['product_id'])->type;
+		$type = ($p = Product::find($data['product_id'])) ? $p->type : '';
 
 		// set default valid from date to tomorrow for this product types
 		// specially for Voip: Has to be created externally – and this will not be done today…
@@ -115,20 +116,22 @@ class ItemController extends \BaseController {
 		// - otherwise after end date of old tariff - does it?
 		if (\Str::contains(\URL::previous(), '/Item/create'))
 		{
-			$c = Contract::find($data['contract_id']);
 			$p = Product::find($data['product_id']);
-			$tariff = $c->get_valid_tariff($p->type);
 
-			if ($tariff)
+			if (in_array($p->type, ['Internet', 'Voip', 'TV']))
 			{
-				// check if date is after today
-				$start = $tariff->get_start_time();
-				$rules['valid_from'] .= '|after:';
-				$rules['valid_from'] .= $tariff->valid_to && $tariff->valid_to != '0000-00-00' ? $tariff->valid_to : date('Y-m-d', $start);
+				$c = Contract::find($data['contract_id']);
+				$tariff = $p ? $c->get_valid_tariff($p->type) : null;
+
+				if ($tariff)
+				{
+					// check if date is after today
+					$start = $tariff->get_start_time();
+					$rules['valid_from'] .= '|after:';
+					$rules['valid_from'] .= $tariff->valid_to && $tariff->valid_to != '0000-00-00' ? $tariff->valid_to : date('Y-m-d', $start);
+				}
 			}
 		}
-
-		// dd($rules, $data);
 
 		return parent::prepare_rules($rules, $data);
 	}

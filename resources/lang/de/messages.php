@@ -15,6 +15,7 @@ return [
 	'Bank Account Holder'		=> 'Kontoinhaber',
 	'Birthday'					=> 'Geburtstag',
 	'ccc'						=> 'Kundenkontrollzentrum',
+	'cdr' 						=> 'Evn',
 	'City'						=> 'Stadt',
 	'Choose KML file'			=> 'Wähle KML file',
 	'close' 					=> 'Schliessen',
@@ -31,6 +32,7 @@ return [
 	'cpe_log_error'				=> 'ist nicht beim Server registriert - Kein Logeintrag gefunden',
 
 	'Create'					=> 'Erstellen',
+	'D' 						=> 'Tag|Tage',
 	'Delete'					=> 'Löschen',
 	'Day'						=> 'Tag',
 	'Description'				=> 'Beschreibung',
@@ -47,6 +49,8 @@ return [
 	'Endpoints'					=> 'Endpunkte',
 	'Endpoints List'			=> 'Endpunktliste',
 	'Entry'						=> 'Eintrag',
+	'envia_no_interaction' 		=> 'Keine Envia Vorgänge, die eine Bearbeitung benötigen',
+	'envia_interaction'			=> 'Envia Vorgang benötigt eine Bearbeitung|Envia Vorgänge benötigen Bearbeitung',
 	'E-Mail Address'			=> 'Email-Adresse',
 	'First IP'					=> 'Erste IP',
 	'Firstname'					=> 'Vorname',
@@ -59,8 +63,10 @@ return [
 	'Language'					=> 'Sprache',
 	'Lastname'					=> 'Nachname',
 	'Last IP'					=> 'Letzte IP',
+	'M' 						=> 'Monat|Monate',
 	'MAC Address'				=> 'MAC Adresse',
 	'Main Menu'					=> 'Hauptmenü',
+	'Maturity' 					=> 'Laufzeit',
 	'modem_eventlog_error'		=> 'Modem Eventlog nicht gefunden',
 	'modem_monitoring_error'	=> 'Möglicherweise war das Modem bis jetzt nicht online. Beachten Sie, dass Diagramme erst ab
 		dem Zeitpunkt verfügbar sind, von dem an das Modem online ist. Wurden alle Diagramme unsauber angezeigt, könnte es
@@ -83,6 +89,7 @@ return [
 	'or: Upload KML file'		=> 'oder lade KML hoch',
 	'Parent Device Type'		=> 'Eltern Gerätetyp',
 	'Parent Object'				=> 'Eltern Objekt',
+	'Period of Notice' 			=> 'Kündigungsfrist',
 	'Password'					=> 'Passwort',
 	'Phone'						=> 'Telefon',
 	'Phone ID next month'		=> 'Telefon ID nächsten Monat',
@@ -99,6 +106,7 @@ return [
 	'Save'						=> 'Speichern',
 	'Save / Restart'			=> 'Speichern / Neustart',
 	'Serial Number'				=> 'Seriennummer',
+	'Sign me in' 				=> 'Anmelden',
 	'State'						=> 'Status',
 	'Street'					=> 'Straße',
 	'Type'						=> 'Typ',
@@ -108,6 +116,7 @@ return [
 	'Vendor'					=> 'Hersteller',
 	'Year'						=> 'Jahr',
 	'yes' 						=> 'ja',
+	'Y' 						=> 'Jahr|Jahre',
 //
 //Global
 //
@@ -123,14 +132,16 @@ return [
 	'Headline 2'				=> 'Überschrift Navigationsleiste',
 	//Billing
 	'accCmd_processing' 		=> 'Der Abrechnungslauf wird erstellt. Bitte warten Sie bis der Prozess abgeschlossen ist.',
-	'Day of Requested Collection Date'	=> 'Monatlicher Abrechungstag',
+	'CDR retention period' 		=> 'Aufbewahrungsfrist für Einzelverbindungsnachweise',
+	'Day of Requested Collection Date'	=> 'Monatlicher Abrechnungstag',
 	'Tax in %'					=> 'Mehrwertsteuer in %',
 	'Invoice Number Start'		=> 'Start Nummerierung Rechnungen',
 	'Split Sepa Transfer-Types'	=> 'SEPA-Transfertypen aufteilen?',
-	'Mandate Reference'			=> 'Mandatrefferenz',
+	'Mandate Reference'			=> 'Mandatsrefferenz',
 	'e.g.: String - {number}'	=> 'z.Bsp.: Sring - {Nummer}',
 	'Item Termination only end of month'=> 'Posten nur am ende des Monats kündigen?',
-	'Language for Accounting command'	=> 'Sprache für Abrechnungslauf-Befehl',
+	'Language for settlement run' => 'Sprache für Abrechnungslauf',
+	'Uncertain start/end dates for tariffs' => 'Ungewisse Tarif-Start-/Enddaten',
 	//CCC
 	'Connection Info Template'	=> 'Vorlage für Verbingungsinformationen',
 	'Upload Template'			=> 'Vorlage hochladen',
@@ -153,6 +164,7 @@ return [
 //
 	//Verträge
 	'Academic Degree'			=> 'Akademischer Titel',
+	'contract_early_cancel' 	=> 'Möchten Sie den Vertrag wirklich vor Tariflaufzeitende :date kündigen?',
 	'Contract number'			=> 'Vertragsnummer',
 	'Contract Nr'				=> 'Vertragsnr',
 	'Contract number legacy'	=> 'Historische Vertragsnummer',
@@ -166,7 +178,7 @@ return [
 	'House Nr'					=> 'Hausnr',
 	'Salesman'					=> 'Verkäufer',
 	'Start Date' 				=> 'Startdatum',
-
+	'noCC'	=> 'Keine Kostenstelle zugewiesen',
 	//Items
 	'Accounting Text (optional)'=> 'Verwendungszweck (optional)',
 	'Cost Center (optional)'	=> 'Kostenstelle (optional)',
@@ -176,10 +188,12 @@ return [
 	'Items'						=> 'Posten',
 	'missing_product'			=> 'Fehlendes Produkt!',
 	'Product'					=> 'Produkt',
-	'Valid from'				=> 'Gültig ab',
-	'Valid to'					=> 'Gültig bis',
-	'Valid from fixed'			=> 'Gültig ab fest',
-	'Valid to fixed'			=> 'Gültig bis fest',
+	'Start date' 				=> 'Startdatum',
+	'Active from start date' 	=> 'Ab Startdatum aktiv',
+	'Valid from'				=> 'Startdatum',
+	'Valid to'					=> 'Enddatum',
+	'Valid from fixed'			=> 'Ab Startdatum aktiv',
+	'Valid to fixed'			=> 'Festes Enddatum',
 	//Modems
 	'Configfile'				=> 'Konfigurationsdatei',
 	'Mta'						=> 'MTA',
@@ -208,8 +222,9 @@ return [
 //
 //Billing Base
 //
+
 	//Product Entry
-	'Billing Cycle'				=> 'Rechnungskreislauf',
+	'Billing Cycle'				=> 'Abrechungszyklus',
 	'Bundled with VoIP product?'=> 'Mit VoIP-Produkt verknüpft?',
 	'Price (Net)'				=> 'Preis (netto)',
 	'Number of Cycles'			=> 'Anzahl der Zyklen',
@@ -276,8 +291,17 @@ return [
 	//Salesman
 	'Commission in %'		=> 'Komission in %',
 	'Product List'			=> 'Produktliste',
+
+	// SepaMandate
+	'Already recurring ?' 	=> 'Bereits wiederkehrend ?',
+	'Date of Signature' 	=> 'Signaturdatum',
+	'Disable temporary' 	=> 'Temporär aussetzen',
+	'Reference Number' 		=> 'Referenznummer',
+	'Bank Institute' 		=> 'Institut',
+
 	//Settlement Run File generation
 	'Contractnr'			=> 'Vertragsnummer',
+	'Create Invoices' 		=> 'Erstelle Rechnungen',
 	'Invoicenr'				=> 'Rechnungsnummer',
 	'Calling Number'		=> 'Rufnummer',
 	'Called Number'			=> 'Angerufene Nummer',
@@ -294,6 +318,8 @@ return [
 	'Commission in %'		=> 'Provision in %',
 	'Total Fee'				=> 'Gesamtgebühr',
 	'Commission Amount'		=> 'davon Provision',
+	'eom' 					=> 'zum Monatsende',
+	'Zip Files' 			=> 'Erstelle ZIP-Datei',
 
 /**
  * Customer Control Center
@@ -308,6 +334,10 @@ return [
 	'secondary'				=> 'sekundär',
 	'disabled'				=> 'deaktiviert',
 
+//
+// DASHBOARD
+//
+	'dashbrd_ticket' 		=> 'Neue mir zugewiesene Tickets',
 
 //
 // HFC
@@ -322,6 +352,11 @@ return [
 //
 	'upload_dependent_mib_err' => "Bitte Laden Sie zuvor die ':name' hoch! (Die zugehörigen OIDs können sonst nicht geparsed werden)",
 
+//
+// TICKETSYSTEM
+//
+	'Priority' 				=> 'Priorität',
+	'Title' 				=> 'Titel',
 //
 // VOIP
 //
@@ -402,9 +437,9 @@ return [
 	'Credit'                    => 'Gutschrift',
 	'Other'                     => 'Sonstige',
 	'Once'                      => 'einmalig',
-	'Monthly'                   => 'pro Monat',
-	'Quarterly'                 => 'pro Quartal',
-	'Yearly'                    => 'pro Jahr',
+	'Monthly'                   => 'monatlich',
+	'Quarterly'                 => 'vierteljährlich',
+	'Yearly'                    => 'jährlich',
 	//Tree Table
 	'NET'                       => 'Netz',
 	'CMTS'                      => 'CMTS',
@@ -421,160 +456,5 @@ return [
 	'user'                      => 'Nutzer',
 	'Yes'                       => 'Ja',
 	'No'                        => 'Nein',
-// Index DataTable Header
-	// GuiLog
-	'guilog.created_at' => 'Zeitpunkt',
-	'guilog.username' => 'Nutzer',
-	'guilog.method' => 'Aktion',
-	'guilog.model' => 'Model',
-	'guilog.model_id' => 'Model ID',
-	// Company
-	'company.name' => 'Name',
-	'company.city' => 'Stadt',
-	'company.phone' => 'Telefonnummer',
-	'company.mail' => 'E-Mail',
-	// Costcenter
-	'costcenter.name' => 'Name',
-	'costcenter.number' => 'Nummer',
-	//Invoices
-	'invoice.type' => 'Typ',
-	'invoice.year' => 'Jahr',
-	'invoice.month' => 'Monat',
-	//Item //**
-
-	// Product
-	'product.type' => 'Typ',
-	'product.name' => 'Name',
-	'product.price' => 'Preis',
-	// Salesman
-	'salesman.id' => 'ID',
-	'salesman.lastname' => 'Nachname',
-	'salesman.firstname' => 'Vorname',
-	// SepaAccount
-	'sepaaccount.name' => "Kontoname",
-	'sepaaccount.institute' => 'Bank',
-	'sepaaccount.iban' => 'IBAN',
-	// SepaMandate
-	'sepamandate.sepa_holder' => 'Kontoinhaber',
-	'sepamandate.sepa_valid_from' => 'Gültig ab',
-	'sepamandate.sepa_valid_to' => 'Gültig bis',
-	'sepamandate.reference' => 'Kontoreferenz',
-	// SettlementRun
-	'settlementrun.year' => 'Jahr',
-	'settlementrun.month' => 'Monat',
-	'settlementrun.created_at' => 'Erstellt am',
-	'verified' => 'Überprüft?',
-	// MPR
-	'mpr.name' => 'Name',
-	// NetElement
-	'netelement.id' => 'ID',
-	'netelement.name' => 'Netzelement',
-	'netelement.ip' => 'IP Adresse',
-	'netelement.pos' => 'Position',
-	// NetElementType
-	'netelementtype.name' => 'Netzelementtyp',
-	//HfcSnmp
-	'parameter.oid.name' => 'OID Name',
-	//Mibfile
-	'mibfile.id' => 'ID',
-	'mibfile.name' => 'Name',
-	'mibfile.version' => 'Version',
-	// OID
-	'oid.name_gui' => 'GUI Beschriftung',
-	'oid.name' => 'OID Name',
-	'oid.oid' => 'OID',
-	'oid.access' => 'Schreibschutz',
-	//SnmpValue
-	'snmpvalue.oid_index' => 'OID Index',
-	'snmpvalue.value' => 'OID Wert',
-	// MAIL
-	'email.localpart' => 'Lokalteil',
-	'email.index' => 'Primäre E-Mail Adresse',
-	'email.greylisting' => 'Greylisting Aktiv?',
-	'email.blacklisting' => 'E-Mail auf Blacklist?',
-	'email.forwardto' => 'Weiterleiten an:',
-	// CMTS
-	'cmts.id' => 'ID',
-	'cmts.hostname' => 'Hostname',
-	'cmts.ip' => 'IP',
-	'cmts.company' => 'Hersteller',
-	'cmts.type' => 'Typ',
-	// Contract
-	'contract.number' => 'Vertragsnummer',
-	'contract.firstname' => 'Vorname',
-	'contract.lastname' => 'Nachname',
-	'contract.zip' => 'Postleitzahl',
-	'contract.city' => 'Stadt',
-	'contract.street' => 'Straße',
-	'contract.house_number' => 'Hausnummer',
-	'contract.district' => 'Bezirk',
-	'contract.contract_start' => 'Vertragsanfang',
-	'contract.contract_end' => 'Vertragsende',
-	// Domain
-	'domain.name' => 'Name',
-	'domain.type' => 'Typ',
-	'domain.alias' => 'Alias',
-	// Endpoint
-	'endpoint.hostname' => 'Hostname',
-	'endpoint.mac' => 'MAC',
-	'endpoint.description' => 'Beschreibung',
-	// IpPool
-	'ippool.id' => 'ID',
-	'ippool.type' => 'Typ',
-	'ippool.net' => 'Netz',
-	'ippool.netmask' => 'Netzmaske',
-	'ippool.router_ip' => 'Router IP',
-	'ippool.description' => 'Beschreibung',
-	// Modem
-	'modem.id' => 'Modem Nummer',
-	'modem.mac' => 'MAC Adresse',
-	'modem.name' => 'Name',
-	'modem.lastname' => 'Nachname',
-	'modem.city' => 'Stadt',
-	'modem.street' => 'Straße',
-	'modem.us_pwr' => 'US level',
-	'contract_valid' => 'Vertrag gültig?',
-	// QoS
-	'qos.name' => 'Name',
-	'qos.ds_rate_max' => 'Maximale DS Geschwindigkeit',
-	'qos.us_rate_max' => 'Maximale US Geschwindigkeit',
-	// Mta
-	'mta.hostname' => 'Hostname',
-	'mta.mac' => 'MAC-Adresse',
-	'mta.type' => 'Provisionierungstyp',
-	// Configfile
-	'configfile.name' => 'Konfiguartionsdatei',
-	// PhonebookEntry
-	'phonebookentry.id' => 'ID',
-	// Phonenumber
-	'phonenumber.prefix_number' => 'Vorwahl',
-	'phonenumber.number' => 'Nummer',
-	'phonenr_act' => 'Aktivierungsdatum',
-	'phonenr_deact' => 'Deaktivierungsdatum',
-	'phonenr_state' => 'Status',
-	// Phonenumbermanagement
-	'phonenumbermanagement.id' => 'ID',
-	// PhoneTariff
-	'phonetariff.name' => 'Name',
-	'phonetariff.type' => 'Typ',
-	'phonetariff.description' => 'Beschreibung',
-	'phonetariff.voip_protocol' => 'VOIP Protokoll',
-	'phonetariff.usable' => 'Verfügbar',
-	// ENVIA enviaorder
-	'enviaorder_ordertype'  => 'Bestelltyp',
-	'enviaorder_orderstatus'  => 'Bestellstatus',
-	'enviaorder_escalation_level' => 'Statuslevel',
-	'enviaorder_contract_nr'  => 'Vertrag',
-	'enviaorder_modem_nr'  => 'Modem',
-	'enviaorder_phonenumber_nrs'  => 'Telefonnummern',
-	'enviaorder.created_at'  => 'Erstellt am',
-	'enviaorder.updated_at'  => 'Bearbeitet am',
-	'enviaorder.orderdate'  => 'Bestelldatum',
-	'enviaorder_current'  => 'Bearbeitung notwendig?',
-	'enviaorder_solve_link' => 'Als gelöst markeren?',
-	// CDR
-	'cdr.calldate' => 'Anrufzeitpunkt',
-	'cdr.caller' => 'Anrufer',
-	'cdr.called' => 'Angerufener',
-	'cdr.mos_min_mult10' => 'minimaler MOS',
+	'Mark solved'				=> 'Als gelöst markeren?',
 ];

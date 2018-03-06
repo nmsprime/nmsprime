@@ -16,6 +16,8 @@ use Acme\php\ArrayHelper;
  */
 class TreeTopographyController extends HfcBaseController {
 
+	protected $edit_left_md_size =12;
+
 	/*
 	 * Local tmp folder required for generating the kml files
 	 * (relative to /storage/app)
@@ -35,6 +37,8 @@ class TreeTopographyController extends HfcBaseController {
 	{
 		// the relative (to /storage/app) file path based on a random hash
 		$this->file = self::$path_rel.sha1(uniqid(mt_rand(), true)).'.kml';
+
+		return parent::__construct();
 	}
 
 
@@ -43,7 +47,7 @@ class TreeTopographyController extends HfcBaseController {
 	*
 	* @param field: search field name in tree table
 	* @param search: the search value to look in tree table $field
-	* @return view with SVG image
+	* @return view with KML file
 	*
 	* @author: Torsten Schmidt
 	*/
@@ -54,7 +58,7 @@ class TreeTopographyController extends HfcBaseController {
 		if($field == 'all')
 			$s = 'id>2';
 
-		// Generate SVG file
+		// Generate KML file
 		$file = $this->kml_generate (NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' '));
 		if(!$file)
 			return \View::make('errors.generic')->with('message', 'No NetElements with Positions available!');
@@ -72,7 +76,32 @@ class TreeTopographyController extends HfcBaseController {
 		// MPS: get all Modem Positioning Rules
 		$mpr = $this->mpr(NetElement::whereRaw($s));
 
-		return \View::make('hfcbase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'panel_right', 'body_onload', 'field', 'search', 'mpr')));
+		// NetElements: generate kml_file upload array
+		$kmls = $this->kml_file_array(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' '));
+
+		return \View::make('hfcbase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'panel_right', 'body_onload', 'field', 'search', 'mpr', 'kmls')));
+	}
+
+
+	/*
+	 * KML Upload Array: Generate the KML file array
+	 *
+	 * @param trees: The Tree Objects to be displayed, without ->get() call
+	 * @return array of KML files, like ['file', 'descr']
+	 *
+	 * @author: Torsten Schmidt
+	 */
+	private function kml_file_array($trees)
+	{
+		$a = [];
+
+		foreach ($trees->get() as $tree)
+		{
+			if ($tree->kml_file != '')
+				array_push($a, ['file'=>$tree->kml_path.'/'.$tree->kml_file, 'descr' => $tree->kml_file]);
+		}
+
+		return $a;
 	}
 
 
@@ -228,7 +257,7 @@ class TreeTopographyController extends HfcBaseController {
 
 							$num  = $modem_helper::ms_num("netelement_id = $id");
 							$numa = $modem_helper::ms_num_all("netelement_id = $id");
-							$pro  = round(100 * $num / $numa,0);
+							$pro  = $numa ? round(100 * $num / $numa, 0) : 0;
 							$cri  = $modem_helper::ms_cri("netelement_id = $id");
 							$avg  = $modem_helper::ms_avg("netelement_id = $id");
 							$url  = \BaseRoute::get_base_url()."/Customer/netelement_id/$id";
@@ -269,11 +298,12 @@ class TreeTopographyController extends HfcBaseController {
 
 			$type  = $tree->type;
 			$parent= $tree->get_parent()->id;
+			$state = $tree->get_bsclass();
 
-			if ($tree->state == 'YELLOW')
+			if ($tree->state == 'warning')
 				$ystate += 1;
 
-			if ($tree->state == 'RED')
+			if ($tree->state == 'danger')
 				$rstate += 1;
 
 			if (($type == 'CMTS') || ($type == 'CLUSTER') || ($type == 'DATA') || ($type == 'NET'))

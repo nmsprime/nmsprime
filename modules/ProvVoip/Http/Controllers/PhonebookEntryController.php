@@ -14,6 +14,26 @@ class PhonebookEntryController extends \BaseController {
     protected $index_create_allowed = false;
 
 
+	/**
+	 * Extend create: check if a phonenumbermanagement exists to attach this phonebook entry to
+	 *
+	 * @author Patrick Reichel
+	 */
+	public function create() {
+
+		if (
+			(!\Input::has('phonenumbermanagement_id'))
+			||
+			!(PhonenumberManagement::find(\Input::get('phonenumbermanagement_id')))
+		) {
+			$this->edit_view_save_button = false;
+			\Session::push('tmp_error_above_form', 'Cannot create phonebookentry – phonenumbermanagement ID missing or phonenumbermanagement not found');
+		}
+
+		return parent::create();
+	}
+
+
     /**
      * defines the formular fields for the edit and create view
      */
@@ -29,7 +49,14 @@ class PhonebookEntryController extends \BaseController {
 
 		// in most cases the phonebook data is identical to contract's data ⇒ on create we prefill these values with data from contract
 		if (!$model->exists) {
-			$phonenumbermanagement = PhonenumberManagement::findOrFail(\Input::get('phonenumbermanagement_id'));
+
+			if (
+				(!\Input::has('phonenumbermanagement_id'))
+				||
+				!($phonenumbermanagement = PhonenumberManagement::find(\Input::get('phonenumbermanagement_id')))
+			) {
+				return [];
+			}
 			$contract = $phonenumbermanagement->phonenumber->mta->modem->contract;
 
 			$init_values = array(
@@ -192,7 +219,7 @@ class PhonebookEntryController extends \BaseController {
 	}
 
 	/**
-	 * Get all management jobs for Envia
+	 * Get all management jobs for envia TEL
 	 *
 	 * @author Patrick Reichel
 	 * @param $phonebookentry current phonebookentry object
@@ -202,7 +229,7 @@ class PhonebookEntryController extends \BaseController {
 
 		$provvoipenvia = new \Modules\ProvVoipEnvia\Entities\ProvVoipEnvia();
 
-		// check if user has the right to perform actions against Envia API
+		// check if user has the right to perform actions against envia TEL API
 		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		return $provvoipenvia->get_jobs_for_view($phonebookentry, 'phonebookentry');

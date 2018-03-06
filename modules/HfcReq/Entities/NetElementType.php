@@ -10,6 +10,8 @@ class NetElementType extends \BaseModel {
 	// The associated SQL table for this Model
 	public $table = 'netelementtype';
 
+	private $max_parents = 15;
+
 
 	// Add your validation rules here
 	public static function rules($id = null)
@@ -31,10 +33,24 @@ class NetElementType extends \BaseModel {
 	}
 
 	// View Icon
-  public static function view_icon()
-  {
-    return '<i class="fa fa-object-group"></i>'; 
-  }
+	public static function view_icon()
+	{
+		return '<i class="fa fa-object-group"></i>';
+	}
+
+	// icon type for tree view
+	public function get_icon_type()
+	{
+		$type = $this->name ? : 'default';
+		if ($parent = $this->parent)
+		{
+			$type = $parent->name;
+			while ($parent = $parent->parent)
+				$type = $parent->name;
+		}
+
+		return $type;
+	}
 
 	// link title in index view
 	public function view_index_label()
@@ -42,33 +58,6 @@ class NetElementType extends \BaseModel {
 		// in Tree View returning an array is currently not yet implemented
 		$version = $this->version ? ' - '.$this->version : '';
 		return $this->name.$version;
-
-		// return ['index' => [$this->name],
-		//         'index_header' => ['Name'],
-		//         'header' => $this->name];
-	}
-
-	public function view_index_label_ajax()
-	{ 
-		return $this;
-	}
-
-	public function index_list ()
-	{
-		// implement Index View as Tree - make sure that a separate index.blade.php is installed that includes the Generic.tree blade
-		// so we can use the Generic BaseController@index function
-		return NetElementType::get_tree_list();
-
-		// $types = $this->orderBy('id')->get();
-		// $undeletables = ['Net', 'Cluster'];
-
-		// foreach ($types as $type)
-		// {
-		// 	if (in_array($type->name, $undeletables))
-		// 		$type->index_delete_disabled = true;
-		// }
-
-		// return $types;
 	}
 
 	// returns all objects that are related to a DeviceType
@@ -102,17 +91,34 @@ class NetElementType extends \BaseModel {
 
 	public function parameters()
 	{
-		return $this->HasMany('Modules\HfcSnmp\Entities\Parameter', 'netelementtype_id')->orderBy('html_frame')->orderBy('html_id')->orderBy('oid_id')->orderBy('id');
-		// return $this->HasMany('Modules\HfcSnmp\Entities\Parameter', 'netelementtype_id')->orderBy('oid_id')->orderBy('id');
+		return $this->hasMany('Modules\HfcSnmp\Entities\Parameter', 'netelementtype_id');
+		// return $this->hasMany('Modules\HfcSnmp\Entities\Parameter', 'netelementtype_id')->orderBy('oid_id')->orderBy('id');
 	}
 
 	// only for preconfiguration of special device types (e.g. kathreins vgp)
 	public function oid()
 	{
-		if (\PPModule::is_active('hfcsnmp'))
-			return $this->belongsTo('Modules\HfcSnmp\Entities\OID', 'pre_conf_oid_id');
+		return $this->belongsTo('Modules\HfcSnmp\Entities\OID', 'pre_conf_oid_id');
 	}
 
+
+	public function parent()
+	{
+		return $this->belongsTo('Modules\HfcReq\Entities\NetElementType');
+	}
+
+	public function children ()
+	{
+		return $this->hasMany('Modules\HfcReq\Entities\NetElementType', 'parent_id');
+	}
+
+	public function get_parent ()
+	{
+		if (!$this->parent_id || $this->parent_id < 1)
+			return 0;
+
+		return NetElementType::find($this->parent_id);
+	}
 
 	public static function param_list($id)
 	{
@@ -134,64 +140,43 @@ class NetElementType extends \BaseModel {
 	 * Furthermore they are ordered by there Database ID which is probably used as fix value in many places of the source code
 	 * So don't change this order unless you definitly know what you are doing !!!
 	 */
-	public static $undeletables = [1 => 'Net', 2 => 'Cluster'];
+	public static $undeletables = [1 => 'Net', 2 => 'Cluster', 3 => 'Cmts', 4 => 'Amplifier', 5 => 'Node'];
 
 
 	/**
-	 * Get all Database Entries with relevant data for index view ordered
-	 *
-	 * TODO: use in generic manner in BaseModel - note the undeletables array in other models!
-	 *
-	 * @return 	Multidimensional Array
+	 * Must be defined to disable delete Checkbox on index tree view
 	 */
-	public static function get_tree_list()
+	public static function undeletables()
 	{
-		$netelementtypes = NetElementType::orderBy('parent_id')->orderBy('id')->get();
-		$types = [];
-
-		foreach ($netelementtypes as $key => $elem)
-		{
-			if ($elem->parent_id)
-				break;
-
-			if (in_array($elem->name, self::$undeletables))
-				$elem->index_delete_disabled = true;
-
-			$types[]  = $elem;
-			unset($netelementtypes[$key]); 		// increases performance a bit
-
-			$children = $elem->_get_children($netelementtypes);
-			if ($children)
-				$types[] = $children;
-		}
-
-		return $types;
+		return array_keys(NetElementType::$undeletables);
 	}
 
 
 	/**
-	 * Search Children from Collection List of NetElementTypes recursivly
+	 * Return the base type id of the current NetElementType
 	 *
-	 * @param 	Collection $objects
-	 * @return 	Array 
+	 * @note: base device means: parent_id = 0, 2 (cluster)
+	 *
+	 * @param
+	 * @return integer id of base device netelementtype
 	 */
-	private function _get_children($objects = null)
+	public function get_base_type()
 	{
-		$children = $objects ? $objects->where('parent_id', $this->id) : [];
-		$arr = [];
+		$p = $this;
+		$i = 0;
 
-		foreach ($children as $key => $elem)
+		do
 		{
-			if (in_array($elem->name, self::$undeletables))
-				$elem->index_delete_disabled = true;
+			if (!is_object($p))
+				return false;
 
-			$arr[] = $elem;
-			$tmp   = $elem->_get_children($objects);
-			if ($tmp)
-				$arr[] = $tmp;
-		}
+			if ($p->parent_id == 0 || $p->id == 2) // exit: on base type, or cluster (which is child of net)
+				return $p->id;
 
-		return $arr;
+			$p = $p->parent;
+		} while ($i++ < $this->max_parents);
+
+		return false;
 	}
 
 }

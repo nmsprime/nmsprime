@@ -13,16 +13,16 @@
 
 	<body class="pace-top">
 
-	<!-- Background Image -->
+	{{-- Background Image --}}
 	<div class="login-cover">
 		<div class="login-cover-image"><img alt="" data-id="login-cover-image" src="{{asset('images/'.$image)}}"></div>
 		<div class="login-cover-bg"></div>
 	</div>
 
-		<!-- begin login -->
+		{{-- begin login --}}
 		<div class="login login-v2 animated fadeInDown">
 
-			<!-- begin brand -->
+			{{-- begin brand --}}
 			<div class="login-header">
 				<div class="brand">
 					<span class="logo"></span> {{ $head1 }}
@@ -33,21 +33,21 @@
 				</div>
 			</div>
 
-			<!-- end brand -->
+			{{-- end brand --}}
 			<div class="login-content">
 				{{ Form::open(array('url' => $prefix.'/auth/login')) }}
 
-					<!-- Username -->
+					{{-- Username --}}
 					<div class="form-group m-b-20">
-					{{ Form::text('login_name', Input::old('login_name'), array('autofocus'=>'autofocus', 'class' => "form-control input-lg", 'placeholder' => 'Username', 'style' => 'simple')) }}
+					{{ Form::text('login_name', Input::old('login_name'), array('autofocus'=>'autofocus', 'class' => "form-control input-lg", 'placeholder' => \App\Http\Controllers\BaseViewController::translate_label('Username'), 'style' => 'simple')) }}
 					</div>
 
-					<!-- Password -->
+					{{-- Password --}}
 					<div class="form-group m-b-20">
-					{{ Form::password('password', array('autofocus'=>'autofocus', 'class' => "form-control input-lg", 'placeholder' => 'Password', 'style' => 'simple')) }}
+					{{ Form::password('password', array('autofocus'=>'autofocus', 'class' => "form-control input-lg", 'placeholder' => \App\Http\Controllers\BaseViewController::translate_label('Password'), 'style' => 'simple')) }}
 					</div>
 
-					<!-- Error Message -->
+					{{-- Error Message --}}
 					<div class="m-t-20">
 						<p align="center"><font id="error" color="yellow">
 							@foreach ($errors->all() as $error)
@@ -57,23 +57,23 @@
 					</div>
 					<br>
 
-			<!-- Remember Me Checkbox is disabled !
+			{{-- Remember Me Checkbox is disabled !
 					<div class="checkbox m-b-20">
 						<label>
 							<input type="checkbox" /> Remember Me
 						</label>
 					</div>
-			-->
+			--}}
 
-					<!-- Login Button -->
+					{{-- Login Button --}}
 					<div class="login-buttons">
-						<button type="submit" class="btn btn-success btn-block btn-lg">Sign me in</button>
+						<button type="submit" class="btn btn-success btn-block btn-lg">{{ \App\Http\Controllers\BaseViewController::translate_label('Sign me in') }}</button>
 					</div>
 
 				{{ Form::close() }}
 			</div>
 		</div>
-		<!-- end login -->
+		{{-- end login --}}
 
 	</body>
 

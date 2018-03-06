@@ -70,13 +70,21 @@ class SettlementRunController extends \BaseController {
 	{
 		$logs = $failed_jobs = [];
 		$sr   = SettlementRun::find($id);
-		$bool = (date('m') == $sr->created_at->__get('month')) && !$sr->verified;
+		$bool = true;
+		$job_queued = \DB::table('jobs')->where('payload', 'like', '%accountingCommand%')->get();
+		$job_queued = $job_queued ? $job_queued[0] : null;
+
+		if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified)
+			$bool = false;
 
 		// delete Session job id if job is done in case someone broke the tcp connection (close tab/window) manually
 		if (\Session::get('job_id')) {
 			if (!\DB::table('jobs')->find(\Session::get('job_id')))
 				\Session::remove('job_id');
 		}
+		// dont let multiple users create a lot of jobs
+		else if ($job_queued)
+			\Session::put('job_id', $job_queued->id);
 
 		// get error logs in case job failed and remove failed job from table
 		$failed_jobs = \DB::table('failed_jobs')->get();
@@ -86,15 +94,14 @@ class SettlementRunController extends \BaseController {
 			if ($obj->name == 'billing:accounting')
 			{
 				\Artisan::call('queue:forget', ['id' => $failed_job->id]);
-				// show all logs made from 2 min before job failed
-				$logs = self::get_logs(strtotime('-2 minutes', strtotime($failed_job->failed_at)), Logger::ERROR);
+				$logs = self::get_logs($sr->updated_at->subSeconds(1)->__get('timestamp'), Logger::ERROR);
 				break;
 			}
 		}
 
 		// get execution logs if job has finished successfully - (show error logs otherwise - show nothing during execution)
 		// NOTE: when SettlementRun gets verified the logs will disappear because timestamp is updated
-		$logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->subSeconds(20)->__get('timestamp')) : $logs;
+		$logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
 
 		return parent::edit($id)->with('rerun_button', $bool)->with('logs', $logs);
 	}
@@ -111,25 +118,28 @@ class SettlementRunController extends \BaseController {
 		\Log::debug(__CLASS__ .'::'. __FUNCTION__);
 		$response = new \Symfony\Component\HttpFoundation\StreamedResponse(function() {
 
-			// Make Sleeptime dependent of Contract count - min 2 sec
-			// $num = DB::table('contract')->where('deleted_at', '=', null)->count();
-			// $sleep = (int) pow($num/10, 1/3);
-			// $sleep = $sleep < 2 ? 2 : $sleep;
-
 			$job = true;
 			while ($job)
 			{
 				$job = \DB::table('jobs')->find(\Session::get('job_id'));
+
+				// if ($job)
+				// 	\Log::debug('Job with ID '.$job->id.' running');
+
+				// TODO: Get state from file
+				$state = \Storage::exists('tmp/accCmdStatus') ? \Storage::get('tmp/accCmdStatus') : '';
+				echo "data: $state\n\n";
+				ob_flush(); flush();
+
 				sleep(3);
-				// sleep($sleep);
 			}
 
 			\Log::debug('SettlementRun Job ['. \Session::get('job_id').'] stopped');
 
 			\Session::remove('job_id');
 
-			// wait for job to land in failed jobs table - if it failed - wait max 20 seconds
-			$i 		 = 10;
+			// wait for job to land in failed jobs table - if it failed - wait max 14 seconds
+			$i 		 = 7;
 			$success = true;
 
 			while ($i && $success)
@@ -168,7 +178,7 @@ class SettlementRunController extends \BaseController {
 	 * @param severity_lvl 	Enum 				Minimum Severity Level to show
 	 * @return Array 		[timestamp => [color, type, message], ...]
 	 */
-	public static function get_logs($date_time, $severity_lvl = Logger::INFO)
+	public static function get_logs($date_time, $severity_lvl = Logger::NOTICE)
 	{
 		$logs = parent::get_logs(storage_path('logs/billing.log'), $severity_lvl);
 		$old = $filtered = [];
@@ -209,33 +219,28 @@ class SettlementRunController extends \BaseController {
 	}
 
 
-	// public function store($redirect = true)
-	// {
-	// 	$this->dispatch(new \Modules\BillingBase\Console\accountingCommand());
-	// 	return parent::store();
-	// }
-
-
 	/**
-	 * Extend BaseControllers update to call Artisan Command when Settlement run shall rerun
+	 * Return CSV with all Log Entries of minimum log level INFO
 	 */
-	public function update($id)
+	public function download_logs($id)
 	{
-		// used as workaround to not display output
-		// ob_start();
+		$sr = SettlementRun::find($id);
 
-		if (\Input::has('rerun'))
-		{
-			// NOTE: Make sure that we use Database Queue Driver - See .env!
-			$job_id = $this->dispatch(new \Modules\BillingBase\Console\accountingCommand);
-			// \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
-			\Session::put('job_id', $job_id);
+		$logs = self::get_logs($sr->updated_at->__get('timestamp'), Logger::INFO);
+
+		$fn = '/tmp/billing-logs.csv';
+		$fh = fopen($fn, 'w+');
+
+		foreach (array_reverse($logs) as $key => $arr) {
+			unset($arr['color']);
+			fputcsv($fh, $arr);
 		}
 
-		// ob_end_clean();
+		fclose($fh);
 
-		return parent::update($id);
+		return response()->download($fn);
 	}
+
 
 
 	/**

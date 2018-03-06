@@ -7,7 +7,7 @@
 
 --}}
 
-@extends ('Layout.split')
+@extends ('Layout.split-nopanel')
 
 @section('content_top')
 

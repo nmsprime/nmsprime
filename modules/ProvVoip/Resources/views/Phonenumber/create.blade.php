@@ -7,9 +7,13 @@
 	// try to get free numbers; these can be given as string (HTML) or as array
 
 	// get numbers for the active provider
-	if (\PPModule::is_active('provvoipenvia')) {
+	if (
+		(\PPModule::is_active('provvoipenvia'))
+		&&
+		(!App::environment('testing'))	// not running in (unit) testing environment
+	) {
 		$currently_free_numbers = \Modules\ProvVoipEnvia\Entities\ProvVoipEnvia::get_free_numbers_for_view();
-		$free_numbers_panel_headline = 'Asking Envia for free numbers';
+		$free_numbers_panel_headline = 'Asking envia TEL for free numbers';
 	}
 
 ?>
@@ -39,7 +43,7 @@
 
 		@stop
 
-		@include ('bootstrap.panel', array ('content' => 'free_numbers_panel', 'view_header' => $free_numbers_panel_headline, 'md' => 3))
+		@include ('bootstrap.panel', array ('content' => 'free_numbers_panel', 'view_header' => $free_numbers_panel_headline, 'md' => 4))
 	@endif
 
 @stop

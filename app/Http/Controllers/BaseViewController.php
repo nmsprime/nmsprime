@@ -55,7 +55,7 @@ class BaseViewController extends Controller {
 			$star = ' *';
 		}
 
-		if (strpos($string, 'messages.'))
+		if (strpos($string, 'messages.') !== false)
 			return trans($string).$star;
 
 		$translation = trans("messages.$string");
@@ -96,9 +96,8 @@ class BaseViewController extends Controller {
 	public static function get_user_lang()
 	{
 		$user = Auth::user();
-		if (!isset($user))
-			return 'en';
-		$language = Auth::user()->language;
+
+		$language = $user ? $user->language : 'browser';
 
 		if ($language == 'browser')
 		{
@@ -112,7 +111,6 @@ class BaseViewController extends Controller {
 			else
 				return 'en';
 		}
-
 		return $language;
 	}
 
@@ -126,6 +124,7 @@ class BaseViewController extends Controller {
 	 *  2. Add Placeholder YYYY-MM-DD for all date fields
 	 *  3. Hide all parent view relation select fields (works only in edit context)
 	 *  4. auto-fill field_value with correlating model data (from sql)
+	 *  5. IP online check for form_type = 'ip' || 'ping'
 	 *
 	 * @param fields: the view_form_fields array()
 	 * @param model: the model to view. Note: could be get_model_obj()->find($id) or get_model_obj()
@@ -176,7 +175,7 @@ class BaseViewController extends Controller {
 				$field['hidden'] = '1';
 			}
 
-			// 4. set all field_value's to SQL data
+			// 4. set all field_value's to actual SQL data
 			if (array_key_exists('eval', $field)) {
 				// dont't remove $name, as it is used in $field['eval'] (might be set in view_form_fields())
 				$name = $model[$field['name']];
@@ -185,6 +184,7 @@ class BaseViewController extends Controller {
 			} else
 				$field['field_value'] = $model[$field['name']];
 
+			// NOTE: Input::get should actually include $_POST global var and $_GET!!
 			// 4.(sub-task) auto-fill all field_value's with HTML Input
 			if (\Input::get($field['name']))
 				$field['field_value'] = \Input::get($field['name']);
@@ -196,8 +196,28 @@ class BaseViewController extends Controller {
 			// 4. (sub-task)
 			// write explicitly given init_value to field_value
 			// this is needed e.g. by Patrick to prefill new PhonenumberManagement and PhonebookEntry with data from Contract
-		if (array_key_exists('init_value', $field) && $field['init_value']) {
+			if (array_key_exists('init_value', $field) && $field['init_value']) {
 				$field['field_value'] = $field['init_value'];
+			}
+
+			// 5. ip online check
+			if ($field['form_type'] == 'ip' || $field['form_type'] == 'ping')
+			{
+				// Ping: Only check if ip is online
+				exec ('sudo ping -c1 -i0 -w1 '.$model[$field['name']], $ping, $offline);
+
+				if($offline)
+				{
+					$field['help'] = 'Device is Offline!';
+					$field['help_icon'] = 'fa-exclamation-triangle text-warning';
+				}
+				else
+				{
+					$field['help'] = 'Device is Online';
+					$field['help_icon'] = 'fa-check-circle-o text-success';
+				}
+
+				$field['form_type'] = 'text';
 			}
 
 			array_push ($ret, $field);
@@ -232,9 +252,6 @@ class BaseViewController extends Controller {
 		$color_array = ['whitesmoke', 'gainsboro'];
 		$color = $color_array[0];
 
-		// prepare form fields
-		// $fields = static::prepare_form_fields($_fields, $model);
-
 		// foreach fields
 		foreach ($fields as $field)
 		{
@@ -258,7 +275,10 @@ class BaseViewController extends Controller {
 					$hidden == 1) // hide globally?
 				)
 					{
-						$s .= \Form::hidden ($field["name"], $field['field_value']);
+						// For hidden fields it's also important that default values are set
+						$value = ($field['field_value'] === null) && isset($field['value']) ? $field['value'] : $field['field_value'];
+						// Note: setting a selection by giving an array doesnt make sense as you can not choose anyway - it also would throw an exception as it's not allowed for hidden fields
+						$s .= \Form::hidden ($field["name"], is_array($value) ? '' : $value);
 						goto finish;
 					}
 			}
@@ -329,7 +349,14 @@ class BaseViewController extends Controller {
 					$s .= \Form::checkbox($field['name'], $value, null, $checked, $options);
 					break;
 
+				case 'file':
+					$s .= \Form::file($field['name'], $options);
+					break;
+
 				case 'select' :
+					if (isset($options['multiple']) && isset($field['selected']))
+						$field['field_value'] = array_keys($field['selected']);
+
 					$s .= \Form::select($field["name"], $value, $field['field_value'], $options);
 					break;
 
@@ -348,9 +375,9 @@ class BaseViewController extends Controller {
 
 			// Help: add help icon/image behind form field
 			if (isset($field['help']))
-				$s .= '<div name='.$field['name'].'-help class="col-md-1"><a data-toggle="popover" data-container="body"
-							data-trigger="hover" title="'.\App\Http\Controllers\BaseViewController::translate_label($field['description']).'" data-placement="auto right" data-content="'.$field['help'].'">'.
-							'<i class="fa fa-question-circle fa-2x text-info p-t-5"></i></a></div>';
+				$s .= '<div name='.$field['name'].'-help class="col-1"><a data-toggle="popover" data-container="body"
+							data-trigger="hover" title="'. BaseViewController::translate_label($field['description']) .'" data-placement="right" data-content="'.$field['help'].'">'.
+							'<i class="fa fa-2x text-info p-t-5 '.(isset($field['help_icon']) ? $field['help_icon'] : 'fa-question-circle').'"></i></a></div>';
 
 			// Close Form Group
 			$s .= \Form::closeGroup();
@@ -670,19 +697,16 @@ finish:
 		}
 
 		// Base Link to Index Table in front of all relations
-// <<<<<<< HEAD
 		// if (in_array($route_name, BaseController::get_config_modules()))	// parse: Global Config requires own link
 		// 	$s = \HTML::linkRoute('Config.index', BaseViewController::translate_view('Global Configurations', 'Header')).': '.$s;
 		// else if (Route::has($route_name.'.index'))
 		// 	$s = \HTML::linkRoute($route_name.'.index', $route_name).': '.$s;
-// =======
 		if (in_array($route_name, BaseController::get_config_modules())) {	// parse: Global Config requires own link
 			$breadcrumb_path_base = "<li class='active'>".static::__link_route_html('Config.index', static::__get_view_icon($view_var).BaseViewController::translate_view('Global Configurations', 'Header'))."</li>";
 		}
 		else {
 			$breadcrumb_path_base = Route::has($route_name.'.index') ? '<li class="active">'.static::__link_route_html($route_name.'.index', static::__get_view_icon($view_var).$view_header)."</li>" : '';
 		}
-// d($breadcrumb_paths, $breadcrumb_path, $breadcrumb_path_base);
 
 		if (!$breadcrumb_paths) {	// if this array is still empty: put the one and only breadcrumb path in this array
 			array_push($breadcrumb_paths, $breadcrumb_path_base.$breadcrumb_path);
@@ -828,32 +852,39 @@ finish:
 	$ret= "3";
 
 	switch ($entity) {
+		case 'rx power dbmv':
+			$ret = self::_colorize($val, [-3, -1, 15, 20]);
+			break;
 		case 'power dbmv':
-			if($dir == 'downstream')
-				$ret = self::_colorize($val, [-12, -5, 10, 17]);
-			if($dir == 'upstream')
-				$ret = self::_colorize($val, [22, 35, 45, 56]);
+			if ($dir == 'downstream')
+				$ret = self::_colorize($val, [-20, -10, 15, 20]);
+			if ($dir == 'upstream')
+				$ret = self::_colorize($val, [22, 27, 50, 56]);
 				break;
 		case 'microreflection -dbc':
 			$ret = self::_colorize($val, [20, 30]);
 			break;
+		case "avg utilization %":
+			$ret = self::_colorize($val, [0,0,70,90]);
+			break;
 		case 'snr db' :
 		case 'mer db':
 			if ($mod == 'qpsk')
-				$ret = self::_colorize($val, [12, 15]);
+				$ret = self::_colorize($val, [14, 17]);
 			if ($mod == '16qam')
-				$ret = self::_colorize($val, [18, 21]);
-			if ($mod == '32qam')
 				$ret = self::_colorize($val, [20, 23]);
+			if ($mod == '32qam')
+				$ret = self::_colorize($val, [22, 25]);
 			if ($mod == '64qam' || $mod == '0') // no docsIfCmtsModulationTable entry
-				$ret = self::_colorize($val, [24, 27]);
+				$ret = self::_colorize($val, [26, 29]);
 			if ($mod == 'qam64')
-				$ret = self::_colorize($val, [24, 27]);
+				$ret = self::_colorize($val, [26, 29]);
 			if ($mod == 'qam256')
-				$ret = self::_colorize($val, [30, 33]);
+				$ret = self::_colorize($val, [32, 35]);
 				break;
-			}
-	return $ret;
+		}
+
+		return $ret;
 	}
 
 	public static function get_quality_color_orig($dir, $entity, $values)
@@ -868,24 +899,24 @@ finish:
 			switch ($entity) {
 			case 'pwr':
 				if($dir == 'ds')
-					$ret[] = self::_colorize($val, [-12, -5, 10, 17]);
+					$ret[] = self::_colorize($val, [-20, -10, 15, 20]);
 				if($dir == 'us')
-					$ret[] = self::_colorize($val, [22, 35, 45, 56]);
+					$ret[] = self::_colorize($val, [22, 27, 50, 56]);
 				break;
 			case 'qpsk':
-				$ret[] = self::_colorize($val, [12, 15]);
+				$ret[] = self::_colorize($val, [14, 17]);
 				break;
 			case '16qam':
-				$ret[] = self::_colorize($val, [18, 21]);
-				break;
-			case '32qam':
 				$ret[] = self::_colorize($val, [20, 23]);
 				break;
+			case '32qam':
+				$ret[] = self::_colorize($val, [22, 25]);
+				break;
 			case '64qam':
-				$ret[] = self::_colorize($val, [24, 27]);
+				$ret[] = self::_colorize($val, [26, 29]);
 				break;
 			case '256qam':
-				$ret[] = self::_colorize($val, [30, 33]);
+				$ret[] = self::_colorize($val, [32, 35]);
 				break;
 			case 'urefl':
 				$ret[] = self::_colorize($val, [20, 30]);

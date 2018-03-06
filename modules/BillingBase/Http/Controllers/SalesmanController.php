@@ -1,5 +1,5 @@
 <?php
-namespace Modules\Billingbase\Http\Controllers;
+namespace Modules\BillingBase\Http\Controllers;
 
 use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Entities\Product;
@@ -28,5 +28,13 @@ class SalesmanController extends \BaseController {
 		);
 	}
 
+
+
+	public function prepare_input($data)
+	{
+		$data['products'] = str_replace(['/', '|', ';'], ',', $data['products']);
+
+		return parent::prepare_input($data);
+	}
 
 }

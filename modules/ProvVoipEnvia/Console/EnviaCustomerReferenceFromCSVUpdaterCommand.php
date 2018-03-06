@@ -25,13 +25,13 @@ class EnviaCustomerReferenceFromCSVUpdaterCommand extends Command {
 	/**
 	 * The console command description.
 	 */
-	protected $description = 'Updates Envia customer references from CSV file delivered by Envia {path_to_csv_file}';
+	protected $description = 'Updates envia TEL customer references from CSV file delivered by envia TEL {path_to_csv_file}';
 
 	/**
 	 * The signature (defining the optional argument)
 	 */
 	protected $signature = 'provvoipenvia:update_envia_customer_references_from_csv
-							{csv_file : The file to be used to update Envia customer references}';
+							{csv_file : The file to be used to update envia TEL customer references}';
 
 	/**
 	 * Execute the console command.
@@ -97,9 +97,9 @@ class EnviaCustomerReferenceFromCSVUpdaterCommand extends Command {
 	 */
 	protected function _update_contracts($csv) {
 
-		Log::info('Updating contracts (Envia customer reference) by data from Envia CSV');
+		Log::info('Updating contracts (envia TEL customer reference) by data from envia TEL CSV');
 
-		// older contracts have been created at Envia using contract numbers with several prefixes
+		// older contracts have been created at envia TEL using contract numbers with several prefixes
 		// our new NMS don't use this prefixes
 		// can be an empty array if there are no prefixes
 		$prefixes_to_be_removed = array(

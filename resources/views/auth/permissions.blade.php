@@ -2,7 +2,7 @@
     // get all assigned permissions to role
     $role_id = Request::segment(3);
     $model = new App\Authmetacore();
-    $assigned_permissions = $model->get_permissions_by_metaid($role_id);
+    $assigned_permissions = $model->get_permissions_by_roleid($role_id);
 
     // find not assigned permissions to role
     $not_assigned_permissions = $model->get_not_assigned_permissions($role_id);
@@ -170,7 +170,7 @@
         var authmethacore_id =  data[0];
         var authmetacore_right = data[1];
         var authmetacore_right_value = data[2];
-        var url = window.location.protocol + '//' + window.location.host + '/lara/admin/Authrole/UpdatePermission';
+        var url = window.location.protocol + '//' + window.location.host + '/nmsprime/admin/Authrole/UpdatePermission';
         var token = $('input[name="_token"]').val();
 
         $.ajaxSetup({

@@ -28,7 +28,7 @@ class CreateEnviaContractTable extends BaseMigration {
 			$table->date('start_date')->nullable()->default(NULL);
 			$table->date('end_date')->nullable()->default(NULL);
 
-			// Envia contract reference can change over the time (e.g. on contract_relocate)
+			// envia TEL contract reference can change over the time (e.g. on contract_relocate)
 			$table->integer('next_id')->unsigned()->nullable()->default(NULL);
 			$table->integer('prev_id')->unsigned()->nullable()->default(NULL);
 			$table->string('end_reason', 60)->nullable()->default(NULL); // API method that ends this contract

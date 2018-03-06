@@ -25,6 +25,11 @@ return [
 		'jQuery_sLast'				=> ': activate to sort column ascending',
 		'jQuery_sLast'				=> ': activate to sort column descending',
 		'jQuery_All'				=> 'All',
+		'jQuery_Print'				=> 'Print',
+		'jQuery_colvis'				=> 'Column Visibility',
+		'jQuery_colvisRestore'		=> 'Restore',
+		'jQuery_colvisReset'		=> 'Reset',
+		'jQuery_ExportTo'			=> 'Export to',
 
 //MENU
 	//Main Menu
@@ -50,6 +55,8 @@ return [
 		'Menu_MTAs' 				=> 'MTAs',
 		'Menu_Phonenumbers'			=> 'Phonenumbers',
 		'Menu_PhoneTariffs'			=> 'PhoneTariffs',
+		'Menu_Envia orders'			=> 'envia TEL orders',
+		'Menu_Envia contracts'		=> 'envia TEL contracts',
 
 	//User Settings
 		'Menu_UserSettings'			=> 'User Settings',
@@ -83,10 +90,12 @@ return [
 		//Company
 		'Header_EditCompany'		=> 'Edit Company',
 		//Salesman
-		'Header_EditSalesman'		=> 'Verkäufer bearbeiten',
+		'Header_EditSalesman'		=> 'Edit Salesman',
 		//Items
 		'Header_Item'				=> 'Item|Items',
 		'Header_EditItem'			=> 'Edit Item', //??
+		//Numberrange
+		'Header_NumberRange'		=> 'Numberrange|Numberranges',
 	//SNMP Modul
 		//Device
 		'Header_Device'				=> 'Device|Devices',
@@ -97,7 +106,7 @@ return [
 		//Contract
 		'Header_Contract'			=> 'Contract|Contracts',
 		'Header_EditContract'		=> 'Edit Contract',
-		'Header_SepaMandate'		=> 'SEPA-Mandate|SEPA-Mandates',	
+		'Header_SepaMandate'		=> 'SEPA-Mandate|SEPA-Mandates',
 		//Modems
 		'Header_Modems'				=> 'Modem|Modems', //workaround
 		'Header_EditModems'			=> 'Edit Modem',
@@ -120,7 +129,16 @@ return [
 		'Header_EditIpPool'			=> 'Edit IP-Pool',
 		'Header_IP-Pools'			=> 'IP-Pool|IP-Pools',
 		'Header_EditIP-Pools'		=> 'Edit IP-Pool',
-			
+		// Tickets
+		'Header_Ticket'				=> 'Ticket|Tickets',
+		'Header_EditTicket'			=> 'Edit Ticket',
+	//HFC
+		//Topography
+		'Header_Topography - Modems'=> 'Topography - Modems',
+		'navigate'					=> 'Navigate',
+		'draw box'					=> 'Draw Box',
+		'draw polygon'				=> 'Draw Polygon',
+		'modify'					=> 'Modify Elements',
 	//VOIP
 		//MTA
 		'Header_Mta'				=> 'MTA|MTAs',
@@ -135,6 +153,9 @@ return [
 		//Phone tariff
 		'Header_Phone tariffs'		=> 'Phonetariff|Phonetariffs',
 		'Header_EditPhone tariffs'	=> 'Edit Phonetariffs',
+	//ProvVoipEnvia
+		'Header_EnviaOrders'		=> 'envia TEL order|envia TEL orders',
+		'Header_EnviaContracts'		=> 'envia TEL contract|envia TEL contracts',
 
 	//Header Relation
 		// 'Assigned'  				=> 'Zugewiesene',
@@ -166,6 +187,9 @@ return [
 		'Button_Create Salesman'		=> 'Create Salesman',
 		//Item
 		'Button_Create Item'			=> 'Create Item',
+		'sr_dl_logs' 					=> 'Download whole logfile',
+		//Numberrange
+		'Button_Create NumberRange'		=> 'Create Numberrange',
 
 	//SNMP Modul
 		//Device
@@ -211,4 +235,19 @@ return [
 	'Dashboard_Date'				=> 'DATE',
 	'Dashboard_LinkDetails'			=> 'View Details',
 	'Dashboard_Other'				=> 'Other',
+	'Dashboard_Tickets' 			=> 'NEW TICKETS',
+	'Dashboard_NoTickets' 			=> 'No new Tickets.',
+	'Dashboard_Quickstart' 			=> 'QUICKSTART',
+
+//
+// Numberrange
+//
+	//Type
+	'Numberrange_Type_contract' => 'Contract',
+	'Numberrange_Type_invoice' => 'Invoice',
+
+//
+// Contract
+//
+	'Contract_Numberrange_Failure' => 'No free contract number for selected costcenter available!'
 ];

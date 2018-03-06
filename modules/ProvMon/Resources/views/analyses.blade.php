@@ -12,12 +12,12 @@
 @section('content_cacti')
 
 	@if ($host_id)
-		<iframe id="cacti-diagram" src="/cacti/graph_view.php?action=preview&columns=1&host_id={{$host_id}}" sandbox="allow-forms allow-scripts allow-pointer-lock allow-popups allow-same-origin" width="100%" height="100%" onload="resizeIframe(this)" scrolling="no" style="overflow:hidden; display:block; min-height: 100%; border: none; position: relative;"></iframe>
+		<iframe id="cacti-diagram" src="/cacti/graph_view.php?action=preview&columns=2&host_id={{$host_id}}" sandbox="allow-scripts allow-same-origin" width="100%" height="100%" onload="resizeIframe(this)" scrolling="no" style="min-height: 100%; border: none;"></iframe>
 	@else
 		<font color="red">{{trans('messages.modem_no_diag')}}</font><br>
 		{{ trans('messages.modem_monitoring_error') }}
 	@endif
-
+	@include('provmon::cacti-height')
 @stop
 
 @section('content_ping')
@@ -28,7 +28,7 @@
 			@else
 				<font color="red">{{trans('messages.modem_offline')}}</font>
 			@endif
-			<!-- pings are appended dynamically here by javascript -->
+			{{-- pings are appended dynamically here by javascript --}}
 		</div>
 
 		<div class="tab-pane fade in" id="flood-ping">
@@ -36,10 +36,10 @@
 					<form route="$route" method="POST">Type:
 						<input type="hidden" name="_token" value="{{ csrf_token() }}"></input>
 						<select class="select2 form-control m-b-20" name="flood_ping" style="width : 100 %">
-							<option value="1">low load: 500 packets of 56 Byte</option> <!-- needs approximately 5 sec -->
-							<option value="2">average load: 1000 packets of 736 Byte</option> <!-- needs approximately 10 sec -->
-							<option value="3">big load: 2500 packets of 56 Byte</option> <!-- needs approximately 30 sec -->
-							<option value="4">huge load: 2500 packets of 1472 Byte</option> <!-- needs approximately 30 sec -->
+							<option value="1">low load: 500 packets of 56 Byte</option> {{-- needs approximately 5 sec --}}
+							<option value="2">average load: 1000 packets of 736 Byte</option> {{-- needs approximately 10 sec --}}
+							<option value="3">big load: 2500 packets of 56 Byte</option> {{-- needs approximately 30 sec --}}
+							<option value="4">huge load: 2500 packets of 1472 Byte</option> {{-- needs approximately 30 sec --}}
 						</select>
 
 				{{-- Form::open(['route' => ['ProvMon.flood_ping', $view_var->id]]) --}}
@@ -150,7 +150,7 @@
 @if (\PPModule::is_active('HfcCustomer'))
 	@section('content_proximity_search')
 
-		{{ Form::open(array('route' => 'CustomerTopo.show_prox')) }}
+		{{ Form::open(array('route' => 'CustomerTopo.show_prox', 'method' => 'GET')) }}
 		{{ Form::label('radius', 'Radius / m', ['class' => 'col-md-2 control-label']) }}
 		{{ Form::hidden('id', $modem->id); }}
 		{{ Form::number('radius', '1000') }}
@@ -162,10 +162,11 @@
 
 
 @section('content_realtime')
-@if ($realtime)
-	@foreach ($realtime['measure'] as $tablename => $table)
+	@if ($realtime)
+		<font color="green"><b>{{$realtime['forecast']}}</b></font><br>
+		@foreach ($realtime['measure'] as $tablename => $table)
 		<h4>{{$tablename}}</h4>
-			@if ($tablename == "Downstream" || $tablename == "Upstream"  )
+			@if ($tablename == "Downstream" || $tablename == "Upstream" )
 			<div class="table-responsive">
 				<table class="table streamtable table-bordered" width="100%">
 					<thead>
@@ -186,18 +187,17 @@
 						<?php $max = count(current($table)); ?>
 						@foreach(current($table) as $i => $dummy)
 						<tr>
-							<td width="20"></td>
-							<td width="20"> {{ $i+1 }}</td>
+							<td width="20"> </td>
+							<td width="20"> {{ $i }}</td>
 							@foreach ($table as $colheader => $colarray)
 								@if ($colheader != "Operational CHs %")
 									<?php
-//TODO Christian, please clean up
 										if(!isset($colarray[$i]))
 											continue;
-										$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "Modulation Profile";
+										$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "SNR dB";
 										if(!isset($table[$mod][$i]))
 										        continue;
-										switch ( \App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), Str::lower($table[$mod][$i]) ,Str::lower($colheader),htmlspecialchars($colarray[$i])) ){
+										switch ( \App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), '64qam' ,Str::lower($colheader),htmlspecialchars($colarray[$i])) ){
 										case 0:
 												$color = "success";
 												break;
@@ -211,7 +211,8 @@
 												$color = "";
 										}
 									?>
-								<td class="text-center {{ $color }}"> <font color="grey"> {{ htmlspecialchars( $colarray[$i] ) }} </font> </td>
+									<td class="text-center {{ $color }}"> <font color="grey"> {{ $colarray[$i] }} </font> </td>
+
 								@endif
 							@endforeach
 						</tr>
@@ -236,41 +237,62 @@
 			</table>
 			@endif
 	@endforeach
-@else
-  <font color="red">{{trans('messages.modem_offline')}}</font>
-@endif
+	@else
+		<font color="red">{{trans('messages.modem_offline')}}</font>
+	@endif
 @stop
 
 
 @section ('javascript')
 
-	<script type="text/javascript">
+<script type="text/javascript">
 
-		<?php if ($ip) : ?>
+@if ($ip)
+
+	$(document).ready(function() {
+
+		setTimeout(function() {
+
+			var source = new EventSource(" {{ route('ProvMon.realtime_ping', $ip) }}");
+
+			source.onmessage = function(e) {
+				// close connection
+				if (e.data == 'finished')
+				{
+					source.close();
+					return;
+				}
+
+				document.getElementById('ping-test').innerHTML += e.data;
+			}
+
+		}, 500);
+	});
+@endif
+</script>
+
+<script language="javascript">
+	$(document).ready(function() {
+		$('table.streamtable').DataTable(
 		{
-			$(document).ready(function() {
-
-				setTimeout(function() {
-
-					var source = new EventSource("<?php echo route('ProvMon.realtime_ping', $ip); ?>");
-
-					source.onmessage = function(e) {
-						console.log(e.data);
-
-						// close connection
-						if (e.data == 'finished')
-						{
-							source.close();
-							return;
-						}
-
-						document.getElementById('ping-test').innerHTML += e.data;
-					}
-
-				}, 500);
-			});
-		}
-		<?php endif; ?>
-	</script>
-
+		{{-- Translate Datatables Base --}}
+			@include('datatables.lang')
+		responsive: {
+			details: {
+				type: 'column' {{-- auto resize the Table to fit the viewing device --}}
+			}
+		},
+		autoWidth: false,
+		paging: false,
+		info: false,
+		searching: false,
+		aoColumnDefs: [ {
+			className: 'control',
+			orderable: false,
+			targets:   [0]
+		} ]
+		});
+});
+</script>
+@include('Generic.handlePanel')
 @stop
