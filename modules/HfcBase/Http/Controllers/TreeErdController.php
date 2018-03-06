@@ -161,7 +161,7 @@ class TreeErdController extends HfcBaseController {
 			$state  = $netelem->get_bsclass();
 			$ip   	= $netelem->ip;
 			$p2   	= $netelem->pos;
-			$parent = $netelem->get_parent();
+			$parent = $netelem->parent;
 			$n++;
 
 			if ($p1 != $p2)
@@ -210,7 +210,7 @@ class TreeErdController extends HfcBaseController {
 		#
 		foreach ($netelements as $netelem)
 		{
-			$_parent = $netelem->get_parent();
+			$_parent = $netelem->parent;
 			$parent = 0;
 			if ($_parent)
 				$parent = $_parent->id;
