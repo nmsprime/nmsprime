@@ -16,7 +16,7 @@
 		@foreach ($lease['text'] as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>
@@ -34,7 +34,7 @@
 		@foreach ($log as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>
@@ -66,14 +66,14 @@
 
 	@if ($ping)
 		<?php
-			$color = isset($ping[1]) ? "green" : "orange";
+			$color = isset($ping[1]) ? "success" : "warning";
 			$text  = isset($ping[1]) ? "$type is Online" : trans('messages.device_probably_online', ['type' => $type]);
 		?>
 		<font color="{{$color}}"><b>{{$text}}</b></font><br>
 		@foreach ($ping as $line)
 				<table>
 				<tr>
-					<td> 
+					<td>
 						 <font color="grey">{{$line}}</font>
 					</td>
 				</tr>
@@ -85,3 +85,8 @@
 	@endif
 
 @stop
+
+@section('javascript')
+{
+	@include('Generic.handlePanel')
+}

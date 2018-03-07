@@ -46,7 +46,7 @@ class CreateConnectionInformations extends Command {
 		$fn 		= 'connInfos.pdf';
 		$controller = new \Modules\Ccc\Http\Controllers\CccAuthuserController;
 
-		if (!$contracts) 
+		if (!$contracts)
 		{
 			$msg = 'No Contracts selected to create connection informations!';
 
@@ -114,7 +114,7 @@ class CreateConnectionInformations extends Command {
 				$ids[] = trim($v);
 		}
 
-		$contracts1 = Contract::whereIn('id', $ids, 'or')->get()->all();
+		$contracts1 = Contract::whereIn('id', $ids, 'or')->orderBy('zip')->orderBy('city')->orderBy('street')->orderBy('house_number')->get()->all();
 
 		if ($this->option('after'))
 			$contracts2 = Contract::where('created_at', '>', $this->option('after'))->get()->all();

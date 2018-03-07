@@ -17,7 +17,7 @@
 		<font color="red">{{trans('messages.modem_no_diag')}}</font><br>
 		{{ trans('messages.modem_monitoring_error') }}
 	@endif
-
+	@include('provmon::cacti-height')
 @stop
 
 @section('content_ping')
@@ -51,32 +51,28 @@
 						<tr class="active">
 							<th> </th>
 							<th>#</th>
-							@foreach ($table as $colheader => $colarray)
+							@foreach (array_keys($table) as $colheader)
 								@if ($colheader == "Modulation Profile")
 									<th class="text-center">Modulation</th>
-								@endif
-								@if ($colheader != "Operational CHs %" && $colheader != "Modulation Profile")
+								@else
 									<th class="text-center">{{$colheader}}</th>
 								@endif
 							@endforeach
 						</tr>
 					</thead>
 					<tbody>
-						<?php $max = count(current($table)); ?>
 						@foreach(current($table) as $i => $dummy)
 						<tr>
 							<td width="20"></td>
-							<td width="20"> {{ $i+1 }}</td>
+							<td width="20"> {{$i}}</td>
 							@foreach ($table as $colheader => $colarray)
-								@if ($colheader != "Operational CHs %")
-									<?php
+								<?php
 //TODO Christian, please clean up
-										if(!isset($colarray[$i]))
-											continue;
-										$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "Modulation Profile";
-										if(!isset($table[$mod][$i]))
-										        continue;
-										switch ( \App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), Str::lower($table[$mod][$i]) ,Str::lower($colheader),htmlspecialchars($colarray[$i])) ){
+									if(!isset($colarray[$i]))
+										continue;
+
+									// NOTE: Colorization is done by assuming Modulation 64 QAM - Make it dependent of Modulation Profile ??
+									switch (\App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), '64qam', Str::lower($colheader),htmlspecialchars($colarray[$i])) ){
 										case 0:
 												$color = "success";
 												break;
@@ -88,10 +84,9 @@
 												break;
 										default:
 												$color = "";
-										}
-									?>
-								<td class="text-center {{ $color }}"> <font color="grey"> {{ htmlspecialchars( $colarray[$i] ) }} </font> </td>
-								@endif
+									}
+								?>
+							<td class="text-center {{ $color }}"> <font color="grey"> {{ htmlspecialchars( $colarray[$i] ) }} </font> </td>
 							@endforeach
 						</tr>
 						@endforeach
@@ -144,4 +139,5 @@
 		});
 });
 </script>
+@include('Generic.handlePanel')
 @stop

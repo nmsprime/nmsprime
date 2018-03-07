@@ -87,13 +87,19 @@ class MprGeopos extends \BaseModel {
  */
 class MprGeoposObserver
 {
-	public function updated($modem)
+	public function updated($mprgeopos)
 	{
+		if (!$mprgeopos->observer_enabled)
+			return;
+
 		\Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
 	}
 
-	public function deleted($modem)
+	public function deleted($mprgeopos)
 	{
+		if (!$mprgeopos->observer_enabled)
+			return;
+
 		\Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
 	}
 }

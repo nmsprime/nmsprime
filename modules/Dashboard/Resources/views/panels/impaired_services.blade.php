@@ -24,15 +24,10 @@
                 <tr class="collapse {{$i}}collapsedservice">
                     <td colspan="4">
                         @if($perf['per'] !== null)
-                            @if($perf['cls'] !== null)
                                 <div class="progress progress-striped">
-                                    <div class="{{$perf['cls']}}" style="width: {{$perf['per']}}%"><span class='text-inverse'>{{$perf['text']}}</span></div>
+                                    <?php $cls = ($perf['cls'] !== null) ? $perf['cls'] : $services['clr'][$i]; ?>
+                                    <div class="progress-bar progress-bar-{{$cls}}" style="width: {{$perf['per']}}%"><span class='text-inverse'>{{$perf['text']}}</span></div>
                                 </div>
-                            @else
-                                <div class="progress progress-striped">
-                                    <div class="progress-bar progress-bar-{{$services['clr'][$i]}}" style="width: {{$perf['per']}}%"><span class='text-inverse'>{{$perf['text']}}</span></div>
-                                </div>
-                            @endif
                         @else
                             {{$perf['text']}}: {{$perf['val']}}
                         @endif

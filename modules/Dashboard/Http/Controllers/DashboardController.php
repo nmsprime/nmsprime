@@ -59,7 +59,7 @@ class DashboardController extends BaseController
 		$income = $hfc = false;
 
 		// check user permissions
-		foreach (\Auth::user()->roles() as $role)
+		foreach (\Auth::user()->roles as $role)
 		{
 			if (\PPModule::is_active('billingbase'))
 			{
@@ -255,19 +255,21 @@ class DashboardController extends BaseController
 	 */
 	public static function save_contracts_to_json()
 	{
-		$i = 13;
-		$contracts = array();
+		$i = 12;
+		$time = \Carbon\Carbon::create();
 
-		while($i > 1)
+		while($i)
 		{
-			$i--;
-			$time = strtotime("second day -$i month");
+			$labels[] 	 = $time->format('m/Y');
+			$contracts[] = self::count_contracts($time->format('Y-m-01'));
 
-			$contracts['labels'][] = date('m/Y', $time);
-			$contracts['contracts'][] = self::count_contracts(date('Y-m-01', $time));
+			$time->subMonthNoOverflow();
+			$i--;
 		}
 
-		\Storage::disk('chart-data')->put('contracts.json', json_encode($contracts));
+		$array = ['contracts' => array_reverse($contracts), 'labels' => array_reverse($labels)];
+
+		\Storage::disk('chart-data')->put('contracts.json', json_encode($array));
 	}
 
 	/**
@@ -365,7 +367,7 @@ class DashboardController extends BaseController
 			$state = $element->get_bsclass();
 			if ($state == 'success' || $state == 'info')
 				continue;
-			if(!isset($element->icingaobjects->icingahoststatus) || !$element->icingaobjects->is_active)
+			if(!isset($element->icingaobjects->icingahoststatus) || $element->icingaobjects->icingahoststatus->problem_has_been_acknowledged || !$element->icingaobjects->is_active)
 				continue;
 
 			$status = $element->icingaobjects->icingahoststatus;

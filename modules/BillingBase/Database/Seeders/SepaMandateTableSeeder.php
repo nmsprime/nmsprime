@@ -40,6 +40,7 @@ class SepaMandateTableSeeder extends \BaseSeeder {
 				'sepa_institute' => '',
 				'sepa_valid_from' => $date,
 				'sepa_valid_to' => null,
+				'disable' => 0,
 				'state' => '',
 			]);
 		}

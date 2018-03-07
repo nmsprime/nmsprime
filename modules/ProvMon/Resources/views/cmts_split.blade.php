@@ -17,10 +17,12 @@
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_realtime', 'view_header' => \App\Http\Controllers\BaseViewController::translate_label('Real Time Values'), 'md' => 8, 'i' => 2))
 	</div>
 	<div class="col-md-5 ui-sortable">
-		@include ('bootstrap.panel-no-div', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'md' => 8, 'i' => 3))
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_ping', 'view_header' => 'Ping Test', 'md' => 4, 'i' => 4))
 	</div>
-
 </div>
-
+<div class="row">
+	<div class="col-md-12 ui-sortable">
+		@include ('bootstrap.panel-no-div', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'md' => 8, 'i' => 3))
+	</div>
+</div>
 @stop

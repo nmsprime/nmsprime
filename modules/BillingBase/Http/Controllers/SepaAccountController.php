@@ -51,6 +51,7 @@ class SepaAccountController extends \BaseController {
 
 	public function prepare_input($data)
 	{
+		$data['invoice_nr_start'] = $data['invoice_nr_start'] ? : 1;
 		$data['bic'] = $data['bic'] ? : SepaAccount::get_bic($data['iban']);
 		$data['bic'] = strtoupper(str_replace(' ', '' , $data['bic']));
 
@@ -89,5 +90,5 @@ class SepaAccountController extends \BaseController {
 
 		return parent::update($id);
 	}
-	
+
 }

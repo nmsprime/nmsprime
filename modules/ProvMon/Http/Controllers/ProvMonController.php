@@ -105,8 +105,9 @@ class ProvMonController extends \BaseController {
 
 		$panel_right = $this->prep_sidebar($id);
 
+		$view_header = 'ProvMon-Analyses';
 		// View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header')));
 	}
 
 
@@ -128,9 +129,8 @@ class ProvMonController extends \BaseController {
 		if (!$log)
 		{
 			$files = glob('/var/log/messages-*');
-			$file  = max($files);
-
-			exec ("egrep -i ".$search.' '.$file.' '.$grep_pipes, $log);
+			if (!empty($files))
+				exec ("egrep -i ".$search.' '.max($files).' '.$grep_pipes, $log);
 		}
 
 		return $log;
@@ -299,7 +299,9 @@ class ProvMonController extends \BaseController {
 
 		$panel_right = $this->prep_sidebar($id);
 
-		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var')));
+		$view_header = 'Provmon-CPE';
+
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var', 'view_header')));
 	}
 
 	/**
@@ -347,7 +349,9 @@ class ProvMonController extends \BaseController {
 end:
 		$panel_right = $this->prep_sidebar($id);
 
-		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'configfile', 'view_var')));
+		$view_header = 'Provmon-MTA';
+
+		return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'configfile', 'view_var', 'view_header')));
 	}
 
 
@@ -357,9 +361,9 @@ end:
 	public function cmts_analysis($id)
 	{
 		$ping = $lease = $log = $dash = $realtime = $monitoring = $type = $flood_ping = null;
-		$modem = $this->modem ? $this->modem : Cmts::find($id);
-		$ip = $modem->ip;
-		$view_var = $modem; // for top header
+		$cmts = Cmts::find($id);
+		$ip   = $cmts->ip;
+		$view_var = $cmts; // for top header
 
 		// Ping: Send 5 request's at once with max timeout of 1 second
 		exec ('sudo ping -c5 -i0 -w1 '.$ip, $ping);
@@ -369,18 +373,20 @@ end:
 		// Realtime Measure
 		if (count($ping) == 10) // only fetch realtime values if all pings are successfull
 		{
-			$realtime['measure']  = $this->realtime_cmts($modem, $modem->get_ro_community());
+			$realtime['measure']  = $this->realtime_cmts($cmts, $cmts->get_ro_community());
 			$realtime['forecast'] = 'TODO';
 		}
 
-		$host_id = $this->monitoring_get_host_id($modem);
+		$host_id = $this->monitoring_get_host_id($cmts);
 
 		$panel_right =  [
 			['name' => 'Edit', 'route' => 'Cmts.edit', 'link' => [$id]],
 			['name' => 'Analysis', 'route' => 'ProvMon.cmts', 'link' => [$id]]
 		];
 
-		return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var')));
+		$view_header = 'Provmon-CMTS';
+
+		return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var', 'view_header')));
 	}
 
 	/**
@@ -583,23 +589,28 @@ end:
 	 */
 	protected function _set_new_rx_power($cmts, $com, $us)
 	{
-		$rx_pwr = array();
-		foreach ($us['If Id'] as $i => $idx) {
-			// don't control non-functional channels
-			if($us['SNR dB'][$i] == 0)
+		echo("$cmts->hostname\n");
+
+		$rx_pwr = [];
+		foreach (array_keys($us['Frequency MHz']) as $idx) {
+			if ($us['Rx Power dBmV'][$idx] === 'n/a')
 				continue;
 			// the reference SNR is 24 dB
-			$r = round($us['Rx Power dBmV'][$i] + 24 - $us['SNR dB'][$i]);
+			// $r = round(/*$us['Rx Power dBmV'][$idx] +*/ 25 - $us['SNR dB'][$idx]);
+			$r = round($us['Rx Power dBmV'][$idx] + 24 - $us['SNR dB'][$idx]);
+			// minimum actual power is 0 dB
 			if ($r < 0)
-				// minimum actual power is 0 dB
 				$r = 0;
+			// maximum actual power is 10 dB
 			if ($r > 10)
-				// maximum actual power is 10 dB
 				$r = 10;
+
+			echo("$idx: $r\t(".$us['SNR dB'][$idx].")\n");
 			snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
 
-			array_push($rx_pwr, $r);
+			$rx_pwr[$idx] = $r;
 		}
+
 		return $rx_pwr;
 	}
 
@@ -617,13 +628,10 @@ end:
 	{
 		// Copy from SnmpController
 		$this->snmp_def_mode();
-		try
-		{
+		try {
 			// First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
 			$docsis = snmpget($cmts->ip, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
-		}
-		catch (\Exception $e)
-		{
+		} catch (\Exception $e) {
 			if (((strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false) || (strpos($e->getMessage(), "No response from") !== false)))
 			return ["SNMP-Server not reachable" => ['' => [ 0 => '']]];
 		}
@@ -633,34 +641,35 @@ end:
 		$sys['Uptime']   = [$this->_secondsToTime(snmpget($cmts->ip, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
 		$sys['DOCSIS']   = [$this->_docsis_mode($docsis)];
 
-		$i = 0;
-		foreach(snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2') as $id => $freq) {
-			$id = end((explode('.', $id)));
-			$us['Cluster'][$i] = snmpget($cmts->ip, $com, ".1.3.6.1.2.1.31.1.1.1.18.$id");
-			/* if utilization is always zero, DOCS-IF-MIB::docsIfCmtsChannelUtilizationInterval must be set to a non-zero value */
-			$us['Avg Utilization %'][$i] = array_sum(snmpwalk($cmts->ip, $com, ".1.3.6.1.2.1.10.127.1.3.9.1.3.$id"));
-			$us['If Id'][$i] = $id;
-			$us['Frequency MHz'][$i] = $freq / 1000000;
-			$i++;
-		}
-		$us['SNR dB'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
+		$freq = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
+		$desc = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.31.1.1.1.18');
+		$snr = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5');
 		try {
-			$us['Rx Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2'));
-		}
-		catch (\Exception $e) {
+			$util = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.3.9.1.3');
+		} catch (\Exception $e) { }
+		try {
+			$rx = snmprealwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2');
+		} catch (\Exception $e) { }
+
+		$us = [];
+		foreach($freq as $idx => $val) {
+			$idx = last(explode('.', $idx));
+			$us['Frequency MHz'][$idx] = $val / 1000000;
+			$us['Cluster'][$idx] = array_values($desc)[last(array_flip(preg_grep("/\.$idx$/", array_keys($desc))))];
+			$us['SNR dB'][$idx] = array_values($snr)[last(array_flip(preg_grep("/\.$idx$/", array_keys($snr))))]/10;
+			// if utilization is always zero, DOCS-IF-MIB::docsIfCmtsChannelUtilizationInterval must be set to a non-zero value
+			$us['Avg Utilization %'][$idx] = isset($util) ? array_values($util)[last(array_flip(preg_grep("/$idx\.129\.\d+$/", array_keys($util))))] : 'n/a';
+			$us['Rx Power dBmV'][$idx] = isset($rx) ? array_values($rx)[last(array_flip(preg_grep("/\.$idx$/", array_keys($rx))))]/10 : 'n/a';
 		}
 
 		// unset unused interfaces, as we don't want to show them on the web gui
-		foreach ($us['Frequency MHz'] as $key => $freq)
-			if ($us['SNR dB'][$key] == 0)
-				foreach ($us as $entry => $arr)
-					unset($us[$entry][$key]);
+		foreach (array_keys($us['SNR dB']) as $idx)
+			if ($us['SNR dB'][$idx] == 0)
+				foreach (array_keys($us) as $entry)
+					unset($us[$entry][$idx]);
 
-		if($ctrl && isset($us['Rx Power dBmV']))
+		if($ctrl)
 			$us['Rx Power dBmV'] = $this->_set_new_rx_power($cmts, $cmts->get_rw_community(), $us);
-
-		// unset interface ID, as we don't want to show it on the web gui, we just needed them for setting the RX power
-		unset($us['If Id']);
 
 		$ret['System'] = $sys;
 		$ret['Upstream'] = $us;
@@ -916,11 +925,14 @@ end:
 	 */
 	public static function monitoring_get_host_id($modem)
 	{
-		// Connect to Cacti DB
-		$cacti = \DB::connection('mysql-cacti');
+		try {
+			$ret = \Schema::connection('mysql-cacti')->hasTable('host');
+		} catch (\PDOException $e) {
+			return false;
+		}
 
 		// Get Cacti Host ID to $modem
-		$host  = $cacti->table('host')->where('description', '=', $modem->hostname)->select('id')->first();
+		$host  = \DB::connection('mysql-cacti')->table('host')->where('description', '=', $modem->hostname)->select('id')->first();
 		if (!isset($host))
 			return false;
 

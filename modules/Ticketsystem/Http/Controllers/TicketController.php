@@ -5,6 +5,8 @@ use Modules\Ticketsystem\Entities\TicketType;
 
 class TicketController extends \BaseController {
 
+	protected $many_to_many = ['users_ids', 'tickettypes_ids'];
+
 	public function view_form_fields($model = null)
 	{
 		if (!$model)
@@ -21,7 +23,7 @@ class TicketController extends \BaseController {
 				'selected' => $model->html_list($model->tickettypes, 'name'), 'space' => 1),
 			array('form_type' => 'select', 'name' => 'contract_id', 'description' => 'Contract', 'value' => $model->html_list(\DB::table('contract')->get(), ['number', 'firstname', 'lastname'], true, ' - ')),
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Ticket description'),
-			array('form_type' => 'text', 'name' => 'user_id', 'description' => 'Current user', 'init_value' => \Auth::user()->id, 'hidden' => 1),
+			array('form_type' => 'text', 'name' => 'user_id', 'description' => 'Current user', 'value' => \Auth::user()->id, 'hidden' => 1),
 			array('form_type' => 'select', 'name' => 'users_ids[]', 'description' => 'Assigned users',
 				'value' => $model->html_list(\App\Authuser::all(), ['last_name', 'first_name'], false, ', '),
 				'options' => array('multiple' => 'multiple'), 'help' => trans('helper.assign_user'),

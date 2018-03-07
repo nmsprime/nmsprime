@@ -17,7 +17,7 @@
 		<font color="red">{{trans('messages.modem_no_diag')}}</font><br>
 		{{ trans('messages.modem_monitoring_error') }}
 	@endif
-
+	@include('provmon::cacti-height')
 @stop
 
 @section('content_ping')
@@ -294,5 +294,5 @@
 		});
 });
 </script>
-
+@include('Generic.handlePanel')
 @stop

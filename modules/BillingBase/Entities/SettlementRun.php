@@ -53,12 +53,17 @@ class SettlementRun extends \BaseModel {
 		$bsclass = $this->get_bsclass();
 		$day = (isset($this->created_at)) ? $this->created_at : '';
 
-		return ['table' => $this->table,
-				'index_header' => [$this->table.'.year', $this->table.'.month',  $this->table.'.created_at', 'verified'],
-				'header' =>  $this->year.' - '.$this->month.' - '.$day ,
-				'bsclass' => $bsclass,
-				'order_by' => ['0' => 'desc'],
-				'edit' => ['verified' => 'run_verified', 'checkbox' => 'set_index_delete', 'created_at' => 'created_at_toDateString' ]];
+		return ['table' 		=> $this->table,
+				'index_header' 	=> [$this->table.'.year',
+									$this->table.'.month',
+									$this->table.'.created_at',
+									'verified', ],
+				'header' 		=>  $this->year.' - '.$this->month.' - '.$day ,
+				'bsclass' 		=> $bsclass,
+				'order_by' 		=> ['0' => 'desc'],
+				'edit' 			=> ['verified' => 'run_verified',
+									'created_at' => 'created_at_toDateString' ]
+				];
 	}
 
 	public function get_bsclass()
@@ -75,6 +80,8 @@ class SettlementRun extends \BaseModel {
 	{
 		if ($this->verified)
 				$this->index_delete_disabled = true;
+
+		return $this->index_delete_disabled;
 	}
 
 	public function created_at_toDateString()
@@ -125,6 +132,8 @@ class SettlementRun extends \BaseModel {
 	{
 		if (!is_dir($this->get_files_dir()))
 			return [];
+
+		$arr = [];
 
 		$files = \File::allFiles($this->get_files_dir());
 
@@ -182,13 +191,15 @@ class SettlementRunObserver
 			return;
 
 		// NOTE: Make sure that we use Database Queue Driver - See .env!
-		$job_id = \Queue::push(new \Modules\BillingBase\Console\accountingCommand);
+		$job_id = \Queue::push(new \Modules\BillingBase\Console\accountingCommand($settlementrun));
 		// \Artisan::call('billing:accounting', ['--debug' => 1]);
 		\Session::put('job_id', $job_id);
 	}
 
 	public function updated($settlementrun)
 	{
+		if (\Input::has('rerun'))
+	 		\Session::put('job_id', \Queue::push(new \Modules\BillingBase\Console\accountingCommand($settlementrun)));
 	}
 
 	public function deleted($settlementrun)

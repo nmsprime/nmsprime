@@ -188,5 +188,6 @@ CREATE TABLE `voipmonitor`.`cdr` (
   KEY `reason_sip_text_id` (`reason_sip_text_id`),
   KEY `reason_q850_text_id` (`reason_q850_text_id`),
   KEY `payload` (`payload`),
-  KEY `id_sensor` (`id_sensor`)
+  KEY `id_sensor` (`id_sensor`),
+  KEY `created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=COMPRESSED

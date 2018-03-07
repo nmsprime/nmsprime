@@ -367,7 +367,8 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// get all phonenumbers related to $this
 		if ($this->phonenumber->exists) {
-			$phonenumbers = [$this->phonenumber];
+			// $phonenumbers = [$this->phonenumber]; => check for side effects: using phonenumbers on modem to be able to create voip account
+			$phonenumbers = $this->modem->related_phonenumbers();
 		}
 		elseif ($this->modem->exists) {
 			$phonenumbers = $this->modem->related_phonenumbers();
@@ -621,11 +622,13 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// “normal“ jobs
 			$phonenumbers_to_create = '&amp;phonenumbers_to_create=';
-			array_push($ret, array(
-				'linktext' => 'Create contract',
-				'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id.$phonenumbers_to_create,
-				'help' => "Creates a envia TEL contract (= telephone connection)",
-			));
+			if (!$this->contract_created) {
+				array_push($ret, array(
+					'linktext' => 'Create contract',
+					'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id.$phonenumbers_to_create,
+					'help' => "Creates a envia TEL contract (= telephone connection)",
+				));
+			}
 
 			// contract can be relocated if created; available with envia TEL API version 1.4
 			if ($this->contract_created) {
@@ -751,6 +754,14 @@ class ProvVoipEnvia extends \BaseModel {
 					'linktext' => 'Update VoIP account',
 					'url' => $base.'voip_account_update'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
 					'help' => "Updates phonenumber related data (TRC class, SIP data) at envia TEL",
+				));
+			};
+
+			if ($this->voipaccount_available) {
+				array_push($ret, array(
+					'linktext' => 'Clear envia TEL reference',
+					'url' => \Request::getRequestUri().'?clear_envia_reference=1',
+					'help' => "Use this for re-creation of rejected creates.",
 				));
 			};
 		}
@@ -2148,9 +2159,11 @@ class ProvVoipEnvia extends \BaseModel {
 		$inner_xml = $this->xml->addChild('account_data');
 
 		$fields_account = array(
-			'porting' => 'porting_in',
 			'orderdate' => 'activation_date',
 		);
+		if ($this->phonenumbermanagement->porting_in) {
+			$fields_account['porting'] = 'porting_in';
+		}
 
 		$this->_add_fields($inner_xml, $fields_account, $this->phonenumbermanagement);
 		// add callnumbers
@@ -2408,6 +2421,7 @@ class ProvVoipEnvia extends \BaseModel {
 					'contract_change_tariff',
 					'contract_change_variation',
 					'contract_relocate',
+					'voip_account_create',
 					]
 				)
 				||
@@ -2435,9 +2449,18 @@ class ProvVoipEnvia extends \BaseModel {
 				}
 			}
 
+			// finally: add reference from modems most recent envia TEL contract
+			// TODO: handle multiple envia TEL contracts on modem
+			// this is used if creation of contract/voipaccount has been rejected by envia TEL (e.g. wrong EKP)
+			// then there is an active envia TEL contract but maybe without active numbers
+			$envia_contract_last = $this->mta->modem->enviacontracts->last();
+			if (!in_array($envia_contract_last->envia_contract_reference, $external_contract_references)) {
+				array_push($external_contract_references, $envia_contract_last->envia_contract_reference);
+			}
+
 			// no reference found
 			if (!$external_contract_references) {
-				throw new XmlCreationError('No EnviaOrder ID (contract_external_id) found. Cannot proceed.');
+				throw new XmlCreationError('No EnviaContract ID (contract_external_id) found. Cannot proceed.');
 			}
 
 			// TODO: implement logic to relocate more than one contract attached to the current modem!!
@@ -2453,8 +2476,9 @@ class ProvVoipEnvia extends \BaseModel {
 			$external_contract_reference = $this->phonenumber->contract_external_id;
 		}
 
+
 		if (!$external_contract_reference) {
-			throw new XmlCreationError('No EnviaOrder ID (contract_external_id) found. Cannot proceed.');
+			throw new XmlCreationError('No EnviaContract ID (contract_external_id) found. Cannot proceed.');
 		}
 
 		$inner_xml->addChild('contractreference', $external_contract_reference);
@@ -2580,7 +2604,10 @@ class ProvVoipEnvia extends \BaseModel {
 		$add_func = function($xml, $xml_field, $payload) {
 			$cur_node = $xml->addChild($xml_field, $payload);
 			if ((is_null($payload)) || ($payload === "")) {
-				$cur_node->addAttribute('nil', 'true');
+				// XML for phonebook entry related stuff do not have a nil attribute
+				if (!\Str::startswith($this->job, 'phonebookentry_')) {
+					$cur_node->addAttribute('nil', 'true');
+				}
 			};
 		};
 
@@ -3610,11 +3637,11 @@ class ProvVoipEnvia extends \BaseModel {
 		$update_envia_contract = False;
 
 		if(!boolval($this->contract->customer_external_id)) {
-			$this->contract->customer_external_id = $xml->customerreference;
-			$this->contract->save();
 			$msg = "Setting external customer id for contract ".$this->contract->id." to ".$xml->customerreference;
 			$out .= "<b>$msg</b>";
 			Log::info($msg);
+			$this->contract->customer_external_id = $xml->customerreference;
+			$this->contract->save();
 			$update_envia_contract = True;
 		}
 		elseif ($this->contract->customer_external_id == $xml->customerreference) {
@@ -3622,9 +3649,13 @@ class ProvVoipEnvia extends \BaseModel {
 			$update_envia_contract = True;
 		}
 		else {
-			$msg = "Returned envia TEL customer reference for contract ".$this->contract->id." (".$xml->customerreference.") does not match our database entry (".$this->contract->customer_external_id.")";
-			Log::error($msg);
-			$out .= "<b>ERROR: $msg</b>";
+			// this can happen with customers that switched from another reseller to us – force overwriting with correct reference
+			$msg = "Changing envia TEL customer reference from ".$this->contract->customer_external_id." to ".$xml->customerreference;
+			Log::warning($msg);
+			$out .= "<b>WARNING: $msg</b>";
+			$this->contract->customer_external_id = $xml->customerreference;
+			$this->contract->save();
+			$update_envia_contract = True;
 		}
 
 		// update data in enviacontract if this seems to be save
