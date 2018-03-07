@@ -1,4 +1,6 @@
-<?php namespace Modules\HfcCustomer\Database\Seeders;
+<?php
+
+namespace Modules\Hfccustomer\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;

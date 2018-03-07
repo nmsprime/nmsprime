@@ -580,7 +580,7 @@ class Modem extends \BaseModel {
 		{
 			// only ignore error with this error message (catch exception with this string)
 			if (((strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false) || (strpos($e->getMessage(), "snmpset(): No response from") !== false))) {
-				\Session::flash('error', 'Could not restart Modem! (offline?)');
+				\Session::push('tmp_warning_above_form', 'Could not restart Modem! (offline?)');
 			}
 			elseif(strpos($e->getMessage(), "noSuchName") !== false) {
 				// this is not necessarily an error, e.g. the modem was deleted (i.e. Cisco) and user clicked on restart again
@@ -589,7 +589,6 @@ class Modem extends \BaseModel {
 				// Inform and log for all other exceptions
 				\Session::push('tmp_error_above_form', 'Unexpected exception: '.$e->getMessage());
 				\Log::error("Unexpected exception restarting modem ".$this->id." (".$this->mac."): ".$e->getMessage()." => ".$e->getTraceAsString());
-				\Session::flash('error', '');
 			}
 		}
 
