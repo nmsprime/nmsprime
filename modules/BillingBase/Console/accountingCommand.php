@@ -468,6 +468,10 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			->join('modem', 'modem.id', '=', 'mta.modem_id')
 			->join('contract', 'contract.id', '=', 'modem.contract_id')
 			->where('phonenumber.deleted_at', '=', null)
+			->where(function ($query) { $query
+				->where('sipdomain', '=', 'sip.enviatel.net')
+				->orWhereNull('sipdomain')
+				->orWhere('sipdomain', '=', '');})
 			->select('modem.contract_id', 'contract.number', 'phonenumber.username', 'phonenumber.id')
 			->orderBy('modem.contract_id')->get();
 
