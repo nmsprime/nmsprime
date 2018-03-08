@@ -243,6 +243,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 			foreach ($c->charge as $acc_id => $value)
 			{
+				$value['net'] = round($value['net'], 2);
+				$value['tax'] = round($value['tax'], 2);
+
 				$acc = $sepa_accs->find($acc_id);
 
 				$mandate_specific = $c->get_valid_mandate('now', $acc->id);

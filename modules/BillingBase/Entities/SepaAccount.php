@@ -321,7 +321,7 @@ class SepaAccount extends \BaseModel {
 	 * Adds a sepa transfer for this account with the charge for a contract to the corresponding sepa_xml-Array (credit/debit)
 	 *
 	 * @param object 	$mandate
-	 * @param float 	$charge
+	 * @param float 	$charge 	Must already be rounded to 2 decimals! (as it actually is we dont do it again here)
 	 * @param array 	$dates 		last run info is important for transfer type
 	 */
 	public function add_sepa_transfer($mandate, $charge)
@@ -336,7 +336,7 @@ class SepaAccount extends \BaseModel {
 		if ($charge < 0)
 		{
 			$data = array(
-				'amount'                => round($charge * (-1), 2),
+				'amount'                => $charge * (-1),
 				'creditorIban'          => $mandate->sepa_iban,
 				'creditorBic'           => $mandate->sepa_bic,
 				'creditorName'          => $mandate->sepa_holder,
@@ -351,7 +351,7 @@ class SepaAccount extends \BaseModel {
 		// Debits
 		$data = array(
 			'endToEndId'			=> 'RG '.$this->_get_invoice_nr_formatted(),
-			'amount'                => round($charge, 2),
+			'amount'                => $charge,
 			'debtorIban'            => $mandate->sepa_iban,
 			'debtorBic'             => $mandate->sepa_bic,
 			'debtorName'            => $mandate->sepa_holder,
