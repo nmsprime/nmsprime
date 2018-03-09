@@ -42,8 +42,8 @@ class SepaMandateController extends \BaseController {
 	{
 		$data['sepa_bic'] = $data['sepa_bic'] ? : SepaAccount::get_bic($data['sepa_iban']);
 		$data['sepa_bic'] = strtoupper(str_replace(' ', '' ,$data['sepa_bic']));
-
 		$data['sepa_iban'] = strtoupper(str_replace(' ', '' ,$data['sepa_iban']));
+		$data['signature_date'] = $data['signature_date'] ? : date('Y-m-d');
 
 		$data = parent::prepare_input($data);
 

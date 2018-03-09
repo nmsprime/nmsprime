@@ -19,7 +19,7 @@ class SepaMandate extends \BaseModel {
 			'signature_date' 	=> 'date',
 			'sepa_iban' 		=> 'required|iban',
 			'sepa_bic' 			=> 'bic',			// see SepaMandateController@prep_rules
-			// 'sepa_institute' 	=> ,
+			'signature_date' 	=> 'date',
 			'sepa_valid_from' 	=> 'date',
 			'sepa_valid_to'		=> 'dateornull'
 		);
@@ -170,7 +170,6 @@ class SepaMandateObserver
 
 		// Set default values for empty fields - NOTE: prepare_input() functions fills data too
 		$mandate->sepa_holder = $mandate->sepa_holder ? : $mandate->contract->firstname.' '.$mandate->contract->lastname;
-		$mandate->signature_date = $mandate->signature_date ? : date('Y-m-d');
 		$mandate->sepa_valid_from = $mandate->sepa_valid_from ? : date('Y-m-d');
 
 		// set end date of old mandate to starting date of new mandate - Note: commented because multiple mandates with different cost centers are possible now
@@ -186,9 +185,6 @@ class SepaMandateObserver
 	{
 		if (!$mandate->reference)
 			$mandate->reference = $this->build_mandate_ref($mandate);
-
-		if (!$mandate->signature_date || $mandate->signature_date == '0000-00-00')
-			$mandate->signature_date = date('Y-m-d');
 	}
 
 
