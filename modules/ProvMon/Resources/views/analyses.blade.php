@@ -235,7 +235,8 @@
 								fill: false
 							}],
 						},
-						options: {scales: { yAxes: [{display: true,scaleLabel: {display: true,labelString: 'Energy'},gridLines: {drawOnChartArea: false}}],
+						options: {scales: { yAxes: [{display: true,ticks: {suggestedMin: -5, steps: 6, stepValue: 2, max: 5},
+							scaleLabel: {display: true,labelString: 'Energy'},gridLines: {drawOnChartArea: false}}],
 											xAxes: [{display: true,scaleLabel: {display: true,labelString: 'Tap'},}]},}
 					});
 				},1000);
