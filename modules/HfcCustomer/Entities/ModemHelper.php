@@ -17,12 +17,12 @@ class ModemHelper extends \BaseModel {
 
 	public static function ms_num ( $s )
 	{
-		return Modem::whereRaw("$s AND us_pwr > 0")->get()->count();
+		return Modem::whereRaw("$s AND us_pwr > 0")->count();
 	}
 
 	public static function ms_num_all ( $s )
 	{
-		return Modem::whereRaw("$s")->get()->count();
+		return Modem::whereRaw("$s")->count();
 	}
 
 	public static function ms_avg ( $s )
@@ -33,7 +33,7 @@ class ModemHelper extends \BaseModel {
 	public static function ms_cri ( $s )
 	{
 		$c = self::$single_critical_us;
-		return ( Modem::whereRaw("(($s) AND us_pwr > $c)")->get()->count() );
+		return ( Modem::whereRaw("(($s) AND us_pwr > $c)")->count() );
 	}
 
 	public static function ms_state ( $s )
