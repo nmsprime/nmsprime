@@ -75,7 +75,7 @@
     <div class="container-fluid m-t-20 m-b-20">
         <div class="col-md-12 d-flex" id="map" style="height:75vh"></div>
     </div>
-    <div id="mapid" style="width: 930px; height: 400px; position: relative; outline: none;"></div>
+    <div id="mapid" style="width: 1024px; height: 480px; position: relative; outline: none;"></div>
 @stop
 
 @section('javascript')

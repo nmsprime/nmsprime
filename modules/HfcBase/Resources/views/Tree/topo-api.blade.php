@@ -388,11 +388,12 @@ function heat_map()
 	  }).addTo(mymap);
 	var marker = L.marker([50.6504, 13.1623]).addTo(mymap);
 	var heat = 	L.heatLayer(<?php echo json_encode($dim);?>, {
-				minOpacity:0.7, maxZoom:18, radius:12, blur: 20, max: 1.0,
-				gradient: {0.1: 'lime', 0.65: 'orange', 1: 'red'}
+				minOpacity:0.5, maxZoom:10, radius:18, blur:20, max:1.0,
+				gradient: {0.1: 'lime', 0.5: 'orange', 1: 'blue'}
 			}).addTo(mymap);
 }
 
 </script>
+
 
 
