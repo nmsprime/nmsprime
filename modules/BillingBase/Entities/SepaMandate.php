@@ -1,11 +1,10 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
+use DB, Storage;
 use Modules\ProvBase\Entities\Contract;
 use Digitick\Sepa\PaymentInformation;
-
-use DB;
-use Storage;
 
 class SepaMandate extends \BaseModel {
 

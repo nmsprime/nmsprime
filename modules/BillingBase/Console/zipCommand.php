@@ -1,17 +1,13 @@
 <?php
 namespace Modules\BillingBase\Console;
 
-
+use Storage;
+use App\Http\Controllers\BaseViewController;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
-
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\Invoice;
-use App\Http\Controllers\BaseViewController;
-
-use Carbon\Carbon;
-use Storage;
+use Symfony\Component\Console\Input\{ InputOption, InputArgument};
 
 class zipCommand extends Command {
 

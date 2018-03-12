@@ -1,9 +1,9 @@
 <?php
 namespace Modules\BillingBase\Http\Controllers;
 
+use Input;
 use Pingpong\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\Company;
-use Input;
 
 class CompanyController extends \BaseController {
 

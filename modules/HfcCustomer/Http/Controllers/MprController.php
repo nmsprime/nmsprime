@@ -1,10 +1,8 @@
 <?php namespace Modules\HfcCustomer\Http\Controllers;
 
 use Pingpong\Modules\Routing\Controller;
-use Modules\HfcCustomer\Entities\Mpr;
-use Modules\HfcCustomer\Entities\MprGeopos;
+use Modules\HfcCustomer\Entities\{ Mpr, MprGeopos};
 use Illuminate\Http\RedirectResponse;
-
 
 class MprController extends \BaseController {
 

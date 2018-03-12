@@ -1,12 +1,10 @@
 <?php
 namespace Modules\Ccc\Http\Controllers;
 
+use  File, Log;
 use Modules\Ccc\Entities\Ccc;
 use Modules\ProvBase\Entities\Contract;
-use Log;
-use File;
-use Modules\BillingBase\Entities\SettlementRun;
-use Modules\BillingBase\Entities\Invoice;
+use Modules\BillingBase\Entities\{Invoice, SettlementRun};
 use Modules\Mail\Entities\Email;
 
 class CccAuthuserController extends \BaseController {

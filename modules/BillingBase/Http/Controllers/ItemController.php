@@ -1,12 +1,10 @@
 <?php
 namespace Modules\BillingBase\Http\Controllers;
 
-use Pingpong\Modules\Routing\Controller;
-use Modules\BillingBase\Entities\Product;
-use Modules\BillingBase\Entities\CostCenter;
-use Modules\BillingBase\Entities\BillingBase;
-use Modules\ProvBase\Entities\Contract;
 use Config;
+use Pingpong\Modules\Routing\Controller;
+use Modules\BillingBase\Entities\{BillingBase, CostCenter, Product};
+use Modules\ProvBase\Entities\Contract;
 
 class ItemController extends \BaseController {
 

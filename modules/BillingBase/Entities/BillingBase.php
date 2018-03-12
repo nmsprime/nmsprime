@@ -1,6 +1,7 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
 use Modules\ProvBase\Entities\Contract;
 
 class BillingBase extends \BaseModel {

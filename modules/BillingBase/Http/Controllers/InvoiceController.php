@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Modules\BillingBase\Http\Controllers;
 

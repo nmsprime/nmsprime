@@ -4,7 +4,6 @@ namespace Modules\HfcCustomer\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Modules\ProvBase\Entities\Modem;
 
-
 /*
  * Modem Positioning Rule Model
  *

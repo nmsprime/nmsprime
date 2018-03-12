@@ -2,10 +2,8 @@
 
 namespace Modules\HfcBase\Http\Controllers;
 
-use Modules\HfcReq\Entities\NetElement;
-
 use Acme\php\ArrayHelper;
-
+use Modules\HfcReq\Entities\NetElement;
 
 /*
  * Tree Topography Controller

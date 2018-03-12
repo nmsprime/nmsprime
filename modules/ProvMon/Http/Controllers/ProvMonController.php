@@ -5,15 +5,7 @@ namespace Modules\ProvMon\Http\Controllers;
 
 use View;
 use Acme\php\ArrayHelper;
-
-use Modules\ProvBase\Entities\Modem;
-use Modules\ProvBase\Entities\Endpoint;
-use Modules\ProvBase\Entities\Configfile;
-use Modules\ProvBase\Entities\Qos;
-use Modules\ProvBase\Entities\ProvBase;
-use Modules\ProvVoip\Entities\ProvVoip;
-use Modules\ProvBase\Entities\IpPool;
-use Modules\ProvBase\Entities\Cmts;
+use Modules\ProvBase\Entities\{ Cmts, Configfile, Endpoint, IpPool, Modem, ProvBase, ProvVoip, Qos };
 
 /*
  * This is the Basic Stuff for Modem Analyses Page
