@@ -705,50 +705,52 @@ end:
 	 */
 	public function search_lease ()
 	{
-		$search = func_get_arg(0);
-		if (func_num_args() == 2)
-			$search2 = func_get_arg(1);
+		if (func_num_args() <= 0) {
+			$search = func_get_arg(0);
 
-		// parse dhcpd.lease file
-		$file   = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
-		// start each lease with a line that begins with "lease" and end with a line that begins with "{"
-		preg_match_all('/^lease(.*?)(^})/ms', $file, $section);
+			if (func_num_args() == 2)
+				$search2 = func_get_arg(1);
 
-		$ret = array();
-		$i   = 0;
+			// parse dhcpd.lease file
+			$file   = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
+			// start each lease with a line that begins with "lease" and end with a line that begins with "{"
+			preg_match_all('/^lease(.*?)(^})/ms', $file, $section);
 
-		// fetch all lines matching hw mac
-		foreach (array_unique($section[0]) as $s)
-		{
-			if(strpos($s, $search))
+			$ret = array();
+			$i   = 0;
+
+			// fetch all lines matching hw mac
+			foreach (array_unique($section[0]) as $s)
 			{
-				if (isset($search2))
+				if(strpos($s, $search))
 				{
-					if (!strpos($s, $search2))
-						continue;
+					if (isset($search2))
+					{
+						if (!strpos($s, $search2))
+							continue;
+					}
+
+					// push matching results
+					array_push($ret, preg_replace('/\r|\n/', '<br />', $s));
 				}
+			}
 
-				// push matching results
-				array_push($ret, preg_replace('/\r|\n/', '<br />', $s));
+			// handle multiple lease entries
+			// actual strategy: if possible grep active lease, otherwise return all entries
+			//                  in reverse ordered format from dhcpd.leases
+			if (sizeof($ret) > 1) {
+				foreach(preg_grep ('/(.*?)binding state active(.*?)/', $ret) as $str)
+					if(preg_match('/starts \d ([^;]+);/', $str, $s))
+						$start[] = $s[1];
+
+				if (isset($start)) {
+					// return the most recent active lease
+					natsort($start);
+					end($start);
+					return [ $ret[each($start)[0]] ];
+				}
 			}
 		}
-
-		// handle multiple lease entries
-		// actual strategy: if possible grep active lease, otherwise return all entries
-		//                  in reverse ordered format from dhcpd.leases
-		if (sizeof($ret) > 1) {
-			foreach(preg_grep ('/(.*?)binding state active(.*?)/', $ret) as $str)
-				if(preg_match('/starts \d ([^;]+);/', $str, $s))
-					$start[] = $s[1];
-
-			if (isset($start)) {
-				// return the most recent active lease
-				natsort($start);
-				end($start);
-				return [ $ret[each($start)[0]] ];
-			}
-		}
-
 		return $ret;
 	}
 
