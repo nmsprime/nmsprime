@@ -147,7 +147,7 @@ class TreeErdController extends HfcBaseController {
 
 		$n  = 0;
 		$p1 = '';
-		$netelements = $query->where('id', '>', '2')->with('netelementtype', 'parent')->orderBy('pos')->get();
+		$netelements = $query->where('id', '>', '2')->orderBy('pos')->get();
 		if (!$netelements->count())
 			return null;
 		#
