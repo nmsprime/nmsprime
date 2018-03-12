@@ -86,6 +86,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		// Fetch all Data from Database
 		echo "Get all Data from Database\n";
+		Storage::put('tmp/accCmdStatus', \App\Http\Controllers\BaseViewController::translate_label('Load Data'));
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
 
