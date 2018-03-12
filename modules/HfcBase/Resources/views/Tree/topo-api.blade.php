@@ -8,67 +8,38 @@ var osm;
 var Layers = [];
 var select;
 
-var global_url = "<?php echo BaseRoute::get_base_url(); ?>/";
+var global_url = '{{BaseRoute::get_base_url()}}/';
 
 
 /*
- * Google Cards ?
+ * Google Cards
  */
 function map_google_init ()
 {
-<?php
-        if (1)
-        {
-                echo "
-                var gphy = new OpenLayers.Layer.Google(
-                        \"Google Physical\",
-                        {type: google.maps.MapTypeId.TERRAIN}
-                        // used to be {type: G_PHYSICAL_MAP}
-                );
-                var gmap = new OpenLayers.Layer.Google(
-                        \"Google Streets\", // the default
-                        {numZoomLevels: 20}
-                        // default type, no change needed here
-                );
-                var ghyb = new OpenLayers.Layer.Google(
-                        \"Google Hybrid\",
-                        {type: google.maps.MapTypeId.HYBRID, numZoomLevels: 20}
-                        // used to be {type: G_HYBRID_MAP, numZoomLevels: 20}
-                );
-                var gsat = new OpenLayers.Layer.Google(
-                        \"Google Satellite\",
-                        {type: google.maps.MapTypeId.SATELLITE, numZoomLevels: 22}
-                        // used to be {type: G_SATELLITE_MAP, numZoomLevels: 22}
-                );
-                vectors = new OpenLayers.Layer.Vector(\"Modem Positioning Rules\", {projection: map.displayProjection});
-                map.addLayers([osm,gsat,gmap,gphy,ghyb,vectors]);
+    var gphy = new OpenLayers.Layer.Google( "Google Physical",	{type: google.maps.MapTypeId.TERRAIN});
+    var gmap = new OpenLayers.Layer.Google( "Google Streets",	{numZoomLevels: 20});
+    var ghyb = new OpenLayers.Layer.Google( "Google Hybrid",	{type: google.maps.MapTypeId.HYBRID, numZoomLevels: 20});
+    var gsat = new OpenLayers.Layer.Google( "Google Satellite",	{type: google.maps.MapTypeId.SATELLITE, numZoomLevels: 22});
 
-                vectors.events.on({\"afterfeaturemodified\": onAfterFeatureModified})
+	vectors = new OpenLayers.Layer.Vector("Modem Positioning Rules", {projection: map.displayProjection});
 
-                drawControls = {polygon: new OpenLayers.Control.DrawFeature(vectors, OpenLayers.Handler.Polygon, {callbacks : {\"done\": savePolygonMPR}}),
-                                box: new OpenLayers.Control.DrawFeature(vectors,
-                                    OpenLayers.Handler.RegularPolygon, {
-                                        handlerOptions: {
-                                            sides: 4,
-                                            irregular: true
-                                        },
-                                        callbacks : {
-                                            \"done\": savePolygonMPR
-                                        }
-                                }),
-                                modify: new OpenLayers.Control.ModifyFeature(vectors)};
+	map.addLayers([osm,gsat,gmap,gphy,ghyb,vectors]);
 
-                for(var key in drawControls)
-                    map.addControl(drawControls[key]);
+	vectors.events.on({ "afterfeaturemodified" : onAfterFeatureModified });
 
-                document.getElementById('noneToggle').checked = true;";
-        }
-        else
-                echo "          map.addLayers([osm]);";
+	drawControls = 	{ polygon 	: new OpenLayers.Control.DrawFeature(vectors, OpenLayers.Handler.Polygon,{ callbacks : { "done": savePolygonMPR} }),
+					  box		: new OpenLayers.Control.DrawFeature(vectors, OpenLayers.Handler.RegularPolygon, {
+									handlerOptions: { sides: 4, irregular: true },
+									callbacks : { "done": savePolygonMPR}
+									}),
+					  modify	: new OpenLayers.Control.ModifyFeature(vectors)
+					};
 
-?>
+	for(var key in drawControls)
+		map.addControl(drawControls[key]);
+
+	document.getElementById('noneToggle').checked = true;
 }
-
 
 /*
  * Modem Positioning System
@@ -76,37 +47,30 @@ function map_google_init ()
  */
 function map_mps_init()
 {
-<?php
+@if(isset($mpr))
+	@foreach ($mpr as $id => $corners)
+		@if (count($mpr) == 2)
+			bounds = new OpenLayers.Bounds();
 
-	if (!isset($mpr))
-		goto finish;
+			@foreach($corners as $coord)
+				bounds.extend(new OpenLayers.LonLat({{ $coord[0] }}, {{ $coord[1] }} ));
+			@endforeach
 
-	$i = 0;
-	$_mpr = $mpr;
-	foreach ($_mpr as $id => $mpr)
-	{
-		if (count($mpr) == 2) {
-			echo "\t\t\t\tbounds = new OpenLayers.Bounds();";
-			foreach($mpr as $coord)
-				echo "bounds.extend(new OpenLayers.LonLat($coord[0], $coord[1]));";
-			echo "
-				bounds.transform(new OpenLayers.Projection(\"EPSG:4326\"),map.getProjectionObject());
-				vectors.addFeatures([new OpenLayers.Feature.Vector(bounds.toGeometry(), {id: $id})]);\n";
+			bounds.transform(new OpenLayers.Projection("EPSG:4326"),map.getProjectionObject());
+			vectors.addFeatures([new OpenLayers.Feature.Vector(bounds.toGeometry(), {id: {{ $id }} })]);
+		@elseif (count($mpr) > 2)
+			vectors.addFeatures([
+			new OpenLayers.Feature.Vector(new OpenLayers.Geometry.Polygon([
+			new OpenLayers.Geometry.LinearRing([
 
-		} elseif (count($mpr) > 2) {
-			echo "
-				vectors.addFeatures([
-				new OpenLayers.Feature.Vector(new OpenLayers.Geometry.Polygon([
-				new OpenLayers.Geometry.LinearRing([";
-			foreach ($mpr as $coord)
-				echo "new OpenLayers.Geometry.Point($coord[0], $coord[1]),";
-			echo "]).transform(new OpenLayers.Projection(\"EPSG:4326\"), map.getProjectionObject())]), {id: $id})]);\n";
-		}
-	}
+			@foreach ($corners as $coord)
+				new OpenLayers.Geometry.Point({{ $coord[0] }}, {{ $coord[1] }} ),
+			@endforeach
 
-
-finish:
-?>
+			]).transform(new OpenLayers.Projection("EPSG:4326"), map.getProjectionObject())]), {id: {{ $id }} })]);
+		@endif
+	@endforeach
+@endif
 }
 
 
@@ -303,38 +267,11 @@ function map_kml_load ()
 {
 	load(0, "{{asset($file)}}", "Infrastructure");
 
-@if (isset($kmls))
-	@foreach ($kmls as $id => $kml)
-		load({{$id+10}}, "{{asset($kml['file'])}}", "{{$kml['descr']}}");
-	@endforeach
-@endif
-}
-
-
-function map_kml_customer_load ()
-{
-<?php
-
-	if(0)
-	{
-		$filename = def_filename;
-		echo "\n\tload(0, \"$filename.kml\", \"Customer\");\n\n";
-
-		include_once ('include.php');
-		__include('mysql.php');
-		_mysql_connect();
-
-		$id = def_kml;
-		$ext = mysql_query("SELECT kml_file, id FROM tree WHERE id IN (SELECT cluster FROM tree WHERE id = $id)");
-		$row = mysql_fetch_assoc($ext);
-
-		$id = $row['id'];
-
-		if ($row['kml_file'] != '')
-			echo "\n\tload(1, \"../../base/kml/static/$id.kml\", \"Detailed Infrastructure\");\n\n";
-	}
-
-?>
+	@if (isset($kmls))
+		@foreach ($kmls as $id => $kml)
+			load({{$id+10}}, "{{asset($kml['file'])}}", "{{$kml['descr']}}");
+		@endforeach
+	@endif
 }
 
 function toggleControl(element) {
@@ -409,37 +346,6 @@ function map_init()
 
 
 	var bounds = new OpenLayers.Bounds();
-
-<?php
-
-	if(0)
-	{
-		$zoom = isset($_GET['zoom']) ? $_GET['zoom'] : '';
-		$pos  = isset($_GET['pos']) ? $_GET['pos'] : '';
-		$a  = split(",", $zoom);
-		$x1 = $a[1];
-		$x2 = $a[3];
-		$y1 = $a[0];
-		$y2 = $a[2];
-
-		if ($pos)
-		{
-			echo "
-				var markers = new OpenLayers.Layer.Markers( \"Markers\" );
-	    			map.addLayer(markers);
-				markers.addMarker(new OpenLayers.Marker(map.getCenter()));";
-		}
-
-
-		if ($zoom)
-		{
-			echo "\n\tbounds.extend(new OpenLayers.LonLat($x1, $y1).transform(new OpenLayers.Projection(\"EPSG:4326\"), map.getProjectionObject()));";
-			echo "\n\tbounds.extend(new OpenLayers.LonLat($x2, $y2).transform(new OpenLayers.Projection(\"EPSG:4326\"), map.getProjectionObject()));";
-			echo "\n\tmap.zoomToExtent(bounds);\n";
-		}
-	}
-
-?>
 }
 
 
@@ -468,6 +374,5 @@ function init_for_customer ()
 	clk_init_1();
 	clk_init_2();
 }
-
 
 </script>
