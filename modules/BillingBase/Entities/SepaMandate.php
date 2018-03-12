@@ -114,7 +114,7 @@ class SepaMandate extends \BaseModel {
 		$changed = false;
 
 		if ($this->state == PaymentInformation::S_FIRST) {
-			$this->state == $ends ? PaymentInformation::S_ONEOFF : PaymentInformation::S_RECURRING;
+			$this->state = $ends ? PaymentInformation::S_ONEOFF : PaymentInformation::S_RECURRING;
 			$changed = true;
 		}
 
