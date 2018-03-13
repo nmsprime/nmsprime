@@ -2447,7 +2447,7 @@ class ProvVoipEnvia extends \BaseModel {
 			// TODO: handle multiple envia TEL contracts on modem
 			// this is used if creation of contract/voipaccount has been rejected by envia TEL (e.g. wrong EKP)
 			// then there is an active envia TEL contract but maybe without active numbers
-			$envia_contract_last = $this->mta->modem->enviacontracts->last();
+			$envia_contract_last = $this->modem->enviacontracts->last();
 			if (!in_array($envia_contract_last->envia_contract_reference, $external_contract_references)) {
 				array_push($external_contract_references, $envia_contract_last->envia_contract_reference);
 			}
