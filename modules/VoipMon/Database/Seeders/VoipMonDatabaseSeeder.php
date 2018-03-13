@@ -1,9 +1,11 @@
-<?php namespace Modules\Voipmon\Database\Seeders;
+<?php
+
+namespace Modules\Voipmon\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
-class VoipMonDatabaseSeeder extends Seeder {
+class VoipmonDatabaseSeeder extends Seeder {
 
 	/**
 	 * Run the database seeds.
