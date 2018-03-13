@@ -99,7 +99,8 @@ class cdrCommand extends Command {
 			// argument is specified
 			$this->month = sprintf('%02d', $this->argument('month'));
 		else
-			$this->month = $offset ? date('m', strtotime('second day -'.($offset+1).' month')) : date('m', strtotime('second day of last month'));
+			// tested: first day OF last/-x month works for every day without bug
+			$this->month = $offset ? date('m', strtotime('first day of -'.($offset+1).' month')) : date('m', strtotime('first day of last month'));
 
 		$this->year = $this->month >= date('m') ? date('Y') - 1 : date('Y');
 
