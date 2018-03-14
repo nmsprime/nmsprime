@@ -964,7 +964,7 @@ class EnviaOrder extends \BaseModel {
 	 */
 	public static function get_user_interaction_needing_enviaorder_count() {
 
-		$count = EnviaOrder::whereRaw(self::get_user_interaction_needing_enviaorder_where_clause())->count();
+		$count = EnviaOrder::whereRaw('(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND ((orderstatus_id != 1000) OR ((orderstatus_id IS NULL) AND (orderstatus NOT LIKE "in Bearbeitung")) AND (orderstatus NOT LIKE "initializing"))')->count();
 
 		return $count;
 	}

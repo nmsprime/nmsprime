@@ -22,7 +22,7 @@ class ProductTableSeeder extends \BaseSeeder {
 			foreach (range(1,3) as $index)
 			{
 				$name = '';
-				$qos_id = $voip_sale_id = $voip_purchase_tariff_id = $cycle_count = $costcenter_id = $price = $email_count = 0;
+				$qos_id = $voip_sale_id = $voip_purchase_tariff_id = $maturity = $costcenter_id = $price = $email_count = 0;
 				$tax = 1;
 				$billing_cycle = 'Once';
 
@@ -70,7 +70,7 @@ class ProductTableSeeder extends \BaseSeeder {
 					case 'Other':
 						$name = $other_names[$index];
 						$price = rand(2, 5);
-						$cycle_count = $index == 3 ? 18 : 0;
+						$maturity = $index == 3 ? 18 : 0;
 						$bundled_with_voip = 0;
 						break;
 				}
@@ -82,7 +82,7 @@ class ProductTableSeeder extends \BaseSeeder {
 					'voip_sales_tariff_id' => $voip_sale_id,
 					'voip_purchase_tariff_id' => $voip_purchase_tariff_id,
 					'billing_cycle' => $billing_cycle,
-					'cycle_count' => $cycle_count,
+					'maturity' => $maturity,
 					'costcenter_id' => $costcenter_id,
 					'price' => $price,
 					'tax' => $tax,

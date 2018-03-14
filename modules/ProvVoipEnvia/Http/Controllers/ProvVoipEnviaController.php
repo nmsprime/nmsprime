@@ -46,6 +46,7 @@ class ProvVoipEnviaController extends \BaseController {
 			$this->base_url .= '/';
 		}
 
+
 		parent::__construct();
 	}
 

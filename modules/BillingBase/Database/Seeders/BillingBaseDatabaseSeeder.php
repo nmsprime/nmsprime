@@ -1,11 +1,11 @@
 <?php 
 
-namespace Modules\BillingBase\Database\Seeders;
+namespace Modules\Billingbase\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
-class BillingBaseDatabaseSeeder extends Seeder {
+class BillingbaseDatabaseSeeder extends Seeder {
 
 	/**
 	 * Run the database seeds.
@@ -17,6 +17,7 @@ class BillingBaseDatabaseSeeder extends Seeder {
 		Model::unguard();
 		
 		$this->call("Modules\BillingBase\Database\Seeders\CostCenterTableSeeder");				// dependent on Contract Seeds - but not mandatory ? (only sql update)
+		$this->call("Modules\BillingBase\Database\Seeders\NumberRangeTableSeeder");				// dependent on Contract Seeds - but not mandatory ? (only sql update)
 		$this->call("Modules\BillingBase\Database\Seeders\ProductTableSeeder");
 		$this->call("Modules\BillingBase\Database\Seeders\SepaAccountTableSeeder");
 		$this->call("Modules\BillingBase\Database\Seeders\CompanyTableSeeder");

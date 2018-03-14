@@ -343,7 +343,7 @@ class DashboardController extends BaseController
 		if (!\PPModule::is_active('ticketsystem'))
 			return null;
 
-		return \Auth::user()->tickets->where('state', 'New')->all();
+		return \Auth::user()->tickets()->where('state', '=', 'New')->get();
 	}
 
 
