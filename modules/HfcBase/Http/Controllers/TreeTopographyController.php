@@ -71,7 +71,8 @@ class TreeTopographyController extends HfcBaseController {
 		$body_onload = 'init_for_map';
 
 		$panel_right = [['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$field, $search]],
-						['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]]];
+						['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]],
+						['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$search, 0, 0]]];
 
 		// MPS: get all Modem Positioning Rules
 		$mpr = $this->mpr(NetElement::whereRaw($s));

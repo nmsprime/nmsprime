@@ -112,7 +112,8 @@ class TreeErdController extends HfcBaseController {
 		$route_name  = 'Tree';
 
 		$panel_right = [['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$field, $search]],
-						['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]]];
+						['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]],
+						['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$search, 0, 0]]];
 
 		$preselect_field = $field;
 		$preselect_value = $search;
