@@ -553,23 +553,16 @@ end:
 		$us['SNR dB'] = $cmts->get_us_snr($ip);
 
 		// remove all inactive channels (no range success)
-		$tmp = count($ds['Power dBmV']);
 		foreach ($ds['Power dBmV'] as $key => $val)
 			if ($ds['Modulation'][$key] == '' && $ds['MER dB'][$key] == 0)
 				foreach ($ds as $entry => $arr)
 					unset($ds[$entry][$key]);
-		$ds['Operational CHs %'] = [count($ds['Power dBmV']) / $tmp * 100];
 
-		if ($docsis >= 4) {
-			$us_ranging_status = snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9');
-			$tmp = count($us['Power dBmV']);
-			foreach ($us_ranging_status as $key => $val)
+		if ($docsis >= 4)
+			foreach (snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9') as $key => $val)
 				if ($val != 4)
 					foreach($us as $entry => $arr)
 						unset($us[$entry][$key]);
-			$us['Operational CHs %'] = [count($us['Power dBmV']) / $tmp * 100];
-		} else
-			$us['Operational CHs %'] = [100];
 
 		// Put Sections together
 		$ret['System']      = $sys;
