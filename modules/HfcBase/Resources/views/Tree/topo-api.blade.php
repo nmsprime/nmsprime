@@ -375,8 +375,8 @@ function init_for_customer ()
 	clk_init_2();
 }
 
-function heat_map()
-{
+function heat_map(){
+	var planes = <?php echo json_encode($point);?>;
 	var mymap = L.map('mapid').setView([50.6504, 13.1623],13);
 
 	var baseLayer = L.tileLayer(
@@ -386,14 +386,39 @@ function heat_map()
 	    id: 'mapbox.streets',
 	    accessToken: 'your.mapbox.access.token'
 	  }).addTo(mymap);
-	var marker = L.marker([50.6504, 13.1623]).addTo(mymap);
+	//var marker = L.marker([50.6504, 13.1623]).addTo(mymap);
+	for (var i = 0; i < planes.length; i++) {
+			marker = new L.marker([planes[i][0],planes[i][1]])
+			.bindPopup(planes[i][2])
+			.addTo(mymap);
+		}
 	var heat = 	L.heatLayer(<?php echo json_encode($dim);?>, {
-				minOpacity:0.5, maxZoom:10, radius:18, blur:20, max:1.0,
-				gradient: {0.1: 'lime', 0.5: 'orange', 1: 'blue'}
+				minOpacity:0, maxZoom:10, radius:14, blur:20, max:1.0,
+				gradient: {
+                0.00 :'rgba(0,0,238,1)',
+                0.05 :'rgba(255,0,0,0.5)',
+                0.10 :'rgba(255,0,0,0.5)',
+                0.15: 'rgba(255,0,0,0.2)',
+                0.20: 'rgba(255,0,0,0.2)',
+                0.25: 'rgba(238,18,137,0.2)',
+                0.30: 'rgba(205,0,205,0.2)',
+                0.35: 'rgba(178,58,238,0.1)',
+                0.40: 'rgba(154,50,205,0.1)',
+                0.45: 'rgba(240,255,255,0.1)',
+                0.50: 'rgba(240,255,255,0.1)',
+                0.55: 'rgba(240,255,255,0.1)',
+                0.60: 'rgba(0,255,0,0.1)',
+                0.65: 'rgba(0,255,0,0.1)',
+                0.70: 'rgba(0,255,0,0.2)',
+                0.75: 'rgba(255,255,0,0.2)',
+                0.85: 'rgba(255,255,0,0.2)',
+                0.90: 'rgba(255,255,0,0.5)',
+                0.95: 'rgba(255,0,0,0.5)',
+                1.00: 'rgba(255,0,0,1)'
+            }
 			}).addTo(mymap);
 }
 
 </script>
-
 
 
