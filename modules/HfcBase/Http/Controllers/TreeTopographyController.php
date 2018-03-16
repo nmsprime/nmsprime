@@ -78,31 +78,9 @@ class TreeTopographyController extends HfcBaseController {
 		$mpr = $this->mpr(NetElement::whereRaw($s));
 
 		// NetElements: generate kml_file upload array
-		$kmls = $this->kml_file_array(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' '));
+		$kmls = $this->kml_file_array(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' ')->get());
 
 		return \View::make('hfcbase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'panel_right', 'body_onload', 'field', 'search', 'mpr', 'kmls')));
-	}
-
-
-	/*
-	 * KML Upload Array: Generate the KML file array
-	 *
-	 * @param trees: The Tree Objects to be displayed, without ->get() call
-	 * @return array of KML files, like ['file', 'descr']
-	 *
-	 * @author: Torsten Schmidt
-	 */
-	private function kml_file_array($trees)
-	{
-		$a = [];
-
-		foreach ($trees->get() as $tree)
-		{
-			if ($tree->kml_file != '')
-				array_push($a, ['file'=>$tree->kml_path.'/'.$tree->kml_file, 'descr' => $tree->kml_file]);
-		}
-
-		return $a;
 	}
 
 
