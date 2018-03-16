@@ -88,6 +88,12 @@
 			<div class="col-auto-md">
 				@include('dashboard::widgets.quickstart')
 			</div>
+
+			@if ($view['hfc'])
+				@DivOpen(3)
+					@include('dashboard::widgets.hfc')
+				@DivClose()
+			@endif
 		</div>
 
 
