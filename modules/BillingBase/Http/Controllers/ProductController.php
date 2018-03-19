@@ -1,7 +1,7 @@
 <?php
 namespace Modules\BillingBase\Http\Controllers;
 
-use Pingpong\Modules\Routing\Controller;
+use Nwidart\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\{CostCenter, Product};
 use Modules\ProvBase\Entities\Qos;
 use Modules\ProvVoip\Entities\PhoneTariff;

@@ -242,7 +242,7 @@ class TreeErdController extends HfcBaseController {
 		#
 		# TODO: Customer
 		#
-		if (\PPModule::is_active ('HfcCustomer'))
+		if (\Module::collections()->has('HfcCustomer'))
 		{
 		    $n = 0;
 			foreach ($netelements as $netelem)

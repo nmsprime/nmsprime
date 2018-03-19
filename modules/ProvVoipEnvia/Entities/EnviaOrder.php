@@ -790,7 +790,7 @@ class EnviaOrder extends \BaseModel {
 	// returns all objects that are related to an envia TEL Order
 	public function view_has_many()
 	{
-		if (\PPModule::is_active('provvoipenvia')) {
+		if (\Module::collections()->has('ProvVoipEnvia')) {
 			$ret['envia TEL']['EnviaOrderDocument']['class'] = 'EnviaOrderDocument';
 			$ret['envia TEL']['EnviaOrderDocument']['relation'] = $this->enviaorderdocument;
 			$ret['envia TEL']['EnviaOrderDocument']['method'] = 'show';

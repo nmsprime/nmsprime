@@ -255,7 +255,7 @@ class CustomerTopoController extends NetElementController {
 	public function show_diagrams ($modems)
 	{
 		// check if ProvMon is installed
-		if (!\PPModule::is_active('ProvMon'))
+		if (!\Module::collections()->has('ProvMon'))
 			return \View::make('errors.generic')->with('message', 'Module Provisioning Monitoring (ProvMon) not installed');
 
 		$monitoring = array();

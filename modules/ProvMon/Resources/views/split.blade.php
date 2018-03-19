@@ -30,7 +30,7 @@
 						<li role="presentation"><a href="#configfile" data-toggle="pill">Configfile</a></li>
 						<li role="presentation"><a href="#eventlog" data-toggle="pill">Eventlog</a></li>
 					</ul>', 'md' => 4, 'i' => 5))
-		@if (\PPModule::is_active('HfcCustomer'))
+		@if (\Module::collections()->has('HfcCustomer'))
 			@include ('bootstrap.panel-no-div', array ('content' => 'content_proximity_search', 'view_header' => 'Proximity Search', 'md' => 4, 'i' => 6))
 		@endif
 	</div>

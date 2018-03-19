@@ -1,7 +1,7 @@
 <?php namespace Modules\BillingBase\Http\Controllers;
 
 use Schema;
-use Pingpong\Modules\Routing\Controller;
+use Nwidart\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\{BillingBase, SepaMandate};
 use Modules\ProvBase\Entities\Contract;
 

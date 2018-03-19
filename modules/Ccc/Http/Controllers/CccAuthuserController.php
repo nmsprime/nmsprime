@@ -118,7 +118,7 @@ class CccAuthuserController extends \BaseController {
 	{
 		// load template
 		$template_dir = storage_path('app/config/ccc/template/');
-		$template_filename = \PPModule::is_active('billingbase') ? $contract->costcenter->sepaaccount->company->conn_info_template_fn : Ccc::first()->template_filename;
+		$template_filename = \Module::collections()->has('BillingBase') ? $contract->costcenter->sepaaccount->company->conn_info_template_fn : Ccc::first()->template_filename;
 
 		if (!$template = file_get_contents($template_dir.$template_filename))
 		{
@@ -194,7 +194,7 @@ class CccAuthuserController extends \BaseController {
 		$this->data['login_name'] 		  = $login_data['login_name'];
 		$this->data['psw'] 				  = $login_data['password'];
 
-		if (!\PPModule::is_active('billingbase'))
+		if (!\Module::collections()->has('BillingBase'))
 			return;
 
 		$costcenter = $contract->costcenter;
@@ -266,7 +266,7 @@ class CccAuthuserController extends \BaseController {
 				);
 		}
 
-		$emails = \PPModule::is_active('mail') ? \Auth::guard('ccc')->user()->contract->emails : collect();
+		$emails = \Module::collections()->has('Mail') ? \Auth::guard('ccc')->user()->contract->emails : collect();
 
 		return \View::make('ccc::index', compact('invoice_links','emails'));
 	}
@@ -296,7 +296,7 @@ class CccAuthuserController extends \BaseController {
 
 	public function psw_update()
 	{
-		if (\PPModule::is_active('mail') && \Input::has('email_id'))
+		if (\Module::collections()->has('Mail') && \Input::has('email_id'))
 		{
 			$email = Email::findorFail(\Input::get('email_id'));
 			// customer requested email object, which does not belong to him

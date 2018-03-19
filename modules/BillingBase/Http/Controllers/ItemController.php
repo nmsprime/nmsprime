@@ -2,7 +2,7 @@
 namespace Modules\BillingBase\Http\Controllers;
 
 use Config;
-use Pingpong\Modules\Routing\Controller;
+use Nwidart\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\{BillingBase, CostCenter, Product};
 use Modules\ProvBase\Entities\Contract;
 

@@ -1,7 +1,7 @@
 <?php
 namespace Modules\BillingBase\Http\Controllers;
 
-use Pingpong\Modules\Routing\Controller;
+use Nwidart\Modules\Routing\Controller;
 use Modules\BillingBase\Entities\{Company, SepaAccount};
 
 class SepaAccountController extends \BaseController {
