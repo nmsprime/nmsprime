@@ -15,7 +15,7 @@ if (!isset($called_by_script_server)) {
 }
 
 $snrs = [];
-foreach(glob("/var/www/nmsprime/storage/app/data/provbase/us_snr/*.json") as $file)
+foreach(glob("/var/www/nmsprime/storage/app/data/provmon/us_snr/*.json") as $file)
 	$snrs = array_merge($snrs, json_decode(file_get_contents($file), true));
 $GLOBALS['snrs'] = $snrs;
 
