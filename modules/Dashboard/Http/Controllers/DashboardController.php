@@ -371,7 +371,7 @@ class DashboardController extends BaseController
 				continue;
 
 			$status = $element->icingaobjects->icingahoststatus;
-			$link = link_to('/icingaweb2/monitoring/host/show?host='.$element->id, $element->name);
+			$link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/host/show?host='.$element->id, $element->name);
 			$ret['clr'][] = $state;
 			$ret['row'][] = [$link, $status->output, $status->last_time_up];
 		}
@@ -406,7 +406,7 @@ class DashboardController extends BaseController
 
 		foreach($objs->get() as $service) {
 			$tmp = \Modules\HfcReq\Entities\NetElement::find($service->name1);
-			$link = link_to('/icingaweb2/monitoring/service/show?host='.$service->name1.'&service='.$service->name2, $tmp ? $tmp->name : $service->name1);
+			$link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/service/show?host='.$service->name1.'&service='.$service->name2, $tmp ? $tmp->name : $service->name1);
 			$ret['clr'][] = $clr[$service->last_hard_state];
 			$ret['row'][] = [$link, $service->name2, $service->output, $service->last_time_ok];
 			$ret['perf'][] = self::_get_impaired_services_perfdata($service->perfdata);
