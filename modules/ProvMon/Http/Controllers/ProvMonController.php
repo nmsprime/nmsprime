@@ -599,7 +599,13 @@ end:
 				$r = 10;
 
 			echo("$idx: $r\t(".$us['SNR dB'][$idx].")\n");
-			snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
+			try {
+				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
+			} catch (\Exception $e) {
+				echo("error while setting new exptected us power\n");
+				\Log::error("error while setting new exptected us power\n");
+			}
+
 
 			$rx_pwr[$idx] = $r;
 		}
