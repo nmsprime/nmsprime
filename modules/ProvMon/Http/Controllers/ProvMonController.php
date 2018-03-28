@@ -244,7 +244,11 @@ class ProvMonController extends \BaseController {
 		$lease['text'] = $this->search_lease('billing subclass', $modem_mac);
 		$lease = $this->validate_lease($lease, $type);
 
-		// get MAC of CPE first
+		$ep = $modem->endpoints()->first();
+		if ($ep && $ep->fixed_ip && $ep->ip)
+			$lease = $this->_fake_lease($modem, $ep);
+
+		/// get MAC of CPE first
 		$str = self::_get_syslog_entries($modem_mac, "| grep CPE | tail -n 1 | tac");
 		// exec ('grep -i '.$modem_mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
 
@@ -420,6 +424,25 @@ end:
 		return $lease;
 	}
 
+	private function _fake_lease($modem, $ep) {
+		$lease['state'] = 'green';
+		$lease['forecast'] = 'CPE lease is statically assigned (endpoint)';
+		$lease['text'][0] = "lease $ep->ip {<br />" .
+			"starts 3 $ep->updated_at;<br />" .
+			"binding state active;<br />" .
+			"next binding state active;<br />" .
+			"rewind binding state active;<br />" .
+			"billing subclass \"Client\" $modem->mac;<br />" .
+			"hardware ethernet $ep->mac;<br />" .
+			"set ip = \"$ep->ip\";<br />" .
+			"set hw_mac = \"$ep->mac\";<br />" .
+			"set cm_mac = \"$modem->mac\";<br />" .
+			"option agent.remote-id $modem->mac;<br />" .
+			"option agent.unknown-9 0:0:11:8b:6:1:4:1:2:3:0;<br />" .
+			"}<br />";
+
+		return $lease;
+	}
 
 	/*
 	 * Local Helper to Convert the sysUpTime from Seconds to human readable format
