@@ -5,7 +5,7 @@ if (!isset($_SERVER['argv'][0]) || isset($_SERVER['REQUEST_METHOD'])  || isset($
 	die('<br><strong>This script is only meant to run at the command line.</strong>');
 }
 
-/* display ALL errors */
+/* display no errors */
 error_reporting(0);
 
 if (!isset($called_by_script_server)) {
@@ -40,6 +40,8 @@ function ss_docsis_snmp($host, $com, $oid, $denom = null)
 {
 	try {
 		$ret = snmp2_walk($host, $com, $oid);
+		if ($ret === false)
+			throw new Exception('No value using SNMP v2.');
 	} catch (\Exception $e) {
 		try {
 			$ret = snmpwalk($host, $com, $oid);
@@ -47,6 +49,9 @@ function ss_docsis_snmp($host, $com, $oid, $denom = null)
 			return null;
 		}
 	}
+
+	if($ret === false)
+		$ret = snmpwalk($host, $com, $oid);
 
 	if($denom)
 		return array_map(function($val) use ($denom) { return $val / $denom; }, $ret);
