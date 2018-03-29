@@ -45,14 +45,9 @@ class ModemHelper extends \BaseModel {
 		$onl = self::ms_num ($s);
 		$avg = self::ms_avg ($s);
 
-		if ($onl / $all * 100 < self::$avg_critical_percentage)
+		if ($onl / $all * 100 < self::$avg_critical_percentage || $avg > self::$avg_critical_us)
 			return 'CRITICAL';
-		if ($onl / $all * 100 < self::$avg_warning_percentage)
-			return 'WARNING';
-
-		if ($avg > self::$avg_critical_us)
-			return 'CRITICAL';
-		if ($avg > self::$avg_warning_us)
+		if ($onl / $all * 100 < self::$avg_warning_percentage || $avg > self::$avg_warning_us)
 			return 'WARNING';
 
 		return 'OK';
