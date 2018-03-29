@@ -27,35 +27,35 @@ class ModemHelper extends \BaseModel {
 
 	public static function ms_avg ( $s )
 	{
-	    return round(Modem::whereRaw("$s AND us_pwr > 0")->avg('us_pwr'),1);
+		return round(Modem::whereRaw("$s AND us_pwr > 0")->avg('us_pwr'), 1);
 	}
 
 	public static function ms_cri ( $s )
 	{
 		$c = self::$single_critical_us;
-		return ( Modem::whereRaw("(($s) AND us_pwr > $c)")->count() );
+		return Modem::whereRaw("(($s) AND us_pwr > $c)")->count();
 	}
 
 	public static function ms_state ( $s )
 	{
-	        $all = self::ms_num_all ($s);
-	        if ($all == 0)
-	                return -1;
+		$all = self::ms_num_all ($s);
+		if ($all == 0)
+			return -1;
 
-	        $onl = self::ms_num ($s);
-	        $avg = self::ms_avg ($s);
+		$onl = self::ms_num ($s);
+		$avg = self::ms_avg ($s);
 
-	        if ($onl / $all * 100 < self::$avg_critical_percentage)
-	                return 'CRITICAL';
-	        if ($onl / $all * 100 < self::$avg_warning_percentage)
-	                return 'WARNING';
+		if ($onl / $all * 100 < self::$avg_critical_percentage)
+			return 'CRITICAL';
+		if ($onl / $all * 100 < self::$avg_warning_percentage)
+			return 'WARNING';
 
-	        if ($avg > self::$avg_critical_us)
-	                return 'CRITICAL';
-	        if ($avg > self::$avg_warning_us)
-	                return 'WARNING';
+		if ($avg > self::$avg_critical_us)
+			return 'CRITICAL';
+		if ($avg > self::$avg_warning_us)
+			return 'WARNING';
 
-	        return 'OK';
+		return 'OK';
 	}
 
 	public static function ms_state_to_color ($s)
@@ -70,9 +70,9 @@ class ModemHelper extends \BaseModel {
 
 	public static function ms_avg_pos ( $s )
 	{
-	    $q = Modem::whereRaw("$s AND us_pwr > 0 AND x != 0 AND y != 0");
+		$q = Modem::whereRaw("$s AND us_pwr > 0 AND x != 0 AND y != 0");
 
-	    return [ 'x' => round($q->avg('x'),4), 'y' => round($q->avg('y'),4) ];
+		return [ 'x' => round($q->avg('x'), 4), 'y' => round($q->avg('y'), 4) ];
 	}
 
 }
