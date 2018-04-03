@@ -430,7 +430,7 @@ end:
 
 	private function _fake_lease($modem, $ep) {
 		$lease['state'] = 'green';
-		$lease['forecast'] = 'CPE lease is statically assigned (endpoint)';
+		$lease['forecast'] = trans('messages.cpe_fake_lease').'<br />';
 		$lease['text'][0] = "lease $ep->ip {<br />" .
 			"starts 3 $ep->updated_at;<br />" .
 			"binding state active;<br />" .
