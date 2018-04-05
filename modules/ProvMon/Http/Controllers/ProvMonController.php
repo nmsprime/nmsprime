@@ -292,6 +292,10 @@ class ProvMonController extends \BaseController {
 			{
 				$ip = $ip[0][0];
 				exec ('sudo ping -c3 -i0 -w1 '.$ip, $ping);
+
+				$fqdn = exec("dig -x $ip +short");
+				if ($fqdn)
+					$dash = "Hostname: $fqdn";
 			}
 		}
 		if (is_array($ping) && count(array_keys($ping)) <= 7)
@@ -426,7 +430,7 @@ end:
 
 	private function _fake_lease($modem, $ep) {
 		$lease['state'] = 'green';
-		$lease['forecast'] = 'CPE lease is statically assigned (endpoint)';
+		$lease['forecast'] = trans('messages.cpe_fake_lease').'<br />';
 		$lease['text'][0] = "lease $ep->ip {<br />" .
 			"starts 3 $ep->updated_at;<br />" .
 			"binding state active;<br />" .
