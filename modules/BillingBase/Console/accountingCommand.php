@@ -509,6 +509,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				}
 
 				if ($logged != $calling_number) {
+					// NOTE: wrong sipdomain can lead to this error too
 					Log::warning('billing', "Calling Number [$calling_number] does not exist - but customer number [$customer_nr] neither!");
 					$logged = $calling_number;
 				}

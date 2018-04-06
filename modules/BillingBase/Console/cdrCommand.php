@@ -122,10 +122,10 @@ class cdrCommand extends Command {
 		$password = env('PROVVOIPENVIA__RESELLER_PASSWORD');
 
 		try {
-			\ChannelLog::debug('billing', "GET: https://$user:$password@www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/".$this->year.'/'.$this->month);
-			$data = file_get_contents("https://$user:$password@www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/".$this->year.'/'.$this->month);
+			\ChannelLog::debug('billing', "GET: https://$user:$password@portal.enviatel.de/vertrieb2/reseller/evn/K8000002961/".date('Y/m', $time));
+			$data = file_get_contents("https://$user:$password@portal.enviatel.de/vertrieb2/reseller/evn/K8000002961/".date('Y/m', $time));
 		} catch (\Exception $e) {
-			\ChannelLog::alert('billing', 'CDR-Import: Could not get Call Data Records from envia TEL for month: '.$this->month, ["www.enviatel.de/portal/vertrieb2/reseller/evn/K8000002961/$this->year/$this->month"]);
+			\ChannelLog::alert('billing', 'CDR-Import: Could not get Call Data Records from envia TEL for month: '.date('m', $time), ["portal.enviatel.de/vertrieb2/reseller/evn/K8000002961/".date('Y/m', $time)]);
 			return -1;
 		}
 
