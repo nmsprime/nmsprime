@@ -3,7 +3,7 @@ namespace Modules\BillingBase\Console;
 
 use ChannelLog as Log, DB, Storage;
 use Illuminate\Console\Command;
-use Illuminate\Contracts\Bus\SelfHandling;
+use Collective\Bus\Contracts\SelfHandling;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\{ SerializesModels, InteractsWithQueue};
 use Modules\ProvBase\Entities\Contract;

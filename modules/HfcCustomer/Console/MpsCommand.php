@@ -3,13 +3,13 @@
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
+use Collective\Bus\Contracts\SelfHandling;
 
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Bus\SelfHandling;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class mpsCommand extends Command implements SelfHandling, ShouldQueue {
+class MpsCommand extends Command implements SelfHandling, ShouldQueue {
 
 	use InteractsWithQueue, SerializesModels;
 
