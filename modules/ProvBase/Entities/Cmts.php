@@ -8,6 +8,7 @@ use Acme\php\ArrayHelper;
 
 class Cmts extends \BaseModel {
 
+	private static $_us_snr_path = 'data/provmon/us_snr';
 	// don't put a trailing slash here!
 	public static $cmts_include_path = '/etc/dhcp/nmsprime/cmts_gws';
 
@@ -34,6 +35,12 @@ class Cmts extends \BaseModel {
 	public static function view_icon()
 	{
 		return '<i class="fa fa-server"></i>';
+	}
+
+	public static function make_dhcp_conf_all()
+	{
+		foreach (Cmts::all() as $cmts)
+			$cmts->make_dhcp_conf();
 	}
 
 	// AJAX Index list function
@@ -265,7 +272,7 @@ class Cmts extends \BaseModel {
 	 */
 	public function get_us_snr($ip)
 	{
-		$fn = "data/provbase/us_snr/$this->id.json";
+		$fn = self::$_us_snr_path."/$this->id.json";
 
 		if (!\Storage::exists($fn)) {
 			\Log::error("Missing Modem US SNR json file of CMTS $this->hostname [$this->id]");
@@ -296,39 +303,47 @@ class Cmts extends \BaseModel {
 		snmp_set_valueretrieval(SNMP_VALUE_LIBRARY);
 		snmp_set_quick_print(true);
 
-		\Log::info("CMTS $this->hostname: Store CM US SNRs");
+		\Log::debug("CMTS $this->hostname: Store CM US SNRs");
 
 		try {
-			// DOCS-IF3-MIB::docsIf3CmtsCmRegStatusIPv4Addr, ...
-			$ips = snmp2_real_walk($this->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.3.1.5');
-			$snrs = snmp2_real_walk($this->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.4.1.4');
+			try {
+				// DOCS-IF3-MIB::docsIf3CmtsCmRegStatusIPv4Addr, ...
+				$ips = snmp2_real_walk($this->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.3.1.5');
+				$snrs = snmp2_real_walk($this->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.4.1.4');
 
-			foreach ($ips as $i_key => $i_val) {
-				$i_key = last(explode('.', $i_key));
-				$tmp = array_filter($snrs, function($s_key) use($i_key) {
-						return strpos($s_key, $i_key) !== false;
-				}, ARRAY_FILTER_USE_KEY);
-				$ret[long2ip(hexdec($i_val))] = ArrayHelper::ArrayDiv(array_values($tmp));
-			}
+				foreach ($ips as $i_key => $i_val) {
+					$i_key = last(explode('.', $i_key));
+					$tmp = array_filter($snrs, function($s_key) use($i_key) {
+							return strpos($s_key, $i_key) !== false;
+					}, ARRAY_FILTER_USE_KEY);
+					$ret[long2ip(hexdec($i_val))] = ArrayHelper::ArrayDiv(array_values($tmp));
+				}
 
-		} catch (\Exception $e) {
-			if (strpos($e->getMessage(), 'No Such Object available on this agent at this OID') === false)
-					throw $e;
+			} catch (\Exception $e) {
+				if (strpos($e->getMessage(), 'No Such Object available on this agent at this OID') === false)
+						throw $e;
 
-			// try DOCSIS2.0 - DOCS-IF-MIB::docsIfCmtsCmStatusIpAddress, ...
-			$ips = snmp2_real_walk($this->ip, $com, '.1.3.6.1.2.1.10.127.1.3.3.1.3');
-			$snrs = snmp2_real_walk($this->ip, $com, '.1.3.6.1.2.1.10.127.1.3.3.1.13');
+				// try DOCSIS2.0 - DOCS-IF-MIB::docsIfCmtsCmStatusIpAddress, ...
+				$ips = snmp2_real_walk($this->ip, $com, '.1.3.6.1.2.1.10.127.1.3.3.1.3');
+				$snrs = snmp2_real_walk($this->ip, $com, '.1.3.6.1.2.1.10.127.1.3.3.1.13');
 
-			foreach ($ips as $i_key => $i_val) {
-				$i_key = last(explode('.', $i_key));
-				$tmp = array_filter($snrs, function($s_key) use($i_key) {
-						return strpos($s_key, $i_key) !== false;
-				}, ARRAY_FILTER_USE_KEY);
-				$ret[$i_val] = ArrayHelper::ArrayDiv(array_values($tmp));
+				foreach ($ips as $i_key => $i_val) {
+					$i_key = last(explode('.', $i_key));
+					$tmp = array_filter($snrs, function($s_key) use($i_key) {
+							return strpos($s_key, $i_key) !== false;
+					}, ARRAY_FILTER_USE_KEY);
+					$ret[$i_val] = ArrayHelper::ArrayDiv(array_values($tmp));
+				}
 			}
 		}
+		catch (\Exception $e) {
+			// have to catch errors here – throwing an exception results in stopping the console command
+			// no other CMTSs will be asked for US values after the first crash
+			\Log::error("Cannot get modem US SNR values for CMTS $this->hostname: ".get_class($e)." (".$e->getMessage().") in ".$e->getFile().":".$e->getLine());
+			return;
+		}
 
-		\Storage::put("data/provbase/us_snr/$this->id.json", json_encode($ret));
+		\Storage::put(self::$_us_snr_path."/$this->id.json", json_encode($ret));
 	}
 
 
@@ -344,17 +359,25 @@ class Cmts extends \BaseModel {
 	{
 		$mods = [];
 		// get all channel IDs of the CMTS
-		$idxs = snmprealwalk($this->ip, $this->get_ro_community(), '.1.3.6.1.2.1.10.127.1.1.2.1.1');
+		try {
+			$idxs = snmprealwalk($this->ip, $this->get_ro_community(), '.1.3.6.1.2.1.10.127.1.1.2.1.1');
 
-		// intersect all channel IDs with the ones used by the modem (supplied as method argument)
-		foreach(array_intersect($idxs, $ch_ids) as $key => $val) {
-			$key = explode('.', $key);
-			// get the modulation profile ID used for this channel
-			$mod_prof = snmpwalk($this->ip, $this->get_ro_community(), '.1.3.6.1.2.1.10.127.1.1.2.1.4.'.end($key));
-			// get all modulations of this profile
-			$mod = snmpwalk($this->ip, $this->get_ro_community(), '.1.3.6.1.2.1.10.127.1.3.5.1.4.'.array_pop($mod_prof));
-			// only add the last one, as this is used for user data
-			$mods[] = array_pop($mod);
+			// intersect all channel IDs with the ones used by the modem (supplied as method argument)
+			foreach(array_intersect($idxs, $ch_ids) as $key => $val) {
+				$key = explode('.', $key);
+				// get the modulation profile ID used for this channel
+				$mod_prof = snmpwalk($this->ip, $this->get_ro_community(), '.1.3.6.1.2.1.10.127.1.1.2.1.4.'.end($key));
+				// get all modulations of this profile
+				$mod = snmpwalk($this->ip, $this->get_ro_community(), '.1.3.6.1.2.1.10.127.1.3.5.1.4.'.array_pop($mod_prof));
+				// only add the last one, as this is used for user data
+				$mods[] = array_pop($mod);
+			}
+		}
+		catch (\ErrorException $ex) {
+			\Log::error("ErrorException in ".__METHOD__."(): ".$ex->getMessage());
+		}
+		catch (\Exception $ex) {
+			throw $ex;
 		}
 
 		return $mods;
@@ -396,7 +419,7 @@ class Cmts extends \BaseModel {
 			$subnet = $pool->net;
 			$netmask = $pool->netmask;
 			$broadcast_addr = $pool->broadcast_ip;
-			$range = $pool->ip_pool_start.' '.$pool->ip_pool_end;
+			$range = $pool->get_range();
 			$router = $pool->router_ip;
 			$type = $pool->type;
 			$options = $pool->optional;
@@ -421,8 +444,8 @@ class Cmts extends \BaseModel {
 				$pos = strrpos($data_tmp, ',');
 				$data .= substr_replace($data_tmp, '', $pos, 1).";";
 			}
-			$data .= "\n\n\t\t".'pool'."\n\t\t".'{';
-			$data .= "\n\t\t\t".'range '.$range.';'."\n";
+			$data .= "\n\n\t\t".'pool'."\n\t\t{\n";
+			$data .= $range;
 
 			switch ($type)
 			{

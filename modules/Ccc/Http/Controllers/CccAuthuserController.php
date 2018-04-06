@@ -288,7 +288,7 @@ class CccAuthuserController extends \BaseController {
 
 		// check that only allowed files are downloadable - invoice must belong to customer and settlmentrun must be verified
 		if (!$invoice || $invoice->contract_id != $user->contract_id || !$invoice->settlementrun->verified)
-			throw new \App\Exceptions\AuthExceptions('Permission Denied');
+			throw new \App\Exceptions\AuthException('Permission Denied');
 
 		Log::info($user->first_name.' '.$user->last_name.' downloaded invoice '.$invoice->filename.' - id: '.$invoice->id);
 

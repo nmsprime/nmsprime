@@ -104,8 +104,8 @@ class ProvMonController extends \BaseController {
 		// TODO: Dash / Forecast
 
 		$panel_right = $this->prep_sidebar($id);
-
 		$view_header = 'ProvMon-Analyses';
+
 		// View
 		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header')));
 	}
@@ -244,7 +244,11 @@ class ProvMonController extends \BaseController {
 		$lease['text'] = $this->search_lease('billing subclass', $modem_mac);
 		$lease = $this->validate_lease($lease, $type);
 
-		// get MAC of CPE first
+		$ep = $modem->endpoints()->first();
+		if ($ep && $ep->fixed_ip && $ep->ip)
+			$lease = $this->_fake_lease($modem, $ep);
+
+		/// get MAC of CPE first
 		$str = self::_get_syslog_entries($modem_mac, "| grep CPE | tail -n 1 | tac");
 		// exec ('grep -i '.$modem_mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
 
@@ -288,6 +292,10 @@ class ProvMonController extends \BaseController {
 			{
 				$ip = $ip[0][0];
 				exec ('sudo ping -c3 -i0 -w1 '.$ip, $ping);
+
+				$fqdn = exec("dig -x $ip +short");
+				if ($fqdn)
+					$dash = "Hostname: $fqdn";
 			}
 		}
 		if (is_array($ping) && count(array_keys($ping)) <= 7)
@@ -420,6 +428,25 @@ end:
 		return $lease;
 	}
 
+	private function _fake_lease($modem, $ep) {
+		$lease['state'] = 'green';
+		$lease['forecast'] = trans('messages.cpe_fake_lease').'<br />';
+		$lease['text'][0] = "lease $ep->ip {<br />" .
+			"starts 3 $ep->updated_at;<br />" .
+			"binding state active;<br />" .
+			"next binding state active;<br />" .
+			"rewind binding state active;<br />" .
+			"billing subclass \"Client\" $modem->mac;<br />" .
+			"hardware ethernet $ep->mac;<br />" .
+			"set ip = \"$ep->ip\";<br />" .
+			"set hw_mac = \"$ep->mac\";<br />" .
+			"set cm_mac = \"$modem->mac\";<br />" .
+			"option agent.remote-id $modem->mac;<br />" .
+			"option agent.unknown-9 0:0:11:8b:6:1:4:1:2:3:0;<br />" .
+			"}<br />";
+
+		return $lease;
+	}
 
 	/*
 	 * Local Helper to Convert the sysUpTime from Seconds to human readable format
@@ -553,23 +580,16 @@ end:
 		$us['SNR dB'] = $cmts->get_us_snr($ip);
 
 		// remove all inactive channels (no range success)
-		$tmp = count($ds['Power dBmV']);
 		foreach ($ds['Power dBmV'] as $key => $val)
 			if ($ds['Modulation'][$key] == '' && $ds['MER dB'][$key] == 0)
 				foreach ($ds as $entry => $arr)
 					unset($ds[$entry][$key]);
-		$ds['Operational CHs %'] = [count($ds['Power dBmV']) / $tmp * 100];
 
-		if ($docsis >= 4) {
-			$us_ranging_status = snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9');
-			$tmp = count($us['Power dBmV']);
-			foreach ($us_ranging_status as $key => $val)
+		if ($docsis >= 4)
+			foreach (snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9') as $key => $val)
 				if ($val != 4)
 					foreach($us as $entry => $arr)
 						unset($us[$entry][$key]);
-			$us['Operational CHs %'] = [count($us['Power dBmV']) / $tmp * 100];
-		} else
-			$us['Operational CHs %'] = [100];
 
 		// Put Sections together
 		$ret['System']      = $sys;
@@ -606,7 +626,13 @@ end:
 				$r = 10;
 
 			echo("$idx: $r\t(".$us['SNR dB'][$idx].")\n");
-			snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
+			try {
+				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
+			} catch (\Exception $e) {
+				echo("error while setting new exptected us power\n");
+				\Log::error("error while setting new exptected us power\n");
+			}
+
 
 			$rx_pwr[$idx] = $r;
 		}

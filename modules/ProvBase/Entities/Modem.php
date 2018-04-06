@@ -164,10 +164,20 @@ class Modem extends \BaseModel {
 		return $this->hasMany('Modules\ProvVoip\Entities\Mta');
 	}
 
-	// TODO: rename to device - search for all places where this function is used
+	public function endpoints()
+	{
+		return $this->hasMany('Modules\ProvBase\Entities\Endpoint');
+	}
+
+	// TODO: deprecated! use netelement function instead - search for all places where this function is used
 	public function tree()
 	{
 		return $this->belongsTo('Modules\HfcReq\Entities\NetElement');
+	}
+
+	public function nelelement()
+	{
+		return $this->belongsTo('Modules\HfcReq\Entities\NetElement', 'netelement_id');
 	}
 
 
@@ -189,6 +199,12 @@ class Modem extends \BaseModel {
 			$ret['dummy']['Mta']['class'] = 'Mta';
 			$ret['dummy']['Mta']['relation'] = $this->mtas;
 		}
+
+                // only show endpoints (and thus the ability to create a new one) for public CPEs
+                if($this->public) {
+                        $ret['dummy']['Endpoint']['class'] = 'Endpoint';
+                        $ret['dummy']['Endpoint']['relation'] = $this->endpoints;
+                }
 
 		if (\PPModule::is_active('provvoipenvia'))
 		{
@@ -446,7 +462,7 @@ class Modem extends \BaseModel {
 		$max_cpe = $cpe_cnt ? : 2; 		// default 2
 		$network_access = 1;
 
-		if (count($this->mtas))
+		if (\PPModule::is_active('provvoip') && (count($this->mtas)))
 			$max_cpe = count($this->mtas) + (($this->contract->telephony_only || !$this->network_access) ? 0 : $max_cpe);
 		else if (!$this->network_access)
 			$network_access = 0;
@@ -459,8 +475,10 @@ class Modem extends \BaseModel {
 		// make text and write to file
 		$conf = "\tNetworkAccess $network_access;\n";
 		$conf .= "\tMaxCPE $max_cpe;\n";
-		foreach ($this->mtas as $mta)
-			$conf .= "\tCpeMacAddress $mta->mac;\n";
+		if (\PPModule::is_active('ProvVoip')) {
+			foreach ($this->mtas as $mta)
+				$conf .= "\tCpeMacAddress $mta->mac;\n";
+		}
 
 		$text = "Main\n{\n".$conf.$cf->text_make($modem, "modem")."\n}";
 
@@ -563,36 +581,39 @@ class Modem extends \BaseModel {
 			$mac 	= $mac_changed ? $this->getOriginal('mac') : $this->mac;
 			$mac_oid = implode('.', array_map('hexdec', explode(':', $mac)));
 
-			if($cmts && $cmts->company == 'Cisco') {
+			if ($cmts && $cmts->company == 'Cisco') {
 				// delete modem entry in cmts - CISCO-DOCS-EXT-MIB::cdxCmCpeDeleteNow
 				snmpset($cmts->ip, $cmts->get_rw_community(), '1.3.6.1.4.1.9.9.116.1.3.1.1.9.'.$mac_oid, 'i', '1', 300000, 1);
 			}
-			elseif($cmts && $cmts->company == 'Casa') {
+			else if ($cmts && $cmts->company == 'Casa') {
 				// reset modem via cmts, deleting is not possible - CASA-CABLE-CMCPE-MIB::casaCmtsCmCpeResetNow
 				snmpset($cmts->ip, $cmts->get_rw_community(), '1.3.6.1.4.1.20858.10.12.1.3.1.7.'.$mac_oid, 'i', '1', 300000, 1);
 			}
-			else {
-				// restart modem - DOCS-CABLE-DEV-MIB::docsDevResetNow
-				snmpset($fqdn, $config->rw_community, '1.3.6.1.2.1.69.1.1.3.0', 'i', '1', 300000, 1);
-			}
+			else throw new Exception("CMTS company not set");
 		}
 		catch (Exception $e)
 		{
-			// only ignore error with this error message (catch exception with this string)
-			if (((strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false) || (strpos($e->getMessage(), "snmpset(): No response from") !== false))) {
-				\Session::flash('error', 'Could not restart Modem! (offline?)');
-			}
-			elseif(strpos($e->getMessage(), "noSuchName") !== false) {
-				// this is not necessarily an error, e.g. the modem was deleted (i.e. Cisco) and user clicked on restart again
-			}
-			else {
-				// Inform and log for all other exceptions
-				\Session::push('tmp_error_above_form', 'Unexpected exception: '.$e->getMessage());
-				\Log::error("Unexpected exception restarting modem ".$this->id." (".$this->mac."): ".$e->getMessage()." => ".$e->getTraceAsString());
-				\Session::flash('error', '');
+			\Log::error("Could not delete $this->hostname from CMTS ('".$e->getMessage()."'). Let's try to restart it directly.");
+
+			try {
+				// restart modem - DOCS-CABLE-DEV-MIB::docsDevResetNow
+				snmpset($fqdn, $config->rw_community, '1.3.6.1.2.1.69.1.1.3.0', 'i', '1', 300000, 1);
+			} catch (Exception $e) {
+				\Log::error("Could not restart $this->hostname directly ('".$e->getMessage()."')");
+
+				if (((strpos($e->getMessage(), "php_network_getaddresses: getaddrinfo failed: Name or service not known") !== false) ||
+					(strpos($e->getMessage(), "snmpset(): No response from") !== false)) ||
+					// this is not necessarily an error, e.g. the modem was deleted (i.e. Cisco) and user clicked on restart again
+					(strpos($e->getMessage(), "noSuchName") !== false))
+				{
+					\Session::push('tmp_warning_above_form', trans('messages.modem_restart_error'));
+				}
+				else {
+					// Inform and log for all other exceptions
+					\Session::push('tmp_error_above_form', 'Unexpected exception: '.$e->getMessage());
+				}
 			}
 		}
-
 	}
 
 

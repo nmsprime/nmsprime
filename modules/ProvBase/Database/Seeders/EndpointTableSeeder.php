@@ -2,24 +2,59 @@
 
 namespace Modules\ProvBase\Database\Seeders;
 
-// Composer: "fzaninotto/faker": "v1.3.0"
-use Faker\Factory as Faker;
 use Modules\ProvBase\Entities\Endpoint;
+use Modules\ProvBase\Entities\Modem;
 
 class EndpointTableSeeder extends \BaseSeeder {
 
 	public function run()
 	{
-		$faker = Faker::create();
-
-		foreach(range(1, $this->max_seed_l2) as $index)
+		foreach(range(1, self::$max_seed_l2) as $index)
 		{
-			Endpoint::create([
-				'mac' => (rand(0,1) == 1 ? $faker->macAddress() : ''),
-				'description' => $faker->realText(200),
-				'type' => (rand(0,1) == 1 ? 'cpe' : 'mta')
-			]);
+			Endpoint::create(static::get_fake_data('seed'));
 		}
 	}
 
+
+	/**
+	 * Returns an array with faked endpoint data; used e.g. in seeding and testing
+	 *
+	 * @param $topic Context the method is used in (seed|test)
+	 *
+	 * @author Patrick Reichel
+	 */
+	public static function get_fake_data($topic, $modem=null) {
+
+		$faker =& \NmsFaker::getInstance();
+
+		if ($topic == 'seed') {
+			$modem = Modem::all()->random(1);
+			$modem_id = $modem->id;
+		} else {
+			if (!is_null($modem))
+				$modem_id = $modem->id;
+			else
+				$modem_id = null;
+		}
+
+		if (rand(0, 1) == 1) {
+			$fixed_ip = 1;
+			$ip = $faker->localIpv4();
+		}
+		else {
+			$fixed_ip = 0;
+			$ip = null;
+		}
+
+		$ret = [
+			'mac' => $faker->macAddress(),
+			'description' => $faker->realText(200),
+			'hostname' => $faker->domainWord.$faker->domainWord.$faker->domainWord,
+			'modem_id' => $modem_id,
+			'fixed_ip' => $fixed_ip,
+			'ip' => $ip,
+		];
+
+		return $ret;
+	}
 }

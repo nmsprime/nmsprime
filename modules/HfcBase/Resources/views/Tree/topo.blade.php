@@ -40,11 +40,11 @@
 				</label>
 			</div>
 		</div>
-		<ul class="nav nav-pills align-self-end ml-auto">
+		<ul class="nav nav-pills align-self-end ml-auto mr-5">
 			<?php
 				$par = array_merge(Route::getCurrentRoute()->parameters(), \Input::all());
 				$cur_row = \Input::has('row') ? \Input::get('row') : 'us_pwr';
-				foreach (['us_pwr' => 'US Power', 'us_snr' => 'US SNR', 'ds_pwr' => 'DS Power', 'ds_snr' => 'DS SNR'] as $key => $val) {
+				foreach (['us_pwr' => 'US Power', 'us_snr' => 'US SNR', 'ds_pwr' => 'DS Power', 'ds_snr' => 'DS SNR', 'ds_us' => 'DS/US Power'] as $key => $val) {
 					$par['row'] = $key;
 					$class = ($cur_row === $key) ? 'active' : '';
 					echo("<li role=\"presentation\" class=\"$class\">".link_to_route(Route::getCurrentRoute()->getName(), $val, $par).'</li>');

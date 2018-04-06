@@ -41,4 +41,25 @@ class HfcBaseController extends BaseController {
 			return \App::abort(404);
 	}
 
+
+	/*
+	 * KML Upload Array: Generate the KML file array
+	 *
+	 * @param trees: The Tree Objects to be displayed, with ->get() call
+	 * @return array of KML files, like ['file', 'descr']
+	 *
+	 * @author: Torsten Schmidt
+	 */
+	public function kml_file_array($trees)
+	{
+		$a = [];
+
+		foreach ($trees as $tree)
+		{
+			if ($tree->kml_file != '')
+				array_push($a, ['file'=>$tree->kml_path.'/'.$tree->kml_file, 'descr' => $tree->kml_file]);
+		}
+
+		return $a;
+	}
 }

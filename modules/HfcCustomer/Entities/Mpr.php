@@ -44,7 +44,7 @@ class Mpr extends \BaseModel {
 	public function view_index_label()
 	{
 		return ['table' => $this->table,
-				'index_header' => [$this->table.'.name', 'netelement.name'],
+				'index_header' => ['id', $this->table.'.name', 'prio', 'netelement.name'],
 				'header' =>  $this->name,
 				'order_by' => ['0' => 'asc'], // columnindex => direction
 				'eager_loading' => ['netelement']];
@@ -184,7 +184,9 @@ class Mpr extends \BaseModel {
 				// Log
 				$log = 'MPS: UPDATE: '.$id.', '.$mpr->name.' - updated modems: '.$r;
 				\Log::debug ($log);
-				echo $log."\n";
+				if (env('APP_ENV') != 'testing') {
+					echo $log."\n";
+				}
 			} elseif (count($mpr->mprgeopos) > 2) {
 
 				// populate polygon array according to mprgeopostions, this will be used by point_in_polygon()

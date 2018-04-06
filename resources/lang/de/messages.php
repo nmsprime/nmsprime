@@ -30,7 +30,7 @@ return [
 	'Country Code'				=> 'Ländervorwahl',
 	'cpe_not_reachable' 		=> 'aber via PING nicht erreichbar (ICMP kann herstellerabhängig vom Router geblockt werden)',
 	'cpe_log_error'				=> 'ist nicht beim Server registriert - Kein Logeintrag gefunden',
-
+	'cpe_fake_lease'			=> 'Der DHCP Server hat kein Lease für den Endpunkt angelegt, weil dessen IP Adresse statisch vergeben ist und der Server diesen somit nicht verfolgen muss. Das folgende Lease wurde lediglich als Referenz manuell generiert:',
 	'Create'					=> 'Erstellen',
 	'D' 						=> 'Tag|Tage',
 	'Delete'					=> 'Löschen',
@@ -54,6 +54,7 @@ return [
 	'E-Mail Address'			=> 'Email-Adresse',
 	'First IP'					=> 'Erste IP',
 	'Firstname'					=> 'Vorname',
+	'Fixed IP'					=> 'Statische IP',
 	'Force Restart'				=> 'Neustart erzwingen',
 	'IBAN'						=> 'IBAN',
 	'Internet Access'			=> 'Internetzugriff',
@@ -77,6 +78,7 @@ return [
 	'modem_log_error'			=> 'Modem ist nicht beim Server registriert - Kein Logeintrag gefunden',
 	'modem_configfile_error'	=> 'Modem Konfigurationsdatei nicht gefunden',
 	'modem_offline'				=> 'Modem ist Offline',
+	'modem_restart_error' 		=> 'Das Modem konnte nicht neugestartet werden! (offline?)',
 	'month'						=> 'Monat',
 	'Month'						=> 'Monat',
 	'mta_configfile_error'		=> 'MTA Konfigurationsdatei nicht gefunden',
@@ -265,6 +267,7 @@ return [
 	'DC'					=> 'SEPA Gutschriften',
 	'salesmen_commission'	=> 'Provision_Verkaeufer',
 	'Invoices'				=> 'Rechnungen',
+	'Load Data' 			=> 'Lade Daten',
 
 	//CostCenter
 	'Associated SEPA Account'	=> 'Verknüpftes SEPA-Konto',
@@ -342,6 +345,8 @@ return [
 //
 // HFC
 //
+	'indices_unassigned' 	=> 'Einer/Einige der zugewiesenen Indizes konnten keinem Parameter zugeordnet werden! Sie werden somit aktuell nur nicht genutzt. Sie können gelöscht oder für später behalten werden. Vergleichen Sie dazu die Parameterliste im Netzelement mit der Liste der Indizes!',
+
 	//MPR
 	'Value (deprecated)'          => 'Wert (veraltet)',
 	'Priority (lower runs first)' => 'Priorität (kleinere zuerst)',

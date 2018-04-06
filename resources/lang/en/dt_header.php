@@ -101,6 +101,7 @@ return [
 	'domain.type' => 'Type',
 	'domain.alias' => 'Alias',
 	// Endpoint
+	'endpoint.ip' => 'IP',
 	'endpoint.hostname' => 'Hostname',
 	'endpoint.mac' => 'MAC',
 	'endpoint.description' => 'Description',
@@ -114,7 +115,7 @@ return [
 	// Modem
 	'modem.house_number' => 'Housenr',
 	'modem.id' => 'Modem Number',
-	'modem.mac' => 'MAC Addresse',
+	'modem.mac' => 'MAC Address',
 	'modem.name' => 'Modem Name',
 	'modem.firstname' => 'First name',
 	'modem.lastname' => 'Surname',

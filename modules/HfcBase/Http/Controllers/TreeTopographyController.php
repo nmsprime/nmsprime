@@ -71,37 +71,16 @@ class TreeTopographyController extends HfcBaseController {
 		$body_onload = 'init_for_map';
 
 		$panel_right = [['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$field, $search]],
-						['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]]];
+						['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]],
+						['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$search, 0, 0]]];
 
 		// MPS: get all Modem Positioning Rules
 		$mpr = $this->mpr(NetElement::whereRaw($s));
 
 		// NetElements: generate kml_file upload array
-		$kmls = $this->kml_file_array(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' '));
+		$kmls = $this->kml_file_array(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' ')->get());
 
 		return \View::make('hfcbase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'panel_right', 'body_onload', 'field', 'search', 'mpr', 'kmls')));
-	}
-
-
-	/*
-	 * KML Upload Array: Generate the KML file array
-	 *
-	 * @param trees: The Tree Objects to be displayed, without ->get() call
-	 * @return array of KML files, like ['file', 'descr']
-	 *
-	 * @author: Torsten Schmidt
-	 */
-	private function kml_file_array($trees)
-	{
-		$a = [];
-
-		foreach ($trees->get() as $tree)
-		{
-			if ($tree->kml_file != '')
-				array_push($a, ['file'=>$tree->kml_path.'/'.$tree->kml_file, 'descr' => $tree->kml_file]);
-		}
-
-		return $a;
 	}
 
 
@@ -170,7 +149,7 @@ class TreeTopographyController extends HfcBaseController {
 		foreach ($trees as $tree)
 		{
 			$pos1   = $tree->pos;
-			$pos2   = $tree->get_parent()->pos;
+			$pos2   = $tree->parent->pos;
 			$name   = $tree->id;
 			$parent = $tree->parent;
 			$type   = $tree->type;
@@ -180,7 +159,7 @@ class TreeTopographyController extends HfcBaseController {
 			if ($pos2 == null ||
 				$pos2 == '' ||
 				$pos2 == '0,0' ||
-				!ArrayHelper::objArraySearch($trees, 'id', $tree->get_parent()->id))
+				!ArrayHelper::objArraySearch($trees, 'id', $tree->parent->id))
 					continue;
 
 			# Line Color - Style
@@ -297,7 +276,7 @@ class TreeTopographyController extends HfcBaseController {
 			}
 
 			$type  = $tree->type;
-			$parent= $tree->get_parent()->id;
+			$parent= $tree->parent->id;
 			$state = $tree->get_bsclass();
 
 			if ($tree->state == 'warning')

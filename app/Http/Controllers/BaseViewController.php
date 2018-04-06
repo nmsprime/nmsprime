@@ -204,17 +204,25 @@ class BaseViewController extends Controller {
 			if ($field['form_type'] == 'ip' || $field['form_type'] == 'ping')
 			{
 				// Ping: Only check if ip is online
-				exec ('sudo ping -c1 -i0 -w1 '.$model[$field['name']], $ping, $offline);
+				if ($model[$field['name']]) {
+					// $model[$field['name']] is null e.g. on Cmts/create
+					exec ('sudo ping -c1 -i0 -w1 '.$model[$field['name']], $ping, $offline);
 
-				if($offline)
-				{
-					$field['help'] = 'Device is Offline!';
-					$field['help_icon'] = 'fa-exclamation-triangle text-warning';
+					if($offline)
+					{
+						$field['help'] = 'Device seems to be Offline!';
+						$field['help_icon'] = 'fa-exclamation-triangle text-warning';
+					}
+					else
+					{
+						$field['help'] = 'Device is Online';
+						$field['help_icon'] = 'fa-check-circle-o text-success';
+					}
 				}
-				else
-				{
-					$field['help'] = 'Device is Online';
-					$field['help_icon'] = 'fa-check-circle-o text-success';
+				else {
+					// there is no device to ping – so we do not provide info about online status
+					$field['help'] = '';
+					$field['help_icon'] = '';
 				}
 
 				$field['form_type'] = 'text';
@@ -440,7 +448,7 @@ finish:
 
 			default:
 				if (in_array('readonly', $options))
-					return $field['field_value'];
+					return '<p name="'.$field['name'].'">'. $field['field_value'] .'</p>';
 
 				$s .= \Form::$field["form_type"]($field["name"], $field['field_value'], $options);
 				break;
@@ -581,8 +589,12 @@ finish:
 		{
 			$key        = array_keys($html)[0];
 			$class_name = BaseModel::_guess_model_name(ucwords(explode ('_id', $key)[0]));
-			$class      = new $class_name;
-			$view_var   = $class->find($html[$key]);
+
+			if (class_exists($class_name))
+			{
+				$class      = new $class_name;
+				$view_var   = $class->find($html[$key]);
+			}
 		}
 
 		// lambda function to extend the current breadcrumb by its predecessor
@@ -818,20 +830,22 @@ finish:
 	*
 	* @param val: the value to be evaluated
 	* @param limits: array of size 2 or 4, containing the limits
+	* @param invert the results (good <--> bad)
 	* @return: evaluation results - good(0), average(1) or bad(2)
 	*
 	* @author: Ole Ernst
 	*/
-	private static function _colorize($val, $limit)
+	private static function _colorize($val, $limit, $inv = false)
 	{
 		if ($val < $limit[0] || (isset($limit[3]) && $val > $limit[3]))
-			return 2;
+			return $inv ? 0 : 2;
 
 		if ($val >= $limit[1]) {
 			if (!isset($limit[2]))
-				return 0;
+				return $inv ? 2: 0;
+
 			if ($val <= $limit[2])
-				return 0;
+				return $inv ? 2: 0;
 		}
 
 		return 1;
@@ -920,6 +934,10 @@ finish:
 				break;
 			case 'urefl':
 				$ret[] = self::_colorize($val, [20, 30]);
+				break;
+			case 'us':
+				if($dir == 'ds')
+					$ret[] = self::_colorize($val, [5, 12], true);
 				break;
 			}
 		}

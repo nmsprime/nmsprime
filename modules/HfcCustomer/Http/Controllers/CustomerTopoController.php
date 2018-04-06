@@ -5,6 +5,7 @@ namespace Modules\HfcCustomer\Http\Controllers;
 use Modules\HfcCustomer\Entities\ModemHelper;
 use Modules\HfcCustomer\Entities\Mpr;
 use Modules\HfcReq\Http\Controllers\NetElementController;
+use Modules\HfcReq\Entities\NetElement;
 
 use Modules\ProvBase\Entities\Modem;
 use App\Http\Controllers\BaseViewController;
@@ -212,8 +213,36 @@ class CustomerTopoController extends NetElementController {
 		$view_header = "Topography - Modems";
 		$body_onload = 'init_for_map';
 		$panel_right = $this->make_right_panel_links($modems);
+		$kmls        = $this->__kml_to_modems($modems);
 
-		return \View::make('hfcbase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'modems', 'panel_right')));
+		return \View::make('hfcbase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'modems', 'panel_right', 'kmls')));
+	}
+
+
+	/*
+	 * KML Upload Array: Generate the KML file array
+	 * based on the provided $modems. Show all related
+	 * kml files which are in relation to a modem cluster.
+	 *
+	 * @param modems: modems list, without ->get() call
+	 * @return array of KML files, like ['file', 'descr']
+	 *
+	 * @author: Torsten Schmidt
+	 */
+	private function __kml_to_modems ($modems)
+	{
+		$a = [];
+
+		// foreach modem with a distinct netelement_id
+		foreach ($modems->select('netelement_id')->distinct('netelement_id')->get() as $m) // $m is a modem object
+		{
+			// if netelement has a valid cluster, push cluster id to $a[]
+			if (isset ($m->nelelement->cluster))
+				array_push($a, $m->nelelement->cluster);
+		}
+
+		// parse all NetElement's with a cluster id in $a[]
+		return $this->kml_file_array(NetElement::whereIn('cluster',$a)->whereNotNull('pos')->where('pos', '!=', ' ')->get());
 	}
 
 
@@ -382,7 +411,12 @@ class CustomerTopoController extends NetElementController {
 			$mid    = $modem->id;
 			$mac    = $modem->mac;
 
-			$row_val = $modem->{$row};
+			if($row == 'ds_us')
+				// DS_ref (50) + US_ref (0) - DS_modem - US_modem
+				$row_val = 50 - $modem->ds_pwr - $modem->us_pwr;
+			else
+				$row_val = $modem->{$row};
+
 			$cur_clr = BaseViewController::get_quality_color_orig(explode('_',$row)[0], explode('_',$row)[1], [$row_val])[0];
 			$clrs[] = $cur_clr;
 

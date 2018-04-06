@@ -112,7 +112,8 @@ class TreeErdController extends HfcBaseController {
 		$route_name  = 'Tree';
 
 		$panel_right = [['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$field, $search]],
-						['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]]];
+						['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]],
+						['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$search, 0, 0]]];
 
 		$preselect_field = $field;
 		$preselect_value = $search;
@@ -148,7 +149,8 @@ class TreeErdController extends HfcBaseController {
 		$n  = 0;
 		$p1 = '';
 
-		$netelements = $query->where('id', '>', '2')->orderBy('pos')->get();
+		$netelements = $query->where('id', '>', '2')->with('netelementtype', 'parent')->orderBy('pos')->get();
+
 		if (!$netelements->count())
 			return null;
 
@@ -163,7 +165,7 @@ class TreeErdController extends HfcBaseController {
 			$state  = $netelem->get_bsclass();
 			$ip   	= $netelem->ip;
 			$p2   	= $netelem->pos;
-			$parent = $netelem->get_parent();
+			$parent = $netelem->parent;
 			$n++;
 
 			if ($p1 != $p2)
@@ -212,7 +214,7 @@ class TreeErdController extends HfcBaseController {
 		#
 		foreach ($netelements as $netelem)
 		{
-			$_parent = $netelem->get_parent();
+			$_parent = $netelem->parent;
 			$parent = 0;
 			if ($_parent)
 				$parent = $_parent->id;

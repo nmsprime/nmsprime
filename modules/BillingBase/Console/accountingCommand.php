@@ -86,6 +86,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		// Fetch all Data from Database
 		echo "Get all Data from Database\n";
+		Storage::put('tmp/accCmdStatus', \App\Http\Controllers\BaseViewController::translate_label('Load Data'));
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
 
@@ -243,6 +244,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 			foreach ($c->charge as $acc_id => $value)
 			{
+				$value['net'] = round($value['net'], 2);
+				$value['tax'] = round($value['tax'], 2);
+
 				$acc = $sepa_accs->find($acc_id);
 
 				$mandate_specific = $c->get_valid_mandate('now', $acc->id);
@@ -465,6 +469,10 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			->join('modem', 'modem.id', '=', 'mta.modem_id')
 			->join('contract', 'contract.id', '=', 'modem.contract_id')
 			->where('phonenumber.deleted_at', '=', null)
+			->where(function ($query) { $query
+				->where('sipdomain', '=', 'sip.enviatel.net')
+				->orWhereNull('sipdomain')
+				->orWhere('sipdomain', '=', '');})
 			->select('modem.contract_id', 'contract.number', 'phonenumber.username', 'phonenumber.id')
 			->orderBy('modem.contract_id')->get();
 
@@ -501,6 +509,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				}
 
 				if ($logged != $calling_number) {
+					// NOTE: wrong sipdomain can lead to this error too
 					Log::warning('billing', "Calling Number [$calling_number] does not exist - but customer number [$customer_nr] neither!");
 					$logged = $calling_number;
 				}

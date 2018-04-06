@@ -19,7 +19,7 @@ class MprGeoposTableSeeder extends \BaseSeeder {
 	{
 		$faker = Faker::create();
 
-		foreach(range(1, $this->max_seed) as $index)
+		foreach(range(1, self::$max_seed) as $index)
 		{
 			$mpr = Mpr::all()->random(1)->id;
 

@@ -20,7 +20,7 @@ class MprTableSeeder extends \BaseSeeder {
 	{
 		$faker = Faker::create();
 
-		foreach(range(1, $this->max_seed) as $index)
+		foreach(range(1, self::$max_seed) as $index)
 		{
 			Mpr::create([
 				'name' => 'Rule'.$faker->colorName(),
