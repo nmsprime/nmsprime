@@ -259,6 +259,12 @@ class Invoice extends \BaseModel{
 		else
 			$ret = $contract->get_next_cancel_date();
 
+		// e.g. customers that get tv amplifier refund, but dont have any tariff
+		if (!isset($ret['tariff'])) {
+			ChannelLog::debug('billing', "Customer has no tariff - dont set cancelation dates.", [$this->data['contract_id']]);
+			return;
+		}
+
 		if ($ret['tariff'])
 		{
 			// Set period of notice and maturity string of last tariff
@@ -587,11 +593,10 @@ class Invoice extends \BaseModel{
 				unlink($fn.'.aux');
 				unlink($fn.'.log');
 			}
-			else
-			{
+			else {
 				// possible errors: syntax/filename/...
 				ChannelLog::error('billing', "Missing Invoice PDF ".$fn);
-				throw new Exception("Missing Invoice PDF ".$fn);
+				throw new \Exception("Missing Invoice PDF ".$fn);
 			}
 		}
 	}
