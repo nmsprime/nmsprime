@@ -21,7 +21,7 @@ class ProvMonServiceProvider extends ServiceProvider {
 
 	/**
 	 * Boot the application events.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function boot()
@@ -37,13 +37,13 @@ class ProvMonServiceProvider extends ServiceProvider {
 	 * @return void
 	 */
 	public function register()
-	{		
+	{
 		$this->commands($this->commands);
 	}
 
 	/**
 	 * Register config.
-	 * 
+	 *
 	 * @return void
 	 */
 	protected function registerConfig()
@@ -58,7 +58,7 @@ class ProvMonServiceProvider extends ServiceProvider {
 
 	/**
 	 * Register views.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function registerViews()
@@ -80,7 +80,7 @@ class ProvMonServiceProvider extends ServiceProvider {
 
 	/**
 	 * Register translations.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function registerTranslations()

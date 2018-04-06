@@ -21,7 +21,7 @@ class VoipMonServiceProvider extends ServiceProvider {
 
 	/**
 	 * Boot the application events.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function boot()
@@ -43,7 +43,7 @@ class VoipMonServiceProvider extends ServiceProvider {
 
 	/**
 	 * Register config.
-	 * 
+	 *
 	 * @return void
 	 */
 	protected function registerConfig()
@@ -58,7 +58,7 @@ class VoipMonServiceProvider extends ServiceProvider {
 
 	/**
 	 * Register views.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function registerViews()
@@ -78,7 +78,7 @@ class VoipMonServiceProvider extends ServiceProvider {
 
 	/**
 	 * Register translations.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function registerTranslations()

@@ -85,7 +85,7 @@ class CreateInvoiceTable extends BaseMigration {
 				$data['year'] 	= $fname[0];
 				$data['month']  = $fname[1];
 
-				// get charge and invoice nr from accounting records - creation date for invoices is 1 month ahead, for cdrs it's 2 months 
+				// get charge and invoice nr from accounting records - creation date for invoices is 1 month ahead, for cdrs it's 2 months
 				$offset = $data['type'] == 'Invoice' ? 1 : 2;
 				$start  = \Carbon\Carbon::create($data['year'], $data['month'], '01', '00', '00', '00')->addMonth($offset);
 				$end    = \Carbon\Carbon::create($data['year'], $data['month'], '01', '00', '00', '00')->addMonth($offset + 1);
