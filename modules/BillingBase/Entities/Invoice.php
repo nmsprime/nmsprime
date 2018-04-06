@@ -593,11 +593,10 @@ class Invoice extends \BaseModel{
 				unlink($fn.'.aux');
 				unlink($fn.'.log');
 			}
-			else
-			{
+			else {
 				// possible errors: syntax/filename/...
 				ChannelLog::error('billing', "Missing Invoice PDF ".$fn);
-				throw new Exception("Missing Invoice PDF ".$fn);
+				throw new \Exception("Missing Invoice PDF ".$fn);
 			}
 		}
 	}
