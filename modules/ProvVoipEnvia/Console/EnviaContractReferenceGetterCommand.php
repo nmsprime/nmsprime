@@ -160,7 +160,7 @@ class EnviaContractReferenceGetterCommand extends Command {
 
 			$log_number = $phonenumber->id." (".$phonenumber->prefix_number."/".$phonenumber->number.")";
 			$phonenumber_id = $phonenumber->id;
-			Log::debug("Updating phonenumber $log_number");
+			Log::info("Getting envia contract reference for phonenumber $log_number");
 
 			try {
 				// get the relative URL to execute the cron job for updating the current order_id
