@@ -954,7 +954,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$filename = strtolower($now.'____'.$context).'.xml';
 
 		// move uploaded file to document_path (after making directories)
-		$path = 'data/provvoipenvia/XML/'.substr($now, 0, 7);
+		$path = 'data/provvoipenvia/XML/'.substr($now, 0, 7).'/'.substr($now, 0, 10);
 		$filename = $path.'/'.$filename;
 		\Storage::makeDirectory($path);
 		\Storage::put($filename, $filecontent);
