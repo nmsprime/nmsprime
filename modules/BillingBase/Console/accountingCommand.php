@@ -39,10 +39,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	public $name 			= 'billing:accounting';
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
-	protected $dir 			= 'data/billingbase/accounting/'; 				// relative to storage/app/ - Note: completed by month in constructor!
 
 	protected $dates;					// offen needed time strings for faster access - see constructor
-
 	protected $sr;
 
 
@@ -69,18 +67,17 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	{
 		// $start = microtime(true);
 		$this->dates = self::create_dates_array();
-		$this->dir .= date('Y-m', strtotime('first day of last month')).'/';
 
 		// Determine SR (SettlementRun) ID as this is necessary to create relation between Invoice & SR
 		if (!$this->sr->getAttribute('id'))
 			$this->sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->first();
 
-		if (!$this->sr || !$this->sr->getAttribute('id'))
-		{
+		if (!$this->sr || !$this->sr->getAttribute('id')) {
 			// Note: create will run the observer that calls this command again with this SR
 			SettlementRun::create(['year' => $this->dates['Y'], 'month' => $this->dates['lastm']]);
 			exit(0);
 		}
+
 
 		Log::debug('billing', ' #####    Start Accounting Command   #####');
 
@@ -283,7 +280,26 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 
 
+	/**
+	 * @param  Integer if > 0 the pathname of the timestamps month is returned
+	 * @return String  Absolute path of accounting directory for actual settlement run (when no argument is specified)
+	 */
+	public static function get_absolute_accounting_dir_path($timestamp = 0)
+	{
+		return storage_path('app/'.self::get_relative_accounting_dir_path($timestamp));
+	}
 
+
+	/**
+	 * @param  Integer if > 0 the pathname of the timestamps month is returned
+	 * @return String  Relative path of accounting dir to storage dir for actual settlement run
+	 */
+	public static function get_relative_accounting_dir_path($timestamp = 0)
+	{
+		$time = $timestamp ? : strtotime('first day of last month');
+
+		return 'data/billingbase/accounting/'.date('Y-m', $time);
+	}
 
 
 	/**
@@ -301,10 +317,10 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		\App::setLocale($conf->userlang);
 
 		// create directory structure and remove old invoices
-		if (is_dir(storage_path('app/'.$this->dir)))
-			SettlementRunController::directory_cleanup($this->dir);
+		if (is_dir(self::get_absolute_accounting_dir_path()))
+			SettlementRunController::directory_cleanup(self::get_relative_accounting_dir_path());
 		else
-			mkdir(storage_path('app/'.$this->dir), 0700, true);
+			mkdir(self::get_absolute_accounting_dir_path(), 0700, true);
 
 		// Salesmen
 		$prod_types = Product::getPossibleEnumValues('type');
@@ -313,7 +329,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		foreach ($salesmen as $key => $sm)
 		{
 			$sm->all_prod_types = $prod_types;
-			$sm->dir = $this->dir;
+			$sm->dir = self::get_relative_accounting_dir_path();
 		}
 		// directory to save file - is actually only needed for first salesmen
 		// if (isset($salesmen[0])) $salesmen[0]->dir = $this->dir;
@@ -322,7 +338,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		// SepaAccount
 		foreach ($sepa_accs as $acc)
 		{
-			$acc->dir = $this->dir;
+			$acc->dir = self::get_relative_accounting_dir_path();
 			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+1 day'));
 		}
 
@@ -391,18 +407,6 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 
 	/**
-	 * @return String 	Filename   e.g.: 'Call Data Record_2016_08.csv' or if app language is german 'Einzelverbindungsnachweis_2015_01.csv'
-	 */
-	public static function _get_cdr_filename()
-	{
-		$offset = BillingBase::first()->cdr_offset;
-		$time = $offset ? strtotime('-'.($offset+1).' month') : strtotime('first day of last month');
-
-		return \App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'_'.date('Y_m', $time).'.csv';
-	}
-
-
-	/**
 	 * Calls cdrCommand to get Call data records from Provider and formats relevant data to structured array
 	 *
 	 * @return array 	[contract_id => [phonr_nr, time, duration, ...],
@@ -412,34 +416,23 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 */
 	private function _get_cdr_data()
 	{
-		$filename = self::_get_cdr_filename();
-		$dir_path = storage_path('app/'.$this->dir.'/');
-		$filepath = $dir_path.$filename;
+		$calls = [[]];
 
-		if (!is_file($filepath))
+		\Artisan::call('billing:cdr');
+
+		$filepaths = cdrCommand::get_cdr_pathnames();
+
+		foreach ($filepaths as $provider => $filepath)
 		{
-			// get call data records
-			$ret = \Artisan::call('billing:cdr');
+			if (!is_file($filepath)) {
+				Log::error('billing', "Missing call data record file from $provider");
+				throw new Exception("Missing call data record file from $provider");
+			}
 
-			if ($ret)
-				return array(array());
+			$calls += $this->{"_parse_$provider"."_csv"}($filepath);
 		}
 
-		// NOTE: Add new Providers here!
-		if (env('PROVVOIPENVIA__RESELLER_USERNAME'))
-		{
-			return $this->_parse_envia_csv($filepath);
-		}
-
-		else if (env('HLKOMM_RESELLER_USERNAME'))
-		{
-			return $this->_parse_hlkomm_csv($filepath);
-		}
-
-		else
-			// we could throw an redundant exception here as well - is already thrown in cdrCommand
-			return array(array());
-
+		return $calls;
 	}
 
 
@@ -453,11 +446,12 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	{
 		Log::debug('billing', 'Parse envia TEL Call Data Records CSV');
 
-		$csv = is_file($filepath) ? file($filepath) : null;
+		$csv = file($filepath);
 
-		if (!$csv)
+		if (!$csv) {
+			\Log::warning('billing', 'Empty envia call data record file');
 			return array(array());
-
+		}
 		/*
 		 * Order existing phonenumbers in format 03735 739822 (prefix, number) to contract id/number as structured array:
 		 * 		[pn1 => [id, num], pn2 => [...], ...]
@@ -536,10 +530,12 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 */
 	protected function _parse_hlkomm_csv($filepath)
 	{
-		$csv = is_file($filepath) ? file($filepath) : null;
+		$csv = file($filepath);
 
-		if (!$csv)
+		if (!$csv) {
+			\Log::warning('billing', 'Empty hlkomm call data record file');
 			return array(array());
+		}
 
 		// skip first 5 lines (descriptions)
 		unset($csv[0], $csv[1], $csv[2], $csv[3], $csv[4]);

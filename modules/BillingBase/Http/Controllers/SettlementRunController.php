@@ -5,7 +5,7 @@ use Modules\BillingBase\Entities\AccountingRecord;
 use Modules\BillingBase\Entities\BillingLogger;
 use Modules\BillingBase\Entities\SettlementRun;
 use Modules\BillingBase\Entities\Invoice;
-use Modules\BillingBase\Console\accountingCommand;
+use Modules\BillingBase\Console\cdrCommand;
 use \Monolog\Logger;
 use ChannelLog;
 
@@ -283,13 +283,16 @@ class SettlementRunController extends \BaseController {
 		if (!$settlementrun)
 			Invoice::delete_current_invoices();
 
+		$cdr_filepaths = cdrCommand::get_cdr_pathnames();
+
 		// everything in accounting directory - SepaAccount specific
-		foreach (\Storage::files($dir) as $f)
+		foreach (glob(storage_path("app/$dir/*")) as $f)
 		{
 			// keep cdr
-			// if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
-			if (basename($f) != accountingCommand::_get_cdr_filename())
-				\Storage::delete($f);
+			if (in_array($f, $cdr_filepaths))
+				continue;
+
+			\Storage::delete($f);
 		}
 
 		foreach (\Storage::directories($dir) as $d)

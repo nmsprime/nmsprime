@@ -60,21 +60,11 @@ class cdrCommand extends Command {
 		$this->time_of_dir  = self::_get_time_of_dir($offset, $this->timestamp);
 		$this->time_of_file = self::_get_time_of_file($offset, $this->timestamp);
 
-		// Add new Providers here!
-		// dont forget array key in environment file in form: {provider-name}_RESELLER_USERNAME  (all letters upper case)
-		$providers = ['envia', 'hlkomm', 'purtel'];
-
-		foreach ($providers as $provider)
+		foreach (self::get_cdr_pathnames($this->timestamp, $offset) as $provider => $filepath)
 		{
-			$key = $provider == 'envia' ? 'PROVVOIPENVIA_' : strtoupper($provider);
-
-			// NOTE: - use env() to parse environmment variables as the super global variable is not set in cronjobs
-			if (!env("$key"."_RESELLER_USERNAME"))
-				continue;
-
 			$missing = false;
 
-			if (is_file(self::get_cdr_pathname($provider, $this->timestamp, $offset))) {
+			if (is_file($filepath)) {
 				\ChannelLog::info('billing', "$provider CDR already loaded");
 				continue;
 			}
@@ -109,6 +99,36 @@ class cdrCommand extends Command {
 		$dir = accountingCommand::get_absolute_accounting_dir_path($time_dir);
 
 		return "$dir/".BaseViewController::translate_label('Call_Data_Records')."_".$provider."_".date('Y_m', $time_file).".csv";
+	}
+
+
+	/**
+	 * Get list of all call data record files important for this system (dependent of environment variables)
+	 *
+	 * NOTE: dont forget array key in environment file in form: {provider-name}_RESELLER_USERNAME  (all letters upper case)
+	 *
+	 * @param  Integer 	Optional timestamp if you want a previous CDR (with records of that timestamps month)
+	 * @param  Integer  Optional if already fetched from DB to improve performance
+	 * @return Array 	of Strings - Absolute path and filenames of CSVs
+	 */
+	public static function get_cdr_pathnames($timestamp = 0, $offset = null)
+	{
+		// Add new Providers here!
+		$providers = ['envia', 'hlkomm', 'purtel'];
+		$arr = [];
+
+		foreach ($providers as $provider)
+		{
+			$key = $provider == 'envia' ? 'PROVVOIPENVIA_' : strtoupper($provider);
+
+			// NOTE: - use env() to parse environmment variables as the super global variable is not set in cronjobs
+			if (!env("$key"."_RESELLER_USERNAME"))
+				continue;
+
+			$arr[$provider] = self::get_cdr_pathname($provider, $timestamp, $offset);
+		}
+
+		return $arr;
 	}
 
 

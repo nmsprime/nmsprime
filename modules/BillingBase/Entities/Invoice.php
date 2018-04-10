@@ -196,16 +196,6 @@ class Invoice extends \BaseModel{
 		return date('Y_m', strtotime('first day of last month'));
 	}
 
-	/**
-	 * @return String 	CDR Filename without extension (like .pdf)
-	 */
-	private static function _get_cdr_filename()
-	{
-		$offset = BillingBase::first()->cdr_offset;
-
-		return $offset ? date('Y_m', strtotime('-'.($offset+1).' month')).'_cdr' : date('Y_m', strtotime('first day of last month')).'_cdr';
-	}
-
 
 	/**
 	 * @param String
