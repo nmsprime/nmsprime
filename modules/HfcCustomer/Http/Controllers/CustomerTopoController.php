@@ -278,7 +278,7 @@ class CustomerTopoController extends NetElementController {
 		$before = microtime(true);
 
 		// foreach modem
-		foreach ($modems->orderBy('city', 'street')->get() as $modem)
+		foreach ($modems->orderBy('city')->orderBy('street')->orderBy('house_number')->get() as $modem)
 		{
 			// load per modem diagrams
 			$dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Overview');
