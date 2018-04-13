@@ -444,12 +444,13 @@ class CustomerTopoController extends NetElementController {
 			$lastname   = $contract->lastname;
 
 			# Headline: Address from DB
-			if ($str != $modem->street || $city != $modem->city || $zip != $modem->zip)
+			if ($str != $modem->street || $city != $modem->city || $zip != $modem->zip || $nr != $modem->house_number)
 			{
 				$str = $modem->street;
 				$city = $modem->city;
 				$zip = $modem->zip;
-				$descr .= "<b>$zip, $city, $str</b><br>";
+				$nr = $modem->house_number;
+				$descr .= "<b>$zip, $city, $str, $nr</b><br>";
 			}
 
 			# add descr line
