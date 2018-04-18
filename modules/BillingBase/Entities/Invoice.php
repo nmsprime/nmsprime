@@ -585,8 +585,8 @@ class Invoice extends \BaseModel{
 			}
 			else {
 				// possible errors: syntax/filename/...
-				ChannelLog::error('billing', "Missing Invoice PDF ".$fn);
-				throw new \Exception("Missing Invoice PDF ".$fn);
+				ChannelLog::error('billing', "pdflatex: Error creating Invoice PDF ".$fn);
+				throw new \Exception("pdflatex: Error creating Invoice PDF ".$fn);
 			}
 		}
 	}
