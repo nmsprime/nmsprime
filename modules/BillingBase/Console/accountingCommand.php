@@ -413,6 +413,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 *					 next_contract_id => [...],
 	 * 					 ...]
 	 *					on success, else 2 dimensional empty array
+	 *
+	 * NOTE/TODO: 1000 Phonecalls need a bit more than 1 MB memory - if files get too large and we get memory
+	 *  problems again, we should probably save calls to database and get them during command when needed
 	 */
 	private function _get_cdr_data()
 	{
@@ -449,7 +452,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		$csv = file($filepath);
 
 		if (!$csv) {
-			\Log::warning('billing', 'Empty envia call data record file');
+			Log::warning('billing', 'Empty envia call data record file');
 			return array(array());
 		}
 		/*
@@ -458,19 +461,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		 * needed to check later if customer can really have made these calls (if customer number to phonenumber assignment is correct)
 		 * NOTE: customer number here means the envia customer number that corresponds to id OR number in our database
 		 */
-		$phonenumbers_db = \DB::table('phonenumber')
-			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
-			->join('modem', 'modem.id', '=', 'mta.modem_id')
-			->join('contract', 'contract.id', '=', 'modem.contract_id')
-			->where('phonenumber.deleted_at', '=', null)
-			->where(function ($query) { $query
-				->where('sipdomain', '=', 'sip.enviatel.net')
-				->orWhereNull('sipdomain')
-				->orWhere('sipdomain', '=', '');})
-			->select('modem.contract_id', 'contract.number', 'phonenumber.username', 'phonenumber.id')
-			->orderBy('modem.contract_id')->get();
+		$phonenumbers_db = self::_get_phonenumbers('sip.enviatel.net');
 
-		foreach ($phonenumbers_db as $key => $pn)
+		foreach ($phonenumbers_db as $pn)
 		{
 			if (substr($pn->username, 0, 1) != '0') {
 				// can be a poorly disabled testnumber -> discard
@@ -512,11 +505,17 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 			if (!in_array($customer_nr, $customer_nrs[$calling_number])) {
 				Log::error('billing', "Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database! Exit");
-				// $this->error("Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database!");
 				throw new \Exception("Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database!");
 			}
 
-			$data[$customer_nr][] = array($calling_number, substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $called_number, str_replace(',', '.', $line[10]));
+			$data[$customer_nr][] = array(
+					$calling_number,
+					substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2), 			// date
+					$line[5],																			// starttime
+					$line[6],																			// duration
+					$called_number,
+					str_replace(',', '.', $line[10]) 													// price
+				);
 		}
 
 		return $data;
@@ -533,7 +532,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		$csv = file($filepath);
 
 		if (!$csv) {
-			\Log::warning('billing', 'Empty hlkomm call data record file');
+			Log::warning('billing', 'Empty hlkomm call data record file');
 			return array(array());
 		}
 
@@ -578,8 +577,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			else if (isset($phonenrs[$phonenr2]))
 				// our phonenr is the called nr - TODO: proof if this case can actually happen - normally this shouldnt be the case
 				$data[$phonenrs[$phonenr2]][] = $a;
-			else
-			{
+			else {
 				// there is a phonenr entry in csv that doesnt exist in our db - this case should never happen
 				Log::error('billing', "Parse CDR.csv: Call Data Record with Phonenr [$phonenr1] that doesnt exist in the Database - Phonenr deleted?");
 			}
@@ -589,6 +587,104 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		return $data;
 	}
 
+	/**
+	 * Parse HLKomm CSV
+	 *
+	 * @return array 	[contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
+	 */
+	protected function _parse_purtel_csv($filepath)
+	{
+		$csv = file($filepath);
+
+		if (!$csv) {
+			Log::warning('billing', 'Empty envia call data record file');
+			return [[]];
+		}
+
+		/*
+		 * Order existing phonenumber usernames to contract number as structured array:
+		 * 		[username => [contractnum, phonenum], username => [...], ...]
+		 * needed to check later if customer can really have made these calls (if customer number to phonenumber assignment is correct)
+		 */
+		$phonenumbers_db = self::_get_phonenumbers('deu3.purtel.com');
+
+		foreach ($phonenumbers_db as $key => $pn)
+		{
+			$phonenumbers[$pn->username] = [$pn->number, $pn->prefix_number.$pn->pnum];
+			$customer_nrs_array[]  = $pn->number;
+		}
+
+		// skip first line of csv (column description)
+		$logged = [];
+		unset($csv[0]);
+
+		foreach ($csv as $line)
+		{
+			$line = str_getcsv($line, ';');
+
+			// Discard Drebach Customers in a first step
+			if (strpos($line[7], '013-') !== false) {
+				if (!in_array($line[7], $logged)) {
+					$logged[] = $line[7];
+					Log::notice('billing', "Purtel-CSV: Discard calls from customer nr $line[7] (still km3 customer - from Drebach)");
+				}
+				continue;
+			}
+
+			$customer_nr 	= intval(str_replace('010-', '', $line[7]));
+			$username 		= $line[2];
+			// Error Checks
+			if (!in_array($customer_nr, $customer_nrs_array)) {
+				Log::error('billing', "Purtel-CSV: Contract Number [$customer_nr] does not exist in our DB for call id $line[0]! Exit");
+				throw new \Exception("Purtel-CSV: Contract Number [$customer_nr] does not exist in our DB for call id $line[0]!");
+			}
+
+			if (!isset($phonenumbers[$username])) {
+				Log::error('billing', "Purtel-CSV: Phonenumber with username $username does not exist for contract $customer_nr! Exit");
+				throw new \Exception("Purtel-CSV: Phonenumber with username $username does not exist for contract $customer_nr!");
+			}
+
+			if ($customer_nr != $phonenumbers[$username][0]) {
+				Log::error('billing', "Phonenumber with username $username has different purtel customer number [$customer_nr] than it has in the local Database! Exit");
+				throw new \Exception("Phonenumber with username $username has different purtel customer number [$customer_nr] than it has in the local Database!");
+			}
+
+			$date = explode(' ', $line[1]);
+
+			$data[$customer_nr][] = array(
+				$phonenumbers[$username][1], 		// calling number
+				$date[0],							// date
+				$date[1], 							// start time
+				gmdate("H:i:s", $line[4]),			// duration in Hours:Minutes:Seconds
+				$line[3],							// called number
+				$line[10] / 100,					// price
+				);
+		}
+
+		return $data;
+	}
+
+
+	/**
+	 * Get list of all phonenumbers of all contracts belonging to a specific registrar
+	 *
+	 * @return Array
+	 */
+	private static function _get_phonenumbers($registrar)
+	{
+		return $phonenumbers_db = \DB::table('phonenumber as p')
+			->join('mta', 'p.mta_id', '=', 'mta.id')
+			->join('modem', 'modem.id', '=', 'mta.modem_id')
+			->join('contract', 'contract.id', '=', 'modem.contract_id')
+			->where('p.deleted_at', '=', null)
+			->where(function ($query) use ($registrar) { $query
+				->where('sipdomain', '=', $registrar)
+				->orWhereNull('sipdomain')
+				->orWhere('sipdomain', '=', '');})
+			->select('modem.contract_id', 'contract.number', 'p.prefix_number', 'p.number as pnum', 'p.username', 'p.id')
+			->orderBy('modem.contract_id')
+			->get();
+	}
 
 	/**
 	 * Instantiates an Array of all necessary date formats needed during execution of this Command
