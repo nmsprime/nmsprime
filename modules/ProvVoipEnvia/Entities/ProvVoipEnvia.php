@@ -954,7 +954,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$filename = strtolower($now.'____'.$context).'.xml';
 
 		// move uploaded file to document_path (after making directories)
-		$path = 'data/provvoipenvia/XML/'.substr($now, 0, 7);
+		$path = 'data/provvoipenvia/XML/'.substr($now, 0, 7).'/'.substr($now, 0, 10);
 		$filename = $path.'/'.$filename;
 		\Storage::makeDirectory($path);
 		\Storage::put($filename, $filecontent);
@@ -1156,7 +1156,7 @@ class ProvVoipEnvia extends \BaseModel {
 			if (!$error['message']) {
 				$error['message'] == 'n/a';
 			}
-			array_push($data, $error);
+			array_push($errors, $error);
 		}
 
 		// stop condition: no more children == leaf node
@@ -1180,13 +1180,13 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	public function get_error_messages($raw_xml) {
 
-		$data = array();
+		$errors = array();
 		$xml = new \SimpleXMLElement($raw_xml);
 
 		// extract all error messages from XML
-		$this->_get_error_messages_recurse($xml, $data);
+		$this->_get_error_messages_recurse($xml, $errors);
 
-		return $data;
+		return $errors;
 	}
 
 
