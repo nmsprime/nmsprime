@@ -12,7 +12,13 @@
 		@if (\Session::get('job_id'))
 			{{-- accountingCommand running --}}
 			<div class="alert alert-warning fade in m-b-15">{{ trans('messages.accCmd_processing') }}</div>
-			<div id="state" class="col-12"></div>
+			<!-- progress bar + message -->
+			<div id="progress-msg" class="col-10"></div>
+			<div class="col-10">
+				<div class="progress">
+					<div class="progress-bar progress-bar-striped" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+				</div>
+			</div>
 		@else
 			@foreach($relation['view']['vars'] as $sepaacc => $files)
 				@DivOpen(6)
@@ -45,7 +51,15 @@
 						if (e.data == 'reload')
 							location.reload();
 						else
-							document.getElementById('state').innerHTML = e.data;
+						{
+							var data = e.data ? JSON.parse(e.data) : {message: ''};
+							// document.getElementById('state').innerHTML = e.data;
+							$("#progress-msg").html(data.message);
+							if (data.hasOwnProperty('value')) {
+								$(".progress-bar").html(data.value + " %");
+								$(".progress-bar").css('width', data.value + "%");
+							}
+						}
 					}
 
 				}, 500);

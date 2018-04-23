@@ -24,6 +24,7 @@ use Modules\BillingBase\Entities\Item;
 use Modules\BillingBase\Entities\SettlementRun;
 use Modules\BillingBase\Http\Controllers\SettlementRunController;
 use ChannelLog as Log;
+use App\Http\Controllers\BaseViewController;
 
 
 class accountingCommand extends Command implements SelfHandling, ShouldQueue {
@@ -85,8 +86,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		Log::debug('billing', ' #####    Start Accounting Command   #####');
 
 		// Fetch all Data from Database
-		echo "Get all Data from Database\n";
-		Storage::put('tmp/accCmdStatus', \App\Http\Controllers\BaseViewController::translate_label('Load Data'));
+		echo "Get all Data from Database...\n";
+		self::push_state(0, 'Load Data...');
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
 
@@ -117,14 +118,14 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		 */
 		foreach ($contracts as $i => $c)
 		{
-			// progress bar - workaround as progress bar is not shown when cmd is called
-			// from observer or throws exception when called via queue
-			if ($this->output)
+			// progress bar on cmd line
+			if ($this->output) {
+				// NOTE: $bar->advance() throws exception when called via queue
 				$bar->advance();
-			else
-			{
-				if (!($i % 20))
-					Storage::put('tmp/accCmdStatus', \App\Http\Controllers\BaseViewController::translate_label('Create Invoices').': '.((int) ($i/$num*100)).' %');
+			}
+			// progress bar in GUI
+			else if (!($i % 10)) {
+				self::push_state((int) $i/$num*100, 'Create Invoices');
 				// echo ($i + 1)."/$num [$c->id][".(memory_get_usage()/1000000)."]\r";
 			}
 
@@ -388,6 +389,24 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		echo "ZIP all Files\n";
 		\Artisan::call('billing:zip');
 	}
+
+
+	/**
+	 * Write Status to temporary file as buffer for settlement run status bar in GUI
+	 *
+	 * @param Integer
+	 * @param String 	Note: is automatically translated to the appropriate language if string exists in lang/./messages.php
+	 */
+	public static function push_state($value, $message)
+	{
+		$arr = array(
+			'message' => BaseViewController::translate_label($message),
+			'value'   => $value,
+			);
+
+		Storage::put('tmp/accCmdStatus', json_encode($arr));
+	}
+
 
 
 	/**

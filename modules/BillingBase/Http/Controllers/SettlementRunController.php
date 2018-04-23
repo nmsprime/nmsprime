@@ -123,23 +123,19 @@ class SettlementRunController extends \BaseController {
 			{
 				$job = \DB::table('jobs')->find(\Session::get('job_id'));
 
-				// if ($job)
-				// 	\Log::debug('Job with ID '.$job->id.' running');
-
-				// TODO: Get state from file
 				$state = \Storage::exists('tmp/accCmdStatus') ? \Storage::get('tmp/accCmdStatus') : '';
 				echo "data: $state\n\n";
 				ob_flush(); flush();
 
-				sleep(3);
+				sleep(2);
 			}
 
 			\Log::debug('SettlementRun Job ['. \Session::get('job_id').'] stopped');
 
 			\Session::remove('job_id');
 
-			// wait for job to land in failed jobs table - if it failed - wait max 14 seconds
-			$i 		 = 7;
+			// wait for job to land in failed jobs table - if it failed - wait max 10 seconds
+			$i 		 = 5;
 			$success = true;
 
 			while ($i && $success)
