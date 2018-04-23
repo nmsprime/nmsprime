@@ -277,6 +277,9 @@ class Invoice extends \BaseModel{
 			$txt_m = $nr .' '. trans_choice("messages.$span", $nr);
 		}
 
+		if (!$ret['cancelation_day'])
+			ChannelLog::info('billing', "Contract $contract->number was canceled with target ".$ret['end_of_term']);
+
 		$german = \App::getLocale() == 'de';
 
 		$cancel_dates = [
