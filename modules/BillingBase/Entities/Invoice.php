@@ -196,16 +196,6 @@ class Invoice extends \BaseModel{
 		return date('Y_m', strtotime('first day of last month'));
 	}
 
-	/**
-	 * @return String 	CDR Filename without extension (like .pdf)
-	 */
-	private static function _get_cdr_filename()
-	{
-		$offset = BillingBase::first()->cdr_offset;
-
-		return $offset ? date('Y_m', strtotime('-'.($offset+1).' month')).'_cdr' : date('Y_m', strtotime('first day of last month')).'_cdr';
-	}
-
 
 	/**
 	 * @param String
@@ -595,8 +585,8 @@ class Invoice extends \BaseModel{
 			}
 			else {
 				// possible errors: syntax/filename/...
-				ChannelLog::error('billing', "Missing Invoice PDF ".$fn);
-				throw new \Exception("Missing Invoice PDF ".$fn);
+				ChannelLog::error('billing', "pdflatex: Error creating Invoice PDF ".$fn);
+				throw new \Exception("pdflatex: Error creating Invoice PDF ".$fn);
 			}
 		}
 	}
