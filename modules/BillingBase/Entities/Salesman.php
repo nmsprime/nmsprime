@@ -124,7 +124,7 @@ class Salesman extends \BaseModel {
 	 */
 	public function get_storage_rel_filename()
 	{
-		return $this->dir.BaseViewController::translate_label($this->filename).'.txt';
+		return "$this->dir/".BaseViewController::translate_label($this->filename).'.txt';
 	}
 
 

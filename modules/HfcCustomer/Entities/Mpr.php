@@ -196,7 +196,7 @@ class Mpr extends \BaseModel {
 					$polygon[] = [$geopos->x, $geopos->y];
 
 				$cnt = 0;
-				foreach ($modem ? : $modems as $m) {
+				foreach ($modem ? [$modem] : $modems as $m) {
 					if (self::point_in_polygon([$m->x,$m->y], $polygon)) {
 						$m->netelement_id = $mpr->netelement_id;
 						$m->observer_enabled = false;
