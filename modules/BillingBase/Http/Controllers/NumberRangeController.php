@@ -1,8 +1,7 @@
 <?php
 namespace Modules\BillingBase\Http\Controllers;
 
-use Modules\BillingBase\Entities\NumberRange;
-use Modules\BillingBase\Entities\CostCenter;
+use Modules\BillingBase\Entities\{CostCenter, NumberRange};
 
 class NumberRangeController extends \BaseController {
 

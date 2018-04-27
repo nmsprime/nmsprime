@@ -2,7 +2,6 @@
 
 namespace Modules\ProvVoipEnvia\Entities;
 
-// Model not found? execute composer dump-autoload in nmsprime root dir
 class EnviaOrderDocument extends \BaseModel {
 
 	// The associated SQL table for this Model

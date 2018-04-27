@@ -2,9 +2,7 @@
 
 namespace Modules\BillingBase\Entities;
 
-use Storage;
-use ChannelLog;
-
+use ChannelLog, Storage;
 
 /**
  * Contains Functions to collect Data for Invoice & create the corresponding PDFs
@@ -13,7 +11,6 @@ use ChannelLog;
  *
  * @author Nino Ryschawy
  */
-
 class Invoice extends \BaseModel{
 
 	public $table = 'invoice';

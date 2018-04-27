@@ -1,4 +1,5 @@
-<?php 
+<?php
+
 namespace Modules\Ccc\Http\Controllers;
 
 use Modules\Ccc\Entities\Ccc;

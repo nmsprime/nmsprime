@@ -1,14 +1,12 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
+use ChannelLog, IBAN, Storage;
+use \App\Http\Controllers\BaseViewController;
 use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\BillingBase;
-
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
-use Storage;
-use IBAN;
-use \App\Http\Controllers\BaseViewController;
-use ChannelLog;
 
 /**
  * Contains the functionality for Creating the SEPA-XML-Files of a SettlementRun

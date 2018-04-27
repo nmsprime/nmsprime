@@ -2,14 +2,10 @@
 
 namespace Modules\HfcCustomer\Http\Controllers;
 
-use Modules\HfcCustomer\Entities\ModemHelper;
-use Modules\HfcCustomer\Entities\Mpr;
-use Modules\HfcReq\Http\Controllers\NetElementController;
-use Modules\HfcReq\Entities\NetElement;
-
-use Modules\ProvBase\Entities\Modem;
 use App\Http\Controllers\BaseViewController;
-
+use Modules\ProvBase\Entities\Modem;
+use Modules\HfcCustomer\Entities\{ ModemHelper, Mpr};
+use Modules\HfcReq\{Entities\NetElement, Http\Controllers\NetElementController};
 
 /*
  * Show Customers (Modems) on Topography

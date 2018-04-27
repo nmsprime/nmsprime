@@ -1,18 +1,10 @@
-<?php 
+<?php
 namespace Modules\BillingBase\Console;
 
-use Illuminate\Console\Command;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
-
 use Storage;
-// require_once('vendor/studenfaffairsuwm/src/XlsxToCsv/XlsxToCsv.php');
-// use PHPExcel_IOFactory;
-// use Maatwebsite\Excel\Facades\Excel;
-// use Maatwebsite\Excel\Filters\
-// use PHPExcel_Reader_IReadFilter;
-use Box\Spout\Reader\ReaderFactory;
-use Box\Spout\Common\Type;
+use Illuminate\Console\Command;
+use Box\Spout\Reader\{ReaderFactory, Type};
+use Symfony\Component\Console\Input\{ InputOption, InputArgument};
 
 class fetchBicCommand extends Command {
 

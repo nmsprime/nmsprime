@@ -1,3 +1,6 @@
+# source environment variables to use php 7.1
+source scl_source enable rh-php71
+
 # variables
 env="/etc/nmsprime/env/provmon.env"
 mysql_cacti_psw=$(pwgen 12 1) # SQL password for user nmsprime_cacti

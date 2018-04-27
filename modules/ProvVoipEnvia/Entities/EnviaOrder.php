@@ -2,8 +2,7 @@
 
 namespace Modules\ProvVoipEnvia\Entities;
 
-use Modules\ProvBase\Entities\Contract;
-use Modules\ProvBase\Entities\Modem;
+use Modules\ProvBase\Entities\{Contract, Modem};
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoipEnvia\Entities\ProvVoipEnviaHelpers;
 
