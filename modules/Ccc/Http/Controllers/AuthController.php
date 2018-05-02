@@ -1,6 +1,6 @@
 <?php namespace Modules\Ccc\Http\Controllers;
 
-use App\Http\Controllers\AuthController as Auth;
+use App\Http\Controllers\Auth\AuthController as Auth;
 use Nwidart\Modules\Routing\Controller;
 use Modules\Ccc\Entities\Ccc;
 
