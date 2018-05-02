@@ -69,8 +69,8 @@ class EnviaOrderDocumentController extends \BaseController {
 	public function show($id) {
 
 		// check if user has the right to perform actions against envia TEL API
-		\App\Http\Controllers\BaseAuthController::auth_check('view', \NamespaceController::get_model_name());
-		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+		\App\Http\Controllers\Auth\BaseAuthController::auth_check('view', \NamespaceController::get_model_name());
+		\App\Http\Controllers\Auth\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$enviaorderdocument = EnviaOrderDocument::findOrFail($id);
 		$contract_id = $enviaorderdocument->enviaorder->contract_id;
@@ -94,8 +94,8 @@ class EnviaOrderDocumentController extends \BaseController {
 	public function edit($id) {
 
 		// check if user has the right to perform actions against envia TEL API
-		\App\Http\Controllers\BaseAuthController::auth_check('edit', \NamespaceController::get_model_name());
-		\App\Http\Controllers\BaseAuthController::auth_check('edit', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+		\App\Http\Controllers\Auth\BaseAuthController::auth_check('edit', \NamespaceController::get_model_name());
+		\App\Http\Controllers\Auth\BaseAuthController::auth_check('edit', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$document = EnviaOrderDocument::findOrFail($id);
 

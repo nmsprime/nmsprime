@@ -239,8 +239,8 @@ class EnviaOrderController extends \BaseController {
 	public function mark_solved($id) {
 
 		// check if user has the right to perform actions against envia TEL API
-		\App\Http\Controllers\BaseAuthController::auth_check('edit', \NamespaceController::get_model_name());
-		\App\Http\Controllers\BaseAuthController::auth_check('edit', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+		\App\Http\Controllers\Auth\BaseAuthController::auth_check('edit', \NamespaceController::get_model_name());
+		\App\Http\Controllers\Auth\BaseAuthController::auth_check('edit', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$model = EnviaOrder::findOrFail($id);
 
@@ -316,8 +316,8 @@ class EnviaOrderController extends \BaseController {
 	public function destroy($id) {
 
 		// check if user has the right to perform actions against envia TEL API
-		\App\Http\Controllers\BaseAuthController::auth_check('view', \NamespaceController::get_model_name());
-		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+		\App\Http\Controllers\Auth\BaseAuthController::auth_check('view', \NamespaceController::get_model_name());
+		\App\Http\Controllers\Auth\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 
 		// get all orders to be canceled

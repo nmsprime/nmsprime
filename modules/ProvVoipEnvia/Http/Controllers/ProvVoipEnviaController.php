@@ -177,7 +177,7 @@ class ProvVoipEnviaController extends \BaseController {
 	public function index() {
 
 		// check if user has the right to perform actions against envia TEL API
-		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+		\App\Http\Controllers\Auth\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		$jobs = array(
 			['api' => 'selfcare', 'link' => 'blacklist_get?phonenumber_id=300001&amp;envia_blacklist_get_direction=in'],
@@ -787,7 +787,7 @@ class ProvVoipEnviaController extends \BaseController {
 	public function request($job) {
 
 		// check if user has the right to perform actions against envia TEL API
-		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+		\App\Http\Controllers\Auth\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
 
 		// check if a non standard return type is wanted
 		// usable: view (default), html
