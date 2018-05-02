@@ -1,9 +1,8 @@
 <?php namespace Modules\BillingBase\Http\Controllers;
 
 use Schema;
-use Pingpong\Modules\Routing\Controller;
-use Modules\BillingBase\Entities\BillingBase;
-use Modules\BillingBase\Entities\SepaMandate;
+use Nwidart\Modules\Routing\Controller;
+use Modules\BillingBase\Entities\{BillingBase, SepaMandate};
 use Modules\ProvBase\Entities\Contract;
 
 class BillingBaseController extends \BaseController {

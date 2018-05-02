@@ -3,25 +3,12 @@
 namespace Modules\ProvVoipEnvia\Entities;
 
 use Log;
-use Modules\ProvBase\Entities\Contract;
-use Modules\ProvBase\Entities\VoipRelatedDataUpdaterByEnvia;
-use Modules\ProvVoip\Entities\PhonebookEntry;
-use Modules\ProvVoip\Entities\Phonenumber;
-use Modules\ProvVoip\Entities\PhonenumberManagement;
-use Modules\ProvVoip\Entities\PhoneTariff;
-use Modules\ProvVoip\Entities\CarrierCode;
-use Modules\ProvVoip\Entities\EkpCode;
-use Modules\ProvVoip\Entities\Mta;
-use Modules\ProvVoip\Entities\TRCClass;
-use Modules\ProvBase\Entities\Modem;
-use Modules\ProvVoipEnvia\Entities\EnviaContract;
-use Modules\ProvVoipEnvia\Entities\EnviaOrder;
-use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
-use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
-use Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
 use App\Exceptions\NotImplementedException;
+use Modules\ProvBase\Entities\{Contract, Modem,VoipRelatedDataUpdaterByEnvia};
+use Modules\ProvVoip\Entities\{CarrierCode, EkpCode, Mta, PhonebookEntry, Phonenumber, PhonenumberManagement, PhoneTariff, TRCClass};
+use Modules\ProvVoipEnvia\Entities\{EnviaContract, EnviaOrder, EnviaOrderDocument, XmlCreationError};
+use Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
 
-// Model not found? execute composer dump-autoload in nmsprime root dir
 class ProvVoipEnvia extends \BaseModel {
 
 
@@ -1821,7 +1808,7 @@ class ProvVoipEnvia extends \BaseModel {
 		if (!boolval($this->contract->phonetariff_purchase_next)) {
 			$value_missing = True;
 			$msg = 'next_purchase_tariff not set in contract '.$this->contract->id;
-			if (\PPModule::is_active('billingbase')) {
+			if (\Module::collections()->has('BillingBase')) {
 				$msg .= ' – maybe you have to create a Voip item with future start date?';
 			}
 		}
@@ -1832,7 +1819,7 @@ class ProvVoipEnvia extends \BaseModel {
 		if (!boolval($this->contract->phonetariff_sale_next)) {
 			$value_missing = True;
 			$msg = 'next_voip_id not set in contract '.$this->contract->id;
-			if (\PPModule::is_active('billingbase')) {
+			if (\Module::collections()->has('BillingBase')) {
 				$msg .= ' – maybe you have to create a Voip item with future start date?';
 			}
 		}

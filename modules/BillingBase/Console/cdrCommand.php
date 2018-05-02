@@ -1,12 +1,11 @@
 <?php
 namespace Modules\BillingBase\Console;
 
+use File, Storage;
 use Illuminate\Console\Command;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
-
-use \Chumper\Zipper\Zipper;
 use Modules\BillingBase\Entities\BillingBase;
+use Symfony\Component\Console\Input\{ InputOption, InputArgument };
+use \Chumper\Zipper\Zipper;
 use \App\Http\Controllers\BaseViewController;
 
 

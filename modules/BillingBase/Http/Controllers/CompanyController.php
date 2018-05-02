@@ -1,9 +1,9 @@
 <?php
 namespace Modules\BillingBase\Http\Controllers;
 
-use Pingpong\Modules\Routing\Controller;
-use Modules\BillingBase\Entities\Company;
 use Input;
+use Nwidart\Modules\Routing\Controller;
+use Modules\BillingBase\Entities\Company;
 
 class CompanyController extends \BaseController {
 
@@ -44,7 +44,7 @@ class CompanyController extends \BaseController {
 		);
 
 		$b = [];
-		if (\PPModule::is_active('ccc'))
+		if (\Module::collections()->has('Ccc'))
 		{
 			$files = self::get_storage_file_list('ccc/template/');
 
@@ -67,7 +67,7 @@ class CompanyController extends \BaseController {
 		// check and handle uploaded firmware files
 		$this->handle_file_upload('logo', storage_path('app/config/billingbase/logo/'));
 
-		if (\PPModule::is_active('ccc'))
+		if (\Module::collections()->has('Ccc'))
 			$this->handle_file_upload('conn_info_template_fn', storage_path('app/config/ccc/template/'));
 
 		// finally: call base method
@@ -78,7 +78,7 @@ class CompanyController extends \BaseController {
 	{
 		$this->handle_file_upload('logo', storage_path('app/config/billingbase/logo/'));
 
-		if (\PPModule::is_active('ccc'))
+		if (\Module::collections()->has('Ccc'))
 			$this->handle_file_upload('conn_info_template_fn', storage_path('app/config/ccc/template/'));
 
 		return parent::update($id);

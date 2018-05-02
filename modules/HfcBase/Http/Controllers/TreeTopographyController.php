@@ -2,10 +2,8 @@
 
 namespace Modules\HfcBase\Http\Controllers;
 
-use Modules\HfcReq\Entities\NetElement;
-
 use Acme\php\ArrayHelper;
-
+use Modules\HfcReq\Entities\NetElement;
 
 /*
  * Tree Topography Controller
@@ -98,7 +96,7 @@ class TreeTopographyController extends HfcBaseController {
 	public function mpr($trees)
 	{
 		$ret = [];
-		if (!\PPModule::is_active('HfcCustomer'))
+		if (!\Module::collections()->has('HfcCustomer'))
 			return $ret;
 
 		foreach ($trees->get() as $tree)
@@ -191,7 +189,7 @@ class TreeTopographyController extends HfcBaseController {
 		#
 		# Customer
 		#
-		if (\PPModule::is_active ('HfcCustomer'))
+		if (\Module::collections()->has('HfcCustomer'))
 		{
 			$modem_helper = 'Modules\HfcCustomer\Entities\ModemHelper';
 

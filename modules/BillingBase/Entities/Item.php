@@ -2,8 +2,7 @@
 
 namespace Modules\BillingBase\Entities;
 
-use DB;
-use ChannelLog;
+use ChannelLog, DB;
 
 class Item extends \BaseModel {
 

@@ -147,7 +147,7 @@
 
 @stop
 
-@if (\PPModule::is_active('HfcCustomer'))
+@if (\Module::collections()->has('HfcCustomer'))
 	@section('content_proximity_search')
 
 		{{ Form::open(array('route' => 'CustomerTopo.show_prox', 'method' => 'GET')) }}
@@ -194,9 +194,9 @@
 									<?php
 										if(!isset($colarray[$i]))
 											continue;
-										$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "SNR dB";
+											$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "SNR dB";
 										if(!isset($table[$mod][$i]))
-										        continue;
+										    continue;
 										switch ( \App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), '64qam' ,Str::lower($colheader),htmlspecialchars($colarray[$i])) ){
 										case 0:
 												$color = "success";

@@ -1,13 +1,10 @@
 <?php
 namespace Modules\BillingBase\Http\Controllers;
 
-use Modules\BillingBase\Entities\AccountingRecord;
-use Modules\BillingBase\Entities\BillingLogger;
-use Modules\BillingBase\Entities\SettlementRun;
-use Modules\BillingBase\Entities\Invoice;
-use Modules\BillingBase\Console\cdrCommand;
-use \Monolog\Logger;
 use ChannelLog;
+use Modules\BillingBase\Entities\{AccountingRecord, BillingLogger, Invoice, SettlementRun};
+use Modules\BillingBase\Console\{accountingCommand, cdrCommand};
+use \Monolog\Logger;
 
 class SettlementRunController extends \BaseController {
 

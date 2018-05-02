@@ -1,31 +1,16 @@
 <?php
 namespace Modules\BillingBase\Console;
 
+use ChannelLog as Log, DB, Storage;
 use Illuminate\Console\Command;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
-
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Bus\SelfHandling;
 use Illuminate\Contracts\Queue\ShouldQueue;
-
-use Storage;
-use DB;
-
+use Illuminate\Queue\{ SerializesModels, InteractsWithQueue};
 use Modules\ProvBase\Entities\Contract;
-use Modules\BillingBase\Entities\AccountingRecord;
-use Modules\BillingBase\Entities\SepaAccount;
-use Modules\BillingBase\Entities\BillingBase;
-use Modules\BillingBase\Entities\Product;
-use Modules\BillingBase\Entities\Salesman;
-use Modules\BillingBase\Entities\Invoice;
-use Modules\BillingBase\Entities\Item;
-use Modules\BillingBase\Entities\SettlementRun;
+use Modules\BillingBase\Entities\{ AccountingRecord, BillingBase, InvoiceItem, Product, Salesman, SepaAccount, SettlementRun};
 use Modules\BillingBase\Http\Controllers\SettlementRunController;
-use ChannelLog as Log;
+use Symfony\Component\Console\Input\{ InputOption, InputArgument};
 use App\Http\Controllers\BaseViewController;
-
 
 class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
