@@ -193,16 +193,6 @@ class Invoice extends \BaseModel{
 		return date('Y_m', strtotime('first day of last month'));
 	}
 
-	/**
-	 * @return String 	CDR Filename without extension (like .pdf)
-	 */
-	private static function _get_cdr_filename()
-	{
-		$offset = BillingBase::first()->cdr_offset;
-
-		return $offset ? date('Y_m', strtotime('-'.($offset+1).' month')).'_cdr' : date('Y_m', strtotime('first day of last month')).'_cdr';
-	}
-
 
 	/**
 	 * @param String
@@ -256,6 +246,12 @@ class Invoice extends \BaseModel{
 		else
 			$ret = $contract->get_next_cancel_date();
 
+		// e.g. customers that get tv amplifier refund, but dont have any tariff
+		if (!isset($ret['tariff'])) {
+			ChannelLog::debug('billing', "Customer has no tariff - dont set cancelation dates.", [$this->data['contract_id']]);
+			return;
+		}
+
 		if ($ret['tariff'])
 		{
 			// Set period of notice and maturity string of last tariff
@@ -267,6 +263,9 @@ class Invoice extends \BaseModel{
 			$span = str_replace($nr, '', $ret['tariff']->product->maturity ? : Product::$maturity);
 			$txt_m = $nr .' '. trans_choice("messages.$span", $nr);
 		}
+
+		if (!$ret['cancelation_day'])
+			ChannelLog::info('billing', "Contract $contract->number was canceled with target ".$ret['end_of_term']);
 
 		$german = \App::getLocale() == 'de';
 
@@ -584,11 +583,10 @@ class Invoice extends \BaseModel{
 				unlink($fn.'.aux');
 				unlink($fn.'.log');
 			}
-			else
-			{
+			else {
 				// possible errors: syntax/filename/...
-				ChannelLog::error('billing', "Missing Invoice PDF ".$fn);
-				throw new Exception("Missing Invoice PDF ".$fn);
+				ChannelLog::error('billing', "pdflatex: Error creating Invoice PDF ".$fn);
+				throw new \Exception("pdflatex: Error creating Invoice PDF ".$fn);
 			}
 		}
 	}

@@ -55,10 +55,13 @@ class MsHelperCommand extends Command {
 			$numa  = ModemHelper::ms_num_all("netelement_id = $element->id");
 			$cm_cri= ModemHelper::ms_cri("netelement_id = $element->id");
 			$avg   = ModemHelper::ms_avg("netelement_id = $element->id");
-			$warn  = ModemHelper::$avg_warning_percentage / 100 * $numa;
-			$crit  = ModemHelper::$avg_critical_percentage / 100 * $numa;
+			$warn_per = ModemHelper::$avg_warning_percentage / 100 * $numa;
+			$crit_per = ModemHelper::$avg_critical_percentage / 100 * $numa;
+			$warn_us  = ModemHelper::$avg_warning_us;
+			$crit_us  = ModemHelper::$avg_critical_us;
 
-			$perf .= "'$element->name ($avg dBuV, #crit:$cm_cri)'=$num;$warn;$crit;0;$numa ";
+			$perf .= "'$element->name (online)'=$num;$warn_per;$crit_per;0;$numa ";
+			$perf .= "'$element->name ($avg dBuV, #crit:$cm_cri)'=$avg;$warn_us;$crit_us;20;55 ";
 		}
 		echo $ret . ' | ' . $perf;
 

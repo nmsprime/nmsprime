@@ -393,6 +393,9 @@ class Item extends \BaseModel {
 				// if payment is split
 				if ($valid_to)
 				{
+					if ($dates['lastm_Y'] > date('Y-m', $start) && $dates['lastm_Y'] <= date('Y-m', $valid_to))
+						$ratio = 1;
+
 					$tot_months = round(($valid_to - strtotime(date('Y-m', $start))) / $dates['m_in_sec'] + 1, 0);
 					$ratio /= $tot_months;
 

@@ -120,7 +120,7 @@ class EnviaCustomerReferenceGetterCommand extends Command {
 		foreach ($this->contracts_to_get_customer_reference_for as $contract) {
 
 			$contract_id = $contract->id;
-			Log::debug("Updating contract $contract_id");
+			Log::info("Getting customer reference for contract $contract_id");
 
 			try {
 				// get the relative URL to execute the cron job for updating the current order_id
