@@ -572,7 +572,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		$phonenumbers_o = \DB::table('phonenumber')
 			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
 			->join('modem', 'modem.id', '=', 'mta.modem_id')
-			->where('phonenumber.deleted_at', '=', null)
+			// ->where('phonenumber.deleted_at', '=', null)
 			->select('modem.contract_id', 'phonenumber.username')
 			->orderBy('modem.contract_id')->get();
 
@@ -712,7 +712,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			->join('mta', 'p.mta_id', '=', 'mta.id')
 			->join('modem', 'modem.id', '=', 'mta.modem_id')
 			->join('contract', 'contract.id', '=', 'modem.contract_id')
-			->where('p.deleted_at', '=', null)
+			// ->where('p.deleted_at', '=', null)
 			->where(function ($query) use ($registrar) { $query
 				->where('sipdomain', '=', $registrar)
 				->orWhereNull('sipdomain')
