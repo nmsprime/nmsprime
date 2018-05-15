@@ -402,7 +402,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	{
 		$arr = array(
 			'message' => BaseViewController::translate_label($message),
-			'value'   => $value,
+			'value'   => round($value),
 			);
 
 		Storage::put('tmp/accCmdStatus', json_encode($arr));
