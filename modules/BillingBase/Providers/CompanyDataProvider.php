@@ -29,7 +29,7 @@ class CompanyDataProvider {
 			$err_msg = '';
 
 			if (!$acc->template_invoice)
-				\ChannelLog::error('billing', 'Missing SepaAccount specific templates for Invoice');
+				\ChannelLog::error('billing', "Missing templates for Invoices in SepaAccount $acc->name [$acc->id]");
 
 			$data['company_account_institute'] = escape_latex_special_chars($acc->institute);
 			$data['company_account_iban'] = $acc->iban;
