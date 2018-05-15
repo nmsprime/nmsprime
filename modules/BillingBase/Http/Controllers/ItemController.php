@@ -26,12 +26,9 @@ class ItemController extends \BaseController {
 		foreach ($products as $p)
 			$types[$p->id] = $p->type;
 
-		// the options should start with a 0 entry which is chosen if nothing is given explicitely
 		// don't use array_merge for this because that reassignes the index!
-		$ccs = $this->_add_empty_first_element_to_options($model->html_list(CostCenter::all(), 'name'));
+		$ccs = $model->html_list(CostCenter::all(), 'name', true);
 
-		$cnt[0] = null;
-		// 	$b[date('Y-m-01', strtotime("now +$i months"))] = date('Y-m', strtotime("now +$i months"));
 		for ($i=1; $i < 99; $i++)
 			$cnt[$i] = $i;
 
@@ -42,7 +39,7 @@ class ItemController extends \BaseController {
 		$fields = array(
 			array('form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'hidden' => '1'),
 			array('form_type' => 'select', 'name' => 'product_id', 'description' => 'Product', 'value' => $prods, 'select' => $types, 'help' => trans('helper.Item_ProductId')),
-			array('form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt, 'select' => 'Device Other TV'),
+			array('form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt, 'select' => 'Internet Voip Device Other TV'),
 			array('form_type' => 'text', 'name' => 'valid_from', 'description' => 'Start date', 'options' => ['placeholder' => 'YYYY-MM-DD'], 'help' => trans('helper.Item_ValidFrom')),
 			array('form_type' => 'checkbox', 'name' => 'valid_from_fixed', 'description' => 'Active from start date', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidFromFixed'), 'hidden' => $fluid, 'checked' => 1, 'value' => 1),
 			array('form_type' => 'text', 'name' => 'valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD']),

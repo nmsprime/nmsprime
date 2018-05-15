@@ -210,6 +210,7 @@ class cdrCommand extends Command {
 
 		// establish ftp connection and login
 		$ftp_server = "ftp.hlkomm.net";
+		$ftp_dir 	= "elektronische_Rechnungen/004895";
 
 		$ftp_conn = ftp_connect($ftp_server);
 		if (!$ftp_conn) {
@@ -220,14 +221,14 @@ class cdrCommand extends Command {
 		$login = ftp_login($ftp_conn, $user, $password);
 		// enable passive mode for client-to-server connections
 		ftp_pasv($ftp_conn, true);
-		$file_list = ftp_nlist($ftp_conn, ".");
+		$file_list = ftp_nlist($ftp_conn, $ftp_dir);
 		// $file_list = ftp_rawlist($ftp_conn, ".");
 
 		// find correct filename
 		foreach ($file_list as $fname)
 		{
 			if (strpos($fname, date('Ym', strtotime('first day of next month', $this->time_of_file))) !== false && strpos($fname, '_EVN.txt') !== false) {
-				$remote_fname = $fname;
+				$remote_fname = "$ftp_dir/$fname";
 				break;
 			}
 		}
