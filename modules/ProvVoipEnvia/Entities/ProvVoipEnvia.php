@@ -2557,7 +2557,7 @@ class ProvVoipEnvia extends \BaseModel {
 			'zipcode' => 'zipcode',
 			'city' => 'city',
 			'urban_district' => 'urban_district',
-			'usage' => 'number_usage',
+			'usage' => 'usage',
 			'publish_in_print_media' => 'publish_in_print_media',
 			'publish_in_electronic_media' => 'publish_in_electronic_media',
 			'directory_assistance' => 'directory_assistance',
@@ -5339,6 +5339,7 @@ class ProvVoipEnvia extends \BaseModel {
 		foreach ($xml->children() as $child) {
 
 			$col = $child->getName();
+
 			$value = (string) $child;
 
 			if ($this->phonebookentry->$col != $value) {
@@ -5359,7 +5360,7 @@ class ProvVoipEnvia extends \BaseModel {
 				$msg = "Created new PhonebookEntry for phonenumber ".$this->phonenumber->id." with data delivered by Telekom";
 			}
 			else {
-				$msg = "Updated PhonebookEntry for phonenumber ".$this->phonenumber-id." with data delivered by Telekom";
+				$msg = "Updated PhonebookEntry for phonenumber ".$this->phonenumber->id." with data delivered by Telekom";
 			}
 			$this->phonebookentry->save();
 			$out .= $msg;
