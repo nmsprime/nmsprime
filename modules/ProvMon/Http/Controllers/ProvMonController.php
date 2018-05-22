@@ -5,7 +5,7 @@ namespace Modules\ProvMon\Http\Controllers;
 
 use View;
 use Acme\php\ArrayHelper;
-use Modules\ProvBase\Entities\{ Cmts, Configfile, Endpoint, IpPool, Modem, ProvBase, ProvVoip, Qos };
+use Modules\ProvBase\Entities\{Cmts, Configfile, Endpoint, IpPool, Modem, ProvBase, Qos };
 
 /*
  * This is the Basic Stuff for Modem Analyses Page
@@ -323,7 +323,7 @@ class ProvMonController extends \BaseController {
 			goto end;
 
 		// Ping
-		$domain   = ProvVoip::first()->mta_domain;
+		$domain   = \Modules\ProvVoip\Entities\ProvVoip::first()->mta_domain;
 		$hostname = $domain ? $mta->hostname.'.'.$domain : $mta->hostname.'.'.$this->domain_name;
 
 		exec ('sudo ping -c3 -i0 -w1 '.$hostname, $ping);
