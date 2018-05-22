@@ -723,6 +723,8 @@ end:
 	 */
 	public function search_lease ()
 	{
+		$ret = [];
+
 		if (func_num_args() <= 0) {
 			$search = func_get_arg(0);
 
@@ -733,9 +735,6 @@ end:
 			$file   = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
 			// start each lease with a line that begins with "lease" and end with a line that begins with "{"
 			preg_match_all('/^lease(.*?)(^})/ms', $file, $section);
-
-			$ret = array();
-			$i   = 0;
 
 			// fetch all lines matching hw mac
 			foreach (array_unique($section[0]) as $s)
@@ -769,6 +768,7 @@ end:
 				}
 			}
 		}
+
 		return $ret;
 	}
 

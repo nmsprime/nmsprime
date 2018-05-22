@@ -36,11 +36,6 @@ class cdrCommand extends Command {
 	 */
 	public function __construct()
 	{
-		$lang = BillingBase::first()->userlang;
-
-		if ($lang)
-			\App::setLocale($lang);
-
 		parent::__construct();
 	}
 
@@ -50,6 +45,10 @@ class cdrCommand extends Command {
 	 */
 	public function fire()
 	{
+		$lang = BillingBase::first()->userlang;
+		if ($lang)
+			\App::setLocale($lang);
+
 		\ChannelLog::debug('billing', 'Get Call Data Records');
 		$missing = true;
 
