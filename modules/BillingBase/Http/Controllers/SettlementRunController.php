@@ -1,13 +1,10 @@
 <?php
 namespace Modules\BillingBase\Http\Controllers;
 
-use Modules\BillingBase\Entities\AccountingRecord;
-use Modules\BillingBase\Entities\BillingLogger;
-use Modules\BillingBase\Entities\SettlementRun;
-use Modules\BillingBase\Entities\Invoice;
-use Modules\BillingBase\Console\accountingCommand;
-use \Monolog\Logger;
 use ChannelLog;
+use Modules\BillingBase\Entities\{AccountingRecord, BillingLogger, Invoice, SettlementRun};
+use Modules\BillingBase\Console\{accountingCommand, cdrCommand};
+use \Monolog\Logger;
 
 class SettlementRunController extends \BaseController {
 
@@ -123,23 +120,19 @@ class SettlementRunController extends \BaseController {
 			{
 				$job = \DB::table('jobs')->find(\Session::get('job_id'));
 
-				// if ($job)
-				// 	\Log::debug('Job with ID '.$job->id.' running');
-
-				// TODO: Get state from file
 				$state = \Storage::exists('tmp/accCmdStatus') ? \Storage::get('tmp/accCmdStatus') : '';
 				echo "data: $state\n\n";
 				ob_flush(); flush();
 
-				sleep(3);
+				sleep(2);
 			}
 
 			\Log::debug('SettlementRun Job ['. \Session::get('job_id').'] stopped');
 
 			\Session::remove('job_id');
 
-			// wait for job to land in failed jobs table - if it failed - wait max 14 seconds
-			$i 		 = 7;
+			// wait for job to land in failed jobs table - if it failed - wait max 10 seconds
+			$i 		 = 5;
 			$success = true;
 
 			while ($i && $success)
@@ -283,13 +276,16 @@ class SettlementRunController extends \BaseController {
 		if (!$settlementrun)
 			Invoice::delete_current_invoices();
 
+		$cdr_filepaths = cdrCommand::get_cdr_pathnames();
+
 		// everything in accounting directory - SepaAccount specific
-		foreach (\Storage::files($dir) as $f)
+		foreach (glob(storage_path("app/$dir/*")) as $f)
 		{
 			// keep cdr
-			// if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
-			if (basename($f) != accountingCommand::_get_cdr_filename())
-				\Storage::delete($f);
+			if (in_array($f, $cdr_filepaths))
+				continue;
+
+			\Storage::delete($f);
 		}
 
 		foreach (\Storage::directories($dir) as $d)

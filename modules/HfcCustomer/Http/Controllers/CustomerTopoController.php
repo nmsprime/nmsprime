@@ -2,14 +2,10 @@
 
 namespace Modules\HfcCustomer\Http\Controllers;
 
-use Modules\HfcCustomer\Entities\ModemHelper;
-use Modules\HfcCustomer\Entities\Mpr;
-use Modules\HfcReq\Http\Controllers\NetElementController;
-use Modules\HfcReq\Entities\NetElement;
-
-use Modules\ProvBase\Entities\Modem;
 use App\Http\Controllers\BaseViewController;
-
+use Modules\ProvBase\Entities\Modem;
+use Modules\HfcCustomer\Entities\{ ModemHelper, Mpr};
+use Modules\HfcReq\{Entities\NetElement, Http\Controllers\NetElementController};
 
 /*
  * Show Customers (Modems) on Topography
@@ -46,6 +42,13 @@ class CustomerTopoController extends NetElementController {
 		  <description><![CDATA[]]></description>
 
 
+		  <Style id='style-1'>
+			<IconStyle>
+			  <Icon>
+				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/red-dot.png</href>
+			  </Icon>
+			</IconStyle>
+		  </Style>
 		  <Style id='style0'>
 			<IconStyle>
 			  <Icon>
@@ -65,7 +68,7 @@ class CustomerTopoController extends NetElementController {
 		  <Style id='style2'>
 			<IconStyle>
 			  <Icon>
-				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/red-dot.png</href>
+				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/orange-dot.png</href>
 			  </Icon>
 			</IconStyle>
 		  </Style>
@@ -259,7 +262,7 @@ class CustomerTopoController extends NetElementController {
 	public function show_diagrams ($modems)
 	{
 		// check if ProvMon is installed
-		if (!\PPModule::is_active('ProvMon'))
+		if (!\Module::collections()->has('ProvMon'))
 			return \View::make('errors.generic')->with('message', 'Module Provisioning Monitoring (ProvMon) not installed');
 
 		$monitoring = array();
@@ -271,7 +274,7 @@ class CustomerTopoController extends NetElementController {
 		$before = microtime(true);
 
 		// foreach modem
-		foreach ($modems->orderBy('city', 'street')->get() as $modem)
+		foreach ($modems->orderBy('city')->orderBy('street')->orderBy('house_number')->get() as $modem)
 		{
 			// load per modem diagrams
 			$dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Overview');
@@ -370,7 +373,7 @@ class CustomerTopoController extends NetElementController {
 		$clrs = [];
 		$str   = '';
 		$descr = '';
-		$states = ['okay', 'critical', 'offline'];
+		$states = [-1 => 'offline', 0 => 'okay', 1 => 'impaired', 2 => 'critical'];
 		$file  = $this->file_pre;
 
 		foreach ($modems->where('contract_id', '>', '0')->orderByRaw('10000000*x+y')->get() as $modem)
@@ -381,7 +384,12 @@ class CustomerTopoController extends NetElementController {
 			if ($x != $modem->x || $y != $modem->y)
 			{
 				# Print Marker
-				$clr = ($x) ? round(array_sum($clrs)/count($clrs)) : '';
+				# if one of the modems in the same location is offline show a red marker,
+				# otherwise the average of all modem states will determine the color
+				if(in_array(-1, $clrs))
+					$clr = -1;
+				else
+					$clr = ($x) ? round(array_sum($clrs)/count($clrs)) : '';
 				$style = "#style$clr"; # green, yellow, red
 
 				# Reset Vars
@@ -418,7 +426,10 @@ class CustomerTopoController extends NetElementController {
 			else
 				$row_val = $modem->{$row};
 
-			$cur_clr = BaseViewController::get_quality_color_orig(explode('_',$row)[0], explode('_',$row)[1], [$row_val])[0];
+			if($modem->us_pwr != 0)
+				$cur_clr = BaseViewController::get_quality_color_orig(explode('_',$row)[0], explode('_',$row)[1], [$row_val])[0];
+			else
+				$cur_clr = -1;
 			$clrs[] = $cur_clr;
 
 			#
@@ -429,12 +440,13 @@ class CustomerTopoController extends NetElementController {
 			$lastname   = $contract->lastname;
 
 			# Headline: Address from DB
-			if ($str != $modem->street || $city != $modem->city || $zip != $modem->zip)
+			if ($str != $modem->street || $city != $modem->city || $zip != $modem->zip || $nr != $modem->house_number)
 			{
 				$str = $modem->street;
 				$city = $modem->city;
 				$zip = $modem->zip;
-				$descr .= "<b>$zip, $city, $str</b><br>";
+				$nr = $modem->house_number;
+				$descr .= "<b>$zip, $city, $str, $nr</b><br>";
 			}
 
 			# add descr line
@@ -446,8 +458,14 @@ class CustomerTopoController extends NetElementController {
 		#
 		# Print Last Marker
 		#
-		$clr = round(array_sum($clrs)/count($clrs));
+		# if one of the modems in the same location is offline show a red marker,
+		# otherwise the average of all modem states will determine the color
+		if(in_array(-1, $clrs))
+			$clr = -1;
+		else
+			$clr = round(array_sum($clrs)/count($clrs));
 		$style = "#style$clr"; # green, yellow, red
+
 		$pos ="$x, $y, 0.000000";
 		if ($x)
 		{

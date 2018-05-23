@@ -2,8 +2,7 @@
 
 namespace Modules\HfcReq\Http\Controllers;
 
-use Modules\HfcReq\Entities\NetElement;
-use Modules\HfcReq\Entities\NetElementType;
+use Modules\HfcReq\Entities\{ NetElement, NetElementType};
 use Modules\HfcBase\Http\Controllers\HfcBaseController;
 use Modules\HfcSnmp\Http\Controllers\SnmpController;
 
@@ -45,8 +44,9 @@ class NetElementController extends HfcBaseController {
 
 		/*
 		 * cluster: rf card settings
+		 * Options array is hidden when not used
 		 */
-		$options_array = array('form_type' => 'text', 'name' => 'options', 'description' => 'Options');
+		$options_array = array('form_type' => 'text', 'name' => 'options', 'description' => 'Options', 'hidden' => 1);
 		if ($model->netelementtype && $model->netelementtype->get_base_type() == 2)
 		{
 			$options_array = array('form_type' => 'select', 'name' => 'options', 'description' => 'RF Card Setting (DSxUS)', 'value' => $model->get_options_array());

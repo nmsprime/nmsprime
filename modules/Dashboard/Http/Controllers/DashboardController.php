@@ -39,7 +39,6 @@ class DashboardController extends BaseController
 			$netelements = $this->_get_impaired_netelements();
 			$services 	 = $this->_get_impaired_services();
 		}
-
 		return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'data', 'view', 'netelements', 'services')));
 	}
 
@@ -61,13 +60,13 @@ class DashboardController extends BaseController
 		// check user permissions
 		foreach (\Auth::user()->roles as $role)
 		{
-			if (\PPModule::is_active('billingbase'))
+			if (\Module::collections()->has('BillingBase'))
 			{
 				if ($role->id == $role_ids_fix['director'])
 					$income = true;
 			}
 
-			if (\PPModule::is_active('hfcreq'))
+			if (\Module::collections()->has('HfcReq'))
 			{
 				if ($role->id == $role_ids_fix['superadmin'] ||
 					$role->id == $role_ids_fix['director'] ||
@@ -77,9 +76,9 @@ class DashboardController extends BaseController
 		}
 
 		$view = array(
-			'contracts' 	=> \PPModule::is_active('provbase'),
+			'contracts' 	=> \Module::collections()->has('ProvBase'),
 			'income'		=> $income,
-			'tickets' 		=> \PPModule::is_active('ticketsystem'),
+			'tickets' 		=> \Module::collections()->has('Ticketsystem'),
 			'provvoipenvia' => false,
 			'date' 			=> true,
 			'hfc' 			=> $hfc,
@@ -103,7 +102,7 @@ class DashboardController extends BaseController
 				->orWhereNull('contract_end');})
 			->orderBy('id');
 
-		return \PPModule::is_active('billingbase') ? $query->with('items', 'items.product')->get()->all() : $query->get()->all();
+		return \Module::collections()->has('BillingBase') ? $query->with('items', 'items.product')->get()->all() : $query->get()->all();
 	}
 
 
@@ -340,7 +339,7 @@ class DashboardController extends BaseController
 	 */
 	private static function get_new_tickets()
 	{
-		if (!\PPModule::is_active('ticketsystem'))
+		if (!\Module::collections()->has('Ticketsystem'))
 			return null;
 
 		return \Auth::user()->tickets()->where('state', '=', 'New')->get();

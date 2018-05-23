@@ -1,6 +1,6 @@
 <?php namespace Modules\HfcCustomer\Http\Controllers;
 
-use Pingpong\Modules\Routing\Controller;
+use Nwidart\Modules\Routing\Controller;
 use Modules\HfcCustomer\Entities\Mpr;
 
 class MprGeoposController extends \BaseController {

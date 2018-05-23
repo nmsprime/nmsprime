@@ -2,10 +2,8 @@
 
 namespace Modules\ProvVoipEnvia\Entities;
 
-use Modules\ProvBase\Entities\Contract;
-use Modules\ProvBase\Entities\Modem;
-use Modules\ProvVoip\Entities\Phonenumber;
-use Modules\ProvVoip\Entities\PhonenumberManagement;
+use Modules\ProvBase\Entities\{Contract, Modem};
+use Modules\ProvVoip\Entities\{Phonenumber, PhonenumberManagement};
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 
 class EnviaContract extends \BaseModel {

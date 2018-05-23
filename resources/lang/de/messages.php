@@ -260,6 +260,7 @@ return [
 	'item'					=> 'Posten',
 	'sepa'					=> 'mit_SEPA',
 	'no_sepa'				=> 'ohne_SEPA',
+	'Call_Data_Records'		=> 'Einzelverbindungsnachweise',
 	'Call Data Record'		=> 'Einzelverbindungsnachweis',
 	'accounting'			=> 'Rechnungssatzdatei',
 	'booking'				=> 'Buchungssatzdatei',
@@ -267,7 +268,7 @@ return [
 	'DC'					=> 'SEPA Gutschriften',
 	'salesmen_commission'	=> 'Provision_Verkaeufer',
 	'Invoices'				=> 'Rechnungen',
-	'Load Data' 			=> 'Lade Daten',
+	'Load Data...' 			=> 'Lade Daten...',
 
 	//CostCenter
 	'Associated SEPA Account'	=> 'Verknüpftes SEPA-Konto',

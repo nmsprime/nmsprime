@@ -1,11 +1,10 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
+use DB, Storage;
 use Modules\ProvBase\Entities\Contract;
 use Digitick\Sepa\PaymentInformation;
-
-use DB;
-use Storage;
 
 class SepaMandate extends \BaseModel {
 
@@ -16,11 +15,12 @@ class SepaMandate extends \BaseModel {
 	public static function rules($id = null)
 	{
 		return array(
+			'reference' 		=> 'required',
 			'signature_date' 	=> 'date',
 			'sepa_iban' 		=> 'required|iban',
 			'sepa_bic' 			=> 'bic',			// see SepaMandateController@prep_rules
-			'signature_date' 	=> 'date',
-			'sepa_valid_from' 	=> 'date',
+			'signature_date' 	=> 'date|required',
+			'sepa_valid_from' 	=> 'date|required',
 			'sepa_valid_to'		=> 'dateornull'
 		);
 	}
@@ -53,7 +53,7 @@ class SepaMandate extends \BaseModel {
 				'index_header' => [$this->table.'.sepa_holder', $this->table.'.sepa_valid_from', $this->table.'.sepa_valid_to', $this->table.'.reference'],
 				'bsclass' => $bsclass,
 				'order_by' => ['0' => 'asc'],
-				'header' =>  $this->sepa_iban];
+				'header' =>  "$this->reference - $this->sepa_iban"];
 	}
 
 
@@ -91,11 +91,11 @@ class SepaMandate extends \BaseModel {
 	/*
 	 * Init Observers
 	 */
-	public static function boot()
-	{
-		SepaMandate::observe(new SepaMandateObserver);
-		parent::boot();
-	}
+	// public static function boot()
+	// {
+	// 	SepaMandate::observe(new SepaMandateObserver);
+	// 	parent::boot();
+	// }
 
 
 	/*
@@ -165,57 +165,10 @@ class SepaMandateObserver
 
 	public function creating($mandate)
 	{
-		// build mandate reference from template
-		$mandate->reference = $mandate->reference ? : $this->build_mandate_ref($mandate);
-
-		// Set default values for empty fields - NOTE: prepare_input() functions fills data too
-		$mandate->sepa_holder = $mandate->sepa_holder ? : $mandate->contract->firstname.' '.$mandate->contract->lastname;
-		$mandate->sepa_valid_from = $mandate->sepa_valid_from ? : date('Y-m-d');
-
-		// set end date of old mandate to starting date of new mandate - Note: commented because multiple mandates with different cost centers are possible now
-		// $mandate_old = $mandate->contract->get_valid_mandate();
-		// if ($mandate_old)
-		// {
-		// 	$mandate_old->sepa_valid_to = date('Y-m-d', strtotime('-1 day', strtotime($mandate->sepa_valid_from)));
-		// 	$mandate_old->save();
-		// }
 	}
 
 	public function updating($mandate)
 	{
-		if (!$mandate->reference)
-			$mandate->reference = $this->build_mandate_ref($mandate);
-	}
-
-
-	/**
-	 * Replaces placeholders from in Global Config defined mandate reference template with values of mandate or the related contract
-	 */
-	private function build_mandate_ref($mandate)
-	{
-		$template = BillingBase::first()->mandate_ref_template;
-
-		if (!$template || (strpos($template, '{') === false))
-			return $mandate->contract->number;
-
-		// replace placeholder with values
-		preg_match_all('/(?<={)[^}]*(?=})/', $template, $matches);
-
-		foreach ($matches[0] as $key)
-		{
-			if (array_key_exists($key, $mandate->contract['attributes']))
-				$template = str_replace('{'.$key.'}', $mandate->contract['attributes'][$key], $template);
-			else if (array_key_exists($key, $mandate['attributes']))
-				$template = str_replace('{'.$key.'}', $mandate['attributes'][$key], $template);
-		}
-
-		// foreach ($mandate->contract['attributes'] as $key => $value)
-		// 	$template = str_replace('{'.$key.'}', $value, $template);
-
-		// foreach ($mandate['attributes'] as $key => $value)
-		// 	$template = str_replace('{'.$key.'}', $value, $template);
-
-		return $template;
 	}
 
 }

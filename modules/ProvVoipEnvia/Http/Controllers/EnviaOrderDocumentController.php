@@ -4,11 +4,7 @@ namespace Modules\ProvVoipEnvia\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\View;
-
-use Modules\ProvVoipEnvia\Entities\EnviaOrder;
-use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
-
-/* use Modules\ProvVoipEnvia\Entities\EnviaOrders; */
+use Modules\ProvVoipEnvia\Entities\{EnviaOrder, EnviaOrderDocument};
 
 class EnviaOrderDocumentController extends \BaseController {
 

@@ -1,6 +1,7 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
 use Storage;
 
 class Company extends \BaseModel {

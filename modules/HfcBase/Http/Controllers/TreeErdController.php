@@ -2,10 +2,9 @@
 
 namespace Modules\HfcBase\Http\Controllers;
 
+use Acme\php\ArrayHelper;
 use Modules\HfcCustomer\Entities\ModemHelper;
 use Modules\HfcReq\Entities\NetElement;
-
-use Acme\php\ArrayHelper;
 
 /*
  * Tree Erd (Entity Relation Diagram) Controller
@@ -243,7 +242,7 @@ class TreeErdController extends HfcBaseController {
 		#
 		# TODO: Customer
 		#
-		if (\PPModule::is_active ('HfcCustomer'))
+		if (\Module::collections()->has('HfcCustomer'))
 		{
 		    $n = 0;
 			foreach ($netelements as $netelem)

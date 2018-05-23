@@ -2,12 +2,9 @@
 
 namespace Modules\ProvBase\Entities;
 
-use File;
-use Log;
-use Exception;
+use Exception, File, Log, GlobalConfig;
 use Acme\php\ArrayHelper;
-use Modules\ProvBase\Entities\Qos;
-use Modules\ProvBase\Entities\ProvBase;
+use Modules\ProvBase\Entities\{ ProvBase, Qos};
 use Modules\ProvMon\Http\Controllers\ProvMonController;
 
 class Modem extends \BaseModel {
@@ -26,6 +23,7 @@ class Modem extends \BaseModel {
 		return array(
 			'mac' => 'required|mac|unique:modem,mac,'.$id.',id,deleted_at,NULL',
 			'birthday' => 'date',
+			'country_code' => 'regex:/^[A-Z]{2}$/',
 		);
 	}
 
@@ -49,8 +47,8 @@ class Modem extends \BaseModel {
 		$bsclass = $this->get_bsclass();
 
 		return ['table' => $this->table,
-				'index_header' => [$this->table.'.id', $this->table.'.mac', 'configfile.name', $this->table.'.name', $this->table.'.firstname', $this->table.'.lastname', $this->table.'.city', $this->table.'.district', $this->table.'.street', $this->table.'.house_number', $this->table.'.us_pwr', 'contract_valid'],
-		        'bsclass' => $bsclass,
+				'index_header' => [$this->table.'.id', $this->table.'.mac', 'configfile.name', $this->table.'.name', $this->table.'.firstname', $this->table.'.lastname', $this->table.'.city', $this->table.'.district', $this->table.'.street', $this->table.'.house_number', $this->table.'.us_pwr', $this->table.'.geocode_source', 'contract_valid'],
+				'bsclass' => $bsclass,
 				'header' => $this->id.' - '.$this->mac.($this->name ? ' - '.$this->name : ''),
 				'edit' => ['us_pwr' => 'get_us_pwr', 'contract_valid' => 'get_contract_valid'],
 				'eager_loading' => ['configfile','contract'],
@@ -114,7 +112,7 @@ class Modem extends \BaseModel {
 	 */
 	protected function _envia_orders() {
 
-		if (!\PPModule::is_active('provvoipenvia')) {
+		if (!\Module::collections()->has('ProvVoipEnvia')) {
 			throw new \LogicException(__METHOD__.' only callable if module ProvVoipEnvia as active');
 		}
 
@@ -126,7 +124,7 @@ class Modem extends \BaseModel {
 	 * related enviacontracts
 	 */
 	public function enviacontracts() {
-		if (!\PPModule::is_active('provvoipenvia')) {
+		if (!\Module::collections()->has('ProvVoipEnvia')) {
 			throw new \LogicException(__METHOD__.' only callable if module ProvVoipEnvia as active');
 		}
 		else {
@@ -195,19 +193,19 @@ class Modem extends \BaseModel {
 		$ret = array();
 
 		// we use a dummy here as this will be overwritten by ModemController::get_form_tabs()
-		if (\PPModule::is_active('ProvVoip')) {
+		if (\Module::collections()->has('ProvVoip')) {
 			$ret['dummy']['Mta']['class'] = 'Mta';
 			$ret['dummy']['Mta']['relation'] = $this->mtas;
 		}
 
-                // only show endpoints (and thus the ability to create a new one) for public CPEs
-                if($this->public) {
-                        $ret['dummy']['Endpoint']['class'] = 'Endpoint';
-                        $ret['dummy']['Endpoint']['relation'] = $this->endpoints;
-                }
-
-		if (\PPModule::is_active('provvoipenvia'))
+		if (\Module::collections()->has('ProvVoipEnvia'))
 		{
+			// only show endpoints (and thus the ability to create a new one) for public CPEs
+			if ($this->public) {
+				$ret['dummy']['Endpoint']['class'] = 'Endpoint';
+				$ret['dummy']['Endpoint']['relation'] = $this->endpoints;
+			}
+
 			$ret['dummy']['EnviaContract']['class'] = 'EnviaContract';
 			$ret['dummy']['EnviaContract']['relation'] = $this->enviacontracts;
 			$ret['dummy']['EnviaContract']['options']['hide_create_button'] = 1;
@@ -261,7 +259,7 @@ class Modem extends \BaseModel {
 
 		$ret = 'host cm-'.$this->id.' { hardware ethernet '.$this->mac.'; filename "cm/cm-'.$this->id.'.cfg"; ddns-hostname "cm-'.$this->id.'";';
 
-		if (\PPModule::is_active('provvoip') && $this->mtas()->count())
+		if (\Module::collections()->has('ProvVoip') && $this->mtas()->count())
 			$ret .= ' option ccc.dhcp-server-1 '.($server ? : ProvBase::first()->provisioning_server).';';
 
 		return $ret."}\n";
@@ -335,10 +333,10 @@ class Modem extends \BaseModel {
 	 * Used in ModemObserver@updated/deleted for created/updated/deleted events
 	 *
 	 * NOTES:
-	 	* This is way faster (0,01s (also on 2k modems) vs 2,8s for 348 Modems via make_dhcp_cm_all) than everytime creating files for all modems
-	 	* It's also more secure as it uses flock() to avoid dhcpd restart errors due to race conditions
-	 	* MaybeTODO: embed part between lock & unlock into try catch block to avoid forever locked files in case of exception !?
-	 	* Attention!: MAC Address must be unique in database to work correctly !!!
+		* This is way faster (0,01s (also on 2k modems) vs 2,8s for 348 Modems via make_dhcp_cm_all) than everytime creating files for all modems
+		* It's also more secure as it uses flock() to avoid dhcpd restart errors due to race conditions
+		* MaybeTODO: embed part between lock & unlock into try catch block to avoid forever locked files in case of exception !?
+		* Attention!: MAC Address must be unique in database to work correctly !!!
 	 *
 	 * @param 	delete  	set to true if you want to remove the entry from the configfile
 	 *
@@ -462,7 +460,7 @@ class Modem extends \BaseModel {
 		$max_cpe = $cpe_cnt ? : 2; 		// default 2
 		$network_access = 1;
 
-		if (\PPModule::is_active('provvoip') && (count($this->mtas)))
+		if (\Module::collections()->has('provvoip') && (count($this->mtas)))
 			$max_cpe = count($this->mtas) + (($this->contract->telephony_only || !$this->network_access) ? 0 : $max_cpe);
 		else if (!$this->network_access)
 			$network_access = 0;
@@ -475,7 +473,7 @@ class Modem extends \BaseModel {
 		// make text and write to file
 		$conf = "\tNetworkAccess $network_access;\n";
 		$conf .= "\tMaxCPE $max_cpe;\n";
-		if (\PPModule::is_active('ProvVoip')) {
+		if (\Module::collections()->has('ProvVoip')) {
 			foreach ($this->mtas as $mta)
 				$conf .= "\tCpeMacAddress $mta->mac;\n";
 		}
@@ -761,7 +759,7 @@ class Modem extends \BaseModel {
 	public function refresh_state_cacti()
 	{
 		// cacti is not installed
-		if(!\PPModule::is_active('provmon'))
+		if(!\Module::collections()->has('ProvMon'))
 			return -1;
 
 		try {
@@ -868,76 +866,240 @@ class Modem extends \BaseModel {
 	 *
 	 * TODO: split in a general geocoding function and a modem specific one
 	 */
-	public function geocode ($save = true)
-	{
+	public function geocode($save=true) {
+
+		$geodata = null;
+
+		// first try to get geocoding from OSM
+		try {
+			$geodata = $this->_geocode_osm_nominatim();
+		}
+		catch (Exception $ex) {
+			$msg = "Error in geocoding against OSM Nominatim: ".$ex->getMessage();
+			\Session::push('tmp_error_above_form', $msg);
+			Log::error("$msg (".get_class($ex)." in ".$ex->getFile()." line ".$ex->getLine().")");
+		}
+
+		// fallback: ask google maps
+		if (!$geodata) {
+			try {
+				$geodata = $this->_geocode_google_maps($save);
+			}
+			catch (Exception $ex) {
+				$msg = "Error in geocoding against google maps: ".$ex->getMessage();
+				\Session::push('tmp_error_above_form', $msg);
+				Log::error("$msg (".get_class($ex)." in ".$ex->getFile()." line ".$ex->getLine().")");
+			}
+		}
+
+		if ($geodata) {
+			$this->y = $geodata['latitude'];
+			$this->x = $geodata['longitude'];
+			$this->geocode_source = $geodata['source'];
+			$this->geocode_state = 'OK';
+
+			Log::info("Geocoding successful, result: ".$this->y.",".$this->x.' (source: '.$geodata['source'].')');
+		}
+		else {
+			// if both methods failed: delete probably outdated geodata and inform user
+			$this->y = '';
+			$this->x = '';
+			$this->geocode_source = 'n/a';
+			$message = "Could not determine geo coordinates – please add manually";
+			Log::info("geocoding failed");
+			\Session::push('tmp_error_above_form', $message);
+		}
+
+		if ($save) {
+			$this->save();
+		}
+
+		return $geodata;
+
+	}
+
+
+	/**
+	 * Get geodata from OpenStreetMap
+	 *
+	 * @author Patrick Reichel
+	 */
+	protected function _geocode_osm_nominatim() {
+
 		Log::debug(__METHOD__." started for ".$this->hostname);
 
-		$country = 'Deutschland';
+		$geodata = null;
 
-		// Load google key if .ENV is set
-		$key = '';
-		if (isset ($_ENV['GOOGLE_API_KEY']))
+		if (!filter_var(env('OSM_NOMINATIM_EMAIL'), FILTER_VALIDATE_EMAIL)) {
+			$message = "Unable to ask OpenStreetMap Nominatim API for geocoding – OSM_NOMINATIM_EMAIL not set";
+			\Session::push('tmp_warning_above_form', $message);
+			Log::warning($message);
+			return false;
+		}
+
+		// first: split the house number – OSM expects a space e.g. between “104” and “a” in “104a”
+		// regex from https://stackoverflow.com/questions/10180730/splitting-string-containing-letters-and-numbers-not-separated-by-any-particular
+		$parts = preg_split("/(,?\s+)|((?<=[-\/a-z])(?=\d))|((?<=\d)(?=[-\/a-z]))/i", strtolower($this->house_number));
+		$housenumber_prepared = implode(' ', $parts);
+
+		if ($this->country_code) {
+			$country_code = $this->country_code;
+		}
+		else {
+			$config = GlobalConfig::find(1);
+			$country_code = $config->default_country_code;
+		}
+
+		$url = "https://nominatim.openstreetmap.org/search";
+		// see https://wiki.openstreetmap.org/wiki/DE:Nominatim#Parameter for details
+		// we are using the structured format (faster, saves server ressources – but marked experimental)
+		$params = [
+			'street' => "$housenumber_prepared $this->street",
+			'postalcode' => $this->zip,
+			'country' => $country_code,
+			'email' => env('OSM_NOMINATIM_EMAIL'),	// has to be set (https://operations.osmfoundation.org/policies/nominatim); else 403 Forbidden
+			'format' => 'json',			// return format
+			'dedupe' => '1',			// only one geolocation (even if address is split to multiple places)?
+			'polygon' => '0',			// include surrounding polygons?
+			'addressdetails' => '0',	// not available using API
+
+		];
+
+		$url .= "?";
+		if ($params) {
+			$tmp_params = [];
+			foreach ($params as $key => $value) {
+				array_push($tmp_params, (urlencode($key)."=".urlencode($value)));
+			}
+			$url .= implode("&", $tmp_params);
+		}
+
+		Log::info("Trying to geocode modem ".$this->id." against $url");
+
+		$geojson = file_get_contents($url);
+		$geodata_raw = json_decode($geojson, true);
+
+		$matches = ['building', ];
+		foreach ($geodata_raw as $entry) {
+			$class = array_get($entry, 'class', '');
+			$display_name = array_get($entry, 'display_name', '');
+			$lat = array_get($entry, 'lat', null);
+			$lon = array_get($entry, 'lon', null);
+
+			// check if returned entry is of certain type (e.g. “highway” indicates fuzzy match)
+			if (
+				in_array($class, $matches) &&
+				$lat &&
+				$lon &&
+				\Str::contains($display_name, $housenumber_prepared)	// don't check for startswith; sometimes a company name is added before the house number
+			) {
+				$geodata = [
+					'latitude' => $lat,
+					'longitude' => $lon,
+					'source' => 'OSM Nominatim',
+				];
+			}
+		}
+
+		if (!$geodata) {
+			Log::warning('OSM Nominatim geocoding for modem '.$this->id.' failed');
+			return false;
+		}
+
+		return $geodata;
+	}
+
+
+	/**
+	 * Get geodata from google maps
+	 *
+	 * @author Torsten Schmidt, Patrick Reichel
+	 */
+	protected function _geocode_google_maps() {
+
+		Log::debug(__METHOD__." started for ".$this->hostname);
+
+		$geodata = null;
+
+		if ($this->country_code) {
+			$country_code = $this->country_code;
+		}
+		else {
+			$config = GlobalConfig::find(1);
+			$country_code = $config->default_country_code;
+		}
+
+		// beginning on 2018-06-11 geocode api can only be used with an api key (otherwise returning error)
+		// ⇒ https://cloud.google.com/maps-platform/user-guide
+		if (date('c') > '2018-06-10') {
+			if (!env('GOOGLE_API_KEY')) {
+				$message = "Unable to ask Google Geocoding API – GOOGLE_API_KEY not set";
+				\Session::push('tmp_warning_above_form', $message);
+				Log::warning($message);
+				return false;
+			}
 			$key = '&key='.$_ENV['GOOGLE_API_KEY'];
+		}
+		else {
+			// Load google key if .ENV is set
+			$key = '';
+			if (env('GOOGLE_API_KEY'))
+				$key = '&key='.$_ENV['GOOGLE_API_KEY'];
+		}
 
 		// url encode the address
-		$address = urlencode($country.', '.$this->street.' '.$this->house_number.', '.$this->zip.', '.$this->city);
+		$address = urlencode($this->street.' '.$this->house_number.', '.$this->zip.', '.$country_code);
 
 		// google map geocode api url
 		$url = "https://maps.google.com/maps/api/geocode/json?sensor=false&address={$address}$key";
 
+		Log::info ("Trying to geocode modem ".$this->id." against $url");
+
 		// get the json response
 		$resp_json = file_get_contents($url);
-
-		// Log
-		Log::info ('geocode: request '.$url);
-
-		// decode the json
 		$resp = json_decode($resp_json, true);
 
+		$status = array_get($resp, 'status', 'n/a');
+
 		// response status will be 'OK', if able to geocode given address
-		if($resp['status']=='OK')
-		{
+		if ($status == 'OK') {
+
 			// get the important data
-			$lati = $resp['results'][0]['geometry']['location']['lat'];
-			$longi = $resp['results'][0]['geometry']['location']['lng'];
-			$formatted_address = $resp['results'][0]['formatted_address'];
+			$lati = array_get($resp, 'results.0.geometry.location.lat', null);
+			$longi = array_get($resp, 'results.0.geometry.location.lng', null);
+			$formatted_address = array_get($resp, 'results.0.formatted_address', null);
+			$location_type = array_get($resp, 'results.0.geometry.location_type', null);
+			$partial_match = array_get($resp, 'results.0.partial_match', null);
 
-			// verify if data is complete
-			if($lati && $longi && $formatted_address)
-			{
-				// put the data in the array
-				$data_arr = array();
+			// verify if data is complete and a real match
+			$matches = ['ROOFTOP', ];
+			if (
+				$lati &&
+				$longi &&
+				$formatted_address &&
+				!$partial_match	&&
+				in_array($location_type, $matches)
+			) {
+				$geodata = [
+					'latitude' => $lati,
+					'longitude' => $longi,
+					'source' => 'Google Geocoding API',
+				];
 
-				array_push(
-					$data_arr,
-					$lati,
-					$longi
-					// $formatted_address
-					);
-
-				$this->y = $lati;
-				$this->x = $longi;
-				$this->geocode_state = 'OK';
-
-				if ($save)
-					$this->save();
-
-				Log::info('geocode: result '.$lati.','.$longi);
-
-				return $data_arr;
+				return $geodata;
 			}
-			else
-			{
+			else {
+
 				$this->geocode_state = 'DATA_VERIFICATION_FAILED';
-				Log::info('geocode: '.$this->geocode_state);
-				return false;
+				Log::warning('Google geocoding for modem '.$this->id.' failed: '.$this->geocode_state);
+				return null;
 			}
 		}
-		else
-		{
-			$this->geocode_state = $resp['status'];
-			Log::info('geocode: '.$this->geocode_state);
-			return false;
+		else {
+
+			$this->geocode_state = $status;
+			Log::warning('Google geocoding for modem '.$this->id.' failed: '.$this->geocode_state);
+			return null;
 		}
 	}
 
@@ -952,7 +1114,7 @@ class Modem extends \BaseModel {
 	public function has_phonenumbers_attached() {
 
 		// if there is no voip module ⇒ there can be no numbers
-		if (!\PPModule::is_active('provvoip')) {
+		if (!\Module::collections()->has('ProvVoip')) {
 			return False;
 		}
 
@@ -976,7 +1138,7 @@ class Modem extends \BaseModel {
 	public function related_phonenumbers() {
 
 		// if voip module is not active: there can be no phonenumbers
-		if (!\PPModule::is_active('ProvVoip')) {
+		if (!\Module::collections()->has('ProvVoip')) {
 			return [];
 		}
 
@@ -1053,7 +1215,7 @@ class Modem extends \BaseModel {
 
 		// first: check if envia module is enabled
 		// if not: do nothing – this database fields could be in use by another voip provider module!
-		if (!\PPModule::is_active('ProvVoipEnvia')) {
+		if (!\Module::collections()->has('ProvVoipEnvia')) {
 			return;
 		}
 
@@ -1120,7 +1282,7 @@ class ModemObserver
 
 		$modem->hostname = 'cm-'.$modem->id;
 		$modem->save();	 // forces to call the updating() and updated() method of the observer !
-		if (\PPModule::is_active ('ProvMon')) {
+		if (\Module::collections()->has('ProvMon')) {
 			Log::info("Create cacti diagrams for modem: $modem->hostname");
 			\Artisan::call('nms:cacti', ['--cmts-id' => 0, '--modem-id' => $modem->id]);
 		}
@@ -1133,7 +1295,7 @@ class ModemObserver
 		// reminder: on active envia TEL module: moving modem to other contract is not allowed!
 		// check if this is running if you decide to implement moving of modems to other contracts
 		// watch Ticket LAR-106
-		if (\PPModule::is_active('ProvVoipEnvia')) {
+		if (\Module::collections()->has('ProvVoipEnvia')) {
 			if (
 				// updating is also called on create – so we have to check this
 				(!$modem->wasRecentlyCreated)
@@ -1154,18 +1316,26 @@ class ModemObserver
 		// Use Updating to set the geopos before a save() is called.
 		// Notice: that we can not call save() in update(). This will re-tricker
 		//         the Observer and re-call update() -> endless loop is the result.
-		if (multi_array_key_exists(['street', 'house_number', 'zip', 'city'], $diff))
-		{
+		if (multi_array_key_exists(['street', 'house_number', 'zip', 'city'], $diff)) {
+			// address changed ⇒ try to geocode new address
 			$modem->geocode(false);
 			$diff['x'] = true; 			// refresh Mpr by setting changed attribute to true
+		}
+		elseif (multi_array_key_exists(['x', 'y'], $diff)) {
+			// geodata changed but address not ⇒ manually entered geodata
+			// set origin to username (except if running from console command)
+			if (!\App::runningInConsole()) {
+				$user = \Auth::user();
+				$modem->geocode_source = $user->first_name." ".$user->last_name;
+			};
 		}
 
 		// Refresh MPS rules
 		// Note: does not perform a save() which could trigger observer.
-		if (\PPModule::is_active('HfcCustomer'))
+		if (\Module::collections()->has('HfcCustomer'))
 		{
 			if (multi_array_key_exists(['x', 'y'], $diff))
-				$modem->netelement_id = \Modules\HfcCustomer\Entities\Mpr::refresh($modem->id);
+				$modem->netelement_id = \Modules\HfcCustomer\Entities\Mpr::refresh($modem);
 		}
 	}
 

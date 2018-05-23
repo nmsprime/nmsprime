@@ -39,8 +39,7 @@
 				kml    = 0;
 
 				alert ("Element Number: "+id, "<li><a href="+url+"/NetElement/"+id+"/edit>Change</a></li>" +
-											"<li><a href="+url+"/NetElement/"+id+"/delete>Delete </a></li>" +
-											"<li><a href=details.php?id="+id+">Details</a>", {width:150});
+											"<li><a href="+url+"/NetElement/"+id+"/delete>Delete </a></li>", {width:150});
 				return false;
 		}
 	</script>
