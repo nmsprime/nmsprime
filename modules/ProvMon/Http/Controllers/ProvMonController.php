@@ -726,7 +726,11 @@ end:
 		$ret = [];
 
 		if (func_num_args() <= 0) {
-			$search = func_get_arg(0);
+			\Log::error("No argument specified in ".__CLASS__."::".__FUNCTION__);
+			return $ret;
+		}
+
+		$search = func_get_arg(0);
 
 		if (func_num_args() == 2)
 			$search2 = func_get_arg(1);
@@ -741,17 +745,11 @@ end:
 		{
 			if (strpos($s, $search))
 			{
-				if(strpos($s, $search))
-				{
-					if (isset($search2))
-					{
-						if (!strpos($s, $search2))
-							continue;
-					}
+				if (isset($search2) && !strpos($s, $search2))
+						continue;
 
-					// push matching results
-					array_push($ret, preg_replace('/\r|\n/', '<br />', $s));
-				}
+				// push matching results
+				array_push($ret, preg_replace('/\r|\n/', '<br />', $s));
 			}
 		}
 
