@@ -46,6 +46,7 @@ class BillingBaseController extends \BaseController {
 
 			array('form_type' => 'checkbox', 'name' => 'fluid_valid_dates', 'description' => 'Uncertain start/end dates for tariffs', 'help' => trans('helper.BillingBase_fluid_dates')),
 			array('form_type' => 'checkbox', 'name' => 'termination_fix', 'description' => 'Item Termination only end of month', 'help' => trans('helper.BillingBase_ItemTermination')),
+			array('form_type' => 'checkbox', 'name' => 'show_ags', 'description' => trans('messages.show_ags'), 'help' => trans('helper.BillingBase_showAGs')),
 		];
 	}
 
