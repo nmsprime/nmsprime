@@ -18,7 +18,6 @@ class InstallPhpConfigProvmon extends BaseMigration {
 		$str = file_get_contents($file);
 		$str = preg_replace('/Require all granted$/m', "Require all granted\n\t\tDirectoryIndex index.php", $str);
 		file_put_contents($file, $str);
-		system('systemctl reload httpd');
 	}
 
 
