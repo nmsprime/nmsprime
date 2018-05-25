@@ -16,7 +16,6 @@ class SepaMandate extends \BaseModel {
 	{
 		return array(
 			'reference' 		=> 'required',
-			'signature_date' 	=> 'date',
 			'sepa_iban' 		=> 'required|iban',
 			'sepa_bic' 			=> 'bic',			// see SepaMandateController@prep_rules
 			'signature_date' 	=> 'date|required',
