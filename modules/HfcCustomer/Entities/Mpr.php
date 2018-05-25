@@ -97,19 +97,15 @@ class Mpr extends \BaseModel {
 	 * on the added rules in Modem Positioning System: Mpr, MprGeopos. This function
 	 * will be used by artisan command nms:mps
 	 *
-	 * NOTE: for priority we will simply use mpr->prio field. So lower values in
-	 *       prio will run first
-	 *
-	 * TODO: use a better (more complex) priority algorithm
+	 * NOTE: For priority we will simply use mpr->prio field. So lower values in prio will run first
+	 * 		 Multiple MPRs with different prio's are superseded by polygons!
 	 *
 	 * @param 	Object 	single Modem or null for all modems
-	 * @return: if param modem is an object the function returns the id of the matched mpr netelement_id, in all other cases 0
-	 * @author: Torsten Schmidt
+	 * @author: Torsten Schmidt, Nino Ryschawy
 	 */
 	public static function refresh ($modem = null)
 	{
-		// prep vars
-		$return = $r = 0;
+		$r = 0;
 
 		// if param modem is integer select modem with this integer value (modem->id)
 		if ($modem)
@@ -168,18 +164,9 @@ class Mpr extends \BaseModel {
 
 				$query = $query->where('x', '>', $x1)->where('x', '<', $x2)->where('y', '>', $y1)->where('y', '<', $y2);
 
-				// for a single modem do not perform a update() either return the netelement_id
-				// Note: This is required because we can not call save() from observer context.
-				//       this will re-call all oberservs and could lead to a potential hazard
-				if ($modem)
-				{
-					$r = $query->count();
-					// single_modem is within the current mpr area
-					if ($r)
-						$return = $id;
-				}
-				else
-					$r = $query->update(['netelement_id' => $id]);
+				// Do not call save() on modem as this would call the observers again and this function is
+				// triggered from observer -> result would be an endless loop
+				$r = $query->update(['netelement_id' => $id]);
 
 				// Log
 				$log = 'MPS: UPDATE: '.$id.', '.$mpr->name.' - updated modems: '.$r;
@@ -197,9 +184,7 @@ class Mpr extends \BaseModel {
 				$cnt = 0;
 				foreach ($modem ? [$modem] : $modems as $m) {
 					if (self::point_in_polygon([$m->x,$m->y], $polygon)) {
-						$m->netelement_id = $mpr->netelement_id;
-						$m->observer_enabled = false;
-						$m->save();
+						Modem::where('id', '=', $m->id)->update(['netelement_id' => $mpr->netelement_id]);
 						$cnt++;
 					}
 				}
@@ -210,7 +195,6 @@ class Mpr extends \BaseModel {
 			}
 		}
 
-		return $return;
 	}
 
 	/**
