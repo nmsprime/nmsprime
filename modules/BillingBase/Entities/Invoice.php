@@ -529,7 +529,7 @@ class Invoice extends \BaseModel{
 	 */
 	private function _create_pdfs()
 	{
-		chdir($this->get_invoice_dir_path());
+		$dir_path = $this->get_invoice_dir_path();
 
 		$file_paths['Invoice']  = $this->get_invoice_dir_path().$this->filename_invoice;
 		$file_paths['CDR'] 		= $this->get_invoice_dir_path().$this->filename_cdr;
@@ -538,24 +538,7 @@ class Invoice extends \BaseModel{
 		{
 			if (is_file($file))
 			{
-				// take care - when we start process in background we don't get the return value anymore
-				system("pdflatex \"$file\" &>/dev/null &", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
-
-				switch ($ret)
-				{
-					case 0: break;
-					case 1:
-						ChannelLog::error('billing', "PdfLatex: Syntax Error in filled tex template!");
-						return null;
-					case 127:
-						ChannelLog::error('billing', "Illegal Command - PdfLatex not installed!");
-						return null;
-					default:
-						ChannelLog::error('billing', "Error executing PdfLatex - Return Code: $ret");
-						return null;
-				}
-
-				// echo "Successfully created $key in $file\n";
+				pdflatex($dir_path, $file, true);
 				ChannelLog::debug('billing', "Created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
 			}
 		}

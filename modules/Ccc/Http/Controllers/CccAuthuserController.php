@@ -145,27 +145,7 @@ class CccAuthuserController extends \BaseController {
 
 		File::put($dir_path.$filename, $template);
 
-
-		// create pdf from tex
-		chdir($dir_path);
-
-		// Log::debug("pdflatex \"$filename\" -interaction=nonstopmode &>/dev/null");
-		system("pdflatex \"$filename\" -interaction=nonstopmode &>/dev/null", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
-
-		// TODO: use exception handling to handle errors
-		switch ($ret)
-		{
-			case 0: break;
-			case 1:
-				Log::error("PdfLatex - Syntax error in tex template (misspelled placeholder?)", [$template_dir.$template_filename, $dir_path.$filename]);
-				return null;
-			case 127:
-				Log::error("Illegal Command - PdfLatex not installed!");
-				return null;
-			default:
-				Log::error("Error executing PdfLatex - Return Code: $ret");
-				return null;
-		}
+		pdflatex($dir_path, $filename);
 
 		// remove temporary files
 		unlink($filename);
