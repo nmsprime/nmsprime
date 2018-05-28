@@ -887,13 +887,17 @@ class EnviaOrder extends \BaseModel {
 		$user_actions['hints'] = array();
 		$user_actions['links'] = array();
 
+		$contract = null;
+		$items = null;
+		$modem = null;
+		$phonenumbers = array();
 
 		if ($this->contract_id) {
 			$contract = Contract::withTrashed()->find($this->contract_id);
 			$user_actions['hints']['Contract (= envia TEL  Customer)'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
+			$items = $contract->items;
 		}
 
-		$items = $contract->items;
 		if ($items) {
 			$user_actions['hints']['Items (Internet and VoIP only)'] = ProvVoipEnviaHelpers::get_user_action_information_items($items);
 		};
@@ -903,7 +907,6 @@ class EnviaOrder extends \BaseModel {
 			$user_actions['hints']['Modem (can hold multiple envia TEL contracts)'] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
 		};
 
-		$phonenumbers = array();
 		if ($modem) {
 			$mtas = $modem->mtas;
 			if ($mtas) {
