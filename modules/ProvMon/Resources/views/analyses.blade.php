@@ -177,20 +177,18 @@
 								@if ($colheader == "Modulation Profile")
 									<th class="text-center">Modulation</th>
 								@endif
-								@if ($colheader != "Operational CHs %" && $colheader != "Modulation Profile")
+								@if ($colheader != "Modulation Profile")
 									<th class="text-center">{{$colheader}}</th>
 								@endif
 							@endforeach
 						</tr>
 					</thead>
 					<tbody>
-						<?php $max = count(current($table)); ?>
 						@foreach(current($table) as $i => $dummy)
 						<tr>
 							<td width="20"> </td>
 							<td width="20"> {{ $i }}</td>
 							@foreach ($table as $colheader => $colarray)
-								@if ($colheader != "Operational CHs %")
 								<?php
 									if(!isset($colarray[$i]))
 										continue;
@@ -212,8 +210,6 @@
 									}
 								?>
 									<td class="text-center {{ $color }}"> <font color="grey"> {{ $colarray[$i] }} </font> </td>
-
-								@endif
 							@endforeach
 						</tr>
 						@endforeach
