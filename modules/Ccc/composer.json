@@ -1,12 +1,10 @@
 {
-	"name": "pingpong-modules/ccc",
-	"description": "",
-	"authors": [
-		{
-			"name": "Pingpong Labs",
-			"email": "pingpong.labs@gmail.com"
-		}
-	],
+	"name": "nmsprime-modules/ccc",
+	"description": "Customer Control Center Module",
+	"authors": [{
+		"name": "Roetzer engineering",
+		"email": "info@roetzer-engineering.com"
+	}],
 	"autoload": {
 		"psr-4": {
 			"Modules\\Ccc\\": ""
