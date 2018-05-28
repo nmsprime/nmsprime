@@ -6,7 +6,8 @@ use Log;
 use App\Exceptions\NotImplementedException;
 use Modules\ProvBase\Entities\{Contract, Modem,VoipRelatedDataUpdaterByEnvia};
 use Modules\ProvVoip\Entities\{CarrierCode, EkpCode, Mta, PhonebookEntry, Phonenumber, PhonenumberManagement, PhoneTariff, TRCClass};
-use Modules\ProvVoipEnvia\Entities\{EnviaContract, EnviaOrder, EnviaOrderDocument, XmlCreationError};
+use Modules\ProvVoipEnvia\Entities\{EnviaContract, EnviaOrder, EnviaOrderDocument};
+use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
 use Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
 
 class ProvVoipEnvia extends \BaseModel {
