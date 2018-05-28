@@ -190,12 +190,12 @@
 							<td width="20"> {{ $i }}</td>
 							@foreach ($table as $colheader => $colarray)
 								<?php
-									if(!isset($colarray[$i]))
-										continue;
-										$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "SNR dB";
-									if(!isset($table[$mod][$i]))
-										continue;
-									switch ( \App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), '64qam' ,Str::lower($colheader),htmlspecialchars($colarray[$i])) ){
+									if (!isset($colarray[$i]))
+										$colarray[$i] = 'n/a';
+									$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "SNR dB";
+									if (!isset($table[$mod][$i]))
+										$table[$mod][$i] = 'n/a';
+									switch (\App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), '64qam', Str::lower($colheader),htmlspecialchars($colarray[$i]))) {
 									case 0:
 											$color = "success";
 											break;
