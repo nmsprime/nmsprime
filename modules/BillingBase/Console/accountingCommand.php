@@ -7,7 +7,7 @@ use Illuminate\Contracts\Bus\SelfHandling;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\{ SerializesModels, InteractsWithQueue};
 use Modules\ProvBase\Entities\Contract;
-use Modules\BillingBase\Entities\{ AccountingRecord, BillingBase, InvoiceItem, Product, Salesman, SepaAccount, SettlementRun};
+use Modules\BillingBase\Entities\{ AccountingRecord, BillingBase, Invoice, Item, Product, Salesman, SepaAccount, SettlementRun};
 use Modules\BillingBase\Http\Controllers\SettlementRunController;
 use Symfony\Component\Console\Input\{ InputOption, InputArgument};
 use App\Http\Controllers\BaseViewController;
