@@ -186,6 +186,7 @@ class SepaAccount extends \BaseModel {
 			'Firstname'		=> $item->contract->firstname,
 			'Lastname' 		=> $item->contract->lastname,
 			'Street' 		=> $item->contract->street,
+			'Housenr' 		=> $item->contract->house_number,
 			'Zip' 			=> $item->contract->zip,
 			'City' 			=> $item->contract->city,
 		);
@@ -234,6 +235,7 @@ class SepaAccount extends \BaseModel {
 			'Firstname' 	=> $contract->firstname,
 			'Lastname' 		=> $contract->lastname,
 			'Street' 		=> $contract->street,
+			'Housenr' 		=> $contract->house_number,
 			'Zip'			=> $contract->zip,
 			'City' 			=> $contract->city,
 			);
@@ -327,8 +329,10 @@ class SepaAccount extends \BaseModel {
 		if ($charge == 0)
 			return;
 
-		$info = $this->company->name.' - ';
-		$info .= trans('messages.month').' '.date('m/Y', strtotime('first day of last month'));
+		$info = $this->invoice_headline.' - ';
+		$info .= $this->invoice_headline == 'Kostenumlage' ? date('Y'). ' (abzüglich Verstärker)' : trans('messages.month').' '.date('m/Y', strtotime('first day of last month'));
+		$info .= ' - '.$mandate->contract->lastname.', '.$mandate->contract->lastname.', '.$mandate->contract->firstname;
+		$info .= ' - '.$this->company->name;
 
 		// Credits
 		if ($charge < 0)

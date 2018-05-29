@@ -112,6 +112,9 @@ class SettlementRunController extends \BaseController {
 	 */
 	public function check_state()
 	{
+		// ob_implicit_flush();
+		// ob_end_flush();
+
 		\Log::debug(__CLASS__ .'::'. __FUNCTION__);
 		$response = new \Symfony\Component\HttpFoundation\StreamedResponse(function() {
 
@@ -121,8 +124,19 @@ class SettlementRunController extends \BaseController {
 				$job = \DB::table('jobs')->find(\Session::get('job_id'));
 
 				$state = \Storage::exists('tmp/accCmdStatus') ? \Storage::get('tmp/accCmdStatus') : '';
-				echo "data: $state\n\n";
-				ob_flush(); flush();
+
+				echo "data: $state".PHP_EOL.PHP_EOL;
+
+				// Dirty fix: fill buffer to flush message as PHP-FPM's buffer can actually not really be disabled
+				// Note: PHP buffer and buffer of webbrowser can be disabled by setting output_buffering = Off in /etc/php.ini and probably 'SetEnv no-gzip 1' in /etc/httpd/conf.d/nmsprime-admin.conf
+				echo "fill: ".str_pad(' ', 4095).PHP_EOL.PHP_EOL;
+				ob_flush();
+				flush();
+
+				if ($state == '{"message":"Finished","value":100}') {
+					$success = true;
+					goto reload;
+				}
 
 				sleep(2);
 			}
@@ -150,7 +164,7 @@ class SettlementRunController extends \BaseController {
 
 				sleep(2);
 			}
-
+reload:
 			$success ? \Log::info('Settlementrun finished successfully') : \Log::error('Settlementrun failed!');
 
 			\Log::debug('Reload Settlementrun Edit View');

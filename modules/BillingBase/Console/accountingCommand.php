@@ -7,7 +7,7 @@ use Illuminate\Contracts\Bus\SelfHandling;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\{ SerializesModels, InteractsWithQueue};
 use Modules\ProvBase\Entities\Contract;
-use Modules\BillingBase\Entities\{ AccountingRecord, BillingBase, InvoiceItem, Product, Salesman, SepaAccount, SettlementRun};
+use Modules\BillingBase\Entities\{ AccountingRecord, BillingBase, Invoice, Item, Product, Salesman, SepaAccount, SettlementRun};
 use Modules\BillingBase\Http\Controllers\SettlementRunController;
 use Symfony\Component\Console\Input\{ InputOption, InputArgument};
 use App\Http\Controllers\BaseViewController;
@@ -262,6 +262,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		// while removing it's tested if all PDFs were created successfully
 		Invoice::remove_templatex_files();
 		$this->_make_billing_files($sepa_accs, $salesmen);
+
+		self::push_state(100, 'Finished');
 	}
 
 

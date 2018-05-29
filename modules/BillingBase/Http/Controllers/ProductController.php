@@ -42,7 +42,7 @@ class ProductController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'maturity', 'description' => 'Maturity', 'select' => 'Internet', 'help' => trans('helper.Product_maturity')), 		// Laufzeit, tarif life time
 			array('form_type' => 'text', 'name' => 'period_of_notice', 'description' => 'Period of Notice', 'select' => 'Internet', 'help' => trans('helper.Product_maturity')), 		// Kündigungsfrist
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
-			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)', 'select' => 'Internet Voip TV Device Other'),
+			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)'),
 			array_merge(array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV Credit'), $model->tax === null ? ['checked' => true, 'value' => 1] : []),
 			array('form_type' => 'text', 'name' => 'email_count', 'description' => 'No. of email addresses', 'select' => 'Internet', 'hidden' => 1),
 			array('form_type' => 'checkbox', 'name' => 'bundled_with_voip', 'description' => 'Bundled with VoIP product?', 'select' => 'Internet'),
