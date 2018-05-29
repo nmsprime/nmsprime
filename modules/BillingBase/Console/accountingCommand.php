@@ -262,6 +262,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		// while removing it's tested if all PDFs were created successfully
 		Invoice::remove_templatex_files();
 		$this->_make_billing_files($sepa_accs, $salesmen);
+
+		self::push_state(100, 'Finished');
 	}
 
 
