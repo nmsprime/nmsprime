@@ -36,6 +36,17 @@ class ModemHelper extends \BaseModel {
 		return Modem::whereRaw("(($s) AND us_pwr > $c)")->count();
 	}
 
+
+	public static function _ms_state ($onl, $all, $avg)
+	{
+		if ($onl / $all * 100 < self::$avg_critical_percentage || $avg > self::$avg_critical_us)
+			return 'CRITICAL';
+		if ($onl / $all * 100 < self::$avg_warning_percentage || $avg > self::$avg_warning_us)
+			return 'WARNING';
+
+		return 'OK';
+	}
+
 	public static function ms_state ( $s )
 	{
 		$all = self::ms_num_all ($s);
