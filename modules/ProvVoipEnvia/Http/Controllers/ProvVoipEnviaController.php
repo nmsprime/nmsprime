@@ -4,7 +4,8 @@ namespace Modules\ProvVoipEnvia\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\View;
-use Modules\ProvVoipEnvia\Entities\{ProvVoipEnvia, XmlCreationError};
+use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
+use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
 
 class ProvVoipEnviaController extends \BaseController {
 

@@ -482,7 +482,7 @@ class DashboardController extends BaseController
 		preg_match_all("/('.+?'|[^ ]+)=([^ ]+)/", $perf, $matches, PREG_SET_ORDER);
 		foreach ($matches as $idx => $val) {
 			$ret[$idx]['text'] = $val[1];
-			$p = explode(';', $val[2]);
+			$p = explode(';', rtrim($val[2], ';'));
 			// we are dealing with percentages
 			if(substr($p[0], -1) == '%') {
 				$p[3] = 0;

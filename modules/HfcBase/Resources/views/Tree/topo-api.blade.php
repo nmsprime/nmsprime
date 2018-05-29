@@ -49,7 +49,7 @@ function map_mps_init()
 {
 @if(isset($mpr))
 	@foreach ($mpr as $id => $corners)
-		@if (count($mpr) == 2)
+		@if (count($corners) == 2)
 			bounds = new OpenLayers.Bounds();
 
 			@foreach($corners as $coord)
@@ -58,7 +58,7 @@ function map_mps_init()
 
 			bounds.transform(new OpenLayers.Projection("EPSG:4326"),map.getProjectionObject());
 			vectors.addFeatures([new OpenLayers.Feature.Vector(bounds.toGeometry(), {id: {{ $id }} })]);
-		@elseif (count($mpr) > 2)
+		@elseif (count($corners) > 2)
 			vectors.addFeatures([
 			new OpenLayers.Feature.Vector(new OpenLayers.Geometry.Polygon([
 			new OpenLayers.Geometry.LinearRing([
