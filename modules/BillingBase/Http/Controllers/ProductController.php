@@ -62,7 +62,6 @@ class ProductController extends \BaseController {
 				$rules['qos_id'] = 'In:0';
 				$rules['voip_sales_tariff_id'] = 'In:0';
 				$rules['voip_purchase_tariff_id'] = 'In:0';
-				$rules['price'] = 'In:"",0';
 				break;
 
 			case 'Device':
