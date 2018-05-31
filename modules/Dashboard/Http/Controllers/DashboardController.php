@@ -305,10 +305,19 @@ class DashboardController extends BaseController
 		if (\Module::collections()->has('HfcCustomer'))
 			$avg_critical_us = \Modules\HfcCustomer\Entities\ModemHelper::$avg_warning_us;
 
+		// Get only modems from valid contracts
+		$query = \Modules\ProvBase\Entities\Modem::join('contract as c', 'c.id', '=', 'modem.contract_id')
+			->where('c.contract_start', '<=', date('Y-m-d'))
+			->where(function ($query) { $query
+				->whereNull('c.contract_end')
+				->orWhere('c.contract_end', '=', '0000-00-00')
+				->orWhere('c.contract_end', '>', date('Y-m-d', strtotime('last day')));
+				});
+
 		$modems = [
-			'all' => \Modules\ProvBase\Entities\Modem::where('id', '>', '0')->count(),
-			'online' => \Modules\ProvBase\Entities\Modem::where('us_pwr', '>', '0')->count(),
-			'critical' => \Modules\ProvBase\Entities\Modem::where('us_pwr', '>', $avg_critical_us)->count()
+			'all' => $query->where('modem.id', '>', '0')->count(),
+			'online' => $query->where('modem.us_pwr', '>', '0')->count(),
+			'critical' => $query->where('modem.us_pwr', '>', $avg_critical_us)->count()
 		];
 
 		\Storage::disk('chart-data')->put('modems.json', json_encode($modems));
