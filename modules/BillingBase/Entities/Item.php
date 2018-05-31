@@ -68,8 +68,8 @@ class Item extends \BaseModel {
 			}
 		}
 
-		$count = $this->count && $this->count != 1 ? "$this->count x " : '';
-		$price = $this->credit_amount ? : $this->product->price;
+		$count = $this->count > 1 ? "$this->count x " : '';
+		$price = floatval($this->credit_amount) ? : $this->product->price;
 		$price = ' | '.round($price, 2).'€';
 
 		/* Evaluate Colours
