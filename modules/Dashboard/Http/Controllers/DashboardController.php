@@ -167,7 +167,7 @@ class DashboardController extends BaseController
 		$ret = 0;
 
 		// for 800 contracts this is approximately 4x faster - DB::table is again 5x faster than Eloquents Contract::count -> (20x faster)
-		$ret = \DB::table('contract')->where('contract_start', '<', $date_interval_start)
+		$ret = \DB::table('contract')->where('contract_start', '<=', $date_interval_start)
 			->whereNull('deleted_at')
 			->where(function ($query) { $query
 				->where('contract_end', '>', date('Y-m-d'))
