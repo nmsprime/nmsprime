@@ -285,7 +285,7 @@ class EnviaOrder extends \BaseModel {
 			// Prevent users from creating orders (table enviaorder is only changable through envia TEL API!)
 			// TODO: later remove delete button
 			'orderid' => 'required|integer|min:1',
-			'related_order_id' => 'exists:enviaorder,id',
+			'related_order_id' => 'exists:enviaorder,id,deleted_at,NULL',
 		);
 
 	}
