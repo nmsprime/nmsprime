@@ -327,9 +327,9 @@ class Invoice extends \BaseModel{
 		$tax_percent = $tax ? $this->tax : 0;
 		$tax_percent .= '\%';
 
+		$total = number_format($net + $tax, 2);
 		$net   = number_format($net, 2);
 		$tax   = number_format($tax, 2);
-		$total = number_format($net + $tax, 2);
 
 		$this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.$net.$this->currency.'\\\\';
 		$this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$tax.$this->currency.'\\\\';
