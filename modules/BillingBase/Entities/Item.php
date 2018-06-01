@@ -23,7 +23,7 @@ class Item extends \BaseModel {
 			'product_id' 	=> 'required|numeric|Min:1',
 			'valid_from'	=> 'date',	//|in_future ??
 			'valid_to'		=> 'date',
-			// 'credit_amount' => 'required_if:product_id,'.$credit_ids,
+			'credit_amount' => 'numeric',
 			// 'count'			=> 'null_if:product_id,'.$tariff_ids.','.$credit_ids,
 		);
 	}
@@ -421,7 +421,7 @@ class Item extends \BaseModel {
 		$this->count  = $this->count ? : 1;
 		$this->charge = $this->product->price;
 		if ($this->product->type == 'Credit')
-			$this->charge = (-1) * ($this->credit_amount ? : $this->product->price);
+			$this->charge = (-1) * (floatval($this->credit_amount) ? : $this->product->price);
 
 		$this->charge *= $ratio * $this->count;
 
