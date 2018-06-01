@@ -67,7 +67,10 @@ class cdrCommand extends Command {
 				continue;
 			}
 
-			$this->{"_load_".$provider."_cdr"}();
+			$ret = $this->{"_load_".$provider."_cdr"}();
+
+			if ($ret == -1)
+				echo "Error: Failed to load $provider CDR\n";
 		}
 
 		if ($missing)
