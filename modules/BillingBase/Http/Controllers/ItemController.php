@@ -87,7 +87,14 @@ class ItemController extends \BaseController {
 			$data['valid_from_fixed'] = 1;
 		}
 
-		return parent::prepare_input($data);
+		$data = parent::prepare_input($data);
+
+		$nullable_fields = array(
+			'accounting_text',
+			'credit_amount',
+		);
+
+		return $this->_nullify_fields($data, $nullable_fields);
 	}
 
 
