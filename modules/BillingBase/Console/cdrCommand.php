@@ -36,11 +36,6 @@ class cdrCommand extends Command {
 	 */
 	public function __construct()
 	{
-		$lang = BillingBase::first()->userlang;
-
-		if ($lang)
-			\App::setLocale($lang);
-
 		parent::__construct();
 	}
 
@@ -50,6 +45,10 @@ class cdrCommand extends Command {
 	 */
 	public function fire()
 	{
+		$lang = BillingBase::first()->userlang;
+		if ($lang)
+			\App::setLocale($lang);
+
 		\ChannelLog::debug('billing', 'Get Call Data Records');
 		$missing = true;
 
@@ -68,7 +67,10 @@ class cdrCommand extends Command {
 				continue;
 			}
 
-			$this->{"_load_".$provider."_cdr"}();
+			$ret = $this->{"_load_".$provider."_cdr"}();
+
+			if ($ret == -1)
+				echo "Error: Failed to load $provider CDR\n";
 		}
 
 		if ($missing)
