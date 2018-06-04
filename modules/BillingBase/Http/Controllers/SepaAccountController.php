@@ -1,9 +1,8 @@
 <?php
 namespace Modules\BillingBase\Http\Controllers;
 
-use Pingpong\Modules\Routing\Controller;
-use Modules\BillingBase\Entities\SepaAccount;
-use Modules\BillingBase\Entities\Company;
+use Nwidart\Modules\Routing\Controller;
+use Modules\BillingBase\Entities\{Company, SepaAccount};
 
 class SepaAccountController extends \BaseController {
 
@@ -30,7 +29,7 @@ class SepaAccountController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'bic', 'description' => 'BIC'),
 			array('form_type' => 'text', 'name' => 'institute', 'description' => 'Institute', 'space' => 1),
 
-			array('form_type' => 'select', 'name' => 'company_id', 'description' => 'Company', 'value' => $list),
+			array('form_type' => 'select', 'name' => 'company_id', 'description' => 'Company', 'value' => $list, 'hidden' => 0),
 			array('form_type' => 'text', 'name' => 'invoice_nr_start', 'description' => 'Invoice Number Start', 'help' => trans('helper.BillingBase_InvoiceNrStart'), 'space' => 1),
 
 			array('form_type' => 'text', 'name' => 'invoice_headline', 'description' => 'Invoice Headline', 'help' => trans('helper.SepaAccount_InvoiceHeadline')),

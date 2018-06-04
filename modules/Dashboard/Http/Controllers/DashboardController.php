@@ -39,7 +39,6 @@ class DashboardController extends BaseController
 			$netelements = $this->_get_impaired_netelements();
 			$services 	 = $this->_get_impaired_services();
 		}
-
 		return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'data', 'view', 'netelements', 'services')));
 	}
 
@@ -61,13 +60,13 @@ class DashboardController extends BaseController
 		// check user permissions
 		foreach (\Auth::user()->roles as $role)
 		{
-			if (\PPModule::is_active('billingbase'))
+			if (\Module::collections()->has('BillingBase'))
 			{
 				if ($role->id == $role_ids_fix['director'])
 					$income = true;
 			}
 
-			if (\PPModule::is_active('hfcreq'))
+			if (\Module::collections()->has('HfcReq'))
 			{
 				if ($role->id == $role_ids_fix['superadmin'] ||
 					$role->id == $role_ids_fix['director'] ||
@@ -77,9 +76,9 @@ class DashboardController extends BaseController
 		}
 
 		$view = array(
-			'contracts' 	=> \PPModule::is_active('provbase'),
+			'contracts' 	=> \Module::collections()->has('ProvBase'),
 			'income'		=> $income,
-			'tickets' 		=> \PPModule::is_active('ticketsystem'),
+			'tickets' 		=> \Module::collections()->has('Ticketsystem'),
 			'provvoipenvia' => false,
 			'date' 			=> true,
 			'hfc' 			=> $hfc,
@@ -103,7 +102,7 @@ class DashboardController extends BaseController
 				->orWhereNull('contract_end');})
 			->orderBy('id');
 
-		return \PPModule::is_active('billingbase') ? $query->with('items', 'items.product')->get()->all() : $query->get()->all();
+		return \Module::collections()->has('BillingBase') ? $query->with('items', 'items.product')->get()->all() : $query->get()->all();
 	}
 
 
@@ -168,7 +167,7 @@ class DashboardController extends BaseController
 		$ret = 0;
 
 		// for 800 contracts this is approximately 4x faster - DB::table is again 5x faster than Eloquents Contract::count -> (20x faster)
-		$ret = \DB::table('contract')->where('contract_start', '<', $date_interval_start)
+		$ret = \DB::table('contract')->where('contract_start', '<=', $date_interval_start)
 			->whereNull('deleted_at')
 			->where(function ($query) { $query
 				->where('contract_end', '>', date('Y-m-d'))
@@ -296,6 +295,67 @@ class DashboardController extends BaseController
 	}
 
 
+	/**
+	 * Calculate modem statistics (online/offline), format and save to json
+	 * Used by Cronjob
+	 */
+	public static function save_modem_statistics()
+	{
+		$avg_critical_us = 52;
+		if (\Module::collections()->has('HfcCustomer'))
+			$avg_critical_us = \Modules\HfcCustomer\Entities\ModemHelper::$avg_warning_us;
+
+		// Get only modems from valid contracts
+		$query = \Modules\ProvBase\Entities\Modem::join('contract as c', 'c.id', '=', 'modem.contract_id')
+			->where('c.contract_start', '<=', date('Y-m-d'))
+			->where(function ($query) { $query
+				->whereNull('c.contract_end')
+				->orWhere('c.contract_end', '=', '0000-00-00')
+				->orWhere('c.contract_end', '>', date('Y-m-d', strtotime('last day')));
+				});
+
+		$modems = [
+			'all' => $query->where('modem.id', '>', '0')->count(),
+			'online' => $query->where('modem.us_pwr', '>', '0')->count(),
+			'critical' => $query->where('modem.us_pwr', '>', $avg_critical_us)->count()
+		];
+
+		\Storage::disk('chart-data')->put('modems.json', json_encode($modems));
+	}
+
+
+	/**
+	 * Get modem statistics (online/offline) from json file - created by cron job
+	 *
+	 * @return array
+	 */
+	public static function get_modem_statistics()
+	{
+		if (\Storage::disk('chart-data')->has('modems.json') === false)
+			return false;
+
+		if (!\Module::collections()->has('HfcCustomer'))
+			return false;
+
+		$a = json_decode( \Storage::disk('chart-data')->get('modems.json') );
+
+		$a->text = 'Modems<br>'.$a->online.' / '.$a->all;
+
+		$a->state = \Modules\HfcCustomer\Entities\ModemHelper::_ms_state($a->online, $a->all, 40);
+		switch ($a->state)
+		{
+			case 'OK':			$a->fa = 'fa fa-thumbs-up'; $a->style = 'success'; break;
+			case 'WARNING':		$a->fa = 'fa fa-meh-o'; $a->style = 'warning'; break;
+			case 'CRITICAL':	$a->fa = 'fa fa-frown-o'; $a->style = 'danger'; break;
+
+			default:
+				$a->fa = 'fa-question';
+		}
+
+
+		return $a;
+	}
+
 
 	/**
 	 * Returns rehashed data for the bar chart
@@ -340,7 +400,7 @@ class DashboardController extends BaseController
 	 */
 	private static function get_new_tickets()
 	{
-		if (!\PPModule::is_active('ticketsystem'))
+		if (!\Module::collections()->has('Ticketsystem'))
 			return null;
 
 		return \Auth::user()->tickets()->where('state', '=', 'New')->get();
@@ -431,7 +491,7 @@ class DashboardController extends BaseController
 		preg_match_all("/('.+?'|[^ ]+)=([^ ]+)/", $perf, $matches, PREG_SET_ORDER);
 		foreach ($matches as $idx => $val) {
 			$ret[$idx]['text'] = $val[1];
-			$p = explode(';', $val[2]);
+			$p = explode(';', rtrim($val[2], ';'));
 			// we are dealing with percentages
 			if(substr($p[0], -1) == '%') {
 				$p[3] = 0;

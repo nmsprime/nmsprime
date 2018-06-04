@@ -2,8 +2,7 @@
 
 namespace Modules\ProvBase\Entities;
 
-use File;
-use DB;
+use DB, File;
 use Acme\php\ArrayHelper;
 
 class Cmts extends \BaseModel {
@@ -276,15 +275,13 @@ class Cmts extends \BaseModel {
 
 		if (!\Storage::exists($fn)) {
 			\Log::error("Missing Modem US SNR json file of CMTS $this->hostname [$this->id]");
-			return ['SNR not found'];
+			return;
 		}
 
 		$snrs = json_decode(\Storage::get($fn), true);
 
 		if(array_key_exists($ip, $snrs))
 			return $snrs[$ip];
-
-		return ['SNR not found'];
 	}
 
 
@@ -533,7 +530,7 @@ class CmtsObserver
 
 	public function created($cmts)
 	{
-		if (\PPModule::is_active ('ProvMon'))
+		if (\Module::collections()->has('ProvMon'))
 			\Artisan::call('nms:cacti', ['--modem-id' => 0, '--cmts-id' => $cmts->id]);
 		$cmts->make_dhcp_conf();
 

@@ -1,7 +1,6 @@
 <?php namespace Modules\Ticketsystem\Http\Controllers;
 
-use Modules\Ticketsystem\Entities\Ticket;
-use Modules\Ticketsystem\Entities\TicketType;
+use Modules\Ticketsystem\Entities\{Ticket, TicketType};
 
 class TicketController extends \BaseController {
 

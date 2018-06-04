@@ -1,10 +1,9 @@
 <?php namespace Modules\Ccc\Entities;
 
-use Illuminate\Auth\Authenticatable;
-use Illuminate\Auth\Passwords\CanResetPassword;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
-use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
-
+use Illuminate\Auth\{Authenticatable, Passwords\CanResetPassword};
+use Illuminate\Contracts\Auth\{
+	Authenticatable as AuthenticatableContract,
+	CanResetPassword as CanResetPasswordContract};
 
 /**
  * Model holding user data for CCC authentication

@@ -4,7 +4,6 @@ namespace Modules\HfcBase\Http\Controllers;
 
 use App\Http\Controllers\BaseController;
 
-
 class HfcBaseController extends BaseController {
 
 	// The Html Link Target

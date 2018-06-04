@@ -4,14 +4,9 @@ namespace Modules\ProvVoipEnvia\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\View;
-
+use Modules\ProvBase\Entities\{Contract, Modem};
+use Modules\ProvVoip\Entities\{PhonenumberManagement,Phonenumber,Phonetariff};
 use Modules\ProvVoipEnvia\Entities\EnviaContract;
-use Modules\ProvVoip\Entities\PhonenumberManagement;
-use Modules\ProvVoip\Entities\Phonenumber;
-use Modules\ProvVoip\Entities\Phonetariff;
-use Modules\ProvBase\Entities\Modem;
-use Modules\ProvBase\Entities\Contract;
-
 
 class EnviaContractController extends \BaseController {
 

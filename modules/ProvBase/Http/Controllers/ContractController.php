@@ -2,33 +2,14 @@
 
 namespace Modules\ProvBase\Http\Controllers;
 
-use Modules\ProvBase\Entities\Contract;
-use Modules\ProvBase\Entities\Qos;
+use Modules\ProvBase\Entities\{Contract, Qos};
 use Modules\ProvVoip\Entities\PhoneTariff;
-
-// TODO: @Nino Ryschawy: directly includes does not work if billing module is disables
-use Modules\BillingBase\Entities\Product;
-use Modules\BillingBase\Entities\Item;
-use Modules\BillingBase\Entities\CostCenter;
-use Modules\BillingBase\Entities\Salesman;
 
 class ContractController extends \BaseController {
 
 
 	protected $relation_create_button = "Add";
 
-	/**
-	 * Returns the List of Salesmen for the contract to choose from
-	 *
-	 * @return 	array 	$salesman
-	 */
-	private function _salesmen()
-	{
-		$salesmen[0] = null;
-		foreach (Salesman::select('id', 'firstname', 'lastname')->get()->all() as $sm)
-			$salesmen[$sm->id] = $sm->firstname.' '. $sm->lastname;
-		return $salesmen;
-	}
 
     /**
      * defines the formular fields for the edit and create view
@@ -59,7 +40,7 @@ class ContractController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'street', 'description' => 'Street', 'create' => '1', 'html' =>
 				"<div class=col-md-12 style='background-color:whitesmoke'>
 				<div class='form-group row'>
-					<label for=street class='col-md-4 control-label' style='margin-top: 10px;'>Street * and House Number</label>
+					<label for=street class='col-md-4 control-label' style='margin-top: 10px;'>Street * and House Number *</label>
 						<div class=col-md-5>
 							<input class='form-control' name='street' type=text value='".$model['street']."' id='street' style='background-color:whitesmoke'>
 						</div>"),
@@ -76,10 +57,10 @@ class ContractController extends \BaseController {
 
 		);
 
-		if (!\PPModule::is_active('ccc'))
+		if (!\Module::collections()->has('Ccc'))
 			unset($a[0]['help']);
 
-		if ($model->voip_enabled && !\PPModule::is_active('billingbase')) {
+		if ($model->voip_enabled && !\Module::collections()->has('BillingBase')) {
 
 			$b = array(
 				/* array('form_type' => 'text', 'name' => 'voip_contract_start', 'description' => 'VoIP Contract Start'), */
@@ -96,31 +77,34 @@ class ContractController extends \BaseController {
 				array('form_type' => 'text', 'name' => 'contract_end', 'description' => 'Contract End'),
 			);
 
-		if (\PPModule::is_active('billingbase')) {
+		if (\Module::collections()->has('BillingBase')) {
 
 			$c2 = array(
 				array('form_type' => 'checkbox', 'name' => 'create_invoice', 'description' => 'Create Invoice', 'value' => '1'),
-				array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center', 'value' => $this->_add_empty_first_element_to_options($model->html_list(CostCenter::all(), 'name'))),
-				array('form_type' => 'select', 'name' => 'salesman_id', 'description' => 'Salesman', 'value' => $this->_salesmen(), 'space' => '1'),
-
+				array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center', 'value' => $model->html_list(\Modules\BillingBase\Entities\CostCenter::all(), 'name', true)),
+				array('form_type' => 'select', 'name' => 'salesman_id', 'description' => 'Salesman', 'value' => $model->html_list(\Modules\BillingBase\Entities\Salesman::all(), ['firstname', 'lastname'], true, ' - '), 'space' => '1'),
 				// NOTE: qos is required as hidden field to automatically create modem with correct contract qos class
-				// TODO: @Nino Ryschawy: please review and test while merging ..
 				array('form_type' => 'text', 'name' => 'qos_id', 'description' => 'QoS', 'create' => '1', 'hidden' => 1),
 				array('form_type' => 'checkbox', 'name' => 'telephony_only', 'description' => 'Telephony only', 'value' => '1', 'help' => 'Customer has only subscribed telephony, i.e. no internet access', 'hidden' => 1)
 			);
+
+			if (\Modules\BillingBase\Entities\BillingBase::first()->show_ags)
+				$c2[] = array('form_type' => 'select', 'name' => 'contact', 'description' => 'Contact Persons', 'value' => \Modules\BillingBase\Entities\BillingBase::contactPersons());
 		}
 		else
 		{
+			$qoss = Qos::all();
+
 			$c2 = array(
 				array('form_type' => 'checkbox', 'name' => 'network_access', 'description' => 'Internet Access', 'value' => '1', 'create' => '1', 'checked' => 1),
-				array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'QoS', 'create' => '1', 'value' => $model->html_list(Qos::all(), 'name')),
-				array('form_type' => 'select', 'name' => 'next_qos_id', 'description' => 'QoS next month', 'value' => $this->_add_empty_first_element_to_options($model->html_list(Qos::all(), 'name'))),
+				array('form_type' => 'select', 'name' => 'qos_id', 'description' => 'QoS', 'create' => '1', 'value' => $model->html_list($qoss, 'name')),
+				array('form_type' => 'select', 'name' => 'next_qos_id', 'description' => 'QoS next month', 'value' => $model->html_list($qoss, 'name', true)),
 				array('form_type' => 'text', 'name' => 'voip_id', 'description' => 'Phone ID'),
 				array('form_type' => 'text', 'name' => 'next_voip_id', 'description' => 'Phone ID next month', 'space' => '1'),
 			);
 		}
 
-		$d = array (
+		$d = array(
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
 		);
 
@@ -159,7 +143,7 @@ class ContractController extends \BaseController {
 		$data['contract_start'] = $data['contract_start'] ? : date('Y-m-d');
 
 		// generate contract number
-		if (!$data['number'] && \PPModule::is_active('billingbase') && $data['costcenter_id'])
+		if (!$data['number'] && \Module::collections()->has('BillingBase') && $data['costcenter_id'])
 		{
 			// generate contract number
 			$num = \Modules\BillingBase\Entities\NumberRange::get_new_number('contract', $data['costcenter_id']);

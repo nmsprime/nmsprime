@@ -1,30 +1,16 @@
 <?php
 namespace Modules\BillingBase\Console;
 
+use ChannelLog as Log, DB, Storage;
 use Illuminate\Console\Command;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
-
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Bus\SelfHandling;
 use Illuminate\Contracts\Queue\ShouldQueue;
-
-use Storage;
-use DB;
-
+use Illuminate\Queue\{ SerializesModels, InteractsWithQueue};
 use Modules\ProvBase\Entities\Contract;
-use Modules\BillingBase\Entities\AccountingRecord;
-use Modules\BillingBase\Entities\SepaAccount;
-use Modules\BillingBase\Entities\BillingBase;
-use Modules\BillingBase\Entities\Product;
-use Modules\BillingBase\Entities\Salesman;
-use Modules\BillingBase\Entities\Invoice;
-use Modules\BillingBase\Entities\Item;
-use Modules\BillingBase\Entities\SettlementRun;
+use Modules\BillingBase\Entities\{ AccountingRecord, BillingBase, Invoice, Item, Product, Salesman, SepaAccount, SettlementRun};
 use Modules\BillingBase\Http\Controllers\SettlementRunController;
-use ChannelLog as Log;
-
+use Symfony\Component\Console\Input\{ InputOption, InputArgument};
+use App\Http\Controllers\BaseViewController;
 
 class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
@@ -39,10 +25,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	public $name 			= 'billing:accounting';
 	protected $tablename 	= 'accounting';
 	protected $description 	= 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
-	protected $dir 			= 'data/billingbase/accounting/'; 				// relative to storage/app/ - Note: completed by month in constructor!
 
 	protected $dates;					// offen needed time strings for faster access - see constructor
-
 	protected $sr;
 
 
@@ -69,24 +53,23 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	{
 		// $start = microtime(true);
 		$this->dates = self::create_dates_array();
-		$this->dir .= date('Y-m', strtotime('first day of last month')).'/';
 
 		// Determine SR (SettlementRun) ID as this is necessary to create relation between Invoice & SR
 		if (!$this->sr->getAttribute('id'))
 			$this->sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->first();
 
-		if (!$this->sr || !$this->sr->getAttribute('id'))
-		{
+		if (!$this->sr || !$this->sr->getAttribute('id')) {
 			// Note: create will run the observer that calls this command again with this SR
 			SettlementRun::create(['year' => $this->dates['Y'], 'month' => $this->dates['lastm']]);
 			exit(0);
 		}
 
+
 		Log::debug('billing', ' #####    Start Accounting Command   #####');
 
 		// Fetch all Data from Database
-		echo "Get all Data from Database\n";
-		Storage::put('tmp/accCmdStatus', \App\Http\Controllers\BaseViewController::translate_label('Load Data'));
+		echo "Get all Data from Database...\n";
+		self::push_state(0, 'Load Data...');
 		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
 
@@ -117,14 +100,14 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		 */
 		foreach ($contracts as $i => $c)
 		{
-			// progress bar - workaround as progress bar is not shown when cmd is called
-			// from observer or throws exception when called via queue
-			if ($this->output)
+			// progress bar on cmd line
+			if ($this->output) {
+				// NOTE: $bar->advance() throws exception when called via queue
 				$bar->advance();
-			else
-			{
-				if (!($i % 20))
-					Storage::put('tmp/accCmdStatus', \App\Http\Controllers\BaseViewController::translate_label('Create Invoices').': '.((int) ($i/$num*100)).' %');
+			}
+			// progress bar in GUI
+			else if (!($i % 10)) {
+				self::push_state((int) $i/$num*100, 'Create Invoices');
 				// echo ($i + 1)."/$num [$c->id][".(memory_get_usage()/1000000)."]\r";
 			}
 
@@ -279,11 +262,32 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		// while removing it's tested if all PDFs were created successfully
 		Invoice::remove_templatex_files();
 		$this->_make_billing_files($sepa_accs, $salesmen);
+
+		self::push_state(100, 'Finished');
 	}
 
 
 
+	/**
+	 * @param  Integer if > 0 the pathname of the timestamps month is returned
+	 * @return String  Absolute path of accounting directory for actual settlement run (when no argument is specified)
+	 */
+	public static function get_absolute_accounting_dir_path($timestamp = 0)
+	{
+		return storage_path('app/'.self::get_relative_accounting_dir_path($timestamp));
+	}
 
+
+	/**
+	 * @param  Integer if > 0 the pathname of the timestamps month is returned
+	 * @return String  Relative path of accounting dir to storage dir for actual settlement run
+	 */
+	public static function get_relative_accounting_dir_path($timestamp = 0)
+	{
+		$time = $timestamp ? : strtotime('first day of last month');
+
+		return 'data/billingbase/accounting/'.date('Y-m', $time);
+	}
 
 
 	/**
@@ -301,10 +305,10 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		\App::setLocale($conf->userlang);
 
 		// create directory structure and remove old invoices
-		if (is_dir(storage_path('app/'.$this->dir)))
-			SettlementRunController::directory_cleanup($this->dir);
+		if (is_dir(self::get_absolute_accounting_dir_path()))
+			SettlementRunController::directory_cleanup(self::get_relative_accounting_dir_path());
 		else
-			mkdir(storage_path('app/'.$this->dir), 0700, true);
+			mkdir(self::get_absolute_accounting_dir_path(), 0700, true);
 
 		// Salesmen
 		$prod_types = Product::getPossibleEnumValues('type');
@@ -313,7 +317,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		foreach ($salesmen as $key => $sm)
 		{
 			$sm->all_prod_types = $prod_types;
-			$sm->dir = $this->dir;
+			$sm->dir = self::get_relative_accounting_dir_path();
 		}
 		// directory to save file - is actually only needed for first salesmen
 		// if (isset($salesmen[0])) $salesmen[0]->dir = $this->dir;
@@ -322,7 +326,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		// SepaAccount
 		foreach ($sepa_accs as $acc)
 		{
-			$acc->dir = $this->dir;
+			$acc->dir = self::get_relative_accounting_dir_path();
 			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+1 day'));
 		}
 
@@ -391,6 +395,24 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 
 	/**
+	 * Write Status to temporary file as buffer for settlement run status bar in GUI
+	 *
+	 * @param Integer
+	 * @param String 	Note: is automatically translated to the appropriate language if string exists in lang/./messages.php
+	 */
+	public static function push_state($value, $message)
+	{
+		$arr = array(
+			'message' => BaseViewController::translate_label($message),
+			'value'   => round($value),
+			);
+
+		Storage::put('tmp/accCmdStatus', json_encode($arr));
+	}
+
+
+
+	/**
 	 * @return String 	Filename   e.g.: 'Call Data Record_2016_08.csv' or if app language is german 'Einzelverbindungsnachweis_2015_01.csv'
 	 */
 	public static function _get_cdr_filename()
@@ -409,37 +431,29 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 *					 next_contract_id => [...],
 	 * 					 ...]
 	 *					on success, else 2 dimensional empty array
+	 *
+	 * NOTE/TODO: 1000 Phonecalls need a bit more than 1 MB memory - if files get too large and we get memory
+	 *  problems again, we should probably save calls to database and get them during command when needed
 	 */
 	private function _get_cdr_data()
 	{
-		$filename = self::_get_cdr_filename();
-		$dir_path = storage_path('app/'.$this->dir.'/');
-		$filepath = $dir_path.$filename;
+		$calls = [[]];
 
-		if (!is_file($filepath))
+		\Artisan::call('billing:cdr');
+
+		$filepaths = cdrCommand::get_cdr_pathnames();
+
+		foreach ($filepaths as $provider => $filepath)
 		{
-			// get call data records
-			$ret = \Artisan::call('billing:cdr');
+			if (!is_file($filepath)) {
+				Log::error('billing', "Missing call data record file from $provider");
+				throw new Exception("Missing call data record file from $provider");
+			}
 
-			if ($ret)
-				return array(array());
+			$calls += $this->{"_parse_$provider"."_csv"}($filepath);
 		}
 
-		// NOTE: Add new Providers here!
-		if (env('PROVVOIPENVIA__RESELLER_USERNAME'))
-		{
-			return $this->_parse_envia_csv($filepath);
-		}
-
-		else if (env('HLKOMM_RESELLER_USERNAME'))
-		{
-			return $this->_parse_hlkomm_csv($filepath);
-		}
-
-		else
-			// we could throw an redundant exception here as well - is already thrown in cdrCommand
-			return array(array());
-
+		return $calls;
 	}
 
 
@@ -453,10 +467,14 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	{
 		Log::debug('billing', 'Parse envia TEL Call Data Records CSV');
 
-		$csv = is_file($filepath) ? file($filepath) : null;
+		$stop = false;
 
-		if (!$csv)
+		$csv = file($filepath);
+
+		if (!$csv) {
+			Log::warning('billing', 'Empty envia call data record file');
 			return array(array());
+		}
 
 		/*
 		 * Order existing phonenumbers in format 03735 739822 (prefix, number) to contract id/number as structured array:
@@ -464,19 +482,9 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		 * needed to check later if customer can really have made these calls (if customer number to phonenumber assignment is correct)
 		 * NOTE: customer number here means the envia customer number that corresponds to id OR number in our database
 		 */
-		$phonenumbers_db = \DB::table('phonenumber')
-			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
-			->join('modem', 'modem.id', '=', 'mta.modem_id')
-			->join('contract', 'contract.id', '=', 'modem.contract_id')
-			->where('phonenumber.deleted_at', '=', null)
-			->where(function ($query) { $query
-				->where('sipdomain', '=', 'sip.enviatel.net')
-				->orWhereNull('sipdomain')
-				->orWhere('sipdomain', '=', '');})
-			->select('modem.contract_id', 'contract.number', 'phonenumber.username', 'phonenumber.id')
-			->orderBy('modem.contract_id')->get();
+		$phonenumbers_db = self::_get_phonenumbers('sip.enviatel.net');
 
-		foreach ($phonenumbers_db as $key => $pn)
+		foreach ($phonenumbers_db as $pn)
 		{
 			if (substr($pn->username, 0, 1) != '0') {
 				// can be a poorly disabled testnumber -> discard
@@ -505,7 +513,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			{
 				if (in_array($customer_nr, $customer_nrs_array)) {
 					Log::error('billing', "Calling Number [$calling_number] does not exist in our DB for customer number $customer_nr! Exit");
-					throw new \Exception("Calling Number [$calling_number] does not exist in our DB for customer number $customer_nr! Exit");
+					$stop = true;
 				}
 
 				if ($logged != $calling_number) {
@@ -518,12 +526,25 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 			if (!in_array($customer_nr, $customer_nrs[$calling_number])) {
 				Log::error('billing', "Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database! Exit");
-				// $this->error("Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database!");
-				throw new \Exception("Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database!");
+				$stop = true;
 			}
 
-			$data[$customer_nr][] = array($calling_number, substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2) , $line[5], $line[6], $called_number, str_replace(',', '.', $line[10]));
+			$data[$customer_nr][] = array(
+					$calling_number,
+					substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2), 			// date
+					$line[5],																			// starttime
+					$line[6],																			// duration
+					$called_number,
+					str_replace(',', '.', $line[10]) 													// price
+				);
 		}
+
+		// Stop execution here if critical errors have been occured
+		if ($stop)
+			throw new \Exception("Stop execution after occured error(s) on parsing envia call data record file. See Logfile!");
+
+		if ($data && (count($customer_nrs_array) > 10 * count($data)))
+			Log::warning('billing', 'Very little data in enviatel call data record file. Possibly missing data!');
 
 		return $data;
 	}
@@ -536,10 +557,12 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 */
 	protected function _parse_hlkomm_csv($filepath)
 	{
-		$csv = is_file($filepath) ? file($filepath) : null;
+		$csv = file($filepath);
 
-		if (!$csv)
+		if (!$csv) {
+			Log::warning('billing', 'Empty hlkomm call data record file');
 			return array(array());
+		}
 
 		// skip first 5 lines (descriptions)
 		unset($csv[0], $csv[1], $csv[2], $csv[3], $csv[4]);
@@ -551,7 +574,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		$phonenumbers_o = \DB::table('phonenumber')
 			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
 			->join('modem', 'modem.id', '=', 'mta.modem_id')
-			->where('phonenumber.deleted_at', '=', null)
+			// ->where('phonenumber.deleted_at', '=', null)
 			->select('modem.contract_id', 'phonenumber.username')
 			->orderBy('modem.contract_id')->get();
 
@@ -582,8 +605,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			else if (isset($phonenrs[$phonenr2]))
 				// our phonenr is the called nr - TODO: proof if this case can actually happen - normally this shouldnt be the case
 				$data[$phonenrs[$phonenr2]][] = $a;
-			else
-			{
+			else {
 				// there is a phonenr entry in csv that doesnt exist in our db - this case should never happen
 				Log::error('billing', "Parse CDR.csv: Call Data Record with Phonenr [$phonenr1] that doesnt exist in the Database - Phonenr deleted?");
 			}
@@ -593,6 +615,114 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		return $data;
 	}
 
+	/**
+	 * Parse HLKomm CSV
+	 *
+	 * @return array 	[contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
+	 */
+	protected function _parse_purtel_csv($filepath)
+	{
+		$csv = file($filepath);
+
+		if (!$csv) {
+			Log::warning('billing', 'Empty envia call data record file');
+			return [[]];
+		}
+
+		$stop = false;
+
+		/*
+		 * Order existing phonenumber usernames to contract number as structured array:
+		 * 		[username => [contractnum, phonenum], username => [...], ...]
+		 * needed to check later if customer can really have made these calls (if customer number to phonenumber assignment is correct)
+		 */
+		$phonenumbers_db = self::_get_phonenumbers('deu3.purtel.com');
+
+		foreach ($phonenumbers_db as $key => $pn)
+		{
+			$phonenumbers[$pn->username] = [$pn->number, $pn->prefix_number.$pn->pnum];
+			$customer_nrs_array[]  = $pn->number;
+		}
+
+		// skip first line of csv (column description)
+		$logged = [];
+		unset($csv[0]);
+
+		foreach ($csv as $line)
+		{
+			$line = str_getcsv($line, ';');
+
+			// Discard Drebach Customers in a first step
+			if (strpos($line[7], '013-') !== false) {
+				if (!in_array($line[7], $logged)) {
+					$logged[] = $line[7];
+					Log::notice('billing', "Purtel-CSV: Discard calls from customer nr $line[7] (still km3 customer - from Drebach)");
+				}
+				continue;
+			}
+
+			$customer_nr 	= intval(str_replace('010-', '', $line[7]));
+			$username 		= $line[2];
+
+			// Error Checks
+			if (!in_array($customer_nr, $customer_nrs_array)) {
+				Log::error('billing', "Purtel-CSV: Contract Number [$customer_nr] does not exist in our DB for call id $line[0]! Exit");
+				$stop = true;
+			}
+
+			if (!isset($phonenumbers[$username])) {
+				Log::error('billing', "Purtel-CSV: Phonenumber with username $username does not exist for contract $customer_nr! Exit");
+				$stop = true;
+			}
+
+			if ($customer_nr != $phonenumbers[$username][0]) {
+				Log::error('billing', "Phonenumber with username $username has different purtel customer number [$customer_nr] than it has in the local Database! Exit");
+				$stop = true;
+			}
+
+			$date = explode(' ', $line[1]);
+
+			$data[$customer_nr][] = array(
+				$phonenumbers[$username][1], 		// calling number
+				$date[0],							// date
+				$date[1], 							// start time
+				gmdate("H:i:s", $line[4]),			// duration in Hours:Minutes:Seconds
+				$line[3],							// called number
+				$line[10] / 100,					// price
+				);
+		}
+
+		// Stop execution here if critical errors have been occured
+		if ($stop)
+			throw new \Exception("Stop execution after occured error(s) on parsing purtel call data record file. See Logfile!");
+
+		if ($data && (count($customer_nrs_array) > 10 * count($data)))
+			Log::warning('billing', 'Very little data in purtel call data record file. Possibly missing data!');
+
+		return $data;
+	}
+
+
+	/**
+	 * Get list of all phonenumbers of all contracts belonging to a specific registrar
+	 *
+	 * @return Array
+	 */
+	private static function _get_phonenumbers($registrar)
+	{
+		return $phonenumbers_db = \DB::table('phonenumber as p')
+			->join('mta', 'p.mta_id', '=', 'mta.id')
+			->join('modem', 'modem.id', '=', 'mta.modem_id')
+			->join('contract', 'contract.id', '=', 'modem.contract_id')
+			// ->where('p.deleted_at', '=', null)
+			->where(function ($query) use ($registrar) { $query
+				->where('sipdomain', '=', $registrar)
+				->orWhereNull('sipdomain')
+				->orWhere('sipdomain', '=', '');})
+			->select('modem.contract_id', 'contract.number', 'p.prefix_number', 'p.number as pnum', 'p.username', 'p.id')
+			->orderBy('modem.contract_id')
+			->get();
+	}
 
 	/**
 	 * Instantiates an Array of all necessary date formats needed during execution of this Command

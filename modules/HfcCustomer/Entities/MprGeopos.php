@@ -3,7 +3,6 @@
 use Illuminate\Database\Eloquent\Model;
 use Modules\HfcCustomer\Entities\Mpr;
 
-
 /*
  * Modem Positioning Rule Geo Position Model
  *

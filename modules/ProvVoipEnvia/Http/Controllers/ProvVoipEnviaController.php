@@ -4,7 +4,6 @@ namespace Modules\ProvVoipEnvia\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\View;
-
 use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
 use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
 
@@ -333,6 +332,9 @@ class ProvVoipEnviaController extends \BaseController {
 			CURLOPT_SSL_VERIFYPEER => TRUE,
 			// check for common name in cert and match to the hostname provided
 			CURLOPT_SSL_VERIFYHOST => 2,
+
+			// force DNS resolution to IPv4 address
+			CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
 
 			// verbose mode?
 			CURLOPT_VERBOSE => FALSE,

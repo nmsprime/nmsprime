@@ -1,14 +1,12 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
+use ChannelLog, IBAN, Storage;
+use \App\Http\Controllers\BaseViewController;
 use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\BillingBase;
-
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
-use Storage;
-use IBAN;
-use \App\Http\Controllers\BaseViewController;
-use ChannelLog;
 
 /**
  * Contains the functionality for Creating the SEPA-XML-Files of a SettlementRun
@@ -188,6 +186,7 @@ class SepaAccount extends \BaseModel {
 			'Firstname'		=> $item->contract->firstname,
 			'Lastname' 		=> $item->contract->lastname,
 			'Street' 		=> $item->contract->street,
+			'Housenr' 		=> $item->contract->house_number,
 			'Zip' 			=> $item->contract->zip,
 			'City' 			=> $item->contract->city,
 		);
@@ -236,6 +235,7 @@ class SepaAccount extends \BaseModel {
 			'Firstname' 	=> $contract->firstname,
 			'Lastname' 		=> $contract->lastname,
 			'Street' 		=> $contract->street,
+			'Housenr' 		=> $contract->house_number,
 			'Zip'			=> $contract->zip,
 			'City' 			=> $contract->city,
 			);
@@ -329,8 +329,10 @@ class SepaAccount extends \BaseModel {
 		if ($charge == 0)
 			return;
 
-		$info = $this->company->name.' - ';
-		$info .= trans('messages.month').' '.date('m/Y', strtotime('first day of last month'));
+		$info = $this->invoice_headline.' - ';
+		$info .= $this->invoice_headline == 'Kostenumlage' ? date('Y'). ' (abzüglich Verstärker)' : trans('messages.month').' '.date('m/Y', strtotime('first day of last month'));
+		$info .= ' - '.$mandate->contract->lastname.', '.$mandate->contract->lastname.', '.$mandate->contract->firstname;
+		$info .= ' - '.$this->company->name;
 
 		// Credits
 		if ($charge < 0)
@@ -392,7 +394,7 @@ class SepaAccount extends \BaseModel {
 				$accounting = BaseViewController::translate_label($key1);
 				$rec 		= $this->_get_billing_lang() == 'de' ? '' : '_records';
 
-				$fn = str_sanitize($this->dir.$this->name.'/'.$accounting.'_'.BaseViewController::translate_label($key).$rec.'.txt');
+				$fn = str_sanitize("$this->dir/$this->name/$accounting"."_".BaseViewController::translate_label($key).$rec.'.txt');
 
 				// echo "write ".count($records)." [".count($this->{($key1 == 'accounting' ? 'acc_recs' : 'book_recs')}[$key]) ."] to file $fn\n";
 
@@ -471,7 +473,7 @@ class SepaAccount extends \BaseModel {
 					$directDebit->addTransfer($msg_id.$type, $r);
 
 				// Retrieve the resulting XML
-				$file = str_sanitize($this->dir.$this->name.'/DD_'.$type.'.xml');
+				$file = str_sanitize("$this->dir/$this->name/DD_$type.xml");
 				Storage::put($file, $directDebit->asXML());
 
 				$this->_log("sepa direct debit $type xml", $file);
@@ -502,7 +504,7 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Retrieve the resulting XML
-		$file = str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DD').'.xml');
+		$file = str_sanitize("$this->dir/$this->name/".BaseViewController::translate_label('DD').'.xml');
 		Storage::put($file, $directDebit->asXML());
 
 		$this->_log("sepa direct debit $type xml", $file);
@@ -534,7 +536,7 @@ class SepaAccount extends \BaseModel {
 			$customerCredit->addTransfer($msg_id.'C', $r);
 
 		// Retrieve the resulting XML
-		$file = str_sanitize($this->dir.$this->name.'/'.BaseViewController::translate_label('DC').'.xml');
+		$file = str_sanitize("$this->dir/$this->name/".BaseViewController::translate_label('DC').'.xml');
 		Storage::put($file, $customerCredit->asXML());
 
 		$this->_log("sepa direct credit xml", $file);

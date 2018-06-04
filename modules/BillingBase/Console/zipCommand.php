@@ -1,17 +1,13 @@
 <?php
 namespace Modules\BillingBase\Console;
 
-
+use Storage;
+use App\Http\Controllers\BaseViewController;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
-
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\Invoice;
-use App\Http\Controllers\BaseViewController;
-
-use Carbon\Carbon;
-use Storage;
+use Symfony\Component\Console\Input\{ InputOption, InputArgument};
 
 class zipCommand extends Command {
 
@@ -101,8 +97,7 @@ class zipCommand extends Command {
 		if ($this->output)
 			$this->bar->start();
 
-		Storage::put('tmp/accCmdStatus', BaseViewController::translate_label('Zip Files').': 0 %');
-
+		accountingCommand::push_state(0, 'Zip Files');
 
 		/**
 		 * Concat Invoices
@@ -121,7 +116,7 @@ class zipCommand extends Command {
 
 
 		echo "Stored concatenated Invoices: $acc_files_dir_abs_path"."$fname\n";
-		Storage::put('tmp/accCmdStatus', BaseViewController::translate_label('Zip Files').': 99 %');
+		accountingCommand::push_state(99, 'Zip Files');
 
 
 		// Zip all - suppress output of zip command
@@ -180,7 +175,8 @@ class zipCommand extends Command {
 			concat_pdfs($files2, $tmp_fn);
 
 			// Status update
-			Storage::put('tmp/accCmdStatus', BaseViewController::translate_label('Zip Files').': '.((int) ($count/$this->num*100)).' %');
+			accountingCommand::push_state((int) $count/$this->num*100, 'Zip Files');
+
 			if ($this->output)
 				$this->bar->advance();
 		}

@@ -2,9 +2,7 @@
 
 namespace Modules\BillingBase\Entities;
 
-use Storage;
-use ChannelLog;
-
+use ChannelLog, Storage;
 
 /**
  * Contains Functions to collect Data for Invoice & create the corresponding PDFs
@@ -13,7 +11,6 @@ use ChannelLog;
  *
  * @author Nino Ryschawy
  */
-
 class Invoice extends \BaseModel{
 
 	public $table = 'invoice';
@@ -196,16 +193,6 @@ class Invoice extends \BaseModel{
 		return date('Y_m', strtotime('first day of last month'));
 	}
 
-	/**
-	 * @return String 	CDR Filename without extension (like .pdf)
-	 */
-	private static function _get_cdr_filename()
-	{
-		$offset = BillingBase::first()->cdr_offset;
-
-		return $offset ? date('Y_m', strtotime('-'.($offset+1).' month')).'_cdr' : date('Y_m', strtotime('first day of last month')).'_cdr';
-	}
-
 
 	/**
 	 * @param String
@@ -276,6 +263,9 @@ class Invoice extends \BaseModel{
 			$span = str_replace($nr, '', $ret['tariff']->product->maturity ? : Product::$maturity);
 			$txt_m = $nr .' '. trans_choice("messages.$span", $nr);
 		}
+
+		if (!$ret['cancelation_day'])
+			ChannelLog::info('billing', "Contract $contract->number was canceled with target ".$ret['end_of_term']);
 
 		$german = \App::getLocale() == 'de';
 
@@ -539,7 +529,7 @@ class Invoice extends \BaseModel{
 	 */
 	private function _create_pdfs()
 	{
-		chdir($this->get_invoice_dir_path());
+		$dir_path = $this->get_invoice_dir_path();
 
 		$file_paths['Invoice']  = $this->get_invoice_dir_path().$this->filename_invoice;
 		$file_paths['CDR'] 		= $this->get_invoice_dir_path().$this->filename_cdr;
@@ -548,24 +538,7 @@ class Invoice extends \BaseModel{
 		{
 			if (is_file($file))
 			{
-				// take care - when we start process in background we don't get the return value anymore
-				system("pdflatex \"$file\" &>/dev/null &", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
-
-				switch ($ret)
-				{
-					case 0: break;
-					case 1:
-						ChannelLog::error('billing', "PdfLatex: Syntax Error in filled tex template!");
-						return null;
-					case 127:
-						ChannelLog::error('billing', "Illegal Command - PdfLatex not installed!");
-						return null;
-					default:
-						ChannelLog::error('billing', "Error executing PdfLatex - Return Code: $ret");
-						return null;
-				}
-
-				// echo "Successfully created $key in $file\n";
+				pdflatex($dir_path, $file, true);
 				ChannelLog::debug('billing', "Created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
 			}
 		}
@@ -595,8 +568,8 @@ class Invoice extends \BaseModel{
 			}
 			else {
 				// possible errors: syntax/filename/...
-				ChannelLog::error('billing', "Missing Invoice PDF ".$fn);
-				throw new \Exception("Missing Invoice PDF ".$fn);
+				ChannelLog::error('billing', "pdflatex: Error creating Invoice PDF ".$fn);
+				throw new \Exception("pdflatex: Error creating Invoice PDF ".$fn);
 			}
 		}
 	}

@@ -177,7 +177,7 @@ class VoiceDataUpdaterCommand extends Command {
 
 		foreach ($this->affected_contracts as $envia_contract_ref => $phonenumber_id) {
 
-			Log::debug('Updating voice data for envia contract '.$envia_contract_ref);
+			Log::info('Getting voice data for envia contract '.$envia_contract_ref);
 
 			// get the relative URL to execute the cron job for updating the current contract_id
 			$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'contract_get_voice_data', 'phonenumber_id' => $phonenumber_id, 'really' => 'True'), false);

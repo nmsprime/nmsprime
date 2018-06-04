@@ -1,9 +1,8 @@
 <?php
 namespace Modules\BillingBase\Http\Controllers;
 
-use Pingpong\Modules\Routing\Controller;
-use Modules\BillingBase\Entities\Product;
-use Modules\BillingBase\Entities\CostCenter;
+use Nwidart\Modules\Routing\Controller;
+use Modules\BillingBase\Entities\{CostCenter, Product};
 use Modules\ProvBase\Entities\Qos;
 use Modules\ProvVoip\Entities\PhoneTariff;
 
@@ -30,8 +29,9 @@ class ProductController extends \BaseController {
 		unset($type_selects[0]);
 
 		// label has to be the same like column in sql table
+		// TODO: pre select field for product types -> smaller list of possible products to choose from
+		// TODO: email_count is not used and without functionality -> hidden
 		return array(
-			// TODO: pre select field for product types -> smaller list of possible products to choose from
 			// array('form_type' => 'text', 'name' => 'type_pre_choice', 'description' => 'Price (Net)', 'select' => 'Internet Voip TV Device Other'),
 			array('form_type' => 'text', 'name' => 'name', 'description' => 'Name', 'help' => trans('helper.Product_Name')),
 			array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => $types, 'select' => $type_selects, 'help' => trans('helper.Product_Type')),
@@ -42,9 +42,9 @@ class ProductController extends \BaseController {
 			array('form_type' => 'text', 'name' => 'maturity', 'description' => 'Maturity', 'select' => 'Internet', 'help' => trans('helper.Product_maturity')), 		// Laufzeit, tarif life time
 			array('form_type' => 'text', 'name' => 'period_of_notice', 'description' => 'Period of Notice', 'select' => 'Internet', 'help' => trans('helper.Product_maturity')), 		// Kündigungsfrist
 			array('form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs),
-			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)', 'select' => 'Internet Voip TV Device Other'),
+			array('form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)'),
 			array_merge(array('form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV Credit'), $model->tax === null ? ['checked' => true, 'value' => 1] : []),
-			array('form_type' => 'text', 'name' => 'email_count', 'description' => 'No. of email addresses', 'select' => 'Internet'),
+			array('form_type' => 'text', 'name' => 'email_count', 'description' => 'No. of email addresses', 'select' => 'Internet', 'hidden' => 1),
 			array('form_type' => 'checkbox', 'name' => 'bundled_with_voip', 'description' => 'Bundled with VoIP product?', 'select' => 'Internet'),
 		);
 	}
@@ -62,7 +62,6 @@ class ProductController extends \BaseController {
 				$rules['qos_id'] = 'In:0';
 				$rules['voip_sales_tariff_id'] = 'In:0';
 				$rules['voip_purchase_tariff_id'] = 'In:0';
-				$rules['price'] = 'In:"",0';
 				break;
 
 			case 'Device':

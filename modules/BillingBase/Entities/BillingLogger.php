@@ -2,8 +2,7 @@
 
 namespace Modules\BillingBase\Entities;
 
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
+use Monolog\{Logger, Handler\StreamHandler};
 
 class BillingLogger extends Logger {
 
