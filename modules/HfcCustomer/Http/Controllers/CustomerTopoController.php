@@ -371,8 +371,7 @@ class CustomerTopoController extends NetElementController {
 		$y = 0;
 		$num = 0;
 		$clrs = [];
-		$str   = '';
-		$descr = '';
+		$str = $descr = $city = $zip = $nr = '';
 		$states = [-1 => 'offline', 0 => 'okay', 1 => 'impaired', 2 => 'critical'];
 		$file  = $this->file_pre;
 
