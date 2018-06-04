@@ -48,9 +48,8 @@ class Ticket extends \BaseModel {
 			'edit' => ['assigned_users' => 'get_assigned_users',
 				'tickettypes.name' => 'index_types',
 				'user_id' => 'username'],
-			'filter' => ['tickettypes.name' => $this->tickettype_names_query()],
-			// 'sortsearch' => ['tickettypes.name' => 'true'],
-
+			// 'filter' => ['tickettypes.name' => $this->tickettype_names_query()],
+			'disable_sortsearch' => ['tickettypes.name' => 'false', 'assigned_users' => 'false'],
 		];
 	}
 
