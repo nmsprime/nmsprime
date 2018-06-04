@@ -1,4 +1,6 @@
-<?php namespace Modules\Voipmon\Providers;
+<?php
+
+namespace Modules\VoipMon\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
@@ -9,7 +11,7 @@ class VoipMonServiceProvider extends ServiceProvider {
 	 *
 	 * @var bool
 	 */
-	protected $defer = false;
+	protected $defer = true;
 
 	/**
 	 * The artisan commands provided by this module

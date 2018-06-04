@@ -1,12 +1,14 @@
 <?php
 
+namespace Modules\HfcCustomer\Entities;
+
 return [
+	'name' => 'HFC',
 	'MenuItems' => [
-		'HFC' => [
-			'Modem Pos System' => [
-				'link'	=> 'Mpr.index',
-				'icon'	=> 'fa-hdd-o'
-			]
+		'Modem Pos System' => [
+			'link'	=> 'Mpr.index',
+			'icon'	=> 'fa-hdd-o',
+			'class' => Mpr::class,
 		]
 	]
 ];

@@ -9,7 +9,7 @@ class ProvMonServiceProvider extends ServiceProvider {
 	 *
 	 * @var bool
 	 */
-	protected $defer = false;
+	protected $defer = true;
 
 	/**
 	 * The artisan commands provided by this module
