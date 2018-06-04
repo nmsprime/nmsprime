@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Voipmon\Database\Seeders;
+namespace Modules\VoipMon\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
