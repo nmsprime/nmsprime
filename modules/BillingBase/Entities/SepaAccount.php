@@ -394,7 +394,7 @@ class SepaAccount extends \BaseModel {
 				$accounting = BaseViewController::translate_label($key1);
 				$rec 		= $this->_get_billing_lang() == 'de' ? '' : '_records';
 
-				$fn = str_sanitize("$this->dir/$this->name/$accounting"."_".BaseViewController::translate_label($key).$rec.'.txt');
+				$fn = "$this->dir/".sanitize_filename($this->name)."/$accounting"."_".BaseViewController::translate_label($key).$rec.'.txt';
 
 				// echo "write ".count($records)." [".count($this->{($key1 == 'accounting' ? 'acc_recs' : 'book_recs')}[$key]) ."] to file $fn\n";
 
@@ -473,7 +473,7 @@ class SepaAccount extends \BaseModel {
 					$directDebit->addTransfer($msg_id.$type, $r);
 
 				// Retrieve the resulting XML
-				$file = str_sanitize("$this->dir/$this->name/DD_$type.xml");
+				$file = "$this->dir/".sanitize_filename($this->name)."/DD_$type.xml";
 				Storage::put($file, $directDebit->asXML());
 
 				$this->_log("sepa direct debit $type xml", $file);
@@ -504,7 +504,7 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Retrieve the resulting XML
-		$file = str_sanitize("$this->dir/$this->name/".BaseViewController::translate_label('DD').'.xml');
+		$file = "$this->dir/".sanitize_filename($this->name)."/".BaseViewController::translate_label('DD').'.xml';
 		Storage::put($file, $directDebit->asXML());
 
 		$this->_log("sepa direct debit $type xml", $file);
@@ -536,7 +536,7 @@ class SepaAccount extends \BaseModel {
 			$customerCredit->addTransfer($msg_id.'C', $r);
 
 		// Retrieve the resulting XML
-		$file = str_sanitize("$this->dir/$this->name/".BaseViewController::translate_label('DC').'.xml');
+		$file = "$this->dir/".sanitize_filename($this->name)."/".BaseViewController::translate_label('DC').'.xml';
 		Storage::put($file, $customerCredit->asXML());
 
 		$this->_log("sepa direct credit xml", $file);

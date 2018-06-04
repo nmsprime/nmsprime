@@ -90,7 +90,6 @@ class ItemController extends \BaseController {
 		$data = parent::prepare_input($data);
 
 		$nullable_fields = array(
-			'accounting_text',
 			'credit_amount',
 		);
 
