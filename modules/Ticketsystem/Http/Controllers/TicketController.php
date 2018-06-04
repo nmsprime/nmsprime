@@ -24,7 +24,7 @@ class TicketController extends \BaseController {
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Ticket description'),
 			array('form_type' => 'text', 'name' => 'user_id', 'description' => 'Current user', 'value' => \Auth::user()->id, 'hidden' => 1),
 			array('form_type' => 'select', 'name' => 'users_ids[]', 'description' => 'Assigned users',
-				'value' => $model->html_list(\App\Authuser::all(), ['last_name', 'first_name'], false, ', '),
+				'value' => $model->html_list(\App\User::all(), ['last_name', 'first_name'], false, ', '),
 				'options' => array('multiple' => 'multiple'), 'help' => trans('helper.assign_user'),
 				'selected' => $model->html_list($model->users, ['last_name', 'first_name'], false, ', ')),
 		);
