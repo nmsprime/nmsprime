@@ -1,13 +1,13 @@
 <?php
 namespace Modules\Ccc\Http\Controllers;
 
-use  File, Log;
+use Auth, File, Log;
 use Modules\Ccc\Entities\Ccc;
 use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\{Invoice, SettlementRun};
-use Modules\Mail\Entities\Email;
+use Modules\NmsMail\Entities\Email;
 
-class CccAuthuserController extends \BaseController {
+class CccUserController extends \BaseController {
 
 	public function __construct()
 	{
@@ -72,14 +72,14 @@ class CccAuthuserController extends \BaseController {
 	public function connection_info_download ($id, $return_pdf = true)
 	{
 		$c = Contract::find($id);
-		$customer = $c->cccauthuser;
+		$customer = $c->CccUser;
 
-		// Get Login Data after updating or creating CccAuthuser
+		// Get Login Data after updating or creating CccUser
 		if ($customer)
 			$login_data = $customer->update();
 		else
 		{
-			$customer = new \Modules\Ccc\Entities\CccAuthuser;
+			$customer = new \Modules\Ccc\Entities\CccUser;
 			$customer->contract_id = $c->id;
 			$login_data = $customer->store();
 		}
@@ -98,7 +98,7 @@ class CccAuthuserController extends \BaseController {
 		// TODO: try - catch exceptions that this function shall throw
 		$ret = $this->make_conn_info_pdf($c);
 
-		Log::info('Download Connection Information for CccAuthuser: '.$customer->first_name.' '.$customer->last_name.' ('.$customer->id.')', [$c->id]);
+		Log::info('Download Connection Information for CccUser: '.$customer->first_name.' '.$customer->last_name.' ('.$customer->id.')', [$c->id]);
 
 		if (is_string($ret))
 			return $return_pdf ? response()->download($ret) : $ret;
@@ -226,7 +226,7 @@ class CccAuthuserController extends \BaseController {
 	 */
 	public function show()
 	{
-		$invoices = \Auth::guard('ccc')->user()->contract->invoices;
+		$invoices = Auth::guard('ccc')->user()->contract->invoices;
 		$invoice_links = [];
 
 		$bsclass = ['info', 'active'];
@@ -249,7 +249,7 @@ class CccAuthuserController extends \BaseController {
 				);
 		}
 
-		$emails = \Module::collections()->has('Mail') ? \Auth::guard('ccc')->user()->contract->emails : collect();
+		$emails = \Module::collections()->has('Mail') ? Auth::guard('ccc')->user()->contract->emails : collect();
 
 		return \View::make('ccc::index', compact('invoice_links','emails'));
 	}
@@ -265,7 +265,7 @@ class CccAuthuserController extends \BaseController {
 	public function download($id)
 	{
 		$invoice = Invoice::find($id);
-		$user 	 = \Auth::guard('ccc')->user();
+		$user 	 = Auth::guard('ccc')->user();
 
 		// check that only allowed files are downloadable - invoice must belong to customer and settlmentrun must be verified
 		if (!$invoice || $invoice->contract_id != $user->contract_id || !$invoice->settlementrun->verified)
@@ -284,7 +284,7 @@ class CccAuthuserController extends \BaseController {
 			$email = Email::findorFail(\Input::get('email_id'));
 			// customer requested email object, which does not belong to him
 			// (by manually changing the email_id in the url)
-			if ($email->contract != \Auth::guard('ccc')->user()->contract)
+			if ($email->contract != Auth::guard('ccc')->user()->contract)
 				return abort(404);
 		}
 
@@ -292,7 +292,7 @@ class CccAuthuserController extends \BaseController {
 		if (\Input::has('password'))
 		{
 			// update psw
-			$customer = \Auth::guard('ccc')->user();
+			$customer = Auth::guard('ccc')->user();
 			$rules = array('password' => 'required|confirmed|min:6');
 			$data = \Input::get();
 

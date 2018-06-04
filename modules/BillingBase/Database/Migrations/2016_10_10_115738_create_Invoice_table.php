@@ -70,7 +70,7 @@ class CreateInvoiceTable extends BaseMigration {
 			$i++;
 			echo "Contract: create Invoice database entry: $i/$num \r";
 
-			$invoices = \Modules\Ccc\Http\Controllers\CccAuthuserController::get_customer_invoices($contract->id);
+			$invoices = \Modules\Ccc\Http\Controllers\CccUserController::get_customer_invoices($contract->id);
 
 			foreach ($invoices as $pdf)
 			{

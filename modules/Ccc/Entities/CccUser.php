@@ -1,32 +1,38 @@
-<?php namespace Modules\Ccc\Entities;
+<?php
 
-use Illuminate\Auth\{Authenticatable, Passwords\CanResetPassword};
-use Illuminate\Contracts\Auth\{
-	Authenticatable as AuthenticatableContract,
-	CanResetPassword as CanResetPasswordContract};
+namespace Modules\Ccc\Entities;
+
+use DB;
+use Illuminate\Notifications\Notifiable;
+use Silber\Bouncer\Database\HasRolesAndAbilities;
+use Illuminate\Auth\Authenticatable;
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Foundation\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 
 /**
- * Model holding user data for CCC authentication
- *
- * NOTE: this is a simple (reduced) copy of @Patrick Reichels Authuser class
+ * This is the Model, holding the User data for CCC authentication.
+ * To gain access data the Middleware will check for Permissions.
  */
-class CccAuthuser extends \BaseModel implements AuthenticatableContract, CanResetPasswordContract {
+class CccUser extends \BaseModel implements
+    AuthenticatableContract,
+    AuthorizableContract,
+    CanResetPasswordContract
+{
+		use Authenticatable, Authorizable, CanResetPassword, HasRolesAndAbilities, Notifiable;
 
-	use Authenticatable, CanResetPassword;
-
+	public $table = 'cccauthuser';
 	// SQL connection
 	// This is a security plus to let the CCC sql user only have read-only access to the required tables
 	protected $connection = 'mysql-ccc';
-
-	// The associated SQL table for this Model
-	public $table = 'cccauthuser';
 
 
 	public function contract()
 	{
 		return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
 	}
-
 
 	/**
 	 * Overwrite Eloquent Function
@@ -93,7 +99,7 @@ class CccAuthuser extends \BaseModel implements AuthenticatableContract, CanRese
 			);
 		}
 		else
-			Log::error('Contract for CccAuthuser does not exist', [$this->id]);
+			Log::error('Contract for CccUser does not exist', [$this->id]);
 
 		return isset($psw) ? ['data' => $data, 'psw' => $psw] : [];
 
