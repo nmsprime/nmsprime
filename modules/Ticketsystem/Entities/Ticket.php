@@ -122,12 +122,6 @@ class Ticket extends \BaseModel {
 	{
 		$ret = array();
 
-		// assigned users
-		// $ret['Edit']['Authuser']['class'] = 'Authuser';
-		// $ret['Edit']['Authuser']['relation'] = $this->users;
-		// $ret['Edit']['Authuser']['options']['many_to_many'] = 'users';
-		// $ret['Edit']['Authuser']['options']['hide_create_button'] = true;
-		// assigned comments
 		$ret['Edit']['Comment']['class'] = 'Comment';
 		$ret['Edit']['Comment']['relation'] = $this->comments;
 
@@ -151,13 +145,13 @@ class Ticket extends \BaseModel {
 	// user who created the ticket
 	public function user()
 	{
-		return $this->belongsTo('App\Authuser', 'user_id');
+		return $this->belongsTo('App\User', 'user_id');
 	}
 
 	// assigned users
 	public function users()
 	{
-		return $this->belongsToMany('\App\Authuser', 'ticket_user', 'ticket_id', 'user_id');
+		return $this->belongsToMany('\App\User', 'ticket_user', 'ticket_id', 'user_id');
 	}
 
 	public function contract()
@@ -169,26 +163,6 @@ class Ticket extends \BaseModel {
 	{
 		return $this->belongsToMany('Modules\Ticketsystem\Entities\TicketType', 'tickettype_ticket', 'ticket_id', 'tickettype_id');
 	}
-
-
-	/**
-	 * Return list of Users that are not yet assigned to this Ticket
-	 */
-	// public function not_assigned_users()
-	// {
-	// 	$ret = array();
-	// 	$users = \App\Authuser::orderBy('last_name', 'ASC')->get();
-	// 	$users_assigned = $this->users;
-
-	// 	foreach ($users as $user)
-	// 	{
-	// 		if (!$users_assigned->contains('id', $user->id))
-	// 			$ret[] = $user;
-	// 	}
-
-	// 	return $ret;
-	// }
-
 }
 
 
