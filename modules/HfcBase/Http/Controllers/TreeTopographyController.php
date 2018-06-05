@@ -146,10 +146,10 @@ class TreeTopographyController extends HfcBaseController {
 
 		foreach ($trees as $tree)
 		{
-			$pos1   = $tree->pos;
-			$pos2   = $tree->parent->pos;
-			$name   = $tree->id;
 			$parent = $tree->parent;
+			$pos1   = $tree->pos;
+			$pos2   = $parent ? $parent->pos : null;
+			$name   = $tree->id;
 			$type   = $tree->type;
 			$tp     = $tree->tp;
 
@@ -274,7 +274,7 @@ class TreeTopographyController extends HfcBaseController {
 			}
 
 			$type  = $tree->type;
-			$parent= $tree->parent->id;
+			$parent= $tree->parent ? $tree->parent->id : null;
 			$state = $tree->get_bsclass();
 
 			if ($tree->state == 'warning')
