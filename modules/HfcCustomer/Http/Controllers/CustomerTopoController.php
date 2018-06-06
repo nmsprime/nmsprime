@@ -371,8 +371,7 @@ class CustomerTopoController extends NetElementController {
 		$y = 0;
 		$num = 0;
 		$clrs = [];
-		$str   = '';
-		$descr = '';
+		$str = $descr = $city = $zip = $nr = '';
 		$states = [-1 => 'offline', 0 => 'okay', 1 => 'impaired', 2 => 'critical'];
 		$file  = $this->file_pre;
 
@@ -384,9 +383,10 @@ class CustomerTopoController extends NetElementController {
 			if ($x != $modem->x || $y != $modem->y)
 			{
 				# Print Marker
-				# if one of the modems in the same location is offline show a red marker,
-				# otherwise the average of all modem states will determine the color
-				if(in_array(-1, $clrs))
+				# if all modems in one location are offline show a red marker,
+				# otherwise the average of all non-offline modem states will determine the color
+				$clrs = array_diff($clrs, [-1]);
+				if (empty($clrs))
 					$clr = -1;
 				else
 					$clr = ($x) ? round(array_sum($clrs)/count($clrs)) : '';
@@ -458,9 +458,10 @@ class CustomerTopoController extends NetElementController {
 		#
 		# Print Last Marker
 		#
-		# if one of the modems in the same location is offline show a red marker,
-		# otherwise the average of all modem states will determine the color
-		if(in_array(-1, $clrs))
+		# if all modems in one location are offline show a red marker,
+		# otherwise the average of all non-offline modem states will determine the color
+		$clrs = array_diff($clrs, [-1]);
+		if (empty($clrs))
 			$clr = -1;
 		else
 			$clr = round(array_sum($clrs)/count($clrs));
