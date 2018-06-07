@@ -174,6 +174,8 @@ reload:
 
 		$response->headers->set('Content-Type', 'text/event-stream');
 
+		\Storage::delete('tmp/accCmdStatus');
+
 		return $response;
 	}
 
