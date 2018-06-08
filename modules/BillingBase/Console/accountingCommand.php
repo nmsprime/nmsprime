@@ -580,94 +580,112 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		}
 
-		return $data;
+		return $calls;
 	}
 
 	/**
-	 * Parse HLKomm CSV
+	 * Parse PurTel CSV
+	 *
+	 * NOTE: Username to phonenumber combination must never change!
 	 *
 	 * @return array 	[contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
 	 */
 	protected function _parse_purtel_csv($filepath)
 	{
-		$csv = file($filepath);
+		Log::debug('billing', 'Parse PurTel Call Data Records CSV');
+
+		$csv   = file($filepath);
+		$calls = [[]];
 
 		if (!$csv) {
 			Log::warning('billing', 'Empty envia call data record file');
-			return [[]];
-		}
-
-		$stop = false;
-
-		/*
-		 * Order existing phonenumber usernames to contract number as structured array:
-		 * 		[username => [contractnum, phonenum], username => [...], ...]
-		 * needed to check later if customer can really have made these calls (if customer number to phonenumber assignment is correct)
-		 */
-		$phonenumbers_db = self::_get_phonenumbers('deu3.purtel.com');
-
-		foreach ($phonenumbers_db as $key => $pn)
-		{
-			$phonenumbers[$pn->username] = [$pn->number, $pn->prefix_number.$pn->pnum];
-			$customer_nrs_array[]  = $pn->number;
+			return $calls;
 		}
 
 		// skip first line of csv (column description)
-		$logged = [];
 		unset($csv[0]);
+
+		$logged = $phonenumbers = $unassigned = [];
+		$price = $count = 0;
+		$customer_nrs = self::_get_customer_nrs();
+		$registrar = 'deu3.purtel.com';
+		$cdr_first_day_of_month = date('Y-m-01', strtotime('first day of -'.(1+$this->conf->cdr_offset).' month'));
+
+		// get phonenumbers because only username is given in CDR.csv
+		$phonenumbers_db = \DB::table('phonenumber as p')
+			->join('mta', 'p.mta_id', '=', 'mta.id')
+			// \Modules\ProvVoip\Entities\Phonenumber::join('mta', 'phonenumber.mta_id', '=', 'mta.id')
+			->join('modem', 'modem.id', '=', 'mta.modem_id')
+			->join('contract as c', 'c.id', '=', 'modem.contract_id')
+			->where(function ($query) use ($registrar) { $query
+				->where('sipdomain', '=', $registrar)
+				->orWhereNull('sipdomain')
+				->orWhere('sipdomain', '=', '');})
+			->select('modem.contract_id', 'c.number as contractnr', 'c.create_invoice', 'p.*')
+			// ->withTrashed()
+			->where(function ($query) use ($cdr_first_day_of_month) { $query
+				->whereNull('p.deleted_at')
+				->orWhere('p.deleted_at', '>=', $cdr_first_day_of_month);
+				})
+			->orderBy('p.deleted_at', 'asc')->orderBy('created_at', 'desc')
+			->get();
+
+		foreach ($phonenumbers_db as $p)
+			$phonenumbers[$p->username] = $p->prefix_number.$p->number;
 
 		foreach ($csv as $line)
 		{
-			$line = str_getcsv($line, ';');
+			$arr = str_getcsv($line, ';');
 
 			// Discard Drebach Customers in a first step
-			if (strpos($line[7], '013-') !== false) {
-				if (!in_array($line[7], $logged)) {
-					$logged[] = $line[7];
-					Log::notice('billing', "Purtel-CSV: Discard calls from customer nr $line[7] (still km3 customer - from Drebach)");
-				}
+			if (strpos($arr[7], '013-') !== false) {
+				if (!in_array($arr[7], $logged))
+					$logged[] = $arr[7];
+
 				continue;
 			}
 
-			$customer_nr 	= intval(str_replace('010-', '', $line[7]));
-			$username 		= $line[2];
-
-			// Error Checks
-			if (!in_array($customer_nr, $customer_nrs_array)) {
-				Log::error('billing', "Purtel-CSV: Contract Number [$customer_nr] does not exist in our DB for call id $line[0]! Exit");
-				$stop = true;
-			}
+			$customer_nr = intval(str_replace(['010-'], '', $arr[7]));
+			$username 	 = $arr[2];
+			$date = explode(' ', $arr[1]);
 
 			if (!isset($phonenumbers[$username])) {
-				Log::error('billing', "Purtel-CSV: Phonenumber with username $username does not exist for contract $customer_nr! Exit");
-				$stop = true;
+				Log::error('billing', "Phonenr of contract $customer_nr with username $username not found in DB. Calling number will not appear on invoice.");
+				$phonenumbers[$username] = ' - ';
 			}
 
-			if ($customer_nr != $phonenumbers[$username][0]) {
-				Log::error('billing', "Phonenumber with username $username has different purtel customer number [$customer_nr] than it has in the local Database! Exit");
-				$stop = true;
-			}
-
-			$date = explode(' ', $line[1]);
-
-			$data[$customer_nr][] = array(
-				$phonenumbers[$username][1], 		// calling number
-				$date[0],							// date
-				$date[1], 							// start time
-				gmdate("H:i:s", $line[4]),			// duration in Hours:Minutes:Seconds
-				$line[3],							// called number
-				$line[10] / 100,					// price
+			$data = array(
+				'calling_nr' => $phonenumbers[$username],
+				'date' 		=> $date[0],
+				'starttime' => $date[1],
+				'duration' 	=> gmdate("H:i:s", $arr[4]),
+				'called_nr' => $arr[3],
+				'price' 	=> $arr[10] / 100,
 				);
+
+			if (in_array($customer_nr, $customer_nrs))
+				$calls[$customer_nr][] = $data;
+			else
+			{
+				// cumulate price of calls that can not be assigned to any contract
+				if (!isset($unassigned[$arr[7]]))
+					$unassigned[$arr[7]][$data['calling_nr']] = ['count' => 0, 'price' => 0];
+
+				$unassigned[$arr[7]][$data['calling_nr']]['count'] += 1;
+				$unassigned[$arr[7]][$data['calling_nr']]['price'] += $data['price'];
+			}
 		}
 
-		// Stop execution here if critical errors have been occured
-		if ($stop)
-			throw new \Exception("Stop execution after occured error(s) on parsing purtel call data record file. See Logfile!");
+		if ($logged)
+			Log::notice('billing', "Purtel-CSV: Discard calls from customer numbers ".implode(', ', $logged)." (still km3 customer - from Drebach)");
 
-		if ($data && (count($customer_nrs_array) > 10 * count($data)))
-			Log::warning('billing', 'Very little data in purtel call data record file. Possibly missing data!');
+		$this->_log_unassigned_calls($unassigned);
 
-		return $data;
+		// warning when there are approx 5 times more customers then calls
+		if ($calls && (count($phonenumbers_db) > 5 * count($calls)))
+			Log::warning('billing', 'Very little data in purtel call data record file ('.count($csv).' records). Possibly missing data!');
+
+		return $calls;
 	}
 
 
