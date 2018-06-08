@@ -188,7 +188,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			if ($id)
 			{
 				foreach ($cdrs[$id] as $entry) {
-					$charge += $entry[5];
+					$charge += $entry['price'];
 					$calls++;
 				}
 
@@ -467,86 +467,54 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	{
 		Log::debug('billing', 'Parse envia TEL Call Data Records CSV');
 
-		$stop = false;
-
 		$csv = file($filepath);
+		$calls = [[]];
 
 		if (!$csv) {
-			Log::warning('billing', 'Empty envia call data record file');
-			return array(array());
-		}
-
-		/*
-		 * Order existing phonenumbers in format 03735 739822 (prefix, number) to contract id/number as structured array:
-		 * 		[pn1 => [id, num], pn2 => [...], ...]
-		 * needed to check later if customer can really have made these calls (if customer number to phonenumber assignment is correct)
-		 * NOTE: customer number here means the envia customer number that corresponds to id OR number in our database
-		 */
-		$phonenumbers_db = self::_get_phonenumbers('sip.enviatel.net');
-
-		foreach ($phonenumbers_db as $pn)
-		{
-			if (substr($pn->username, 0, 1) != '0') {
-				// can be a poorly disabled testnumber -> discard
-				Log::warning('billing', "Username [$pn->username] of Phonenumber ID [$pn->id] not in correct format");
-				continue;
-			}
-
-			$customer_nrs[substr_replace($pn->username, '49', 0, 1)] = [$pn->contract_id, $pn->number];
-
-			$customer_nrs_array[] = $pn->contract_id;
-			$customer_nrs_array[] = $pn->number;
+			Log::error('billing', 'Empty envia call data record file');
+			return $calls;
 		}
 
 		// skip first line of csv (column description)
-		$logged = '';
 		unset($csv[0]);
+		$price = $count = 0;
+		$unassigned = [];
+		$customer_nrs = self::_get_customer_nrs();
 
 		foreach ($csv as $line)
 		{
-			$line = str_getcsv($line, ';');
-			$customer_nr 	= intval(str_replace(['002-', '010-'], '', $line[0]));
-			$calling_number = $line[3];
-			$called_number  = $line[7];
+			$arr = str_getcsv($line, ';');
+			$customer_nr = intval(str_replace(['002-', '010-'], '', $arr[0]));
 
-			if (!isset($customer_nrs[$calling_number]))
-			{
-				if (in_array($customer_nr, $customer_nrs_array)) {
-					Log::error('billing', "Calling Number [$calling_number] does not exist in our DB for customer number $customer_nr! Exit");
-					$stop = true;
-				}
-
-				if ($logged != $calling_number) {
-					// NOTE: wrong sipdomain can lead to this error too
-					Log::warning('billing', "Calling Number [$calling_number] does not exist - but customer number [$customer_nr] neither!");
-					$logged = $calling_number;
-				}
-				continue;
-			}
-
-			if (!in_array($customer_nr, $customer_nrs[$calling_number])) {
-				Log::error('billing', "Calling Number [$calling_number] has different envia customer number [$customer_nr] than it has in the local Database! Exit");
-				$stop = true;
-			}
-
-			$data[$customer_nr][] = array(
-					$calling_number,
-					substr($line[4], 4).'-'.substr($line[4], 2, 2).'-'.substr($line[4], 0, 2), 			// date
-					$line[5],																			// starttime
-					$line[6],																			// duration
-					$called_number,
-					str_replace(',', '.', $line[10]) 													// price
+			$data = array(
+				'calling_nr' => $arr[3],
+				'date' 		=> substr($arr[4], 4).'-'.substr($arr[4], 2, 2).'-'.substr($arr[4], 0, 2),
+				'starttime' => $arr[5],
+				'duration' 	=> $arr[6],
+				'called_nr' => $arr[7],
+				'price' 	=> str_replace(',', '.', $arr[10])
 				);
+
+			if (in_array($customer_nr, $customer_nrs))
+				$calls[$customer_nr][] = $data;
+			else
+			{
+				// cumulate price of calls that can not be assigned to any contract
+				if (!isset($unassigned[$arr[0]]))
+					$unassigned[$arr[0]][$data['calling_nr']] = ['count' => 0, 'price' => 0];
+
+				$unassigned[$arr[0]][$data['calling_nr']]['count'] += 1;
+				$unassigned[$arr[0]][$data['calling_nr']]['price'] += $data['price'];
+			}
 		}
 
-		// Stop execution here if critical errors have been occured
-		if ($stop)
-			throw new \Exception("Stop execution after occured error(s) on parsing envia call data record file. See Logfile!");
+		$this->_log_unassigned_calls($unassigned);
 
-		if ($data && (count($customer_nrs_array) > 10 * count($data)))
-			Log::warning('billing', 'Very little data in enviatel call data record file. Possibly missing data!');
+		// warning when there are 5 times more customers then calls
+		if ($calls && (count($customer_nrs) > 10 * count($calls)))
+			Log::warning('billing', 'Very little data in enviatel call data record file ('.count($csv).' records). Possibly missing data!');
 
-		return $data;
+		return $calls;
 	}
 
 
@@ -708,21 +676,44 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 *
 	 * @return Array
 	 */
-	private static function _get_phonenumbers($registrar)
+	private static function _get_customer_nrs()
 	{
-		return $phonenumbers_db = \DB::table('phonenumber as p')
-			->join('mta', 'p.mta_id', '=', 'mta.id')
-			->join('modem', 'modem.id', '=', 'mta.modem_id')
-			->join('contract', 'contract.id', '=', 'modem.contract_id')
-			// ->where('p.deleted_at', '=', null)
-			->where(function ($query) use ($registrar) { $query
-				->where('sipdomain', '=', $registrar)
-				->orWhereNull('sipdomain')
-				->orWhere('sipdomain', '=', '');})
-			->select('modem.contract_id', 'contract.number', 'p.prefix_number', 'p.number as pnum', 'p.username', 'p.id')
-			->orderBy('modem.contract_id')
-			->get();
+		$customer_nrs = [];
+
+		$numbers = \DB::table('contract')->select(['id', 'number'])->whereNull('deleted_at')->get();
+
+		foreach ($numbers as $num) {
+			$customer_nrs[] = $num->id;
+			$customer_nrs[] = $num->number;
+		}
+
+		return $customer_nrs;
 	}
+
+	/**
+	 * Log all cumulated prices of calls from specific phonenumbers that could not be assigned to any contract
+	 *
+	 * @param Array 	 [customer_id][phonenr] => [count, price]
+	 */
+	private function _log_unassigned_calls($unassigned)
+	{
+		foreach ($unassigned as $customer_nr => $pns)
+		{
+			foreach ($pns as $p => $arr)
+			{
+				$price = \App::getLocale() == 'de' ? number_format($arr['price'], 2, ',', '.') : number_format($arr['price'], 2, '.', ',');
+
+				Log::warning('billing', trans('messages.cdr_discarded_calls', array(
+					'contractnr' => $customer_nr,
+					'count' => $arr['count'],
+					'phonenr' => $p,
+					'price' => $price,
+					'currency' => $this->conf->currency
+					)));
+			}
+		}
+	}
+
 
 	/**
 	 * Instantiates an Array of all necessary date formats needed during execution of this Command

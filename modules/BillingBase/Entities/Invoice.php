@@ -410,8 +410,12 @@ class Invoice extends \BaseModel{
 		$sum = $count = 0;
 		foreach ($cdrs as $entry)
 		{
-			$this->data['cdr_table_positions'] .= date('d.m.Y', strtotime($entry[1])).' '.$entry[2] .' & '. $entry[3] .' & '. $entry[0] .' & '. $entry[4] . ' & '.sprintf("%01.4f", $entry[5]).'\\\\';
-			$sum += $entry[5];
+			$line = date('d.m.Y', strtotime($entry['date'])).' '.$entry['starttime'] .' & '. $entry['duration'];
+			$line .= ' & '. $entry['calling_nr'] .' & '. $entry['called_nr'];
+			$line .= ' & '.sprintf("%01.4f", $entry['price']).'\\\\';
+
+			$this->data['cdr_table_positions'] .= $line;
+			$sum += $entry['price'];
 			$count++;
 		}
 
