@@ -73,8 +73,10 @@ class cdrCommand extends Command {
 				echo "Error: Failed to load $provider CDR\n";
 		}
 
-		if ($missing)
-			throw new Exception('Missing Reseller Data in Environment File!');
+		if ($missing) {
+			\ChannelLog::error('billing', trans('messages.cdr_missing_reseller_data'));
+			throw new Exception(trans('messages.cdr_missing_reseller_data'));
+		}
 
 		// chown in case command was called from commandline as root
 		system('chown -R apache '.storage_path('app/data/billingbase/'));
@@ -236,7 +238,7 @@ class cdrCommand extends Command {
 		}
 
 		if (!isset($remote_fname)) {
-			\ChannelLog::error('billing', 'No CDR File on ftp Server that matches naming conventions', [__FUNCTION__]);
+			\ChannelLog::error('billing', 'No CDR file on ftp server that matches naming conventions', [__FUNCTION__]);
 			return -1;
 		}
 
@@ -251,7 +253,7 @@ class cdrCommand extends Command {
 			echo "New file: $target_filepath\n";
 		}
 		else {
-			\ChannelLog::error('billing', 'Could not Retrieve CDR File from ftp Server', [__FUNCTION__]);
+			\ChannelLog::error('billing', 'Could not retrieve CDR file from ftp server', [__FUNCTION__]);
 			return -1;
 		}
 

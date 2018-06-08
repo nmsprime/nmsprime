@@ -82,7 +82,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		}
 
 		// init product types of salesmen and invoice nr counters for each sepa account, date of last run
-		$this->_init($sepa_accs, $salesmen, $conf);
+		$this->_init($sepa_accs, $salesmen);
 
 		// get call data records as ordered structure (array)
 		$cdrs = $this->_get_cdr_data();
@@ -116,16 +116,15 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				continue;
 			}
 
-			if (!$c->costcenter) {
-				Log::error('billing', "Contract $c->number [$c->id] has no CostCenter assigned - Stop execution");
-				throw new \Exception("Contract $c->number [$c->id] has no CostCenter assigned", 1);
+			// Skip invalid contracts
+			if (!$c->check_validity('yearly') && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
+				Log::debug('billing', "Contract $c->number [$c->id] is invalid for current year");
 				continue;
 			}
 
-			// Skip invalid contracts
-			if (!$c->check_validity('yearly') && !(isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
-				Log::info('billing', "Contract $c->number [$c->id] is invalid for current year");
-				continue;
+			if (!$c->costcenter) {
+				Log::error('billing', "Contract $c->number [$c->id] has no CostCenter assigned - Stop execution");
+				throw new \Exception("Contract $c->number [$c->id] has no CostCenter assigned", 1);
 			}
 
 
@@ -138,12 +137,11 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				if (!isset($item->product)) {
 					Log::error('billing', "Product of $item->accounting_text was deleted", [$c->id]);
 					throw new \Exception("Product of $item->accounting_text was deleted");
-					continue;
 				}
 
 				// skip if price is 0 (or item dates are invalid)
 				if (!($ret = $item->calculate_price_and_span($this->dates))) {
-					Log::info('billing', 'Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
+					Log::debug('billing', 'Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
 					continue;
 				}
 
@@ -160,7 +158,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 				// increase charge for account by price, calculate tax
 				$c->charge[$acc->id]['net'] += $item->charge;
-				$c->charge[$acc->id]['tax'] += $item->product->tax ? $item->charge * $conf->tax/100 : 0;
+				$c->charge[$acc->id]['tax'] += $item->product->tax ? $item->charge * $this->conf->tax/100 : 0;
 
 				$item->charge = round($item->charge, 2);
 
@@ -170,7 +168,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 				// add item to accounting records of account, invoice and salesman
 				$acc->add_accounting_record($item);
-				$acc->add_invoice_item($item, $conf, $this->sr->id);
+				$acc->add_invoice_item($item, $this->conf, $this->sr->id);
 				if ($c->salesman_id)
 					$salesmen->find($c->salesman_id)->add_item($item);
 
@@ -207,7 +205,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				}
 
 				$c->charge[$acc->id]['net'] += $charge;
-				$c->charge[$acc->id]['tax'] += $charge * $conf->tax/100;
+				$c->charge[$acc->id]['tax'] += $charge * $this->conf->tax/100;
 
 				// accounting record
 				$rec = new AccountingRecord;
@@ -215,7 +213,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$acc->add_cdr_accounting_record($c, $charge, $calls);
 
 				// invoice
-				$acc->add_invoice_cdr($c, $cdrs[$id], $conf, $this->sr->id);
+				$acc->add_invoice_cdr($c, $cdrs[$id], $this->conf, $this->sr->id);
 			}
 
 			/*
@@ -235,7 +233,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$mandate_specific = $c->get_valid_mandate('now', $acc->id);
 				$mandate = $mandate_specific ? : $mandate_global;
 
-				$acc->add_booking_record($c, $mandate, $value, $conf);
+				$acc->add_booking_record($c, $mandate, $value, $this->conf);
 				$acc->set_invoice_data($c, $mandate, $value);
 
 				// create invoice pdf already - this task is the most timeconsuming and therefore threaded!
@@ -244,7 +242,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 				// skip sepa part if contract has no valid mandate
 				if (!$mandate) {
-					Log::info('billing', "Contract $c->number [$c->id] has no valid sepa mandate for SepaAccount $acc->name [$acc->id]");
+					Log::debug('billing', "Contract $c->number [$c->id] has no valid sepa mandate for SepaAccount $acc->name [$acc->id]");
 					continue;
 				}
 
@@ -299,10 +297,12 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 * Set Language for Billing
 	 * Remove already created Invoice Database Entries
 	 */
-	private function _init($sepa_accs, $salesmen, $conf)
+	private function _init($sepa_accs, $salesmen)
 	{
+		$this->conf = BillingBase::first();
+
 		// set language for this run
-		\App::setLocale($conf->userlang);
+		\App::setLocale($this->conf->userlang);
 
 		// create directory structure and remove old invoices
 		if (is_dir(self::get_absolute_accounting_dir_path()))
@@ -327,7 +327,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		foreach ($sepa_accs as $acc)
 		{
 			$acc->dir = self::get_relative_accounting_dir_path();
-			$acc->rcd = $conf->rcd ? date('Y-m-'.$conf->rcd) : date('Y-m-d', strtotime('+1 day'));
+			$acc->rcd = $this->conf->rcd ? date('Y-m-'.$this->conf->rcd) : date('Y-m-d', strtotime('+1 day'));
 		}
 
 		// actual invoice nr counters
