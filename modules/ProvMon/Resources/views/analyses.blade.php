@@ -147,7 +147,7 @@
 
 @stop
 
-@if (\Module::collections()->has('HfcCustomer'))
+@if (Module::collections()->has('HfcCustomer'))
 	@section('content_proximity_search')
 
 		{{ Form::open(array('route' => 'CustomerTopo.show_prox', 'method' => 'GET')) }}
