@@ -150,12 +150,12 @@
 @if (Module::collections()->has('HfcCustomer'))
 	@section('content_proximity_search')
 
-		{{ Form::open(array('route' => 'CustomerTopo.show_prox', 'method' => 'GET')) }}
-		{{ Form::label('radius', 'Radius / m', ['class' => 'col-md-2 control-label']) }}
-		{{ Form::hidden('id', $modem->id); }}
-		{{ Form::number('radius', '1000') }}
+		{!! Form::open(array('route' => 'CustomerTopo.show_prox', 'method' => 'GET')) !!}
+		{!! Form::label('radius', 'Radius / m', ['class' => 'col-md-2 control-label']) !!}
+		{!! Form::hidden('id', $modem->id) !!}
+		{!! Form::number('radius', '1000') !!}
 		<input type="submit" value="Search...">
-		{{ Form::close() }}
+		{!! Form::close() !!}
 
 	@stop
 @endif
