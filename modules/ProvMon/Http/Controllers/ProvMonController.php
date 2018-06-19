@@ -285,9 +285,9 @@ class ProvMonController extends \BaseController {
 				$ip = $ip[0][0];
 				exec ('sudo ping -c3 -i0 -w1 '.$ip, $ping);
 
-				$fqdn = exec("dig -x $ip +short");
-				if ($fqdn)
-					$dash = "Hostname: $fqdn";
+				exec("dig -x $ip +short", $fqdns);
+				foreach ($fqdns as $fqdn)
+					$dash .= "Hostname: $fqdn<br>";
 			}
 		}
 		if (is_array($ping) && count(array_keys($ping)) <= 7)
