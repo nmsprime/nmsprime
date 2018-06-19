@@ -41,7 +41,7 @@ class Ticket extends \BaseModel {
 				$this->table . '.created_at',
 				'assigned_users',
 			],
-			'header' => $this->id . ' - ' . $this->name,
+			'header' => "$this->id - $this->name ($this->created_at)",
 			'bsclass' => $bsclass,
 			'order_by' => ['0' => 'desc'],
 			'eager_loading' => ['tickettypes'],
