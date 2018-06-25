@@ -135,6 +135,7 @@ class SettlementRunController extends \BaseController {
 
 				if ($state == '{"message":"Finished","value":100}') {
 					$success = true;
+					\Storage::delete('tmp/accCmdStatus');
 					goto reload;
 				}
 
