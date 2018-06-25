@@ -331,8 +331,12 @@ class SepaAccount extends \BaseModel {
 
 		$info = $this->invoice_headline.' - ';
 		$info .= $this->invoice_headline == 'Kostenumlage' ? date('Y'). ' (abzüglich Verstärker)' : trans('messages.month').' '.date('m/Y', strtotime('first day of last month'));
-		$info .= ' - '.$mandate->contract->lastname.', '.$mandate->contract->lastname.', '.$mandate->contract->firstname;
+		$info .= ' - '.$mandate->contract->lastname.', '.$mandate->contract->firstname;
 		$info .= ' - '.$this->company->name;
+
+		// max length of SFirm
+		if (strlen($info) > 140)
+			$info = substr($info, 0, 140);
 
 		// Credits
 		if ($charge < 0)

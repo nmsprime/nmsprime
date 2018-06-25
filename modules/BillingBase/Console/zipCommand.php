@@ -84,6 +84,7 @@ class zipCommand extends Command {
 			->orderBy('c.number', 'desc')->orderBy('invoice.type')
 			->get()->all();
 
+		$files = [];
 		foreach ($invoices as $inv)
 			$files[] = $inv->get_invoice_dir_path().$inv->filename;
 
