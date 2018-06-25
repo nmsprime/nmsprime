@@ -626,23 +626,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		$cdr_first_day_of_month = date('Y-m-01', strtotime('first day of -'.(1+$this->conf->cdr_offset).' month'));
 
 		// get phonenumbers because only username is given in CDR.csv
-		$phonenumbers_db = \DB::table('phonenumber as p')
-			->join('mta', 'p.mta_id', '=', 'mta.id')
-			// \Modules\ProvVoip\Entities\Phonenumber::join('mta', 'phonenumber.mta_id', '=', 'mta.id')
-			->join('modem', 'modem.id', '=', 'mta.modem_id')
-			->join('contract as c', 'c.id', '=', 'modem.contract_id')
-			->where(function ($query) use ($registrar) { $query
-				->where('sipdomain', '=', $registrar)
-				->orWhereNull('sipdomain')
-				->orWhere('sipdomain', '=', '');})
-			->select('modem.contract_id', 'c.number as contractnr', 'c.create_invoice', 'p.*')
-			// ->withTrashed()
-			->where(function ($query) use ($cdr_first_day_of_month) { $query
-				->whereNull('p.deleted_at')
-				->orWhere('p.deleted_at', '>=', $cdr_first_day_of_month);
-				})
-			->orderBy('p.deleted_at', 'asc')->orderBy('created_at', 'desc')
-			->get();
+		$phonenumbers_db = $this->_get_phonenumbers($registrar);
 
 		foreach ($phonenumbers_db as $p)
 			$phonenumbers[$p->username] = $p->prefix_number.$p->number;
