@@ -247,7 +247,7 @@ class Invoice extends \BaseModel{
 			$ret = $contract->get_next_cancel_date();
 
 		// e.g. customers that get tv amplifier refund, but dont have any tariff
-		if (!isset($ret['tariff'])) {
+		if (!array_key_exists('tariff', $ret)) {
 			ChannelLog::debug('billing', "Customer has no tariff - dont set cancelation dates.", [$this->data['contract_id']]);
 			return;
 		}
