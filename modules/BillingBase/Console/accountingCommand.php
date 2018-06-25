@@ -536,17 +536,15 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		unset($csv[0], $csv[1], $csv[2], $csv[3], $csv[4]);
 
 		$config = BillingBase::first();
+		$unassigned = [];
 
 		// get phonenr to contract_id listing - needed because only phonenr is mentioned in csv
-		// select m.contract_id, a.username from phonenumber a, mta b, modem m where a.mta_id=b.id AND b.modem_id=m.id order by m.contract_id;
-		$phonenumbers_o = \DB::table('phonenumber')
-			->join('mta', 'phonenumber.mta_id', '=', 'mta.id')
-			->join('modem', 'modem.id', '=', 'mta.modem_id')
-			// ->where('phonenumber.deleted_at', '=', null)
-			->select('modem.contract_id', 'phonenumber.username')
-			->orderBy('modem.contract_id')->get();
+		// BUG: Actually when a phonenumber is deleted on date 1.5. and then the same number is assigned to another contract, all
+		// records of 1.4.-30.4. would be assigned to the new contract that actually hasn't done any call yet
+		// As precaution we warn the user when he changes or creates a phonenumber so that this bug would be affected
+		$phonenumbers_db = $this->_get_phonenumbers('sip.hlkomm.net');
 
-        foreach ($phonenumbers_o as $value)
+        foreach ($phonenumbers_db as $value)
         {
         	if ($value->username)
         	{
@@ -562,22 +560,38 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			$phonenr1 = $line[4].$line[5].$line[6];			// calling nr
 			$phonenr2 = $line[7].$line[8].$line[9];			// called nr
 
-			$a = array($phonenr1, $line[0], $line[1], $line[10], $phonenr2, str_replace(',', '.', $line[13]));
+			$data = array(
+				'calling_nr' => $phonenr1,
+				'date' 		=> $line[0],
+				'starttime' => $line[1],
+				'duration' 	=> $line[10],
+				'called_nr' => $phonenr2,
+				'price' 	=> str_replace(',', '.', $line[13])
+				);
 
 			// calculate price with hlkomms distance zone
 			// $a[5] = strpos($line[3], 'Mobilfunk national') !== false ? $a[5] * ($config->voip_extracharge_mobile_national / 100 + 1) : $a[5] * ($config->voip_extracharge_default / 100 + 1);
-			$a[5] = $line[15] == '990711' ? $a[5] * ($config->voip_extracharge_mobile_national / 100 + 1) : $a[5] * ($config->voip_extracharge_default / 100 + 1);
+			$data['price'] = $line[15] == '990711' ? $data['price'] * ($config->voip_extracharge_mobile_national / 100 + 1) : $data['price'] * ($config->voip_extracharge_default / 100 + 1);
 
 			if (isset($phonenrs[$phonenr1]))
-				$data[$phonenrs[$phonenr1]][] = $a;
+				$calls[$phonenrs[$phonenr1]][] = $data;
 			else if (isset($phonenrs[$phonenr2]))
 				// our phonenr is the called nr - TODO: proof if this case can actually happen - normally this shouldnt be the case
-				$data[$phonenrs[$phonenr2]][] = $a;
+				$calls[$phonenrs[$phonenr2]][] = $data;
 			else {
 				// there is a phonenr entry in csv that doesnt exist in our db - this case should never happen
-				Log::error('billing', "Parse CDR.csv: Call Data Record with Phonenr [$phonenr1] that doesnt exist in the Database - Phonenr deleted?");
+				if (!isset($unassigned[$phonenr1]))
+					$unassigned[$phonenr1] = ['count' => 0, 'price' => 0];
+
+				$unassigned[$phonenr1]['count'] += 1;
+				$unassigned[$phonenr1]['price'] += $data['price'];
 			}
 
+		}
+
+		foreach ($unassigned as $pn => $arr) {
+			$price = \App::getLocale() == 'de' ? number_format($arr['price'], 2, ',', '.') : number_format($arr['price'], 2, '.', ',');
+			Log::error('billing', trans('messages.cdr_missing_phonenr', ['phonenr' => $pn, 'count' => $arr['count'], 'price' => $price, 'currency' => $this->conf->currency]));
 		}
 
 		return $calls;
@@ -707,6 +721,29 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		return $customer_nrs;
 	}
+
+
+	private function _get_phonenumbers($registrar)
+	{
+		$cdr_first_day_of_month = date('Y-m-01', strtotime('first day of -'.(1+$this->conf->cdr_offset).' month'));
+
+		return \DB::table('phonenumber as p')
+			->join('mta', 'p.mta_id', '=', 'mta.id')
+			->join('modem', 'modem.id', '=', 'mta.modem_id')
+			->join('contract as c', 'c.id', '=', 'modem.contract_id')
+			->where(function ($query) use ($registrar) { $query
+				->where('sipdomain', 'like', "%$registrar%")
+				->orWhereNull('sipdomain')
+				->orWhere('sipdomain', '=', '');})
+			->where(function ($query) use ($cdr_first_day_of_month) { $query
+				->whereNull('p.deleted_at')
+				->orWhere('p.deleted_at', '>=', $cdr_first_day_of_month);
+				})
+			->select('modem.contract_id', 'c.number as contractnr', 'c.create_invoice', 'p.*')
+			->orderBy('p.deleted_at', 'asc')->orderBy('p.created_at', 'desc')
+			->get();
+	}
+
 
 	/**
 	 * Log all cumulated prices of calls from specific phonenumbers that could not be assigned to any contract
