@@ -64,13 +64,11 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			exit(0);
 		}
 
-
 		Log::debug('billing', ' #####    Start Accounting Command   #####');
 
 		// Fetch all Data from Database
 		echo "Get all Data from Database...\n";
 		self::push_state(0, 'Load Data...');
-		$conf 		= BillingBase::first();
 		$sepa_accs  = SepaAccount::all();
 
 		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter', 'sepamandates')->get();		// eager loading for better performance
@@ -687,11 +685,6 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	}
 
 
-	/**
-	 * Get list of all phonenumbers of all contracts belonging to a specific registrar
-	 *
-	 * @return Array
-	 */
 	private static function _get_customer_nrs()
 	{
 		$customer_nrs = [];
@@ -707,6 +700,11 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	}
 
 
+	/**
+	 * Get list of all phonenumbers of all contracts belonging to a specific registrar
+	 *
+	 * @return Array
+	 */
 	private function _get_phonenumbers($registrar)
 	{
 		$cdr_first_day_of_month = date('Y-m-01', strtotime('first day of -'.(1+$this->conf->cdr_offset).' month'));
