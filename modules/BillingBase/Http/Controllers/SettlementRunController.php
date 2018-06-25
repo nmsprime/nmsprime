@@ -135,6 +135,7 @@ class SettlementRunController extends \BaseController {
 
 				if ($state == '{"message":"Finished","value":100}') {
 					$success = true;
+					\Storage::delete('tmp/accCmdStatus');
 					goto reload;
 				}
 
@@ -173,6 +174,8 @@ reload:
 		});
 
 		$response->headers->set('Content-Type', 'text/event-stream');
+
+		\Storage::delete('tmp/accCmdStatus');
 
 		return $response;
 	}
