@@ -2,19 +2,57 @@
 
 BaseRoute::group([], function() {
 
-	BaseRoute::get('Customer/{field}/{search}', array('as' => 'CustomerTopo.show', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show'));
-	BaseRoute::get('Customer/prox', array('as' => 'CustomerTopo.show_prox', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_prox'));
-	BaseRoute::get('Customer/bad', array('as' => 'CustomerTopo.show_bad', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_bad'));
-	BaseRoute::get('CustomerRect/{x1}/{x2}/{y1}/{y2}', array('as' => 'CustomerRect.show', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_rect'));
-	BaseRoute::get('CustomerPoly/{poly}', array('as' => 'CustomerPoly.show', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_poly'));
-	BaseRoute::get('CustomerModem/{topo_dia}/{ids}', array('as' => 'CustomerModem.show', 'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_modem_ids'));
-
 	BaseRoute::resource('Mpr', 'Modules\HfcCustomer\Http\Controllers\MprController');
-	BaseRoute::get('Mpr/{id}/update_geopos/{new_gp}', array('as' => 'Mpr.update_geopos', 'uses' => 'Modules\HfcCustomer\Http\Controllers\MprController@update_geopos'));
 	BaseRoute::resource('MprGeopos', 'Modules\HfcCustomer\Http\Controllers\MprGeoposController');
 
+	BaseRoute::get('Customer/{field}/{search}', [
+		'as' => 'CustomerTopo.show',
+		'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show',
+		'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
+	]);
+
+	BaseRoute::get('Customer/prox', [
+		'as' => 'CustomerTopo.show_prox',
+		'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_prox',
+		'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
+	]);
+
+	BaseRoute::get('Customer/bad', [
+		'as' => 'CustomerTopo.show_bad',
+		'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_bad',
+		'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
+	]);
+
+	BaseRoute::get('CustomerRect/{x1}/{x2}/{y1}/{y2}', [
+		'as' => 'CustomerRect.show',
+		'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_rect',
+		'middleware' => ['can:view,Modules\HfcCustomer\Entities\MprGeopos'],
+	]);
+
+	BaseRoute::get('CustomerPoly/{poly}', [
+		'as' => 'CustomerPoly.show',
+		'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_poly',
+		'middleware' => ['can:view,Modules\HfcCustomer\Entities\MprGeopos'],
+	]);
+
+	BaseRoute::get('CustomerModem/{topo_dia}/{ids}', [
+		'as' => 'CustomerModem.show',
+		'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_modem_ids',
+		'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
+	]);
+
+	BaseRoute::get('Mpr/{id}/update_geopos/{new_gp}', [
+		'as' => 'Mpr.update_geopos',
+		'uses' => 'Modules\HfcCustomer\Http\Controllers\MprController@update_geopos',
+		'middleware' => ['can:update,Modules\HfcCustomer\Entities\MprGeopos'],
+	]);
 });
 
-Route::group(['middleware' => 'auth:view', 'prefix' => 'app/data/hfccustomer'], function () {
-	Route::get('{type}/{filename}', array('uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@get_file'));
+Route::group(['prefix' => 'app/data/hfccustomer'], function () {
+
+	Route::get('{type}/{filename}', [
+		'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@get_file',
+		'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
+	]);
+
 });
