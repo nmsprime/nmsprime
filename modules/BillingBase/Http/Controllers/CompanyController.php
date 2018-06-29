@@ -7,6 +7,10 @@ use Modules\BillingBase\Entities\Company;
 
 class CompanyController extends \BaseController {
 
+	protected $file_upload_paths = [
+		'logo' => 'app/config/billingbase/logo/',
+		'conn_info_template_fn' = 'app/config/ccc/template/',
+	];
 
 	/**
 	 * defines the formular fields for the edit and create view
@@ -49,7 +53,7 @@ class CompanyController extends \BaseController {
 			$files = self::get_storage_file_list('ccc/template/');
 
 			$b = array(
-				array('form_type' => 'select', 'name' => 'conn_info_template_fn', 'description' => 'Connection Info Template', 'value' => $files, 'help' => 'Tex Template used to Create Connection Information on the Contract Page for a Customer'),
+				array('form_type' => 'select', 'name' => 'conn_info_template_fn', 'description' => 'Connection Info Template', 'value' => $files, 'help' => trans('helper.conn_info_template')),
 				array('form_type' => 'file', 'name' => 'conn_info_template_fn_upload', 'description' => 'Upload Template'),
 				);
 
@@ -58,43 +62,5 @@ class CompanyController extends \BaseController {
 		return array_merge($a, $b);
 
 	}
-
-	/**
-	 * Overwrites the base methods to handle file uploads
-	 */
-	public function store($redirect = true)
-	{
-		// check and handle uploaded firmware files
-		$this->handle_file_upload('logo', storage_path('app/config/billingbase/logo/'));
-
-		if (\Module::collections()->has('Ccc'))
-			$this->handle_file_upload('conn_info_template_fn', storage_path('app/config/ccc/template/'));
-
-		// finally: call base method
-		return parent::store();
-	}
-
-	public function update($id)
-	{
-		$this->handle_file_upload('logo', storage_path('app/config/billingbase/logo/'));
-
-		if (\Module::collections()->has('Ccc'))
-			$this->handle_file_upload('conn_info_template_fn', storage_path('app/config/ccc/template/'));
-
-		return parent::update($id);
-	}
-
-	// Also overwritten because we don't want a field to be updated, just upload a file
-	// protected function handle_file_upload($field, $dst_path)
-	// {
-	// 	if (Input::hasFile($field))
-	// 	{
-	// 		// get filename
-	// 		$filename = Input::file($field)->getClientOriginalName();
-
-	// 		// move file
-	// 		Input::file($field)->move($dst_path, $filename);
-	// 	}
-	// }
 
 }

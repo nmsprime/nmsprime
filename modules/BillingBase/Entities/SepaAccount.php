@@ -31,7 +31,9 @@ class SepaAccount extends \BaseModel {
 			'creditorid' => 'required|max:35|creditor_id',
 			'iban' 		=> 'required|iban',
 			'bic' 		=> 'bic',
-		);
+			'template_invoice_upload' => 'mimetypes:text/x-tex,application/x-tex',
+			'template_cdr_upload'     => 'mimetypes:text/x-tex,application/x-tex',
+			);
 	}
 
 
