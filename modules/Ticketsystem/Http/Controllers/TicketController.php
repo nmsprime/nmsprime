@@ -7,7 +7,16 @@ use Modules\Ticketsystem\Entities\{Ticket, TicketType};
 
 class TicketController extends \BaseController {
 
-	protected $many_to_many = ['users_ids', 'tickettypes_ids'];
+	protected $many_to_many = [
+		[
+			'field' => 'users_ids',
+			'classes' => [Ticket::class, User::class]
+		],
+		[
+			'field' => 'tickettypes_ids',
+			'classes' => [Ticket::class, TicketType::class]
+		],
+	];
 
 	public function view_form_fields($model = null)
 	{
