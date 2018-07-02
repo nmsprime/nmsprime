@@ -160,12 +160,13 @@ class cdrCommand extends Command {
 	{
 		$user 	  = env('PROVVOIPENVIA__RESELLER_USERNAME');
 		$password = env('PROVVOIPENVIA__RESELLER_PASSWORD');
+		$customer = env('PROVVOIPENVIA__RESELLER_CUSTOMER');
 
 		try {
-			\ChannelLog::debug('billing', "GET: https://$user:$password@portal.enviatel.de/vertrieb2/reseller/evn/K8000002961/".date('Y/m', $this->time_of_file));
-			$data = file_get_contents("https://$user:$password@portal.enviatel.de/vertrieb2/reseller/evn/K8000002961/".date('Y/m', $this->time_of_file));
+			\ChannelLog::debug('billing', "GET: https://$user:$password@portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $this->time_of_file));
+			$data = file_get_contents("https://$user:$password@portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $this->time_of_file));
 		} catch (\Exception $e) {
-			\ChannelLog::alert('billing', 'CDR-Import: Could not get Call Data Records from envia TEL for month: '.date('m', $this->time_of_file), ["portal.enviatel.de/vertrieb2/reseller/evn/K8000002961/".date('Y/m', $this->time_of_file)]);
+			\ChannelLog::alert('billing', 'CDR-Import: Could not get Call Data Records from envia TEL for month: '.date('m', $this->time_of_file), ["portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $this->time_of_file)]);
 			return -1;
 		}
 
