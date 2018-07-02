@@ -9,7 +9,7 @@ class CompanyController extends \BaseController {
 
 	protected $file_upload_paths = [
 		'logo' => 'app/config/billingbase/logo/',
-		'conn_info_template_fn' = 'app/config/ccc/template/',
+		'conn_info_template_fn' => 'app/config/ccc/template/',
 	];
 
 	/**
@@ -54,7 +54,7 @@ class CompanyController extends \BaseController {
 
 			$b = array(
 				array('form_type' => 'select', 'name' => 'conn_info_template_fn', 'description' => 'Connection Info Template', 'value' => $files, 'help' => trans('helper.conn_info_template')),
-				array('form_type' => 'file', 'name' => 'conn_info_template_fn_upload', 'description' => 'Upload Template'),
+				array('form_type' => 'file', 'name' => 'conn_info_template_fn_upload', 'description' => 'Upload Template', 'help' => trans('helper.tex_template')),
 				);
 
 		}
