@@ -58,13 +58,13 @@ su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules
 # add cacti to group apache, so it is able to read the .env file
 gpasswd -a cacti apache
 
-php /var/www/nmsprime/artisan view:clear
+/opt/rh/rh-php71/root/usr/bin/php /var/www/nmsprime/artisan view:clear
 
 # we call ProvMonController from cacti and thus need to be able to write to the following folder
 chmod o+w /var/www/nmsprime/storage/framework/views
 
 # create graphs for all existing modems
-php /var/www/nmsprime/artisan nms:cacti
+/opt/rh/rh-php71/root/usr/bin/php /var/www/nmsprime/artisan nms:cacti
 
 # make .env files readable for apache
 # TODO/REVIEW: shouln't this be in module_after_install.sh to be executed for every module?
