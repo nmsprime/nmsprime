@@ -39,6 +39,9 @@ class ModemHelper extends \BaseModel {
 
 	public static function _ms_state ($onl, $all, $avg)
 	{
+		if (!$all)
+			return 'OK';
+
 		if ($onl / $all * 100 < self::$avg_critical_percentage || $avg > self::$avg_critical_us)
 			return 'CRITICAL';
 		if ($onl / $all * 100 < self::$avg_warning_percentage || $avg > self::$avg_warning_us)
