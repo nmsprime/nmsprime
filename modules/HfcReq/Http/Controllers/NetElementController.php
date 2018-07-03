@@ -2,8 +2,7 @@
 
 namespace Modules\HfcReq\Http\Controllers;
 
-use Modules\HfcReq\Entities\NetElement;
-use Modules\HfcReq\Entities\NetElementType;
+use Modules\HfcReq\Entities\{ NetElement, NetElementType};
 use Modules\HfcBase\Http\Controllers\HfcBaseController;
 use Modules\HfcSnmp\Http\Controllers\SnmpController;
 
@@ -16,8 +15,11 @@ class NetElementController extends HfcBaseController {
 	{
 		$model = $model ? : new NetElement;
 
-		$empty_field = isset($model->id);
-		$parents 	 = $model->html_list(NetElement::get(['id','name']), 'name', $empty_field);
+		$empty_field = $model->exists;
+		$netelems = NetElement::join('netelementtype as nt', 'nt.id', '=', 'netelementtype_id')
+			->select(['netelement.id as id','netelement.name as name', 'nt.name as ntname'])
+			->get();
+		$parents 	 = $model->html_list($netelems, ['ntname', 'name'], true, ': ');
 		$kml_files   = $model->kml_files();
 
 		// parse which netelementtype we want to edit/create
@@ -45,6 +47,7 @@ class NetElementController extends HfcBaseController {
 
 		/*
 		 * cluster: rf card settings
+		 * Options array is hidden when not used
 		 */
 		$options_array = array('form_type' => 'text', 'name' => 'options', 'description' => 'Options');
 		if ($model->netelementtype && $model->netelementtype->get_base_type() == 2)

@@ -2,8 +2,7 @@
 
 namespace Modules\ProvVoipEnvia\Entities;
 
-use Modules\ProvBase\Entities\Contract;
-use Modules\ProvBase\Entities\Modem;
+use Modules\ProvBase\Entities\{Contract, Modem};
 use Modules\ProvVoip\Entities\Phonenumber;
 use Modules\ProvVoipEnvia\Entities\ProvVoipEnviaHelpers;
 
@@ -112,6 +111,20 @@ class EnviaOrder extends \BaseModel {
 				'final' => True,
 			),
 			array(
+				'orderstatus_id' => 1002,
+				'orderstatus' => 'keine Teilnehmeranschlussleitung möglich / Auftrag nicht realisierbar',
+				'view_class' => 'danger',
+				'state_type' => 'failed',
+				'final' => True,
+			),
+			array(
+				'orderstatus_id' => 1003,
+				'orderstatus' => 'Teilnehmeranschlussleitung bestätigt/Warte auf Anschaltung',
+				'view_class' => 'info',
+				'state_type' => 'pending',
+				'final' => False,
+			),
+			array(
 				'orderstatus_id' => 1009,
 				'orderstatus' => 'Warte auf Portierungserklärung',
 				'view_class' => 'warning',
@@ -183,6 +196,27 @@ class EnviaOrder extends \BaseModel {
 				'final' => False,
 			),
 			array(
+				'orderstatus_id' => 1020,
+				'orderstatus' => 'In Kündigung',
+				'view_class' => 'warning',
+				'state_type' => 'pending',
+				'final' => False,
+			),
+			array(
+				'orderstatus_id' => 1028,
+				'orderstatus' => 'Produkt am neuen Standort nicht verfügbar',
+				'view_class' => 'warning',
+				'state_type' => 'failed',
+				'final' => True,
+			),
+			array(
+				'orderstatus_id' => 1030,
+				'orderstatus' => 'Warte auf Rückmeldung Lieferant',
+				'view_class' => 'warning',
+				'state_type' => 'pending',
+				'final' => False,
+			),
+			array(
 				'orderstatus_id' => 1036,
 				'orderstatus' => 'Eskalationsstufe 1 - Warte auf Portierungsbestätigung',
 				'view_class' => 'danger',
@@ -208,6 +242,20 @@ class EnviaOrder extends \BaseModel {
 				'orderstatus_id' => 1039,
 				'orderstatus' => 'Warte auf Zieltermin kleiner gleich 180 Kalendertage',
 				'view_class' => 'warning',
+				'state_type' => 'pending',
+				'final' => False,
+			),
+			array(
+				'orderstatus_id' => 1040,
+				'orderstatus' => 'Warte auf KVz Fertigstellung',
+				'view_class' => 'warning',
+				'state_type' => 'pending',
+				'final' => False,
+			),
+			array(
+				'orderstatus_id' => 1041,
+				'orderstatus' => 'Negativmeldung Telekom erhalten',
+				'view_class' => 'danger',
 				'state_type' => 'pending',
 				'final' => False,
 			),
@@ -237,7 +285,7 @@ class EnviaOrder extends \BaseModel {
 			// Prevent users from creating orders (table enviaorder is only changable through envia TEL API!)
 			// TODO: later remove delete button
 			'orderid' => 'required|integer|min:1',
-			'related_order_id' => 'exists:enviaorder,id',
+			'related_order_id' => 'exists:enviaorder,id,deleted_at,NULL',
 		);
 
 	}
@@ -574,7 +622,7 @@ class EnviaOrder extends \BaseModel {
         return ['table' => $this->table,
                 'index_header' => [$this->table.'.ordertype', $this->table.'.orderstatus', 'escalation_level', 'contract.number', 'modem.id', 'phonenumber.number', 'enviacontract.envia_contract_reference',  $this->table.'.created_at', $this->table.'.updated_at', $this->table.'.orderdate', 'enviaorder_current'],
 				'bsclass' => $bsclass,
-				'sortsearch' => ['phonenumber.number'],
+				'disable_sortsearch' => ['phonenumber.number'],
 				'eager_loading' => ['modem', 'contract', 'enviacontract', 'phonenumbers' ],
 				'edit' => ['ordertype' => 'get_ordertype', 'orderstatus'  => 'get_orderstatus', 'modem.id' => 'get_modem_id', 'contract.number' => 'get_contract_nr', 'enviacontract.envia_contract_reference' => 'get_enviacontract_ref', 'enviaorder_current' => 'get_user_interaction_necessary', 'phonenumber.number' => 'get_phonenumbers', 'escalation_level' => 'get_escalation_level'],
 				'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
@@ -791,7 +839,7 @@ class EnviaOrder extends \BaseModel {
 	// returns all objects that are related to an envia TEL Order
 	public function view_has_many()
 	{
-		if (\PPModule::is_active('provvoipenvia')) {
+		if (\Module::collections()->has('ProvVoipEnvia')) {
 			$ret['envia TEL']['EnviaOrderDocument']['class'] = 'EnviaOrderDocument';
 			$ret['envia TEL']['EnviaOrderDocument']['relation'] = $this->enviaorderdocument;
 			$ret['envia TEL']['EnviaOrderDocument']['method'] = 'show';
@@ -839,13 +887,17 @@ class EnviaOrder extends \BaseModel {
 		$user_actions['hints'] = array();
 		$user_actions['links'] = array();
 
+		$contract = null;
+		$items = null;
+		$modem = null;
+		$phonenumbers = array();
 
 		if ($this->contract_id) {
 			$contract = Contract::withTrashed()->find($this->contract_id);
 			$user_actions['hints']['Contract (= envia TEL  Customer)'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
+			$items = $contract->items;
 		}
 
-		$items = $contract->items;
 		if ($items) {
 			$user_actions['hints']['Items (Internet and VoIP only)'] = ProvVoipEnviaHelpers::get_user_action_information_items($items);
 		};
@@ -855,7 +907,6 @@ class EnviaOrder extends \BaseModel {
 			$user_actions['hints']['Modem (can hold multiple envia TEL contracts)'] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
 		};
 
-		$phonenumbers = array();
 		if ($modem) {
 			$mtas = $modem->mtas;
 			if ($mtas) {

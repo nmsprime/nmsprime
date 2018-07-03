@@ -9,9 +9,6 @@ BaseRoute::group([], function() {
 	BaseRoute::get('Tree/erd/{field}/{search}', array('as' => 'TreeErd.show', 'uses' => 'Modules\HfcBase\Http\Controllers\TreeErdController@show'));
 	BaseRoute::get('Tree/topo/{field}/{search}', array('as' => 'TreeTopo.show', 'uses' => 'Modules\HfcBase\Http\Controllers\TreeTopographyController@show'));
 
-
-	BaseRoute::get('Tree/{id}/delete', array('as' => 'Tree.delete', 'uses' => 'Modules\HfcReq\Http\Controllers\NetElementController@delete'));
-
 });
 
 Route::group(['middleware' => 'auth:view', 'prefix' => 'app/data/hfcbase'], function () {

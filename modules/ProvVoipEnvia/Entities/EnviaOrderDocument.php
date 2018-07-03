@@ -2,7 +2,6 @@
 
 namespace Modules\ProvVoipEnvia\Entities;
 
-// Model not found? execute composer dump-autoload in nmsprime root dir
 class EnviaOrderDocument extends \BaseModel {
 
 	// The associated SQL table for this Model
@@ -35,7 +34,7 @@ class EnviaOrderDocument extends \BaseModel {
 		return array(
 			'document_type' => 'required',
 			'document_upload' => 'required|mimes:'.$mimestring.'|max:'.self::$allowed_max_upload_filesize,
-			'enviaorder_id' => 'required|exists:enviaorder,id',
+			'enviaorder_id' => 'required|exists:enviaorder,id,deleted_at,NULL',
 			'mime_type' => 'required',
 		);
 	}

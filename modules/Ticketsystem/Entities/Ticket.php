@@ -34,19 +34,22 @@ class Ticket extends \BaseModel {
 			'index_header' => [
 				$this->table . '.id',
 				$this->table . '.name',
-				$this->table . '.type',
+				'tickettypes.name',
 				$this->table . '.priority',
 				$this->table . '.state',
 				$this->table . '.user_id',
 				$this->table . '.created_at',
-				$this->table . '.assigned_users',
+				'assigned_users',
 			],
-			'header' => $this->id . ' - ' . $this->name,
+			'header' => "$this->id - $this->name ($this->created_at)",
 			'bsclass' => $bsclass,
 			'order_by' => ['0' => 'desc'],
+			'eager_loading' => ['tickettypes'],
 			'edit' => ['assigned_users' => 'get_assigned_users',
-				'type' => 'index_types',
+				'tickettypes.name' => 'index_types',
 				'user_id' => 'username'],
+			// 'filter' => ['tickettypes.name' => $this->tickettype_names_query()],
+			'disable_sortsearch' => ['tickettypes.name' => 'false', 'assigned_users' => 'false'],
 		];
 	}
 
@@ -85,6 +88,12 @@ class Ticket extends \BaseModel {
 	public function username()
 	{
 		return $this->user ? $this->user->first_name.' '.$this->user->last_name : '';
+	}
+
+	public function tickettype_names_query()
+	{
+		return "group_concat(tickettypes.names separator ', ') like ?";
+		// from ticket t, tickettype_ticket ttt, tickettype tt where t.id=ttt.ticket_id and ttt.tickettype_id=tt.id";
 	}
 
 

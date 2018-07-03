@@ -2,10 +2,9 @@
 
 namespace Modules\HfcBase\Http\Controllers;
 
+use Acme\php\ArrayHelper;
 use Modules\HfcCustomer\Entities\ModemHelper;
 use Modules\HfcReq\Entities\NetElement;
-
-use Acme\php\ArrayHelper;
 
 /*
  * Tree Erd (Entity Relation Diagram) Controller
@@ -184,22 +183,16 @@ class TreeErdController extends HfcBaseController {
 			if ($state == 'info')
 				$color = 'blue';
 
-			// why are elements with parent->id == 1 blue ?? - what is distinction made for?
-			if ($parent == NULL || $parent->id == 1)
-				$file .= "\n node [id = \"$id\" label = \"$id - $name\", shape = rectangle, style = filled, fillcolor=blue, color=darkgrey, URL=\"$url\", target=\"".$this->html_target."\"];";
+			if ($type == 'Net')
+				$file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=lightblue, color=black URL=\"$url\", target=\"".$this->html_target."\"];";
+			else if ($type == 'Cluster')
+				$file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=white, color=$color, URL=\"$url\", target=\"".$this->html_target."\"];";
+			else if ($type == 'C')
+				$file .= "\n node [id = \"$id\" label = \"CMTS\\n$name\", shape = hexagon, style = filled, fillcolor=grey, color=$color, URL=\"$url\", target=\"".$this->html_target."\"];";
+			else if ($type == 'DATA')
+				$file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=$color, color=darkgrey, URL=\"$url\", target=\"".$this->html_target."\"];";
 			else
-			{
-				if ($type == 'Net')
-					$file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=lightblue, color=black URL=\"$url\", target=\"".$this->html_target."\"];";
-				else if ($type == 'Cluster')
-					$file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=white, color=$color, URL=\"$url\", target=\"".$this->html_target."\"];";
-				else if ($type == 'C')
-					$file .= "\n node [id = \"$id\" label = \"CMTS\\n$name\", shape = hexagon, style = filled, fillcolor=grey, color=$color, URL=\"$url\", target=\"".$this->html_target."\"];";
-				else if ($type == 'DATA')
-					$file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=$color, color=darkgrey, URL=\"$url\", target=\"".$this->html_target."\"];";
-				else
-					$file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=$color, color=$color, URL=\"$url\", target=\"".$this->html_target."\"];";
-			}
+				$file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=$color, color=$color, URL=\"$url\", target=\"".$this->html_target."\"];";
 
 			$file .= " \"$id\"";
 
@@ -243,7 +236,7 @@ class TreeErdController extends HfcBaseController {
 		#
 		# TODO: Customer
 		#
-		if (\PPModule::is_active ('HfcCustomer'))
+		if (\Module::collections()->has('HfcCustomer'))
 		{
 		    $n = 0;
 			foreach ($netelements as $netelem)

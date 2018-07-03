@@ -9,6 +9,9 @@ return [
 	'ExportVisibleTable'			=> 'Exportiert den aktuell sichtbaren Bereich der Tabelle. Um alles zu exportieren bitte im Filter \"Alle\" auswählen. Das Laden kann einige Sekunden dauern.',
 	'ChangeVisibilityTable'			=> 'Mit dieser Option können Spaten ein-/ausgeblendet werden.',
 
+	// GlobalConfig
+	'ISO_3166_ALPHA-2'				=> 'ISO 3166 ALPHA-2 (zwei Zeichen, z.B. „DE“). Genutzt in Formularen mit Adressdaten um das Land anzugeben.',
+
  /**
   *	MODULE: BillingBase
   */
@@ -20,12 +23,14 @@ return [
 	'BillingBase_InvoiceNrStart' 	=> 'Rechnungsnummer startet jedes neue Jahr mit dieser Nummer.',
 	'BillingBase_ItemTermination'	=> 'Erlaubt es Kunden gebuchte Produkte nur bis zum letzten Tag des Monats zu kündigen.',
 	'BillingBase_MandateRef'		=> "Eine Vorlage kann mit SQL-Spalten des Auftrags oder mit der Mandat-Tabelle erstellt werden - mögliche Felder: \n",
+	'BillingBase_showAGs' 			=> 'Fügt eine Auswahlliste mit Ansprechpartnern von Antennengemeinschaften zur Vertragsseite hinzu. Die Liste muss als Textdatei im Storage hinterlegt werden. Siehe Quellcode!',
 	'BillingBase_SplitSEPA'			=> 'SEPA-Überweisungen sind in unterschiedliche XML-Dateien aufgeteilt, abhängig von ihrem Übertragungstyp.',
 
 	//CompanyController
 	'Company_Management'			=> 'Trennung der Namen durch Komma.',
 	'Company_Directorate'			=> 'Trennung der Namen durch Komma.',
 	'Company_TransferReason'		=> 'Vorlage aller Rechnungsklassen als Datenfeld-Schlüssel - Vertrags- und Rechnungsnummer sind standardmäßig ausgewählt.',
+	'conn_info_template' 			=> 'TeX Vorlage für das Anschlussinformationsblatt. (Kann auf der Kundenvertragsseite erstellt werden)',
 
 	//CostCenterController
 	'CostCenter_BillingMonth'		=> 'Abrechnungsmonat für jährliche Posten. Gilt für den Monat für den die Rechnungen erstellt werden. Standard: 6 (Juni) - wenn nicht festgelegt. Bitte seien Sie vorsichtig beim Ändern innerhalb des Jahres: das Resultat könnten fehlende Zahlungen sein!',
@@ -53,6 +58,7 @@ return [
 	//SepaAccountController
 	'SepaAccount_InvoiceHeadline'	=> 'Ersetzt die Überschrift der Rechnung, die für diese Kostenstelle erstellt wird.',
 	'SepaAccount_InvoiceText'		=> 'Der Text der vier verschiedenen \'Rechnungstext\'-Felder wird automatisch in Abhängigkeit von Gesamtkosten und SEPA-Mandat gwählt und wird in der entsprechenden Rechnung für den Kunden festgelegt. Es ist möglich, alle Datenfeld-Schlüssel der Rechnungsklasse als Platzhalter in Form von {Feldname} zu verwenden, um eine Art von Vorlage zu erstellen . Diese werden durch den Ist-Wert der Rechnung ersetzt ',
+	'tex_template' 					=> 'TeX Vorlage',
 
 	// SettlementrunController
 	'settlement_verification' 		=> 'Mit aktivierter Checkbox kann der Abrechnungslauf nicht wiederholt werden. Rechnungen der Kunden werden nur mit aktivierter Checkbox angezeigt.',
@@ -80,8 +86,11 @@ return [
  /**
   *	MODULE: ProvBase
   */
+	'rate_coefficient'				=> 'MaxRateSustained wird mit diesem Wert multipliziert, um den Nutzer eine höhere (> 1.0) Übertragungsrate als gebucht zu gewähren.',
 	//ModemController
 	'Modem_NetworkAccess'			=> 'Netzwerkzugriff für CPEs. (MTAs werden nicht beachtet und gehen immer online, wenn alle restlich notwendigen Konfigurationen korrekt vorgenommen wurden) - Achtung: Mit Billingmodul wird diese Checkbox während der nächtlichen Prüfung (nur) bei Tarifänderung überschrieben.',
+	'Modem_InstallationAddressChangeDate'	=> 'Datum der Änderung der Installationsadresse. Wenn nur lesbar existiert bereits ein offener Auftrag.',
+	'Modem_GeocodeOrigin'			=> 'Quelle der Geodaten. Falls hier „n/a“ steht konnte die Adresse nicht aufgelöst werden. Bei manueller Änderung der Geodaten wird der aktuelle Nutzer eingetragen.',
 	'contract_number' 				=> 'Achtung - Kundenkennwort wird bei Änderung automatisch geändert!',
 	'mac_formats'					=> "Erlaubte Formate (Groß-/Kleinschreibung nicht unterschieden):\n\n1) AA:BB:CC:DD:EE:FF\n2) AABB.CCDD.EEFF\n3) AABBCCDDEEFF",
 	'fixed_ip_warning'				=> 'Die Nutzung fester IP Adressen ist nicht empfohlen, da hierbei Modems und ihre zugehörigen CPEs nicht mehr zwsichen CMTSen verschoben werden können. Anstatt den Endkunden die jeweilige IP Adresse zu nennen, sollte ihnen der Hostname mitgeteilt werden, da sich dieser nicht ändert.',

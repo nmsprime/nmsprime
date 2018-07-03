@@ -1,4 +1,5 @@
-<?php 
+<?php
+
 namespace Modules\Ccc\Http\Controllers;
 
 use Modules\Ccc\Entities\Ccc;
@@ -19,7 +20,7 @@ class CccController extends \BaseController {
 		);
 
 		$b = [];
-		if (!\PPModule::is_active('billingbase'))
+		if (!\Module::collections()->has('BillingBase'))
 		{
 			// See CompanyController in Case BillingBase is active
 			$files = self::get_storage_file_list('ccc/template/');

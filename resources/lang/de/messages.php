@@ -27,12 +27,14 @@ return [
 	'Contract'					=> 'Vertrag',
 	'Contract List'				=> 'Vertragsliste',
 	'Contracts'					=> 'Verträge',
-	'Country Code'				=> 'Ländervorwahl',
+	'International prefix'		=> 'Ländervorwahl',
+	'Country code'				=> 'Ländercode',
 	'cpe_not_reachable' 		=> 'aber via PING nicht erreichbar (ICMP kann herstellerabhängig vom Router geblockt werden)',
 	'cpe_log_error'				=> 'ist nicht beim Server registriert - Kein Logeintrag gefunden',
 	'cpe_fake_lease'			=> 'Der DHCP Server hat kein Lease für den Endpunkt angelegt, weil dessen IP Adresse statisch vergeben ist und der Server diesen somit nicht verfolgen muss. Das folgende Lease wurde lediglich als Referenz manuell generiert:',
 	'Create'					=> 'Erstellen',
 	'D' 						=> 'Tag|Tage',
+	'Date of installation address change'	=> 'Datum der Änderung der Installationsaddresse',
 	'Delete'					=> 'Löschen',
 	'Day'						=> 'Tag',
 	'Description'				=> 'Beschreibung',
@@ -56,6 +58,7 @@ return [
 	'Firstname'					=> 'Vorname',
 	'Fixed IP'					=> 'Statische IP',
 	'Force Restart'				=> 'Neustart erzwingen',
+	'Geocode origin'			=> 'Herkunft der Geodaten',
 	'IBAN'						=> 'IBAN',
 	'Internet Access'			=> 'Internetzugriff',
 	'Inventar Number'			=> 'Inventarnummer',
@@ -68,17 +71,22 @@ return [
 	'MAC Address'				=> 'MAC Adresse',
 	'Main Menu'					=> 'Hauptmenü',
 	'Maturity' 					=> 'Laufzeit',
+	'modem_configfile_error'	=> 'Modem Konfigurationsdatei nicht gefunden',
 	'modem_eventlog_error'		=> 'Modem Eventlog nicht gefunden',
+	'modem_force_restart_button_title' => 'Startet nur das Modem neu. Speichert keine geänderten Daten!',
+	'modem_lease_error'			=> 'Kein gültiger Lease gefunden',
+	'modem_lease_valid'			=> 'Modem hat einen gültigen Lease',
+	'modem_log_error'			=> 'Modem ist nicht beim Server registriert - Kein Logeintrag gefunden',
 	'modem_monitoring_error'	=> 'Möglicherweise war das Modem bis jetzt nicht online. Beachten Sie, dass Diagramme erst ab
 		dem Zeitpunkt verfügbar sind, von dem an das Modem online ist. Wurden alle Diagramme unsauber angezeigt, könnte es
 		sich um ein größeres Problem, wie eine Fehlkonfiguration von Cacti, handeln. Wenden Sie sich dazu an ihren Administrator.',
 	'modem_no_diag'				=> 'Keine Diagramme verfügbar',
-	'modem_lease_error'			=> 'Kein gültiger Lease gefunden',
-	'modem_lease_valid'			=> 'Modem hat einen gültigen Lease',
-	'modem_log_error'			=> 'Modem ist nicht beim Server registriert - Kein Logeintrag gefunden',
-	'modem_configfile_error'	=> 'Modem Konfigurationsdatei nicht gefunden',
 	'modem_offline'				=> 'Modem ist Offline',
 	'modem_restart_error' 		=> 'Das Modem konnte nicht neugestartet werden! (offline?)',
+	'modem_restart_success_cmts' => "Das Modem wurde erfolgreich über das CMTS neugestartet",
+	'modem_restart_success_direct' => "Das Modem wurde erfolgreich direkt über SNMP neugestartet",
+	'modem_save_button_title' 	=> 'Speichert geänderte Daten. Berechnet die Geoposition neu, wenn Adressdaten geändert wurden (und weist es ggf. einer neuen MPR hinzu). Baut das Configfile und startet das Modem neu, wenn sich mindestens eines der folgenden Einträge geändert hat: Öffentliche IP, Netzwerkzugriff, Configfile, QoS, MAC-Adresse',
+	'modem_statistics'			=> 'Anzahl Online / Offline Modems',
 	'month'						=> 'Monat',
 	'Month'						=> 'Monat',
 	'mta_configfile_error'		=> 'MTA Konfigurationsdatei nicht gefunden',
@@ -112,6 +120,7 @@ return [
 	'State'						=> 'Status',
 	'Street'					=> 'Straße',
 	'Type'						=> 'Typ',
+	'Unexpected exception' 		=> 'Unerwarteter Fehler',
 	'US level' 					=> 'US Pegel',
 	'Username'					=> 'Nutzername',
 	'Users'						=> 'Nutzer',
@@ -145,7 +154,7 @@ return [
 	'Language for settlement run' => 'Sprache für Abrechnungslauf',
 	'Uncertain start/end dates for tariffs' => 'Ungewisse Tarif-Start-/Enddaten',
 	//CCC
-	'Connection Info Template'	=> 'Vorlage für Verbingungsinformationen',
+	'Connection Info Template'	=> 'Vorlage für Verbindungsinformationen',
 	'Upload Template'			=> 'Vorlage hochladen',
 	//HFC
 	'SNMP Read Only Community'	=> 'SNMP Read Only Community',
@@ -159,6 +168,8 @@ return [
 	'Start ID Contracts'		=> 'Start Nummerierung Verträge',
 	'Start ID Modems'			=> 'Start Nummerierung Modems',
 	'Start ID Endpoints'		=> 'Start Nummerierung Endpunkte',
+	'Downstream rate coefficient' => 'Übertragungsratenkoeffizient Vorwärtskanal',
+	'Upstream rate coefficient' => 'Übertragungsratenkoeffizient Rückwärtskanal',
 	//VOIP
 	'Start ID MTA´s'			=> 'Start Nummerierung MTA\'s',
 //
@@ -180,7 +191,8 @@ return [
 	'House Nr'					=> 'Hausnr',
 	'Salesman'					=> 'Verkäufer',
 	'Start Date' 				=> 'Startdatum',
-	'noCC'	=> 'Keine Kostenstelle zugewiesen',
+	'noCC'						=> 'Keine Kostenstelle zugewiesen',
+	'Contact Persons' 			=> 'Antennengemeinschaft/Kontakt',
 	//Items
 	'Accounting Text (optional)'=> 'Verwendungszweck (optional)',
 	'Cost Center (optional)'	=> 'Kostenstelle (optional)',
@@ -253,13 +265,17 @@ return [
 	'Upload CDR template'		=> 'CDR-Vorlage hochladen',
 	'Upload invoice template'	=> 'Rechnungsvorlage hochladen',
 
-	//Settlement Run Abrechnnungslauf
+	//Settlement Run Abrechnungslauf
+	'cdr_discarded_calls' 	=> "EVN: Vertragsnr oder -ID ':contractnr' in Datenbank nicht gefunden - :count Telefongespräche der Telefonnr :phonenr mit einem Preis von :price :currency können nicht zugeordnet werden.",
+	'cdr_missing_phonenr' 	=> "EVN: Einzelverbindungsnachweise mit Telefonnummer :phonenr gefunden, die nicht in der Datenbank existiert. :count Telefongespräche mit einem Preis von :price :currency können nicht zugeordnet werden.",
+	'cdr_missing_reseller_data' => 'EVN konnte nicht geladen werden. Reseller Daten in Environment Datei fehlen!',
 	'General'				=> 'Allgemein',
 	'Verified'				=> 'Überprüft?',
 	'tariff'				=> 'Tarif',
 	'item'					=> 'Posten',
 	'sepa'					=> 'mit_SEPA',
 	'no_sepa'				=> 'ohne_SEPA',
+	'Call_Data_Records'		=> 'Einzelverbindungsnachweise',
 	'Call Data Record'		=> 'Einzelverbindungsnachweis',
 	'accounting'			=> 'Rechnungssatzdatei',
 	'booking'				=> 'Buchungssatzdatei',
@@ -267,7 +283,7 @@ return [
 	'DC'					=> 'SEPA Gutschriften',
 	'salesmen_commission'	=> 'Provision_Verkaeufer',
 	'Invoices'				=> 'Rechnungen',
-	'Load Data' 			=> 'Lade Daten',
+	'Load Data...' 			=> 'Lade Daten...',
 
 	//CostCenter
 	'Associated SEPA Account'	=> 'Verknüpftes SEPA-Konto',
@@ -288,6 +304,7 @@ return [
 	'Zip'					=> 'PLZ',
 	// Global Config
 	'cdr_offset' 			=> 'Zeitdifferenz EVN zu Rechnung in Monaten',
+	'show_ags' 				=> 'Zeige AG Auswahlfeld auf Vertragsseite',
 	'voip_extracharge_default' => 'Preisaufschlag Telefonie Standard in %',
 	'voip_extracharge_mobile_national' => 'Preisaufschlag Telefonie Mobilfunk national in %',
 
@@ -362,13 +379,17 @@ return [
 //
 	'Priority' 				=> 'Priorität',
 	'Title' 				=> 'Titel',
+	'Created at'			=> 'Erstellt am',
 //
 // VOIP
 //
 	//Telefon numbers
 	'Activation date'       => 'Aktivierungsdatum',
 	'Deactivation date'     => 'Deaktivierungsdatum',
+	'phonenumber_nr_change_hlkomm' => 'Beim Ändern dieser Nummer können die angefallen Gespräche der alten Nummer nicht mehr diesem Vertrag angerechnet werden, da HL Komm bzw. Pyur nur die Telefonnummer in den Einzelverbindungsnachweisen mitschickt. Bitte ändern Sie diese Nummer nur, wenn es sich um eine Testnummer handelt oder Sie sicher sind, dass keine Gespräche mehr abgerechnet werden.',
+	'phonenumber_overlap_hlkomm' => 'Diese Nummer existiert bereits oder hat im/in den letzten :delay Monat(en) exisiert. Da HL Komm oder Pyur in den Einzelverbindungsnachweisen nur die Telefonnummer mitsendet, wird es nicht möglich sein getätigte Anrufe zum richtigen Vertrag zuzuweisen! Das kann zu falschen Abrechnungen führen. Bitte fügen Sie die Nummer nur hinzu, wenn es sich um eine Testnummer handelt oder Sie sicher sind, dass keine Gespräche mehr abgerechnet werden.',
 	'SIP domain'            => 'SIP Adresse',
+
 //
 // ProvVoipEnvia
 //

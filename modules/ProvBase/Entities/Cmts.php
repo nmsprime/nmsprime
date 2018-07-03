@@ -2,15 +2,14 @@
 
 namespace Modules\ProvBase\Entities;
 
-use File;
-use DB;
+use DB, File;
 use Acme\php\ArrayHelper;
 
 class Cmts extends \BaseModel {
 
 	private static $_us_snr_path = 'data/provmon/us_snr';
 	// don't put a trailing slash here!
-	public static $cmts_include_path = '/etc/dhcp/nmsprime/cmts_gws';
+	public static $cmts_include_path = '/etc/dhcp-nmsprime/cmts_gws';
 
 	// The associated SQL table for this Model
 	public $table = 'cmts';
@@ -276,15 +275,13 @@ class Cmts extends \BaseModel {
 
 		if (!\Storage::exists($fn)) {
 			\Log::error("Missing Modem US SNR json file of CMTS $this->hostname [$this->id]");
-			return ['SNR not found'];
+			return;
 		}
 
 		$snrs = json_decode(\Storage::get($fn), true);
 
 		if(array_key_exists($ip, $snrs))
 			return $snrs[$ip];
-
-		return ['SNR not found'];
 	}
 
 
@@ -498,7 +495,7 @@ _exit:
 		self::make_includes();
 
 		// chown for future writes in case this function was called from CLI via php artisan nms:dhcp that changes owner to 'root'
-		system('/bin/chown -R apache /etc/dhcp/');
+		system('/bin/chown -R apache /etc/dhcp-nmsprime/');
 	}
 
 	/**
@@ -533,7 +530,7 @@ class CmtsObserver
 
 	public function created($cmts)
 	{
-		if (\PPModule::is_active ('ProvMon'))
+		if (\Module::collections()->has('ProvMon'))
 			\Artisan::call('nms:cacti', ['--modem-id' => 0, '--cmts-id' => $cmts->id]);
 		$cmts->make_dhcp_conf();
 

@@ -21,10 +21,24 @@ class GlobalConfigController extends BaseController {
 			array('form_type' => 'text', 'name' => 'phone', 'description' => 'Phonenumber'),
 			array('form_type' => 'text', 'name' => 'mail', 'description' => 'E-Mail Address'),
 
-			array('form_type' => 'select', 'name' => 'log_level', 'description' => 'System Log Level', 'value' => $this->log_level),
+			array('form_type' => 'select', 'name' => 'log_level', 'description' => 'System Log Level', 'value' => $this->log_level, 'hidden' => 1),
 			array('form_type' => 'text', 'name' => 'headline1', 'description' => 'Headline 1'),
 			array('form_type' => 'text', 'name' => 'headline2', 'description' => 'Headline 2'),
+			array('form_type' => 'text', 'name' => 'default_country_code', 'description' => 'Default country code', 'help' => trans('helper.ISO_3166_ALPHA-2')),
 			);
+	}
+
+
+	/**
+	 * @author Patrick Reichel
+	 */
+	public function prepare_input($data) {
+
+		// ISO 3166 country codes are uppercase
+		$data['default_country_code'] = \Str::upper($data['default_country_code']);
+
+		$data = parent::prepare_input($data);
+		return $data;
 	}
 
 
@@ -41,7 +55,7 @@ class GlobalConfigController extends BaseController {
         $view_header = BaseViewController::translate_view("Global Configurations", 'Header');
 		$route_name = 'Config.index';
 
-		$enabled = Module::enabled();
+		$enabled = \Module::enabled();
 		$module_controller = [0 => $this];
 		$module_model = [0 => static::get_model_obj()->first()];
 

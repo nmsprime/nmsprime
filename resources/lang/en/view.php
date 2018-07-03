@@ -30,7 +30,7 @@ return [
 		'jQuery_colvisRestore'		=> 'Restore',
 		'jQuery_colvisReset'		=> 'Reset',
 		'jQuery_ExportTo'			=> 'Export to',
-
+                'jQuery_ImportCsv'              => 'import CSV',
 //MENU
 	//Main Menu
 		'Menu_MainMenu' 			=> 'Main Menu',
@@ -124,6 +124,7 @@ return [
 		//CMTS
 		'Header_CMTS'				=> 'CMTS|CMTSs',
 		'Header_EditCMTS'			=> 'Edit CMTS',
+		'Header_Config'				=> 'Config proposal|Config proposals',
 		//IpPool
 		'Header_IpPool'				=> 'IP-Pool|IP-Pools',
 		'Header_EditIpPool'			=> 'Edit IP-Pool',

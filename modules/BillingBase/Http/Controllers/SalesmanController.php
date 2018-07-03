@@ -1,8 +1,7 @@
 <?php
 namespace Modules\BillingBase\Http\Controllers;
 
-use Modules\BillingBase\Entities\Salesman;
-use Modules\BillingBase\Entities\Product;
+use Modules\BillingBase\Entities\{Product, Salesman};
 
 class SalesmanController extends \BaseController {
 

@@ -2,8 +2,8 @@
 
 namespace Modules\ProvBase\Entities;
 
-use GlobalConfig;
-use File;
+use File, GlobalConfig;
+use Modules\ProvBase\Entities\{ProvBase, Qos};
 
 class ProvBase extends \BaseModel {
 
@@ -44,15 +44,15 @@ class ProvBase extends \BaseModel {
 	}
 
 	/**
-     * BOOT - init provbase observer
-     */
-    public static function boot()
-    {
-        parent::boot();
+	 * BOOT - init provbase observer
+	 */
+	public static function boot()
+	{
+		parent::boot();
 
-        ProvBase::observe(new ProvBaseObserver);
-        ProvBase::observe(new \App\SystemdObserver);
-    }
+		ProvBase::observe(new ProvBaseObserver);
+		ProvBase::observe(new \App\SystemdObserver);
+	}
 
 	/*
 	 * Return true if $this->prov_ip is online, otherwise false
@@ -66,15 +66,15 @@ class ProvBase extends \BaseModel {
 	}
 
 
-    /**
+	/**
 	 * Create the global configuration file for DHCP Server from Global Config Parameters
 	 * Set correct Domain Name on Server from GUI (Permissions via sudoers-file needed!!)
-     *
-     * @author Nino Ryschawy
-     */
-    public function make_dhcp_glob_conf()
-    {
-		$file_dhcp_conf = '/etc/dhcp/nmsprime/global.conf';
+	 *
+	 * @author Nino Ryschawy
+	 */
+	public function make_dhcp_glob_conf()
+	{
+		$file_dhcp_conf = '/etc/dhcp-nmsprime/global.conf';
 
 		$data = 'ddns-domainname "'.$this->domain_name.'.";'."\n";
 		$data .= 'option domain-name "'.$this->domain_name.'";'."\n";
@@ -89,7 +89,7 @@ class ProvBase extends \BaseModel {
 		$data .= "\n# zone\nzone ".$this->domain_name." {\n\tprimary 127.0.0.1;\n\tkey dhcpupdate;\n}\n";
 		$data .= "\n# reverse zone\nzone in-addr.arpa {\n\tprimary 127.0.0.1;\n\tkey dhcpupdate;\n}\n";
 
-		if (\PPModule::is_active('provvoip'))
+		if (\Module::collections()->has('ProvVoip'))
 		{
 			// second domain for mta's if existent
 			$mta_domain = \Modules\ProvVoip\Entities\ProvVoip::first()->mta_domain;
@@ -144,7 +144,7 @@ class ProvBase extends \BaseModel {
 		$data .= 'class "Client-Public" {'."\n\t".'match if ((substring(option vendor-class-identifier,0,6) != "docsis") and (substring(option vendor-class-identifier,0,4) != "pktc"));'."\n\t".'match pick-first-value (option agent.remote-id);'."\n\t".'lease limit 4; # max 4 public cpe per cm'."\n}\n\n";
 
 		File::put($file_dhcp_conf, $data);
-    }
+	}
 }
 
 
@@ -159,11 +159,25 @@ class ProvBase extends \BaseModel {
 class ProvBaseObserver
 {
 
-    public function updated($model)
-    {
-        $model->make_dhcp_glob_conf();
+	public function updated($model)
+	{
+		$model->make_dhcp_glob_conf();
 
-        // TODO: if max_cpe was changed -> make all Modem Configfiles via Queue Job as this will take a long time (Nino)
-    }
+		$changes = $model->getDirty();
+
+		// re-evaluate all qos rate_max_help fields if one or both coefficients were changed
+		if (multi_array_key_exists(['ds_rate_coefficient', 'us_rate_coefficient'], $changes)) {
+			$pb = ProvBase::first();
+			foreach(Qos::all() as $qos) {
+				$qos->ds_rate_max_help = $qos->ds_rate_max * 1000 * 1000 * $pb->ds_rate_coefficient;
+				$qos->us_rate_max_help = $qos->us_rate_max * 1000 * 1000 * $pb->us_rate_coefficient;
+				$qos->save();
+			}
+		}
+
+		// build all Modem Configfiles via Job as this will take a long time
+		if (multi_array_key_exists(['ds_rate_coefficient', 'us_rate_coefficient', 'max_cpe'], $changes))
+			\Queue::push(new \Modules\ProvBase\Console\configfileCommand(0, 'cm'));
+	}
 
 }

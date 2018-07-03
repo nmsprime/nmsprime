@@ -18,8 +18,8 @@ class IpPool extends \BaseModel {
 			'netmask' => 'required|ip|netmask',     // netmask must not be in first place!
 			'ip_pool_start' => 'required|ip|ip_in_range:net,netmask|ip_larger:net',   // own validation - see in classes: ExtendedValidator and IpPoolController
 			'ip_pool_end' => 'required|ip|ip_in_range:net,netmask|ip_larger:ip_pool_start',
-			'router_ip' => 'required|ip|ip_in_range:net,netmask|ip_larger:ip_pool_start',
-			'broadcast_ip' => 'ip|ip_in_range:net,netmask|ip_larger:ip_pool_start',
+			'router_ip' => 'required|ip|ip_in_range:net,netmask',
+			'broadcast_ip' => 'ip|ip_in_range:net,netmask|ip_larger:ip_pool_end',
 			'dns1_ip' => 'ip',
 			'dns2_ip' => 'ip',
 			'dns3_ip' => 'ip'
@@ -107,6 +107,21 @@ class IpPool extends \BaseModel {
 		// Ping: Only check if device is online
 		exec ('sudo ping -c1 -i0 -w1 '.$this->router_ip, $ping, $ret);
 		return $ret ? false : true;
+	}
+
+	/**
+	 * Return the cisco wildcard mask, which is the inverted subnet mask
+	 *
+	 * @return String
+	 *
+	 * @author Ole Ernst
+	 */
+	public function wildcard_mask ()
+	{
+		foreach (explode('.', $this->netmask) as $val)
+			$mask[] = ~intval($val) & 255;
+
+		return implode('.', $mask);
 	}
 
 	/**

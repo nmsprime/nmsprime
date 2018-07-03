@@ -2,7 +2,6 @@
 
 namespace Modules\ProvVoip\Entities;
 
-// Model not found? execute composer dump-autoload in nmsprime root dir
 class PhonebookEntry extends \BaseModel {
 
     // The associated SQL table for this Model
@@ -16,7 +15,7 @@ class PhonebookEntry extends \BaseModel {
 	public static function rules($id=null)
 	{
 		return array(
-			'phonenumbermanagement_id' => 'required|exists:phonenumbermanagement,id|min:1',
+			'phonenumbermanagement_id' => 'required|exists:phonenumbermanagement,id,deleted_at,NULL|min:1',
 			'reverse_search' => 'required|phonebook_one_character_option',
 			'publish_in_print_media' => 'required|phonebook_one_character_option',
 			'publish_in_electronic_media' => 'required|phonebook_one_character_option',
@@ -36,7 +35,7 @@ class PhonebookEntry extends \BaseModel {
 			'city' => 'required|phonebook_string',
 			'urban_district' => 'phonebook_string',
 			'business' => 'phonebook_predefined_string',
-			'number_usage' => 'required|phonebook_one_character_option',
+			'usage' => 'required|phonebook_one_character_option',
 			'tag' => 'phonebook_predefined_string',
 		);
 	}
@@ -224,7 +223,7 @@ class PhonebookEntry extends \BaseModel {
 	// View Relation.
 	public function view_has_many() {
 
-		if (\PPModule::is_active('provvoipenvia')) {
+		if (\Module::collections()->has('ProvVoipEnvia')) {
 
 			// TODO: auth - loading controller from model could be a security issue ?
 			$ret['envia TEL']['envia TEL API']['html'] = '<h4>Available envia TEL API jobs</h4>';

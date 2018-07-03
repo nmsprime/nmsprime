@@ -3,25 +3,13 @@
 namespace Modules\ProvVoipEnvia\Entities;
 
 use Log;
-use Modules\ProvBase\Entities\Contract;
-use Modules\ProvBase\Entities\VoipRelatedDataUpdaterByEnvia;
-use Modules\ProvVoip\Entities\PhonebookEntry;
-use Modules\ProvVoip\Entities\Phonenumber;
-use Modules\ProvVoip\Entities\PhonenumberManagement;
-use Modules\ProvVoip\Entities\PhoneTariff;
-use Modules\ProvVoip\Entities\CarrierCode;
-use Modules\ProvVoip\Entities\EkpCode;
-use Modules\ProvVoip\Entities\Mta;
-use Modules\ProvVoip\Entities\TRCClass;
-use Modules\ProvBase\Entities\Modem;
-use Modules\ProvVoipEnvia\Entities\EnviaContract;
-use Modules\ProvVoipEnvia\Entities\EnviaOrder;
-use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
+use App\Exceptions\NotImplementedException;
+use Modules\ProvBase\Entities\{Contract, Modem,VoipRelatedDataUpdaterByEnvia};
+use Modules\ProvVoip\Entities\{CarrierCode, EkpCode, Mta, PhonebookEntry, Phonenumber, PhonenumberManagement, PhoneTariff, TRCClass};
+use Modules\ProvVoipEnvia\Entities\{EnviaContract, EnviaOrder, EnviaOrderDocument};
 use Modules\ProvVoipEnvia\Exceptions\XmlCreationError;
 use Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
-use App\Exceptions\NotImplementedException;
 
-// Model not found? execute composer dump-autoload in nmsprime root dir
 class ProvVoipEnvia extends \BaseModel {
 
 
@@ -954,7 +942,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$filename = strtolower($now.'____'.$context).'.xml';
 
 		// move uploaded file to document_path (after making directories)
-		$path = 'data/provvoipenvia/XML/'.substr($now, 0, 7);
+		$path = 'data/provvoipenvia/XML/'.substr($now, 0, 7).'/'.substr($now, 0, 10);
 		$filename = $path.'/'.$filename;
 		\Storage::makeDirectory($path);
 		\Storage::put($filename, $filecontent);
@@ -1156,7 +1144,7 @@ class ProvVoipEnvia extends \BaseModel {
 			if (!$error['message']) {
 				$error['message'] == 'n/a';
 			}
-			array_push($data, $error);
+			array_push($errors, $error);
 		}
 
 		// stop condition: no more children == leaf node
@@ -1180,13 +1168,13 @@ class ProvVoipEnvia extends \BaseModel {
 	 */
 	public function get_error_messages($raw_xml) {
 
-		$data = array();
+		$errors = array();
 		$xml = new \SimpleXMLElement($raw_xml);
 
 		// extract all error messages from XML
-		$this->_get_error_messages_recurse($xml, $data);
+		$this->_get_error_messages_recurse($xml, $errors);
 
-		return $data;
+		return $errors;
 	}
 
 
@@ -1821,7 +1809,7 @@ class ProvVoipEnvia extends \BaseModel {
 		if (!boolval($this->contract->phonetariff_purchase_next)) {
 			$value_missing = True;
 			$msg = 'next_purchase_tariff not set in contract '.$this->contract->id;
-			if (\PPModule::is_active('billingbase')) {
+			if (\Module::collections()->has('BillingBase')) {
 				$msg .= ' – maybe you have to create a Voip item with future start date?';
 			}
 		}
@@ -1832,7 +1820,7 @@ class ProvVoipEnvia extends \BaseModel {
 		if (!boolval($this->contract->phonetariff_sale_next)) {
 			$value_missing = True;
 			$msg = 'next_voip_id not set in contract '.$this->contract->id;
-			if (\PPModule::is_active('billingbase')) {
+			if (\Module::collections()->has('BillingBase')) {
 				$msg .= ' – maybe you have to create a Voip item with future start date?';
 			}
 		}
@@ -2570,7 +2558,7 @@ class ProvVoipEnvia extends \BaseModel {
 			'zipcode' => 'zipcode',
 			'city' => 'city',
 			'urban_district' => 'urban_district',
-			'usage' => 'number_usage',
+			'usage' => 'usage',
 			'publish_in_print_media' => 'publish_in_print_media',
 			'publish_in_electronic_media' => 'publish_in_electronic_media',
 			'directory_assistance' => 'directory_assistance',
@@ -5352,6 +5340,7 @@ class ProvVoipEnvia extends \BaseModel {
 		foreach ($xml->children() as $child) {
 
 			$col = $child->getName();
+
 			$value = (string) $child;
 
 			if ($this->phonebookentry->$col != $value) {
@@ -5372,7 +5361,7 @@ class ProvVoipEnvia extends \BaseModel {
 				$msg = "Created new PhonebookEntry for phonenumber ".$this->phonenumber->id." with data delivered by Telekom";
 			}
 			else {
-				$msg = "Updated PhonebookEntry for phonenumber ".$this->phonenumber-id." with data delivered by Telekom";
+				$msg = "Updated PhonebookEntry for phonenumber ".$this->phonenumber->id." with data delivered by Telekom";
 			}
 			$this->phonebookentry->save();
 			$out .= $msg;

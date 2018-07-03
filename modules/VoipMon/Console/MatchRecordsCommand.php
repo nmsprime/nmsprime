@@ -52,13 +52,13 @@ class matchRecordsCommand extends Command {
 		 * has not been processed yet (i.e. created_at is NULL) take *a* MOS value
 		 * If MOS value is not valid set it to 45 (best)
 		 */
-		\DB::table($database.'.'.$this->tablename.' as c')->join($match_db.'.phonenumber as p', 'c.caller', '=', \DB::raw('concat(p.prefix_number, p.number)'))->whereNull('c.created_at')->update(['c.phonenumber_id' => \DB::raw('p.id'), 'c.mos_min_mult10' => \DB::raw('IF(c.a_mos_f1_min_mult10, c.a_mos_f1_min_mult10, 45)')]);
+		\DB::table($database.'.'.$this->tablename.' as c')->join($match_db.'.phonenumber as p', 'c.caller', 'like', \DB::raw('concat("%", p.prefix_number, p.number, "%")'))->whereNull('c.created_at')->update(['c.phonenumber_id' => \DB::raw('p.id'), 'c.mos_min_mult10' => \DB::raw('IF(c.a_mos_f1_min_mult10, c.a_mos_f1_min_mult10, 45)')]);
 		/**
 		 * If call originated from external network (i.e. *called* matches) and
 		 * has not been processed yet (i.e. created_at is NULL) take *b* MOS value
 		 * If MOS value is not valid set it to 45 (best)
 		 */
-		\DB::table($database.'.'.$this->tablename.' as c')->join($match_db.'.phonenumber as p', 'c.called', '=', \DB::raw('concat(p.prefix_number, p.number)'))->whereNull('c.created_at')->update(['c.phonenumber_id' => \DB::raw('p.id'), 'c.mos_min_mult10' => \DB::raw('IF(c.b_mos_f1_min_mult10, c.b_mos_f1_min_mult10, 45)')]);
+		\DB::table($database.'.'.$this->tablename.' as c')->join($match_db.'.phonenumber as p', 'c.called', 'like', \DB::raw('concat("%", p.prefix_number, p.number, "%")'))->whereNull('c.created_at')->update(['c.phonenumber_id' => \DB::raw('p.id'), 'c.mos_min_mult10' => \DB::raw('IF(c.b_mos_f1_min_mult10, c.b_mos_f1_min_mult10, 45)')]);
 
 		// If no match was found (i.e. phonenumber_id is NULL), use worst MOS of both directions
 		\DB::connection($this->connection)->table($this->tablename)->whereNull('created_at')->whereNull('phonenumber_id')->update(['mos_min_mult10' => \DB::raw('LEAST(IF(a_mos_f1_min_mult10, a_mos_f1_min_mult10, 45), IF(b_mos_f1_min_mult10, b_mos_f1_min_mult10, 45))')]);

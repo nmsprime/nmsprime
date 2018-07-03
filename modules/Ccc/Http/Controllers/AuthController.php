@@ -1,7 +1,7 @@
 <?php namespace Modules\Ccc\Http\Controllers;
 
 use App\Http\Controllers\AuthController as Auth;
-use Pingpong\Modules\Routing\Controller;
+use Nwidart\Modules\Routing\Controller;
 use Modules\Ccc\Entities\Ccc;
 
 /**

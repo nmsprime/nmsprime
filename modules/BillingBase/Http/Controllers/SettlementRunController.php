@@ -1,13 +1,10 @@
 <?php
 namespace Modules\BillingBase\Http\Controllers;
 
-use Modules\BillingBase\Entities\AccountingRecord;
-use Modules\BillingBase\Entities\BillingLogger;
-use Modules\BillingBase\Entities\SettlementRun;
-use Modules\BillingBase\Entities\Invoice;
-use Modules\BillingBase\Console\accountingCommand;
-use \Monolog\Logger;
 use ChannelLog;
+use Modules\BillingBase\Entities\{AccountingRecord, BillingLogger, Invoice, SettlementRun};
+use Modules\BillingBase\Console\{accountingCommand, cdrCommand};
+use \Monolog\Logger;
 
 class SettlementRunController extends \BaseController {
 
@@ -115,6 +112,9 @@ class SettlementRunController extends \BaseController {
 	 */
 	public function check_state()
 	{
+		// ob_implicit_flush();
+		// ob_end_flush();
+
 		\Log::debug(__CLASS__ .'::'. __FUNCTION__);
 		$response = new \Symfony\Component\HttpFoundation\StreamedResponse(function() {
 
@@ -123,23 +123,31 @@ class SettlementRunController extends \BaseController {
 			{
 				$job = \DB::table('jobs')->find(\Session::get('job_id'));
 
-				// if ($job)
-				// 	\Log::debug('Job with ID '.$job->id.' running');
-
-				// TODO: Get state from file
 				$state = \Storage::exists('tmp/accCmdStatus') ? \Storage::get('tmp/accCmdStatus') : '';
-				echo "data: $state\n\n";
-				ob_flush(); flush();
 
-				sleep(3);
+				echo "data: $state".PHP_EOL.PHP_EOL;
+
+				// Dirty fix: fill buffer to flush message as PHP-FPM's buffer can actually not really be disabled
+				// Note: PHP buffer and buffer of webbrowser can be disabled by setting output_buffering = Off in /etc/php.ini and probably 'SetEnv no-gzip 1' in /etc/httpd/conf.d/nmsprime-admin.conf
+				echo "fill: ".str_pad(' ', 4095).PHP_EOL.PHP_EOL;
+				ob_flush();
+				flush();
+
+				if ($state == '{"message":"Finished","value":100}') {
+					$success = true;
+					\Storage::delete('tmp/accCmdStatus');
+					goto reload;
+				}
+
+				sleep(2);
 			}
 
 			\Log::debug('SettlementRun Job ['. \Session::get('job_id').'] stopped');
 
 			\Session::remove('job_id');
 
-			// wait for job to land in failed jobs table - if it failed - wait max 14 seconds
-			$i 		 = 7;
+			// wait for job to land in failed jobs table - if it failed - wait max 10 seconds
+			$i 		 = 5;
 			$success = true;
 
 			while ($i && $success)
@@ -157,7 +165,7 @@ class SettlementRunController extends \BaseController {
 
 				sleep(2);
 			}
-
+reload:
 			$success ? \Log::info('Settlementrun finished successfully') : \Log::error('Settlementrun failed!');
 
 			\Log::debug('Reload Settlementrun Edit View');
@@ -166,6 +174,8 @@ class SettlementRunController extends \BaseController {
 		});
 
 		$response->headers->set('Content-Type', 'text/event-stream');
+
+		\Storage::delete('tmp/accCmdStatus');
 
 		return $response;
 	}
@@ -283,13 +293,16 @@ class SettlementRunController extends \BaseController {
 		if (!$settlementrun)
 			Invoice::delete_current_invoices();
 
+		$cdr_filepaths = cdrCommand::get_cdr_pathnames();
+
 		// everything in accounting directory - SepaAccount specific
-		foreach (\Storage::files($dir) as $f)
+		foreach (glob(storage_path("app/$dir/*")) as $f)
 		{
 			// keep cdr
-			// if (pathinfo($f, PATHINFO_EXTENSION) != 'csv')
-			if (basename($f) != accountingCommand::_get_cdr_filename())
-				\Storage::delete($f);
+			if (in_array($f, $cdr_filepaths))
+				continue;
+
+			\Storage::delete($f);
 		}
 
 		foreach (\Storage::directories($dir) as $d)

@@ -2,7 +2,7 @@ dir="/var/www/nmsprime"
 env="/etc/nmsprime/env/ccc.env"
 ccc_pw=$(pwgen 12 1) # SQL password for user nmsprime_ccc
 
-mysql -u root -e "CREATE DATABASE nmsprime_ccc CHARACTER SET 'utf8mb4';"
+mysql -u root -e "CREATE DATABASE nmsprime_ccc CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';"
 mysql -u root -e "GRANT ALL ON nmsprime_ccc.* TO 'nmsprime_ccc'@'localhost' IDENTIFIED BY '$ccc_pw'";
 sed -i "s/^CCC_DB_PASSWORD=$/CCC_DB_PASSWORD=$ccc_pw/" "$env"
 

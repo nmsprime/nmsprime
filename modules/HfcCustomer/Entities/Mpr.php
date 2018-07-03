@@ -4,7 +4,6 @@ namespace Modules\HfcCustomer\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Modules\ProvBase\Entities\Modem;
 
-
 /*
  * Modem Positioning Rule Model
  *
@@ -92,42 +91,39 @@ class Mpr extends \BaseModel {
 	}
 
 
-	/*
+	/**
 	 * MPR: refresh all bubbles on Entity Relation Diagram and Topography Card
 	 * This will perform an updated on all matched Modems netelement_id value, based
 	 * on the added rules in Modem Positioning System: Mpr, MprGeopos. This function
 	 * will be used by artisan command nms:mps
 	 *
-	 * NOTE: for priotity we will simply use mpr->prio field. So lower values in
-	 *       prio will run first
-
-	 * TODO: use a better (more complex) priority algorithm
+	 * NOTE: For priority we will simply use mpr->prio field. So lower values in prio will run first
+	 * 		 Multiple MPRs with different prio's are superseded by polygons!
 	 *
-	 * @param modem: could be a modem->id or a set of pre-selected modem models filtered with Modem::where() or false for all modems
-	 * @return: if param modem is a id the function returns the id of the matched mpr netelement_id, in all other cases 0
-	 * @author: Torsten Schmidt
+	 * @param 	Object 	single Modem or null for all modems
+	 * @author: Torsten Schmidt, Nino Ryschawy
 	 */
 	public static function refresh ($modem = null)
 	{
-		// prep vars
-		$single_modem = false;
-		$return = $r = 0;
+		$r = 0;
 
 		// if param modem is integer select modem with this integer value (modem->id)
-		if (is_int($modem))
-		{
-			$single_modem = true;
+		if ($modem)
 			\Log::info('MPS: perform mps rule matching for a single modem');
-		} else {
+		else
+		{
 			\Log::info('MPS: perform mps rule matching');
-			// reset all tree_ids if all modems are being matched,
+			// reset all netelement_ids if all modems are being matched,
 			// because we don't know if old matches are still valid
 			Modem::where('id', '>', '0')->update(['netelement_id' => 0]);
+
+			echo "Get all modems from DB...\n";
+			$modems = Modem::all();
 		}
 
 		// Foreach MPR
 		// lower priority integers first
-		foreach (Mpr::where('id', '>', '0')->orderBy('prio')->get() as $mpr)
+		foreach (Mpr::orderBy('prio')->get() as $mpr)
 		{
 			// parse rectangles for MPR
 			if (count($mpr->mprgeopos) == 2)
@@ -160,51 +156,45 @@ class Mpr extends \BaseModel {
 				$id = $mpr->netelement_id;
 
 				// the selected modems to use for update
-				if ($single_modem)
-					$tmp = Modem::where('id', '=', $modem);
+				if ($modem)
+					$query = Modem::where('id', '=', $modem->id);
 				else
 					// if no modem is set in parameters -> means: select all modems
-					$tmp = Modem::where('id', '>', '0');
+					$query = Modem::where('id', '>', '0');
 
-				$select = $tmp->where('x', '>', $x1)->where('x', '<', $x2)->where('y', '>', $y1)->where('y', '<', $y2);
+				$query = $query->where('x', '>', $x1)->where('x', '<', $x2)->where('y', '>', $y1)->where('y', '<', $y2);
 
-				// for a single modem do not perform a update() either return the netelement_id
-				// Note: This is required because we can not call save() from observer context.
-				//       this will re-call all oberservs and could lead to a potential hazard
-				if ($single_modem)
-				{
-					$r = $select->count();
-					// single_modem is within the current mpr area
-					if($r)
-						$return = $id;
-				}
-				else
-					$r = $select->update(['netelement_id' => $id]);
+				// Do not call save() on modem as this would call the observers again and this function is
+				// triggered from observer -> result would be an endless loop
+				$r = $query->update(['netelement_id' => $id]);
 
 				// Log
 				$log = 'MPS: UPDATE: '.$id.', '.$mpr->name.' - updated modems: '.$r;
 				\Log::debug ($log);
-				if (env('APP_ENV') != 'testing') {
+				if (env('APP_ENV') != 'testing')
 					echo $log."\n";
-				}
-			} elseif (count($mpr->mprgeopos) > 2) {
-
+			}
+			else if (count($mpr->mprgeopos) > 2)
+			{
 				// populate polygon array according to mprgeopostions, this will be used by point_in_polygon()
 				$polygon = [];
 				foreach($mpr->mprgeopos as $geopos)
 					$polygon[] = [$geopos->x, $geopos->y];
 
-				foreach ($single_modem ? Modem::where('id', '=', $modem) : Modem::all() as $tmp) {
-					if(self::point_in_polygon([$tmp->x,$tmp->y], $polygon)) {
-						$tmp->netelement_id = $mpr->netelement_id;
-						$tmp->observer_enabled = false;
-						$tmp->save();
+				$cnt = 0;
+				foreach ($modem ? [$modem] : $modems as $m) {
+					if (self::point_in_polygon([$m->x,$m->y], $polygon)) {
+						Modem::where('id', '=', $m->id)->update(['netelement_id' => $mpr->netelement_id]);
+						$cnt++;
 					}
 				}
+
+				$log = "MPS: UPDATE: $mpr->netelement_id, $mpr->name - updated modems: $cnt";
+				\Log::debug($log);
+				echo $log."\n";
 			}
 		}
 
-		return $return;
 	}
 
 	/**

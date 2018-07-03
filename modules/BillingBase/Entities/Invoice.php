@@ -2,9 +2,7 @@
 
 namespace Modules\BillingBase\Entities;
 
-use Storage;
-use ChannelLog;
-
+use ChannelLog, Storage;
 
 /**
  * Contains Functions to collect Data for Invoice & create the corresponding PDFs
@@ -13,7 +11,6 @@ use ChannelLog;
  *
  * @author Nino Ryschawy
  */
-
 class Invoice extends \BaseModel{
 
 	public $table = 'invoice';
@@ -157,10 +154,13 @@ class Invoice extends \BaseModel{
 		'cdr_charge' 			=> '', 			// Integer with costs resulted from telephone calls
 		'cdr_table_positions'	=> '',			// tex table of all call data records
 		'table_summary' 		=> '', 			// preformatted table - use following three keys to set table by yourself
-		'table_sum_charge_net'  => '', 			// net charge - without tax
 		'table_sum_tax_percent' => '', 			// The tax percentage with % character
+		'table_sum_charge_net'  => '', 			// net charge - without tax
 		'table_sum_tax' 		=> '', 			// The tax
 		'table_sum_charge_total' => '', 		// total charge - with tax
+		'table_sum_charge_net_formatted' => '', // net charge formatted for billing language (e.g. for german: comma as decimal separator and point as thousands separator)
+		'table_sum_tax_formatted' => '',
+		'table_sum_charge_total_formatted' => '',
 
 		// Cancelation Dates - as prescribed by law from 2018-01-01
 		'start_of_term' 	=> '', 				// contract start
@@ -194,16 +194,6 @@ class Invoice extends \BaseModel{
 	private static function _get_invoice_filename_date_part()
 	{
 		return date('Y_m', strtotime('first day of last month'));
-	}
-
-	/**
-	 * @return String 	CDR Filename without extension (like .pdf)
-	 */
-	private static function _get_cdr_filename()
-	{
-		$offset = BillingBase::first()->cdr_offset;
-
-		return $offset ? date('Y_m', strtotime('-'.($offset+1).' month')).'_cdr' : date('Y_m', strtotime('first day of last month')).'_cdr';
 	}
 
 
@@ -260,7 +250,7 @@ class Invoice extends \BaseModel{
 			$ret = $contract->get_next_cancel_date();
 
 		// e.g. customers that get tv amplifier refund, but dont have any tariff
-		if (!isset($ret['tariff'])) {
+		if (!array_key_exists('tariff', $ret)) {
 			ChannelLog::debug('billing', "Customer has no tariff - dont set cancelation dates.", [$this->data['contract_id']]);
 			return;
 		}
@@ -276,6 +266,9 @@ class Invoice extends \BaseModel{
 			$span = str_replace($nr, '', $ret['tariff']->product->maturity ? : Product::$maturity);
 			$txt_m = $nr .' '. trans_choice("messages.$span", $nr);
 		}
+
+		if (!$ret['cancelation_day'])
+			ChannelLog::info('billing', "Contract $contract->number was canceled with target ".$ret['end_of_term']);
 
 		$german = \App::getLocale() == 'de';
 
@@ -293,9 +286,11 @@ class Invoice extends \BaseModel{
 
 	public function add_item($item)
 	{
-		$count = $item->count ? $item->count : 1;
-		$price = sprintf("%01.2f", round($item->charge/$item->count, 2));
-		$sum   = sprintf("%01.2f", $item->charge);
+		$count = $item->count ? : 1;
+		$price = $item->charge/$item->count;
+		$price = \App::getLocale() == 'de' ? number_format($price, 2, ',', '.') : number_format($price, 2);
+		$sum   = \App::getLocale() == 'de' ? number_format($item->charge, 2, ',', '.') : number_format($item->charge, 2);
+
 		$this->data['item_table_positions'] .= $item->count.' & '.escape_latex_special_chars($item->invoice_description).' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
 	}
 
@@ -334,21 +329,26 @@ class Invoice extends \BaseModel{
 	 */
 	public function set_summary($net, $tax, $account)
 	{
+		$this->sepaaccount_id = $account->id;
+
 		$tax_percent = $tax ? $this->tax : 0;
 		$tax_percent .= '\%';
 
-		$net   = number_format($net, 2);
-		$tax   = number_format($tax, 2);
-		$total = number_format($net + $tax, 2);
+		$total = $net + $tax;
 
-		$this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.$net.$this->currency.'\\\\';
-		$this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$tax.$this->currency.'\\\\';
-		$this->data['table_summary'] .= '~ & \textbf{Rechnungsbetrag:} & ~ & \textbf{'.$total.$this->currency.'}\\\\';
-
-		$this->data['table_sum_charge_net']  	= $net;
 		$this->data['table_sum_tax_percent'] 	= $tax_percent;
-		$this->data['table_sum_tax'] 			= $tax;
-		$this->data['table_sum_charge_total'] 	= $total;
+		// dont use thousands separator for numbers that are compared or used for further calculations as it's hard to compare in latex
+		$this->data['table_sum_charge_net']  	= number_format($net, 2, '.', '');
+		$this->data['table_sum_tax'] 			= number_format($tax, 2, '.', '');
+		$this->data['table_sum_charge_total'] 	= number_format($total, 2, '.', '');
+		$this->data['table_sum_charge_net_formatted'] = \App::getLocale() == 'de' ? number_format($net, 2, ',', '.') : number_format($net, 2);
+		$this->data['table_sum_tax_formatted'] 	= \App::getLocale() == 'de' ? number_format($tax, 2, ',', '.') : number_format($tax, 2);
+		$this->data['table_sum_charge_total_formatted'] = \App::getLocale() == 'de' ? number_format($total, 2, ',', '.') : number_format($total, 2);
+
+		$this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.$this->data['table_sum_charge_net_formatted'].$this->currency.'\\\\';
+		$this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$this->data['table_sum_tax_formatted'].$this->currency.'\\\\';
+		$this->data['table_summary'] .= '~ & \textbf{Rechnungsbetrag:} & ~ & \textbf{'.$this->data['table_sum_charge_total_formatted'].$this->currency.'}\\\\';
+
 
 
 		// make transfer reason (Verwendungszweck)
@@ -420,12 +420,17 @@ class Invoice extends \BaseModel{
 		$sum = $count = 0;
 		foreach ($cdrs as $entry)
 		{
-			$this->data['cdr_table_positions'] .= date('d.m.Y', strtotime($entry[1])).' '.$entry[2] .' & '. $entry[3] .' & '. $entry[0] .' & '. $entry[4] . ' & '.sprintf("%01.4f", $entry[5]).'\\\\';
-			$sum += $entry[5];
+			$line = date('d.m.Y', strtotime($entry['date'])).' '.$entry['starttime'] .' & '. $entry['duration'];
+			$line .= ' & '. $entry['calling_nr'] .' & '. $entry['called_nr'];
+			// $line .= ' & '.sprintf("%01.4f", $entry['price']).'\\\\';
+			$line .= ' & '.(\App::getLocale() == 'de' ? number_format($entry['price'], 4, ',', '.') : number_format($entry['price'], 4)).'\\\\';
+
+			$this->data['cdr_table_positions'] .= $line;
+			$sum += $entry['price'];
 			$count++;
 		}
 
-		$sum = sprintf("%01.2f", $sum);
+		$sum = \App::getLocale() == 'de' ? number_format($sum, 2, ',', '.') : number_format($sum, 2);
 
 		$this->data['cdr_charge'] = $sum;
 		$this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'. $sum . '}\\\\';
@@ -539,7 +544,7 @@ class Invoice extends \BaseModel{
 	 */
 	private function _create_pdfs()
 	{
-		chdir($this->get_invoice_dir_path());
+		$dir_path = $this->get_invoice_dir_path();
 
 		$file_paths['Invoice']  = $this->get_invoice_dir_path().$this->filename_invoice;
 		$file_paths['CDR'] 		= $this->get_invoice_dir_path().$this->filename_cdr;
@@ -548,24 +553,7 @@ class Invoice extends \BaseModel{
 		{
 			if (is_file($file))
 			{
-				// take care - when we start process in background we don't get the return value anymore
-				system("pdflatex \"$file\" &>/dev/null &", $ret);			// returns 0 on success, 127 if pdflatex is not installed  - $ret as second argument
-
-				switch ($ret)
-				{
-					case 0: break;
-					case 1:
-						ChannelLog::error('billing', "PdfLatex: Syntax Error in filled tex template!");
-						return null;
-					case 127:
-						ChannelLog::error('billing', "Illegal Command - PdfLatex not installed!");
-						return null;
-					default:
-						ChannelLog::error('billing', "Error executing PdfLatex - Return Code: $ret");
-						return null;
-				}
-
-				// echo "Successfully created $key in $file\n";
+				pdflatex($dir_path, $file, true);
 				ChannelLog::debug('billing', "Created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
 			}
 		}
@@ -595,8 +583,8 @@ class Invoice extends \BaseModel{
 			}
 			else {
 				// possible errors: syntax/filename/...
-				ChannelLog::error('billing', "Missing Invoice PDF ".$fn);
-				throw new \Exception("Missing Invoice PDF ".$fn);
+				ChannelLog::error('billing', "pdflatex: Error creating Invoice PDF ".$fn);
+				throw new \Exception("pdflatex: Error creating Invoice PDF ".$fn);
 			}
 		}
 	}

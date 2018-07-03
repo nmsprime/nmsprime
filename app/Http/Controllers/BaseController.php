@@ -2,26 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App;
-use Module;
-use Config;
-use File;
-use View;
-use Validator;
-use Input;
-use Redirect;
-use Route;
-use BaseModel;
-use Auth;
-use NoAuthenticateduserError;
-use Log;
-use GlobalConfig;
-use Illuminate\Support\Facades\Request;
-use Yajra\Datatables\Datatables;
-use Monolog\Logger;
-
+use App, Auth, BaseModel, Config, File, GlobalConfig, Input, Log, Module, NoAuthenticateduserError, Redirect, Route, Validator, View;
 use App\Exceptions\AuthException;
-
+use Illuminate\Support\Facades\Request;
+use Monolog\Logger;
+use Yajra\Datatables\Datatables;
 
 /*
  * BaseController: The Basic Controller in our MVC design.
@@ -32,8 +17,15 @@ class BaseController extends Controller {
 	 * Default VIEW styling options
 	 * NOTE: All these values could be used in the inheritances classes
 	 */
-	protected $save_button = 'Save';
-	protected $force_restart_button = 'Force Restart';
+	protected $edit_view_save_button = true;
+	protected $save_button_name = 'Save';
+	// key in messages language file
+	protected $save_button_title_key = null;
+
+	protected $edit_view_second_button = false;
+	protected $second_button_name = 'Missing action name';
+	protected $second_button_title_key = null;
+
 	protected $relation_create_button = 'Create';
 
 	// if set to true a create button on index view is available
@@ -44,9 +36,6 @@ class BaseController extends Controller {
 	protected $index_left_md_size = 12;
 	protected $edit_right_md_size = null;
 
-	protected $edit_view_save_button = true;
-	protected $edit_view_force_restart_button = false;
-
 	protected $index_tree_view = false;
 
 	/**
@@ -55,6 +44,16 @@ class BaseController extends Controller {
 	 * NOTE: When model is deleted all pivot entries will be detached and special handling in BaseModel@delete is omitted
 	 */
 	protected $many_to_many = [];
+
+
+	/**
+	 * File upload paths to handle file upload fields generically - see e.g. CompanyController, SepaAccountController
+	 *
+	 * NOTE: upload field has to be named like the corresponding select field of the upload field
+	 *
+	 * @var Array 	['upload_field' => 'relative storage path']
+	 */
+	protected $file_upload_paths = [];
 
 
 	// Auth Vars
@@ -144,7 +143,7 @@ class BaseController extends Controller {
 
 	public static function get_config_modules()
 	{
-		$modules = Module::enabled();
+		$modules = \Module::enabled();
 		$links = ['Global Config' => 'GlobalConfig'];
 
 		foreach($modules as $module)
@@ -317,26 +316,45 @@ class BaseController extends Controller {
 	 * @param dst_path Path to move uploaded file in
 	 * @author Patrick Reichel
 	 */
-	protected function handle_file_upload($base_field, $dst_path) {
-
+	protected function handle_file_upload($base_field, $dst_path)
+	{
 		$upload_field = $base_field."_upload";
 
-		if (Input::hasFile($upload_field)) {
+		if (!Input::hasFile($upload_field))
+			return null;
 
-			// get filename
-			$filename = Input::file($upload_field)->getClientOriginalName();
+		// get filename
+		$filename = Input::file($upload_field)->getClientOriginalName();
 
-			$ext = strrchr($filename, '.');
-			$fn  = substr($filename, 0, strlen($filename) - strlen($ext));
-			$filename = str_replace([' ', '&', '|', ',', ';', '+', '.' ], '', $fn).$ext;
+		$ext = pathinfo($filename, PATHINFO_EXTENSION);
+		$fn  = pathinfo($filename, PATHINFO_FILENAME);
+		$filename = sanitize_filename($fn).".$ext";
 
-			// move file
-			Input::file($upload_field)->move($dst_path, $filename);
+		// move file
+		Input::file($upload_field)->move($dst_path, $filename);
 
-			// place filename as chosen value in Input field
-			Input::merge(array($base_field => $filename));
+		// place filename as chosen value in Input field
+		Input::merge(array($base_field => $filename));
+
+		return $filename;
+	}
+
+
+	/**
+	 * Handle file uploads generically in store and update function
+	 *
+	 * NOTE: use global Variable 'file_upload_paths' in Controller to specify DB column and storage path
+	 *
+	 * @param Array 	Input data array passed by reference
+	 */
+	private function _handle_file_upload(&$data)
+	{
+		foreach ($this->file_upload_paths as $column => $path) {
+			$filename = $this->handle_file_upload($column, storage_path($path));
+
+			if ($filename !== null)
+				$data[$column] = $filename;
 		}
-
 	}
 
 
@@ -357,7 +375,7 @@ class BaseController extends Controller {
 
 		if(!isset($a['networks'])){
 			$a['networks'] = [];
-			if (\PPModule::is_active('HfcReq'))
+			if (\Module::collections()->has('HfcReq'))
 				$a['networks'] = \Modules\HfcReq\Entities\NetElement::get_all_net();
 		}
 
@@ -395,13 +413,18 @@ class BaseController extends Controller {
 		if (!isset($a['html_title']))
 			$a['html_title'] = 'NMS Prime - '.\App\Http\Controllers\BaseViewController::translate_view(\NamespaceController::module_get_pure_model_name(),'Header');
 
-		if (( \PPModule::is_active('Provvoipenvia')) && (!isset($a['envia_interactioncount'])) )
+		if (( \Module::collections()->has('ProvVoipEnvia')) && (!isset($a['envia_interactioncount'])) )
 			$a['envia_interactioncount'] = \Modules\ProvVoipEnvia\Entities\EnviaOrder::get_user_interaction_needing_enviaorder_count();
 
-		$a['save_button'] = $this->save_button;
-		$a['force_restart_button'] = $this->force_restart_button;
+		if ( \Module::collections()->has('Dashboard'))
+			$a['modem_statistics'] = \Modules\Dashboard\Http\Controllers\DashboardController::get_modem_statistics();
+
 		$a['edit_view_save_button'] = $this->edit_view_save_button;
-		$a['edit_view_force_restart_button'] = $this->edit_view_force_restart_button;
+		$a['save_button_name'] = $this->save_button_name;
+		$a['second_button_name'] = $this->second_button_name;
+		$a['edit_view_second_button'] = $this->edit_view_second_button;
+		$a['second_button_title_key'] = $this->second_button_title_key;
+		$a['save_button_title_key'] = $this->save_button_title_key;
 
 		// Get Framework Informations
 		$gc = GlobalConfig::first();
@@ -560,6 +583,25 @@ class BaseController extends Controller {
 
 
 	/**
+	 * API equivalent of create()
+	 *
+	 * @author Ole Ernst
+	 *
+	 * @return JsonResponse
+	 */
+	public function api_create($ver)
+	{
+		if ($ver !== '0')
+			return response()->json(['ret' => "Version $ver not supported"]);
+
+		$model = static::get_model_obj();
+		$fields = BaseViewController::prepare_form_fields(static::get_controller_obj()->view_form_fields($model), $model);
+
+		return response()->json($fields);
+	}
+
+
+	/**
 	 * Generic store function - stores an object of the calling model
 	 * @param redirect: if set to false returns id of the new created object (default: true)
 	 * @return: html redirection to edit page (or if param $redirect is false the new added object id)
@@ -573,13 +615,18 @@ class BaseController extends Controller {
 		$data 		= $controller->prepare_input(Input::all());
 		$rules 		= $controller->prepare_rules($obj::rules(), $data);
 		$validator  = Validator::make($data, $rules);
-		$data 		= $controller->prepare_input_post_validation ($data);
 
 		if ($validator->fails()) {
+			Log::info ('Validation Rule Error: '.$validator->errors());
+
 			$msg = 'Input invalid – please correct the following errors';
 			\Session::push('tmp_error_above_form', $msg);
 			return Redirect::back()->withErrors($validator)->withInput()->with('message', $msg)->with('message_color', 'danger');
 		}
+		$data = $controller->prepare_input_post_validation ($data);
+
+		// Handle file uploads generically - this must happen after the validation as moving the file before leads always to validation error
+		$this->_handle_file_upload($data);
 
 		$obj = $obj::create($data);
 
@@ -594,6 +641,43 @@ class BaseController extends Controller {
 		\Session::push('tmp_success_above_form', $msg);
 
 		return Redirect::route(\NamespaceController::get_route_name().'.edit', $id)->with('message', $msg)->with('message_color', 'success');
+	}
+
+	/**
+	 * API equivalent of store()
+	 *
+	 * @author Ole Ernst
+	 *
+	 * @return JsonResponse
+	 */
+	public function api_store($ver)
+	{
+		if ($ver !== '0')
+			return response()->json(['ret' => "Version $ver not supported"]);
+
+		$obj = static::get_model_obj();
+		$controller = static::get_controller_obj();
+
+		// Prepare and Validate Input
+		$data       = $this->_api_prepopulate_fields($obj, $controller);
+		$data 		= $controller->prepare_input($data);
+		$rules 		= $controller->prepare_rules($obj::rules(), $data);
+		$validator  = Validator::make($data, $rules);
+
+		if ($validator->fails()) {
+			$ret = [];
+			foreach($validator->errors()->getMessages() as $field => $error)
+				$ret[$field] = $error;
+			return response()->json(['ret' => $ret]);
+		}
+		$data = $controller->prepare_input_post_validation ($data);
+
+		$obj = $obj::create($data);
+
+		// Add N:M Relations
+		self::_set_many_to_many_relations($obj, $data);
+
+		return response()->json(['ret' => 'success', 'id' => $obj->id]);
 	}
 
 
@@ -673,6 +757,9 @@ class BaseController extends Controller {
 			return Redirect::back()->withErrors($validator)->withInput()->with('message', $msg)->with('message_color', 'danger');
 		}
 
+		// Handle file uploads generically - this must happen after the validation as moving the file before leads always to validation error
+		$this->_handle_file_upload($data);
+
 		// update timestamp, this forces to run all observer's
 		// Note: calling touch() forces a direct save() which calls all observers before we update $data
 		//       when exit in middleware to a new view page (like Modem restart) this kill update process
@@ -707,6 +794,68 @@ class BaseController extends Controller {
 
 		return Redirect::route($route_model.'.edit', $id)->with('message', $msg)->with('message_color', $color);
 	}
+
+	/**
+	 * API equivalent of update()
+	 *
+	 * @author Ole Ernst
+	 *
+	 * @return JsonResponse
+	 */
+	public function api_update($ver, $id)
+	{
+		if ($ver !== '0')
+			return response()->json(['ret' => "Version $ver not supported"]);
+
+		$obj = static::get_model_obj()->findOrFail($id);
+		$controller = static::get_controller_obj();
+
+		// Prepare and Validate Input
+		$data      = $this->_api_prepopulate_fields($obj, $controller);
+		$data      = $controller->prepare_input($data);
+		$rules     = $controller->prepare_rules($obj::rules($id), $data);
+		$validator = Validator::make($data, $rules);
+		$data      = $controller->prepare_input_post_validation ($data);
+
+		if ($validator->fails()) {
+			$ret = [];
+			foreach($validator->errors()->getMessages() as $field => $error)
+				$ret[$field] = $error;
+			return response()->json(['ret' => $ret]);
+		}
+
+		$data['updated_at'] = \Carbon\Carbon::now(Config::get('app.timezone'));
+
+		$obj->update($data);
+
+		// Add N:M Relations
+		self::_set_many_to_many_relations($obj, $data);
+
+		return response()->json(['ret' => 'success']);
+	}
+
+	/**
+	 * Prepopluate all data fields of the corresponding object, so that an API
+	 * request only needs to send the fields which should be updated and not all
+	 *
+	 * @author Ole Ernst
+	 *
+	 * @return Array
+	 */
+	private static function _api_prepopulate_fields($obj, $ctrl) {
+		$fields = BaseViewController::prepare_form_fields($ctrl->view_form_fields($obj), $obj);
+		$inputs = Input::all();
+		$data = [];
+
+		foreach ($fields as $field) {
+			$name = $field['name'];
+			// we can't use Input::has($name), as it claims $name does not exists, if it is an empty string
+			$data[$name] = array_key_exists($name, $inputs) ? $inputs[$name] : $field['field_value'];
+		}
+
+		return $data;
+	}
+
 
 
 	/**
@@ -825,6 +974,28 @@ class BaseController extends Controller {
 		return Redirect::back()->with('delete_message', ['message' => $message, 'class' => $class, 'color' => $color]);
 	}
 
+	/**
+	 * API equivalent of destroy()
+	 * Recursive deletion is not implemented, as this should be handled by the client
+	 *
+	 * @author Ole Ernst
+	 *
+	 * @return JsonResponse
+	 */
+	public function api_destroy($ver, $id)
+	{
+		if ($ver !== '0')
+			return response()->json(['ret' => "Version $ver not supported"]);
+
+		$obj = static::get_model_obj();
+		if ($obj->findOrFail($id)->delete())
+			$ret = 'success';
+		else
+			$ret = 'failure';
+
+		return response()->json(['ret' => $ret]);
+	}
+
 
 	/**
 	 * Detach a pivot entry of an n-m relationship
@@ -846,13 +1017,32 @@ class BaseController extends Controller {
 		return \Redirect::back();
 	}
 
-
-	public function dump($id) {
-		return static::get_model_obj()->findOrFail($id);
+	/**
+	 * API equivalent of the edit view
+	 *
+	 * @author Ole Ernst
+	 *
+	 * @return JsonResponse
+	 */
+	public function api_get($ver, $id) {
+		if ($ver === '0')
+			return static::get_model_obj()->findOrFail($id);
+		else
+			return response()->json(['ret' => "Version $ver not supported"]);
 	}
 
-	public function dumpall() {
-		return static::get_model_obj()->all();
+	/**
+	 * API equivalent of index()
+	 *
+	 * @author Ole Ernst
+	 *
+	 * @return JsonResponse
+	 */
+	public function api_index($ver) {
+		if ($ver === '0')
+			return static::get_model_obj()->all();
+		else
+			return response()->json(['ret' => "Version $ver not supported"]);
 	}
 
 
@@ -1087,14 +1277,18 @@ class BaseController extends Controller {
 	 * @param header - defines whats written in Breadcrumbs Header at Edit and Create Pages
 	 * @param edit - array like [$table.'.column1' => 'customfunction', 'foreigntable.column' => 'customfunction', 'customcolumn' => 'customfunction']
 	 * customfunction will be called for every element in table.column, foreigntable.column or customcolumn
-	 * CAREFUL customcolumn will not be sortable or searchable - to use them anyways use the sortsearch key
+	 * CAREFUL customcolumn will not be sortable or searchable - to use them anyways use the disable_sortsearch key
 	 * @param eager_loading array like [foreigntable1, foreigntable2, ...] - eager load foreign tables
 	 * @param order_by array like ['0' => 'asc'] - order table by id in ascending order, ['1' => 'desc'] - order table after first column in descending order
-	 * @param sortsearch array like ['customcolumn' => 'false'] prevents that user is able to sort what is impossible => prevent errors
+	 * @param disable_sortsearch array like ['customcolumn' => 'false'] disables sorting & searching for the chosen column (e.g. when it is impossible) => prevent errors
 	 *
 	 * @return \Illuminate\Http\JsonResponse
 	 *
 	 * @author Christian Schramm
+	 *
+	 * NOTE: Further Datatables Documentation
+	 * 			https://datatables.yajrabox.com
+	 * 			https://yajrabox.com/docs/laravel-datatables/
      */
     public function index_datatables_ajax()
     {
@@ -1151,15 +1345,15 @@ class BaseController extends Controller {
 		foreach ($edit_column_data as $column => $functionname) {
 			if($column == $first_column)
 			{
-			$DT->editColumn($column, function($object) use ($functionname) {
-				return '<a href="'.route(\NamespaceController::get_route_name().'.edit', $object->id).'"><strong>'.
-				$object->view_icon().$object->$functionname().'</strong></a>';
-			});
+				$DT->editColumn($column, function($object) use ($functionname) {
+					return '<a href="'.route(\NamespaceController::get_route_name().'.edit', $object->id).'"><strong>'.
+					$object->view_icon().$object->$functionname().'</strong></a>';
+				});
 			} else {
-			$DT->editColumn($column, function($object) use ($functionname) {
-				return $object->$functionname();
-			});
-		}
+				$DT->editColumn($column, function($object) use ($functionname) {
+					return $object->$functionname();
+				});
+			}
 		};
 
 		$DT	->setRowClass(function ($object) {
@@ -1168,5 +1362,125 @@ class BaseController extends Controller {
 		});
 
 		return $DT->make(true);
+	}
+
+
+// NOTE: Import is a fast-forward-copy from https://github.com/LaravelDaily/Laravel-Import-CSV-Demo
+
+	/**
+	 * Import: show the import view
+	 *
+	 * @author Torsten Schmidt
+	 *
+	 * @return view
+	 */
+	public function import ()
+	{
+
+		return View::make('Generic.import', $this->compact_prep_view(null));
+	}
+
+
+	/**
+	 * Import Parse: upload the file in CsvData model and allow the user to
+	 *               parse the *.csv file fields
+	 *
+	 * @author Torsten Schmidt
+	 *
+	 * @return view
+	 */
+	public function import_parse(\App\Http\Requests\CsvImportRequest $request)
+	{
+
+		$path = $request->file('csv_file')->getRealPath();
+
+		if ($request->has('header')) {
+			$data = \Maatwebsite\Excel\Facades\Excel::load($path, function($reader) {})->get()->toArray();
+		} else {
+			$data = array_map('str_getcsv', file($path));
+		}
+
+		if (count($data) > 0) {
+			if ($request->has('header')) {
+				$csv_header_fields = [];
+				foreach ($data[0] as $key => $value) {
+					$csv_header_fields[] = $key;
+				}
+			}
+			$csv_data = array_slice($data, 0, 2);
+
+			$csv_data_file = \App\CsvData::create([
+				'csv_filename' => $request->file('csv_file')->getClientOriginalName(),
+				'csv_header' => $request->has('header'),
+				'csv_data' => json_encode($data)
+				]);
+		} else {
+			return redirect()->back();
+		}
+
+		$db_fields = \Schema::getColumnListing(static::get_model_obj()->getTable());
+
+		// d($csv_header_fields, $csv_data, $csv_data_file, $db_fields);
+
+		return View::make('Generic.import_fields', $this->compact_prep_view(compact('csv_header_fields', 'csv_data', 'csv_data_file', 'db_fields')));
+
+	}
+
+
+	/**
+	 * Import Process: Do the import
+	 *
+	 * @author Torsten Schmidt
+	 *
+	 * @return view
+	 */
+	public function import_process()
+	{
+		$data = \App\CsvData::find($_POST['csv_data_file_id']);
+		$csv_data = json_decode($data->csv_data, true);
+
+		foreach ($csv_data as $row) {
+			$obj = static::get_model_obj();
+			foreach (\Schema::getColumnListing(static::get_model_obj()->getTable()) as $index => $field) {
+				if ($data->csv_header) {
+					$obj->$field = $row[$_POST['fields'][$field]];
+				} else {
+					$obj->$field = $row[$_POST['fields'][$index]];
+				}
+			}
+
+			if ($obj->deleted_at == 0)
+				$obj->deleted_at = NULL;
+
+			// Disable & Detach all observers for speed up
+			if (!$data->observer)
+			{
+				$obj->observer_enabled = false;
+				$obj->getEventDispatcher()->forget('eloquent.created: '.\NamespaceController::get_model_name());
+				$obj->getEventDispatcher()->forget('eloquent.creating: '.\NamespaceController::get_model_name());
+				//d( $obj->getEventDispatcher() );
+			}
+
+			$obj->save();
+		}
+
+		return View::make('Generic.import_success', $this->compact_prep_view(null));
+	}
+
+	/**
+	 * Process autocomplete ajax request
+	 *
+	 * @return Array
+	 *
+	 * @author Ole Ernst
+	 */
+	public function autocomplete_ajax($column)
+	{
+		$model = static::get_model_obj();
+
+		return $model->select($column)
+			->where($column, 'like', '%'.\Input::get('q').'%')
+			->distinct()
+			->pluck($column);
 	}
 }

@@ -1,6 +1,7 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
 use Storage;
 
 class Company extends \BaseModel {
@@ -21,9 +22,10 @@ class Company extends \BaseModel {
 			'street' 	=> 'required',
 			'zip'	 	=> 'required',
 			'city'	 	=> 'required',
+			'logo_upload' => 'mimes:jpg,jpeg,bmp,png,pdf',
+			'conn_info_template_fn_upload' => 'mimetypes:text/x-tex,application/x-tex',
 		);
 	}
-
 
 	/**
 	 * View related stuff

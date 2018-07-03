@@ -2,14 +2,9 @@
 
 namespace Modules\ProvVoip\Entities;
 
-use File;
-use Log;
+use File, Log;
+use Modules\ProvBase\Entities\{Configfile, Modem, ProvBase};
 
-use Modules\ProvBase\Entities\Modem;
-use Modules\ProvBase\Entities\Configfile;
-use Modules\ProvBase\Entities\ProvBase;
-
-// Model not found? execute composer dump-autoload in nmsprime root dir
 class Mta extends \BaseModel {
 
 	// The associated SQL table for this Model
@@ -21,10 +16,9 @@ class Mta extends \BaseModel {
 	{
 		return array(
 			'mac' => 'required|mac|unique:mta,mac,'.$id.',id,deleted_at,NULL', //|unique:mta,mac',
-			'modem_id' => 'required|exists:modem,id|min:1',
-			'configfile_id' => 'required|exists:configfile,id|min:1',
+			'modem_id' => 'required|exists:modem,id,deleted_at,NULL|min:1',
+			'configfile_id' => 'required|exists:configfile,id,deleted_at,NULL|min:1',
 			// 'hostname' => 'required|unique:mta,hostname,'.$id,
-			'type' => 'required|exists:mta,type'
 		);
 	}
 
@@ -215,7 +209,7 @@ _failed:
 	/**
 	 * Define DHCP Config File for MTA's
 	 */
-	const CONF_FILE_PATH = '/etc/dhcp/nmsprime/mta.conf';
+	const CONF_FILE_PATH = '/etc/dhcp-nmsprime/mta.conf';
 
 	/**
 	 * Writes all mta entries to dhcp configfile

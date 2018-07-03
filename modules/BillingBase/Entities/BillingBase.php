@@ -1,6 +1,7 @@
 <?php
 
 namespace Modules\BillingBase\Entities;
+
 use Modules\ProvBase\Entities\Contract;
 
 class BillingBase extends \BaseModel {
@@ -41,6 +42,19 @@ class BillingBase extends \BaseModel {
 	public function view_index_label()
 	{
 		return $this->view_headline();
+	}
+
+
+	public static function contactPersons()
+	{
+		$filepath = storage_path('app/config/billingbase/ags.php');
+
+		if (!is_file($filepath)) {
+			\Log::error("Missing list of Antennengemeinschaft contacts under $filepath");
+			return [0 => null];
+		}
+
+		return require $filepath;
 	}
 
 }

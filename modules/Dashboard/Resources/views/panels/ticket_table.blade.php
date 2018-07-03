@@ -14,6 +14,7 @@
 		<tr>
 			<th>{{ \App\Http\Controllers\BaseViewController::translate_label('Title') }}</th>
 			<th>{{ \App\Http\Controllers\BaseViewController::translate_label('Priority') }}</th>
+			<th>{{ \App\Http\Controllers\BaseViewController::translate_label('Created at') }}</th>
 		</tr>
 	</thead>
 	<tbody>
@@ -21,6 +22,7 @@
 		<tr class = "{{$bsclass[$ticket->priority]}} clickableRow">
 			<td class="ClickableTd">{{HTML::linkRoute('Ticket.edit', $ticket->name, $ticket->id)}}</td>
 			<td class="ClickableTd">{{$ticket->priority}}</td>
+			<td class="ClickableTd">{{$ticket->created_at}}</td>
 		</tr>
 	@endforeach
 	</tbody>

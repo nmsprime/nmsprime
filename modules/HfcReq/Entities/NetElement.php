@@ -28,7 +28,7 @@ class NetElement extends \BaseModel {
 			'pos' 			=> 'geopos',
 			'community_ro' 	=> 'regex:/(^[A-Za-z0-9]+$)+/',
 			'community_rw' 	=> 'regex:/(^[A-Za-z0-9]+$)+/',
-			'netelementtype_id'	=> 'required|exists:netelementtype,id|min:1'
+			'netelementtype_id'	=> 'required|exists:netelementtype,id,deleted_at,NULL|min:1'
 		);
 	}
 
@@ -58,19 +58,19 @@ class NetElement extends \BaseModel {
 	{
 		$ret = [];
 
-		// if (\PPModule::is_active('ProvBase'))
+		// if (\Module::collections()->has('ProvBase'))
 		// {
 		// 	$ret['Edit']['Modem']['class'] 	  = 'Modem';
 		// 	$ret['Edit']['Modem']['relation'] = $this->modems;
 		// }
 
-		if (\PPModule::is_active('HfcCustomer'))
+		if (\Module::collections()->has('HfcCustomer'))
 		{
 			$ret['Edit']['Mpr']['class'] 	= 'Mpr';
 			$ret['Edit']['Mpr']['relation'] = $this->mprs;
 		}
 
-		if (\PPModule::is_active('hfcsnmp'))
+		if (\Module::collections()->has('HfcSnmp'))
 		{
 			if ($this->netelementtype && ($this->netelementtype->id == 2 || $this->netelementtype->parameters()->count()))
 			{
@@ -91,7 +91,7 @@ class NetElement extends \BaseModel {
 		$bsclass = $this->get_bsclass();
 
 		return ['table' => $this->table,
-				'index_header' => [$this->table.'.id', 'netelementtype.name', $this->table.'.name',  $this->table.'.ip', $this->table.'.pos'],
+				'index_header' => [$this->table.'.id', 'netelementtype.name', $this->table.'.name',  $this->table.'.ip', $this->table.'.pos', $this->table.'.options'],
 				'header' =>  $this->id.' - '.$this->name,
 				'bsclass' => $bsclass,
 				'order_by' => ['0' => 'asc'],
