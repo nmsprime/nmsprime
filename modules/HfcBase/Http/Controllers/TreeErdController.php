@@ -248,14 +248,14 @@ class TreeErdController extends HfcBaseController {
 				$url  = \BaseRoute::get_base_url()."/Customer/netelement_id/$idtree";
 		        $n++;
 
-				$state = ModemHelper::ms_state ("netelement_id = $idtree");
+				$state = ModemHelper::ms_state($idtree);
 				if ($state != -1)
 				{
 					$color = ModemHelper::ms_state_to_color ($state);
-					$num   = ModemHelper::ms_num("netelement_id = $idtree");
-					$numa  = ModemHelper::ms_num_all("netelement_id = $idtree");
-					$cri   = ModemHelper::ms_cri("netelement_id = $idtree");
-					$avg   = ModemHelper::ms_avg("netelement_id = $idtree");
+					$num   = ModemHelper::ms_num($idtree);
+					$numa  = ModemHelper::ms_num_all($idtree);
+					$cri   = ModemHelper::ms_cri($idtree);
+					$avg   = ModemHelper::ms_avg($idtree);
 
 					$file .= "\n node [label = \"$numa\\n$num/$cri\\n$avg\", shape = circle, style = filled, color=$color, URL=\"$url\", target=\"".$this->html_target."\"];";
 					$file .= " \"C$idtree\"";

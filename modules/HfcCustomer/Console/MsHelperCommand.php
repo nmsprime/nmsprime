@@ -43,7 +43,7 @@ class MsHelperCommand extends Command {
 		$ret = 'OK';
 		$perf = '';
 		foreach(NetElement::where('id', '>', '2')->get() as $element) {
-			$state = ModemHelper::ms_state ("netelement_id = $element->id");
+			$state = ModemHelper::ms_state($element->id);
 			if ($state == -1)
 				continue;
 			if ($state == 'WARNING' && $ret == 'OK')
@@ -51,10 +51,10 @@ class MsHelperCommand extends Command {
 			if ($state == 'CRITICAL')
 				$ret = $state;
 
-			$num   = ModemHelper::ms_num("netelement_id = $element->id");
-			$numa  = ModemHelper::ms_num_all("netelement_id = $element->id");
-			$cm_cri= ModemHelper::ms_cri("netelement_id = $element->id");
-			$avg   = ModemHelper::ms_avg("netelement_id = $element->id");
+			$num   = ModemHelper::ms_num($element->id);
+			$numa  = ModemHelper::ms_num_all($element->id);
+			$cm_cri= ModemHelper::ms_cri($element->id);
+			$avg   = ModemHelper::ms_avg($element->id);
 			$warn_per = ModemHelper::$avg_warning_percentage / 100 * $numa;
 			$crit_per = ModemHelper::$avg_critical_percentage / 100 * $numa;
 			$warn_us  = ModemHelper::$avg_warning_us;

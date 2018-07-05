@@ -200,13 +200,13 @@ class TreeTopographyController extends HfcBaseController {
 				$name     = $tree->name;
 				$pos_tree = $tree->pos;
 
-				$pos = $modem_helper::ms_avg_pos('netelement_id='.$tree->id);
+				$pos = $modem_helper::ms_avg_pos($tree->id);
 
 				if ($pos['x'])
 				{
 					$xavg = $pos['x'];
 					$yavg = $pos['y'];
-					$icon = $modem_helper::ms_state_to_color($modem_helper::ms_state ("netelement_id = $id"));
+					$icon = $modem_helper::ms_state_to_color($modem_helper::ms_state($id));
 					$icon .= '-CUS';
 
 					# Draw Line - Customer - Amp
@@ -232,11 +232,11 @@ class TreeTopographyController extends HfcBaseController {
 						<name></name>
 						<description><![CDATA[";
 
-							$num  = $modem_helper::ms_num("netelement_id = $id");
-							$numa = $modem_helper::ms_num_all("netelement_id = $id");
+							$num  = $modem_helper::ms_num($id);
+							$numa = $modem_helper::ms_num_all($id);
 							$pro  = $numa ? round(100 * $num / $numa, 0) : 0;
-							$cri  = $modem_helper::ms_cri("netelement_id = $id");
-							$avg  = $modem_helper::ms_avg("netelement_id = $id");
+							$cri  = $modem_helper::ms_cri($id);
+							$avg  = $modem_helper::ms_avg($id);
 							$url  = \BaseRoute::get_base_url()."/Customer/netelement_id/$id";
 
 							$file .= "Amp/Node: $name<br><br>Number All CM: $numa<br>Number Online CM: $num ($pro %)<br>Number Critical CM: $cri<br>US Level Average: $avg<br><br><a href=\"$url\" target=\"".$this->html_target."\" alt=\"\">Show all Customers</a>";
