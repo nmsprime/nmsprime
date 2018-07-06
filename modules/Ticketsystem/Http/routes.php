@@ -9,7 +9,7 @@ BaseRoute::group([], function() {
 	BaseRoute::post('Ticket/detach/{id}/{func}', [
 		'as' => 'Ticket.detach',
 		'uses' => 'Modules\Ticketsystem\Http\Controllers\TicketController@detach',
-		'middleware' => 'can:delete,Modules\Ticketsystem\Entities\Ticket'
+		'middleware' => ['can:delete,Modules\Ticketsystem\Entities\Ticket']
 	]);
 
 });

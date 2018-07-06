@@ -15,12 +15,12 @@ BaseRoute::group([], function() {
 	BaseRoute::resource('SettlementRun', 'Modules\BillingBase\Http\Controllers\SettlementRunController');
 
 	BaseRoute::get('SettlementRun/download/{id}/{sepaacc}/{key}', [
-		'as' => 'Settlement.download',
+		'as' => 'SettlementRun.download',
 		'uses' => 'Modules\BillingBase\Http\Controllers\SettlementRunController@download',
 		'middleware' => ['can:download,Modules\BillingBase\Entities\SettlementRun'],
 	]);
 
-	BaseRoute::get('SettlementRun/check_state', [
+	BaseRoute::get('SettlementRun/check_state/stream', [
 		'as' => 'SettlementRun.check_state',
 		'uses' => 'Modules\BillingBase\Http\Controllers\SettlementRunController@check_state',
 		'middleware' => ['can:view,Modules\BillingBase\Entities\SettlementRun'],

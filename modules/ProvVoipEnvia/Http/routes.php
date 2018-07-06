@@ -10,6 +10,7 @@ BaseRoute::group([], function() {
 		'as' => 'ProvVoipEnvia.cron',
 		'uses' => 'Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@cron',
 		// TODO: @xee8ai @Patrick: which auth middleware should be used?
+		// none? -> create middleware cron or move Route to routes/Commmands.php
 	]);
 
 	BaseRoute::get('/provvoipenvia/index', [
@@ -17,6 +18,7 @@ BaseRoute::group([], function() {
 		'uses' => 'Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@index',
 		'middleware' => ['can:view,Modules\ProvVoipEnvia\Entities\ProvVoipEnvia'],
 	]);
+
 	BaseRoute::get('/provvoipenvia/request/{job}', [
 		'as' => 'ProvVoipEnvia.request',
 		'uses' => 'Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request',
@@ -26,7 +28,7 @@ BaseRoute::group([], function() {
 	BaseRoute::get('/enviaorderdocument/{id}/show', [
 		'as' => 'EnviaOrderDocument.show',
 		'uses' => 'Modules\ProvVoipEnvia\Http\Controllers\EnviaOrderDocumentController@show',
-		'middleware' => ['can:edit,Modules\ProvVoipEnvia\Entities\EnviaOrderDocument'],
+		'middleware' => ['can:view,Modules\ProvVoipEnvia\Entities\EnviaOrderDocument'],
 	]);
 
 	BaseRoute::get('/EnviaOrder/{EnviaOrder}/marksolved', [
