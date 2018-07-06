@@ -6,8 +6,6 @@ use Auth, Bouncer, Log, Module, Storage, View;
 
 use App\Http\Controllers\BaseController;
 use Modules\ProvBase\Entities\Contract;
-use Modules\Ticketsystem\Entities\Ticket;
-use Modules\HfcReq\Entities\NetElement;
 
 class DashboardController extends BaseController
 {
@@ -49,21 +47,18 @@ class DashboardController extends BaseController
 	private static function _get_view_permissions()
 	{
 		$user = Auth::user();
-		$income = $hfc = false;
-
-		if (Module::collections()->has('BillingBase') && $user->can('see income chart'))
-				$income = true;
-
-		if (Module::collections()->has('HfcReq') && $user->can('view', NetElement::class))
-				$hfc = true;
 
 		$view = [
-			'contracts' 	=> Module::collections()->has('ProvBase'),
-			'income'		=> $income,
-			'tickets' 		=> Module::collections()->has('Ticketsystem'),
-			'provvoipenvia' => false,
 			'date' 			=> true,
-			'hfc' 			=> $hfc,
+			'provvoipenvia' => false,
+			'income'		=> (Module::collections()->has('BillingBase') &&
+								$user->can('see income chart')),
+			'contracts' 	=> (Module::collections()->has('ProvBase') &&
+								$user->can('view', \Modules\ProvBase\Entities\Contract::class)),
+			'tickets' 		=> (Module::collections()->has('Ticketsystem') &&
+								$user->can('view', \Modules\Ticketsystem\Entities\Ticket::class)),
+			'hfc' 			=> (Module::collections()->has('HfcReq') &&
+								$user->can('view', \Modules\HfcReq\Entities\NetElement::class)),
 		];
 
 		return $view;
@@ -385,7 +380,7 @@ class DashboardController extends BaseController
 		if (!Module::collections()->has('Ticketsystem'))
 			return null;
 
-		return \Auth::user()->tickets()->where('state', '=', 'New')->get();
+		return Auth::user()->tickets()->where('state', '=', 'New')->get();
 	}
 
 
