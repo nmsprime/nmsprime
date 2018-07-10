@@ -92,8 +92,6 @@ class CccUserController extends \BaseController {
 		// get data to fill placeholders in tex template
 		$this->fill_template_data($login_data, $c);
 
-		// dd($login_data);
-
 		// create pdf
 		// TODO: try - catch exceptions that this function shall throw
 		$ret = $this->make_conn_info_pdf($c);

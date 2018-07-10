@@ -1,4 +1,6 @@
-<?php namespace Modules\hfcbase\Providers;
+<?php
+
+namespace Modules\HfcBase\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
@@ -38,7 +40,7 @@ class HfcBaseServiceProvider extends ServiceProvider {
 	 */
 	public function register()
 	{
-		\View::addNamespace('hfcbase', __DIR__.'/../Resources/views');
+		\View::addNamespace('HfcBase', __DIR__.'/../Resources/views');
 
                 $this->commands($this->commands);
 	}
@@ -65,7 +67,7 @@ class HfcBaseServiceProvider extends ServiceProvider {
 	 */
 	public function registerViews()
 	{
-		$viewPath = base_path('resources/views/modules/hfcbase');
+		$viewPath = base_path('resources/views/modules/HfcBase');
 
 		$sourcePath = __DIR__.'/../Resources/views';
 
@@ -74,8 +76,8 @@ class HfcBaseServiceProvider extends ServiceProvider {
 		]);
 
 		$this->loadViewsFrom(array_merge(array_map(function ($path) {
-			return $path . '/modules/hfcbase';
-		}, \Config::get('view.paths')), [$sourcePath]), 'hfcbase');
+			return $path . '/modules/HfcBase';
+		}, \Config::get('view.paths')), [$sourcePath]), 'HfcBase');
 	}
 
 	/**
@@ -85,12 +87,12 @@ class HfcBaseServiceProvider extends ServiceProvider {
 	 */
 	public function registerTranslations()
 	{
-		$langPath = base_path('resources/lang/modules/hfcbase');
+		$langPath = base_path('resources/lang/modules/HfcBase');
 
 		if (is_dir($langPath)) {
-			$this->loadTranslationsFrom($langPath, 'hfcbase');
+			$this->loadTranslationsFrom($langPath, 'HfcBase');
 		} else {
-			$this->loadTranslationsFrom(__DIR__ .'/../Resources/lang', 'hfcbase');
+			$this->loadTranslationsFrom(__DIR__ .'/../Resources/lang', 'HfcBase');
 		}
 	}
 
