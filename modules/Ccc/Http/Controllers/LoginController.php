@@ -24,13 +24,45 @@ class LoginController extends Controller
      */
 	public function __construct()
     {
-		$this->middleware('ccc', ['except' => 'logout']);
+		$this->middleware('cccRedirect', ['except' => 'logout']);
     }
 
+    /**
+     * Return a instance of the used guard
+     *
+     */
 	protected function guard()
 	{
 		return Auth::guard('ccc');
 	}
+
+
+    /**
+     * Change Login Check Field to login_name
+     * Laravel Standard: email
+     */
+    public function username() {
+        return 'login_name';
+    }
+
+    /**
+     * Show Login Page
+     *
+     * @return type view
+     */
+    public function showLoginForm()
+    {
+        $conf = Ccc::first();
+
+        $prefix = 'customer';
+        $head1 = $conf->headline1;
+        $head2 = $conf->headline2;
+        $image = 'main-pic-3.png';
+
+        App::setLocale(\App\Http\Controllers\BaseViewController::get_user_lang());
+
+        return \View::make('auth.login', compact('head1', 'head2', 'prefix', 'image'));
+    }
 
     /**
      * Show Default Page after successful login
@@ -41,20 +73,6 @@ class LoginController extends Controller
      */
     private function redirectTo()
     {
-		return 'customer';
-	}
-
-    public function showLoginForm()
-    {
-		$conf = Ccc::first();
-
-		$prefix = 'customer';
-        $head1 = $conf->headline1;
-        $head2 = $conf->headline2;
-        $image = 'main-pic-3.png';
-
-        App::setLocale(\App\Http\Controllers\BaseViewController::get_user_lang());
-
-        return \View::make('auth.login', compact('head1', 'head2', 'prefix', 'image'));
+		return 'customer/';
 	}
 }

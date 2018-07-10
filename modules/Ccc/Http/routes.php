@@ -13,7 +13,7 @@ BaseRoute::group([], function() {
 
 });
 
-Route::group(['middleware' => 'web', 'prefix' => 'customer'], function () {
+Route::group(['middleware' => ['web'], 'prefix' => 'customer'], function () {
 
 	Route::get('login', [
 		'as' => 'customerLogin',
@@ -32,7 +32,7 @@ Route::group(['middleware' => 'web', 'prefix' => 'customer'], function () {
 
 });
 
-Route::group(['middleware' => 'auth', 'prefix' => 'customer'], function () {
+Route::group(['middleware' => ['web', 'auth'], 'prefix' => 'customer'], function () {
 
 	Route::get ('', [
 		'as' => 'HomeCcc',
