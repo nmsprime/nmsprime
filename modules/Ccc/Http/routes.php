@@ -32,7 +32,7 @@ Route::group(['middleware' => ['web'], 'prefix' => 'customer'], function () {
 
 });
 
-Route::group(['middleware' => ['web', 'auth'], 'prefix' => 'customer'], function () {
+Route::group(['middleware' => ['web'], 'prefix' => 'customer'], function () {
 
 	Route::get ('', [
 		'as' => 'HomeCcc',

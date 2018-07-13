@@ -73,6 +73,6 @@ class LoginController extends Controller
      */
     private function redirectTo()
     {
-		return 'customer/';
+		return 'customer';
 	}
 }
