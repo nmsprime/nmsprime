@@ -7,13 +7,13 @@ BaseRoute::group([], function() {
 	BaseRoute::get('Tree/erd/{field}/{search}', [
 		'as' => 'TreeErd.show',
 		'uses' => 'Modules\HfcBase\Http\Controllers\TreeErdController@show',
-		'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
+		'middleware' => ['can:view,Modules\HfcBase\Entities\TreeErd'],
 	]);
 
 	BaseRoute::get('Tree/topo/{field}/{search}', [
 		'as' => 'TreeTopo.show',
 		'uses' => 'Modules\HfcBase\Http\Controllers\TreeTopographyController@show',
-		'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
+		'middleware' => ['can:view,Modules\HfcBase\Entities\TreeErd'],
 	]);
 
 });
@@ -22,7 +22,7 @@ Route::group(['prefix' => 'app/data/hfcbase'], function () {
 
 	Route::get('{type}/{filename}', [
 		'uses' => 'Modules\HfcBase\Http\Controllers\HfcBaseController@get_file',
-		'middleware' => ['web', 'can:download,Modules\HfcBase\Entities\HfcBase'],
+		'middleware' => ['web', 'can:view,Modules\Entities\TreeErd'],
 	]);
 
 });
