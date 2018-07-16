@@ -2,7 +2,7 @@
 namespace Modules\BillingBase\Http\Controllers;
 
 use ChannelLog;
-use Modules\BillingBase\Entities\{AccountingRecord, BillingLogger, Invoice, SettlementRun};
+use Modules\BillingBase\Entities\{AccountingRecord, BillingLogger, Invoice, SettlementRun, Salesman};
 use Modules\BillingBase\Console\{accountingCommand, cdrCommand};
 use \Monolog\Logger;
 
@@ -276,7 +276,7 @@ reload:
 	 * @param 	dir 			String 		Accounting Record Files Directory relative to storage/app/
 	 * @param 	settlementrun 	Object 		SettlementRun the directory should be cleared for
 	 */
-	public static function directory_cleanup($dir, $settlementrun = null)
+	public static function directory_cleanup($dir, $settlementrun = null, $sepaacc = null)
 	{
 		$start  = $settlementrun ? date('Y-m-01 00:00:00', strtotime($settlementrun->created_at)) : date('Y-m-01');
 		$end 	= $settlementrun ? date('Y-m-01 00:00:00', strtotime('+1 month', strtotime($settlementrun->created_at))) : date('Y-m-01', strtotime('+1 month'));
@@ -294,6 +294,7 @@ reload:
 			Invoice::delete_current_invoices();
 
 		$cdr_filepaths = cdrCommand::get_cdr_pathnames();
+		$salesman_csv_path = Salesman::get_storage_rel_filename();
 
 		// everything in accounting directory - SepaAccount specific
 		foreach (glob(storage_path("app/$dir/*")) as $f)
@@ -301,6 +302,12 @@ reload:
 			// keep cdr
 			if (in_array($f, $cdr_filepaths))
 				continue;
+
+			// keep salesman csv, but remove entries of specific sepa account
+			if ($sepaacc && ($f == $salesman_csv_path)) {
+				Salesman::remove_account_specific_entries_from_csv($sepaacc->id);
+				continue;
+			}
 
 			\Storage::delete($f);
 		}

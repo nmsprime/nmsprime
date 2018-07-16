@@ -168,7 +168,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$acc->add_accounting_record($item);
 				$acc->add_invoice_item($item, $this->conf, $this->sr->id);
 				if ($c->salesman_id)
-					$salesmen->find($c->salesman_id)->add_item($item);
+					$salesmen->find($c->salesman_id)->add_item($c, $item, $acc->id);
 
 			} // end of item loop
 
@@ -308,19 +308,6 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		else
 			mkdir(self::get_absolute_accounting_dir_path(), 0700, true);
 
-		// Salesmen
-		$prod_types = Product::getPossibleEnumValues('type');
-		unset($prod_types['Credit']);
-
-		foreach ($salesmen as $key => $sm)
-		{
-			$sm->all_prod_types = $prod_types;
-			$sm->dir = self::get_relative_accounting_dir_path();
-		}
-		// directory to save file - is actually only needed for first salesmen
-		// if (isset($salesmen[0])) $salesmen[0]->dir = $this->dir;
-
-
 		// SepaAccount
 		foreach ($sepa_accs as $acc)
 		{
@@ -382,8 +369,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				$sm->print_commission();
 
 			// delete file if there are no entries
-			if (Storage::size($salesmen[0]->get_storage_rel_filename()) <= 60)
-				Storage::delete($salesmen[0]->get_storage_rel_filename());
+			if (Storage::size(Salesman::get_storage_rel_filename()) < 160)
+				Storage::delete(Salesman::get_storage_rel_filename());
 		}
 
 		// create zip file
