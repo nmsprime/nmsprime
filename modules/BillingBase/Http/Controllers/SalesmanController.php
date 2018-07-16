@@ -13,9 +13,7 @@ class SalesmanController extends \BaseController {
 		if (!$model)
 			$model = new Salesman;
 
-		$types = Product::getPossibleEnumValues('type');
-		unset($types['Credit']);
-		$types = implode(', ', $types);
+		$types = implode(', ', Product::getPossibleEnumValues('type'));
 
 		// label has to be the same like column in sql table
 		return array(
@@ -31,7 +29,7 @@ class SalesmanController extends \BaseController {
 
 	public function prepare_input($data)
 	{
-		$data['products'] = str_replace(['/', '|', ';'], ',', $data['products']);
+		$data['products'] = str_replace(['/', '|', ';'], ',', trim(ucwords(strtolower($data['products']))));
 
 		return parent::prepare_input($data);
 	}
