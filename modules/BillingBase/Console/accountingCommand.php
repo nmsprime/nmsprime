@@ -28,6 +28,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 	protected $dates;					// offen needed time strings for faster access - see constructor
 	protected $sr;
+	protected $sepaaccount;
 
 
 	/**
@@ -35,9 +36,10 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 *
 	 * @return void
 	 */
-	public function __construct(SettlementRun $sr)
+	public function __construct(SettlementRun $sr, SepaAccount $sa = null)
 	{
 		$this->sr = $sr;
+		$this->sepaaccount = $sa;
 
 		parent::__construct();
 	}
@@ -74,9 +76,10 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		else
 			self::push_state(0, 'Load Data...');
 
-		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter', 'sepamandates')->get();		// eager loading for better performance
-		$salesmen 	= Salesman::all();
+		if ($this->output && $this->argument('sepaaccount_id'))
+			$this->sepaaccount = SepaAccount::findOrFail($this->argument('sepaaccount_id'));
 
+		$sepa_accs  = $this->sepaaccount ? [0 => $this->sepaaccount] : SepaAccount::all();
 		if (!isset($sepa_accs[0])) {
 			Log::error('billing', 'There are no Sepa Accounts to create Billing Files for - Stopping here!');
 			throw new Exception("There are no Sepa Accounts to create Billing Files for");
@@ -92,7 +95,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		if (!$cdrs)
 			Log::warning('billing', 'No Call Data Records available for this Run!');
 
-		echo "Create Invoices:\n";
+		$contracts = self::load_contracts($this->sepaaccount ? $this->sepaaccount->id : 0);
+
 		$num = count($contracts);
 		// show progress bar if not called silently via queues
 		if ($this->output) {
@@ -112,11 +116,6 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			else if (!($i % 10)) {
 				self::push_state((int) $i/$num*100, 'Create Invoices');
 				// echo ($i + 1)."/$num [$c->id][".(memory_get_usage()/1000000)."]\r";
-			}
-
-			if (!$c->create_invoice) {
-				Log::info('billing', "Create invoice for Contract $c->number [$c->id] is off");
-				continue;
 			}
 
 			// Skip invalid contracts
@@ -151,6 +150,10 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				// get account via costcenter
 				$costcenter = $item->get_costcenter();
 				$acc 		= $sepa_accs->find($costcenter->sepaaccount_id);
+
+				// If SR runs for specific SA skip item if it does not belong to that SA (SepaAccount)
+				if ($this->sepaaccount && ($this->sepaaccount->id != $acc->id))
+					continue;
 
 				// increase invoice nr of sepa account
 				if (!isset($c->charge[$acc->id]))
@@ -369,6 +372,79 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	}
 
 
+	/**
+	 * Get all Contracts an invoice shall be created for
+	 *
+	 * NOTE: If SettlementRun is executed for a specific SepaAccount this function will only return the contracts
+	 * 	that can have resulting charges for that account
+	 *
+	 * @param Integer
+	 */
+	public static function load_contracts($sepaaccount_id)
+	{
+		// All contracts - with eager loading
+		if (!$sepaaccount_id)
+		{
+			// Log all contracts where invoice creation is deactivated
+			$deactivated = Contract::where('create_invoice', '=', 0)->orderBy('number')->get(['number'])->pluck('number')->all();
+			Log::info('billing', trans('messages.accCmd_invoice_creation_deactivated', ['contractnrs' => implode(',', $deactivated)]));
+
+			return Contract::orderBy('number')->with('items.product', 'costcenter')
+				->where('create_invoice', '!=', 0)
+				// ->where('salesman_id', '!=', 0)
+				// ->whereIn('number', [50746, /*45570, 45061,*/ 45950])
+				->get();
+		}
+
+
+		// Contracts that are related to specific SepaAccount
+		// All contracts with costcenter belonging to the specific SA (SEPA-Account)
+		$filter1 = Contract::join('costcenter as cc', 'contract.costcenter_id', '=', 'cc.id')
+			->where('cc.sepaaccount_id', '=', $sepaaccount_id)
+			->select('contract.*');
+
+		// All contracts with items with costcenter belonging to the specific SA
+		$filter2 = Contract::join('item as i', 'contract.id', '=', 'i.contract_id')
+			->join('costcenter as cc', 'i.costcenter_id', '=', 'cc.id')
+			->where('cc.sepaaccount_id', '=', $sepaaccount_id)
+			->select('contract.*');
+
+		// All contracts with items of products with costcenter belonging to the specific SA
+		$filter3 = Contract::join('item as i', 'contract.id', '=', 'i.contract_id')
+			->join('product as p', 'i.product_id', '=', 'p.id')
+			->join('costcenter as cc', 'p.costcenter_id', '=', 'cc.id')
+			->where('cc.sepaaccount_id', '=', $sepaaccount_id)
+			->select('contract.*');
+
+
+		// Log all contracts where invoice creation is deactivated
+		// Note: The following single query has the same results but worse performance with
+		// 	create_invoice != 0, but better performance for create_invoice = 0
+		$deactivated = Contract::leftJoin('item as i', 'contract.id', '=', 'i.contract_id')
+			->leftJoin('costcenter as ccc', 'contract.costcenter_id', '=', 'ccc.id')
+			->leftJoin('costcenter as cci', 'i.costcenter_id', '=', 'cci.id')
+			->leftJoin('product as p', 'i.product_id', '=', 'p.id')
+			->leftJoin('costcenter as ccp', 'p.costcenter_id', '=', 'ccp.id')
+			->where('create_invoice', '=', 0)
+			->where(function ($query) use ($sepaaccount_id) { $query
+				->where('ccc.sepaaccount_id', '=', $sepaaccount_id)
+				->orWhere('ccp.sepaaccount_id', '=', $sepaaccount_id)
+				->orWhere('cci.sepaaccount_id', '=', $sepaaccount_id);
+				})
+			->select('contract.number')
+			->with('items.product', 'costcenter')
+			->distinct()
+			->orderBy('number')
+			->get()->pluck('number')->all();
+
+		Log::info('billing', trans('messages.accCmd_invoice_creation_deactivated', ['contractnrs' => implode(',', $deactivated)]));
+
+		return $filter1->union($filter2)->union($filter3)
+			->where('create_invoice', '!=', 0)
+			->select('contract.*')
+			->with('items.product', 'costcenter')
+			->distinct()
+			->get();
 	}
 
 
@@ -800,7 +876,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	protected function getArguments()
 	{
 		return [
-			// ['cycle', InputArgument::OPTIONAL, '1 - without TV, 2 - only TV'],
+			['sepaaccount_id', InputArgument::OPTIONAL, 'SEPA-Account-ID: Run command for Specific account'],
 		];
 	}
 
