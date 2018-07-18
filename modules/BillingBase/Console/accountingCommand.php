@@ -64,12 +64,15 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			exit(0);
 		}
 
-		Log::debug('billing', ' #####    Start Accounting Command   #####');
+		Log::debug('billing', ' ##############################');
+		Log::debug('billing', ' ## Start Accounting Command ##');
+		Log::debug('billing', ' ##############################');
 
 		// Fetch all Data from Database
-		echo "Get all Data from Database...\n";
-		self::push_state(0, 'Load Data...');
-		$sepa_accs  = SepaAccount::all();
+		if ($this->output)
+			echo "Get all Data from Database...\n";
+		else
+			self::push_state(0, 'Load Data...');
 
 		$contracts  = Contract::orderBy('number')->with('items', 'items.product', 'costcenter', 'sepamandates')->get();		// eager loading for better performance
 		$salesmen 	= Salesman::all();
@@ -89,20 +92,20 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		echo "Create Invoices:\n";
 		$num = count($contracts);
-		// if not called silently via queues
-		if ($this->output)
+		// show progress bar if not called silently via queues
+		if ($this->output) {
+			echo "Create Invoices:\n";
 			$bar = $this->output->createProgressBar($num);
+		}
 
 		/*
 		 * Loop over all Contracts
 		 */
 		foreach ($contracts as $i => $c)
 		{
-			// progress bar on cmd line
-			if ($this->output) {
-				// NOTE: $bar->advance() throws exception when called via queue
+			// progress bar on cmd line - NOTE: $bar->advance() throws exception when called via queue
+			if ($this->output)
 				$bar->advance();
-			}
 			// progress bar in GUI
 			else if (!($i % 10)) {
 				self::push_state((int) $i/$num*100, 'Create Invoices');
@@ -121,8 +124,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			}
 
 			if (!$c->costcenter) {
-				Log::error('billing', "Contract $c->number [$c->id] has no CostCenter assigned - Stop execution");
-				throw new \Exception("Contract $c->number [$c->id] has no CostCenter assigned", 1);
+				Log::error('billing', "Contract $c->number [$c->id] has no CostCenter assigned");
+				continue;
 			}
 
 
@@ -134,7 +137,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				// skip items that are related to a deleted product
 				if (!isset($item->product)) {
 					Log::error('billing', "Product of $item->accounting_text was deleted", [$c->id]);
-					throw new \Exception("Product of $item->accounting_text was deleted");
+					continue;
 				}
 
 				// skip if price is 0 (or item dates are invalid)
@@ -259,7 +262,10 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		Invoice::remove_templatex_files();
 		$this->_make_billing_files($sepa_accs, $salesmen);
 
-		self::push_state(100, 'Finished');
+		if ($this->output)
+			Storage::delete('tmp/accCmdStatus');
+		else
+			self::push_state(100, 'Finished');
 	}
 
 

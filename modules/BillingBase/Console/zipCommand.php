@@ -92,13 +92,13 @@ class zipCommand extends Command {
 		$num = count($files);
 		$this->num = $num >= $this->split ? ((int) ($num / $this->split)) + 1 + ($num % $this->split ? 1 : 0) : null;
 
-		if ($this->output)
+		if ($this->output) {
 			$this->bar = $this->output->createProgressBar($this->num);
-
-		if ($this->output)
 			$this->bar->start();
+		}
+		else
+			accountingCommand::push_state(0, 'Zip Files');
 
-		accountingCommand::push_state(0, 'Zip Files');
 
 		/**
 		 * Concat Invoices
@@ -114,10 +114,10 @@ class zipCommand extends Command {
 			$this->bar->advance();
 			echo "\n";
 		}
+		else
+			accountingCommand::push_state(99, 'Zip Files');
 
-
-		echo "Stored concatenated Invoices: $acc_files_dir_abs_path"."$fname\n";
-		accountingCommand::push_state(99, 'Zip Files');
+		echo "New file (concatenated invoices): $acc_files_dir_abs_path"."$fname\n";
 
 
 		// Zip all - suppress output of zip command
@@ -127,6 +127,7 @@ class zipCommand extends Command {
 		ob_start();
 		system("zip -r $filename *");
 		ob_end_clean();
+		echo "New file (Zip): $acc_files_dir_abs_path"."$filename\n";
 
 
 		system('chmod -R 0700 '.$acc_files_dir_abs_path);
@@ -176,10 +177,10 @@ class zipCommand extends Command {
 			concat_pdfs($files2, $tmp_fn);
 
 			// Status update
-			accountingCommand::push_state((int) $count/$this->num*100, 'Zip Files');
-
 			if ($this->output)
 				$this->bar->advance();
+			else
+				accountingCommand::push_state((int) $count/$this->num*100, 'Zip Files');
 		}
 
 		return $tmp_pdfs;
