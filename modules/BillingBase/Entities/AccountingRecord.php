@@ -27,7 +27,7 @@ class AccountingRecord extends \BaseModel {
 			'count'			=> $item->count,
 			'charge'		=> $item->charge,
 			'invoice_nr'	=> $acc->invoice_nr,
-			'sepa_account_id' => $acc->id,
+			'sepaaccount_id' => $acc->id,
 			);
 
 		$this->create($data);
@@ -46,7 +46,7 @@ class AccountingRecord extends \BaseModel {
 			'count'			=> $count,
 			'charge'		=> $charge,
 			'invoice_nr'	=> $acc->invoice_nr,
-			'sepa_account_id' => $acc->id,
+			'sepaaccount_id' => $acc->id,
 			);
 
 		$this->create($data);

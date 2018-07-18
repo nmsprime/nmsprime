@@ -365,7 +365,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				continue;
 			}
 
-			$nr = AccountingRecord::where('sepa_account_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
+			$nr = AccountingRecord::where('sepaaccount_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
 
 			$acc->invoice_nr = is_object($nr) ? $nr->invoice_nr : $acc->invoice_nr_start;
 		}
