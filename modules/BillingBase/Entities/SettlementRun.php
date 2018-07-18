@@ -8,7 +8,7 @@ class SettlementRun extends \BaseModel {
 	public $table = 'settlementrun';
 
 	// don't try to add these Input fields to Database of this model
-    public $guarded = ['rerun'];
+    public $guarded = ['rerun', 'sepaaccount'];
 
 	// Add your validation rules here
 	public static function rules($id = null)
@@ -93,7 +93,10 @@ class SettlementRun extends \BaseModel {
 	public function view_has_many()
 	{
 		$ret['Files']['Files']['view']['view'] = 'billingbase::SettlementRun.files';
-		$ret['Files']['Files']['view']['vars'] = $this->accounting_files();
+		$ret['Files']['Files']['view']['vars']['files'] = $this->accounting_files();
+		$accs = $this->html_list(SepaAccount::all(), 'name');
+		$accs[0] = trans('messages.ALL');
+		$ret['Files']['Files']['view']['vars']['sepaaccs'] = $accs;
 
 		// NOTE: logs are fetched in SettlementRunController::edit
 		$ret['Files']['Logs']['view']['view'] = 'billingbase::SettlementRun.logs';

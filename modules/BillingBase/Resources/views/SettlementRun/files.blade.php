@@ -4,6 +4,12 @@
 			<div class="col-12 text-center m-b-20">
 				{{ Form::open(array('route' => ['SettlementRun.update', $view_var->id,] ,'method' => 'put')) }}
 					{{ Form::hidden('rerun', true) }}
+					<div class="row">
+						<label for="description" style="margin-top: 10px;" class="col-md-5 control-label">{{ trans('messages.sr_repeat') }}</label>
+						<div class="col-md-5">
+							{{ Form::select('sepaaccount', $relation['view']['vars']['sepaaccs'], 0, ['style' => 'simple']) }}
+						</div>
+					</div>
 					{{ Form::submit( \App\Http\Controllers\BaseViewController::translate_view('Rerun Accounting Command for current Month', 'Button') , ['style' => 'simple']) }}
 				{{ Form::close() }}
 			</div>
@@ -20,7 +26,7 @@
 				</div>
 			</div>
 		@else
-			@foreach($relation['view']['vars'] as $sepaacc => $files)
+			@foreach($relation['view']['vars']['files'] as $sepaacc => $files)
 				@DivOpen(6)
 					<table class="table table-bordered">
 					<th class="text-center active"> {{ $sepaacc }} </th>
