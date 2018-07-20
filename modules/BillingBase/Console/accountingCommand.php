@@ -115,13 +115,11 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		 */
 		foreach ($contracts as $i => $c)
 		{
-			// progress bar on cmd line - NOTE: $bar->advance() throws exception when called via queue
 			if ($this->output)
 				$bar->advance();
-			// progress bar in GUI
 			else if (!($i % 10)) {
 				self::push_state((int) $i/$num*100, 'Create Invoices');
-				// echo ($i + 1)."/$num [$c->id][".(memory_get_usage()/1000000)."]\r";
+				// echo ($i/$num [$c->id][".(memory_get_usage()/1000000)."]\r";
 			}
 
 			// Skip invalid contracts
@@ -134,7 +132,6 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 				Log::error('billing', "Contract $c->number [$c->id] has no CostCenter assigned");
 				continue;
 			}
-
 
 			/*
 			 * Collect item specific data for all billing files
@@ -260,12 +257,13 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 					continue;
 				}
 
+				$mandate->setRelation('contract', $c);
 				$acc->add_sepa_transfer($mandate, $value['net'] + $value['tax']);
 			}
-
 		} // end of loop over contracts
 
-		echo "\n";
+		if ($this->output)
+			$bar->finish();
 
 		// avoid deleting temporary latex files before last invoice was built (multiple threads are used)
 		// and wait for all invoice pdfs to be created for concatenation in zipCommand@_make_billing_files()
@@ -492,7 +490,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		}
 
 		// create zip file
-		echo "ZIP all Files\n";
+		echo "\nZIP all Files...";
 		\Artisan::call('billing:zip');
 	}
 
@@ -513,6 +511,20 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		Storage::put('tmp/accCmdStatus', json_encode($arr));
 	}
 
+
+	/**
+	 * Push message and state either to commandline or to state file for GUI
+	 *
+	 * @param String 	msg
+	 * @param Float 	state
+	 */
+	public function user_output($msg, $state)
+	{
+		if ($this->output)
+			echo "$msg\n";
+		else
+			self::push_state($state, $msg);
+	}
 
 
 	/**
@@ -885,8 +897,6 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 			'null' 			=> '0000-00-00',
 			'm_in_sec' 		=> 60*60*24*30,						// month in seconds
-			'last_run'		=> '0000-00-00', 					// filled on start of execution
-
 		);
 	}
 
