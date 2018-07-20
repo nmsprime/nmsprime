@@ -430,6 +430,24 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	}
 
 
+	/**
+	 * Load only necessary salesmen from contract list
+	 *
+	 * @param Collection
+	 */
+	public static function load_salesman_from_contracts($contracts)
+	{
+		$salesmen_ids = $contracts->filter(function ($contract) {
+				if ($contract->salesman_id)
+					return $contract;
+				})
+			->pluck('salesman_id')->unique()->all();
+
+		$salesmen = Salesman::whereIn('id', $salesmen_ids)->get();
+
+		return $salesmen;
+	}
+
 	/*
 	 * Stores all billing files besides invoices in the directory defined as property of this class
 	 */
