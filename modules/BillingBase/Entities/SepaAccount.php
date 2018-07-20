@@ -88,16 +88,6 @@ class SepaAccount extends \BaseModel {
 	}
 
 
-
-	public function __construct($attributes = array())
-	{
-		parent::__construct($attributes);
-
-		$this->invoice_nr_prefix = date('Y', strtotime("first day of last month")).'/';
-	}
-
-
-
 	/**
 	 * BILLING STUFF
 	 */
@@ -162,6 +152,43 @@ class SepaAccount extends \BaseModel {
 	private function _get_invoice_nr_formatted()
 	{
 		return $this->invoice_nr_prefix.$this->id.'/'.$this->invoice_nr;
+	}
+
+
+	/**
+	 * Initialises the SepaAccount for the current settlementrun
+	 *
+	 * @param Integer 	Requested Collection Date (day of month)
+	 */
+	public function settlementrun_init($rcd)
+	{
+		$this->invoice_nr_prefix = date('Y', strtotime("first day of last month")).'/';
+
+		$this->rcd = $rcd;
+
+		$this->_set_invoice_nr_counters();
+	}
+
+
+	/**
+	 * Set invoice number counter of SEPA-account
+	 *
+	 * @param Array 	SepaAccount objects
+	 */
+	private function _set_invoice_nr_counters()
+	{
+		// restart counter every year
+		if (date('m', strtotime('first day of last month')) == '01')
+		{
+			if ($this->invoice_nr_start)
+				$this->invoice_nr = $this->invoice_nr_start - 1;
+
+			return;
+		}
+
+		$nr = AccountingRecord::where('sepaaccount_id', '=', $this->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
+
+		$this->invoice_nr = is_object($nr) ? $nr->invoice_nr : $this->invoice_nr_start - 1;
 	}
 
 
@@ -398,7 +425,7 @@ class SepaAccount extends \BaseModel {
 				$accounting = BaseViewController::translate_label($key1);
 				$rec 		= $this->_get_billing_lang() == 'de' ? '' : '_records';
 
-				$fn = accountingCommand::get_relative_accounting_dir_path()."/".sanitize_filename($this->name);
+				$fn = self::get_relativ_accounting_dir_path();
 				$fn .= "/$accounting"."_".BaseViewController::translate_label($key).$rec.'.txt';
 
 				// echo "write ".count($records)." [".count($this->{($key1 == 'accounting' ? 'acc_recs' : 'book_recs')}[$key]) ."] to file $fn\n";
@@ -444,6 +471,12 @@ class SepaAccount extends \BaseModel {
 	}
 
 
+	public function get_relativ_accounting_dir_path()
+	{
+		return accountingCommand::get_relative_accounting_dir_path()."/".sanitize_filename($this->name);
+	}
+
+
 	/**
 	 * Create SEPA XML File for direct debits
 	 */
@@ -478,7 +511,7 @@ class SepaAccount extends \BaseModel {
 					$directDebit->addTransfer($msg_id.$type, $r);
 
 				// Retrieve the resulting XML
-				$file = accountingCommand::get_relative_accounting_dir_path()."/".sanitize_filename($this->name)."/DD_$type.xml";
+				$file = self::get_relativ_accounting_dir_path()."/DD_$type.xml";
 				Storage::put($file, $directDebit->asXML());
 
 				$this->_log("sepa direct debit $type xml", $file);
@@ -509,7 +542,7 @@ class SepaAccount extends \BaseModel {
 		}
 
 		// Retrieve the resulting XML
-		$file = accountingCommand::get_relative_accounting_dir_path()."/".sanitize_filename($this->name);
+		$file = self::get_relativ_accounting_dir_path();
 		$file .= "/".BaseViewController::translate_label('DD').'.xml';
 		Storage::put($file, $directDebit->asXML());
 
@@ -542,7 +575,7 @@ class SepaAccount extends \BaseModel {
 			$customerCredit->addTransfer($msg_id.'C', $r);
 
 		// Retrieve the resulting XML
-		$file = accountingCommand::get_relative_accounting_dir_path()."/".sanitize_filename($this->name);
+		$file = self::get_relativ_accounting_dir_path();
 		$file .= "/".BaseViewController::translate_label('DC').'.xml';
 		Storage::put($file, $customerCredit->asXML());
 

@@ -321,60 +321,20 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 
 		// create directory structure and remove old invoices
 		if (is_dir(self::get_absolute_accounting_dir_path()))
-			SettlementRunController::directory_cleanup(self::get_relative_accounting_dir_path());
+		{
+			$this->user_output('Clean up directory...', 0);
+			SettlementRunController::directory_cleanup(null, $this->sepaacc);
+		}
 		else
 			mkdir(self::get_absolute_accounting_dir_path(), 0700, true);
 
 		// SepaAccount
-		foreach ($sepa_accs as $acc)
-			$acc->rcd = $this->conf->rcd ? date('Y-m-'.$this->conf->rcd) : date('Y-m-d', strtotime('+1 day'));
-
-		// set actual invoice nr counters of sepa accounts
-		$this->_set_invoice_nr_counters($sepa_accs);
+		foreach ($sepaaccs as $acc)
+			$acc->settlementrun_init($this->conf->rcd ? date('Y-m-'.$this->conf->rcd) : date('Y-m-d', strtotime('+1 day')));
 
 		// reset yearly payed items payed_month column
 		if ($this->dates['lastm'] == '01')
 			Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
-	}
-
-
-	/**
-	 * Set invoice number counters of SEPA-accounts
-	 *
-	 * @param Array 	SepaAccount objects
-	 */
-	private function _set_invoice_nr_counters(&$sepa_accs)
-	{
-		$last_run = AccountingRecord::orderBy('created_at', 'desc')->select('created_at')->first();
-
-		// first run for this system
-		if (!is_object($last_run))
-		{
-			foreach ($sepa_accs as $acc) {
-				if ($acc->invoice_nr_start)
-					$acc->invoice_nr = $acc->invoice_nr_start - 1;
-			}
-
-			return;
-		}
-
-		// set time of last run
-		$this->dates['last_run'] = $last_run->created_at;
-
-		foreach ($sepa_accs as $acc)
-		{
-			// restart counter every year
-			if ($this->dates['lastm'] == '01')
-			{
-				if ($acc->invoice_nr_start)
-					$acc->invoice_nr = $acc->invoice_nr_start - 1;
-				continue;
-			}
-
-			$nr = AccountingRecord::where('sepaaccount_id', '=', $acc->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
-
-			$acc->invoice_nr = is_object($nr) ? $nr->invoice_nr : $acc->invoice_nr_start;
-		}
 	}
 
 
