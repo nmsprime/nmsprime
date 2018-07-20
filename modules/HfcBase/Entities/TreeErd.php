@@ -2,7 +2,7 @@
 
 namespace Modules\HfcBase\Entities;
 
-class TreeErd {
+class TreeErd extends \BaseModel {
 /**
  * This class is here mainly for Authorization Purposes
  * and due to the lack of granularity. It can be used
