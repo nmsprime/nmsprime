@@ -185,4 +185,39 @@ class Salesman extends \BaseModel {
 		}
 	}
 
+
+	/**
+	 * Remove SEPA account specific entries from csv on repetition of the settlementrun
+	 */
+	public static function remove_account_specific_entries_from_csv($sepaaccount_id)
+	{
+		$rel_path = self::get_storage_rel_filename();
+		$path = storage_path("app/$rel_path");
+
+		if (!is_file($path))
+			return;
+
+		$lines = file($path);
+
+		foreach ($lines as $key => $line)
+		{
+			if ($key == 0)
+				continue;
+
+			if (!$line || $line == PHP_EOL) {
+				unset($lines[$key]);
+				continue;
+			}
+
+			$arr = str_getcsv($line, ';');
+
+			if (intval($arr[13]) == $sepaaccount_id)
+				unset($lines[$key]);
+		}
+
+		Storage::put($rel_path, implode($lines));
+		// Storage::put($rel_path, implode($lines, "\n"));
+	}
+
+
 }

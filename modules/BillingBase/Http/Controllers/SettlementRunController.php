@@ -273,16 +273,22 @@ reload:
 	 *
 	 * USE WITH CARE!
 	 *
-	 * @param 	dir 			String 		Accounting Record Files Directory relative to storage/app/
-	 * @param 	settlementrun 	Object 		SettlementRun the directory should be cleared for
+	 * @param String	dir 				Accounting Record Files Directory relative to storage/app/
+	 * @param Object	settlementrun 		SettlementRun the directory should be cleared for
+	 * @param Object 	sepaacc
 	 */
-	public static function directory_cleanup($dir, $settlementrun = null, $sepaacc = null)
+	public static function directory_cleanup($settlementrun = null, $sepaacc = null)
 	{
+		$dir 	= accountingCommand::get_relative_accounting_dir_path();
 		$start  = $settlementrun ? date('Y-m-01 00:00:00', strtotime($settlementrun->created_at)) : date('Y-m-01');
 		$end 	= $settlementrun ? date('Y-m-01 00:00:00', strtotime('+1 month', strtotime($settlementrun->created_at))) : date('Y-m-01', strtotime('+1 month'));
 
 		// remove all entries of this month permanently (if already created)
-		$ret = AccountingRecord::whereBetween('created_at', [$start, $end])->forceDelete();
+		$query = AccountingRecord::whereBetween('created_at', [$start, $end]);
+		if ($sepaacc)
+			$query = $query->where('sepaaccount_id', '=', $sepaacc->id);
+
+		$ret = $query->forceDelete();
 		if ($ret)
 			ChannelLog::debug('billing', 'Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 
@@ -291,29 +297,44 @@ reload:
 		ChannelLog::debug('billing', $logmsg);	echo "$logmsg\n";
 
 		if (!$settlementrun)
-			Invoice::delete_current_invoices();
+			Invoice::delete_current_invoices($sepaacc ? $sepaacc->id : 0);
 
 		$cdr_filepaths = cdrCommand::get_cdr_pathnames();
 		$salesman_csv_path = Salesman::get_storage_rel_filename();
 
-		// everything in accounting directory - SepaAccount specific
-		foreach (glob(storage_path("app/$dir/*")) as $f)
+		// everything in accounting directory
+		if (!$sepaacc)
 		{
-			// keep cdr
-			if (in_array($f, $cdr_filepaths))
-				continue;
+			foreach (glob(storage_path("app/$dir/*")) as $f)
+			{
+				// keep cdr
+				if (in_array($f, $cdr_filepaths))
+					continue;
 
-			// keep salesman csv, but remove entries of specific sepa account
-			if ($sepaacc && ($f == $salesman_csv_path)) {
-				Salesman::remove_account_specific_entries_from_csv($sepaacc->id);
-				continue;
+				\Storage::delete($f);
 			}
 
-			\Storage::delete($f);
+			foreach (\Storage::directories($dir) as $d)
+				\Storage::deleteDirectory($d);
 		}
+		// SepaAccount specific stuff
+		else
+		{
+			// delete ZIP
+			\Storage::delete("$dir/".date('Y-m', strtotime('first day of last month')).'.zip');
 
-		foreach (\Storage::directories($dir) as $d)
-			\Storage::deleteDirectory($d);
+			// delete concatenated Invoice pdf
+			\Storage::delete("$dir/".\App\Http\Controllers\BaseViewController::translate_label('Invoices').'.pdf');
+
+			Salesman::remove_account_specific_entries_from_csv($sepaacc->id);
+
+			// delete account specific dir
+			$dir = $sepaacc->get_relativ_accounting_dir_path();
+			foreach (\Storage::files($dir) as $f)
+				\Storage::delete($f);
+
+			\Storage::deleteDirectory($dir);
+		}
 	}
 
 }
