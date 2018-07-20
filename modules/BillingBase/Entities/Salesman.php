@@ -139,11 +139,16 @@ class Salesman extends \BaseModel {
 	 */
 	public function prepare_output_file()
 	{
+		$rel_path = self::get_storage_rel_filename();
+
+		if (Storage::exists($rel_path))
+			return;
+
 		$arr = [];
 		foreach (array_keys($this->items[0]) as $col)
 			$arr[] = trans("dt_header.$col");
 
-		Storage::put(self::get_storage_rel_filename(), implode(';', $arr));
+		Storage::put($rel_path, implode(';', $arr));
 	}
 
 

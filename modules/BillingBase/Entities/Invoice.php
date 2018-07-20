@@ -568,9 +568,12 @@ class Invoice extends \BaseModel{
 	 *
 	 * @throws Exception 	when pdflatex was not able to create PDF from tex document for an invoice
 	 */
-	public static function remove_templatex_files()
+	public static function remove_templatex_files($sepaacc = null)
 	{
-		$invoices = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))])->get();
+		$invoices = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
+		if ($sepaacc)
+			$invoices = $invoices->where('sepaaccount_id', '=', $sepaacc->id);
+		$invoices = $invoices->get();
 
 		foreach ($invoices as $invoice)
 		{
@@ -586,7 +589,6 @@ class Invoice extends \BaseModel{
 			else {
 				// possible errors: syntax/filename/...
 				ChannelLog::error('billing', "pdflatex: Error creating Invoice PDF ".$fn);
-				throw new \Exception("pdflatex: Error creating Invoice PDF ".$fn);
 			}
 		}
 	}

@@ -175,8 +175,10 @@ class SettlementRunObserver
 
 	public function updated($settlementrun)
 	{
-		if (\Input::has('rerun'))
-	 		\Session::put('job_id', \Queue::push(new \Modules\BillingBase\Console\accountingCommand($settlementrun)));
+		if (\Input::has('rerun')) {
+			$acc = SepaAccount::find(\Input::get('sepaaccount'));
+			\Session::put('job_id', \Queue::push(new \Modules\BillingBase\Console\accountingCommand($settlementrun, $acc ? : null)));
+		}
 	}
 
 	public function deleted($settlementrun)
