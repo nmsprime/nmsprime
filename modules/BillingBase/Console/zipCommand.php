@@ -97,38 +97,46 @@ class zipCommand extends Command {
 			$this->bar->start();
 		}
 		else
-			accountingCommand::push_state(0, 'Zip Files');
-
+			accountingCommand::push_state(0, 'Concatenate invoices');
 
 		/**
 		 * Concat Invoices
 		 */
 		$files = $this->_concat_split_pdfs($files);
 
-		$fname = BaseViewController::translate_label('Invoices').'.pdf';
+		// wait for all background processes to be finished
+		if ($num > $this->split)
+		{
+			self::_wait_for_background_processes($files);
+			$files = array_keys($files);
+		}
 
 		// concat temporary files to final target file
+		$fname = BaseViewController::translate_label('Invoices').'.pdf';
+
 		concat_pdfs($files, $acc_files_dir_abs_path.$fname);
 
-		if ($this->output) {
+		if ($this->output)
 			$this->bar->advance();
-			echo "\n";
-		}
 		else
 			accountingCommand::push_state(99, 'Zip Files');
-
-		echo "New file (concatenated invoices): $acc_files_dir_abs_path"."$fname\n";
-
 
 		// Zip all - suppress output of zip command
 		$filename = $target_t->format('Y-m').'.zip';
 		chdir($acc_files_dir_abs_path);
 
+		\ChannelLog::debug('billing', "ZIP Files to $filename");
+
 		ob_start();
 		system("zip -r $filename *");
 		ob_end_clean();
-		echo "New file (Zip): $acc_files_dir_abs_path"."$filename\n";
+		if ($this->output) {
+			$this->bar->finish();
+			echo "\n";
+		}
 
+		echo "New file (concatenated invoices): $acc_files_dir_abs_path"."$fname\n";
+		echo "New file (Zip): $acc_files_dir_abs_path"."$filename\n";
 
 		system('chmod -R 0700 '.$acc_files_dir_abs_path);
 		system('chown -R apache '.$acc_files_dir_abs_path);
@@ -161,29 +169,69 @@ class zipCommand extends Command {
 
 		$arr = array_chunk($files, $this->split);
 
-		// recursive splitting
+		// recursive splitting - TODO: to be tested!
 		if (count($arr) > $this->split)
-		{
-			foreach ($arr as $files2)
-				$tmp_pdfs = $this->_concat_split_pdfs($files2);
-		}
+			return $this->_concat_split_pdfs($arr);
 
 		foreach ($arr as $files2)
 		{
 			$tmp_fn = storage_path('app/tmp/').'tmp_inv_'.$count.'.pdf';
-			$tmp_pdfs[] = $tmp_fn;
-			$count++;
 
-			concat_pdfs($files2, $tmp_fn);
+			$pid = concat_pdfs($files2, $tmp_fn, true);
+
+			$tmp_pdfs[$tmp_fn] = $pid;
 
 			// Status update
+			$count++;
 			if ($this->output)
 				$this->bar->advance();
 			else
-				accountingCommand::push_state((int) $count/$this->num*100, 'Zip Files');
+				accountingCommand::push_state((int) $count/$this->num*100, 'Concat invoices');
 		}
 
 		return $tmp_pdfs;
+	}
+
+
+	/**
+	 * Wait for processes when ghost script was started in background to concatenate invoices in multiple threads
+	 *
+	 * @param Array 	[temporary file paths => process IDs]
+	 */
+	private static function _wait_for_background_processes($files)
+	{
+		while ($files)
+		{
+			foreach ($files as $path => $pid)
+			{
+				if (self::process_running($pid))
+					continue;
+				else {
+					if (is_file($path))
+						unset($files[$path]);
+					else {
+						ChannelLog::error('billing', "Ghostscript failed to concatenate temporary file $path while concatenating all invoices");
+						return;
+					}
+				}
+			}
+
+			sleep(2);
+		}
+	}
+
+
+	/**
+	 * Check if process is running
+	 *
+	 * @param Integer 	pid (Process-ID)
+	 * @return Bool 	True if process is still running
+	 */
+	public static function process_running($pid)
+	{
+		exec('ps -p '.escapeshellarg($pid), $op);
+
+		return isset($op[1]);
 	}
 
 
