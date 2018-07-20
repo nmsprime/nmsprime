@@ -71,7 +71,7 @@ class EnviaOrderDocumentController extends \BaseController {
 	public function show($id) {
 
 		if (Bouncer::cannot('view', EnviaOrderDocument::class ) &&
-			Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+			Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia'));
 			throw new AuthException('Access to EnviaOrderDocument not allowed for user '. Auth::user()->login_name .'.');
 
 		$enviaorderdocument = EnviaOrderDocument::findOrFail($id);
