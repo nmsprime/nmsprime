@@ -22,7 +22,7 @@ Route::group(['prefix' => 'app/data/hfcbase'], function () {
 
 	Route::get('{type}/{filename}', [
 		'uses' => 'Modules\HfcBase\Http\Controllers\HfcBaseController@get_file',
-		'middleware' => ['web', 'can:view,Modules\Entities\TreeErd'],
+		'middleware' => ['web', 'can:view,Modules\HfcBase\Entities\TreeErd'],
 	]);
 
 });
