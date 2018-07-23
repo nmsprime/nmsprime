@@ -260,6 +260,22 @@ class zipCommand extends Command {
 
 
 	/**
+	 * Remove all SepaAccount specific zip files and invoice PDFs and build the general ones
+	 *
+	 * TODO if accounting staff asks for it
+	 */
+	private function _rezip()
+	{
+		// get all accounts from invoices
+		// $accounts = $invoices->pluck('sepaaccount_id')->unique();
+
+		// remove pdf and zip from account specific directories
+
+		// build general PDF with all invoices and zip with all account directories
+	}
+
+
+	/**
 	 * Get the console command arguments / options
 	 *
 	 * @return array

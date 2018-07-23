@@ -345,6 +345,8 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	 * 	that can have resulting charges for that account
 	 *
 	 * @param Integer
+	 *
+	 * @TODO: Dont load contracts that are outdated
 	 */
 	public static function load_contracts($sepaaccount_id)
 	{
