@@ -1,5 +1,7 @@
 @if (isset($relation['view']['vars']))
 	<div class="row">
+
+		<!-- rerun button -->
 		@if ($rerun_button)
 			<div class="col-12 text-center m-b-20">
 				{{ Form::open(array('route' => ['SettlementRun.update', $view_var->id,] ,'method' => 'put')) }}
@@ -15,28 +17,29 @@
 			</div>
 		@endif
 
+		<!-- progress bar + message -->
 		@if (\Session::get('job_id'))
 			{{-- accountingCommand running --}}
 			<div class="alert alert-warning fade in m-b-15">{{ trans('messages.accCmd_processing') }}</div>
-			<!-- progress bar + message -->
 			<div id="progress-msg" class="col-10"></div>
 			<div class="col-10">
 				<div class="progress">
 					<div class="progress-bar progress-bar-striped" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
 				</div>
 			</div>
-		@else
-			@foreach($relation['view']['vars']['files'] as $sepaacc => $files)
-				@DivOpen(6)
-					<table class="table table-bordered">
-					<th class="text-center active"> {{ $sepaacc }} </th>
-					@foreach ($files as $key => $file)
-						<tr><td class="text-center">{{ HTML::linkRoute('Settlement.download', $file->getFilename(), ['id' => $view_var->id, 'sepaacc' => $sepaacc, 'key' => $key]) }}</td></tr>
-					@endforeach
-					</table>
-				@DivClose()
-			@endforeach
 		@endif
+
+		<!-- all accounting record files & invoices -->
+		@foreach($relation['view']['vars']['files'] as $sepaacc => $files)
+			@DivOpen(6)
+				<table class="table table-bordered">
+				<th class="text-center active"> {{ $sepaacc }} </th>
+				@foreach ($files as $key => $file)
+					<tr><td class="text-center">{{ HTML::linkRoute('Settlement.download', $file->getFilename(), ['id' => $view_var->id, 'sepaacc' => $sepaacc, 'key' => $key]) }}</td></tr>
+				@endforeach
+				</table>
+			@DivClose()
+		@endforeach
 
 	</div>
 @endif

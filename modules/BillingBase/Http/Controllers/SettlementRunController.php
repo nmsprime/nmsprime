@@ -98,7 +98,8 @@ class SettlementRunController extends \BaseController {
 
 		// get execution logs if job has finished successfully - (show error logs otherwise - show nothing during execution)
 		// NOTE: when SettlementRun gets verified the logs will disappear because timestamp is updated
-		$logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
+		// $logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
+		$logs = $logs ? : self::get_logs($sr->updated_at->__get('timestamp'));
 
 		return parent::edit($id)->with('rerun_button', $bool)->with('logs', $logs);
 	}
@@ -174,8 +175,6 @@ reload:
 		});
 
 		$response->headers->set('Content-Type', 'text/event-stream');
-
-		\Storage::delete('tmp/accCmdStatus');
 
 		return $response;
 	}

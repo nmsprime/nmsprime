@@ -129,7 +129,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 			}
 
 			if (!$c->costcenter) {
-				Log::error('billing', "Contract $c->number [$c->id] has no CostCenter assigned");
+				Log::error('billing', trans('messages.accCmd_error_noCC', ['contract_nr' => $c->number, 'contract_id' => $c->id]));
 				continue;
 			}
 
@@ -210,7 +210,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 					if (!isset($c->charge[$acc->id]))
 					{
 						// this case should only happen when contract/voip tarif ended and deferred CDRs are calculated
-						Log::notice('billing', 'Contract '.$c->number.' has Call Data Records but no valid Voip Tariff assigned', [$c->id]);
+						Log::notice('billing', trans('messages.accCmd_notice_CDR', ['contract_nr' => $c->number, 'contract_id' => $c->id]));
 						$c->charge[$acc->id] = ['net' => 0, 'tax' => 0];
 						$acc->invoice_nr += 1;
 					}

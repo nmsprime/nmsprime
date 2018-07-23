@@ -81,23 +81,29 @@ class zipCommand extends Command {
 				->where('type', '=', 'CDR')
 				->where('year', '=', $cdr_target_t->__get('year'))->where('month', '=', $cdr_target_t->__get('month'));})
 			->join('contract as c', 'c.id', '=', 'invoice.contract_id')
-			->orderBy('c.number', 'desc')->orderBy('invoice.type')
-			->get()->all();
+			->limit(1500)
+			->orderBy('c.number', 'desc')->orderBy('invoice.type');
+
+		// Prepare and start output
+		// $this->num = $num >= $this->split ? ((int) ($num / $this->split)) + 1 + ($num % $this->split ? 1 : 0) : null;
+		// Note: 4 steps to distinguish: (1) load data (2a) concat temp files (2b) concat final invoices pdf (4) zip files
+		$num = $invoices->count();
+		$this->num = $num >= $this->split ? 4 : 3;
+		if ($this->output) {
+			$this->bar = $this->output->createProgressBar($this->num);
+			$this->bar->start();
+		}
+
+		// Get Data
+		$invoices = $invoices->get()->all();
 
 		$files = [];
 		foreach ($invoices as $inv)
 			$files[] = $inv->get_invoice_dir_path().$inv->filename;
 
-		// Prepare and start output
-		$num = count($files);
-		$this->num = $num >= $this->split ? ((int) ($num / $this->split)) + 1 + ($num % $this->split ? 1 : 0) : null;
-
-		if ($this->output) {
-			$this->bar = $this->output->createProgressBar($this->num);
-			$this->bar->start();
-		}
-		else
-			accountingCommand::push_state(0, 'Concatenate invoices');
+		accountingCommand::push_state($this->num == 3 ? 33 : 25, 'Concatenate invoices');
+		if ($this->output)
+			$this->bar->advance();
 
 		/**
 		 * Concat Invoices
@@ -109,17 +115,20 @@ class zipCommand extends Command {
 		{
 			self::_wait_for_background_processes($files);
 			$files = array_keys($files);
+
+			accountingCommand::push_state(50, 'Concatenate invoices');
+			if ($this->output)
+				$this->bar->advance();
 		}
 
 		// concat temporary files to final target file
 		$fname = BaseViewController::translate_label('Invoices').'.pdf';
 
 		concat_pdfs($files, $acc_files_dir_abs_path.$fname);
-
+		// sleep(10);
+		accountingCommand::push_state($this->num == 3 ? 66 : 75, 'Zip Files');
 		if ($this->output)
 			$this->bar->advance();
-		else
-			accountingCommand::push_state(99, 'Zip Files');
 
 		// Zip all - suppress output of zip command
 		$filename = $target_t->format('Y-m').'.zip';
@@ -128,6 +137,7 @@ class zipCommand extends Command {
 		\ChannelLog::debug('billing', "ZIP Files to $filename");
 
 		ob_start();
+		// sleep(10);
 		system("zip -r $filename *");
 		ob_end_clean();
 		if ($this->output) {
@@ -182,11 +192,10 @@ class zipCommand extends Command {
 			$tmp_pdfs[$tmp_fn] = $pid;
 
 			// Status update
-			$count++;
-			if ($this->output)
-				$this->bar->advance();
-			else
-				accountingCommand::push_state((int) $count/$this->num*100, 'Concat invoices');
+			// $count++;
+			// if ($this->output)
+			// 	$this->bar->advance();
+			// accountingCommand::push_state((int) $count/$this->num*100, 'Concatenate invoices');
 		}
 
 		return $tmp_pdfs;
