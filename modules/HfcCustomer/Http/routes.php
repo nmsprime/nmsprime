@@ -17,9 +17,9 @@ BaseRoute::group([], function() {
 		'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
 	]);
 
-	BaseRoute::get('Customer/bad', [
-		'as' => 'CustomerTopo.show_bad',
-		'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_bad',
+	BaseRoute::get('Customer/impaired', [
+		'as' => 'CustomerTopo.show_impaired',
+		'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_impaired',
 		'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
 	]);
 

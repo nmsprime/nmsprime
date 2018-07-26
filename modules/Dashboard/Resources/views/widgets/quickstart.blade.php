@@ -26,7 +26,7 @@
 			!!}
 		</div>
 		<div class="btn btn-dark m-5 m-l-10">
-			{!! HTML::decode (HTML::linkRoute('CustomerTopo.show_bad',
+			{!! HTML::decode (HTML::linkRoute('CustomerTopo.show_impaired',
 				'<h3><div class="text-center" style="color: white;"><i class="img-center fa fa-hdd-o text-danger"></i></div></h3>
 				<div style="color: white;" class="username text-ellipsis text-center">Impaired Modems</div>'))
 			!!}
