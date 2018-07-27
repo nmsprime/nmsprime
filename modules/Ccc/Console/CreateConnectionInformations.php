@@ -44,7 +44,7 @@ class CreateConnectionInformations extends Command {
 		$contracts  = $this->select_contracts();
 		$dir_path 	= storage_path('app/tmp/');
 		$fn 		= 'connInfos.pdf';
-		$controller = new \Modules\Ccc\Http\Controllers\CccAuthuserController;
+		$controller = new \Modules\Ccc\Http\Controllers\CccUserController;
 
 		if (!$contracts)
 		{

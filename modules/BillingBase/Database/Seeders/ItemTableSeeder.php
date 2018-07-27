@@ -43,7 +43,7 @@ class ItemTableSeeder extends \BaseSeeder {
 				$product_id = $tariff_ids[rand(0, count($tariff_ids) - 1)];
 				$valid_from = date('Y-m-d', strtotime('-'.rand(1,20).' month'));
 				$valid_to 	= rand(0,10) > 7 ? null : date('Y-m-d', strtotime('+'.rand(1,5).' month'));
-			
+
 				Item::create([
 					'contract_id' 	=> $contract_id,
 					'product_id' 	=> $product_id,
@@ -55,7 +55,7 @@ class ItemTableSeeder extends \BaseSeeder {
 					'costcenter_id' => $costcenter_id,
 					'payed_month' 	=> $payed_month,
 					]);
-				
+
 
 				// Add 2 Other Products
 				$credit_amount  = 0;

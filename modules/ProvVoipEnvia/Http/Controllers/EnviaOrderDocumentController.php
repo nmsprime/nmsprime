@@ -2,6 +2,8 @@
 
 namespace Modules\ProvVoipEnvia\Http\Controllers;
 
+use Bouncer;
+use App\Http\Controllers\NamespaceController;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\View;
 use Modules\ProvVoipEnvia\Entities\{EnviaOrder, EnviaOrderDocument};
@@ -68,9 +70,9 @@ class EnviaOrderDocumentController extends \BaseController {
 	 */
 	public function show($id) {
 
-		// check if user has the right to perform actions against envia TEL API
-		\App\Http\Controllers\BaseAuthController::auth_check('view', \NamespaceController::get_model_name());
-		\App\Http\Controllers\BaseAuthController::auth_check('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+		if (Bouncer::cannot('view', EnviaOrderDocument::class ) &&
+			Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia'));
+			throw new AuthException('Access to EnviaOrderDocument not allowed for user '. Auth::user()->login_name .'.');
 
 		$enviaorderdocument = EnviaOrderDocument::findOrFail($id);
 		$contract_id = $enviaorderdocument->enviaorder->contract_id;
@@ -93,9 +95,10 @@ class EnviaOrderDocumentController extends \BaseController {
 
 	public function edit($id) {
 
-		// check if user has the right to perform actions against envia TEL API
-		\App\Http\Controllers\BaseAuthController::auth_check('edit', \NamespaceController::get_model_name());
-		\App\Http\Controllers\BaseAuthController::auth_check('edit', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia');
+		if (Bouncer::cannot('view', EnviaOrderDocument::class) &&
+			Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia'))
+			throw new AuthException('Access to EnviaOrderDocument not allowed for user '. Auth::user()->login_name .'.');
+
 
 		$document = EnviaOrderDocument::findOrFail($id);
 

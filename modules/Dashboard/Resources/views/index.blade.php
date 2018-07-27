@@ -146,7 +146,7 @@
 
 	$(window).on('localstorage-position-loaded load', function() {
 		// line chart contracts
-		var chart_data_contracts = {{ $view['contracts'] ? json_encode($data['contracts']['chart']) : '{}' }};
+		var chart_data_contracts = {!! $view['contracts'] ? json_encode($data['contracts']['chart']) : '{}' !!};
 
 		if (Object.getOwnPropertyNames(chart_data_contracts).length != 0) {
 
@@ -179,7 +179,7 @@
 		}
 
 		// bar chart income
-		var chart_data_income = {{ $view['income'] ? json_encode($data['income']['chart']) : '{}' }};
+		var chart_data_income = {!! $view['income'] ? json_encode($data['income']['chart']) : '{}' !!};
 
 		if (Object.getOwnPropertyNames(chart_data_income).length != 0) {
 

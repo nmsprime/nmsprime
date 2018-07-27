@@ -8,7 +8,7 @@
 	<script src="{{asset('/modules/hfcbase/OpenLayers-2.13.1/OpenLayers.js')}}"></script>
 	<script src="https://maps.google.com/maps/api/js?v=3.2&sensor=false"></script>
 
-	@include ('hfcbase::Tree.topo-api')
+	@include ('HfcBase::Tree.topo-api')
 
 </head>
 
@@ -20,7 +20,7 @@
 
 @section('content_left')
 
-	@include ('hfcbase::Tree.search')
+	@include ('HfcBase::Tree.search')
 
 	<div class="col-md-12" id="map" style="height: 80%;"></div>
 

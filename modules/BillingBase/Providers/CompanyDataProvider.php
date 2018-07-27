@@ -1,4 +1,6 @@
-<?php namespace Modules\BillingBase\Providers;
+<?php
+
+namespace Modules\BillingBase\Providers;
 
 use Modules\BillingBase\Entities\SepaAccount;
 

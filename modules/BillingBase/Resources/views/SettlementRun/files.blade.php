@@ -2,10 +2,10 @@
 	<div class="row">
 		@if ($rerun_button)
 			<div class="col-12 text-center m-b-20">
-				{{ Form::open(array('route' => ['SettlementRun.update', $view_var->id,] ,'method' => 'put')) }}
-					{{ Form::hidden('rerun', true) }}
-					{{ Form::submit( \App\Http\Controllers\BaseViewController::translate_view('Rerun Accounting Command for current Month', 'Button') , ['style' => 'simple']) }}
-				{{ Form::close() }}
+				{!! Form::open(array('route' => ['SettlementRun.update', $view_var->id,] ,'method' => 'put')) !!}
+					{!! Form::hidden('rerun', true) !!}
+					{!! Form::submit( \App\Http\Controllers\BaseViewController::translate_view('Rerun Accounting Command for current Month', 'Button') , ['style' => 'simple']) !!}
+				{!! Form::close() !!}
 			</div>
 		@endif
 
@@ -25,7 +25,7 @@
 					<table class="table table-bordered">
 					<th class="text-center active"> {{ $sepaacc }} </th>
 					@foreach ($files as $key => $file)
-						<tr><td class="text-center">{{ HTML::linkRoute('Settlement.download', $file->getFilename(), ['id' => $view_var->id, 'sepaacc' => $sepaacc, 'key' => $key]) }}</td></tr>
+						<tr><td class="text-center">{!! HTML::linkRoute('SettlementRun.download', $file->getFilename(), ['id' => $view_var->id, 'sepaacc' => $sepaacc, 'key' => $key]) !!}</td></tr>
 					@endforeach
 					</table>
 				@DivClose()
@@ -45,7 +45,7 @@
 			{
 				setTimeout(function()
 				{
-					var source = new EventSource("<?php echo route('SettlementRun.check_state'); ?>");
+					var source = new EventSource("{!! route('SettlementRun.check_state') !!}");
 					source.onmessage = function(e)
 					{
 						if (e.data == 'reload')

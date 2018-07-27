@@ -1,12 +1,10 @@
 {
-	"name": "pingpong-modules/provvoipenvia",
-	"description": "",
-	"authors": [
-		{
-			"name": "Pingpong Labs",
-			"email": "pingpong.labs@gmail.com"
-		}
-	],
+	"name": "nmsprime-modules/provvoipenvia",
+	"description": "NMS Prime Envia Provisioning Module",
+	"authors": [{
+		"name": "Roetzer engineering",
+		"email": "info@roetzer-engineering.com"
+	}],
 	"autoload": {
 		"psr-4": {
 			"Modules\\ProvVoipEnvia\\": ""

@@ -1,4 +1,4 @@
-<?php namespace Modules\Voipmon\Http\Controllers;
+<?php namespace Modules\VoipMon\Http\Controllers;
 
 use Nwidart\Modules\Routing\Controller;
 

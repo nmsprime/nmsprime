@@ -3,6 +3,7 @@
 namespace Modules\HfcBase\Http\Controllers;
 
 use Acme\php\ArrayHelper;
+use App\Http\Controllers\BaseViewController;
 use Modules\HfcCustomer\Entities\ModemHelper;
 use Modules\HfcReq\Entities\NetElement;
 
@@ -97,9 +98,9 @@ class TreeErdController extends HfcBaseController {
 		foreach ($usemap as $element => $html) {
 			if ( str_contains($html, 'shape="circle"' ) ){
 				$usemap[$element] = explode('\n', $html);
-				$usemap[$element][0] = str_replace('data-content="', 'title="'.\App\Http\Controllers\BaseViewController::translate_label('Modem Summary').'" data-content="'.\App\Http\Controllers\BaseViewController::translate_label('Total Number of Modems').': ', $usemap[$element][0]);
-				$usemap[$element][1] = \App\Http\Controllers\BaseViewController::translate_label('Number of Online').' Modems / '.\App\Http\Controllers\BaseViewController::translate_label('Number of Critical').' Modems : '.$usemap[$element][1];
-				$usemap[$element][2] = \App\Http\Controllers\BaseViewController::translate_label('Avg. Upstream Power: ').$usemap[$element][2];
+				$usemap[$element][0] = str_replace('data-content="', 'title="'. BaseViewController::translate_label('Modem Summary').'" data-content="'. BaseViewController::translate_label('Total Number of Modems').': ', $usemap[$element][0]);
+				$usemap[$element][1] =  BaseViewController::translate_label('Number of Online').' Modems / '. BaseViewController::translate_label('Number of Critical').' Modems : '.$usemap[$element][1];
+				$usemap[$element][2] =  BaseViewController::translate_label('Avg. Upstream Power: ').$usemap[$element][2];
 				$usemap[$element] = implode('<br>', $usemap[$element]);
 			}
 
@@ -117,7 +118,7 @@ class TreeErdController extends HfcBaseController {
 		$preselect_field = $field;
 		$preselect_value = $search;
 
-		return \View::make('hfcbase::Tree.erd', $this->compact_prep_view(compact('route_name', 'file', 'target', 'is_pos', 'gid', 'usemap', 'preselect_field', 'view_header', 'panel_right', 'view_var', 'preselect_value', 'field', 'search')));
+		return \View::make('HfcBase::Tree.erd', $this->compact_prep_view(compact('route_name', 'file', 'target', 'is_pos', 'gid', 'usemap', 'preselect_field', 'view_header', 'panel_right', 'view_var', 'preselect_value', 'field', 'search')));
 	}
 
 
