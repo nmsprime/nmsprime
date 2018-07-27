@@ -610,7 +610,7 @@ class ProvVoipEnvia extends \BaseModel {
 
 			// “normal“ jobs
 			$phonenumbers_to_create = '&amp;phonenumbers_to_create=';
-			if (!$this->contract_created) {
+			if (!$this->contract_available) {
 				array_push($ret, array(
 					'linktext' => 'Create contract',
 					'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id.$phonenumbers_to_create,
@@ -619,7 +619,7 @@ class ProvVoipEnvia extends \BaseModel {
 			}
 
 			// contract can be relocated if created; available with envia TEL API version 1.4
-			if ($this->contract_created) {
+			if ($this->contract_available) {
 				if ($this->api_version_greater_or_equal("1.4")) {
 					array_push($ret, array(
 						'linktext' => 'Relocate contract',
