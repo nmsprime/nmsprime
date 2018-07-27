@@ -15,7 +15,7 @@ class HfccustomerDatabaseSeeder extends Seeder {
 	public function run()
 	{
 		Model::unguard();
-		
+
 		$this->call("Modules\HfcCustomer\Database\Seeders\MprTableSeeder");
 		$this->call("Modules\HfcCustomer\Database\Seeders\MprGeoposTableSeeder");
 	}

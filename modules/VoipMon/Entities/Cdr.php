@@ -1,4 +1,6 @@
-<?php namespace Modules\Voipmon\Entities;
+<?php
+
+namespace Modules\VoipMon\Entities;
 
 class Cdr extends \BaseModel {
 

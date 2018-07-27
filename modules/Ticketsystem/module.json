@@ -1,7 +1,7 @@
 {
     "name": "Ticketsystem",
     "alias": "ticketsystem",
-    "description": "",
+    "description": "Ticket System",
     "keywords": [],
     "active": 1,
     "order": 0,
@@ -9,7 +9,7 @@
     "providers": [
         "Modules\\Ticketsystem\\Providers\\TicketsystemServiceProvider"
     ],
-    "aliases":{},
+    "aliases": {},
     "files": [
         "start.php"
     ]

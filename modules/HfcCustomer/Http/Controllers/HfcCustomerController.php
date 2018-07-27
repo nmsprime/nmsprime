@@ -7,7 +7,7 @@ class HfcCustomerController extends Controller {
 
 	public function index()
 	{
-		return View::make('hfccustomer::index');
+		return View::make('HfcCustomer::index');
 	}
 
 }

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Modules\Hfcbase\Database\Seeders;
 
@@ -15,7 +15,7 @@ class HfcbaseDatabaseSeeder extends Seeder {
 	public function run()
 	{
 		Model::unguard();
-		
+
 		$this->call("Modules\HfcBase\Database\Seeders\HfcBaseConfigTableSeeder");
 	}
 

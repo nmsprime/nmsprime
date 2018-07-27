@@ -2,12 +2,10 @@
 
 namespace Modules\Dashboard\Http\Controllers;
 
-use View;
-use Log;
+use Auth, Bouncer, Log, Module, Storage, View;
 
 use App\Http\Controllers\BaseController;
 use Modules\ProvBase\Entities\Contract;
-use Modules\Ticketsystem\Entities\Ticket;
 
 class DashboardController extends BaseController
 {
@@ -48,41 +46,20 @@ class DashboardController extends BaseController
 	 */
 	private static function _get_view_permissions()
 	{
-		$role_ids_fix = array(
-			'superadmin' 	=> 1,
-			'director' 		=> 3,
-			'technican' 	=> 4,
-			'accounting' 	=> 5,
-		);
+		$user = Auth::user();
 
-		$income = $hfc = false;
-
-		// check user permissions
-		foreach (\Auth::user()->roles as $role)
-		{
-			if (\Module::collections()->has('BillingBase'))
-			{
-				if ($role->id == $role_ids_fix['director'])
-					$income = true;
-			}
-
-			if (\Module::collections()->has('HfcReq'))
-			{
-				if ($role->id == $role_ids_fix['superadmin'] ||
-					$role->id == $role_ids_fix['director'] ||
-					$role->id == $role_ids_fix['technican'])
-					$hfc = true;
-			}
-		}
-
-		$view = array(
-			'contracts' 	=> \Module::collections()->has('ProvBase'),
-			'income'		=> $income,
-			'tickets' 		=> \Module::collections()->has('Ticketsystem'),
-			'provvoipenvia' => false,
+		$view = [
 			'date' 			=> true,
-			'hfc' 			=> $hfc,
-			);
+			'provvoipenvia' => false,
+			'income'		=> (Module::collections()->has('BillingBase') &&
+								$user->can('see income chart')),
+			'contracts' 	=> (Module::collections()->has('ProvBase') &&
+								$user->can('view', \Modules\ProvBase\Entities\Contract::class)),
+			'tickets' 		=> (Module::collections()->has('Ticketsystem') &&
+								$user->can('view', \Modules\Ticketsystem\Entities\Ticket::class)),
+			'hfc' 			=> (Module::collections()->has('HfcReq') &&
+								$user->can('view', \Modules\HfcReq\Entities\NetElement::class)),
+		];
 
 		return $view;
 	}
@@ -102,7 +79,7 @@ class DashboardController extends BaseController
 				->orWhereNull('contract_end');})
 			->orderBy('id');
 
-		return \Module::collections()->has('BillingBase') ? $query->with('items', 'items.product')->get()->all() : $query->get()->all();
+		return Module::collections()->has('BillingBase') ? $query->with('items', 'items.product')->get()->all() : $query->get()->all();
 	}
 
 
@@ -143,10 +120,10 @@ class DashboardController extends BaseController
 	 */
 	private static function get_contract_data()
 	{
-		if (\Storage::disk('chart-data')->has('contracts.json') === false) {
+		if (Storage::disk('chart-data')->has('contracts.json') === false) {
 			$content = json_encode(\Config::get('dashboard.contracts'));
 		} else {
-			$content = \Storage::disk('chart-data')->get('contracts.json');
+			$content = Storage::disk('chart-data')->get('contracts.json');
 		}
 
 		$data['chart'] = json_decode($content);
@@ -244,7 +221,7 @@ class DashboardController extends BaseController
 		$income = self::get_income_total();
 		$income = self::format_chart_data_income($income);
 
-		\Storage::disk('chart-data')->put('income.json', json_encode($income));
+		Storage::disk('chart-data')->put('income.json', json_encode($income));
 	}
 
 
@@ -268,7 +245,7 @@ class DashboardController extends BaseController
 
 		$array = ['contracts' => array_reverse($contracts), 'labels' => array_reverse($labels)];
 
-		\Storage::disk('chart-data')->put('contracts.json', json_encode($array));
+		Storage::disk('chart-data')->put('contracts.json', json_encode($array));
 	}
 
 	/**
@@ -278,10 +255,10 @@ class DashboardController extends BaseController
 	 */
 	public static function get_income_data()
 	{
-		if (\Storage::disk('chart-data')->has('income.json') === false)
+		if (Storage::disk('chart-data')->has('income.json') === false)
 			$content = json_encode(\Config::get('dashboard.income'));
 		else
-			$content = \Storage::disk('chart-data')->get('income.json');
+			$content = Storage::disk('chart-data')->get('income.json');
 
 		$data['chart'] = json_decode($content);
 
@@ -400,10 +377,10 @@ class DashboardController extends BaseController
 	 */
 	private static function get_new_tickets()
 	{
-		if (!\Module::collections()->has('Ticketsystem'))
+		if (!Module::collections()->has('Ticketsystem'))
 			return null;
 
-		return \Auth::user()->tickets()->where('state', '=', 'New')->get();
+		return Auth::user()->tickets()->where('state', '=', 'New')->get();
 	}
 
 

@@ -1,4 +1,6 @@
-<?php namespace Modules\BillingBase\Providers;
+<?php
+
+namespace Modules\BillingBase\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
@@ -9,7 +11,7 @@ class BillingBaseServiceProvider extends ServiceProvider {
 	 *
 	 * @var bool
 	 */
-	protected $defer = false;
+	protected $defer = true;
 
 	/**
 	 * The artisan commands provided by this module
@@ -42,7 +44,6 @@ class BillingBaseServiceProvider extends ServiceProvider {
 	{
 		$this->commands($this->commands);
 
-		// $this->mergeConfigFrom(__DIR__ . '/../Config/dates.php', 'dates');
 		$this->app->bind('companydata', 'Modules\BillingBase\Providers\CompanyDataProvider');
 	}
 
@@ -104,7 +105,10 @@ class BillingBaseServiceProvider extends ServiceProvider {
 	 */
 	public function provides()
 	{
-		return array();
+		return [
+			CompanyData::class,
+			CompanyDataProvider::class
+		];
 	}
 
 }

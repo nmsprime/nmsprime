@@ -1,4 +1,6 @@
-<?php namespace Modules\Voipmon\Providers;
+<?php
+
+namespace Modules\VoipMon\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
@@ -9,7 +11,7 @@ class VoipMonServiceProvider extends ServiceProvider {
 	 *
 	 * @var bool
 	 */
-	protected $defer = false;
+	protected $defer = true;
 
 	/**
 	 * The artisan commands provided by this module
@@ -21,7 +23,7 @@ class VoipMonServiceProvider extends ServiceProvider {
 
 	/**
 	 * Boot the application events.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function boot()
@@ -43,7 +45,7 @@ class VoipMonServiceProvider extends ServiceProvider {
 
 	/**
 	 * Register config.
-	 * 
+	 *
 	 * @return void
 	 */
 	protected function registerConfig()
@@ -58,7 +60,7 @@ class VoipMonServiceProvider extends ServiceProvider {
 
 	/**
 	 * Register views.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function registerViews()
@@ -78,7 +80,7 @@ class VoipMonServiceProvider extends ServiceProvider {
 
 	/**
 	 * Register translations.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function registerTranslations()

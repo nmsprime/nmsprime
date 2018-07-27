@@ -6,6 +6,11 @@ use Modules\BillingBase\Entities\{Company, SepaAccount};
 
 class SepaAccountController extends \BaseController {
 
+	protected $file_upload_paths = [
+		'template_invoice' => 'app/config/billingbase/template/',
+		'template_cdr' 	   => 'app/config/billingbase/template/',
+		];
+
     /**
      * defines the formular fields for the edit and create view
      */
@@ -40,8 +45,8 @@ class SepaAccountController extends \BaseController {
 
 			array('form_type' => 'select', 'name' => 'template_invoice', 'description' => 'Choose invoice template file', 'value' => $templates),
 			array('form_type' => 'select', 'name' => 'template_cdr', 'description' => 'Choose Call Data Record template file', 'value' => $templates),
-			array('form_type' => 'file', 'name' => 'template_invoice_upload', 'description' => 'Upload invoice template'),
-			array('form_type' => 'file', 'name' => 'template_cdr_upload', 'description' => 'Upload CDR template', 'space' => 1),
+			array('form_type' => 'file', 'name' => 'template_invoice_upload', 'description' => 'Upload invoice template', 'help' => trans('helper.tex_template')),
+			array('form_type' => 'file', 'name' => 'template_cdr_upload', 'description' => 'Upload CDR template', 'help' => trans('helper.tex_template'), 'space' => 1),
 
 			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
 		);
@@ -66,28 +71,6 @@ class SepaAccountController extends \BaseController {
 		$rules['bic'] .= $data['bic'] ? '' : '|required';
 
 		return parent::prepare_rules($rules, $data);
-	}
-
-
-	/**
-	 * Overwrites the base methods to handle file uploads
-	 */
-	public function store($redirect = true)
-	{
-		// check and handle uploaded firmware files
-		$this->handle_file_upload('template_invoice', storage_path('app/config/billingbase/template/'));
-		$this->handle_file_upload('template_cdr', storage_path('app/config/billingbase/template/'));
-
-		// finally: call base method
-		return parent::store();
-	}
-
-	public function update($id)
-	{
-		$this->handle_file_upload('template_invoice', storage_path('app/config/billingbase/template/'));
-		$this->handle_file_upload('template_cdr', storage_path('app/config/billingbase/template/'));
-
-		return parent::update($id);
 	}
 
 }

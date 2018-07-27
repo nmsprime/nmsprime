@@ -56,7 +56,7 @@
 			{
 				setTimeout(function()
 				{
-					var source = new EventSource("<?php echo route('SettlementRun.check_state'); ?>");
+					var source = new EventSource("{!! route('SettlementRun.check_state') !!}");
 					source.onmessage = function(e)
 					{
 						if (e.data == 'reload')

@@ -218,7 +218,7 @@ class CustomerTopoController extends NetElementController {
 		$panel_right = $this->make_right_panel_links($modems);
 		$kmls        = $this->__kml_to_modems($modems);
 
-		return \View::make('hfcbase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'modems', 'panel_right', 'kmls')));
+		return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'modems', 'panel_right', 'kmls')));
 	}
 
 
@@ -309,7 +309,7 @@ class CustomerTopoController extends NetElementController {
 
 
 		// show view
-		return \View::make('hfccustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'panel_right')));
+		return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'panel_right')));
 	}
 
 

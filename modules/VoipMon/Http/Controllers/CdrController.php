@@ -1,4 +1,6 @@
-<?php namespace Modules\Voipmon\Http\Controllers;
+<?php
+
+namespace Modules\VoipMon\Http\Controllers;
 
 class CdrController extends \BaseController {
 

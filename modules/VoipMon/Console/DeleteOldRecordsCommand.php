@@ -1,4 +1,6 @@
-<?php namespace Modules\Voipmon\Console;
+<?php
+
+namespace Modules\VoipMon\Console;
 
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
