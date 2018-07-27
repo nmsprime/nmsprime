@@ -621,10 +621,9 @@ end:
 			try {
 				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
 			} catch (\Exception $e) {
-				echo("error while setting new exptected us power\n");
-				\Log::error("error while setting new exptected us power\n");
+				echo("error while setting new exptected us power on CMTS $cmts->hostname [$cmts->id]\n");
+				\Log::error("SNMP failed to set new exptected us power on CMTS $cmts->hostname [$cmts->id]");
 			}
-
 
 			$rx_pwr[$idx] = $r;
 		}
