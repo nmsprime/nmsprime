@@ -682,7 +682,7 @@ end:
 
 		// unset unused interfaces, as we don't want to show them on the web gui
 		foreach (array_keys($us['SNR dB']) as $idx)
-			if ($us['SNR dB'][$idx] == 0)
+			if ($cmts->company == 'Casa' && $us['SNR dB'][$idx] == 0)
 				foreach (array_keys($us) as $entry)
 					unset($us[$entry][$idx]);
 
