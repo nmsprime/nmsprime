@@ -310,7 +310,8 @@ reload:
 				if (in_array($f, $cdr_filepaths))
 					continue;
 
-				\Storage::delete($f);
+				if (is_file($f))
+					unlink($f);
 			}
 
 			foreach (\Storage::directories($dir) as $d)
