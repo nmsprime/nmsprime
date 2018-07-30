@@ -176,7 +176,7 @@ class CustomerTopoController extends NetElementController {
 	*
 	* @author: Ole Ernst
 	*/
-	public function show_bad()
+	public function show_impaired()
 	{
 		$modems = Modem::where('us_pwr', '>', '50');
 
