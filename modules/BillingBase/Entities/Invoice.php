@@ -19,6 +19,8 @@ class Invoice extends \BaseModel{
 	private $currency;
 	private $tax;
 
+	protected $sepaaccount_id;
+
 
 	/**
 	 * View Stuff
@@ -271,7 +273,6 @@ class Invoice extends \BaseModel{
 			ChannelLog::info('billing', "Contract $contract->number was canceled with target ".$ret['end_of_term']);
 
 		$german = \App::getLocale() == 'de';
-
 		$cancel_dates = [
 			'end_of_term' => $german ? self::german_dateformat($ret['end_of_term']) : $ret['end_of_term'],
 			'maturity' 		=> $txt_m,
@@ -489,6 +490,7 @@ class Invoice extends \BaseModel{
 		$data = array(
 			'contract_id' 	=> $this->data['contract_id'],
 			'settlementrun_id' 	=> $this->settlementrun_id,
+			'sepaaccount_id' => $this->sepaaccount_id,
 			'year' 			=> date('Y', $time),
 			'month' 		=> date('m', $time),
 			'filename' 		=> $type ? $this->filename_invoice.'.pdf' :  $this->filename_cdr.'.pdf',
@@ -566,9 +568,12 @@ class Invoice extends \BaseModel{
 	 *
 	 * @throws Exception 	when pdflatex was not able to create PDF from tex document for an invoice
 	 */
-	public static function remove_templatex_files()
+	public static function remove_templatex_files($sepaacc = null)
 	{
-		$invoices = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))])->get();
+		$invoices = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
+		if ($sepaacc)
+			$invoices = $invoices->where('sepaaccount_id', '=', $sepaacc->id);
+		$invoices = $invoices->get();
 
 		foreach ($invoices as $invoice)
 		{
@@ -584,7 +589,6 @@ class Invoice extends \BaseModel{
 			else {
 				// possible errors: syntax/filename/...
 				ChannelLog::error('billing', "pdflatex: Error creating Invoice PDF ".$fn);
-				throw new \Exception("pdflatex: Error creating Invoice PDF ".$fn);
 			}
 		}
 	}
@@ -592,13 +596,18 @@ class Invoice extends \BaseModel{
 
 	/**
 	 * Deletes currently created invoices (created in actual month)
-	 * Used to delete invoices created by previous settlement run in current month - executed in accountingCommand
+	 * Used to delete invoices created by previous settlement run (SR) in current month - executed in accountingCommand
 	 * is used to remove files before settlement run is repeatedly created (accountingCommand executed again)
 	 * NOTE: Use Carefully!!
+	 *
+	 * @param Integer 	Delete only invoices related to specific SepaAccount, 0 - delete all invoices of current SR
 	 */
-	public static function delete_current_invoices()
+	public static function delete_current_invoices($sepaaccount_id = 0)
 	{
-		$query 	  = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
+		$query = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
+		if ($sepaaccount_id)
+			$query = $query->where('sepaaccount_id', '=', $sepaaccount_id);
+
 		$invoices = $query->get();
 
 		// Delete PDFs

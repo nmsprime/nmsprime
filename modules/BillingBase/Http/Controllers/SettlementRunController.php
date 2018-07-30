@@ -2,7 +2,7 @@
 namespace Modules\BillingBase\Http\Controllers;
 
 use ChannelLog;
-use Modules\BillingBase\Entities\{AccountingRecord, BillingLogger, Invoice, SettlementRun};
+use Modules\BillingBase\Entities\{AccountingRecord, BillingLogger, Invoice, SettlementRun, Salesman};
 use Modules\BillingBase\Console\{accountingCommand, cdrCommand};
 use \Monolog\Logger;
 
@@ -98,7 +98,8 @@ class SettlementRunController extends \BaseController {
 
 		// get execution logs if job has finished successfully - (show error logs otherwise - show nothing during execution)
 		// NOTE: when SettlementRun gets verified the logs will disappear because timestamp is updated
-		$logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
+		// $logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
+		$logs = $logs ? : self::get_logs($sr->updated_at->__get('timestamp'));
 
 		return parent::edit($id)->with('rerun_button', $bool)->with('logs', $logs);
 	}
@@ -174,8 +175,6 @@ reload:
 		});
 
 		$response->headers->set('Content-Type', 'text/event-stream');
-
-		\Storage::delete('tmp/accCmdStatus');
 
 		return $response;
 	}
@@ -273,16 +272,22 @@ reload:
 	 *
 	 * USE WITH CARE!
 	 *
-	 * @param 	dir 			String 		Accounting Record Files Directory relative to storage/app/
-	 * @param 	settlementrun 	Object 		SettlementRun the directory should be cleared for
+	 * @param String	dir 				Accounting Record Files Directory relative to storage/app/
+	 * @param Object	settlementrun 		SettlementRun the directory should be cleared for
+	 * @param Object 	sepaacc
 	 */
-	public static function directory_cleanup($dir, $settlementrun = null)
+	public static function directory_cleanup($settlementrun = null, $sepaacc = null)
 	{
+		$dir 	= accountingCommand::get_relative_accounting_dir_path();
 		$start  = $settlementrun ? date('Y-m-01 00:00:00', strtotime($settlementrun->created_at)) : date('Y-m-01');
 		$end 	= $settlementrun ? date('Y-m-01 00:00:00', strtotime('+1 month', strtotime($settlementrun->created_at))) : date('Y-m-01', strtotime('+1 month'));
 
 		// remove all entries of this month permanently (if already created)
-		$ret = AccountingRecord::whereBetween('created_at', [$start, $end])->forceDelete();
+		$query = AccountingRecord::whereBetween('created_at', [$start, $end]);
+		if ($sepaacc)
+			$query = $query->where('sepaaccount_id', '=', $sepaacc->id);
+
+		$ret = $query->forceDelete();
 		if ($ret)
 			ChannelLog::debug('billing', 'Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
 
@@ -291,22 +296,45 @@ reload:
 		ChannelLog::debug('billing', $logmsg);	echo "$logmsg\n";
 
 		if (!$settlementrun)
-			Invoice::delete_current_invoices();
+			Invoice::delete_current_invoices($sepaacc ? $sepaacc->id : 0);
 
 		$cdr_filepaths = cdrCommand::get_cdr_pathnames();
+		$salesman_csv_path = Salesman::get_storage_rel_filename();
 
-		// everything in accounting directory - SepaAccount specific
-		foreach (glob(storage_path("app/$dir/*")) as $f)
+		// everything in accounting directory
+		if (!$sepaacc)
 		{
-			// keep cdr
-			if (in_array($f, $cdr_filepaths))
-				continue;
+			foreach (glob(storage_path("app/$dir/*")) as $f)
+			{
+				// keep cdr
+				if (in_array($f, $cdr_filepaths))
+					continue;
 
-			\Storage::delete($f);
+				if (is_file($f))
+					unlink($f);
+			}
+
+			foreach (\Storage::directories($dir) as $d)
+				\Storage::deleteDirectory($d);
 		}
+		// SepaAccount specific stuff
+		else
+		{
+			// delete ZIP
+			\Storage::delete("$dir/".date('Y-m', strtotime('first day of last month')).'.zip');
 
-		foreach (\Storage::directories($dir) as $d)
-			\Storage::deleteDirectory($d);
+			// delete concatenated Invoice pdf
+			\Storage::delete("$dir/".\App\Http\Controllers\BaseViewController::translate_label('Invoices').'.pdf');
+
+			Salesman::remove_account_specific_entries_from_csv($sepaacc->id);
+
+			// delete account specific dir
+			$dir = $sepaacc->get_relativ_accounting_dir_path();
+			foreach (\Storage::files($dir) as $f)
+				\Storage::delete($f);
+
+			\Storage::deleteDirectory($dir);
+		}
 	}
 
 }

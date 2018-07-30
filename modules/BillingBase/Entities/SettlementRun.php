@@ -8,7 +8,7 @@ class SettlementRun extends \BaseModel {
 	public $table = 'settlementrun';
 
 	// don't try to add these Input fields to Database of this model
-    public $guarded = ['rerun'];
+    public $guarded = ['rerun', 'sepaaccount'];
 
 	// Add your validation rules here
 	public static function rules($id = null)
@@ -93,7 +93,15 @@ class SettlementRun extends \BaseModel {
 	public function view_has_many()
 	{
 		$ret['Files']['Files']['view']['view'] = 'billingbase::SettlementRun.files';
-		$ret['Files']['Files']['view']['vars'] = $this->accounting_files();
+		$ret['Files']['Files']['view']['vars']['files'] = $this->accounting_files();
+
+		// option to rerun settlementrun only for a specific SepaAccount
+		if (SepaAccount::count() > 1) {
+			$accs1 = [0 => trans('messages.ALL')];
+			$accs2 = $this->html_list(SepaAccount::orderBy('id')->get(), ['id', 'name'], false, ': ');
+			$accs = $accs1 + $accs2;
+			$ret['Files']['Files']['view']['vars']['sepaaccs'] = $accs;
+		}
 
 		// NOTE: logs are fetched in SettlementRunController::edit
 		$ret['Files']['Logs']['view']['view'] = 'billingbase::SettlementRun.logs';
@@ -172,8 +180,10 @@ class SettlementRunObserver
 
 	public function updated($settlementrun)
 	{
-		if (\Input::has('rerun'))
-	 		\Session::put('job_id', \Queue::push(new \Modules\BillingBase\Console\accountingCommand($settlementrun)));
+		if (\Input::has('rerun')) {
+			$acc = SepaAccount::find(\Input::get('sepaaccount'));
+			\Session::put('job_id', \Queue::push(new \Modules\BillingBase\Console\accountingCommand($settlementrun, $acc ? : null)));
+		}
 	}
 
 	public function deleted($settlementrun)
