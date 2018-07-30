@@ -46,11 +46,9 @@ BaseRoute::group([], function() {
 		'uses' => 'Modules\HfcCustomer\Http\Controllers\MprController@update_geopos',
 		'middleware' => ['can:update,Modules\HfcCustomer\Entities\MprGeopos'],
 	]);
-});
 
-Route::group(['prefix' => 'app/data/hfccustomer'], function () {
-
-	Route::get('{type}/{filename}', [
+	BaseRoute::get('data/hfccustomer/{type}/{filename}', [
+		'as' => 'HfcCustomer.get_file',
 		'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@get_file',
 		'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
 	]);

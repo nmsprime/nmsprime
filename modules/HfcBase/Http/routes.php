@@ -16,13 +16,10 @@ BaseRoute::group([], function() {
 		'middleware' => ['can:view,Modules\HfcBase\Entities\TreeErd'],
 	]);
 
-});
-
-Route::group(['prefix' => 'app/data/hfcbase'], function () {
-
-	Route::get('{type}/{filename}', [
+	BaseRoute::get('data/hfcbase/{type}/{filename}', [
+		'as' => 'HfcBase.get_file',
 		'uses' => 'Modules\HfcBase\Http\Controllers\HfcBaseController@get_file',
-		'middleware' => ['web', 'can:view,Modules\HfcBase\Entities\TreeErd'],
+		'middleware' => ['can:view,Modules\HfcBase\Entities\TreeErd'],
 	]);
 
 });
