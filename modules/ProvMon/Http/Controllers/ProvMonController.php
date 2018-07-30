@@ -605,10 +605,10 @@ end:
 
 		$rx_pwr = [];
 		foreach (array_keys($us['Frequency MHz']) as $idx) {
-			if ($us['Rx Power dBmV'][$idx] === 'n/a')
+			// continue if rx power is not available or zero (i.e. no CM on the channel)
+			if ($us['Rx Power dBmV'][$idx] === 'n/a' || !$us['SNR dB'][$idx])
 				continue;
 			// the reference SNR is 24 dB
-			// $r = round(/*$us['Rx Power dBmV'][$idx] +*/ 25 - $us['SNR dB'][$idx]);
 			$r = round($us['Rx Power dBmV'][$idx] + 24 - $us['SNR dB'][$idx]);
 			// minimum actual power is 0 dB
 			if ($r < 0)
@@ -621,8 +621,9 @@ end:
 			try {
 				snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
 			} catch (\Exception $e) {
-				echo("error while setting new exptected us power on CMTS $cmts->hostname [$cmts->id]\n");
-				\Log::error("SNMP failed to set new exptected us power on CMTS $cmts->hostname [$cmts->id]");
+				$out = "error while setting new exptected us power on CMTS $cmts->hostname ($idx: $r)\n";
+				echo($out);
+				\Log::error($out);
 			}
 
 			$rx_pwr[$idx] = $r;
@@ -681,7 +682,7 @@ end:
 
 		// unset unused interfaces, as we don't want to show them on the web gui
 		foreach (array_keys($us['SNR dB']) as $idx)
-			if ($us['SNR dB'][$idx] == 0)
+			if ($cmts->company == 'Casa' && $us['SNR dB'][$idx] == 0)
 				foreach (array_keys($us) as $entry)
 					unset($us[$entry][$idx]);
 

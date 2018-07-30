@@ -118,7 +118,7 @@ function ss_docsis($hostname, $snmp_community)
 		// assume as width of 3.2MHz if we can't get the info
 		$preq['width'] = $tmp ? reset($tmp) : 3200000;
 		$preq['next'] = strtotime($rates[$preq['rate']]);
-		$tmp = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.1.1');
+		$tmp = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.1.1')[0];
 		$preq['descr'] = isset($tmp) ? $tmp : 'n/a';
 		file_put_contents($file, json_encode($preq));
 	}
