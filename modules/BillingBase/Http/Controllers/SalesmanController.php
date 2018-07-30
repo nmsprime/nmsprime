@@ -29,7 +29,9 @@ class SalesmanController extends \BaseController {
 
 	public function prepare_input($data)
 	{
-		$data['products'] = str_replace(['/', '|', ';'], ',', trim(ucwords(strtolower($data['products']))));
+		// $data['products'] = str_replace(['/', '|', ';'], ',', trim(ucwords(strtolower($data['products']))));
+		$data['products'] = str_replace(['/', '|', ';'], ',', \Str::title($data['products']));
+		$data['products'] = str_replace('Tv', 'TV', $data['products']);
 
 		return parent::prepare_input($data);
 	}
