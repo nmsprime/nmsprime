@@ -38,7 +38,7 @@
 				url    = '{!! \BaseRoute::get_base_url() !!}'
 				kml    = 0;
 
-				alert ("Element Number: "+id, "<li><a href="+url+"/NetElement/"+id+"/edit>Change</a></li>" +
+				alert ("Element Number: "+id, "<li><a href="+url+"/NetElement/"+id+">Change</a></li>" +
 											"<li><a href="+url+"/NetElement/"+id+"/delete>Delete </a></li>", {width:150});
 				return false;
 		}

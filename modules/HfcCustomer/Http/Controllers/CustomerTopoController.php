@@ -450,7 +450,7 @@ class CustomerTopoController extends NetElementController {
 			}
 
 			# add descr line
-			$descr .= "<a target=\"".$this->html_target."\" href='".\BaseRoute::get_base_url()."/Modem/$mid/edit'>$mac</a>, $contractid, $lastname, $states[$cur_clr] ($row_val)<br>";
+			$descr .= "<a target=\"".$this->html_target."\" href='".\BaseRoute::get_base_url()."/Modem/$mid'>$mac</a>, $contractid, $lastname, $states[$cur_clr] ($row_val)<br>";
 			$num += 1;
 		}
 
