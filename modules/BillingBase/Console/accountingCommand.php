@@ -5,6 +5,7 @@ use ChannelLog as Log, DB, Storage;
 use Illuminate\Console\Command;
 use Collective\Bus\Contracts\SelfHandling;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Queue\{ SerializesModels, InteractsWithQueue};
 use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\{ AccountingRecord, BillingBase, Invoice, Item, Product, Salesman, SepaAccount, SettlementRun};
@@ -74,12 +75,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 		if ($this->output)
 			$this->sepaacc = $this->argument('sepaaccount_id') ? SepaAccount::findOrFail($this->argument('sepaaccount_id')) : null;
 
-		if ($this->sepaacc) {
-			$sepaaccs = new \Illuminate\Database\Eloquent\Collection();
-			$sepaaccs->add($this->sepaacc);
-		}
-		else
-			$sepaaccs = SepaAccount::all();
+		$sepaaccs = $this->sepaacc ? new Collection([0 => $this->sepaacc]) : SepaAccount::all();
 
 		if (!$sepaaccs) {
 			Log::error('billing', 'There are no Sepa Accounts to create Billing Files for - Stopping here!');
@@ -621,6 +617,7 @@ class accountingCommand extends Command implements SelfHandling, ShouldQueue {
 	protected function _parse_hlkomm_csv($filepath)
 	{
 		$csv = file($filepath);
+		$calls = [[]];
 
 		if (!$csv) {
 			Log::warning('billing', 'Empty hlkomm call data record file');
