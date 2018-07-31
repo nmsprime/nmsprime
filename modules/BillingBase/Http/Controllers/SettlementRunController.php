@@ -69,7 +69,7 @@ class SettlementRunController extends \BaseController {
 		$sr   = SettlementRun::find($id);
 		$bool = true;
 		$job_queued = \DB::table('jobs')->where('payload', 'like', '%accountingCommand%')->get();
-		$job_queued = $job_queued ? $job_queued[0] : null;
+		$job_queued = $job_queued->isNotEmpty() ? $job_queued[0] : null;
 
 		if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified)
 			$bool = false;
