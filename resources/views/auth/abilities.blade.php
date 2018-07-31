@@ -290,11 +290,15 @@ new Vue({
             this.allowAll = false;
 
         for (id in this.customAbilities) {
-            if (id in this.originalRoleAbilities.custom)
+            if (id in this.originalRoleAbilities.custom) {
                 this.$refs['allowed'+ id][0].checked = true;
+                this.allowViewAll = (this.customAbilities[id]['title'] == 'View everything') ? true : undefined;
+            }
 
-            if (id in this.originalForbiddenAbilities.custom)
+            if (id in this.originalForbiddenAbilities.custom) {
                 this.$refs['forbidden'+ id][0].checked = true;
+                this.allowViewAll = (this.customAbilities[id]['title'] == 'View everything') ? false : undefined;
+            }
 
             this.changed[id] = false;
         }
