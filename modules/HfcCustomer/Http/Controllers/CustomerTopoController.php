@@ -217,6 +217,7 @@ class CustomerTopoController extends NetElementController {
 		$body_onload = 'init_for_map';
 		$panel_right = $this->make_right_panel_links($modems);
 		$kmls        = $this->__kml_to_modems($modems);
+		$file        = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
 		return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'modems', 'panel_right', 'kmls')));
 	}
