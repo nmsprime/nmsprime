@@ -14,13 +14,13 @@
 	@if ($lease)
 		<font color="{{$lease['state']}}"><b>{{$lease['forecast']}}</b></font><br>
 		@foreach ($lease['text'] as $line)
-				<table>
+			<table>
 				<tr>
 					<td>
-						 <font color="grey">{{$line}}</font>
+						 <font color="grey">{!!$line!!}</font>
 					</td>
 				</tr>
-				</table>
+			</table>
 		@endforeach
 	@else
 		<font color="red">{{ trans('messages.modem_lease_error')}}</font>
