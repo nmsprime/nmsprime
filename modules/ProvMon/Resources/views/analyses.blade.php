@@ -186,10 +186,10 @@
 				setTimeout(function(_event){
 					var ctx = document.getElementById("timeChart").getContext('2d');
 					var ctx2 = document.getElementById("fftChart").getContext('2d');
-					var js_energy = [<?php echo '"'.implode('","', $preeq['energy']).'"' ?>];
-					var js_ene = [<?php echo '"'.implode('","', $preeq['fft']).'"' ?>];
-					var js_chart = [<?php echo '"'.implode('","', $preeq['chart']).'"' ?>];
-					var js_axis = [<?php echo '"'.implode('","', $preeq['axis']).'"' ?>];
+					var js_energy = [{!! implode(',', $preeq['energy'])	!!}];
+					var js_ene = 	[{!! implode(',', $preeq['fft']) 	!!}];
+					var js_chart = 	[{!! implode(',', $preeq['chart']) 	!!}];
+					var js_axis = 	[{!! implode(',', $preeq['axis']) 	!!}];
 					var myChart = new Chart(ctx,
 					{
 						type: 'bar',
