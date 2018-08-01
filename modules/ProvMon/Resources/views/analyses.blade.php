@@ -182,7 +182,6 @@
 
 			@section('mycharts')
 			<script>
-			//console.log(john);
 			window.onload = (function(){
 				setTimeout(function(_event){
 					var ctx = document.getElementById("timeChart").getContext('2d');
