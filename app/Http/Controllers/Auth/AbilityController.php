@@ -175,7 +175,7 @@ class AbilityController extends Controller
 	 */
 	public static function getCustomAbilities()
 	{
-		$customAbilities = Ability::whereNotIn('name', ['*', 'view', 'create', 'update', 'delete'])
+		$customAbilities = Ability::whereNotIn('name', self::getAbilityCrudActionsArray()->keys())
 			->orWhere('entity_type', '*')
 			->get()
 			->pluck('title', 'id')
@@ -282,9 +282,9 @@ class AbilityController extends Controller
 	{
 		$sortedAbilities = collect();
 
-		$sortedAbilities['custom'] = $abilities->filter(function ($ability) {
+		$sortedAbilities = $abilities->filter(function ($ability) {
 			return (Str::startsWith($ability->entity_type, '*') || $ability->entity_type == null ||
-				!in_array($ability->name, ['*', 'view', 'create', 'update', 'delete']));
+				!in_array($ability->name, self::getAbilityCrudActionsArray()->keys()));
 			})
 			->pluck('title', 'id');
 
@@ -302,9 +302,9 @@ class AbilityController extends Controller
 	{
 		$sortedAbilities = collect();
 
-		$sortedAbilities['model'] = $abilities->filter(function ($ability) {
+		$sortedAbilities = $abilities->filter(function ($ability) {
 				return (!Str::startsWith($ability->entity_type, '*') && $ability->entity_type !== null &&
-					in_array($ability->name, ['*', 'view', 'create', 'update', 'delete']));
+					in_array($ability->name, self::getAbilityCrudActionsArray()->keys()));
 			})->map(function ($ability) {
 				return ['id' => $ability->id, 'name' => $ability->name, 'entity_type' => $ability->entity_type];
 			})->keyBy('id');
