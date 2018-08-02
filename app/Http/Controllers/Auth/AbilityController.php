@@ -212,12 +212,11 @@ class AbilityController extends Controller
 
 		$customAbilities = self::mapCustomAbilities($allowedAbilities);
 		$customForbiddenAbilities = self::mapCustomAbilities($forbiddenAbilities);
-		$allowAll = $customForbiddenAbilities['custom']->has(1) ? true : 'falseOrUndefined';
-		$abilities = $allowAll == 'falseOrUndefined' ? self::mapModelAbilities($allowedAbilities)['model'] : self::mapModelAbilities($forbiddenAbilities)['model'];
+		$isAllowAllEnabled = $customAbilities->has(1);
+		$abilities = $isAllowAllEnabled ? self::mapModelAbilities($forbiddenAbilities) : self::mapModelAbilities($allowedAbilities);
 		$allAbilities = Ability::withTrashed()->whereIn('id', $abilities->keys())->orderBy('id', 'asc')->get();
 
-		// Grouping GlobalConfig, Authentication and HFC Permissions
-		// into "special" Groups to increase usability
+		// Grouping GlobalConfig, Authentication and HFC Permissions to increase usability
 		$modelAbilities = collect([
 			'GlobalConfig' => collect([
 				'GlobalConfig','BillingBase','Ccc','HfcBase','ProvBase','ProvVoip','GuiLog'
