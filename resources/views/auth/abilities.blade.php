@@ -114,11 +114,11 @@
                                     @endif
                                     title="{{ App\Http\Controllers\BaseViewController::translate_view($action['name'], 'Button' )}}"
                                     >
-                                <span class="d-block d-xl-none">
+                                <span class="d-block d-xl-none" style="pointer-events: none;">
                                 <i class="fa {!! $action['icon'] !!} fa-lg"
                                     :class="[{!! $action['name'] !!}All.{!! $module !!} ? '' : 'text-dark']"></i>
                                 </span>
-                                <span class="d-none d-xl-block">
+                                <span class="d-none d-xl-block" style="pointer-events: none;">
                                     <i class="fa {!! $action['icon'] !!} fa-lg"
                                         :class="[{!! $action['name'] !!}All.{!! $module !!} ? '' : 'text-dark']"></i>
                                     {{ App\Http\Controllers\BaseViewController::translate_label( Str::title($action['name'])) }}
