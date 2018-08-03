@@ -719,7 +719,7 @@ end:
 	 * TODO: make a seperate class for dhcpd
 	 * lease stuff (search, replace, ..)
 	 *
-	 * @return Response
+	 * @return Array 	of lease entry strings
 	 */
 	public function search_lease ()
 	{
@@ -748,8 +748,10 @@ end:
 				if (isset($search2) && !strpos($s, $search2))
 						continue;
 
+				$s = str_replace('  ', '&nbsp;&nbsp;', $s);
+
 				// push matching results
-				array_push($ret, preg_replace('/\r|\n/', '<br />', $s));
+				array_push($ret, preg_replace('/\r|\n/', '<br/>', $s));
 			}
 		}
 

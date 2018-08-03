@@ -86,7 +86,7 @@
 				<table>
 					<tr>
 						<td>
-							<font color="grey">{{$line}}</font>
+							<font color="grey">{!!$line!!}</font>
 						</td>
 					</tr>
 				</table>
