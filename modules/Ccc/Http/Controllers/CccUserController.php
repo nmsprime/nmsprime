@@ -224,15 +224,11 @@ class CccUserController extends \BaseController {
 	 */
 	public function show()
 	{
-		if (!Auth::guard('ccc')->check())
-			return redirect(route('customerLogin'));
-
-		$invoices = Auth::guard('ccc')->user()->contract->invoices;
+		$invoices = Auth::guard('ccc')->user()->contract->invoices()->with('settlementrun')->get();
 		$invoice_links = [];
 
 		$bsclass = ['info', 'active'];
 		$start = $year = 0;
-
 		foreach ($invoices as $key => $invoice)
 		{
 			// dont show unverified invoices
