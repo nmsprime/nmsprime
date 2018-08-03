@@ -56,7 +56,10 @@ class HfcBaseController extends BaseController {
 		foreach ($trees as $tree)
 		{
 			if ($tree->kml_file != '')
-				array_push($a, ['file'=>$tree->kml_path.'/'.$tree->kml_file, 'descr' => $tree->kml_file]);
+				array_push($a, [
+					'file' => route('HfcBase.get_file', ['type' => 'kml_static', 'filename' => basename($tree->kml_file)]),
+					'descr' => $tree->kml_file,
+				]);
 		}
 
 		return $a;
