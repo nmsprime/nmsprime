@@ -224,6 +224,9 @@ class CccUserController extends \BaseController {
 	 */
 	public function show()
 	{
+		if (!Auth::guard('ccc')->check())
+			return redirect(route('customerLogin'));
+
 		$invoices = Auth::guard('ccc')->user()->contract->invoices;
 		$invoice_links = [];
 

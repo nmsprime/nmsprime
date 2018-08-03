@@ -18,9 +18,8 @@ class CccRedirectIfAuthenticated
 	 */
 	public function handle($request, Closure $next, $guard = null)
 	{
-		if (Auth::guard('ccc')->check()) {
+		if (Auth::guard('ccc')->check())
 			return redirect('customer');
-		}
 
 		return $next($request);
 	}
