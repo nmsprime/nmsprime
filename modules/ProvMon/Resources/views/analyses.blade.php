@@ -32,8 +32,7 @@
 		</div>
 
 		<div class="tab-pane fade in" id="flood-ping">
-			<?php $route = \Route::getCurrentRoute()->getUri(); ?>
-					<form route="$route" method="POST">Type:
+					<form method="POST">Type:
 						<input type="hidden" name="_token" value="{{ csrf_token() }}"></input>
 						<select class="select2 form-control m-b-20" name="flood_ping" style="width : 100 %">
 							<option value="1">low load: 500 packets of 56 Byte</option> {{-- needs approximately 5 sec --}}
@@ -268,9 +267,16 @@
 </script>
 
 <script language="javascript">
-	$(document).ready(function() {
-		$('table.streamtable').DataTable(
-		{
+	let targetPage = window.location.href;
+		targetPage = targetPage.split('?');
+		targetPage = targetPage[0];
+	let panelPositionData = localStorage.getItem(targetPage) ? targetPage : "{!! isset($view_header) ? $view_header : 'undefined'!!}";
+    let event = 'load';
+	if (panelPositionData)
+		event = 'localstorage-position-loaded';
+
+	$(window).on(event, function() {
+		$('table.streamtable').DataTable({
 		{{-- Translate Datatables Base --}}
 			@include('datatables.lang')
 		responsive: {
