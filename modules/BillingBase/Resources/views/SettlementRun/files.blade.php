@@ -37,7 +37,7 @@
 				<table class="table table-bordered">
 				<th class="text-center active"> {{ $sepaacc }} </th>
 				@foreach ($files as $key => $file)
-					<tr><td class="text-center">{{ HTML::linkRoute('Settlement.download', $file->getFilename(), ['id' => $view_var->id, 'sepaacc' => $sepaacc, 'key' => $key]) }}</td></tr>
+					<tr><td class="text-center">{{ HTML::linkRoute('SettlementRun.download', $file->getFilename(), ['id' => $view_var->id, 'sepaacc' => $sepaacc, 'key' => $key]) }}</td></tr>
 				@endforeach
 				</table>
 			@DivClose()
