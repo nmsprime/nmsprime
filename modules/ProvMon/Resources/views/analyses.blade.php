@@ -270,7 +270,8 @@
 	let targetPage = window.location.href;
 		targetPage = targetPage.split('?');
 		targetPage = targetPage[0];
-	let panelPositionData = localStorage.getItem(targetPage) ? targetPage : "{!! isset($view_header) ? $view_header : 'undefined'!!}";
+	let panelPositionData = localStorage.getItem(targetPage) ?: localStorage.getItem("{!! isset($view_header) ? $view_header : 'undefined'!!}");
+
     let event = 'load';
 	if (panelPositionData)
 		event = 'localstorage-position-loaded';
