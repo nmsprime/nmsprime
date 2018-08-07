@@ -32,7 +32,7 @@ class SepaMandateTableSeeder extends \BaseSeeder {
 
 			SepaMandate::create([
 				'contract_id' => $contract_id,
-				'reference' => '002-'-$contract_id,
+				'reference' => '002-'.$contract_id,
 				'signature_date' => $date,
 				'sepa_holder' => $contracts->find($contract_id)->firstname.' '.$contracts->find($contract_id)->lastname,
 				'sepa_iban'=> $ibans[rand(0,1)],
