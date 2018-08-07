@@ -307,6 +307,14 @@ class ProvVoipEnvia extends \BaseModel {
 		// colorize output
 		foreach ($lines as $line) {
 			$pretty = $line;
+
+			// remove double escaped special chars
+			$pretty = str_replace('&quot;quot;', '&quot;', $pretty);
+			$pretty = str_replace('&amp;amp;', '&amp;', $pretty);
+			$pretty = str_replace('&apos;', "'", $pretty);
+			$pretty = str_replace('&lt;lt;', '&lt;', $pretty);
+			$pretty = str_replace('&gt;gt;', '&gt;', $pretty);
+
 			$pretty = str_replace('/', 'dummy_slash', $pretty);
 			$pretty = str_replace('&quot; ', '</span>&quot; ', $pretty);
 			$pretty = str_replace('&quot;/', '</span>&quot;/', $pretty);
@@ -2584,6 +2592,14 @@ class ProvVoipEnvia extends \BaseModel {
 
 		// lambda func to add the data to xml
 		$add_func = function($xml, $xml_field, $payload) {
+
+			// escape forbidden characters (https://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references#Predefined_entities_in_XML)
+			$payload = str_replace('"', "&quot;", $payload);
+			$payload = str_replace("&", "&amp;", $payload);
+			$payload = str_replace("'", "&apos;", $payload);
+			$payload = str_replace("<", "&lt;", $payload);
+			$payload = str_replace(">", "&gt;", $payload);
+
 			$cur_node = $xml->addChild($xml_field, $payload);
 			if ((is_null($payload)) || ($payload === "")) {
 				// XML for phonebook entry related stuff do not have a nil attribute
