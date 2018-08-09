@@ -109,7 +109,6 @@ class NumberRange extends \BaseModel {
 			// \Log::info("No NumberRange assigned to CostCenter [$costcenter_id]!");
 			return null;
 		}
-
 		foreach ($numberranges as $range)
 		{
 			$first = \Modules\ProvBase\Entities\Contract::where('number', '=', $range->prefix.$range->start.$range->suffix)->get(['number'])->all();
@@ -142,7 +141,33 @@ class NumberRange extends \BaseModel {
 
 			$num = $num[0]->nextNum;
 
-			if (!$num || $num > $range->end) {
+			if (!$num)
+			{
+				\Log::warning("Could not find a free number in number range $range->name", [$range->id]);
+
+				$wherebetween = \DB::raw("substring(number, char_length('$range->prefix') + 1,
+							char_length(number) - char_length('$range->prefix') - char_length('$range->suffix'))");
+
+				$last = \Modules\ProvBase\Entities\Contract::select('number')
+					->whereBetween($wherebetween, [$range->start, $range->end])
+					->where('costcenter_id', '=', $costcenter_id)
+					->orderBy('number', 'desc')->first()->number;
+
+				if ($last >= $range->end)
+					continue;
+
+				// check if there are contracts with different costcenter_id inside the range when last number is smaller than the end of the range
+				$contract_nrs = \Modules\ProvBase\Entities\Contract::where('costcenter_id', '!=', $costcenter_id)
+					->whereBetween($wherebetween, [$range->start, $range->end])
+					->select('number')
+					->orderBy('number')->get()->pluck('number')->all();
+
+				if ($contract_nrs)
+					session(['alert' => trans('messages.contract_nr_mismatch', ['nrs' => implode(', ', $contract_nrs)])]);
+
+				continue;
+			}
+			else if ($num > $range->end) {
 				\Log::warning("No free contract number in number range: $range->name [$range->id]");
 				continue;
 			}
