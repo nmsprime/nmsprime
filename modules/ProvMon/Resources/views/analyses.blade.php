@@ -270,32 +270,36 @@
 	let targetPage = window.location.href;
 		targetPage = targetPage.split('?');
 		targetPage = targetPage[0];
-	let panelPositionData = localStorage.getItem(targetPage) ?: localStorage.getItem("{!! isset($view_header) ? $view_header : 'undefined'!!}");
+	let panelPositionData = localStorage.getItem(targetPage) ? localStorage.getItem(targetPage) : localStorage.getItem("{!! isset($view_header) ? $view_header : 'undefined'!!}");
 
     let event = 'load';
 	if (panelPositionData)
 		event = 'localstorage-position-loaded';
 
 	$(window).on(event, function() {
-		$('table.streamtable').DataTable({
-		{{-- Translate Datatables Base --}}
-			@include('datatables.lang')
-		responsive: {
-			details: {
-				type: 'column' {{-- auto resize the Table to fit the viewing device --}}
-			}
-		},
-		autoWidth: false,
-		paging: false,
-		info: false,
-		searching: false,
-		aoColumnDefs: [ {
-			className: 'control',
-			orderable: false,
-			targets:   [0]
-		} ]
+		$(document).ready(function() {
+			$('table.streamtable').DataTable({
+			{{-- Translate Datatables Base --}}
+				@include('datatables.lang')
+			responsive: {
+				details: {
+					type: 'column' {{-- auto resize the Table to fit the viewing device --}}
+				}
+			},
+			autoWidth: false,
+			paging: false,
+			info: false,
+			searching: false,
+			order: [[ 1, "asc" ]],
+			aoColumnDefs: [ {
+	            className: 'control',
+	            orderable: false,
+	            searchable: false,
+	            targets:   [0]
+			} ]
+			});
 		});
-});
+	});
 </script>
 @include('Generic.handlePanel')
 @stop
