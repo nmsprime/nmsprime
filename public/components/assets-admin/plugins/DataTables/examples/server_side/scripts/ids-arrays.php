@@ -28,54 +28,52 @@ $primaryKey = 'id';
 // The `db` parameter represents the column name in the database, while the `dt`
 // parameter represents the DataTables column identifier. In this case simple
 // indexes + the primary key column for the id
-$columns = array(
-	array(
-		'db' => 'id',
-		'dt' => 'DT_RowId',
-		'formatter' => function( $d, $row ) {
-			// Technically a DOM id cannot start with an integer, so we prefix
-			// a string. This can also be useful if you have multiple tables
-			// to ensure that the id is unique with a different prefix
-			return 'row_'.$d;
-		}
-	),
-	array( 'db' => 'first_name', 'dt' => 0 ),
-	array( 'db' => 'last_name',  'dt' => 1 ),
-	array( 'db' => 'position',   'dt' => 2 ),
-	array( 'db' => 'office',     'dt' => 3 ),
-	array(
-		'db'        => 'start_date',
-		'dt'        => 4,
-		'formatter' => function( $d, $row ) {
-			return date( 'jS M y', strtotime($d));
-		}
-	),
-	array(
-		'db'        => 'salary',
-		'dt'        => 5,
-		'formatter' => function( $d, $row ) {
-			return '$'.number_format($d);
-		}
-	)
-);
+$columns = [
+    [
+        'db' => 'id',
+        'dt' => 'DT_RowId',
+        'formatter' => function ($d, $row) {
+            // Technically a DOM id cannot start with an integer, so we prefix
+            // a string. This can also be useful if you have multiple tables
+            // to ensure that the id is unique with a different prefix
+            return 'row_'.$d;
+        },
+    ],
+    ['db' => 'first_name', 'dt' => 0],
+    ['db' => 'last_name',  'dt' => 1],
+    ['db' => 'position',   'dt' => 2],
+    ['db' => 'office',     'dt' => 3],
+    [
+        'db'        => 'start_date',
+        'dt'        => 4,
+        'formatter' => function ($d, $row) {
+            return date('jS M y', strtotime($d));
+        },
+    ],
+    [
+        'db'        => 'salary',
+        'dt'        => 5,
+        'formatter' => function ($d, $row) {
+            return '$'.number_format($d);
+        },
+    ],
+];
 
 // SQL server connection information
-$sql_details = array(
-	'user' => '',
-	'pass' => '',
-	'db'   => '',
-	'host' => ''
-);
-
+$sql_details = [
+    'user' => '',
+    'pass' => '',
+    'db'   => '',
+    'host' => '',
+];
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * If you just want to use the basic configuration for DataTables with PHP
  * server-side, there is no need to edit below this line.
  */
 
-require( 'ssp.class.php' );
+require 'ssp.class.php';
 
 echo json_encode(
-	SSP::simple( $_GET, $sql_details, $table, $primaryKey, $columns )
+    SSP::simple($_GET, $sql_details, $table, $primaryKey, $columns)
 );
-
