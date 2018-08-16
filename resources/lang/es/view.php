@@ -2,12 +2,12 @@
 
 return [
 //SEARCH
-		'Search_EnterKeyword' 		=> 'Enter Keyword',
-		'Search_MatchesFor'			=> 'Matches for',
-		'Search_In'					=> 'in',
+		'Search_EnterKeyword' 		=> 'Ingresar palabra clave',
+		'Search_MatchesFor'			=> 'Coincida con',
+		'Search_In'					=> 'en',
 //jQuery
 		//Translations for this at https://datatables.net/plug-ins/i18n/
-		'jQuery_sEmptyTable'		=> 'No data available in table',
+		'jQuery_sEmptyTable'		=> 'No hay datos disponibles en la tabla',
 		'jQuery_sInfo'				=> 'Showing _START_ to _END_ of _TOTAL_ entries',
 		'jQuery_sInfoEmpty'			=> 'Showing 0 to 0 of 0 entries',
 		'jQuery_sInfoFiltered'		=> '(filtered from _MAX_ total entries)',
