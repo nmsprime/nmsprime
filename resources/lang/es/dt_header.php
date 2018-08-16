@@ -143,12 +143,12 @@ return [
 	'modem.inventar_num' => 'Serial',
 	'contract_valid' => 'Contrato valido?',
 	// QoS
-	'qos.name' => 'Nombre de QoS',
-	'qos.ds_rate_max' => 'Velocidad maxima de bajada',
-	'qos.us_rate_max' => 'Velocidad maxima de subida',
+	'qos.name' => 'Nombre de Plan',
+	'qos.ds_rate_max' => 'Velocidad DS',
+	'qos.us_rate_max' => 'Velocidad US',
 	// Mta
-	'mta.hostname' => 'Nombre de Host',
-	'mta.mac' => 'Direccion MAC',
+	'mta.hostname' => 'Nombre de host',
+	'mta.mac' => 'Dirección MAC',
 	'mta.type' => 'Protocolo VOIP',
 	// Configfile
 	'configfile.name' => 'Archivo de configuracion',
