@@ -10,20 +10,20 @@ return [
 	'All abilities'					=> 'Esta capacidad permite que todas las solicitudes de autorización, salvo las capacidades, que están explícitamente prohibidas. Esto es principalmente una capacidad de ayuda. Prohibición está deshabilitado, porque se permiten sólo marcadas habilidades. Si esta capacidad no está marcada, tienes que configurar a mano todas las capacidades. Si cambia esta capacidad, cuando se establecen muchas otras habilidades, tarda hasta un minuto para aplicar los cambios.',
 	'View everything'			=> 'Esta habilidad permite visualizar todas las páginas. Prohibición se deshabilita, ya que hace inutilizable el NMS. Esto es principalmente una capacidad auxiliar para los invitados o usuarios con pocos privilegios.',
 	'Use api'					=> 'Esta habilidad permite o prohíbe el acceso a las rutas de la API con "Autenticación básica" (el correo electrónico se utiliza como nombre de usuario).',
-	'See income chart'			=> 'This ability allows or forbids to view the income chart on the dashboard.',
-	'View analysis pages of modems'	=> 'This ability allows or forbids to access the analysis pages of a modem.',
-	'View analysis pages of cmts' => 'This ability allows or forbids to access the analysis pages of a CMTS.',
-	'Download settlement runs'	=> 'This ability allows or forbids the download of settlement runs. This ability has no impact if it is forbidden to manage settlement runs.',
+	'See income chart'			=> 'Esta habilidad permite o prohíbe ver la tabla de ingresos en el tablero.',
+	'View analysis pages of modems'	=> 'Esta habilidad permite o prohíbe el acceso a las páginas de análisis de un módem.',
+	'View analysis pages of cmts' => 'Esta habilidad permite o prohíbe el acceso a las páginas de análisis de un módem.',
+	'Download settlement runs'	=> 'Esta habilidad permite o prohíbe que la descarga de solución funciona. Esta habilidad no tiene impacto si está prohibido administrar pistas de solución.',
  /**
   * Index Page - Datatables
   */
-	'SortSearchColumn'				=> 'This Column cannot be searched or ordered.',
-	'PrintVisibleTable'				=> 'Prints the shown table. If the table is filtered make sure to select the \\"All\\" option to display everything. Loading can take a few seconds.',
-	'ExportVisibleTable'			=> 'Exports the shown table. If the table is filtered make sure to select the \\"All\\" option to display everything. Loading can take a few seconds.',
-	'ChangeVisibilityTable'			=> 'Select the columns that should be visible.',
+	'SortSearchColumn'				=> 'Esta columna no se puede ordenar o buscar.',
+	'PrintVisibleTable'				=> 'Imprime la tabla que se muestra. Si se filtra la tabla Asegúrese de seleccionar la opción \\"Todo\\" para mostrar todo. La carga puede tardar unos segundos.',
+	'ExportVisibleTable'			=> 'Imprime la tabla que se muestra. Si se filtra la tabla Asegúrese de seleccionar la opción \\"Todo\\" para mostrar todo. La carga puede tardar unos segundos.',
+	'ChangeVisibilityTable'			=> 'Seleccione las columnas que deben ser visibles.',
 
 	// GlobalConfig
-	'ISO_3166_ALPHA-2'				=> 'ISO 3166 ALPHA-2 (two characters, e.g. “US”). Used in address forms to specify the country.',
+	'ISO_3166_ALPHA-2'				=> 'ISO 3166 alfa-2 (dos caracteres, por ejemplo, "US"). Utilizado en formas de dirección para especificar el país.',
 
  /**
   *	MODULE: BillingBase
