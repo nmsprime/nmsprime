@@ -87,7 +87,7 @@ return [
   *	MODULE: HfcSnmp
   */
 	'mib_filename' 					=> 'The Filename is composed by MIB name & Revision. If there is already an existent identical File it\'s not possible to create it again.',
-	'oid_link' 						=> 'Go to OID Settings',
+	'oid_link' 						=> 'Ir a Ajustes de OID',
 	'oid_table' 					=> 'INFO: This Parameter belongs to a Table-OID. If you add/specify SubOIDs or/and indices, only these are considered for the snmpwalk. Besides the better Overview this can dramatically speed up the Creation of the Controlling View for the corresponding NetElement.',
 	'parameter_3rd_dimension' 		=> 'Check this box if this Parameter belongs to an extra Controlling View behind an Element of the SnmpTable.',
 	'parameter_diff' 				=> 'Check this if only the Difference of actual to last queried values shall be shown.',
@@ -139,5 +139,5 @@ return [
 /**
  * Module Ticketsystem
  */
-	'assign_user' => 'Allowed to assign an user to a ticket.',
+	'assign_user' => 'Permite asignar un usuario a un ticket.',
  ];
