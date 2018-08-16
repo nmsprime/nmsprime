@@ -139,11 +139,11 @@ return [
 	'modem.street' => 'Calle',
 	'modem.district' => 'Distrito',
 	'modem.us_pwr' => 'US level',
-	'modem.geocode_source' => 'Geocode origin',
-	'modem.inventar_num' => 'Serial Nr',
-	'contract_valid' => 'Contract valid?',
+	'modem.geocode_source' => 'Geolocalización',
+	'modem.inventar_num' => 'Nº de serie',
+	'contract_valid' => 'Activo?',
 	// QoS
-	'qos.name' => 'QoS Name',
+	'qos.name' => 'Nombre de Plan',
 	'qos.ds_rate_max' => 'Maximum DS Speed',
 	'qos.us_rate_max' => 'Maximum US Speed',
 	// Mta
