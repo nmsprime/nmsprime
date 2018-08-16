@@ -110,9 +110,9 @@ return [
 		'Header_SepaMandate'		=> 'SEPA-Mandate|SEPA-Mandates',
 		//Modems
 		'Header_Modems'				=> 'Modem|Modems', //workaround
-		'Header_EditModems'			=> 'Edit Modem',
+		'Header_EditModems'			=> 'Editar Modem',
 		'Header_Modem'				=> 'Modem|Modems',
-		'Header_EditModem'			=> 'Edit Modem',
+		'Header_EditModem'			=> 'Editar Modem',
 		//Endpoint
 		'Header_Endpoints'			=> 'Endpoint|Endpoints',
 		'Header_EditEndpoints'		=> 'Edit Endpoints',
