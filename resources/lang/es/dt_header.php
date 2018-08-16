@@ -144,12 +144,12 @@ return [
 	'contract_valid' => 'Activo?',
 	// QoS
 	'qos.name' => 'Nombre de Plan',
-	'qos.ds_rate_max' => 'Maximum DS Speed',
-	'qos.us_rate_max' => 'Maximum US Speed',
+	'qos.ds_rate_max' => 'Velocidad DS',
+	'qos.us_rate_max' => 'Velocidad US',
 	// Mta
-	'mta.hostname' => 'Hostname',
-	'mta.mac' => 'MAC-Adress',
-	'mta.type' => 'VOIP Protocol',
+	'mta.hostname' => 'Nombre de host',
+	'mta.mac' => 'Dirección MAC',
+	'mta.type' => 'Protocolo VOIP',
 	// Configfile
 	'configfile.name' => 'Configfile',
 	// PhonebookEntry
