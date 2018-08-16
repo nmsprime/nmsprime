@@ -4,12 +4,12 @@ return [
  /**
   * Authentication and Base
   */
-	'assign_role'					=> 'Assign one or more Roles to this User. Users without a Role cant use the NMS because they got no Permissions.',
-	'assign_users'					=> 'Assign one or more Users to this Role. Changes made here are not visible in the GuiLog of the user.',
-	'assign_rank'					=> "The rank of a role determines the ability to edit other users. \nYou can assign values from 0 to 100. (higher is better). \nIf a user has more than one role, the highest rank is used. \nIf the ability to update users is set, the rank is also checked. Only if the rank of the editor is higher, permission is granted. Furthermore, when creating or updating users, only roles with equal or lower rank can be assigned.",
-	'All abilities'					=> 'This ability allows all authorisation requests, except for the abilities, which are explicitly forbidden. This is mainly a helper ability. Forbidding is disabled, because only checked Abilities are allowed. If this Ability is not checked, you have to set all abilities by hand. If you change this ability, when many other abilities are set, it will take up to 1 minute to apply all the changes.',
-	'View everything'			=> 'This ability allows to view all pages. Forbidding is disabled, because it makes the NMS unusable. This is mainly a helper ability for guests or very low priviledged users.',
-	'Use api'					=> 'This ability allows or forbids to access the API routes with "Basic Auth" (the email is used as username).',
+	'assign_role'					=> 'Asignar una o más funciones a este usuario. Los usuarios sin una función no pueden utilizar el NMS porque no tienen permisos.',
+	'assign_users'					=> 'Asignar a uno o más usuarios a esta función. Los cambios realizados aquí no son visibles en la Interfaz del usuario.',
+	'assign_rank'					=> "El rango de una función determina la posibilidad de editar otros usuarios. \nPuede asignar valores de 0 a 100. (mayor es mejor). \nSi un usuario tiene más de una función, se utiliza el rango más alto. \nSi se establece la posibilidad de actualizar los usuarios, la fila también se comprueba. Solamente si el rango del editor es mayor, se concede el permiso. Además, al crear o actualizar los usuarios, pueden asignarse sólo funciones con rango igual o inferior.",
+	'All abilities'					=> 'Esta capacidad permite que todas las solicitudes de autorización, salvo las capacidades, que están explícitamente prohibidas. Esto es principalmente una capacidad de ayuda. Prohibición está deshabilitado, porque se permiten sólo marcadas habilidades. Si esta capacidad no está marcada, tienes que configurar a mano todas las capacidades. Si cambia esta capacidad, cuando se establecen muchas otras habilidades, tarda hasta un minuto para aplicar los cambios.',
+	'View everything'			=> 'Esta habilidad permite visualizar todas las páginas. Prohibición se deshabilita, ya que hace inutilizable el NMS. Esto es principalmente una capacidad auxiliar para los invitados o usuarios con pocos privilegios.',
+	'Use api'					=> 'Esta habilidad permite o prohíbe el acceso a las rutas de la API con "Autenticación básica" (el correo electrónico se utiliza como nombre de usuario).',
 	'See income chart'			=> 'This ability allows or forbids to view the income chart on the dashboard.',
 	'View analysis pages of modems'	=> 'This ability allows or forbids to access the analysis pages of a modem.',
 	'View analysis pages of cmts' => 'This ability allows or forbids to access the analysis pages of a CMTS.',
