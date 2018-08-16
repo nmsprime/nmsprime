@@ -365,4 +365,3 @@ return [
 // Contract
 //
 	'Contract_Numberrange_Failure' => 'No se encuentra disponible el numero de contrato libre para el centro de costos seleccionado!'
-];
