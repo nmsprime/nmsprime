@@ -21,92 +21,92 @@ return [
 		'jQuery_PaginatesFirst'		=> 'Primero',
 		'jQuery_PaginatesPrevious'	=> 'Anterior',
 		'jQuery_PaginatesNext'		=> 'Próximo',
-		'jQuery_PaginatesLast'		=> 'Last',
-		'jQuery_sLast'				=> ': activate to sort column ascending',
-		'jQuery_sLast'				=> ': activate to sort column descending',
-		'jQuery_All'				=> 'All',
-		'jQuery_Print'				=> 'Print',
-		'jQuery_colvis'				=> 'Column Visibility',
-		'jQuery_colvisRestore'		=> 'Restore',
-		'jQuery_colvisReset'		=> 'Reset',
-		'jQuery_ExportTo'			=> 'Export to',
-                'jQuery_ImportCsv'              => 'import CSV',
+		'jQuery_PaginatesLast'		=> 'Último',
+		'jQuery_sLast'				=> ': activar para ordenar las columnas de forma ascendente',
+		'jQuery_sLast'				=> ': activar para ordenar las columnas de forma descendente',
+		'jQuery_All'				=> 'Todo',
+		'jQuery_Print'				=> 'Imprimir',
+		'jQuery_colvis'				=> 'Visibilidad de la columna',
+		'jQuery_colvisRestore'		=> 'Restaurar',
+		'jQuery_colvisReset'		=> 'Reiniciar',
+		'jQuery_ExportTo'			=> 'Exportar a',
+                'jQuery_ImportCsv'              => 'importar CSV',
 //MENU
 	//Main Menu
-		'Menu_MainMenu' 			=> 'Main Menu',
-		'Menu_Config Page'			=> 'Global Config Page',
-		'Menu_Logging'				=> 'Logging',
-		'Menu_Product List'			=> 'Product List',
-		'Menu_SEPA Accounts'		=> 'SEPA Accounts',
+		'Menu_MainMenu' 			=> 'Menú Principal',
+		'Menu_Config Page'			=> 'Configuración global',
+		'Menu_Logging'				=> 'Registro',
+		'Menu_Product List'			=> 'Lista de productos',
+		'Menu_SEPA Accounts'		=> 'Cuenta de SEPA',
 		'Menu_Settlement Run'		=> 'Settlement Run',
-		'Menu_Cost Center'			=> 'Cost Center',
-		'Menu_Companies'			=> 'Companies',
-		'Menu_Salesmen'				=> 'Salesmen',
-		'Menu_Tree Table'			=> 'Tree Table',
-		'Menu_Devices'				=> 'Devices',
-		'Menu_DeviceTypes'			=> 'Devicetypes',
-		'Menu_Contracts'			=> 'Contracts',
-		'Menu_Modems'				=> 'Modems',
-		'Menu_Endpoints'			=> 'Endpoints',
-		'Menu_Configfiles' 			=> 'Configfiles',
+		'Menu_Cost Center'			=> 'Departamento de costos',
+		'Menu_Companies'			=> 'Empresas',
+		'Menu_Salesmen'				=> 'Vendedores',
+		'Menu_Tree Table'			=> 'Arbol de tabla',
+		'Menu_Devices'				=> 'Dispositivos',
+		'Menu_DeviceTypes'			=> 'Tipos de dispositivos',
+		'Menu_Contracts'			=> 'Contratos',
+		'Menu_Modems'				=> 'Módems',
+		'Menu_Endpoints'			=> 'Extremos',
+		'Menu_Configfiles' 			=> 'Archivo de configuración',
 		'Menu_QoS' 					=> 'QoS',
 		'Menu_CMTS' 				=> 'CMTS',
 		'Menu_Ip-Pools' 			=> 'IP-Pools',
 		'Menu_MTAs' 				=> 'MTAs',
-		'Menu_Phonenumbers'			=> 'Phonenumbers',
-		'Menu_PhoneTariffs'			=> 'PhoneTariffs',
-		'Menu_Envia orders'			=> 'envia TEL orders',
-		'Menu_Envia contracts'		=> 'envia TEL contracts',
+		'Menu_Phonenumbers'			=> 'Números de teléfono',
+		'Menu_PhoneTariffs'			=> 'Tarifa telefonica',
+		'Menu_Envia orders'			=> 'ordenes envia TEL',
+		'Menu_Envia contracts'		=> 'envia TEL contratos',
 
 	//User Settings
-		'Menu_UserSettings'			=> 'User Settings',
-		'Menu_UserGlobSettings' 	=> 'Global User Settings',
-		'Menu_Logout'				=> 'Logout',
-		'Menu_UserRoleSettings'		=> 'User Roles',
+		'Menu_UserSettings'			=> 'Configuración del Usuario',
+		'Menu_UserGlobSettings' 	=> 'Configuración global',
+		'Menu_Logout'				=> 'Cerrar sesión',
+		'Menu_UserRoleSettings'		=> 'Funciones de usuario',
 
 //HEADER
 	//General
-		'Header_GlobalSearch'		=> 'Global Search',
-		'Header_Overview'			=> 'Overview',
-		'Header_Assigned'			=> 'Assigned',
-		'Header_Create'				=> 'Create',
+		'Header_GlobalSearch'		=> 'Búsqueda global',
+		'Header_Overview'			=> 'Información general',
+		'Header_Assigned'			=> 'Asignado',
+		'Header_Create'				=> 'Crear',
 	//Module specific
 
 	//Global
 		//Logs
-		'Header_Logs'				=> 'Logs',
-		'Header_EditLogs'			=> 'Edit Logs',
-		'Header_Roles'				=> 'Role|Roles',
+		'Header_Logs'				=> 'Registros',
+		'Header_EditLogs'			=> 'Editar registro',
+		'Header_Roles'				=> 'Funcion|Funciones',
 	//Billing Base
 		//Prduct Entry
-		'Header_Product Entry'		=> 'Product Entry|Product Entries',
-		'Header_EditProduct Entry'	=> 'Edit Product Entry',
+		'Header_Product Entry'		=> 'Entrada de Producto|Entradas de Productos',
+		'Header_EditProduct Entry'	=> 'Editar producto',
 		//SEPA Accounts
-		'Header_SEPA Account'		=> 'SEPA Account|SEPA Accounts', //Workaround decide which one to use
-		'Header_EditSEPA Account'	=> 'Edit SEPA Account',
+		'Header_SEPA Account'		=> 'Cuenta SEPA|Cuentas SEPA', //Workaround decide which one to use
+		'Header_EditSEPA Account'	=> 'Editar Cuenta SEPA',
 		//CostCenter
-		'Header_CostCenter'			=> 'Cost Center|Cost Centers', //Workaround decide which one to use
-		'Header_Cost Center'		=> 'Cost Center|Cost Centers',
-		'Header_EditCost Center'	=> 'Edit Cost Center',
+		'Header_CostCenter'			=> 'Centro de Costos|Centros de Costos', //Workaround decide which one to use
+		'Header_Cost Center'		=> 'Centro de Costos|Centros de Costos',
+		'Header_EditCost Center'	=> 'Modificar Centro de Costos',
 		//Company
-		'Header_EditCompany'		=> 'Edit Company',
+		'Header_EditCompany'		=> 'Modificar Empresa',
 		//Salesman
-		'Header_EditSalesman'		=> 'Edit Salesman',
+		'Header_EditSalesman'		=> 'Modificar Vendedor',
 		//Items
-		'Header_Item'				=> 'Item|Items',
-		'Header_EditItem'			=> 'Edit Item', //??
+		'Header_Item'				=> 'Ítem|Ítems',
+		'Header_EditItem'			=> 'Editar ítem', //??
 		//Numberrange
 		'Header_NumberRange'		=> 'Numberrange|Numberranges',
 	//SNMP Modul
 		//Device
-		'Header_Device'				=> 'Device|Devices',
-		'Header_EditDevice'			=> 'Edit Device',
+		'Header_Device'				=> 'Dispositivo|Dispositivos',
+		'Header_EditDevice'			=> 'Editar dispositivo',
 		//Device Type
-		'Header_EditDevice Type'	=> 'Edit Devicytype',
+		'Header_EditDevice Type'	=> 'Editar dispositivo',
 	//Provisioning
 		//Contract
-		'Header_Contract'			=> 'Contract|Contracts',
-		'Header_EditContract'		=> 'Edit Contract',
+		'Header_Contract'			=> 'Contrato|Contratos',
+		'Header_EditContract'		=> 'Editar contrato',
 		'Header_SepaMandate'		=> 'SEPA-Mandate|SEPA-Mandates',
 		//Modems
 		'Header_Modems'				=> 'Modem|Modems', //workaround
@@ -137,27 +137,27 @@ return [
 	//HFC
 		//Topography
 		'Header_Topography - Modems'=> 'Topography - Modems',
-		'navigate'					=> 'Navigate',
-		'draw box'					=> 'Draw Box',
-		'draw polygon'				=> 'Draw Polygon',
-		'modify'					=> 'Modify Elements',
+		'navigate'					=> 'Navegar',
+		'draw box'					=> 'Dibujar caja',
+		'draw polygon'				=> 'Dibujar polígono',
+		'modify'					=> 'Modificar elementos',
 	//VOIP
 		//MTA
-		'Header_Mta'				=> 'MTA|MTAs',
-		'Header_EditMta'			=> 'Edit MTA',
-		'Header_MTAs'				=> 'MTA|MTAs',
-		'Header_EditMTAs'			=> 'Edit MTA',
+		'Header_Mta'				=> '|los MTA MTA',
+		'Header_EditMta'			=> 'Editar MTA',
+		'Header_MTAs'				=> '|los MTA MTA',
+		'Header_EditMTAs'			=> 'Editar MTA',
 		//Phonenumber
-		'Header_Phonenumber'		=> 'Phonenumber|Phonenumbers',
-		'Header_EditPhonenumber'	=> 'Edit Phonenumber',
-		'Header_Phonenumbers'		=> 'Phonenumber|Phonenumbers',
-		'Header_EditPhonenumbers'	=> 'Edit Phonenumber',
+		'Header_Phonenumber'		=> 'Número de teléfono|Phonenumbers',
+		'Header_EditPhonenumber'	=> 'Editar número de teléfono',
+		'Header_Phonenumbers'		=> 'Número de teléfono|Phonenumbers',
+		'Header_EditPhonenumbers'	=> 'Editar número de teléfono',
 		//Phone tariff
-		'Header_Phone tariffs'		=> 'Phonetariff|Phonetariffs',
-		'Header_EditPhone tariffs'	=> 'Edit Phonetariffs',
+		'Header_Phone tariffs'		=> 'Tarifa telefonica|Phonetariffs',
+		'Header_EditPhone tariffs'	=> 'Editar tarifa',
 	//ProvVoipEnvia
-		'Header_EnviaOrders'		=> 'envia TEL order|envia TEL orders',
-		'Header_EnviaContracts'		=> 'envia TEL contract|envia TEL contracts',
+		'Header_EnviaOrders'		=> 'envia TEL orden|envia TEL órdenes',
+		'Header_EnviaContracts'		=> 'envia TEL contrato|envia TEL contratos',
 
 	//Header Relation
 		// 'Assigned'  				=> 'Zugewiesene',
@@ -167,42 +167,42 @@ return [
 		// 'Edit'						=> 'Ändere ',
 
 //BUTTON
-		'Sign me in'				=> 'Login',
-		'Button_Create'				=> 'Create',
-		'Button_Delete'				=> 'Delete marked Elements',
-		'Button_Force Restart'		=> 'Force Restart',
-		'Button_Save'				=> 'Save',
-		'Button_Save / Restart'		=> 'Save / Restart',
-		'Button_manage'				=> 'Managing allows or forbids to do everything with each element. This button is a shortcut to manage all entities of this module.',
-		'Button_view'				=> 'Shortcut for the view ability for all pages of this module. Viewing is the basic ability that is required for all other actions inside the GUI.',
-		'Button_create'				=> 'Shortcut for the create ability for all pages of this module.',
-		'Button_update'				=> 'Shortcut for the update ability for all pages of this module.',
-		'Button_delete'				=> 'Shortcut for the delete ability for all pages of this module.',
+		'Sign me in'				=> 'Usuario',
+		'Button_Create'				=> 'Crear',
+		'Button_Delete'				=> 'Eliminar elementos marcados',
+		'Button_Force Restart'		=> 'Forzar reinicio',
+		'Button_Save'				=> 'Guardar',
+		'Button_Save / Restart'		=> 'Guardar / reiniciar',
+		'Button_manage'				=> 'Gestión permite o prohíbe hacer todo lo posible con cada elemento. Este botón es un acceso directo para administrar todas las entidades de este módulo.',
+		'Button_view'				=> 'Acceso directo para la capacidad de ver todas las páginas de este módulo. Visualización es la capacidad básica que se requiere para todas las otras acciones dentro de la GUI.',
+		'Button_create'				=> 'Acceso directo para la capacidad de crear todas las páginas de este módulo.',
+		'Button_update'				=> 'Acceso directo para la capacidad de crear todas las páginas de este módulo.',
+		'Button_delete'				=> 'Acceso directo para la capacidad de crear todas las páginas de este módulo.',
 	//BillingBase
 		//Product List
-		'Button_Create Product Entry'	=> 'Create Product Entry',
+		'Button_Create Product Entry'	=> 'Crear entrada de producto',
 		//SEPA-Konto
-		'Button_Create SEPA Account'	=> 'Create SEPA Account', //Workaround decide which one to use
-		'Button_Create SepaAccount'		=> 'Create SEPA Account',
+		'Button_Create SEPA Account'	=> 'Crear cuenta SEPA', //Workaround decide which one to use
+		'Button_Create SepaAccount'		=> 'Crear cuenta SEPA',
 
 		//CostCenter
-		'Button_Create Cost Center' 	=> 'Create Cost Center', //Workaround decide which one to use
-		'Button_Create CostCenter' 		=> 'Create Cost Center',
+		'Button_Create Cost Center' 	=> 'Crear centro de costos', //Workaround decide which one to use
+		'Button_Create CostCenter' 		=> 'Crear centro de costos',
 		//Company
-		'Button_Create Company'			=> 'Create Company',
+		'Button_Create Company'			=> 'Crear una empresa',
 		//Salesman
-		'Button_Create Salesman'		=> 'Create Salesman',
+		'Button_Create Salesman'		=> 'Crear vendedor',
 		//Item
-		'Button_Create Item'			=> 'Create Item',
-		'sr_dl_logs' 					=> 'Download whole logfile',
+		'Button_Create Item'			=> 'Crear artículo',
+		'sr_dl_logs' 					=> 'Descargar archivo de registro de todo',
 		//Numberrange
-		'Button_Create NumberRange'		=> 'Create Numberrange',
+		'Button_Create NumberRange'		=> 'Crear rango de numeros',
 
 	//SNMP Modul
 		//Device
-		'Button_Create Device'			=> 'Create Device',
+		'Button_Create Device'			=> 'Crear dispositivo',
 		//Device Type
-		'Button_Create Device Type'		=> 'Create Devicetype',
+		'Button_Create Device Type'		=> 'Crear tipo de dispositivo',
 
 	//Provisioning
 		//Contract
@@ -229,32 +229,32 @@ return [
 		// //Phonenumber
 		// 'Button_Create Phonenumber'		=> 'Neue Telefonnummer',
 		// //Phone tariff
-		'Button_Create Phone tariffs'	=> 'Create Phonetariffs',
+		'Button_Create Phone tariffs'	=> 'Crear Tarifa',
 
 //
 // DASHBOARD
 //
-	'Dashboard_Contracts'			=> 'ACTIVE CONTRACTS',
-	'Dashboard_ContractAnalytics'	=> 'Contract Analytics (Last 12 Months)',
-	'Dashboard_NoContracts'			=> 'No contracts available.',
-	'Dashboard_Income'				=> 'INCOME',
-	'Dashboard_IncomeAnalytics'		=> 'Income Details',
-	'Dashboard_Date'				=> 'DATE',
-	'Dashboard_LinkDetails'			=> 'View Details',
-	'Dashboard_Other'				=> 'Other',
-	'Dashboard_Tickets' 			=> 'NEW TICKETS',
-	'Dashboard_NoTickets' 			=> 'No new Tickets.',
-	'Dashboard_Quickstart' 			=> 'QUICKSTART',
+	'Dashboard_Contracts'			=> 'CONTRATOS ACTIVOS',
+	'Dashboard_ContractAnalytics'	=> 'Análisis del contrato (últimos 12 meses)',
+	'Dashboard_NoContracts'			=> 'No hay contratos disponibles.',
+	'Dashboard_Income'				=> 'INGRESO',
+	'Dashboard_IncomeAnalytics'		=> 'Detalle de Ingresos',
+	'Dashboard_Date'				=> 'Fecha',
+	'Dashboard_LinkDetails'			=> 'Ver Detalles',
+	'Dashboard_Other'				=> 'Otros',
+	'Dashboard_Tickets' 			=> 'NUEVO TICKET',
+	'Dashboard_NoTickets' 			=> 'No hay nuevos Tickets.',
+	'Dashboard_Quickstart' 			=> 'INICIO RAPIDO',
 
 //
 // Numberrange
 //
 	//Type
-	'Numberrange_Type_contract' => 'Contract',
-	'Numberrange_Type_invoice' => 'Invoice',
+	'Numberrange_Type_contract' => 'Contacto',
+	'Numberrange_Type_invoice' => 'Factura',
 
 //
 // Contract
 //
-	'Contract_Numberrange_Failure' => 'No free contract number for selected costcenter available!'
+	'Contract_Numberrange_Failure' => 'No hay contrato libre para el centro de costos seleccionado!'
 ];
