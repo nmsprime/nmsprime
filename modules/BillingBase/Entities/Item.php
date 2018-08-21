@@ -23,7 +23,7 @@ class Item extends \BaseModel {
 			'product_id' 	=> 'required|numeric|Min:1',
 			'valid_from'	=> 'date',	//|in_future ??
 			'valid_to'		=> 'date',
-			'credit_amount' => 'numeric',
+			'credit_amount' => 'nullable|numeric',
 			// 'count'			=> 'null_if:product_id,'.$tariff_ids.','.$credit_ids,
 		);
 	}

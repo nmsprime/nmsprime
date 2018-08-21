@@ -33,8 +33,8 @@ class Product extends \BaseModel {
 			'voip_purchase_tariff_id' => 'required_if:type,Voip',
 			'qos_id' => 'required_if:type,Internet',
 			'price'  => 'required_if:type,Internet,Voip,TV,Other,Device,Mixed',
-			'maturity' => 'regex:/^\d+[dDmMyY]$/',
-			'period_of_notice' => 'regex:/^\d+[dDmMyY]$/',
+			'maturity' => 'nullable|regex:/^\d+[dDmMyY]$/',
+			'period_of_notice' => 'nullable|regex:/^\d+[dDmMyY]$/',
 		);
 	}
 
