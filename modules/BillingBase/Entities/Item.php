@@ -23,7 +23,7 @@ class Item extends \BaseModel {
 			'product_id' 	=> 'required|numeric|Min:1',
 			'valid_from'	=> 'date',	//|in_future ??
 			'valid_to'		=> 'date',
-			'credit_amount' => 'numeric',
+			'credit_amount' => 'nullable|numeric',
 			// 'count'			=> 'null_if:product_id,'.$tariff_ids.','.$credit_ids,
 		);
 	}
@@ -594,6 +594,20 @@ class ItemObserver
 
 		// this is ab(used) here for easily setting the correct values
 		$item->contract->daily_conversion();
+
+		// on enabled envia module: check if data has to be changed via envia TEL API
+		if (\Module::collections()->has('ProvVoipEnvia')) {
+			$purchase_tariff = $item->contract->purchase_tariff;
+			$next_purchase_tariff = $item->contract->next_purchase_tariff;
+			$voip_id = $item->contract->voip_id;
+			$next_voip_id = $item->contract->next_voip_id;
+			if ($next_purchase_tariff && ($purchase_tariff != $next_purchase_tariff)) {
+				\Session::push('tmp_warning_above_form', 'ATTENTION: You have to “Change purchase tariff” (envia TEL API), too!');
+			}
+			if ($next_voip_id && ($voip_id != $next_voip_id)) {
+				\Session::push('tmp_warning_above_form', 'ATTENTION: You have to “Change tariff” (envia TEL API), too!');
+			}
+		}
 	}
 
 

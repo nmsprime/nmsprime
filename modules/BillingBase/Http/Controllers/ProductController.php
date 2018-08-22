@@ -98,7 +98,14 @@ class ProductController extends \BaseController {
 				break;
 		}
 
-		return parent::prepare_rules($rules, $data);
+		$data = parent::prepare_rules($rules, $data);
+
+		$nullable_fields = array(
+			'maturity',
+			'period_of_notice',
+		);
+
+		return $this->_nullify_fields($data, $nullable_fields);
 	}
 
 	public function prepare_input($data)
