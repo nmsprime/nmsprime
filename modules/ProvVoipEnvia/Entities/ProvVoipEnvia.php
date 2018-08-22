@@ -2553,6 +2553,7 @@ class ProvVoipEnvia extends \BaseModel {
 		$inner_xml = $this->xml->addChild('phonebookentry_data');
 
 		$fields= array(
+			'salutation' => 'salutation',
 			'lastname' => 'lastname',
 			'firstname' => 'firstname',
 			'company' => 'company',
@@ -2573,7 +2574,6 @@ class ProvVoipEnvia extends \BaseModel {
 			'entry_type' => 'entry_type',
 			'reverse_search' => 'reverse_search',
 			'publish_address' => 'publish_address',
-			'tag' => 'tag',
 		);
 
 		$this->_add_fields($inner_xml, $fields, $this->phonebookentry);
