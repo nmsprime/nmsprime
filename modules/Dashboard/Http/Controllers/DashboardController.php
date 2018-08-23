@@ -37,6 +37,9 @@ class DashboardController extends BaseController
 			$netelements = $this->_get_impaired_netelements();
 			$services 	 = $this->_get_impaired_services();
 		}
+
+		$data['news'] = $this->news();
+
 		return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'data', 'view', 'netelements', 'services')));
 	}
 
@@ -530,6 +533,23 @@ class DashboardController extends BaseController
 		} else {
 			return 'warning';
 		}
+	}
+
+
+	/*
+	 * This function should guide a new user through critical stages
+	 * like installation. To do this, we should test how far installation
+	 * process is and addvice the next steps the user should do..
+	 *
+	 * This function could also be used to inform the user of new updates (etc)
+	 */
+	public function news()
+	{
+		//return null;
+
+		// links need to be in embedded style, like:
+		return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
+				'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
 	}
 
 }
