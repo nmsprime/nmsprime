@@ -2,6 +2,11 @@
 
 
 @section('content_dash')
+	<div class="btn pull-right">
+		@include('Generic.documentation', ['documentation' => 'cmts_analysis'])
+	</div>
+
+
 	@if ($dash)
 		<font color="grey">{{$dash}}</font>
 	@else

@@ -57,6 +57,7 @@ class ProvMonController extends \BaseController {
 		$view_var = $modem; // for top header
 		$hostname = $modem->hostname.'.'.$this->domain_name;
 		$mac 	  = strtolower($modem->mac);
+		$modem->help = "modem_analysis";
 
 		$ip = gethostbyname($hostname);
 		$ip = ($ip == $hostname) ? null : $ip;
@@ -231,6 +232,7 @@ class ProvMonController extends \BaseController {
 		$view_var = $modem; // for top header
 		$type 	  = 'CPE';
 		$modem_mac = strtolower($modem->mac);
+		$modem->help = "cpe_analysis";
 
 		// Lease
 		$lease['text'] = $this->search_lease('billing subclass', $modem_mac);
@@ -315,6 +317,7 @@ class ProvMonController extends \BaseController {
 		$modem 	  = $this->modem ? $this->modem : Modem::find($id);
 		$view_var = $modem; // for top header
 		$type = 'MTA';
+		$modem->help = "mta_analysis";
 
 		$mtas = $modem->mtas;		// Note: we should use one-to-one relationship here
 		if (isset($mtas[0]))

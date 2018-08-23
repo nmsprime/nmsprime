@@ -7,6 +7,10 @@
 	@else
 		<b>TODO</b>
 	@endif
+
+	<div class="btn pull-right">
+		@include('Generic.documentation', ['documentation' => $modem->help])
+	</div>
 @stop
 
 @section('content_cacti')
