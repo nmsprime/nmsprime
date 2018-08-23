@@ -98,8 +98,7 @@ class cactiCommand extends Command {
 			$graph_template_ids = \DB::connection($this->connection)->table('host_template_graph')
 				->join('host_template', 'host_template_graph.host_template_id', '=', 'host_template.id')
 				->where('host_template.name', '=', 'cablemodem')
-				->select('host_template_graph.graph_template_id')->get();
-			$graph_template_ids = array_flatten(array_map(function($item) { return get_object_vars($item); }, $graph_template_ids));
+				->pluck('host_template_graph.graph_template_id');
 
 			$tree_id = \DB::connection($this->connection)->table('graph_tree')
 				->where('name', '=', 'cablemodem')

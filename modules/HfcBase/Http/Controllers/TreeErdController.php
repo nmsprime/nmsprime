@@ -90,7 +90,7 @@ class TreeErdController extends HfcBaseController {
 		// file -> html link area
 		$usemap = str_replace ('alt', 'onContextMenu="return getEl(this.id)" alt', \Storage::get($this->file.'.map'));
 		// add Popover
-        $usemap = str_replace('title=', 'class="erd-popover" data-html="true" data-toggle="popover" data-container="body" data-trigger="hover" data-placement="auto right" data-content=', $usemap);
+        $usemap = str_replace('title=', 'target="_blank" class="erd-popover" data-html="true" data-toggle="popover" data-container="body" data-trigger="hover" data-placement="auto right" data-content=', $usemap);
 
 		// generate Array to manipulate string
 		$usemap = explode(PHP_EOL, $usemap);
