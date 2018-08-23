@@ -545,11 +545,11 @@ class DashboardController extends BaseController
 	 */
 	public function news()
 	{
-		//return null;
+		return null;
 
 		// links need to be in embedded style, like:
-		return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
-				'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
+		//return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
+		//		'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
 	}
 
 }
