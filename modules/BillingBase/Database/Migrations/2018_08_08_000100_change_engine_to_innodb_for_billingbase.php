@@ -6,6 +6,6 @@
  *
  * @author Patrick Reichel
  */
-class ChangeEngineToInnodbForBillingbase extends ChangeEngineToInnodb {
-
+class ChangeEngineToInnodbForBillingbase extends ChangeEngineToInnodb
+{
 }

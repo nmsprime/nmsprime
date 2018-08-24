@@ -6,6 +6,6 @@
  *
  * @author Patrick Reichel
  */
-class ChangeEngineToInnodbForTicketsystem extends ChangeEngineToInnodb {
-
+class ChangeEngineToInnodbForTicketsystem extends ChangeEngineToInnodb
+{
 }

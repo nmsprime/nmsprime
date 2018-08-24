@@ -1,15 +1,15 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
-class CreateCccAuthuserTable extends BaseMigration {
-
+class CreateCccAuthuserTable extends BaseMigration
+{
     // name of the table to create
-    protected $tablename = "cccauthusers";
+    protected $tablename = 'cccauthusers';
 
     // password for inital superuser
-    protected $initial_superuser_password = "toor";
+    protected $initial_superuser_password = 'toor';
 
     /**
      * Run the migrations.
@@ -19,10 +19,9 @@ class CreateCccAuthuserTable extends BaseMigration {
      *
      * @return void
      */
-    public function up() {
-
-        Schema::create($this->tablename, function(Blueprint $table) {
-
+    public function up()
+    {
+        Schema::create($this->tablename, function (Blueprint $table) {
             $this->up_table_generic($table);
 
             $table->string('first_name');
@@ -52,7 +51,6 @@ class CreateCccAuthuserTable extends BaseMigration {
             'description' => 'Superuser to do base config. Initial password is “'.$this->initial_superuser_password.'” – change this ASAP or delete this user!!',
             'contract_id' => 500000,
         ]);
-
     }
 
     /**
@@ -60,7 +58,8 @@ class CreateCccAuthuserTable extends BaseMigration {
      *
      * @return void
      */
-    public function down() {
+    public function down()
+    {
         Schema::drop($this->tablename);
     }
 }

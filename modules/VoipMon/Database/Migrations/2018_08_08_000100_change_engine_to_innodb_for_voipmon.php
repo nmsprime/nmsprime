@@ -6,6 +6,6 @@
  *
  * @author Patrick Reichel
  */
-class ChangeEngineToInnodbForVoipmon extends ChangeEngineToInnodb {
-
+class ChangeEngineToInnodbForVoipmon extends ChangeEngineToInnodb
+{
 }

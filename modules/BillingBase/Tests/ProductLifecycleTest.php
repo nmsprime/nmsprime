@@ -2,20 +2,18 @@
 
 namespace Modules\BillingBase\Tests;
 
-use \Modules\BillingBase\Entities\Product;
-use \Modules\BillingBase\Http\Controllers\ProductController;
+use Modules\BillingBase\Entities\Product;
 
 /**
  * Run the lifecycle test for Product.
  */
-class ProductLifecycleTest extends \BaseLifecycleTest {
-
-	// fields to be used in update test
-	protected $update_fields = [
+class ProductLifecycleTest extends \BaseLifecycleTest
+{
+    // fields to be used in update test
+    protected $update_fields = [
         'name',
         'price',
     ];
-
 
     /**
      * Extended to modify $testrun_count.
@@ -23,8 +21,8 @@ class ProductLifecycleTest extends \BaseLifecycleTest {
      *
      * @author Patrick Reichel
      */
-    public function createApplication() {
-
+    public function createApplication()
+    {
         $app = parent::createApplication();
 
         // run $testrun_count tests for each product type
