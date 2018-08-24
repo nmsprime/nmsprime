@@ -11,4 +11,4 @@
 
 App::register('Modules\HfcCustomer\Providers\HfcCustomerServiceProvider');
 
-require __DIR__ . '/Http/routes.php';
+require __DIR__.'/Http/routes.php';

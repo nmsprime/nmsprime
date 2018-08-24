@@ -6,6 +6,6 @@
  *
  * @author Patrick Reichel
  */
-class ChangeEngineToInnodbForCcc extends ChangeEngineToInnodb {
-
+class ChangeEngineToInnodbForCcc extends ChangeEngineToInnodb
+{
 }

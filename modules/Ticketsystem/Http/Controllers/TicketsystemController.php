@@ -1,7 +1,7 @@
 <?php
+
 namespace Modules\Ticketsystem\Http\Controllers;
 
-class TicketsystemController extends \BaseController {
-
-
+class TicketsystemController extends \BaseController
+{
 }

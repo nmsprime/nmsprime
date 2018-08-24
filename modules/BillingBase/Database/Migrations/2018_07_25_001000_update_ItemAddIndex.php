@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
 
 /**
  * Add Index to improve performance
@@ -10,35 +9,32 @@ use Illuminate\Database\Migrations\Migration;
  *
  * @author Nino Ryschawy
  */
-class UpdateItemAddIndex extends BaseMigration {
+class UpdateItemAddIndex extends BaseMigration
+{
+    // name of the table to create
+    protected $tablename = 'item';
 
-	// name of the table to create
-	protected $tablename = "item";
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::table($this->tablename, function (Blueprint $table) {
+            $table->index('contract_id', 'by_contract_id');
+        });
+    }
 
-
-	/**
-	 * Run the migrations.
-	 *
-	 * @return void
-	 */
-	public function up()
-	{
-		Schema::table($this->tablename, function(Blueprint $table)
-		{
-			$table->index('contract_id', 'by_contract_id');
-		});
-	}
-
-	/**
-	 * Reverse the migrations.
-	 *
-	 * @return void
-	 */
-	public function down()
-	{
-		Schema::table($this->tablename, function(Blueprint $table)
-		{
-			$table->dropIndex('by_contract_id');
-		});
-	}
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::table($this->tablename, function (Blueprint $table) {
+            $table->dropIndex('by_contract_id');
+        });
+    }
 }

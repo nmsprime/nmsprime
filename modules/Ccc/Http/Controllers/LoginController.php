@@ -1,8 +1,8 @@
 <?php
+
 namespace Modules\Ccc\Http\Controllers;
 
-use App, Log, Module;
-use Illuminate\Http\Request;
+use App;
 use Modules\Ccc\Entities\Ccc;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -15,33 +15,32 @@ use Illuminate\Foundation\Auth\AuthenticatesUsers;
  */
 class LoginController extends Controller
 {
-	use AuthenticatesUsers;
+    use AuthenticatesUsers;
 
-	/**
-	 * Create a new controller instance.
+    /**
+     * Create a new controller instance.
      *
-	 * @return void
+     * @return void
      */
-	public function __construct()
+    public function __construct()
     {
-		$this->middleware('cccRedirect', ['except' => 'logout']);
+        $this->middleware('cccRedirect', ['except' => 'logout']);
     }
 
     /**
      * Return a instance of the used guard
-     *
      */
-	protected function guard()
-	{
-		return Auth::guard('ccc');
-	}
-
+    protected function guard()
+    {
+        return Auth::guard('ccc');
+    }
 
     /**
      * Change Login Check Field to login_name
      * Laravel Standard: email
      */
-    public function username() {
+    public function username()
+    {
         return 'login_name';
     }
 
@@ -73,6 +72,6 @@ class LoginController extends Controller
      */
     private function redirectTo()
     {
-		return 'customer';
-	}
+        return 'customer';
+    }
 }
