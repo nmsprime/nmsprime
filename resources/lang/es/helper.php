@@ -4,140 +4,140 @@ return [
  /**
   * Authentication and Base
   */
-	'assign_role'					=> 'Asignar una o más funciones a este usuario. Los usuarios sin una función no pueden utilizar el NMS porque no tienen permisos.',
-	'assign_users'					=> 'Asignar a uno o más usuarios a esta función. Los cambios realizados aquí no son visibles en la Interfaz del usuario.',
-	'assign_rank'					=> "El rango de una función determina la posibilidad de editar otros usuarios. \nPuede asignar valores de 0 a 100. (mayor es mejor). \nSi un usuario tiene más de una función, se utiliza el rango más alto. \nSi se establece la posibilidad de actualizar los usuarios, la fila también se comprueba. Solamente si el rango del editor es mayor, se concede el permiso. Además, al crear o actualizar los usuarios, pueden asignarse sólo funciones con rango igual o inferior.",
-	'All abilities'					=> 'Esta capacidad permite que todas las solicitudes de autorización, salvo las capacidades, que están explícitamente prohibidas. Esto es principalmente una capacidad de ayuda. Prohibición está deshabilitado, porque se permiten sólo marcadas habilidades. Si esta capacidad no está marcada, tienes que configurar a mano todas las capacidades. Si cambia esta capacidad, cuando se establecen muchas otras habilidades, tarda hasta un minuto para aplicar los cambios.',
-	'View everything'			=> 'Esta habilidad permite visualizar todas las páginas. Prohibición se deshabilita, ya que hace inutilizable el NMS. Esto es principalmente una capacidad auxiliar para los invitados o usuarios con pocos privilegios.',
-	'Use api'					=> 'Esta habilidad permite o prohíbe el acceso a las rutas de la API con "Autenticación básica" (el correo electrónico se utiliza como nombre de usuario).',
-	'See income chart'			=> 'Esta habilidad permite o prohíbe ver la tabla de ingresos en el tablero.',
-	'View analysis pages of modems'	=> 'Esta habilidad permite o prohíbe el acceso a las páginas de análisis de un módem.',
-	'View analysis pages of cmts' => 'Esta habilidad permite o prohíbe el acceso a las páginas de análisis de un módem.',
-	'Download settlement runs'	=> 'Esta habilidad permite o prohíbe que la descarga de solución funciona. Esta habilidad no tiene impacto si está prohibido administrar pistas de solución.',
+	'assign_role'					=> 'Asigna uno o más roles a este usuario. Los usuarios sin Rol no pueden usar el NMS porque no tienen Permisos.',
+	'assign_users'					=> 'Asigna uno o más usuarios a este rol. Los cambios realizados aquí no son visibles en el GuiLog del usuario.',
+	'assign_rank'					=> "El rango de un rol determina la capacidad de editar otros usuarios. \\ nPuedes asignar valores de 0 a 100. (más alto es mejor). \\ nSi un usuario tiene más de un rol, se usa el rango más alto . \\ nSi se establece la capacidad de actualizar usuarios, el rango también se verifica. Solo si el rango del editor es mayor, se concede permiso. Además, al crear o actualizar usuarios, solo se pueden asignar roles con rango igual o inferior.",
+	'All abilities'					=> 'Esta habilidad permite todas las solicitudes de autorización, excepto las habilidades, que están explícitamente prohibidas. Esto es principalmente una habilidad de ayuda. La prohibición está deshabilitada, porque solo se permiten las habilidades marcadas. Si esta habilidad no está marcada, debes establecer todas las habilidades a mano. Si cambias esta habilidad, cuando se establecen muchas otras habilidades, tomará hasta 1 minuto aplicar todos los cambios.',
+	'View everything'			=> 'Esta capacidad permite ver todas las páginas. La prohibición está inhabilitada porque hace que el NMS no se pueda usar. Esto es principalmente una capacidad de ayuda para los invitados o usuarios con privilegios muy bajos.',
+	'Use api'					=> 'Esta capacidad permite o prohíbe el acceso a las rutas API con "Basic Auth" (el correo electrónico se usa como nombre de usuario).',
+	'See income chart'			=> 'Esta capacidad permite o prohíbe ver la tabla de ingresos en el panel de control.',
+	'View analysis pages of modems'	=> 'Esta capacidad permite o prohíbe el acceso a las páginas de análisis de un módem.',
+	'View analysis pages of cmts' => 'Esta capacidad permite o prohíbe el acceso a las páginas de análisis de un CMTS.',
+	'Download settlement runs'	=> 'Esta capacidad permite o prohíbe la descarga de ejecuciones de liquidación. Esta capacidad no tiene ningún impacto si está prohibido administrar ejecuciones de liquidación.',
  /**
   * Index Page - Datatables
   */
-	'SortSearchColumn'				=> 'Esta columna no se puede ordenar o buscar.',
-	'PrintVisibleTable'				=> 'Imprime la tabla que se muestra. Si se filtra la tabla Asegúrese de seleccionar la opción \\"Todo\\" para mostrar todo. La carga puede tardar unos segundos.',
-	'ExportVisibleTable'			=> 'Imprime la tabla que se muestra. Si se filtra la tabla Asegúrese de seleccionar la opción \\"Todo\\" para mostrar todo. La carga puede tardar unos segundos.',
-	'ChangeVisibilityTable'			=> 'Seleccione las columnas que deben ser visibles.',
+	'SortSearchColumn'				=> 'Esta Columna no puede ser examinada u ordenada.',
+	'PrintVisibleTable'				=> 'Imprime la tabla mostrada. Si la tabla esta filtrada, asegurarse de seleccionar la opcion \\"Todo\\" para mostrar todo. Espere algunos segundos.',
+	'ExportVisibleTable'			=> 'Exporta la tabla seleccionada. Si la tabla esta filtrada, asegurarse de seleccionar la opcion \\"Todo\\" para mostrar todo. Espere algunos segundos.',
+	'ChangeVisibilityTable'			=> 'Seleccione las columnas que deberian ser visibles.',
 
 	// GlobalConfig
-	'ISO_3166_ALPHA-2'				=> 'ISO 3166 alfa-2 (dos caracteres, por ejemplo, "US"). Utilizado en formas de dirección para especificar el país.',
+	'ISO_3166_ALPHA-2'				=> 'ISO 3166 ALPHA-2 (dos caracteres, p.e. “US”). Usado en formularios de direccion para especificar el pais.',
 
  /**
   *	MODULE: BillingBase
   */
 	//BillingBaseController
-	'BillingBase_cdr_offset' 		=> "TAKE CARE: incrementing this when having data from settlement runs leads to overwritten CDRs during next run - make sure to save/rename the history!\n\nExample: Set to 1 if Call Data Records from June belong to Invoices of July, Zero if it's the same month, 2 if CDRs of January belong to Invoices of March.",
-	'BillingBase_cdr_retention' 	=> 'Months that Call Data Records may/have to be kept save',
-	'BillingBase_extra_charge' 		=> 'Additional mark-on to purchase price. Only when not calculated through provider!',
-	'BillingBase_fluid_dates' 		=> 'Check this box if you want to add tariffs with uncertain start and/or end date. If checked two new checkboxes (Valid from fixed, Valid to fixed) will appear on Item\'s edit/create page. Check out their help messages for further explanation!',
-	'BillingBase_InvoiceNrStart' 	=> 'Invoice Number Counter starts every new year with this number',
-	'BillingBase_ItemTermination'	=> 'Allow Customers only to terminate booked products on last day of month',
-	'BillingBase_MandateRef'		=> "A Template can be built with sql columns of contract or mandate table - possible fields: \n",
-	'BillingBase_showAGs' 			=> 'Adds a select list with contact persons to the contract page. The list has to be stored in appropriate Storage directory - check source code!',
+	'BillingBase_cdr_offset' 		=> "ADVERTENCIA: incrementar esto mientras se tiene datos de Acuerdos ocasiona sobrescribir CDRs la siguiente ejecucion - Este seguro de guardar/renombrar el historial!\n\nEjemplo: Asignar a 1 si los Registros de Datos de Llamada de Junio, pertenecen a las Facturas de Julio, 0 si este es del mismo mes, 2 si RDLs de Enero pertenecen a las Facturas de Marzo.",
+	'BillingBase_cdr_retention' 	=> 'Meses que Registros de Datos de Llamada Months that Call Data Records may/have to be kept save',
+	'BillingBase_extra_charge' 		=> 'Beneficio adicional al precio de compra. Solo cuando no es calculado mediante el proveedor!',
+	'BillingBase_fluid_dates' 		=> 'Marque esta casilla si quiere aniadir tarifas con fechas de inicio y/o plazo dudosas. Si se marcaron dos nuevos casilleros (Valido desde, Valido hasta) aparecera en la pagina editar/crear Articulo. Revise sus mensajes de ayuda para explicaciones adicionales!',
+	'BillingBase_InvoiceNrStart' 	=> 'Contador de Cifras de Factura empieza cada nuevo anio con esta cifra',
+	'BillingBase_ItemTermination'	=> 'Permitir a los Clientes solo cancelar productos reservados el ultimo dia del mes',
+	'BillingBase_MandateRef'		=> "Un Formulario puede ser construido con columnas SQL de las tablas contrato/mandato - posibles campos: \n",
+	'BillingBase_showAGs' 			=> 'Adiciona una lista seleccionada con personas contactadas a la pagina de contrato. La lista tiene que ser almacenada en un directorio Alamacenamiento apropiado - revise el codigo fuente!',
 	'BillingBase_SplitSEPA'			=> 'Sepa Transfers are split to different XML-Files dependent of their transfer type',
 
 	//CompanyController
-	'Company_Management'			=> 'Comma separated list of names',
-	'Company_Directorate'			=> 'Comma separated list of names',
-	'Company_TransferReason'		=> 'Template from all Invoice class data field keys - Contract Number and Invoice Nr is default',
-	'conn_info_template' 			=> 'Tex Template used to Create Connection Information on the Contract Page for a Customer',
+	'Company_Management'			=> 'Lista de nombres separada por comas',
+	'Company_Directorate'			=> 'Lista de nombres separada por comas',
+	'Company_TransferReason'		=> 'Formulario desde todas las clases de Factura de campos de datos primarios - Cifra de Contrato y Cifra de Factura es por defecto',
+	'conn_info_template' 			=> 'Plantilla Tex es usada para Crear Informacion de Conexion en la Pagina de Contrato para un Cliente',
 
 	//CostCenterController
-	'CostCenter_BillingMonth'		=> 'Accounting for yearly charged items - corresponds to the month the invoices are created for. Default: 6 (June) - if not set. Please be careful to not miss any payments when changing this!',
+	'CostCenter_BillingMonth'		=> 'Contabilizacion para articulos de pago anual - corresponde al mes por el cual las facturas son creadas. Por Defecto: 6 (Junio) - si no es establecido. Sea cuidadoso de no olvidar algun pago al momento de modificarse!',
 
 	//ItemController
-	'Item_ProductId'				=> 'All fields besides Billing Cycle have to be cleared before a type change! Otherwise items can not be saved in most cases',
-	'Item_ValidFrom'				=> 'For One Time Payments the fields can be used to split payment - Only YYYY-MM is considered then!',
-	'Item_ValidFromFixed'			=> 'Checked by default! Uncheck if the tariff shall stay inactive when start date is reached (e.g. if customer is waiting for a phone number porting). The tariff will not start and not be charged until you activate the checkbox. Further the start date will be incremented every day by one day after reaching the start date. Info: The date is not updated by external orders (e.g. from telephony provider).',
-	'Item_ValidToFixed'				=> 'Checked by default! Uncheck if the end date is uncertain. If unchecked the tariff will not end and will be charged until you activate the checkbox. Further when the end date is reached it will be incremented every day by one day. Info: The date is not updated by external orders (e.g. from telephony provider).',
-	'Item_CreditAmount'				=> 'Net Amount to be credited to Customer. Take Care: a negative amount becomes a debit!',
+	'Item_ProductId'				=> 'Todos los campos ademas del Ciclo de Facturacion tienen que ser despejados antes de algun cambio! De otra manera, los articulos no podran ser guardados en la mayoria de los casos',
+	'Item_ValidFrom'				=> 'Para Pagos de Una Vez los campos pueden ser usados para dividir pagos - Solo YYYY-MM es considerado entonces!',
+	'Item_ValidFromFixed'			=> 'Marcado por defecto! Desmarque si la tarifa deberia quedar inactiva cuando una fecha de inicio es alcanzada (p.ej. si el cliente esta esperando por transferencia de numero telefonico). La tarifa no sera iniciada y no sera cargada hasta que active la casilla. Luego, la fecha de inicio sera incrementada cada dia un dia despues de alcanzar la fecha de inicio. Nota: La fecha no es actualizada por ordenes externas (p.ej. desde proveedor de telefonia).',
+	'Item_ValidToFixed'				=> 'Marcado por defecto! Desmarcar si la fecha de pazo es desconocida. Si es desmarcada, la tarifa no acabara y sera cargada hasta que active la casilla. Luego, cuando la fecha de plazo es alcanzada, sera incrementada cada dia en un dia. Nota: La fecha no es actualizada por ordenes externas (p.ej. desde proveedor de telefonia).',
+	'Item_CreditAmount'				=> 'Cantidad Neta a ser acreditada al Cliente. Cuidado: una cantidad negativa viene a ser un debito!',
 
 	//ProductController
-	'Product_maturity' 				=> 'Tariff period/runtime/term. E.g. 14D (14 days), 3M (three months), 1Y (one year)',
-	'Product_Name' 					=> 'For Credits it is possible to assign a Type by adding the type name to the Name of the Credit - e.g.: \'Credit Device\'',
-	'Product_Number_of_Cycles' 		=> 'Take Care!: for all repeatedly payed products the price stands for every charge, for Once payed products the Price is divided by the number of cycles',
-	'Product_Type'					=> 'All fields besides Billing Cycle have to be cleared before a type change! Otherwise products can not be saved in most cases',
+	'Product_maturity' 				=> 'Periodo/Tiempo de ejecucion. P.ej. 14D (14 dias), 3M (3 meses), 1Y (1 anio)',
+	'Product_Name' 					=> 'Para creditos es posible de asignar un Tipo aniadiendo el tipo de nombre al Nombre del Credito - p.ej.: \'Credito de Dispositivo\'',
+	'Product_Number_of_Cycles' 		=> 'Ten cuidado!: para todos los productos pagados repetidos, el precio aplica para cada deuda, para productos pagados de una, el Precio es dividido por el numero de ciclos',
+	'Product_Type'					=> 'Todos los campos ademas del Ciclo de Facturacion tienen que ser despejados antes de algun cambio! De otra manera, los productos no seran guardados en la mayoria de los casos',
 
 	//SalesmanController
-	'Salesman_ProductList'			=> 'Add all Product types he gets commission for - possible: ',
+	'Salesman_ProductList'			=> 'Aniadir todos los tipos de Producto por los cuales se obtiene comision - posible: ',
 
 	// SepaMandate
-	'sm_cc' 						=> 'If a cost center is assigned only products related to the same cost center will be charged of this account. Leave this field empty if all charges that can not be assigned to another SEPA-Mandate with specific cost center shall be debited of this account. Note: It is assumed that all emerging costs that can not be assigned to any SEPA-Mandate will be payed in cash!',
-	'sm_recur' 						=> 'Activate if there already have been transactions of this account before the creation of this mandate. Sets the status to recurring. Note: This flag is only considered on first transaction!',
+	'sm_cc' 						=> 'Si un centro de coste es asignado, solo productos relacionados al mismo seran cargados a la cuenta. Deje este campo vacio si todos los cargos que no puedan ser asignados a otro mandado-SEPA con especifico centro de coste, deben ser debitado a esta cuenta. Nota: Se asume que todos los costos emergentes que no pueden ser asignados a algun mandado-SEPA, seran pagados en efectivo!',
+	'sm_recur' 						=> 'Activar si ya han habido transacciones de esta cuenta, antes de la creacion de este mandado. Establece el estado a recurrente. Nota: Esta etiqueta solo es considerada en la primera transaccion!',
 
 	//SepaAccountController
-	'SepaAccount_InvoiceHeadline'	=> 'Replaces Headline in Invoices created for this Costcenter',
-	'SepaAccount_InvoiceText'		=> 'The Text of the separate four \'Invoice Text\'-Fields is automatically chosen dependent on the total charge and SEPA Mandate and is set in the appropriate Invoice for the Customer. It is possible to use all data field keys of the Invoice Class as placeholder in the form of {fieldname} to build a kind of template. These are replaced by the actual value of the Invoice.',
-	'tex_template' 					=> 'TeX Template',
+	'SepaAccount_InvoiceHeadline'	=> 'Remplaza el Encabezado en Facturas creadas para este Centro de Coste',
+	'SepaAccount_InvoiceText'		=> 'El Texto de los cuatro Campos-\'Texto de Factura\' independientes, es automaticamente escogido dependiendo del cargo total y del Mandado SEPA, ademas es establecido en la Factura para el Cliente apropiada. Es posible de usar todos los datos de campo primarios de la Clase Factura como referente en la forma de {fieldname} para construir un tipo de plantilla. Estos son reemplazados por el valor actual de la Factura.',
+	'tex_template' 					=> 'Plantilla TeX',
 
 	// SettlementrunController
-	'settlement_verification' 		=> 'If activated it\'s not possible to repeat the Settlement Run. Customer Invoices are only visible when this checkbox is activated.',
+	'settlement_verification' 		=> 'Si es activada, no es posible de repetir el Acuerdo. Las Facturas del Cliente son solo visibles cuando esta casilla esta marcada.',
 
  /**
   *	MODULE: HfcReq
   */
-	'netelementtype_reload' 		=> 'In Seconds. Zero to deactivate autoreload. Decimals possible.',
-	'netelementtype_time_offset' 	=> 'In Seconds. Decimals possible.',
-	'undeleteables' 				=> 'Net & Cluster can not be changed due to there relevance for all the Entity Relation Diagrams',
+	'netelementtype_reload' 		=> 'En Segundos. Cero para desactivar auto-cargado. Decimales disponibles.',
+	'netelementtype_time_offset' 	=> 'En Segundos. Decimales disponibles.',
+	'undeleteables' 				=> 'Red & Grupo no pueden ser cambiados debido a que tienen relevacia en todos los Diagramas Entidad Relacion',
 
  /**
   *	MODULE: HfcSnmp
   */
-	'mib_filename' 					=> 'The Filename is composed by MIB name & Revision. If there is already an existent identical File it\'s not possible to create it again.',
-	'oid_link' 						=> 'Ir a Ajustes de OID',
-	'oid_table' 					=> 'INFO: This Parameter belongs to a Table-OID. If you add/specify SubOIDs or/and indices, only these are considered for the snmpwalk. Besides the better Overview this can dramatically speed up the Creation of the Controlling View for the corresponding NetElement.',
-	'parameter_3rd_dimension' 		=> 'Check this box if this Parameter belongs to an extra Controlling View behind an Element of the SnmpTable.',
-	'parameter_diff' 				=> 'Check this if only the Difference of actual to last queried values shall be shown.',
-	'parameter_divide_by' 			=> 'Make this ParameterValue percentual compared to the added values of the following OIDs that are queried by the actual snmpwalk, too. In a first step this only works on SubOIDs of exactly specified tables! The Calculation is also done after the Difference is calculated in case of Difference-Parameters.',
-	'parameter_indices' 			=> 'Specify a comma separated List of all Table Rows we want the Snmp Values for.',
-	'parameter_html_frame' 			=> 'Assign this parameter to a specific frame (part of the page). Doesn\'t have influences on SubOIDs in Tables (but on 3rd Dimensional Params!).',
-	'parameter_html_id' 			=> 'By adding an ID you can order this parameter in sequence to other parameters. In tables you can change the column order by setting the Sub-Params html id.',
+	'mib_filename' 					=> 'El Nombre de Archivo esta compuesto por un nombre MIB & Revision. Si ya existe un Archivo identico, no es posible el crearlo otra vez.',
+	'oid_link' 						=> 'Ir a configuraciones de OID',
+	'oid_table' 					=> 'INFO: Este Parametro pertenece a la Tabla-OID. Si usted agrega/especifica SubOIDs y/o indices, solo estos son considerados para el snmpwalk. Ademas del mejor Resumen, este puede dramaticamente acelerar la Creacion de la Vista de Control para el correspondiente Elemento de Red.',
+	'parameter_3rd_dimension' 		=> 'Marque esta casilla si este Parametro pertenece a una Vista de Control extra detras de un Elemento de la SnmpTable.',
+	'parameter_diff' 				=> 'Marque esto si solo la Diferencia de los valores actuales a los ultimos consultados debe ser mostrado.',
+	'parameter_divide_by' 			=> 'Hacer este Valor/Parametro porcentual comparado a los valores agregados de los siguientes OIDs que son consultados por el snmpwalk actual, tambien. En un primer lugar, esto solo funciona en SubOIDs de las tablas especificadas! El Calculo es Realizado despues de que la Diferencia es calculada en caso de Parametros-Diferencia.',
+	'parameter_indices' 			=> 'Especificar una Lista separada por comas, de todas las Filas de las Tablas que el Snmp equivaldra.',
+	'parameter_html_frame' 			=> 'Asignar este parametro a un especifico frame (parte de la pagina). No influye en SubOIDs en Tablas.',
+	'parameter_html_id' 			=> 'Agregando un ID, usted puede ordenar este parametro en secuencia de otros parametros. Puede cambiar el orden de las columnas en las tablas, configurando el html id Sub-Params.',
 
  /**
   *	MODULE: ProvBase
   */
-	'rate_coefficient'				=> 'MaxRateSustained will be multiplied by this value to grant the user more (> 1.0) throughput than subscribed.',
+	'rate_coefficient'				=> 'La Maxima Tarifa Sostenida sera multiplicada por este valor para otorgar al usuario mas (> 1.0) rendimiento que el suscrito.',
 	//ModemController
-	'Modem_NetworkAccess'			=> 'Network Access for CPEs. (MTAs are not considered and will always go online when all other configurations are correct). Take care: With Billing-Module this checkbox will be overwritten by daily check if tariff changes.',
-	'Modem_InstallationAddressChangeDate'	=> 'In case of (physical) relocation of the modem: Add startdate for the new address here. If readonly there is a pending address change order at Envia.',
-	'Modem_GeocodeOrigin'			=> 'Where does geocode data come from? If set to “n/a” address could not be geocoded against any API. Will be set to your name on manually changed geodata.',
-	'contract_number' 				=> 'Attention - Customer login password is changed automatically on changing this field!',
-	'mac_formats'					=> "Allowed formats (case-insensitive):\n\n1) AA:BB:CC:DD:EE:FF\n2) AABB.CCDD.EEFF\n3) AABBCCDDEEFF",
-	'fixed_ip_warning'				=> 'Using fixed IP address is highly discouraged, as this breaks the ability to move modems and their CPEs freely among CMTSes. Instead of telling the customer a fixed IP address they should be supplied with the hostname, which will not change.',
-	'modem_update_frequency'		=> 'This field is updated once a day.',
+	'Modem_NetworkAccess'			=> 'Acceso a la Red para CPEs. (MTAs no son considerados y iran siempre online cuando las demas configuraciones sean correctas). Cuidado: Con el Modulo-Facturacion, esta casilla sera siempre sobrescrita diariamente si la tarifa cambia.',
+	'Modem_InstallationAddressChangeDate'	=> 'En caso de (fisico) reubicacion del modem: Agregar fecha de inicio para la nueva direccion ahi. Si es solo lectura, hay una orden de cambio de direccion pendiente en Envia.',
+	'Modem_GeocodeOrigin'			=> 'De donde vienen los datos geocode? Si se establece a "n/a", la direccion no podra ser geocoded para cualquier API. Sera establecido a su nombre en cambios manuales de geodata.',
+	'contract_number' 				=> 'Atencion - Contrasena del Cliente es cambiado automaticamente cuando se cambia este campo!',
+	'mac_formats'					=> "Formatos permitidos (case-insensitive):\n\n1) AA:BB:CC:DD:EE:FF\n2) AABB.CCDD.EEFF\n3) AABBCCDDEEFF",
+	'fixed_ip_warning'				=> 'Usar una IP fija es altamente no recomendado, ya que pierde la habilidad de mover modems y sus CPEs libremente entre CMTSes. Envez de dar una IP fija al cliente, deberan ser provistos del hostname, el cual no cambiara.',
+	'modem_update_frequency'		=> 'Este campo se actualiza una vez al día.',
 
  /**
   *	MODULE: ProvVoip
   */
 	//PhonenumberManagementController
-	'PhonenumberManagement_CarrierIn' => 'On incoming porting: set to previous Telco.',
-	'PhonenumberManagement_CarrierInWithEnvia' => 'On incoming porting: set to previous Telco. In case of a new number set this to EnviaTEL',
-	'PhonenumberManagement_EkpIn' => 'On incoming porting: set to previous Telco.',
-	'PhonenumberManagement_EkpInWithEnvia' => 'On incoming porting: set to previous Telco. In case of a new number set this to EnviaTEL',
-	'PhonenumberManagement_TRC' => 'This is for information only. Real changes have to be performed at your Telco.',
-	'PhonenumberManagement_TRCWithEnvia' => 'If changed here this has to be sent to Envia, too (Update VoIP account).',
-	'PhonenumberManagement_Autogenerated' => 'This management has been created automatically. Please verify/change values, then uncheck this box.',
+	'PhonenumberManagement_CarrierIn' => 'En puerto entrante: establecer al Telco anterior.',
+	'PhonenumberManagement_CarrierInWithEnvia' => 'En puerto entrante: establecer al Telco anterior. Si hubiese una nueva cifra, se establece a EnviaTEL',
+	'PhonenumberManagement_EkpIn' => 'En puerto entrante: establecer al Telco.',
+	'PhonenumberManagement_EkpInWithEnvia' => 'En puerto entrante: establecer al Telco anterior. Si hubiese una nueva cifra, se establece a EnviaTEL',
+	'PhonenumberManagement_TRC' => 'Solo para su conocimiento. Los cambios reales tienen que ser realizadas en su Telco.',
+	'PhonenumberManagement_TRCWithEnvia' => 'Si se cambia aqui, tambien tiene que ser enviado a Envia (Actualizar su cuenta VoIP).',
+	'PhonenumberManagement_Autogenerated' => 'Esta gestion ha sido creada automaticamente. Por favor, verifique/cambie valores, entonces desmarque esta casilla.',
 /**
   * MODULE VoipMon
   */
-	'mos_min_mult10' 				=> 'Minimal Mean Opionion Score experienced during call',
-	'caller' 						=> 'Call direction from Caller to Callee',
-	'a_mos_f1_min_mult10' 			=> 'Minimal Mean Opionion Score experienced during call for a fixed jitter buffer of 50ms',
-	'a_mos_f2_min_mult10' 			=> 'Minimal Mean Opionion Score experienced during call for a fixed jitter buffer of 200ms',
-	'a_mos_adapt_min_mult10' 		=> 'Minimal Mean Opionion Score experienced during call for an adaptive jitter buffer of 500ms',
-	'a_mos_f1_mult10' 				=> 'Average Mean Opionion Score experienced during call for a fixed jitter buffer of 50ms',
-	'a_mos_f2_mult10' 				=> 'Average Mean Opionion Score experienced during call for a fixed jitter buffer of 200ms',
-	'a_mos_adapt_mult10' 			=> 'Average Mean Opionion Score experienced during call for an adaptive jitter buffer of 500ms',
-	'a_sl1' => 'Number of packets experiencing one consecutive packet loss during call',
-	'a_sl9' => 'Number of packets experiencing nine consecutive packet losses during call',
-	'a_d50' => 'Number of packets experiencing a packet delay variation (i.e. jitter) between 50ms and 70ms',
-	'a_d300' => 'Number of packets experiencing a packet delay variation (i.e. jitter) greater than 300ms',
-	'called' => 'Call direction from Callee to Caller',
+	'mos_min_mult10' 				=> 'Minimal Mean Opionion Score experimentado durante una llamada',
+	'caller' 						=> 'Direccion de Llamada de Emisor a Receptor',
+	'a_mos_f1_min_mult10' 			=> 'Minimal Mean Opionion Score experimentado durante una llamada por un fixed jitter buffer de 50ms',
+	'a_mos_f2_min_mult10' 			=> 'Minimal Mean Opionion Score experimentado durante una llamada por un fixed jitter buffer de 200ms',
+	'a_mos_adapt_min_mult10' 		=> 'Minimal Mean Opionion Score experimentado durante una llamada por un adaptive jitter buffer de 500ms',
+	'a_mos_f1_mult10' 				=> 'Average Mean Opionion Score experimentado durante una llamada por un fixed jitter buffer de 50ms',
+	'a_mos_f2_mult10' 				=> 'Average Mean Opionion Score experimentado durante una llamada por un fixed jitter buffer de 200ms',
+	'a_mos_adapt_mult10' 			=> 'Average Mean Opionion Score experimentado durante una llamada por un adaptive jitter buffer de 500ms',
+	'a_sl1' => 'Numero de paquetes experimentando una perdida de paquete consecutiva durante una llamada',
+	'a_sl9' => 'Numero de paquetes experimentando nueve perdidas de paquete consecutivas durante una llamada',
+	'a_d50' => 'Numero de paquetes experimentando una variacion en el retraso del paquete (p.ej. Jitter) entre 50ms y 70ms',
+	'a_d300' => 'Numero de paquetes experienciando un retraso en la variacion del paquete (p.ej. Jitter) mayor a 300ms',
+	'called' => 'Direccion de Llamada de Receptor a Emisor',
 /**
  * Module Ticketsystem
  */
-	'assign_user' => 'Permite asignar un usuario a un ticket.',
+	'assign_user' => ' Permitido de asignar un usuario a un ticket',
  ];
