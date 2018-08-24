@@ -4,17 +4,10 @@ return [
 		'Search_EnterKeyword' 		=> 'Ingresar palabra clave',
 		'Search_MatchesFor'			=> 'Coincide para',
 		'Search_In'					=> 'en la tabla',
-<<<<<<< HEAD
-        'Search_Search ...'         => 'Ingrese un termino de busqueda',
-//jQuery
-		//Translations for this at https://datatables.net/plug-ins/i18n/
-		'jQuery_sEmptyTable'		=> 'No hay datos disponibles en la tabla',
-=======
 //jQuery
 		//Translations for this at https://datatables.net/plug-ins/i18n/
 		'jQuery_sEmptyTable'		=> 'No hay datos disponibles en la tabla',
 		'Search_Search ...'			=> 'Ingrese un termino de busqueda',
->>>>>>> New translations view.php (Spanish)
 		'jQuery_sInfo'				=> 'Mostrando _START_ hasta _END_ de _TOTAL_ entradas',
 		'jQuery_sInfoEmpty'			=> 'Mostrando 0 hasta 0 de 0 entradas',
 		'jQuery_sInfoFiltered'		=> '(filtrado de _MAX_ entradas)',
@@ -29,13 +22,8 @@ return [
 		'jQuery_PaginatesPrevious'	=> 'Anterior',
 		'jQuery_PaginatesNext'		=> 'Siguiente',
 		'jQuery_PaginatesLast'		=> 'Ultimo',
-<<<<<<< HEAD
 		'jQuery_sLast'				=> ': activar para ordenar la columna ascendentemente',
 		'jQuery_sLast'				=> ': activar para ordenar la columna descendentemente',
-=======
-		'jQuery_sLast'				=> ': activar para ordenar la columna descendentemente',
-		'jQuery_sLast'				=> ': activate to sort column descending',
->>>>>>> New translations view.php (Spanish)
 		'jQuery_All'				=> 'Todo',
 		'jQuery_Print'				=> 'Imprimir',
 		'jQuery_colvis'				=> 'Visibilidad de la columna',
