@@ -192,6 +192,6 @@ class SettlementRunObserver
 		$date = $settlementrun->year.'-'.str_pad($settlementrun->month, 2, '0', STR_PAD_LEFT);
 		$dir = 'data/billingbase/accounting/'.$date;
 
-		\Modules\BillingBase\Http\Controllers\SettlementRunController::directory_cleanup($dir, $settlementrun);
+		\Modules\BillingBase\Http\Controllers\SettlementRunController::directory_cleanup($settlementrun);
 	}
 }
