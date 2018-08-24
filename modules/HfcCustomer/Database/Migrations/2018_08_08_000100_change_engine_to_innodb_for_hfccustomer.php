@@ -6,6 +6,6 @@
  *
  * @author Patrick Reichel
  */
-class ChangeEngineToInnodbForHfccustomer extends ChangeEngineToInnodb {
-
+class ChangeEngineToInnodbForHfccustomer extends ChangeEngineToInnodb
+{
 }

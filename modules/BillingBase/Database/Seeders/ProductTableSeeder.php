@@ -4,21 +4,19 @@ namespace Modules\BillingBase\Database\Seeders;
 
 use Modules\BillingBase\Entities\Product;
 
-
-class ProductTableSeeder extends \BaseSeeder {
-
+class ProductTableSeeder extends \BaseSeeder
+{
     protected static $type;
     protected static $index;
 
     public function run()
     {
-        foreach(Product::getPossibleEnumValues('type') as self::$type) {
-            foreach (range(1,3) as self::$index) {
+        foreach (Product::getPossibleEnumValues('type') as self::$type) {
+            foreach (range(1, 3) as self::$index) {
                 Product::create(static::get_fake_data('seed'));
             }
         }
     }
-
 
     /**
      * Returns an array with faked product data; used e.g. in seeding and testing
@@ -27,15 +25,14 @@ class ProductTableSeeder extends \BaseSeeder {
      *
      * @author Nino Ryschawy, Patrick Reichel
      */
-    public static function get_fake_data($topic) {
-
-        $faker =& \NmsFaker::getInstance();
+    public static function get_fake_data($topic)
+    {
+        $faker = &\NmsFaker::getInstance();
 
         if ($topic == 'seed') {
             $type = self::$type;
             $index = self::$index;
-        }
-        else {
+        } else {
             // make sure to fake every type in testing
             $product_types = Product::getPossibleEnumValues('type');
             $products_in_db = \DB::table('product')->count();
@@ -56,18 +53,18 @@ class ProductTableSeeder extends \BaseSeeder {
         switch ($type) {
 
         case 'Internet':
-            $name = 'Flat '.(2*pow(10, $index-1)).' Mbit/s';
+            $name = 'Flat '.(2 * pow(10, $index - 1)).' Mbit/s';
             $price = 10 * $index;
             $qos_id = $index;
             $billing_cycle = 'Monthly';
             $bundled_with_voip = rand(0, 1);
-            $email_count = rand(0,10);
+            $email_count = rand(0, 10);
             break;
 
         case 'Voip':
             $name = $voip_name[$index];
             $price = 5 * $index;
-            $voip_sale_id = 1 ; 		// (int) (($index+3)/3);
+            $voip_sale_id = 1; 		// (int) (($index+3)/3);
             $billing_cycle = 'Monthly';
             $voip_purchase_tariff_id = 2;
             $bundled_with_voip = 0;
@@ -77,8 +74,8 @@ class ProductTableSeeder extends \BaseSeeder {
             $name = 'TV '.$faker->city;
             $price = rand(40, 80);
             $billing_cycle = 'Yearly';
-            $tax = rand(0,1);
-            $costcenter_id = rand(0,10) > 3 ? 0 : $index;
+            $tax = rand(0, 1);
+            $costcenter_id = rand(0, 10) > 3 ? 0 : $index;
             $bundled_with_voip = 0;
             break;
 
@@ -97,7 +94,7 @@ class ProductTableSeeder extends \BaseSeeder {
         case 'Other':
             $name = $other_names[$index];
             $price = rand(2, 5);
-            $maturity = $index == 3 ? "18M" : "0M";
+            $maturity = $index == 3 ? '18M' : '0M';
             $bundled_with_voip = 0;
             break;
         }
@@ -122,5 +119,4 @@ class ProductTableSeeder extends \BaseSeeder {
             'email_count' => $email_count,
         ];
     }
-
 }

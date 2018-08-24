@@ -1,9 +1,12 @@
-<?php namespace Modules\ProvVoipEnvia\Exceptions;
+<?php
+
+namespace Modules\ProvVoipEnvia\Exceptions;
 
 /**
  * Exception to indicate missing (but needed) values.
  *
  * @author Patrick Reichel
  */
-class XmlCreationError extends \RuntimeException {
+class XmlCreationError extends \RuntimeException
+{
 }

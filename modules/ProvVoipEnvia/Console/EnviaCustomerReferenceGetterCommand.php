@@ -4,144 +4,131 @@ namespace Modules\ProvVoipEnvia\Console;
 
 use Log;
 use Illuminate\Console\Command;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
-use \Modules\ProvBase\Entities\Contract;
-use \Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController;
+use Modules\ProvBase\Entities\Contract;
 
 /**
  * Class for updating database with carrier codes from csv file
  */
-class EnviaCustomerReferenceGetterCommand extends Command {
+class EnviaCustomerReferenceGetterCommand extends Command
+{
+    // get some methods used by several updaters
+    use \App\Console\Commands\DatabaseUpdaterTrait;
 
-	// get some methods used by several updaters
-	use \App\Console\Commands\DatabaseUpdaterTrait;
+    /**
+     * The console command name.
+     */
+    protected $name = 'provvoipenvia:get_envia_customer_references';
 
-	/**
-	 * The console command name.
-	 */
-	protected $name = 'provvoipenvia:get_envia_customer_references';
+    /**
+     * The console command description.
+     */
+    protected $description = 'Get missing envia TEL customer references and write to contracts';
 
-	/**
-	 * The console command description.
-	 */
-	protected $description = 'Get missing envia TEL customer references and write to contracts';
+    /**
+     * Array containing the contracts we want to get the envia TEL customer references for
+     */
+    protected $contracts_to_get_customer_reference_for = [];
 
-	/**
-	 * Array containing the contracts we want to get the envia TEL customer references for
-	 */
-	protected $contracts_to_get_customer_reference_for = array();
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        // this comes from config/app.php (key 'url')
+        $this->base_url = \Config::get('app.url');
 
-	/**
-	 * Create a new command instance.
-	 *
-	 * @return void
-	 */
-	public function __construct()
-	{
-		// this comes from config/app.php (key 'url')
-		$this->base_url = \Config::get('app.url');
+        parent::__construct();
+    }
 
-		parent::__construct();
-	}
+    /**
+     * Execute the console command.
+     *
+     * @return null
+     */
+    public function fire()
+    {
+        Log::info($this->description);
 
-	/**
-	 * Execute the console command.
-	 *
-	 * @return null
-	 */
-	public function fire() {
+        $runs = ['current', 'legacy'];
+        foreach ($runs as $run) {
+            $this->contracts_to_get_customer_reference_for = [];
 
-		Log::info($this->description);
+            echo "\n";
+            $this->_get_contracts($run);
 
-		$runs = ['current', 'legacy'];
-		foreach ($runs as $run) {
+            echo "\n";
+            $this->_get_envia_customer_references($run);
+        }
+    }
 
-			$this->contracts_to_get_customer_reference_for = array();
+    /**
+     * Collect all contracts we want to get envia TEL customer reference for
+     *
+     * @author Patrick Reichel
+     */
+    protected function _get_contracts($run)
+    {
+        Log::debug(__METHOD__." started for $run customer numbers");
 
-			echo "\n";
-			$this->_get_contracts($run);
+        // get all contracts without envia reference
+        $contracts_without_customer_reference = Contract::whereNull('customer_external_id')->get();
 
-			echo "\n";
-			$this->_get_envia_customer_references($run);
-		}
-	}
+        // keep only those with related phonenumbers having an external contract id
+        foreach ($contracts_without_customer_reference as $contract) {
+            foreach ($contract->related_phonenumbers() as $phonenumber) {
 
-	/**
-	 * Collect all contracts we want to get envia TEL customer reference for
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _get_contracts($run) {
+                // check if there is an external contract id on this phonenumber
+                if (is_null($phonenumber->contract_external_id)) {
+                    continue;
+                }
 
-		Log::debug(__METHOD__." started for $run customer numbers");
+                // add contract and stop investigation (we don't want to get the customer reference multiple times)
+                if ($run == 'current') {
+                    $number = $contract->customer_number();
+                    if (boolval($number) && ($number != 'n/a')) {
+                        array_push($this->contracts_to_get_customer_reference_for, $contract);
+                    }
+                    break;
+                } elseif ($run == 'legacy') {
+                    $number = $contract->customer_number_legacy();
+                    if (boolval($number) && ($number != 'n/a')) {
+                        array_push($this->contracts_to_get_customer_reference_for, $contract);
+                    }
+                    break;
+                }
+            }
+        }
+    }
 
-		// get all contracts without envia reference
-		$contracts_without_customer_reference = Contract::whereNull('customer_external_id')->get();
+    /**
+     * Get all envia TEL customer references for the contracts
+     *
+     * @author Patrick Reichel
+     */
+    protected function _get_envia_customer_references($run)
+    {
+        Log::debug(__METHOD__." for $run customer numbers started");
 
-		// keep only those with related phonenumbers having an external contract id
-		foreach ($contracts_without_customer_reference as $contract) {
+        foreach ($this->contracts_to_get_customer_reference_for as $contract) {
+            $contract_id = $contract->id;
+            Log::info("Getting customer reference for contract $contract_id");
 
-			foreach ($contract->related_phonenumbers() as $phonenumber) {
+            try {
+                // get the relative URL to execute the cron job for updating the current order_id
+                if ($run == 'current') {
+                    $url_suffix = \URL::route('ProvVoipEnvia.cron', ['job' => 'customer_get_reference', 'contract_id' => $contract_id, 'really' => 'True'], false);
+                } elseif ($run == 'legacy') {
+                    $url_suffix = \URL::route('ProvVoipEnvia.cron', ['job' => 'customer_get_reference_by_legacy_number', 'contract_id' => $contract_id, 'really' => 'True'], false);
+                }
 
-				// check if there is an external contract id on this phonenumber
-				if (is_null($phonenumber->contract_external_id)) {
-					continue;
-				}
+                $url = $this->base_url.$url_suffix;
 
-				// add contract and stop investigation (we don't want to get the customer reference multiple times)
-				if ($run == 'current') {
-					$number = $contract->customer_number();
-					if (boolval($number) && ($number != 'n/a')) {
-						array_push($this->contracts_to_get_customer_reference_for, $contract);
-					}
-					break;
-				}
-				elseif ($run == 'legacy') {
-					$number = $contract->customer_number_legacy();
-					if (boolval($number) && ($number != 'n/a')) {
-						array_push($this->contracts_to_get_customer_reference_for, $contract);
-					}
-					break;
-				}
-			}
-		}
-	}
-
-	/**
-	 * Get all envia TEL customer references for the contracts
-	 *
-	 * @author Patrick Reichel
-	 */
-	protected function _get_envia_customer_references($run) {
-
-		Log::debug(__METHOD__." for $run customer numbers started");
-
-		foreach ($this->contracts_to_get_customer_reference_for as $contract) {
-
-			$contract_id = $contract->id;
-			Log::info("Getting customer reference for contract $contract_id");
-
-			try {
-				// get the relative URL to execute the cron job for updating the current order_id
-				if ($run == 'current') {
-					$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'customer_get_reference', 'contract_id' => $contract_id, 'really' => 'True'), false);
-				}
-				elseif ($run == 'legacy') {
-					$url_suffix = \URL::route("ProvVoipEnvia.cron", array('job' => 'customer_get_reference_by_legacy_number', 'contract_id' => $contract_id, 'really' => 'True'), false);
-				}
-
-				$url = $this->base_url.$url_suffix;
-
-				$this->_perform_curl_request($url);
-
-			}
-			catch (Exception $ex) {
-				Log::error("Exception getting envia TEL customer reference for contract ".$contract_id."): ".$ex->getMessage()." => ".$ex->getTraceAsString());
-			}
-		}
-	}
-
-
-
+                $this->_perform_curl_request($url);
+            } catch (Exception $ex) {
+                Log::error('Exception getting envia TEL customer reference for contract '.$contract_id.'): '.$ex->getMessage().' => '.$ex->getTraceAsString());
+            }
+        }
+    }
 }

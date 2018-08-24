@@ -1,11 +1,12 @@
-<?php namespace Modules\HfcBase\Entities;
+<?php
 
-class IcingaHostStatus extends \BaseModel {
+namespace Modules\HfcBase\Entities;
 
-	// SQL connection
-	protected $connection = 'mysql-icinga2';
+class IcingaHostStatus extends \BaseModel
+{
+    // SQL connection
+    protected $connection = 'mysql-icinga2';
 
-	// The associated SQL table for this Model
-	public $table = 'icinga_hoststatus';
-
+    // The associated SQL table for this Model
+    public $table = 'icinga_hoststatus';
 }
