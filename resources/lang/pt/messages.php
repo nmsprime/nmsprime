@@ -191,8 +191,8 @@ return [
 	'Language for settlement run' => 'Language for settlement run',
 	'Uncertain start/end dates for tariffs' => 'Uncertain start/end dates for tariffs',
 	'modem_monitoring_error'=> 'This could be because the Modem was not online until now. Please note that Diagrams are only available
-	from the point that a modem was online. If all diagrams did not show properly then it should be a
-	bigger problem and there should be a cacti misconfiguration. Please consider the administrator on bigger problems.',
+		from the point that a modem was online. If all diagrams did not show properly then it should be a
+		bigger problem and there should be a cacti misconfiguration. Please consider the administrator on bigger problems.',
 	'Connection Info Template'	=> 'Connection Info Template',
 	'Upload Template'			=> 'Upload Template',
 	'SNMP Read Only Community'	=> 'SNMP Read Only Community',
