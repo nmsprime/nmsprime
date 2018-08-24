@@ -2,7 +2,6 @@
 /**
  * Laravel - A PHP Framework For Web Artisans
  *
- * @package  Laravel
  * @author   Taylor Otwell <taylorotwell@gmail.com>
  */
 
@@ -48,7 +47,6 @@ $app = require_once __DIR__.'/../bootstrap/app.php';
 
 $kernel = $app->make('Illuminate\Contracts\Http\Kernel');
 
-
 /*
  * Check permissions: disable all admin pages and/or redirect
  * to customer control center (ccc)
@@ -57,15 +55,14 @@ $kernel = $app->make('Illuminate\Contracts\Http\Kernel');
  */
 $request = Illuminate\Http\Request::capture();
 
-
 $response = $kernel->handle(
-	$request
+    $request
 );
 
-if ($request->is('admin*'))
-	abort(404);
+if ($request->is('admin*')) {
+    abort(404);
+}
 
 $response->send();
-
 
 $kernel->terminate($request, $response);
