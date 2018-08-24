@@ -37,6 +37,9 @@ class DashboardController extends BaseController
 			$netelements = $this->_get_impaired_netelements();
 			$services 	 = $this->_get_impaired_services();
 		}
+
+		$data['news'] = $this->news();
+
 		return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'data', 'view', 'netelements', 'services')));
 	}
 
@@ -530,6 +533,78 @@ class DashboardController extends BaseController
 		} else {
 			return 'warning';
 		}
+	}
+
+
+	/*
+	 * This function should guide a new user through critical stages
+	 * like installation. To do this, we should test how far installation
+	 * process is and addvice the next steps the user should do..
+	 *
+	 * This function could also be used to inform the user of new updates (etc)
+	 *
+	 * @TODO: This should be somehow cashed and must not always be run when loading dashboard!
+	 */
+	public function news()
+	{
+		// change default psw's
+		if(\Hash::check('toor', \Auth::user()->password))
+			return ['youtube' => 'https://www.youtube.com/embed/TVjJ7T8NZKw',
+					'text' => "<li>Next: Change default Password! ".\HTML::linkRoute('User.profile', 'Global Config', \Auth::user()->id)];
+
+		// set ISP name
+		if (!\GlobalConfig::first()->name)
+			return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s',
+					'text' => "<li>Next: Set Global Config ISP name: ".\HTML::linkRoute('Config.index', 'Global Config')];
+
+		// add CMTS
+		if (\Module::collections()->has('ProvBase'))
+			if(\Modules\ProvBase\Entities\Cmts::count() == 0)
+			return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=159&',
+					'text' => "<li>Next: ".\HTML::linkRoute('Cmts.create', 'Create CMTS')];
+
+		// add IP-Pools
+		if (\Module::collections()->has('ProvBase'))
+			if(\Modules\ProvBase\Entities\IpPool::count() == 0)
+			return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
+					'text' => "<li>Next: ".\HTML::linkRoute('Cmts.edit', 'Create IP-Pools',
+						\Modules\ProvBase\Entities\Cmts::first())];
+
+		// QoS
+		if (\Module::collections()->has('ProvBase'))
+			if(\Modules\ProvBase\Entities\Qos::count() == 0)
+			return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=380&',
+					'text' => "<li>Next: ".\HTML::linkRoute('Qos.create', 'Create QoS-Profile')];
+
+		// Product
+		if (\Module::collections()->has('BillingBase'))
+			if(\Modules\BillingBase\Entities\Product::where('type', '=', 'Internet')->count() == 0)
+			return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=425&',
+					'text' => "<li>Next: ".\HTML::linkRoute('Product.create', 'Create Billing Product')];
+
+		// Configfile
+		if (\Module::collections()->has('ProvBase'))
+			if(\Modules\ProvBase\Entities\Configfile::where('device','=','cm')->where('public','=','yes')->count() == 0)
+			return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=500&',
+					'text' => "<li>Next: ".\HTML::linkRoute('Configfile.create', 'Create Configfile')];
+
+		// check for mysql_secure_installation
+		if (env('ROOT_DB_PASSWORD') == '') {
+		    try {
+		        \DB::connection('mysql-root')->getPdo();
+		        if(\DB::connection()->getDatabaseName()){
+		        	return ['youtube' => 'https://www.youtube.com/embed/dZWjeL-LmG8',
+					'text' => "<li>Danger! Run: mysql_secure_installation in bash as root!"];
+		        }
+		    } catch (\Exception $e) {
+		    }
+		}
+
+		return null;
+
+		// links need to be in embedded style, like:
+		//return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
+		//		'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
 	}
 
 }

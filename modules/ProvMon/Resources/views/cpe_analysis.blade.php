@@ -2,6 +2,10 @@
 
 
 @section('content_dash')
+	<div class="btn pull-right">
+		@include('Generic.documentation', ['documentation' => $modem->help])
+	</div>
+
 	@if ($dash)
 		<font color="grey">{{$dash}}</font>
 	@else

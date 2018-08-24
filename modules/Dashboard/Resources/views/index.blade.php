@@ -94,6 +94,10 @@
 					@include('dashboard::widgets.hfc')
 				@DivClose()
 			@endif
+
+			<div class="col-auto-md">
+				@include('dashboard::widgets.documentation')
+			</div>
 		</div>
 
 
@@ -125,6 +129,13 @@
 					@include('dashboard::panels.income_analytics')
 				@stop
 				@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 4, 'height' => 'auto', 'i' => '4'))
+			@endif
+
+			@if (isset($data['news']) && $data['news'])
+				@section ('news')
+					@include('dashboard::panels.news')
+				@stop
+				@include ('bootstrap.panel', array ('content' => "news", 'view_header' => 'News', 'md' => 4, 'height' => '350px', 'i' => '5'))
 			@endif
 
 			@if ($view['tickets'] && $data['tickets']['total'])
