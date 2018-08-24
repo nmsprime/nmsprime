@@ -33,8 +33,8 @@ class Product extends \BaseModel {
 			'voip_purchase_tariff_id' => 'required_if:type,Voip',
 			'qos_id' => 'required_if:type,Internet',
 			'price'  => 'required_if:type,Internet,Voip,TV,Other,Device,Mixed',
-			'maturity' => 'regex:/^\d+[dDmMyY]$/',
-			'period_of_notice' => 'regex:/^\d+[dDmMyY]$/',
+			'maturity' => 'nullable|regex:/^\d+[dDmMyY]$/',
+			'period_of_notice' => 'nullable|regex:/^\d+[dDmMyY]$/',
 		);
 	}
 
@@ -113,6 +113,7 @@ class Product extends \BaseModel {
 	 *	@return void
 	 *
 	 *  @todo return state on success, should also take care of deleted children
+     *  @TODO check if BaseModel::delete() can be used here
 	 */
 	public function delete()
 	{
@@ -122,7 +123,30 @@ class Product extends \BaseModel {
 			$child->save();
 		}
 
-		$this->_delete();
+		// check from where the deletion request has been triggered and set the correct var to show information
+		$prev = explode('?', \URL::previous())[0];
+		$prev = \Str::lower($prev);
+		$deleted = $this->_delete();
+		if (!$deleted) {
+			$msg = "Could not delete Product $this->id";
+			if (\Str::endsWith($prev, 'edit')) {
+				\Session::push('tmp_error_above_relations', $msg);
+			}
+			else {
+				\Session::push('tmp_error_above_index_list', $msg);
+			}
+		}
+		else {
+			$msg = "Deleted Product $this->id";
+			if (\Str::endsWith($prev, 'edit')) {
+				\Session::push('tmp_success_above_relations', $msg);
+			}
+			else {
+				\Session::push('tmp_success_above_index_list', $msg);
+			}
+		}
+
+		return $deleted;
 	}
 
 

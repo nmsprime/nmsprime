@@ -1,4 +1,6 @@
-<?php namespace Modules\HfcBase\Entities;
+<?php
+
+namespace Modules\HfcBase\Entities;
 
 class IcingaObjects extends \BaseModel {
 
@@ -21,7 +23,7 @@ class IcingaObjects extends \BaseModel {
 
 	public function icingahoststatus()
 	{
-		return $this->hasOne('Modules\HfcBase\Entities\IcingaHoststatus', 'host_object_id',  'object_id');
+		return $this->hasOne(IcingaHostStatus::class, 'host_object_id',  'object_id');
 	}
 
 }
