@@ -6,6 +6,6 @@
  *
  * @author Patrick Reichel
  */
-class ChangeEngineToInnodbForDashboard extends ChangeEngineToInnodb {
-
+class ChangeEngineToInnodbForDashboard extends ChangeEngineToInnodb
+{
 }

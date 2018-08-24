@@ -1,39 +1,32 @@
 <?php
 
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
 
-class UpdateCompanyAddConnInfoTemplate extends BaseMigration {
+class UpdateCompanyAddConnInfoTemplate extends BaseMigration
+{
+    protected $tablename = 'company';
 
-	protected $tablename = 'company';
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::table($this->tablename, function (Blueprint $table) {
+            $table->string('conn_info_template_fn');
+        });
+    }
 
-	/**
-	 * Run the migrations.
-	 *
-	 * @return void
-	 */
-	public function up()
-	{
-		Schema::table($this->tablename, function(Blueprint $table)
-		{
-			$table->string('conn_info_template_fn');
-		});
-
-	}
-
-	/**
-	 * Reverse the migrations.
-	 *
-	 * @return void
-	 */
-	public function down()
-	{
-
-		Schema::table($this->tablename, function(Blueprint $table)
-		{
-			$table->dropColumn('conn_info_template_fn');
-		});
-
-	}
-
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::table($this->tablename, function (Blueprint $table) {
+            $table->dropColumn('conn_info_template_fn');
+        });
+    }
 }

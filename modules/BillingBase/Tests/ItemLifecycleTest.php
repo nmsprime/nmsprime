@@ -2,19 +2,18 @@
 
 namespace Modules\BillingBase\Tests;
 
-use \Modules\BillingBase\Entities\Item;
-use \Modules\BillingBase\Http\Controllers\ItemController;
+use Modules\BillingBase\Entities\Item;
 
 /**
  * Run the lifecycle test for Item.
  */
-class ItemLifecycleTest extends \BaseLifecycleTest {
+class ItemLifecycleTest extends \BaseLifecycleTest
+{
+    // item can only be created from Contract.edit
+    protected $create_from_model_context = '\Modules\ProvBase\Entities\Contract';
 
-	// item can only be created from Contract.edit
-	protected $create_from_model_context = '\Modules\ProvBase\Entities\Contract';
-
-	// fields to be used in update test
-	protected $update_fields = [
+    // fields to be used in update test
+    protected $update_fields = [
         'name',
         'price',
     ];
@@ -24,15 +23,14 @@ class ItemLifecycleTest extends \BaseLifecycleTest {
         'testIndexViewVisible', // no index view
     ];
 
-
     /**
      * Extended to modify $testrun_count.
      * Cannot be done in constructor as we need a running app to use Item…
      *
      * @author Patrick Reichel
      */
-    public function createApplication() {
-
+    public function createApplication()
+    {
         $app = parent::createApplication();
 
         // create 4 items per contract

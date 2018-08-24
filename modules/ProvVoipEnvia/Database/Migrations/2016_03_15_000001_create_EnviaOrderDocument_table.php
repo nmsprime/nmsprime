@@ -1,55 +1,49 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 
-class CreateEnviaOrderDocumentTable extends BaseMigration {
+class CreateEnviaOrderDocumentTable extends BaseMigration
+{
+    // name of the table to create
+    protected $tablename = 'enviaorderdocument';
 
-	// name of the table to create
-	protected $tablename = "enviaorderdocument";
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create($this->tablename, function (Blueprint $table) {
+            $this->up_table_generic($table);
 
+            $table->enum('document_type', [
+                'Auftrag',
+                'Insolvenz',
+                'Kommunikation',
+                'NachweisUnternehmer',
+                'Portierungsformblatt',
+                'Telefonbucheintrag',
+                'Vertrag',
+                'Vertragsbeend',
+                'Vollmacht',
+            ]);
+            $table->string('mime_type');
+            $table->string('filename');
+            $table->integer('enviaorder_id');
+            $table->integer('upload_order_id')->nullable()->default(null);
+        });
 
-	/**
-	 * Run the migrations.
-	 *
-	 * @return void
-	 */
-	public function up()
-	{
-		Schema::create($this->tablename, function(Blueprint $table)
-		{
-			$this->up_table_generic($table);
+        return parent::up();
+    }
 
-			$table->enum('document_type', [
-				'Auftrag',
-				'Insolvenz',
-				'Kommunikation',
-				'NachweisUnternehmer',
-				'Portierungsformblatt',
-				'Telefonbucheintrag',
-				'Vertrag',
-				'Vertragsbeend',
-				'Vollmacht',
-			]);
-			$table->string('mime_type');
-			$table->string('filename');
-			$table->integer('enviaorder_id');
-			$table->integer('upload_order_id')->nullable()->default(NULL);
-		});
-
-		return parent::up();
-	}
-
-
-	/**
-	 * Reverse the migrations.
-	 *
-	 * @return void
-	 */
-	public function down()
-	{
-		Schema::drop($this->tablename);
-	}
-
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::drop($this->tablename);
+    }
 }
-
