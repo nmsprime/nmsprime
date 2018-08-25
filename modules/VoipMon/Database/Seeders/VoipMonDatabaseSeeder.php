@@ -5,7 +5,7 @@ namespace Modules\VoipMon\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
-class VoipmonDatabaseSeeder extends Seeder
+class VoipMonDatabaseSeeder extends Seeder
 {
     /**
      * Run the database seeds.

@@ -143,7 +143,7 @@ class TreeTopographyController extends HfcBaseController
         $trees = $_trees->orderBy('pos')->get();
 
         if (! $trees->count()) {
-            return null;
+            return;
         }
 
         foreach ($trees as $tree) {
