@@ -119,7 +119,7 @@ class Mpr extends \BaseModel
 
         // Foreach MPR
         // lower priority integers first
-        foreach (Mpr::orderBy('prio')->get() as $mpr) {
+        foreach (self::orderBy('prio')->get() as $mpr) {
             // parse rectangles for MPR
             if (count($mpr->mprgeopos) == 2) {
                 // get ordered MPR Positions
@@ -225,7 +225,7 @@ class Mpr extends \BaseModel
     {
         parent::boot();
 
-        Mpr::observe(new MprObserver);
+        self::observe(new MprObserver);
     }
 }
 

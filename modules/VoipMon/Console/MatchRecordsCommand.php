@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-class matchRecordsCommand extends Command
+class MatchRecordsCommand extends Command
 {
     // Default config of the voipmonitor daemon is to create its own database, use it instead of the default db
     protected $connection = 'mysql-voipmonitor';

@@ -48,7 +48,7 @@ function ss_docsis_snmp($host, $com, $oid, $denom = null)
         try {
             $ret = snmpwalk($host, $com, $oid);
         } catch (\Exception $e) {
-            return null;
+            return;
         }
     }
 
@@ -75,7 +75,7 @@ function ss_docsis($hostname, $snmp_community)
         if (strpos($e->getMessage(), 'Error in packet at') !== false) {
             $ver = 1;
         } else {
-            return null;
+            return;
         }
     }
 

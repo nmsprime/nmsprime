@@ -196,7 +196,7 @@ class ProvMonController extends \BaseController
     public function flood_ping($hostname)
     {
         if (! \Input::has('flood_ping')) {
-            return null;
+            return;
         }
 
         $hostname = escapeshellarg($hostname);
@@ -468,7 +468,7 @@ class ProvMonController extends \BaseController
             case 3: return 'DOCSIS 2.0';
             case 4: return 'DOCSIS 3.0';
 
-            default: return null;
+            default: return;
         }
     }
 
@@ -770,7 +770,7 @@ class ProvMonController extends \BaseController
         // handle multiple lease entries
         // actual strategy: if possible grep active lease, otherwise return all entries
         //                  in reverse ordered format from dhcpd.leases
-        if (sizeof($ret) > 1) {
+        if (count($ret) > 1) {
             foreach (preg_grep('/(.*?)binding state active(.*?)/', $ret) as $str) {
                 if (preg_match('/starts \d ([^;]+);/', $str, $s)) {
                     $start[] = $s[1];
@@ -908,7 +908,7 @@ class ProvMonController extends \BaseController
         }
 
         // parse diagram id's from cacti database
-        $ids = ProvMonController::monitoring_get_graph_ids($modem, $graph_template);
+        $ids = self::monitoring_get_graph_ids($modem, $graph_template);
 
         // no id's return
         if (! $ids) {
@@ -1002,7 +1002,7 @@ class ProvMonController extends \BaseController
         // Get Cacti Host ID to $modem
         $template = $cacti->table('graph_templates')->where('name', '=', $name)->select('id')->first();
         if (! isset($template)) {
-            return null;
+            return;
         }
 
         return $template->id;

@@ -71,7 +71,7 @@ class MprGeopos extends \BaseModel
     {
         parent::boot();
 
-        MprGeopos::observe(new MprGeoposObserver);
+        self::observe(new MprGeoposObserver);
     }
 }
 
