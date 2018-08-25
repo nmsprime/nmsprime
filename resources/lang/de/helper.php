@@ -4,6 +4,7 @@ return [
  /*
   * Authentication and Base
   */
+    'translate'					=> 'You can help translating NMS PRIME at',
     'assign_role'					=> 'Diesem Nutzer eine oder mehrere Rollen zuweisen. Nutzer ohne Rolle können das NMS nicht verwenden, da sie keine Berechtigungen haben.',
     'assign_users'					=> 'Einen oder mehrere Nutzer zu dieser Rolle zuweisen. Die Veränderung ist im GuiLog des Users nicht sichtbar, sondern nur hier.',
     'assign_rank'					=> "Der Rang einer Rolle gibt die Fähigkeiten der Rolle an, andere Nutzer zu bearbeiten. \nEs werden werte von 0 bis 100 angenommen. (höher ist besser) \nHat ein Nutzer mehrere Rollen, gilt der höchste Rang. \nWenn die Fähigkeit gesetzt ist um Nutzer bearbeiten zu können, wird außerdem der Rang geprüft. Nur wenn der Rang des Bearbeiters höher ist, wird die Anfrage genehmigt. Weiterhin können beim erstellen und bearbeiten von Nutzern nur Rollen mit dem gleichen oder einem niedrigeren Rang vergeben werden.",
