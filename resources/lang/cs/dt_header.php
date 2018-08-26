@@ -47,6 +47,8 @@ return [
     'product_type' 		=> 'Product type',
     'product_count' 	=> 'Count',
     'charge' 			=> 'Charge',
+    'salesman.lastname' => 'Lastname',
+    'salesman.firstname' => 'Firstname',
     'salesman_commission' => 'Commission',
     'sepaaccount_id' 	=> 'SEPA-account',
     // SepaAccount
