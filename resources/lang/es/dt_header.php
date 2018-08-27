@@ -38,8 +38,8 @@ return [
     'salesman_id' 		=> 'ID del vendedor',
     'salesman_firstname' => 'Nombre',
     'salesman_lastname' => 'Apellido',
-    'commission in %' 	=> 'Comision en %',
-    'contract_nr' 		=> 'Nro. Contrato',
+    'commission in %' 	=> 'Commission in %',
+    'contract_nr' 		=> 'Contractnr',
     'contract_name' 	=> 'Cliente',
     'contract_start' 	=> 'Inicio de Contrato',
     'contract_end' 		=> 'Fin de Contrato',
@@ -49,11 +49,11 @@ return [
     'charge' 			=> 'Cambiar',
     'salesman.lastname' => 'Apellidos',
     'salesman.firstname' => 'Nombres',
-    'salesman_commission' => 'Comision',
+    'salesman_commission' => 'Commission',
     'sepaaccount_id' 	=> 'ID Cuenta SEPA',
     // SepaAccount
-    'sepaaccount.name' => 'Nombre de cuenta SEPA',
-    'sepaaccount.institute' => 'Asociacion',
+    'sepaaccount.name' => 'Account Name',
+    'sepaaccount.institute' => 'Institute',
     'sepaaccount.iban' => 'IBAN',
     // SepaMandate
     'sepamandate.sepa_holder' => 'Poseedor de cuenta',
@@ -61,7 +61,7 @@ return [
     'sepamandate.sepa_valid_to' => 'Valida hasta',
     'sepamandate.reference' => 'Referencia de cuenta',
     // SettlementRun
-    'settlementrun.year' => 'A&ntilde;o',
+    'settlementrun.year' => 'Year',
     'settlementrun.month' => 'Mes',
     'settlementrun.created_at' => 'Creado el',
     'verified' => 'Verificado?',
@@ -70,16 +70,16 @@ return [
     // NetElement
     'netelement.id' => 'ID',
     'netelement.name' => 'Elemento de red',
-    'netelement.ip' => 'Direccion IP',
+    'netelement.ip' => 'IP Adress',
     'netelement.state' => 'Estado',
-    'netelement.pos' => 'Posicion',
+    'netelement.pos' => 'Position',
     // NetElementType
     'netelementtype.name' => 'Tipo de elemento de red',
     //HfcSnmp
     'parameter.oid.name' => 'Nombre OID',
     //Mibfile
     'mibfile.id' => 'ID',
-    'mibfile.name' => 'Nombre MIB',
+    'mibfile.name' => 'Mibfile',
     'mibfile.version' => 'Versión',
     // OID
     'oid.name_gui' => 'Etiqueta de GUI',
@@ -92,7 +92,7 @@ return [
     // MAIL
     'email.localpart' => 'Parte local',
     'email.index' => 'E-Mail primario?',
-    'email.greylisting' => 'Greylisting activo?',
+    'email.greylisting' => 'Greylisting active?',
     'email.blacklisting' => 'Lista negra habilitada?',
     'email.forwardto' => 'Reenviar a:',
     // CMTS
@@ -102,7 +102,7 @@ return [
     'cmts.company' => 'Fabricante',
     'cmts.type' => 'Tipo',
     // Contract
-    'contract.company' => 'Compa&ntilde;ia',
+    'contract.company' => 'Company',
     'contract.number' => 'Numero',
     'contract.firstname' => 'Nombres',
     'contract.lastname' => 'Apellidos',
@@ -121,7 +121,7 @@ return [
     'endpoint.ip' => 'IP',
     'endpoint.hostname' => 'Nombre de host',
     'endpoint.mac' => 'MAC',
-    'endpoint.description' => 'Descripcion',
+    'endpoint.description' => 'Description',
     // IpPool
     'ippool.id' => 'ID',
     'ippool.type' => 'Tipo',
