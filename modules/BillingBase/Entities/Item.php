@@ -116,7 +116,7 @@ class Item extends \BaseModel
      */
     public static function boot()
     {
-        Item::observe(new ItemObserver);
+        self::observe(new ItemObserver);
         parent::boot();
     }
 
@@ -243,7 +243,7 @@ class Item extends \BaseModel
         if (! $this->check_validity($billing_cycle, null, [$start, $end])) {
             ChannelLog::debug('billing', 'Item '.$this->product->name." ($this->id) is outdated", [$this->contract->id]);
 
-            return null;
+            return;
         }
 
         // Carbon::createFromTimestampUTC
@@ -384,7 +384,7 @@ class Item extends \BaseModel
         }
 
         if (! $ratio) {
-            return null;
+            return;
         }
 
         $this->count = $this->count ?: 1;

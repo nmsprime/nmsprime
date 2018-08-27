@@ -179,7 +179,7 @@ class Product extends \BaseModel
                 break;
 
             default:
-                return null;
+                return;
         }
 
         $ids = [];

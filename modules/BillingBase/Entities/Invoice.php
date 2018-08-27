@@ -62,7 +62,7 @@ class Invoice extends \BaseModel
     {
         parent::boot();
 
-        Invoice::observe(new InvoiceObserver);
+        self::observe(new InvoiceObserver);
     }
 
     /**
@@ -541,7 +541,7 @@ class Invoice extends \BaseModel
      */
     public static function remove_templatex_files($sepaacc = null)
     {
-        $invoices = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
+        $invoices = self::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
         if ($sepaacc) {
             $invoices = $invoices->where('sepaaccount_id', '=', $sepaacc->id);
         }
@@ -572,7 +572,7 @@ class Invoice extends \BaseModel
      */
     public static function delete_current_invoices($sepaaccount_id = 0)
     {
-        $query = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
+        $query = self::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
         if ($sepaaccount_id) {
             $query = $query->where('sepaaccount_id', '=', $sepaaccount_id);
         }
@@ -608,7 +608,7 @@ class Invoice extends \BaseModel
 
         \Log::info("Delete all CDRs older than $period Months");
 
-        $query = Invoice::where('type', '=', 'CDR')
+        $query = self::where('type', '=', 'CDR')
                 ->where('year', '<=', $target_time_o->__get('year'))
                 ->where('month', '<', $target_time_o->__get('month'));
 

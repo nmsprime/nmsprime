@@ -379,7 +379,7 @@ class DashboardController extends BaseController
     private static function get_new_tickets()
     {
         if (! Module::collections()->has('Ticketsystem')) {
-            return null;
+            return;
         }
 
         return Auth::user()->tickets()->where('state', '=', 'New')->get();
@@ -616,8 +616,6 @@ class DashboardController extends BaseController
             } catch (\Exception $e) {
             }
         }
-
-        return null;
 
         // links need to be in embedded style, like:
         //return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',

@@ -5,7 +5,7 @@ namespace Modules\Provvoipenvia\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
-class ProvvoipenviaDatabaseSeeder extends Seeder
+class ProvVoipEnviaDatabaseSeeder extends Seeder
 {
     /**
      * Run the database seeds.
