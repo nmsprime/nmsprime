@@ -25,7 +25,7 @@ class SettlementRun extends \BaseModel
     {
         parent::boot();
 
-        SettlementRun::observe(new SettlementRunObserver);
+        self::observe(new SettlementRunObserver);
     }
 
     /**
@@ -114,7 +114,7 @@ class SettlementRun extends \BaseModel
 
     public static function get_last_run()
     {
-        return SettlementRun::orderBy('id', 'desc')->get()->first();
+        return self::orderBy('id', 'desc')->get()->first();
     }
 
     /**

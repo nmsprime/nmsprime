@@ -61,7 +61,7 @@ function ss_docsis_cmts_cm_count($hostname, $snmp_community, $snmp_version, $snm
 
     /*Fields defined in docsIfCmtsCmStatusValue */
 
-    for ($i = 0; ($i < sizeof($totals)); $i++) {
+    for ($i = 0; ($i < count($totals)); $i++) {
         $row = each($totals);
 
         if ($row['key'] == 1) {
@@ -88,7 +88,7 @@ function reindex($arr)
 {
     $return_arr = [];
 
-    for ($i = 0; ($i < sizeof($arr)); $i++) {
+    for ($i = 0; ($i < count($arr)); $i++) {
         $return_arr[$i] = $arr[$i]['value'];
     }
 

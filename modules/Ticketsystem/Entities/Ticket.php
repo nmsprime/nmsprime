@@ -11,7 +11,7 @@ class Ticket extends \BaseModel
     public static function boot()
     {
         parent::boot();
-        Ticket::observe(new TicketObserver);
+        self::observe(new TicketObserver);
     }
 
     public static function view_headline()

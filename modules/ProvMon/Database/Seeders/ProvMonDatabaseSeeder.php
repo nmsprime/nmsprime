@@ -5,7 +5,7 @@ namespace Modules\ProvMon\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
-class ProvmonDatabaseSeeder extends Seeder
+class ProvMonDatabaseSeeder extends Seeder
 {
     /**
      * Run the database seeds.
