@@ -35,8 +35,6 @@ return [
     'product.price' => 'Precio',
     // Salesman
     'salesman.id' => 'ID',
-    'salesman.lastname' => 'Apellidos',
-    'salesman.firstname' => 'Nombres',
     'salesman_id' 		=> 'ID del vendedor',
     'salesman_firstname' => 'Nombre',
     'salesman_lastname' => 'Apellido',
@@ -49,6 +47,8 @@ return [
     'product_type' 		=> 'Tipo de Producto',
     'product_count' 	=> 'Contar',
     'charge' 			=> 'Cambiar',
+    'salesman.lastname' => 'Apellidos',
+    'salesman.firstname' => 'Nombres',
     'salesman_commission' => 'Comision',
     'sepaaccount_id' 	=> 'ID Cuenta SEPA',
     // SepaAccount
