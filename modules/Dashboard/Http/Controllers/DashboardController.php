@@ -617,6 +617,31 @@ class DashboardController extends BaseController
             }
         }
 
+        // add costcenter
+        if (\Module::collections()->has('BillingBase')) {
+            if (\Modules\BillingBase\Entities\CostCenter::count() == 0) {
+                return ['youtube' => null,
+                    'text' => '<li>Next: '.\HTML::linkRoute('CostCenter.create', 'Create a first Cost Center'), ];
+            }
+        }
+
+        // add Contract
+        if (\Module::collections()->has('ProvBase')) {
+            if (\Modules\ProvBase\Entities\Contract::count() == 0) {
+                return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=0&',
+                    'text' => '<li>Congratulations: now you can create a first '.\HTML::linkRoute('Contract.create', 'Contract'), ];
+            }
+        }
+
+        // add Modem
+        if (\Module::collections()->has('ProvBase')) {
+            if (\Modules\ProvBase\Entities\Modem::count() == 0) {
+                return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=40&',
+                    'text' => '<li>Congratulations: now you can create a first '.\HTML::linkRoute('Contract.edit', 'Modem', \Modules\ProvBase\Entities\Contract::first()), ];
+            }
+        }
+
+
         // crowdin - check if language is still supported, otherwise show crowdin link
         if (!in_array(\Auth::user()->language, config('app.supported_locale')))
             return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
