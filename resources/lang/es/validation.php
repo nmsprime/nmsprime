@@ -151,7 +151,7 @@ return [
         'excerpt' => 'extracto',
         'date' => 'fecha',
         'time' => 'hora',
-        'available' => 'Available',
-        'size' => 'Size',
+        'available' => 'Disponible',
+        'size' => 'Tamaño',
     ],
 ];
