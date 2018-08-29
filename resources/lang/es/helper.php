@@ -4,7 +4,7 @@ return [
  /*
   * Authentication and Base
   */
-    'translate'					=> 'You can help translating NMS PRIME at',
+    'translate'					=> 'Usted puede ayudar a traducir primer NMS en',
     'assign_role'					=> 'Asigna uno o más roles a este usuario. Los usuarios sin Rol no pueden usar el NMS porque no tienen Permisos.',
     'assign_users'					=> 'Asigna uno o más usuarios a este rol. Los cambios realizados aquí no son visibles en el GuiLog del usuario.',
     'assign_rank'					=> 'The rank of a role determines the ability to edit other users. <br \\>You can assign values from 0 to 100. (higher is better). <br \\>If a user has more than one role, the highest rank is used. <br \\>If the ability to update users is set, the rank is also checked. Only if the rank of the editor is higher, permission is granted. Furthermore, when creating or updating users, only roles with equal or lower rank can be assigned.',
