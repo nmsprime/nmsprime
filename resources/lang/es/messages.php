@@ -50,7 +50,7 @@ return [
     'Edit'						=> 'Editar',
     'Edit '						=> 'Editar',
     'Endpoints'					=> 'Punto final:',
-    'Endpoints List'			=> 'Endpoints List',
+    'Endpoints List'			=> 'Lista de Puntos finales',
     'Entry'						=> 'Entrada',
     'alert' 				=> 'Atencion!',
     'ALL' 					=> 'TODOS',
