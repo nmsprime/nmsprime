@@ -92,7 +92,7 @@ return [
     // MAIL
     'email.localpart' => 'Parte local',
     'email.index' => 'E-Mail primario?',
-    'email.greylisting' => 'Greylisting active?',
+    'email.greylisting' => '¿Activo listas de rechazo transitorio?',
     'email.blacklisting' => 'Lista negra habilitada?',
     'email.forwardto' => 'Reenviar a:',
     // CMTS
