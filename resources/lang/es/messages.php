@@ -38,7 +38,7 @@ return [
     'Date of installation address change'	=> 'Fecha de cambio de domicilio de instalación',
     'Delete'					=> 'Eliminar',
     'Day'						=> 'Día',
-    'Description'				=> 'Descripción 	',
+    'Description'				=> 'Descripción',
     'Device'					=> 'Dispositivo',
     'accCmd_notice_CDR' 	=> 'El Contrato :contract_nr [ID :contract_id] tiene registros de datos de llamadas pero no tiene asignada una tarifa Voip válida',
     'Device List'				=> 'Lista de dispositivos',
