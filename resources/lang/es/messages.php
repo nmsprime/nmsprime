@@ -181,7 +181,7 @@ return [
     'modem_eventlog_error'	=> 'Modem eventlog no encontrado',
     'modem_force_restart_button_title' => 'Solo reinicia el modem. No guarda algun dato cambiado!',
     'CDR retention period' 		=> 'Período de retención de CDR',
-    'Day of Requested Collection Date'	=> 'Day of Requested Collection Date',
+    'Day of Requested Collection Date'	=> 'Fecha de facturación',
     'Tax in %'					=> 'Impuestos en %',
     'Invoice Number Start'		=> 'Inicio de número de facturación',
     'Split Sepa Transfer-Types'	=> 'Split Sepa Transfer-Types',
