@@ -568,7 +568,7 @@ class DashboardController extends BaseController
         if (\Module::collections()->has('ProvBase')) {
             if (\Modules\ProvBase\Entities\Cmts::count() == 0) {
                 return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=159&',
-                    'text' => '<li>Next: '.\HTML::linkRoute('Cmts.create', 'Create CMTS'), ];
+                        'text' => '<li>Next: '.\HTML::linkRoute('Cmts.create', 'Create CMTS'), ];
             }
         }
 
@@ -576,7 +576,7 @@ class DashboardController extends BaseController
         if (\Module::collections()->has('ProvBase')) {
             if (\Modules\ProvBase\Entities\IpPool::count() == 0) {
                 return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
-                    'text' => '<li>Next: '.\HTML::linkRoute('Cmts.edit', 'Create IP-Pools',
+                        'text' => '<li>Next: '.\HTML::linkRoute('Cmts.edit', 'Create IP-Pools',
                         \Modules\ProvBase\Entities\Cmts::first()), ];
             }
         }
@@ -585,7 +585,7 @@ class DashboardController extends BaseController
         if (\Module::collections()->has('ProvBase')) {
             if (\Modules\ProvBase\Entities\Qos::count() == 0) {
                 return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=380&',
-                    'text' => '<li>Next: '.\HTML::linkRoute('Qos.create', 'Create QoS-Profile'), ];
+                        'text' => '<li>Next: '.\HTML::linkRoute('Qos.create', 'Create QoS-Profile'), ];
             }
         }
 
@@ -593,7 +593,7 @@ class DashboardController extends BaseController
         if (\Module::collections()->has('BillingBase')) {
             if (\Modules\BillingBase\Entities\Product::where('type', '=', 'Internet')->count() == 0) {
                 return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=425&',
-                    'text' => '<li>Next: '.\HTML::linkRoute('Product.create', 'Create Billing Product'), ];
+                        'text' => '<li>Next: '.\HTML::linkRoute('Product.create', 'Create Billing Product'), ];
             }
         }
 
@@ -601,7 +601,7 @@ class DashboardController extends BaseController
         if (\Module::collections()->has('ProvBase')) {
             if (\Modules\ProvBase\Entities\Configfile::where('device', '=', 'cm')->where('public', '=', 'yes')->count() == 0) {
                 return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=500&',
-                    'text' => '<li>Next: '.\HTML::linkRoute('Configfile.create', 'Create Configfile'), ];
+                      'text' => '<li>Next: '.\HTML::linkRoute('Configfile.create', 'Create Configfile'), ];
             }
         }
 
@@ -611,14 +611,19 @@ class DashboardController extends BaseController
                 \DB::connection('mysql-root')->getPdo();
                 if (\DB::connection()->getDatabaseName()) {
                     return ['youtube' => 'https://www.youtube.com/embed/dZWjeL-LmG8',
-                    'text' => '<li>Danger! Run: mysql_secure_installation in bash as root!', ];
+                            'text' => '<li>Danger! Run: mysql_secure_installation in bash as root!', ];
                 }
             } catch (\Exception $e) {
             }
         }
 
+        // check if nominatim email address is set, otherwise osm geocoding won't be possible
+        if (env('OSM_NOMINATIM_EMAIL') == '') {
+            return ['text' => '<li>Next: Set an email address (OSM_NOMINATIM_EMAIL) in /etc/nmsprime/env/global.env to enable geocoding for modems</li>'];
+        }
+
         // links need to be in embedded style, like:
         //return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
-        //		'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
+        //        'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
     }
 }

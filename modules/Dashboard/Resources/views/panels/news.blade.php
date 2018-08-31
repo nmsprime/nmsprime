@@ -1,5 +1,5 @@
 
-@if ($data['news']['text'])
+@if (isset($data['news']['text']))
 	<div>
 		<h4>
 		{!!$data['news']['text']!!}
@@ -9,7 +9,7 @@
 @endif
 
 
-@if ($data['news']['youtube'])
+@if (isset($data['news']['youtube']))
 	<div>
 		<iframe class="col-sm-12" height="350px" width="350" frameborder="0" wmode="Opaque" allowfullscreen=""
 				src="{{$data['news']['youtube']}}?wmode=transparent">
