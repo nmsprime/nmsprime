@@ -41,27 +41,23 @@ class HfcBaseController extends BaseController
         }
     }
 
-    /*
+    /**
      * KML Upload Array: Generate the KML file array
      *
-     * @param trees: The Tree Objects to be displayed, with ->get() call
-     * @return array of KML files, like ['file', 'descr']
+     * @param Collection|NetElement $trees
+     * @return Collection KML files, like ['file', 'descr']
      *
-     * @author: Torsten Schmidt
+     * @author Torsten Schmidt, Christian Schramm
      */
     public function kml_file_array($trees)
     {
-        $a = [];
-
-        foreach ($trees as $tree) {
-            if ($tree->kml_file != '') {
-                array_push($a, [
-                    'file' => route('HfcBase.get_file', ['type' => 'kml_static', 'filename' => basename($tree->kml_file)]),
-                    'descr' => $tree->kml_file,
-                ]);
-            }
-        }
-
-        return $a;
+        return $trees->filter(function ($tree) {
+            return $tree->kml_file != '';
+        })->map(function ($tree) {
+            return [
+                'file' => route('HfcBase.get_file', ['type' => 'kml_static', 'filename' => basename($tree->kml_file)]),
+                'descr' => $tree->kml_file,
+            ];
+        });
     }
 }
