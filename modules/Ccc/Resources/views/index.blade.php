@@ -26,7 +26,7 @@
 
 @section('content')
 
-	@include ('bootstrap.panel', array ('content' => 'content_left', 'invoice_links' => $invoice_links, 'view_header' => trans('messages.Invoices'), 'md' => 4))
+	@include ('bootstrap.panel', array ('content' => 'content_left', 'invoice_links' => $invoice_links, 'view_header' => trans('messages.Invoices'), 'md' => 8))
 
 	@if (!$emails->isEmpty())
 		@include ('bootstrap.panel', array ('content' => 'content_emails', 'emails' => $emails, 'view_header' => App\Http\Controllers\BaseViewController::translate_label('E-Mail Address'), 'md' => 4))
