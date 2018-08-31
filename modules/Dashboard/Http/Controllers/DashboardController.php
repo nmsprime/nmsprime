@@ -617,6 +617,11 @@ class DashboardController extends BaseController
             }
         }
 
+        // check if nominatim email address is set, otherwise osm geocoding won't be possible
+        if (env('OSM_NOMINATIM_EMAIL') == '') {
+            return ['text' => '<li>Next: Set an email address (OSM_NOMINATIM_EMAIL) in /etc/nmsprime/env/global.env to enable geocoding for modems</li>'];
+        }
+
         // links need to be in embedded style, like:
         //return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
         //        'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
