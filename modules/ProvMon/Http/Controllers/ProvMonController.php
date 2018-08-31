@@ -138,6 +138,7 @@ class ProvMonController extends \BaseController
 
         // this can be done irrespective of device online state
         $measure = $this->realtimePPP($modem);
+        // Pre-equalization data
         $preeq = $modem->get_preq_data();  //calling the function get_preq_data() from the modem and instantiating it to class modem
 
         if ($online) {

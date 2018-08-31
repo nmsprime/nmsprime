@@ -29,16 +29,16 @@ class TreeTopographyController extends HfcBaseController
     public static $path_images = 'modules/hfcbase/kml/';
 
     /*
-	@author: John Adebayo
-	Private property determines the range of intensity of the Heatmap, for the amplitude values
-	of the modem
-	$min_value is the minimum for the database query
-	$max_value is the max for the database query
-	*/
-	private $min_value;
-	private $max_value;
+    @author: John Adebayo
+    Private property determines the range of intensity of the Heatmap, for the amplitude values
+    of the modem
+    $min_value is the minimum for the database query
+    $max_value is the max for the database query
+    */
+    private $min_value;
+    private $max_value;
 
-	/*
+    /*
      * Constructor: Set local vars
      */
     public function __construct()
@@ -49,23 +49,23 @@ class TreeTopographyController extends HfcBaseController
         return parent::__construct();
     }
 
-	/*
-	@author: John Adebayo
-	This function sets the value of the display in percentage
-	e.g 100% = 5 i.e the variable max_value above
-	*/
-	function set_maxmin()
-	{
-		//\Input::all();
-		//$max = \Input::get('max');
-		//$percent = \Input::get('percent');
-		//$max = 5; $percent = 20;
-		//$min = $percent / 100 * $max;
-		$min = 0;
-		$max = 5;
-		$this->max_value = $max;
-		$this->min_value = $min;
-	}
+    /*
+    @author: John Adebayo
+    This function sets the value of the display in percentage
+    e.g 100% = 5 i.e the variable max_value above
+    */
+    public function set_maxmin()
+    {
+        //\Input::all();
+        //$max = \Input::get('max');
+        //$percent = \Input::get('percent');
+        //$max = 5; $percent = 20;
+        //$min = $percent / 100 * $max;
+        $min = 0;
+        $max = 5;
+        $this->max_value = $max;
+        $this->min_value = $min;
+    }
 
     /**
      * Show Cluster or Network Entity Relation Diagram
@@ -110,28 +110,27 @@ class TreeTopographyController extends HfcBaseController
         $view_header = 'Topography';
         $body_onload = 'init_for_map';
 
-		//temporary heat map data @author: John Adebayo
-		$dim = [];
-		$point = [];
-		$thresh = $this->set_maxmin();
-		//$work = \DB::table('modem')->max('fft_max');
-		//$work = \DB::table('modem')->where('fft_max', '=', 6.48)->select('id')->get();
-		//dd($work);
-		$max = \DB::table('modem')->where('fft_max' , '>' , $this->min_value)->where('fft_max' , '<', $this->max_value)->orderBy('street')->limit(1000)->max('fft_max');
-		foreach (\Modules\ProvBase\Entities\Modem::where('fft_max' , '>' , $this->min_value)->where('fft_max' , '<', $this->max_value)->orderBy('street')->limit(1000)->get() as $modem => $value) {
-			$point[] = $value['y'];
-			$point[] = $value['x'];
-			$point[] = $value['tdr']."";
-			$temp = round($value['tdr'] / 111111.1, 4);
-					for ($i=0; $i <= 360 ; $i+=10) {
-					$dim[] = $temp * cos($i) + $value['y'];
-					$dim[] = $temp * sin($i) + $value['x'];
-						$dim[] = $value['fft_max'] / $max * \Input::get('percent')/100;
-				}
-			}
+        $dim = [];
+        $point = [];
+        $thresh = $this->set_maxmin();
+        //$work = \DB::table('modem')->max('fft_max');
+        //$work = \DB::table('modem')->where('fft_max', '=', 6.48)->select('id')->get();
+        //dd($work);
+        $max = \DB::table('modem')->where('fft_max', '>', $this->min_value)->where('fft_max', '<', $this->max_value)->orderBy('street')->limit(1000)->max('fft_max');
+        foreach (\Modules\ProvBase\Entities\Modem::where('fft_max', '>', $this->min_value)->where('fft_max', '<', $this->max_value)->orderBy('street')->limit(1000)->get() as $modem => $value) {
+            $point[] = $value['y'];
+            $point[] = $value['x'];
+            $point[] = $value['tdr'].'';
+            $temp = round($value['tdr'] / 111111.1, 4);
+            for ($i = 0; $i <= 360; $i += 10) {
+                $dim[] = $temp * cos($i) + $value['y'];
+                $dim[] = $temp * sin($i) + $value['x'];
+                $dim[] = $value['fft_max'] / $max * \Input::get('percent') / 100;
+            }
+        }
 
-		$dim = array_chunk($dim, 3);
-		$point = array_chunk($point, 3);
+        $dim = array_chunk($dim, 3);
+        $point = array_chunk($point, 3);
 
         return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact(
             'file', 'tabs', 'field', 'search', 'mpr', 'kmls', 'body_onload', 'view_header', 'route_name', 'dim', 'point'
