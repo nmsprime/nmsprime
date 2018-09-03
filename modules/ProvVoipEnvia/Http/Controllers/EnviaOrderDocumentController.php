@@ -2,7 +2,10 @@
 
 namespace Modules\ProvVoipEnvia\Http\Controllers;
 
+use Auth;
+use Input;
 use Bouncer;
+use Storage;
 use Illuminate\Support\Facades\View;
 use Illuminate\Auth\AuthenticationException;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
@@ -35,8 +38,8 @@ class EnviaOrderDocumentController extends \BaseController
      */
     public function view_form_fields($model = null)
     {
-        $enviaorder_id = \Input::get('enviaorder_id', null);
-        /* dd($model); */
+        $enviaorder_id = Input::get('enviaorder_id', null);
+
         $ret = [
             ['form_type' => 'select', 'name' => 'enviaorder_id', 'description' => 'envia TEL Order', 'hidden' => '1', 'init_value' => $enviaorder_id],
             ['form_type' => 'select', 'name' => 'document_type', 'description' => 'Document type', 'value' => EnviaOrderDocument::getPossibleEnumValues('document_type')],
@@ -55,7 +58,7 @@ class EnviaOrderDocumentController extends \BaseController
 
         // check and handle uploaded documents
         // perform only if file is uploaded, otherwise let the model decide what to do
-        if (\Input::hasFile('document_upload')) {
+        if (Input::hasFile('document_upload')) {
             $this->_handle_document_upload();
         }
 
@@ -81,7 +84,7 @@ class EnviaOrderDocumentController extends \BaseController
 
         $filepath = $this->document_base_path.'/'.$contract_id.'/'.$filename;
 
-        $file = \Storage::get($filepath);
+        $file = Storage::get($filepath);
 
         /* return (new \Response($file, 200)) */
         /* 	->header('Content-Type', $enviaorderdocument->mime_type); */
@@ -129,18 +132,18 @@ class EnviaOrderDocumentController extends \BaseController
     {
 
         // build path to store document in – this is the base path with subdir contract ID
-        $enviaorder_id = \Input::get('enviaorder_id', -1);
+        $enviaorder_id = Input::get('enviaorder_id', -1);
         if ($enviaorder_id < 0) {
             throw new \InvalidArgumentException('No enviaorder_id given');
         }
-        \Input::merge(['enviaorder_id' => $enviaorder_id]);
+        Input::merge(['enviaorder_id' => $enviaorder_id]);
 
         $contract_id = EnviaOrder::findOrFail($enviaorder_id)->contract->id;
         $document_path = $this->document_base_path.'/'.$contract_id;
 
         // build the filename: ISODate__contractID__documentType.ext
-        $document_type = \Input::get('document_type');
-        $original_filename = \Input::file('document_upload')->getClientOriginalName();
+        $document_type = Input::get('document_type');
+        $original_filename = Input::file('document_upload')->getClientOriginalName();
 
         // extract filename suffix (if existing)
         $parts = explode('.', $original_filename);
@@ -152,12 +155,12 @@ class EnviaOrderDocumentController extends \BaseController
 
         $new_filename = date('Y-m-d\tH-i-s').'__'.$contract_id.'__'.$document_type.$suffix;
         $new_filename = \Str::lower($new_filename);
-        \Input::merge(['filename' => $new_filename]);
+        Input::merge(['filename' => $new_filename]);
         $new_filename_complete = $document_path.'/'.$new_filename;
 
         // get MIME type and store for use in model
-        $mime_type = \Input::file('document_upload')->getMimeType();
-        \Input::merge(['mime_type' => $mime_type]);
+        $mime_type = Input::file('document_upload')->getMimeType();
+        Input::merge(['mime_type' => $mime_type]);
 
         // if MIME type is forbidden: return instantly (don't move uploaded file to destination)
         $allowed_mimetypes = EnviaOrderDocument::$allowed_mimetypes;
@@ -166,8 +169,8 @@ class EnviaOrderDocumentController extends \BaseController
         }
 
         // move uploaded file to document_path (after making directories)
-        \Storage::makeDirectory($document_path);
-        \Storage::put($new_filename_complete, \File::get(\Input::file('document_upload')));
+        Storage::makeDirectory($document_path);
+        Storage::put($new_filename_complete, \File::get(Input::file('document_upload')));
 
         // TODO: should we chmod the file to readonly??
     }
