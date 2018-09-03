@@ -4,6 +4,7 @@ namespace Modules\ProvVoipEnvia\Http\Controllers;
 
 use Bouncer;
 use Illuminate\Support\Facades\View;
+use Illuminate\Auth\AuthenticationException;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
 
@@ -70,8 +71,10 @@ class EnviaOrderDocumentController extends \BaseController
     public function show($id)
     {
         if (Bouncer::cannot('view', EnviaOrderDocument::class) &&
-            Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia'));
-        throw new AuthException('Access to EnviaOrderDocument not allowed for user '.Auth::user()->login_name.'.');
+            Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia')) {
+                throw new AuthenticationException ('Access to EnviaOrderDocument not allowed for user '. Auth::user()->login_name .'.');
+        }
+
         $enviaorderdocument = EnviaOrderDocument::findOrFail($id);
         $contract_id = $enviaorderdocument->enviaorder->contract_id;
         $filename = $enviaorderdocument->filename;
@@ -94,7 +97,7 @@ class EnviaOrderDocumentController extends \BaseController
     {
         if (Bouncer::cannot('view', EnviaOrderDocument::class) &&
             Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia')) {
-            throw new AuthException('Access to EnviaOrderDocument not allowed for user '.Auth::user()->login_name.'.');
+            throw new AuthenticationException ('Access to EnviaOrderDocument not allowed for user '. Auth::user()->login_name .'.');
         }
         $document = EnviaOrderDocument::findOrFail($id);
 
