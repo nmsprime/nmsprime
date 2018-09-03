@@ -4,29 +4,16 @@
 
 
     {{-- begin #header --}}
-    <div id="header" class="header navbar navbar-default navbar-fixed-top">
+    <div id="header" class="header navbar navbar-default navbar-fixed-top d-flex">
       <!-- begin container-fluid -->
-      <div class="container-fluid">
-        <!-- begin mobile sidebar expand / collapse button -->
-        <div class="navbar-header">
-          <a href="javascript:;" class="navbar-brand">{{ trans('messages.ccc') }}</a>
-          <button type="button" class="navbar-toggle" data-click="sidebar-toggled">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-        </div>
-        <!-- end mobile sidebar expand / collapse button -->
-
-        <div class="col-md-5">
-          <br>
-          <h5>
-              <a href="{{route('HomeCcc')}}">{{ trans('messages.home') }}</a>
-          </h5>
+      <div class="container-fluid d-flex align-items-center">
+        <a href="javascript:;" class="navbar-brand d-none d-md-block">{{ trans('messages.ccc') }}</a>
+        <div class="d-flex justify-self-start" style="flex: 1;">
+          <h5> <a href="{{route('HomeCcc')}}" style="color: #333;">{{ trans('messages.home') }}</a> </h5>
         </div>
 
         <!-- global search form -->
-        <div class="nav-item dropdown m-r-20">
+        <div class="nav-item dropdown justify-self-end">
           <a id="navbarDropdown"
             class="nav-link dropdown-toggle"
             href="#"
@@ -34,11 +21,11 @@
             data-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false">
-            <i class="fa fa-user-circle-o fa-lg d-inline" aria-hidden="true"></i>
-            <span class="d-none d-sm-none d-md-inline">
+            <i class="fa fa-user-circle-o fa-lg d-inline" aria-hidden="true" style="color: #333;"></i>
+            <span class="d-none d-sm-none d-md-inline" style="color: #333;">
               {{ Auth::guard('ccc')->user()->first_name.' '.Auth::guard('ccc')->user()->last_name}}
             </span>
-            <b class="caret"></b>
+            <b class="caret" style="color: #333;"></b>
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown" style="right: 0;left:auto;">
             <a class="dropdown-item" href="{{ route('CustomerPsw') }}">
