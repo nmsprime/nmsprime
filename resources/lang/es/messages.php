@@ -189,7 +189,7 @@ return [
     'e.g.: String - {number}'	=> 'por ejemplo: String - {number}',
     'Item Termination only end of month'=> 'Item Termination only end of month',
     'Language for settlement run' => 'Idioma del contrato',
-    'Uncertain start/end dates for tariffs' => 'Uncertain start/end dates for tariffs',
+    'Uncertain start/end dates for tariffs' => 'Fechas de inicio y fin incierto para los aranceles',
     'modem_monitoring_error'=> 'Esto podría deberse a que el módem no estaba en línea hasta ahora. Tenga en cuenta que los diagramas solo están disponibles
 desde el punto en que un módem estaba en línea. Si todos los diagramas no se muestran correctamente, entonces debe ser un
  problema más grande y debería haber una mala configuración de cactus. Por favor, considere comunicar al administrador en problemas mayores.',
@@ -204,7 +204,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'DHCP Max Lease Time'		=> 'Tiempo máximo de Arrendamiento del DHCP ',
     'Start ID Contracts'		=> ' ID Inicio de contrato',
     'Start ID Modems'			=> 'Inicio de ID del CableModem',
-    'Start ID Endpoints'		=> 'Inicio de ID para terminales',
+    'Start ID Endpoints'		=> 'ID de Inicio para terminales "Endpoints"',
     'Downstream rate coefficient' => 'Coeficiente de velocidad de descarga',
     'Upstream rate coefficient' => 'Coeficiente de velocidad de subida',
     'modem_no_diag'			=> 'Diagrams no disponibles',
@@ -451,8 +451,8 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Null'                      => 'Null',
     'generic'                   => 'genérico',
     'network'                   => 'network',
-    'vendor'                    => 'vendor',
-    'user'                      => 'user',
+    'vendor'                    => 'fabricante',
+    'user'                      => 'usuario',
     'Yes'                       => 'Si',
     'No'                        => 'No',
 ];
