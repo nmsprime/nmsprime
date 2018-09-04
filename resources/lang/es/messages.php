@@ -188,7 +188,7 @@ return [
     'Mandate Reference'			=> 'Mandate Reference',
     'e.g.: String - {number}'	=> 'por ejemplo: String - {number}',
     'Item Termination only end of month'=> 'Item Termination only end of month',
-    'Language for settlement run' => 'Language for settlement run',
+    'Language for settlement run' => 'Idioma del contrato',
     'Uncertain start/end dates for tariffs' => 'Uncertain start/end dates for tariffs',
     'modem_monitoring_error'=> 'Esto podría deberse a que el módem no estaba en línea hasta ahora. Tenga en cuenta que los diagramas solo están disponibles
 desde el punto en que un módem estaba en línea. Si todos los diagramas no se muestran correctamente, entonces debe ser un
