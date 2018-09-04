@@ -193,7 +193,7 @@ return [
     'modem_monitoring_error'=> 'Esto podría deberse a que el módem no estaba en línea hasta ahora. Tenga en cuenta que los diagramas solo están disponibles
 desde el punto en que un módem estaba en línea. Si todos los diagramas no se muestran correctamente, entonces debe ser un
  problema más grande y debería haber una mala configuración de cactus. Por favor, considere comunicar al administrador en problemas mayores.',
-    'Connection Info Template'	=> 'Connection Info Template',
+    'Connection Info Template'	=> 'Plantilla de información de conexión',
     'Upload Template'			=> 'Subir plantilla',
     'SNMP Read Only Community'	=> 'SNMP de solo lectura',
     'SNMP Read Write Community'	=> 'SNMP de lectura y escritura',
@@ -213,7 +213,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'modem_lease_valid' 	=> 'Modem tiene un Arrendamientos dhcp valido',
     'modem_log_error' 		=> 'Modem no fue registrado en el Servidor - Ningun registro encontrado',
     'modem_configfile_error'=> 'Archivo de configuracion del Modem no hallado',
-    'Academic Degree'			=> 'Academic Degree',
+    'Academic Degree'			=> 'Grado académico',
     'modem_offline'			=> 'Modem esta Offline',
     'Contract number'			=> 'Número de contrato',
     'Contract Nr'				=> 'Número de contrato',
@@ -243,7 +243,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Active from start date' 	=> 'Activo a partir de la fecha de inicio',
     'Valid from'				=> 'Válido desde',
     'Valid to'					=> 'Válido hasta',
-    'Valid from fixed'			=> 'Valid from fixed',
+    'Valid from fixed'			=> ' Activo desde la fecha de inicio',
     'Valid to fixed'			=> 'Valid to fixed',
     'modem_statistics'		=> 'Cifra Online / Offline Modems',
     'Configfile'				=> 'Archivo de configuracion',
