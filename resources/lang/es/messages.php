@@ -186,7 +186,7 @@ return [
     'Invoice Number Start'		=> 'Inicio de número de facturación',
     'Split Sepa Transfer-Types'	=> 'Dividir los tipos de transferencia Sepa',
     'Mandate Reference'			=> 'Mandate Reference',
-    'e.g.: String - {number}'	=> 'e.g.: String - {number}',
+    'e.g.: String - {number}'	=> 'por ejemplo: String - {number}',
     'Item Termination only end of month'=> 'Item Termination only end of month',
     'Language for settlement run' => 'Language for settlement run',
     'Uncertain start/end dates for tariffs' => 'Uncertain start/end dates for tariffs',
