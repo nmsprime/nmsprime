@@ -260,34 +260,34 @@ return [
         //SEPA-Konto
         'Assigned'  				=> 'Zugewiesen',
         'Button_Create SEPA Account'	=> 'Neues SEPA-Konto', //Workaround decide which one to use
-        'SEPA Account' 				=> 'SEPA-Account',
-        'Create'					=> 'Create ',
-        'Edit'						=> 'Edit ',
+        'SEPA Account' 				=> 'SEPA-Konto',
+        'Create'					=> 'Erstelle ',
+        'Edit'						=> 'Bearbeite ',
         'Button_Create SepaAccount'		=> 'Neues SEPA-Konto',
 
     //Provisioning
         //Contract
-        'Button_Create Contract'		=> 'Create Contract',
-        'Button_Create SepaMandate'		=> 'Create SEPA-Mandate',
+        'Button_Create Contract'		=> 'Vertrag erstellen',
+        'Button_Create SepaMandate'		=> 'SEPA-Mandat erstellen',
         // //Modems
-        'Button_Create Modem'			=> 'Create Modem',
+        'Button_Create Modem'			=> 'Modem erstellen',
         // //Endpoints
-        'Button_Create Endpoints'		=> 'Create Endpoints',
+        'Button_Create Endpoints'		=> 'Endpunkt erstellen',
         //MTA
         'Button_Create Mta'				=> 'Neues MTA',
         // //Phonenumber
         'Button_Create Phone tariffs'	=> 'Neuer Telefontarif',
         // //Configfiles
-        'Button_Create Configfiles'		=> 'Create Configfile',
+        'Button_Create Configfiles'		=> 'Konfigurationsdatei erstellen',
         // //QoS
-        'Button_Create Settlement Run'	=> 'Create Settlement Run',
-        'Button_Rerun Accounting Command' => 'Rerun Accounting Command',
-        'Button_Create QoS'				=> 'Create QoS-Rule',
+        'Button_Create Settlement Run'	=> 'Abrechnungslauf erstellen',
+        'Button_Rerun Accounting Command' => 'Rechnungsführung neu starten',
+        'Button_Create QoS'				=> 'QoS-Regel erstellen',
         // //CMTS
-        'Button_Create CMTS'			=> 'Create CMTS',
+        'Button_Create CMTS'			=> 'CMTS anlegen',
         // //IpPool
-        'Button_Create IpPool'			=> 'Create IpPool', //workaround
-        'Button_Create IP-Pools'		=> 'Create IpPools',
+        'Button_Create IpPool'			=> 'IpPool anlegen', //workaround
+        'Button_Create IP-Pools'		=> 'IpPool anlegen',
 
 // DASHBOARD
     'Dashboard_Contracts'			=> 'AKTIVE VERTRÄGE',
@@ -327,7 +327,7 @@ return [
     'Ticket_Priority_Critical' => 'Kritisch',
     'Numberrange_Start' => 'Beginn',
     'Numberrange_End' => 'Ende',
-    'Numberrange_Suffix' => 'Suffix',
+    'Numberrange_Suffix' => 'Vorzeichen',
     'Numberrange_Prefix' => 'Präfix',
     'Numberrange_Type' => 'Typ',
 ];
