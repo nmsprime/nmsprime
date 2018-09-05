@@ -441,7 +441,7 @@ return [
     'Once'                      => 'Once',
     'Monthly'                   => 'Monatlich',
     'Quarterly'                 => 'Vierteljährlich',
-    'Yearly'                    => 'Yearly',
+    'Yearly'                    => 'Jährlich',
     'NET'                       => 'NET',
     'CMTS'                      => 'CMTS',
     'DATA'                      => 'DATA',
