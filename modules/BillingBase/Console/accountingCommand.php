@@ -5,6 +5,7 @@ namespace Modules\BillingBase\Console;
 use DB;
 use Storage;
 use ChannelLog as Log;
+use Illuminate\Bus\Queueable;
 use Illuminate\Console\Command;
 use Illuminate\Queue\SerializesModels;
 use Modules\BillingBase\Entities\Item;
@@ -12,7 +13,6 @@ use Modules\ProvBase\Entities\Contract;
 use Illuminate\Queue\InteractsWithQueue;
 use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Entities\Product;
-use Collective\Bus\Contracts\SelfHandling;
 use Modules\BillingBase\Entities\Salesman;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use App\Http\Controllers\BaseViewController;
@@ -25,9 +25,9 @@ use Modules\BillingBase\Entities\AccountingRecord;
 use Symfony\Component\Console\Input\InputArgument;
 use Modules\BillingBase\Http\Controllers\SettlementRunController;
 
-class accountingCommand extends Command implements SelfHandling, ShouldQueue
+class accountingCommand extends Command implements ShouldQueue
 {
-    use InteractsWithQueue, SerializesModels;
+    use InteractsWithQueue, Queueable, SerializesModels;
 
     /**
      * The console command & table name, description, data arrays
