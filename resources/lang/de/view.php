@@ -8,7 +8,7 @@ return [
 //jQuery
         //Translations for this at https://datatables.net/plug-ins/i18n/
         'jQuery_sEmptyTable'		=> 'Keine Daten in der Tabelle vorhanden',
-        'Search_Search ...'			=> 'Search ...',
+        'Search_Search ...'			=> 'Suche...',
         'jQuery_sInfo'				=> '_START_ bis _END_ von _TOTAL_ Einträgen',
         'jQuery_sInfoEmpty'			=> '0 bis 0 von 0 Einträgen',
         'jQuery_sInfoFiltered'		=> '(gefiltert von _MAX_ Einträgen)',
@@ -24,7 +24,7 @@ return [
         'jQuery_PaginatesNext'		=> 'Nächste',
         'jQuery_PaginatesLast'		=> 'Letzte',
         'jQuery_sLast'				=> ':sSortDescending aktivieren, um Spalte absteigend zu sortieren',
-        'jQuery_sLast'				=> ': activate to sort column descending',
+        'jQuery_sLast'				=> ': aktivieren, um die Spalte absteigend zu sortieren',
         'jQuery_All'				=> 'Alle',
         'jQuery_Print'				=> 'Drucken',
         'jQuery_colvis'				=> 'Spaltensichtbarkeit',
@@ -69,7 +69,7 @@ return [
 //HEADER
         'Menu_CDRs'					=> 'CDRs',
         'Menu_Tickets'				=> 'Tickets',
-        'Menu_Comment'				=> 'Comments',
+        'Menu_Comment'				=> 'Kommentare',
     //General
         'Header_GlobalSearch'		=> 'Systemweite Suche',
         'Header_Overview'			=> 'Übersicht',
@@ -79,7 +79,7 @@ return [
     //BillingBase
         //Product List
         'Header_Mpr'				=> 'MPR|MPRs',
-        'Header_Modem Positioning Rule' => 'Modem Positioning Rule|Modem Positioning Rules',
+        'Header_Modem Positioning Rule' => 'Modem Positionierungsregel|Modem Positionierungsregeln',
         'Header_EditModem Positioning Rule' => 'Edit Modem Positioning Rule',
         'Header_MprGeopos'			=> 'MPR Geoposition|MPR Geopositions',
         'Header_Modem Positioning Rule Geoposition'	=> 'Modem Positioning Rule Geoposition|Modem Positioning Rule Geopositions',
