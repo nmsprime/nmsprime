@@ -274,7 +274,7 @@ return [
         // //Endpoints
         'Button_Create Endpoints'		=> 'Endpunkt erstellen',
         //MTA
-        'Button_Create Mta'				=> 'Neues MTA',
+        'Button_Create Mta'				=> 'MTA erstellen',
         // //Phonenumber
         'Button_Create Phone tariffs'	=> 'Neuer Telefontarif',
         // //Configfiles
@@ -311,7 +311,7 @@ return [
 
 //
 // Contract
-    'Dashboard_Net Income'			=> 'NETTOERLÖSE',
+    'Dashboard_Net Income'			=> 'Net Income',
 //
     'Contract_Numberrange_Failure' => 'Keine freie Vertragsnummer für die gewählte Kostenstelle gefunden.',
 
