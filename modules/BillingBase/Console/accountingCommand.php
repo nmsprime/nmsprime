@@ -590,7 +590,7 @@ class accountingCommand extends Command implements ShouldQueue
                 $calls[$customer_nr][] = $data;
             } else {
                 // cumulate price of calls that can not be assigned to any contract
-                if (! isset($unassigned[$arr[0]])) {
+                if (! isset($unassigned[$arr[0]][$data['calling_nr']])) {
                     $unassigned[$arr[0]][$data['calling_nr']] = ['count' => 0, 'price' => 0];
                 }
 
@@ -758,7 +758,7 @@ class accountingCommand extends Command implements ShouldQueue
                 $calls[$customer_nr][] = $data;
             } else {
                 // cumulate price of calls that can not be assigned to any contract
-                if (! isset($unassigned[$arr[7]])) {
+                if (! isset($unassigned[$arr[7]][$data['calling_nr']])) {
                     $unassigned[$arr[7]][$data['calling_nr']] = ['count' => 0, 'price' => 0];
                 }
 
