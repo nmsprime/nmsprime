@@ -67,7 +67,7 @@ return [
         'Menu_UserRoleSettings'		=> 'Nutzerrollen',
 
 //HEADER
-        'Menu_CDRs'					=> 'CDRs',
+        'Menu_CDRs'					=> 'EVNs',
         'Menu_Tickets'				=> 'Tickets',
         'Menu_Comment'				=> 'Kommentare',
     //General
@@ -78,12 +78,12 @@ return [
     //Module specific
     //BillingBase
         //Product List
-        'Header_Mpr'				=> 'MPR|MPRs',
+        'Header_Mpr'				=> 'MPR|MPR',
         'Header_Modem Positioning Rule' => 'Modem Positionierungsregel|Modem Positionierungsregeln',
-        'Header_EditModem Positioning Rule' => 'Edit Modem Positioning Rule',
-        'Header_MprGeopos'			=> 'MPR Geoposition|MPR Geopositions',
-        'Header_Modem Positioning Rule Geoposition'	=> 'Modem Positioning Rule Geoposition|Modem Positioning Rule Geopositions',
-        'Header_EditModem Positioning Rule Geoposition' => 'Edit Modem Positioning Rule Geoposition',
+        'Header_EditModem Positioning Rule' => 'Modem Positionierungsregel bearbeiten',
+        'Header_MprGeopos'			=> 'MPR Geoposition|MPR Geopositionen',
+        'Header_Modem Positioning Rule Geoposition'	=> 'Modem Positionierungsregel Geoposition|Modem Positionierungsregel Geopositionen',
+        'Header_EditModem Positioning Rule Geoposition' => 'Modem Positionierungsregel Geoposition bearbeiten',
     //Global
         //Logs
         'Header_Logs'				=> 'Logs',
@@ -92,16 +92,16 @@ return [
     //Billing Base
         //Prduct Entry
         'Header_Product Entry'		=> 'Produkt|Produktangebot',
-        'Header_Users'				=> 'User|Users',
-        'Header_EditUsers'			=> 'Edit User',
+        'Header_Users'				=> 'Benutzer|Benutzer',
+        'Header_EditUsers'			=> 'Benutzer bearbeiten',
         'Header_EditProduct Entry'	=> 'Produkt bearbeiten',
         //SEPA Accounts
         'Header_SEPA Account'		=> 'SEPA-Konto|SEPA-Konten', //Workaround decide which one to use
         'Header_EditSEPA Account'	=> 'SEPA-Konto bearbeiten',
         //CostCenter
-        'Header_Global Configurations' => 'System Configurations',
-        'Header_Global Config' 		=> 'Global Config|Global Configs',
-        'Header_EditGlobal Config'	=> 'Edit Global Config',
+        'Header_Global Configurations' => 'Systemkonfiguration',
+        'Header_Global Config' 		=> 'Systemkonfiguration|Globale Konfigurationen',
+        'Header_EditGlobal Config'	=> 'Systemkonfiguration bearbeiten',
         'Header_Billing Config' 	=> 'Modul Configuration for Billing',
         'Header_EditBilling Config' => 'Edit Modul Configuration for Billing',
         'Header_ProvVoip'			=> 'Modul Configuration for VOIP',
