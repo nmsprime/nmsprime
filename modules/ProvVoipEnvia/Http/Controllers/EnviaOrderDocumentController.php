@@ -9,6 +9,7 @@ use Storage;
 use Illuminate\Support\Facades\View;
 use Illuminate\Auth\AuthenticationException;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
+use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
 use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
 
 class EnviaOrderDocumentController extends \BaseController
@@ -73,10 +74,7 @@ class EnviaOrderDocumentController extends \BaseController
      */
     public function show($id)
     {
-        if (Bouncer::cannot('view', EnviaOrderDocument::class) &&
-            Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia')) {
-                throw new AuthenticationException ('Access to EnviaOrderDocument not allowed for user '. Auth::user()->login_name .'.');
-        }
+        $this->checkForPermission();
 
         $enviaorderdocument = EnviaOrderDocument::findOrFail($id);
         $contract_id = $enviaorderdocument->enviaorder->contract_id;
@@ -98,10 +96,8 @@ class EnviaOrderDocumentController extends \BaseController
 
     public function edit($id)
     {
-        if (Bouncer::cannot('view', EnviaOrderDocument::class) &&
-            Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia')) {
-            throw new AuthenticationException ('Access to EnviaOrderDocument not allowed for user '. Auth::user()->login_name .'.');
-        }
+        $this->checkForPermission();
+
         $document = EnviaOrderDocument::findOrFail($id);
 
         // if still not uploaded to envia TEL (that means there is no order id for this upload) => send to API
@@ -173,5 +169,19 @@ class EnviaOrderDocumentController extends \BaseController
         Storage::put($new_filename_complete, \File::get(Input::file('document_upload')));
 
         // TODO: should we chmod the file to readonly??
+    }
+
+    /**
+     * EnviaOrderDocument needs additional Permissions and these are checked
+     * inside this method.
+     *
+     * @return void
+     * @author Christian Schramm
+     */
+    public function checkForPermission() : void
+    {
+        if (Bouncer::cannot('view', ProvVoipEnvia::class)) {
+            throw new AuthenticationException(trans('auth.EnviaOrderDocument'));
+        }
     }
 }
