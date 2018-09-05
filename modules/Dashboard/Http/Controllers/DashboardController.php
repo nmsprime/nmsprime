@@ -52,16 +52,16 @@ class DashboardController extends BaseController
         $user = Auth::user();
 
         $view = [
-            'date' 			=> true,
+            'date'          => true,
             'provvoipenvia' => false,
-            'income'		=> (Module::collections()->has('BillingBase') &&
-                                $user->can('see income chart')),
-            'contracts' 	=> (Module::collections()->has('ProvBase') &&
-                                $user->can('view', \Modules\ProvBase\Entities\Contract::class)),
-            'tickets' 		=> (Module::collections()->has('Ticketsystem') &&
-                                $user->can('view', \Modules\Ticketsystem\Entities\Ticket::class)),
-            'hfc' 			=> (Module::collections()->has('HfcReq') &&
-                                $user->can('view', \Modules\HfcReq\Entities\NetElement::class)),
+            'income'        => (Module::collections()->has('BillingBase') &&
+                               $user->can('see income chart')),
+            'contracts'     => (Module::collections()->has('ProvBase') &&
+                               $user->can('view', \Modules\ProvBase\Entities\Contract::class)),
+            'tickets'       => (Module::collections()->has('Ticketsystem') &&
+                               $user->can('view', \Modules\Ticketsystem\Entities\Ticket::class)),
+            'hfc'           => (Module::collections()->has('HfcReq') &&
+                               $user->can('view', \Modules\HfcReq\Entities\NetElement::class)),
         ];
 
         return $view;
@@ -161,6 +161,50 @@ class DashboardController extends BaseController
     }
 
     /**
+     * Calculates products and the total amount of the contracts for the last 12 months.
+     *
+     * @author Roy Schneider
+     * @return collection ['contracts' => Array, 'labels' => Array, 'internet' => Array, 'voip' => Array, 'tv' => Array]
+     */
+    public static function count_products_of_contracts()
+    {
+        $value = 0;
+        $types = ['internet', 'voip', 'tv'];
+
+        for ($i = 0; $i <= 11; $i++) {
+            $cur = \Carbon\Carbon::now()->subMonthNoOverflow($i);
+            $date = $cur->toDateString();
+            $labels[$i] = $cur->format('Y-m');
+            $contracts[$i] = self::count_contracts($date);
+
+            foreach ($types as $type) {
+                $value = \DB::table('contract')
+                    ->join('item', 'item.contract_id', 'contract.id')
+                    ->join('product', 'product.id', 'item.product_id')
+                    ->where('contract.contract_start', '<=', $date)
+                    ->where('item.valid_from', '<=', $date)
+                    ->where('product.type', $type)
+                    ->where('contract.create_invoice', 1)
+                    ->whereNull('item.deleted_at')
+                    ->where(function ($query) use ($date) {
+                        $query->where('contract.contract_end', '>', $date)
+                            ->orWhere('contract.contract_end', '0000-00-00')
+                            ->orWhereNull('contract.contract_end');
+                    })->where(function ($query) use ($date) {
+                        $query->where('item.valid_to', '>', $date)
+                            ->orWhere('item.valid_to', '0000-00-00')
+                            ->orWhereNull('item.valid_to');
+                    })->count();
+
+                $arr[$type][$i] = $value;
+            }
+        }
+        $collection = collect(['contracts' => $contracts, 'labels' => $labels]);
+
+        return $collection->union($arr);
+    }
+
+    /**
      * Returns monthly incomes for each product type
      *
      * @return array
@@ -233,18 +277,9 @@ class DashboardController extends BaseController
      */
     public static function save_contracts_to_json()
     {
-        $i = 12;
-        $time = \Carbon\Carbon::create();
+        $products = self::count_products_of_contracts();
 
-        while ($i) {
-            $labels[] = $time->format('m/Y');
-            $contracts[] = self::count_contracts($time->format('Y-m-01'));
-
-            $time->subMonthNoOverflow();
-            $i--;
-        }
-
-        $array = ['contracts' => array_reverse($contracts), 'labels' => array_reverse($labels)];
+        $array = ['contracts' => array_reverse($products['contracts']), 'labels' => array_reverse($products['labels']), 'internet' => array_reverse($products['internet']), 'voip' => array_reverse($products['voip']), 'tv' => array_reverse($products['tv'])];
 
         Storage::disk('chart-data')->put('contracts.json', json_encode($array));
     }
