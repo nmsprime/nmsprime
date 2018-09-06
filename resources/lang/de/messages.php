@@ -253,6 +253,7 @@ return [
     'Configfiles'				=> 'Konfigurationsdatei',
     'Choose Firmware File'		=> 'Firmware-Datei auswählen',
     'Config File Parameters'	=> 'Parameter für die Konfigurationsdatei',
+    'or: Upload Certificate File'	=> 'oder: Zertifikat-Datei hochladen',
     'or: Upload Firmware File'	=> 'oder: Firmware-Datei hochladen',
     'Parent Configfile'			=> 'Übergeordnete Konfigurationsdatei',
     'Public Use'				=> 'Öffentliche Nutzung',
