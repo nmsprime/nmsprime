@@ -541,7 +541,10 @@ class DashboardController extends BaseController
         }
     }
 
+
     /*
+     * For News Blade:
+     *
      * This function should guide a new user through critical stages
      * like installation. To do this, we should test how far installation
      * process is and addvice the next steps the user should do..
@@ -549,6 +552,41 @@ class DashboardController extends BaseController
      * This function could also be used to inform the user of new updates (etc)
      */
     public function news()
+    {
+        // check for insecure install
+        $sec = $this->news_is_insecure_install();
+        if ($sec)
+            return $sec;
+
+        // Install add sequence check
+        if (\Module::collections()->has('ProvBase'))
+            if (\Modules\ProvBase\Entities\Modem::count() == 0)
+                return $this->news_install_add_sequence_check();
+
+        // Check for official news from nmsprime.com
+        $news = $this->news_load_official_site();
+        if ($news)
+            return $news;
+
+
+        // crowdin - check if language is still supported, otherwise show crowdin link
+        if (!in_array(\Auth::user()->language, config('app.supported_locale')))
+            return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
+                    'text' => ' <li>NMS PRIME is not yet translated to your language. Help translating NMS PRIME with
+                    <a href="https://crowdin.com/project/nmsprime/'.\Auth::user()->language.'" target="_blank">Crowdin</a></li>'];
+
+        // links need to be in embedded style, like:
+        //return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
+        //		'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
+    }
+
+
+    /*
+     * For News Blade:
+     *
+     * Check if installation is secure
+     */
+    private function news_is_insecure_install()
     {
         // change default psw's
         if (\Hash::check('toor', \Auth::user()->password)) {
@@ -569,33 +607,17 @@ class DashboardController extends BaseController
             }
         }
 
-        // Install add sequence check
-        if (\Module::collections()->has('ProvBase'))
-            if (\Modules\ProvBase\Entities\Modem::count() == 0)
-                return $this->install_add_sequence_check();
-
-        // Check for official news from nmsprime.com
-        $news = $this->load_official_news();
-        if ($news)
-            return $news;
-
-
-        // crowdin - check if language is still supported, otherwise show crowdin link
-        if (!in_array(\Auth::user()->language, config('app.supported_locale')))
-            return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
-                    'text' => ' <li>NMS PRIME is not yet translated to your language. Help translating NMS PRIME with
-                    <a href="https://crowdin.com/project/nmsprime/'.\Auth::user()->language.'" target="_blank">Crowdin</a></li>'];
-
-        // links need to be in embedded style, like:
-        //return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
-        //		'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
+        // means: secure – nothing todo
+        return null;
     }
 
 
     /*
+     * For News Blade:
+     *
      * Official News Parser
      */
-    private function load_official_news()
+    private function news_load_official_site()
     {
         $json = json_encode([
             'youtube' => "",
@@ -620,9 +642,11 @@ class DashboardController extends BaseController
     }
 
     /*
+     * For News Blade:
+     *
      * check install sequence order
      */
-    private function install_add_sequence_check()
+    private function news_install_add_sequence_check()
     {
         // set ISP name
         if (! \GlobalConfig::first()->name) {
