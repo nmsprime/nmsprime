@@ -556,7 +556,6 @@ class DashboardController extends BaseController
                     'text' => '<li>Next: Change default Password! '.\HTML::linkRoute('User.profile', 'Global Config', \Auth::user()->id), ];
         }
 
-
         // check for insecure MySQL root password
         // This requires to run: mysql_secure_installation
         if (env('ROOT_DB_PASSWORD') == '') {
@@ -575,6 +574,10 @@ class DashboardController extends BaseController
             if (\Modules\ProvBase\Entities\Modem::count() == 0)
                 return $this->install_add_sequence_check();
 
+        // Check for official news from nmsprime.com
+        $news = $this->load_official_news();
+        if ($news)
+            return $news;
 
 
         // crowdin - check if language is still supported, otherwise show crowdin link
@@ -588,6 +591,33 @@ class DashboardController extends BaseController
         //		'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
     }
 
+
+    /*
+     * Official News Parser
+     */
+    private function load_official_news()
+    {
+        $json = json_encode([
+            'youtube' => "",
+            'text' => ""
+        ]);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://repo.roetzer-engineering.com/rpm/nmsprime-news/index.json');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        $result=curl_exec($ch);
+        curl_close($ch);
+
+        $json = json_decode($result);
+
+        if (!isset($json->youtube) || !isset($json->text))
+            return null;
+
+        return ['youtube' => $json->youtube,
+                'text' => $json->text];
+    }
 
     /*
      * check install sequence order
