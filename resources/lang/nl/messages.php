@@ -253,6 +253,7 @@ return [
     'Configfiles'				=> 'Configfiles',
     'Choose Firmware File'		=> 'Choose Firmware File',
     'Config File Parameters'	=> 'Config File Parameters',
+    'or: Upload Certificate File'	=> 'or: Upload Certificate File',
     'or: Upload Firmware File'	=> 'or: Upload Firmware File',
     'Parent Configfile'			=> 'Parent Configfile',
     'Public Use'				=> 'Public Use',
