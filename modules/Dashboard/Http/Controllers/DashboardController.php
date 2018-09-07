@@ -554,26 +554,26 @@ class DashboardController extends BaseController
     public function news()
     {
         // check for insecure install
-        $sec = $this->news_is_insecure_install();
-        if ($sec)
-            return $sec;
+        if ($insecure = $this->isInsecureInstall()) {
+            return $insecure;
+        }
 
         // Install add sequence check
-        if (\Module::collections()->has('ProvBase'))
-            if (\Modules\ProvBase\Entities\Modem::count() == 0)
-                return $this->news_install_add_sequence_check();
+        if (\Module::collections()->has('ProvBase') && (\Modules\ProvBase\Entities\Modem::count() == 0)) {
+            return $this->newsInstallAndSequenceCheck();
+        }
 
         // Check for official news from nmsprime.com
-        $news = $this->news_load_official_site();
-        if ($news)
+        if ($news = $this->newsLoadOfficialSite()) {
             return $news;
-
+        }
 
         // crowdin - check if language is still supported, otherwise show crowdin link
-        if (!in_array(\Auth::user()->language, config('app.supported_locale')))
+        if (!in_array(\Auth::user()->language, config('app.supported_locale'))) {
             return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
                     'text' => ' <li>NMS PRIME is not yet translated to your language. Help translating NMS PRIME with
                     <a href="https://crowdin.com/project/nmsprime/'.\Auth::user()->language.'" target="_blank">Crowdin</a></li>'];
+        }
 
         // links need to be in embedded style, like:
         //return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
@@ -586,7 +586,7 @@ class DashboardController extends BaseController
      *
      * Check if installation is secure
      */
-    private function news_is_insecure_install()
+    private function isInsecureInstall()
     {
         // change default psw's
         if (\Hash::check('toor', \Auth::user()->password)) {
@@ -603,8 +603,7 @@ class DashboardController extends BaseController
                     return ['youtube' => 'https://www.youtube.com/embed/dZWjeL-LmG8',
                     'text' => '<li>Danger! Run: mysql_secure_installation in bash as root!', ];
                 }
-            } catch (\Exception $e) {
-            }
+            } catch (Exception $e) {};
         }
 
         // means: secure – nothing todo
@@ -617,7 +616,7 @@ class DashboardController extends BaseController
      *
      * Official News Parser
      */
-    private function news_load_official_site()
+    private function newsLoadOfficialSite()
     {
         $json = json_encode([
             'youtube' => "",
@@ -646,7 +645,7 @@ class DashboardController extends BaseController
      *
      * check install sequence order
      */
-    private function news_install_add_sequence_check()
+    private function newsInstallAndSequenceCheck()
     {
         // set ISP name
         if (! \GlobalConfig::first()->name) {
@@ -655,68 +654,56 @@ class DashboardController extends BaseController
         }
 
         // add CMTS
-        if (\Module::collections()->has('ProvBase')) {
-            if (\Modules\ProvBase\Entities\Cmts::count() == 0) {
-                return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=159&',
+        if (\Module::collections()->has('ProvBase') && \Modules\ProvBase\Entities\Cmts::count() == 0) {
+            return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=159&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Cmts.create', 'Create CMTS'), ];
-            }
         }
 
         // add IP-Pools
-        if (\Module::collections()->has('ProvBase')) {
-            if (\Modules\ProvBase\Entities\IpPool::count() == 0) {
-                return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
+        if (\Module::collections()->has('ProvBase') && \Modules\ProvBase\Entities\IpPool::count() == 0) {
+            return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Cmts.edit', 'Create IP-Pools',
                         \Modules\ProvBase\Entities\Cmts::first()), ];
-            }
         }
 
         // QoS
-        if (\Module::collections()->has('ProvBase')) {
-            if (\Modules\ProvBase\Entities\Qos::count() == 0) {
-                return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=380&',
+        if (\Module::collections()->has('ProvBase') && \Modules\ProvBase\Entities\Qos::count() == 0) {
+            return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=380&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Qos.create', 'Create QoS-Profile'), ];
-            }
         }
 
         // Product
-        if (\Module::collections()->has('BillingBase')) {
-            if (\Modules\BillingBase\Entities\Product::where('type', '=', 'Internet')->count() == 0) {
-                return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=425&',
+        if (\Module::collections()->has('BillingBase') &&
+            \Modules\BillingBase\Entities\Product::where('type', '=', 'Internet')->count() == 0) {
+            return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=425&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Product.create', 'Create Billing Product'), ];
-            }
         }
 
         // Configfile
-        if (\Module::collections()->has('ProvBase')) {
-            if (\Modules\ProvBase\Entities\Configfile::where('device', '=', 'cm')->where('public', '=', 'yes')->count() == 0) {
-                return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=500&',
+        if (\Module::collections()->has('ProvBase') &&
+            \Modules\ProvBase\Entities\Configfile::where('device', '=', 'cm')->where('public', '=', 'yes')->count() == 0) {
+            return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=500&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Configfile.create', 'Create Configfile'), ];
-            }
         }
 
         // add costcenter
-        if (\Module::collections()->has('BillingBase')) {
-            if (\Modules\BillingBase\Entities\CostCenter::count() == 0) {
-                return ['youtube' => null,
+        if (\Module::collections()->has('BillingBase') && \Modules\BillingBase\Entities\CostCenter::count() == 0) {
+            return ['youtube' => null,
                     'text' => '<li>Next: '.\HTML::linkRoute('CostCenter.create', 'Create a first Cost Center'), ];
-            }
         }
 
         // add Contract
-        if (\Module::collections()->has('ProvBase')) {
-            if (\Modules\ProvBase\Entities\Contract::count() == 0) {
-                return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=0&',
+        if (\Module::collections()->has('ProvBase') &&
+            \Modules\ProvBase\Entities\Contract::count() == 0) {
+            return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=0&',
                     'text' => '<li>Congratulations: now you can create a first '.\HTML::linkRoute('Contract.create', 'Contract'), ];
-            }
         }
 
         // add Modem
-        if (\Module::collections()->has('ProvBase')) {
-            if (\Modules\ProvBase\Entities\Modem::count() == 0) {
-                return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=40&',
+        if (\Module::collections()->has('ProvBase') &&
+            \Modules\ProvBase\Entities\Modem::count() == 0) {
+            return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=40&',
                     'text' => '<li>Congratulations: now you can create a first '.\HTML::linkRoute('Contract.edit', 'Modem', \Modules\ProvBase\Entities\Contract::first()), ];
-            }
         }
 
         return false;
