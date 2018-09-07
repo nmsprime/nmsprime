@@ -541,7 +541,6 @@ class DashboardController extends BaseController
         }
     }
 
-
     /*
      * For News Blade:
      *
@@ -569,17 +568,16 @@ class DashboardController extends BaseController
         }
 
         // crowdin - check if language is still supported, otherwise show crowdin link
-        if (!in_array(\Auth::user()->language, config('app.supported_locale'))) {
+        if (! in_array(\Auth::user()->language, config('app.supported_locale'))) {
             return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
                     'text' => ' <li>NMS PRIME is not yet translated to your language. Help translating NMS PRIME with
-                    <a href="https://crowdin.com/project/nmsprime/'.\Auth::user()->language.'" target="_blank">Crowdin</a></li>'];
+                    <a href="https://crowdin.com/project/nmsprime/'.\Auth::user()->language.'" target="_blank">Crowdin</a></li>', ];
         }
 
         // links need to be in embedded style, like:
         //return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
         //		'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
     }
-
 
     /*
      * For News Blade:
@@ -603,13 +601,12 @@ class DashboardController extends BaseController
                     return ['youtube' => 'https://www.youtube.com/embed/dZWjeL-LmG8',
                     'text' => '<li>Danger! Run: mysql_secure_installation in bash as root!', ];
                 }
-            } catch (Exception $e) {};
+            } catch (Exception $e) {
+            }
         }
 
         // means: secure – nothing todo
-        return null;
     }
-
 
     /*
      * For News Blade:
@@ -619,8 +616,8 @@ class DashboardController extends BaseController
     private function newsLoadOfficialSite()
     {
         $json = json_encode([
-            'youtube' => "",
-            'text' => ""
+            'youtube' => '',
+            'text' => '',
         ]);
 
         $ch = curl_init();
@@ -628,16 +625,17 @@ class DashboardController extends BaseController
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-        $result=curl_exec($ch);
+        $result = curl_exec($ch);
         curl_close($ch);
 
         $json = json_decode($result);
 
-        if (!isset($json->youtube) || !isset($json->text))
-            return null;
+        if (! isset($json->youtube) || ! isset($json->text)) {
+            return;
+        }
 
         return ['youtube' => $json->youtube,
-                'text' => $json->text];
+                'text' => $json->text, ];
     }
 
     /*
