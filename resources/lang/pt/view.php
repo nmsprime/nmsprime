@@ -321,7 +321,7 @@ return [
     'Ticket_Type_Technical' => 'Technical',
     'Ticket_Type_Accounting' => 'Accounting',
     'Ticket_Priority_Trivial' => 'Trivial',
-    'Ticket_Priority_Minor' => 'Medium',
+    'Ticket_Priority_Minor' => 'Minor',
     'Ticket_Priority_Major' => 'Major',
     'Ticket_Priority_Critical' => 'Critical',
     'Numberrange_Start' => 'Start',
