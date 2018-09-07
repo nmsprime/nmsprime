@@ -23,7 +23,7 @@ return [
         'jQuery_PaginatesPrevious'	=> 'Zurück',
         'jQuery_PaginatesNext'		=> 'Nächste',
         'jQuery_PaginatesLast'		=> 'Letzte',
-        'jQuery_sLast'				=> ':sSortDescending aktivieren, um Spalte absteigend zu sortieren',
+        'jQuery_sLast'				=> ': aktivieren, um die Spalte absteigend zu sortieren',
         'jQuery_All'				=> 'Alle',
         'jQuery_Print'				=> 'Drucken',
         'jQuery_colvis'				=> 'Spaltensichtbarkeit',
@@ -310,7 +310,7 @@ return [
 
 //
 // Contract
-    'Dashboard_Net Income'			=> 'Net Income',
+    'Dashboard_Net Income'			=> 'Nettoerlöse',
 //
     'Contract_Numberrange_Failure' => 'Keine freie Vertragsnummer für die gewählte Kostenstelle gefunden.',
 
