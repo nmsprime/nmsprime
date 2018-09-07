@@ -311,7 +311,7 @@ return [
 
 //
 // Contract
-    'Dashboard_Net Income'			=> 'Net Income',
+    'Dashboard_Net Income'			=> 'Nettoerlöse',
 //
     'Contract_Numberrange_Failure' => 'Keine freie Vertragsnummer für die gewählte Kostenstelle gefunden.',
 
