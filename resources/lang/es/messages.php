@@ -406,7 +406,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'min. MOS'				=> 'min MOS',
     'Packet loss/%'			=> 'Pérdida de paquetes /%',
     'Jitter/ms'				=> 'inestabilidad "Jitter/ms"',
-    'avg. Delay/ms'			=> 'avg. Delay/ms',
+    'avg. Delay/ms'			=> 'promedio demora/ms',
     'Caller (-> Callee)'	=> 'Llamada (-> destinatario)',
     '@Domain'				=> '@dominio',
     'min. MOS 50ms'			=> 'min MOS 50ms',
