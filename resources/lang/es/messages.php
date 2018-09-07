@@ -253,6 +253,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Configfiles'				=> 'Archivo de configuración',
     'Choose Firmware File'		=> 'Seleccione el archivo de Firmware',
     'Config File Parameters'	=> 'Parámetros del archivo de configuración',
+    'or: Upload Certificate File'	=> 'or: Upload Certificate File',
     'or: Upload Firmware File'	=> 'o: subir archivo de Firmware',
     'Parent Configfile'			=> 'Archivo de configuración principal',
     'Public Use'				=> 'IP publica',
