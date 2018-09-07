@@ -49,7 +49,7 @@ return [
         'Menu_Contracts'			=> 'Contratos',
         'Menu_Modems'				=> 'Módems',
         'Menu_Endpoints'			=> 'Extremos',
-        'Menu_Number Range'			=> 'Nummernkreis',
+        'Menu_Number Range'			=> 'Intervalo de números',
         'Menu_Configfiles' 			=> 'Archivo de configuración',
         'Menu_QoS' 					=> 'QoS',
         'Menu_CMTS' 				=> 'CMTS',
