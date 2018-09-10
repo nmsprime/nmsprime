@@ -79,7 +79,7 @@ return [
     'cdr_offset' 			=> 'CDR diferencia de tiempo de Factura en Meses',
     'close' 				=> 'Cerrar',
     'contract_early_cancel' => 'En serio quiere cancelar este contrato antes de que el fin de termino de las tarifas :date sea alcanzado?',
-    'contract_nr_mismatch'  => 'Could not find the next contract number because the database query failed. This is due to the following contracts having a contract number that does not belong to their selected cost center: :nrs. Please change the cost center or let the system assign a new contract number for these contracts.',
+    'contract_nr_mismatch'  => 'No se pudo encontrar el siguiente número de contrato porque la consulta de la base de datos falló. Esto se debe a que los siguientes contratos tienen un número de contrato que no pertenece a su centro de costo seleccionado: :nrs. Cambie el centro de costos o permita que el sistema asigne un nuevo número de contrato para estos contratos.',
     'contract_numberrange_failure' => 'No se encuentra disponible el numero de contrato para el centro de costos seleccionado!',
     'conn_info_err_create' 	=> 'Error Creando PDF - Revise los Registros o pregunte a un Administrador!',
     'conn_info_err_template' => 'No se pudo Leer la Plantilla - Mire Configuracion Globar o Compania si es establecido!',
