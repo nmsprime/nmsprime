@@ -4,7 +4,7 @@
     }
 </style>
 
-<div class="widget widget-stats bg-yellow">
+<div class="widget widget-stats bg-aqua-darker">
     {{-- info/data --}}
     <div class="stats-info d-flex">
         <div class="btn btn-dark m-5 m-r-10">
@@ -22,9 +22,9 @@
         </div>
 
         <div class="btn btn-dark m-5 m-r-10">
-            {!! HTML::decode (HTML::link('',
+            {!! HTML::decode (HTML::link('https://nmsprime.com/forum',
                 '<h3><div class="text-center"><i style="color: white;" class="img-center fa fa-wpforms"></i></div></h3>
-                <div style="color: white;" class="username text-ellipsis text-center">Forum <br>(coming soon)</div>', ['target' => '_blank']))
+                <div style="color: white;" class="username text-ellipsis text-center">Forum <br></div>', ['target' => '_blank']))
             !!}
         </div>
 
