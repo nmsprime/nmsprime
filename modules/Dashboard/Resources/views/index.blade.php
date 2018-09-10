@@ -163,25 +163,56 @@
 
 			var labels = chart_data_contracts['labels'];
 			var contracts = chart_data_contracts['contracts'];
+			var internet = chart_data_contracts['internet'];
+			var voip = chart_data_contracts['voip'];
+			var tv = chart_data_contracts['tv'];
 			var ctx = document.getElementById('contracts-chart').getContext('2d');
 			var contractChart = new Chart(ctx, {
 				type: 'line',
 				data: {
 					labels: labels,
 					datasets: [{
+						label:'TV',
+						data: tv,
+						pointBackgroundColor: 'rgb(12, 40, 110, 1)',
+						borderColor: 'rgb(12, 40, 110, 1)',
+						backgroundColor: 'rgb(12, 40, 110, 0.3)',
+						cubicInterpolationMode: 'monotone'
+					}, {
+						label:'VoIP',
+						data: voip,
+						pointBackgroundColor: 'rgb(42, 98, 254, 1)',
+						borderColor: 'rgb(42, 98, 254, 1)',
+						backgroundColor: 'rgb(42, 98, 254, 0.3)',
+						cubicInterpolationMode: 'monotone'
+					}, {
+						label: 'Internet',
+						data: internet,
+						pointBackgroundColor: 'rgb(0, 170, 132, 1)',
+						borderColor: 'rgb(0, 170, 132, 1)',
+						backgroundColor: 'rgb(0, 170, 132, 0.3)',
+						cubicInterpolationMode: 'monotone'
+					}, {
+						label:'active contracts',
 						data: contracts,
-						backgroundColor: "rgba(0, 172, 172, 0.8)",
+						pointBackgroundColor: 'rgb(2, 207, 211, 1)',
+						borderColor: 'rgb(2, 207, 211, 1)',
+						backgroundColor: 'rgb(2, 207, 211, 0.3)',
+						cubicInterpolationMode: 'monotone'
 					}],
 				},
 				options: {
+					animation: {
+						duration: 0,
+					},
 					legend: {
-						display: false
+						display: true,
 					},
 					maintainAspectRatio: false,
 					scales: {
 						yAxes: [{
 							ticks: {
-								beginAtZero: false
+								beginAtZero: true,
 							}
 						}]
 					}

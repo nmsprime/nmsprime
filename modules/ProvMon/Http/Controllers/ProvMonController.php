@@ -468,7 +468,7 @@ class ProvMonController extends \BaseController
             case 3: return 'DOCSIS 2.0';
             case 4: return 'DOCSIS 3.0';
 
-            default: return;
+            default: return 'n/a';
         }
     }
 
@@ -659,6 +659,9 @@ class ProvMonController extends \BaseController
             if (((strpos($e->getMessage(), 'php_network_getaddresses: getaddrinfo failed: Name or service not known') !== false) || (strpos($e->getMessage(), 'No response from') !== false))) {
                 return ['SNMP-Server not reachable' => ['' => [0 => '']]];
             }
+            if (strpos($e->getMessage(), 'noSuchName') !== false) {
+                $docsis = 0;
+            }
         }
 
         // System
@@ -667,7 +670,11 @@ class ProvMonController extends \BaseController
         $sys['DOCSIS'] = [$this->_docsis_mode($docsis)];
 
         $freq = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
-        $desc = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.31.1.1.1.18');
+        try {
+            $desc = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.31.1.1.1.18');
+        } catch (\Exception $e) {
+            $desc = ['n/a'];
+        }
         $snr = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5');
         try {
             $util = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.3.9.1.3');

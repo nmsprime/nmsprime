@@ -16,7 +16,10 @@ class NumberRangeController extends \BaseController
             ['form_type' => 'text', 'name' => 'prefix', 'description' => 'Prefix'],
             ['form_type' => 'text', 'name' => 'suffix', 'description' => 'Suffix'],
             ['form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'CostCenter', 'value' => $model->html_list(CostCenter::all(), 'name')],
-            ['form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => NumberRange::get_types(), 'hidden' => 1],
+
+            // type is hidden – ATM we use only contract – left the old line here for later use
+            /* ['form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => NumberRange::get_types()], */
+            ['form_type' => 'text', 'name' => 'type', 'description' => 'Type', 'value' => 'contract', 'hidden' => 1],
         ];
     }
 
