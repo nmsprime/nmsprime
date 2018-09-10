@@ -99,12 +99,7 @@ return [
 
     'custom' => [
         'password' => [
-            'regex' => 'The password has to be at least 10 characters long and fulfill three of these requirements:
-                        <li>Uppercase characters (A – Z)</li>
-                        <li>Lowercase characters (a – z)</li>
-                        <li>Digits (0 – 9)</li>
-                        <li>Non-alphanumeric (For example: !, $, #, or %)</li>
-                        <li>Unicode characters</li>',
+            'regex' => 'La contraseña debe ser al menos 10 caracteres de largo y cumplan tres de estos requisitos:  de caracteres en mayúsculas (A – Z), minúsculas caracteres (a – z), dígitos (0-9), no alfanuméricos (por ejemplo:!, $, # o %), de caracteres de Unicode',
         ],
     ],
 
