@@ -619,7 +619,7 @@ class DashboardController extends BaseController
                     return ['youtube' => 'https://www.youtube.com/embed/dZWjeL-LmG8',
                     'text' => '<li>Danger! Run: mysql_secure_installation in bash as root!', ];
                 }
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
             }
         }
 
