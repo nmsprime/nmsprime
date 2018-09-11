@@ -2508,8 +2508,11 @@ class ProvVoipEnvia extends \BaseModel
 
                 // special case salutation: envia TEL expects Herrn instead of Herr…
                 if ($xml_field == 'salutation') {
-                    if ($payload == 'Herr') {
-                        $payload = 'Herrn';
+                    // but not if phonebook entry
+                    if (! \Str::startswith($this->job, 'phonebookentry_')) {
+                        if ($payload == 'Herr') {
+                            $payload = 'Herrn';
+                        }
                     }
                 }
             }
