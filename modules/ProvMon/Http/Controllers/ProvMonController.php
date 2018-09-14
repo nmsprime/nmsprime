@@ -6,6 +6,7 @@ use View;
 use Acme\php\ArrayHelper;
 use Modules\ProvBase\Entities\Cmts;
 use Modules\ProvBase\Entities\Modem;
+use Modules\HfcReq\Entities\NetElement;
 use Modules\ProvBase\Entities\ProvBase;
 use Modules\ProvBase\Entities\Configfile;
 
@@ -883,7 +884,61 @@ class ProvMonController extends \BaseController
         return $graph_ids;
     }
 
-    /*
+    /**
+     * Get the corresponing graph id's for $netelem. These id's could
+     * be used in graph_image.php as HTML GET Request with local_graph_id variable
+     * like https://../cacti/graph_image.php?local_graph_id=<ID>
+     *
+     * NOTE: This function requires a valid 'mysql-cacti' array
+     *       in config/database.php
+     *
+     * @param netelem: The netelem to look for Cacti Graphs
+     * @return: array of related cacti graph id's, false if no entries are found
+     *
+     * @author: Ole Ernst
+     */
+    public static function monitoring_get_netelement_graph_ids($netelem)
+    {
+        // Search parent CMTS for type cluster
+        if ($netelem->netelementtype_id == 2 && ! $netelem->ip) {
+            $ip = $netelem->get_parent_cmts()->ip;
+        } else {
+            $ip = $netelem->ip;
+        }
+        // resolve IP address if necessary
+        $ip = gethostbyname($ip);
+
+        $host_id = self::monitoring_get_host_id($ip);
+        if (! $host_id) {
+            return;
+        }
+        /*
+        $vendor = $netelem->netelementtype->vendor;
+        $graph_template_id = self::monitoring_get_graph_template_id("$vendor CMTS Overview");
+        if (! $graph_template_id)
+            return;
+        */
+        $idxs = $netelem
+            ->indices
+            ->pluck('indices')
+            ->map(function ($i) {
+                return explode(',', $i);
+            })->collapse();
+
+        $q = \DB::connection('mysql-cacti')
+            ->table('graph_local')
+            ->where('host_id', $host_id)
+            /*->where('graph_template_id', $graph_template_id)*/
+            ->where(function ($q) use ($idxs) {
+                foreach ($idxs as $idx) {
+                    $q->orWhere('snmp_index', $idx);
+                }
+            });
+
+        return $q->pluck('id');
+    }
+
+    /**
      * The Main Monitoring Function
      * Returns the prepared monitoring array required for monitoring view
      * This Array contains: Timing and the pre-loaded Images and looks like:
@@ -899,23 +954,27 @@ class ProvMonController extends \BaseController
      *   ]
      * ]
      *
-     * @param modem: The modem to look for Cacti Graphs
+     * @param host: The host to look for Cacti Graphs
      * @param graph_template: only show array[] of cacti graph template ids in result
      * @return: the prepared monitoring array for view. Returns false if no diagram exists.
      *          No other adaptions required. See example in comment above
      *
      * @author: Torsten Schmidt
      */
-    public function monitoring($modem, $graph_template = null)
+    public function monitoring($host, $graph_template = null)
     {
         // Check if Cacti Host RRD files exist
         // This is a speed-up. A cacti HTTP request takes more time.
-        if (! glob('/usr/share/cacti/rra/'.$modem->hostname.'*')) {
+        if (get_class($host) != 'Modules\HfcReq\Entities\NetElement' && ! glob('/usr/share/cacti/rra/'.$host->hostname.'*')) {
             return false;
         }
 
         // parse diagram id's from cacti database
-        $ids = self::monitoring_get_graph_ids($modem, $graph_template);
+        if (get_class($host) == 'Modules\HfcReq\Entities\NetElement') {
+            $ids = self::monitoring_get_netelement_graph_ids($host);
+        } else {
+            $ids = self::monitoring_get_graph_ids($host, $graph_template);
+        }
 
         // no id's return
         if (! $ids) {
@@ -954,7 +1013,7 @@ class ProvMonController extends \BaseController
         // in the image view. This could lead to diffuse (unscharf) fonts.
         $graph_width = '700';
 
-        // Fetch Cacti DB for images of $modem and request the Image from Cacti
+        // Fetch Cacti DB for images of $host and request the Image from Cacti
         foreach ($ids as $id) {
             $ret['graphs'][$id] = $url_base."&graph_width=$graph_width&local_graph_id=$id";
         }
@@ -969,14 +1028,14 @@ class ProvMonController extends \BaseController
     }
 
     /**
-     * Get the cacti host id, which corresponds to a given hostname of the modem object
+     * Get the cacti host id, which corresponds to a given hostname/ip address of the host object
      *
-     * @param modem: The modem object
+     * @param host: The host object or ip address
      * @return: The cacti host id
      *
      * @author: Ole Ernst
      */
-    public static function monitoring_get_host_id($modem)
+    public static function monitoring_get_host_id($host)
     {
         try {
             $ret = \Schema::connection('mysql-cacti')->hasTable('host');
@@ -984,8 +1043,12 @@ class ProvMonController extends \BaseController
             return false;
         }
 
-        // Get Cacti Host ID to $modem
-        $host = \DB::connection('mysql-cacti')->table('host')->where('description', '=', $modem->hostname)->select('id')->first();
+        // Get Cacti Host ID of $host
+        $host = \DB::connection('mysql-cacti')
+            ->table('host')
+            ->where(is_string($host) ? 'hostname' : 'description', is_string($host) ? $host : $host->hostname)
+            ->first();
+
         if (! isset($host)) {
             return false;
         }
@@ -1013,6 +1076,30 @@ class ProvMonController extends \BaseController
         }
 
         return $template->id;
+    }
+
+    /**
+     * Returns the Diagram View for a NetElement (Device)
+     *
+     * @param   id          The NetElement id
+     * @author  Ole Ernst
+     */
+    public function diagram_edit($id)
+    {
+        $monitoring = [];
+        $dia = $this->monitoring(NetElement::findOrFail($id));
+
+        // reshape array according to HfcCustomer::Tree.dias
+        // we might want to split these in the future, to avoid the module dependency
+        if ($dia) {
+            foreach ($dia['graphs'] as $idx => $graph) {
+                $dia['graphs'] = [$idx => $graph];
+                $dia['row'] = '';
+                $monitoring[] = $dia;
+            }
+        }
+
+        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring')));
     }
 
     /*

@@ -36,4 +36,10 @@ BaseRoute::group([], function () {
         'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@realtime_ping',
         'middleware' => ['can:view_analysis_pages_of,Modules\ProvBase\Entities\Modem'],
     ]);
+
+    BaseRoute::get('NetElement/{id}/diagram', [
+        'as' => 'ProvMon.diagram_edit',
+        'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@diagram_edit',
+        'middleware' => ['can:view,Modules\HfcReq\Entities\NetElement'],
+    ]);
 });
