@@ -10,7 +10,7 @@ use Modules\HfcReq\Entities\NetElement;
 use Modules\ProvBase\Entities\ProvBase;
 use Modules\ProvBase\Entities\Configfile;
 
-/*
+/**
  * This is the Basic Stuff for Modem Analyses Page
  * Note: this class does not have a corresponding Model
  *       it fetches all required stuff from Modem or Server
@@ -182,7 +182,7 @@ class ProvMonController extends \BaseController
         return $response;
     }
 
-    /*
+    /**
      * Flood ping
      *
      * NOTE:
@@ -443,7 +443,7 @@ class ProvMonController extends \BaseController
         return $lease;
     }
 
-    /*
+    /**
      * Local Helper to Convert the sysUpTime from Seconds to human readable format
      * See: http://stackoverflow.com/questions/8273804/convert-seconds-into-days-hours-minutes-and-seconds
      *
@@ -797,7 +797,7 @@ class ProvMonController extends \BaseController
         return $ret;
     }
 
-    /*
+    /**
      * Local Helper: Convert String Time Diff to Unix Timestamp
      * Example: '-3d' => to now() - 3 days => unix time 1450350686
      *          '-3h' => to now() - 3 hours => unix time 1450350686
@@ -837,7 +837,7 @@ class ProvMonController extends \BaseController
         return \Carbon\Carbon::now()->timestamp;
     }
 
-    /*
+    /**
      * Get the corresponing graph id's for $modem. These id's could
      * be used in graph_image.php as HTML GET Request with local_graph_id variable
      * like https://../cacti/graph_image.php?local_graph_id=<ID>
