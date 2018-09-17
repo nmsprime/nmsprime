@@ -26,7 +26,9 @@
                                 </td></tr>
                         @endif
 
-                        <tr><td><h4>{{$mon['descr']}}</h4></td></tr>
+                        @if (isset($mon['descr']))
+                                <tr><td><h4>{{$mon['descr']}}</h4></td></tr>
+                        @endif
                         <tr>
                         @foreach ($mon['graphs'] as $id => $graph)
                                 <td><img height="230" src={{$graph}}></img></td>
