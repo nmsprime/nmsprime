@@ -7,7 +7,7 @@
 	</div>
 
 	@if ($dash)
-		<font color="grey">{{$dash}}</font>
+		<font color="grey">{!!$dash!!}</font>
 	@else
 		<font color="green"><b>TODO</b></font>
 	@endif
