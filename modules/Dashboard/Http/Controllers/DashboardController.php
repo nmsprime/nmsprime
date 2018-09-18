@@ -633,8 +633,9 @@ class DashboardController extends BaseController
      */
     private function newsLoadOfficialSite()
     {
-        if(env('IGNORE_NEWS'))
+        if (env('IGNORE_NEWS')) {
             return false;
+        }
 
         // get actual network size based on SLA table
         $ns = \App\Sla::first()->get_sla_size();
