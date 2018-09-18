@@ -633,13 +633,22 @@ class DashboardController extends BaseController
      */
     private function newsLoadOfficialSite()
     {
+        if(env('IGNORE_NEWS'))
+            return false;
+
+        // get actual network size based on SLA table
+        $ns = \App\Sla::first()->get_sla_size();
+        $sla = \App\Sla::first()->name;
+
+        // prep json return array
         $json = json_encode([
             'youtube' => '',
             'text' => '',
         ]);
 
+        // parse
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://repo.roetzer-engineering.com/rpm/nmsprime-news/index.json');
+        curl_setopt($ch, CURLOPT_URL, 'https://repo.roetzer-engineering.com/rpm/nmsprime-news/index.php?ns='.$ns.'&sla='.$sla);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
