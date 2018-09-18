@@ -196,6 +196,13 @@ class cdrCommand extends Command
         \ChannelLog::debug('billing', "Successfully stored call data records in $target_filepath");
         echo "New file: $target_filepath\n";
 
+        // execute phonenumber filter command if it exists (e.g. on mablx10, olblx10)
+        $filter = storage_path('app/config/billingbase/filter-cdr.sh');
+        if (file_exists($filter)) {
+            \ChannelLog::info('billing', "Filtered phonenumbers in $target_filepath via $filter");
+            system("$filter $target_filepath");
+        }
+
         \Storage::delete("tmp/$tmp_file");
     }
 
