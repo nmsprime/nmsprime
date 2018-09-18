@@ -133,7 +133,7 @@ return [
         'Header_EditItem'			=> 'Editar articulo', //??
         //Numberrange
         'Header_NumberRange'		=> 'Rango numerico',
-        'Header_Numberranges'        => 'Numberranges',
+        'Header_Numberranges'        => 'Rangos Numericos',
     //SNMP Modul
         //Device
         'Header_Device'				=> 'Dispositivo|Dispositivos',
