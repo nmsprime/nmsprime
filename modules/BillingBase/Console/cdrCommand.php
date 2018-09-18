@@ -93,7 +93,9 @@ class cdrCommand extends Command
      */
     public static function get_cdr_pathname($provider, $timestamp = 0, $offset = null)
     {
-        $offset = $offset ?: BillingBase::first()->cdr_offset;
+        if ($offset === null) {
+            $offset = BillingBase::first()->cdr_offset;
+        }
         $time_dir = self::_get_time_of_dir($offset, $timestamp);
         $time_file = self::_get_time_of_file($offset, $timestamp);
 
