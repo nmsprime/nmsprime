@@ -7,7 +7,7 @@ use Storage;
 use ChannelLog;
 use Modules\ProvBase\Entities\Contract;
 use App\Http\Controllers\BaseViewController;
-use Modules\BillingBase\Console\accountingCommand;
+use Modules\BillingBase\Console\SettlementRunCommand;
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
 
 /**
@@ -405,7 +405,7 @@ class SepaAccount extends \BaseModel
                 $accounting = BaseViewController::translate_label($key1);
                 $rec = $this->_get_billing_lang() == 'de' ? '' : '_records';
 
-                $fn = self::get_relativ_accounting_dir_path();
+                $fn = self::get_relative_accounting_dir_path();
                 $fn .= "/$accounting".'_'.BaseViewController::translate_label($key).$rec.'.txt';
 
                 // echo "write ".count($records)." [".count($this->{($key1 == 'accounting' ? 'acc_recs' : 'book_recs')}[$key]) ."] to file $fn\n";
@@ -449,9 +449,9 @@ class SepaAccount extends \BaseModel
         return date('YmdHis').$this->id;		// km3 uses actual time
     }
 
-    public function get_relativ_accounting_dir_path()
+    public function get_relative_accounting_dir_path()
     {
-        return accountingCommand::get_relative_accounting_dir_path().'/'.sanitize_filename($this->name);
+        return SettlementRunCommand::get_relative_accounting_dir_path().'/'.sanitize_filename($this->name);
     }
 
     /**
@@ -488,7 +488,7 @@ class SepaAccount extends \BaseModel
                 }
 
                 // Retrieve the resulting XML
-                $file = self::get_relativ_accounting_dir_path()."/DD_$type.xml";
+                $file = self::get_relative_accounting_dir_path()."/DD_$type.xml";
                 Storage::put($file, $directDebit->asXML());
 
                 $this->_log("sepa direct debit $type xml", $file);
@@ -519,7 +519,7 @@ class SepaAccount extends \BaseModel
         }
 
         // Retrieve the resulting XML
-        $file = self::get_relativ_accounting_dir_path();
+        $file = self::get_relative_accounting_dir_path();
         $file .= '/'.BaseViewController::translate_label('DD').'.xml';
         Storage::put($file, $directDebit->asXML());
 
@@ -553,7 +553,7 @@ class SepaAccount extends \BaseModel
         }
 
         // Retrieve the resulting XML
-        $file = self::get_relativ_accounting_dir_path();
+        $file = self::get_relative_accounting_dir_path();
         $file .= '/'.BaseViewController::translate_label('DC').'.xml';
         Storage::put($file, $customerCredit->asXML());
 

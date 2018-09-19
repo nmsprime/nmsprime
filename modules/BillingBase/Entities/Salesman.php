@@ -5,7 +5,7 @@ namespace Modules\BillingBase\Entities;
 use Storage;
 use Modules\ProvBase\Entities\Contract;
 use App\Http\Controllers\BaseViewController;
-use Modules\BillingBase\Console\accountingCommand;
+use Modules\BillingBase\Console\SettlementRunCommand;
 
 class Salesman extends \BaseModel
 {
@@ -126,7 +126,7 @@ class Salesman extends \BaseModel
      */
     public static function get_storage_rel_filename()
     {
-        return accountingCommand::get_relative_accounting_dir_path().'/'.BaseViewController::translate_label(self::$filename).'.txt';
+        return SettlementRunCommand::get_relative_accounting_dir_path().'/'.BaseViewController::translate_label(self::$filename).'.txt';
     }
 
     /**

@@ -166,7 +166,7 @@ class SettlementRunObserver
         }
 
         // NOTE: Make sure that we use Database Queue Driver - See .env!
-        $job_id = \Queue::push(new \Modules\BillingBase\Console\accountingCommand($settlementrun));
+        $job_id = \Queue::push(new \Modules\BillingBase\Console\SettlementRunCommand($settlementrun));
         // \Artisan::call('billing:accounting', ['--debug' => 1]);
         \Session::put('job_id', $job_id);
     }
@@ -181,7 +181,7 @@ class SettlementRunObserver
 
     public function deleted($settlementrun)
     {
-        // delete all invoices & accounting record files - maybe use accountingCommand@_directory_cleanup
+        // delete all invoices & accounting record files - maybe use SettlementRunCommand@_directory_cleanup
         $date = $settlementrun->year.'-'.str_pad($settlementrun->month, 2, '0', STR_PAD_LEFT);
         $dir = 'data/billingbase/accounting/'.$date;
 

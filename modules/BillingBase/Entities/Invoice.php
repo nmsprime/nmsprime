@@ -384,7 +384,7 @@ class Invoice extends \BaseModel
     }
 
     /**
-     * @param 	cdrs 	Array		Call Data Record array designated for this Invoice formatted by parse_cdr_data in accountingCommand
+     * @param 	cdrs 	Array		Call Data Record array designated for this Invoice formatted by parse_cdr_data in SettlementRunCommand
      * @param   conf   	model 		BillingBase
      */
     public function add_cdr_data($cdrs, $conf)
@@ -564,8 +564,8 @@ class Invoice extends \BaseModel
 
     /**
      * Deletes currently created invoices (created in actual month)
-     * Used to delete invoices created by previous settlement run (SR) in current month - executed in accountingCommand
-     * is used to remove files before settlement run is repeatedly created (accountingCommand executed again)
+     * Used to delete invoices created by previous settlement run (SR) in current month - executed in SettlementRunCommand
+     * is used to remove files before settlement run is repeatedly created (SettlementRunCommand executed again)
      * NOTE: Use Carefully!!
      *
      * @param int 	Delete only invoices related to specific SepaAccount, 0 - delete all invoices of current SR

@@ -108,7 +108,7 @@ class zipCommand extends Command
             $this->bar = $this->output->createProgressBar($this->num);
             $this->bar->start();
         }
-        accountingCommand::push_state(0, 'Concatenate invoices');
+        SettlementRunCommand::push_state(0, 'Concatenate invoices');
 
         // Get Data
         $invoices = $invoices->get();
@@ -118,7 +118,7 @@ class zipCommand extends Command
             $files[] = $inv->get_invoice_dir_path().$inv->filename;
         }
 
-        accountingCommand::push_state($this->num == 3 ? 33 : 25, 'Concatenate invoices');
+        SettlementRunCommand::push_state($this->num == 3 ? 33 : 25, 'Concatenate invoices');
         if ($this->output) {
             $this->bar->advance();
         }
@@ -133,7 +133,7 @@ class zipCommand extends Command
             self::_wait_for_background_processes($files);
             $files = array_keys($files);
 
-            accountingCommand::push_state(50, 'Concatenate invoices');
+            SettlementRunCommand::push_state(50, 'Concatenate invoices');
             if ($this->output) {
                 $this->bar->advance();
             }
@@ -148,7 +148,7 @@ class zipCommand extends Command
 
         concat_pdfs($files, $fpath);
         // sleep(10);
-        accountingCommand::push_state($this->num == 3 ? 66 : 75, 'Zip Files');
+        SettlementRunCommand::push_state($this->num == 3 ? 66 : 75, 'Zip Files');
         if ($this->output) {
             $this->bar->advance();
         }
@@ -220,7 +220,7 @@ class zipCommand extends Command
             // Status update
             // if ($this->output)
             // 	$this->bar->advance();
-            // accountingCommand::push_state((int) $count/$this->num*100, 'Concatenate invoices');
+            // SettlementRunCommand::push_state((int) $count/$this->num*100, 'Concatenate invoices');
         }
 
         return $tmp_pdfs;

@@ -25,7 +25,7 @@ use Modules\BillingBase\Entities\AccountingRecord;
 use Symfony\Component\Console\Input\InputArgument;
 use Modules\BillingBase\Http\Controllers\SettlementRunController;
 
-class accountingCommand extends Command implements ShouldQueue
+class SettlementRunCommand extends Command implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, SerializesModels;
 
@@ -34,9 +34,8 @@ class accountingCommand extends Command implements ShouldQueue
      *
      * @var string
      */
-    public $name = 'billing:accounting';
-    protected $tablename = 'accounting';
-    protected $description = 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
+    public $name = 'billing:settlementrun';
+    protected $description = 'Execute/Create SettlementRun - create Direct Debit/Credit XML, invoices and accounting/booking record files';
 
     protected $dates;					// offen needed time strings for faster access - see constructor
     protected $sr;
@@ -358,6 +357,7 @@ class accountingCommand extends Command implements ShouldQueue
 
             return Contract::orderBy('number')->with('items.product', 'costcenter')
                 ->where('create_invoice', '!=', 0)
+                // ->where('contract.number', '>', 21870)->where('contract.number', '<', 21890)
                 // ->where('salesman_id', '!=', 0)
                 // ->whereIn('number', [50746, /*45570, 45061,*/ 45950])
                 ->get();
