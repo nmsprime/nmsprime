@@ -291,6 +291,10 @@ class ProvMonController extends \BaseController
                 exec("dig -x $ip +short", $fqdns);
                 foreach ($fqdns as $fqdn) {
                     $dash .= "Hostname: $fqdn<br>";
+                    exec("dig $fqdn ptr +short", $ptrs);
+                    foreach ($ptrs as $ptr) {
+                        $dash .= "Hostname: $ptr<br>";
+                    }
                 }
             }
         }
