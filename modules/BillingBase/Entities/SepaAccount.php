@@ -355,7 +355,8 @@ class SepaAccount extends \BaseModel
                 'creditorIban'          => $mandate->sepa_iban,
                 'creditorBic'           => $mandate->sepa_bic,
                 'creditorName'          => $mandate->sepa_holder,
-                'remittanceInformation' => $info,
+                'endToEndId'            => 'RG '.$this->_get_invoice_nr_formatted(),
+                'remittanceInformation' => substr("$info - $mandate->reference", 0, 140),
             ];
 
             $this->sepa_xml['credits'][] = $data;
