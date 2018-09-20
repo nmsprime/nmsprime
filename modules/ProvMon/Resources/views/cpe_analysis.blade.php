@@ -16,7 +16,7 @@
 @section('content_lease')
 
 	@if ($lease)
-		<font color="{{$lease['state']}}"><b>{{$lease['forecast']}}</b></font><br>
+		<font color="{{$lease['state']}}"><b>{!!$lease['forecast']!!}</b></font><br>
 		@foreach ($lease['text'] as $line)
 			<table>
 				<tr>

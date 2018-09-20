@@ -291,6 +291,10 @@ class ProvMonController extends \BaseController
                 exec("dig -x $ip +short", $fqdns);
                 foreach ($fqdns as $fqdn) {
                     $dash .= "Hostname: $fqdn<br>";
+                    exec("dig $fqdn ptr +short", $ptrs);
+                    foreach ($ptrs as $ptr) {
+                        $dash .= "Hostname: $ptr<br>";
+                    }
                 }
             }
         }
@@ -900,8 +904,8 @@ class ProvMonController extends \BaseController
     public static function monitoring_get_netelement_graph_ids($netelem)
     {
         // Search parent CMTS for type cluster
-        if ($netelem->netelementtype_id == 2 && ! $netelem->ip) {
-            $ip = $netelem->get_parent_cmts()->ip;
+        if ($netelem->netelementtype_id == 2 && ! $netelem->ip && $cmts = $netelem->get_parent_cmts()) {
+            $ip = $cmts->ip;
         } else {
             $ip = $netelem->ip;
         }
