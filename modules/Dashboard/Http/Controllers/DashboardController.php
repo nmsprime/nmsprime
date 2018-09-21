@@ -627,11 +627,11 @@ class DashboardController extends BaseController
     }
 
     /*
-     * For News Blade:
+     * For News Blade: Load News from REPO Server to JSON file in app/tmp
      *
      * Official News Parser
      */
-    private function newsLoadOfficialSite()
+    public function newsLoadToFile()
     {
         if (env('IGNORE_NEWS')) {
             return false;
@@ -656,7 +656,23 @@ class DashboardController extends BaseController
         $result = curl_exec($ch);
         curl_close($ch);
 
-        $json = json_decode($result);
+        \File::put(storage_path('app/tmp/').'news.json', $result);
+    }
+
+    /*
+     * For News Blade:
+     *
+     * Official News Parser
+     */
+    private function newsLoadOfficialSite()
+    {
+        $file = storage_path('app/tmp/').'news.json';
+
+        if (! \File::exists($file)) {
+            return;
+        }
+
+        $json = json_decode(\File::get($file));
 
         if (! isset($json->youtube) || ! isset($json->text)) {
             return;
