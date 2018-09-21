@@ -280,12 +280,12 @@ class CustomerTopoController extends NetElementController
         // Log: prepare time measurement
         $before = microtime(true);
 
-        $types = ['us_pwr', 'us_snr', 'ds_pwr', 'ds_snr'];
+        $types = ['ds_pwr', 'ds_snr', 'us_snr', 'us_pwr'];
 
         // foreach modem
         foreach ($modems->orderBy('city')->orderBy('street')->orderBy('house_number')->get() as $modem) {
             // load per modem diagrams
-            $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS Overview');
+            $dia_ids = [$provmon->monitoring_get_graph_template_id('DOCSIS Overview')];
             if (! \Input::has('row')) {
                 $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS US PWR');
             } elseif (in_array(\Input::get('row'), $types)) {

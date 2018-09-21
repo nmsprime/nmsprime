@@ -77,7 +77,7 @@ class cactiCommand extends Command
         $modems = $this->option('modem-id') === false ? Modem::all() : Modem::where('id', '=', $this->option('modem-id'))->get();
         foreach ($modems as $modem) {
             // Skip all $modem's that already have cacti graphs
-            if (ProvMonController::monitoring_get_graph_ids($modem)) {
+            if (ProvMonController::monitoring_get_graph_ids($modem)->isNotEmpty()) {
                 continue;
             }
 
@@ -149,7 +149,7 @@ class cactiCommand extends Command
         $cmtss = $this->option('cmts-id') === false ? Cmts::all() : Cmts::where('id', '=', $this->option('cmts-id'))->get();
         foreach ($cmtss as $cmts) {
             // Skip all $cmts's that already have cacti graphs
-            if (ProvMonController::monitoring_get_graph_ids($cmts)) {
+            if (ProvMonController::monitoring_get_graph_ids($cmts)->isNotEmpty()) {
                 continue;
             }
 

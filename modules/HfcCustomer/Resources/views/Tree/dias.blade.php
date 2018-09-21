@@ -21,7 +21,7 @@
                                         <div class="row">
                                                 <div class="col-xs-3">From: {!!Form::input('text', 'from', $mon['from'], ['style' => 'simple'])!!}</div>
                                                 <div class="col-xs-3">To: {!!Form::input('text' ,'to', $mon['to'], ['style' => 'simple'])!!}</div>
-                                                @if(Route::current()->getName() != 'ProvMon.diagram_edit')
+                                                @if (Route::current()->getName() != 'ProvMon.diagram_edit')
                                                         <div class="col-xs-4">{!!Form::select('row', ['us_pwr' => 'US Power', 'us_snr' => 'US SNR', 'ds_pwr' => 'DS Power', 'ds_snr' => 'DS SNR', 'all' => 'ALL'], $mon['row'], ['style' => 'simple', 'class' => 'pull-right'])!!}</div>
                                                 @endif
                                                 <div class="col-xs-3">{!!Form::submit('Submit', ['style' => 'simple'])!!}</div>

@@ -851,11 +851,11 @@ class ProvMonController extends \BaseController
      *
      * @param modem: The modem to look for Cacti Graphs
      * @param graph_template: only show array[] of cacti graph template ids in result
-     * @return: array of related cacti graph id's, false if no entries are found
+     * @return: collection of related cacti graph id's, empty collection if no entries are found
      *
      * @author: Torsten Schmidt
      */
-    public static function monitoring_get_graph_ids($modem, $graph_template = null)
+    public static function monitoring_get_graph_ids($modem, $graph_template = [])
     {
         // Connect to Cacti DB
         $cacti = \DB::connection('mysql-cacti');
@@ -863,29 +863,22 @@ class ProvMonController extends \BaseController
         // Get Cacti Host ID to $modem
         $host = $cacti->table('host')->where('description', '=', $modem->hostname)->get();
         if (! isset($host[0])) {
-            return false;
+            return collect();
         }
-
         $host_id = $host[0]->id;
 
-        // Graph Template
-        $sql_graph_template = '';
-        if ($graph_template == null) {
-            $sql_graph_template = 'graph_template_id > 0';
-        } else {
-            $sql_graph_template = 'graph_template_id = 0 ';
-            foreach ($graph_template as $_tmpl) {
-                $sql_graph_template .= ' OR graph_template_id = '.$_tmpl;
-            }
+        if (! $graph_template) {
+            return $cacti->table('graph_local')->where('host_id', $host_id)->orderBy('graph_template_id')->pluck('id');
         }
 
         // Get all Graph IDs to Modem
-        $graph_ids = [];
-        foreach ($cacti->table('graph_local')->whereRaw("host_id = $host_id AND ($sql_graph_template)")->orderBy('graph_template_id')->get() as $host_graph) {
-            array_push($graph_ids, $host_graph->id);
+        $ret = collect();
+        // we must use foreach instead of orWhere here, because we want to get the diagrams in a certain order
+        foreach ($graph_template as $tmpl) {
+            $ret = $ret->merge($cacti->table('graph_local')->where('host_id', $host_id)->where('graph_template_id', $tmpl)->pluck('id'));
         }
 
-        return $graph_ids;
+        return $ret;
     }
 
     /**
@@ -897,7 +890,7 @@ class ProvMonController extends \BaseController
      *       in config/database.php
      *
      * @param netelem: The netelem to look for Cacti Graphs
-     * @return: array of related cacti graph id's, false if no entries are found
+     * @return: collection of related cacti graph id's, empty collection if no entries are found
      *
      * @author: Ole Ernst
      */
@@ -914,7 +907,7 @@ class ProvMonController extends \BaseController
 
         $host_id = self::monitoring_get_host_id($ip);
         if (! $host_id) {
-            return;
+            return collect();
         }
         /*
         $vendor = $netelem->netelementtype->vendor;
@@ -965,7 +958,7 @@ class ProvMonController extends \BaseController
      *
      * @author: Torsten Schmidt
      */
-    public function monitoring($host, $graph_template = null)
+    public function monitoring($host, $graph_template = [])
     {
         // Check if Cacti Host RRD files exist
         // This is a speed-up. A cacti HTTP request takes more time.
@@ -981,7 +974,7 @@ class ProvMonController extends \BaseController
         }
 
         // no id's return
-        if (! $ids) {
+        if ($ids->isEmpty()) {
             return false;
         }
 
