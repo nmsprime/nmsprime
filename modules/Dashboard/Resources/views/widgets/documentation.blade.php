@@ -29,9 +29,9 @@
         </div>
 
         <div class="btn btn-dark m-5 m-r-10">
-            {!! HTML::decode (HTML::link('mailto:support@roetzer-engineering.com',
+            {!! HTML::decode (HTML::link(route('SupportRequest.index'),
                 '<h3><div class="text-center"><i style="color: white;" class="img-center fa fa-envelope-open"></i></div></h3>
-                <div style="color: white;" class="username text-ellipsis text-center">Request Help</div>', ['target' => '_blank']))
+                <div style="color: white;" class="username text-ellipsis text-center">Request Help</div>'))
             !!}
         </div>
 
