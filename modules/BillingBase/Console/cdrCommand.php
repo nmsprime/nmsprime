@@ -93,7 +93,9 @@ class cdrCommand extends Command
      */
     public static function get_cdr_pathname($provider, $timestamp = 0, $offset = null)
     {
-        $offset = $offset ?: BillingBase::first()->cdr_offset;
+        if ($offset === null) {
+            $offset = BillingBase::first()->cdr_offset;
+        }
         $time_dir = self::_get_time_of_dir($offset, $timestamp);
         $time_file = self::_get_time_of_file($offset, $timestamp);
 
@@ -193,6 +195,13 @@ class cdrCommand extends Command
 
         \ChannelLog::debug('billing', "Successfully stored call data records in $target_filepath");
         echo "New file: $target_filepath\n";
+
+        // execute phonenumber filter command if it exists (e.g. on mablx10, olblx10)
+        $filter = storage_path('app/config/billingbase/filter-cdr.sh');
+        if (file_exists($filter)) {
+            \ChannelLog::info('billing', "Filtered phonenumbers in $target_filepath via $filter");
+            system("$filter $target_filepath");
+        }
 
         \Storage::delete("tmp/$tmp_file");
     }
