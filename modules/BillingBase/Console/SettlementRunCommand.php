@@ -567,6 +567,11 @@ class SettlementRunCommand extends Command implements ShouldQueue
             return $calls;
         }
 
+        $pns = $this->_get_phonenumbers('sip.enviatel.net');
+        foreach ($pns as $pn) {
+            $pn_customer[substr_replace($pn->prefix_number, '49', 0, 1).$pn->number][] = $pn->contractnr;
+        }
+
         // skip first line of csv (column description)
         unset($csv[0]);
         $price = $count = 0;
@@ -588,6 +593,13 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
             if (in_array($customer_nr, $customer_nrs)) {
                 $calls[$customer_nr][] = $data;
+
+                // check and log if phonenumber does not exist or does not belong to contract
+                if (! isset($pn_customer[$data['calling_nr']])) {
+                    $mismatches[$customer_nr][$data['calling_nr']] = 'missing';
+                } elseif (! in_array($customer_nr, $pn_customer[$data['calling_nr']])) {
+                    $mismatches[$customer_nr][$data['calling_nr']] = 'mismatch';
+                }
             } else {
                 // cumulate price of calls that can not be assigned to any contract
                 if (! isset($unassigned[$arr[0]][$data['calling_nr']])) {
@@ -599,6 +611,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
             }
         }
 
+        $this->_log_phonenumber_mismatches($mismatches);
         $this->_log_unassigned_calls($unassigned);
 
         // warning when there are 5 times more customers then calls
@@ -821,7 +834,28 @@ class SettlementRunCommand extends Command implements ShouldQueue
             })
             ->select('modem.contract_id', 'c.number as contractnr', 'c.create_invoice', 'p.*')
             ->orderBy('p.deleted_at', 'asc')->orderBy('p.created_at', 'desc')
+            // ->limit(50)
             ->get();
+    }
+
+    /**
+     * Log all phonenumbers that actually do not belong to the identifier/contract number labeled in CSV
+     *
+     * @param array      [customer_id][phonenr] => true
+     */
+    private function _log_phonenumber_mismatches($mismatches)
+    {
+        foreach ($mismatches as $contract_nr => $pns) {
+            foreach ($pns as $p => $type) {
+
+                // NOTE: type actually can be missing or mismatch
+                Log::warning('billing', trans("messages.phonenumber_$type", [
+                    'provider' => 'EnviaTel',
+                    'contractnr' => $contract_nr,
+                    'phonenr' => $p,
+                    ]));
+            }
+        }
     }
 
     /**
