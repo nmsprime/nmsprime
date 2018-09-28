@@ -24,16 +24,16 @@ class TicketController extends \BaseController
         }
 
         return [
-            ['form_type' => 'text', 'name' => 'name', 'description' => 'Ticket title'],
+            ['form_type' => 'text', 'name' => 'name', 'description' => 'Title'],
             ['form_type' => 'text', 'name' => 'duedate', 'description' => 'Due Date', 'space' => 1],
-            ['form_type' => 'select', 'name' => 'state', 'description' => 'Ticket state', 'value' => Ticket::getPossibleEnumValues('state')],
-            ['form_type' => 'select', 'name' => 'priority', 'description' => 'Ticket priority', 'value' => Ticket::getPossibleEnumValues('priority')],
-            ['form_type' => 'select', 'name' => 'tickettypes_ids[]', 'description' => 'Ticket type',
+            ['form_type' => 'select', 'name' => 'state', 'description' => 'State', 'value' => Ticket::getPossibleEnumValues('state')],
+            ['form_type' => 'select', 'name' => 'priority', 'description' => 'Priority', 'value' => Ticket::getPossibleEnumValues('priority')],
+            ['form_type' => 'select', 'name' => 'tickettypes_ids[]', 'description' => 'Type',
                 'value' => $model->html_list(TicketType::all(), 'name', true),
                 'options' => ['multiple' => 'multiple'],
                 'selected' => $model->html_list($model->tickettypes, 'name'), 'space' => 1, ],
             ['form_type' => 'select', 'name' => 'contract_id', 'description' => 'Contract', 'value' => $model->html_list(\DB::table('contract')->get(), ['number', 'firstname', 'lastname'], true, ' - ')],
-            ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Ticket description'],
+            ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
             ['form_type' => 'text', 'name' => 'user_id', 'description' => 'Current user', 'value' => \Auth::user()->id, 'hidden' => 1],
             ['form_type' => 'select', 'name' => 'users_ids[]', 'description' => 'Assigned users',
                 'value' => $model->html_list(User::all(), ['last_name', 'first_name'], false, ', '),
