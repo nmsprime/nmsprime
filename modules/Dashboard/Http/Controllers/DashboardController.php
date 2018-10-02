@@ -656,7 +656,6 @@ class DashboardController extends BaseController
         } catch (\Exception $e) {
             Storage::delete("data/$module/documentation.json");
         }
-
     }
 
     /*
@@ -743,6 +742,12 @@ class DashboardController extends BaseController
         // check if nominatim email address is set, otherwise osm geocoding won't be possible
         if (env('OSM_NOMINATIM_EMAIL') == '') {
             return ['text' => '<li>Next: Set an email address (OSM_NOMINATIM_EMAIL) in /etc/nmsprime/env/global.env to enable geocoding for modems</li>'];
+        }
+
+        // check for local nameserver
+        preg_match('/^Server:\s*(\d{1,3}).\d{1,3}.\d{1,3}.\d{1,3}$/m', shell_exec('nslookup nmsprime.com'), $matches);
+        if (isset($matches[1]) && $matches[1] != '127') {
+            return ['text' => '<li>Next: Set your nameserver to 127.0.0.1 in /etc/resolv.conf and make sure it won\'t be overwritten via DHCP (see DNS and PEERDNS in /etc/sysconfig/network-scripts/ifcfg-*)</li>'];
         }
 
         // add Modem
