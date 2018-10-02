@@ -740,6 +740,11 @@ class DashboardController extends BaseController
                     'text' => '<li>Congratulations: now you can create a first '.\HTML::linkRoute('Contract.create', 'Contract'), ];
         }
 
+        // check if nominatim email address is set, otherwise osm geocoding won't be possible
+        if (env('OSM_NOMINATIM_EMAIL') == '') {
+            return ['text' => '<li>Next: Set an email address (OSM_NOMINATIM_EMAIL) in /etc/nmsprime/env/global.env to enable geocoding for modems</li>'];
+        }
+
         // add Modem
         if (\Modules\ProvBase\Entities\Modem::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=40&',
