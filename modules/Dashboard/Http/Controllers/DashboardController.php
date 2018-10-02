@@ -580,7 +580,7 @@ class DashboardController extends BaseController
             return $this->newsInstallAndSequenceCheck();
         }
 
-        // Check for official news from nmsprime.com
+        // Check for official news from support.nmsprime.com
         if ($news = $this->newsLoadOfficialSite()) {
             return $news;
         }
@@ -627,7 +627,8 @@ class DashboardController extends BaseController
     }
 
     /*
-     * For News Blade: Load News from REPO Server to JSON file in app/tmp
+     * News panel: load news from support server to json file
+     * Documentation panel: load documentation.json from support server
      *
      * Official News Parser
      */
@@ -638,25 +639,24 @@ class DashboardController extends BaseController
         }
 
         // get actual network size based on SLA table
-        $ns = \App\Sla::first()->get_sla_size();
-        $sla = \App\Sla::first()->name;
+        $sla = \App\Sla::first();
+        $support = 'https://support.nmsprime.com';
+        $module = strtolower(\NamespaceController::module_get_pure_model_name());
 
-        // prep json return array
-        $json = json_encode([
-            'youtube' => '',
-            'text' => '',
-        ]);
+        try {
+            $url = "$support/news.php?ns=".urlencode($sla->get_sla_size()).'&sla='.urlencode($sla->name);
+            Storage::put("data/$module/news.json", file_get_contents($url));
+        } catch (\Exception $e) {
+            Storage::delete("data/$module/news.json");
+        }
 
-        // parse
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://repo.roetzer-engineering.com/rpm/nmsprime-news/index.php?ns='.$ns.'&sla='.$sla);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        try {
+            $url = "$support/documentation.json";
+            Storage::put("data/$module/documentation.json", file_get_contents($url));
+        } catch (\Exception $e) {
+            Storage::delete("data/$module/documentation.json");
+        }
 
-        $result = curl_exec($ch);
-        curl_close($ch);
-
-        \File::put(storage_path('app/tmp/').'news.json', $result);
     }
 
     /*
@@ -666,13 +666,14 @@ class DashboardController extends BaseController
      */
     private function newsLoadOfficialSite()
     {
-        $file = storage_path('app/tmp/').'news.json';
+        $module = strtolower(\NamespaceController::module_get_pure_model_name());
+        $file = "data/$module/news.json";
 
-        if (! \File::exists($file)) {
+        if (! Storage::exists($file)) {
             return;
         }
 
-        $json = json_decode(\File::get($file));
+        $json = json_decode(Storage::get($file));
 
         if (! isset($json->youtube) || ! isset($json->text)) {
             return;
