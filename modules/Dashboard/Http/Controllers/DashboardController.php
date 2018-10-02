@@ -228,43 +228,157 @@ class DashboardController extends BaseController
     }
 
     /**
-     * Calculate products and the total amount of the contracts for the last 12 months, format and save to json.
-     * Used by cronjob
+     * Determine the total count of contracts (Internet only, Voip only, Internet + Voip) for current & last year
+     * Format and save to json.
+     * Note: used by cronjob
      *
-     * @author Roy Schneider
+     * @author Nino Ryschawy, Roy Schneider
      */
     public static function save_contracts_to_json()
     {
-        $types = ['internet', 'voip', 'tv'];
+        $queries = [
+            'Internet_only'     => ['Internet', 'not', 'Voip'],
+            'Voip_only'         => ['Voip', 'not', 'Internet'],
+            'Internet_and_Voip' => ['Internet', '', 'Voip'],
+            ];
 
-        for ($i = 11; $i >= 0; $i--) {
-            $cur = \Carbon\Carbon::now()->subMonthNoOverflow($i);
-            $date = $cur->toDateString();
-            $array['labels'][] = $cur->format('Y-m');
-            $array['contracts'][] = self::count_contracts($date);
+        $time = \Carbon\Carbon::now();
 
-            foreach ($types as $type) {
-                $array[$type][] = \DB::table('contract')
-                    ->join('item', 'item.contract_id', 'contract.id')
-                    ->join('product', 'product.id', 'item.product_id')
-                    ->where('contract.contract_start', '<=', $date)
-                    ->where('item.valid_from', '<=', $date)
-                    ->where('product.type', $type)
-                    ->where('contract.create_invoice', 1)
-                    ->whereNull('item.deleted_at')
-                    ->where(function ($query) use ($date) {
-                        $query->where('contract.contract_end', '>', $date)
-                            ->orWhere('contract.contract_end', '0000-00-00')
-                            ->orWhereNull('contract.contract_end');
-                    })->where(function ($query) use ($date) {
-                        $query->where('item.valid_to', '>', $date)
-                            ->orWhere('item.valid_to', '0000-00-00')
-                            ->orWhereNull('item.valid_to');
-                    })->count();
+        for ($i=0; $i < 12 + date('m'); $i++) {
+            $month['last'] = $time->lastOfMonth()->format('Y-m-d');
+            $month['first'] = $time->firstOfMonth()->format('Y-m-d');
+            $time->subMonthNoOverflow();
+
+            // $index = $month['last'];
+            $index = $i;
+
+            $contracts['new'][$index] = self::getNewCustomerCount($month);
+            $contracts['canceled'][$index] = self::getCancelationCount($month);
+
+            foreach ($queries as $name => $combinations) {
+                $contracts[$name][$index] = self::getContractCount($month, $combinations);
             }
+
+            // TODO: Internet+-, Voip+-, TV+-
         }
 
-        Storage::disk('chart-data')->put('contracts.json', json_encode($array));
+        Storage::disk('chart-data')->put('contracts.json', json_encode($contracts));
+    }
+
+    /**
+     * Get count of contracts
+     *
+     * @param array     [first, last] day of month
+     * @param array
+     * @author Nino Ryschawy
+     */
+    public static function getContractCount($month, $combinations)
+    {
+        $filter = function ($query) use ($month) { $query
+            ->where('contract.create_invoice', 1)
+            ->whereNull('contract.deleted_at')
+            ->where('contract_start', '<=', $month['last'])
+            ->where(function($query) use ($month) { $query
+                ->whereNull('contract_end')
+                ->orWhere('contract_end', '=', '0000-00-00')
+                ->orWhere('contract_end', '>=', $month['last']);
+            })
+            ->whereNull('i.deleted_at')
+            ->where('i.valid_from', '<=', $month['last'])
+            ->where(function($query) use ($month) { $query
+                ->whereNull('i.valid_to')
+                ->orWhere('i.valid_to', '=', '0000-00-00')
+                ->orWhere('i.valid_to', '>=', $month['last']);
+            });
+        };
+
+        return Contract::join('item as i', 'i.contract_id', '=', 'contract.id')
+            ->join('product as p', 'i.product_id', '=', 'p.id')
+            ->where('p.type', $combinations[0])
+            ->where($filter)
+            ->select('contract.number')
+                ->{"where".ucwords($combinations[1])."In"}('contract.id', function ($query) use ($filter, $combinations) { $query
+                    ->from('contract')
+                    ->join('item as i', 'i.contract_id', '=', 'contract.id')
+                    ->join('product as p', 'i.product_id', '=', 'p.id')
+                    ->where('p.type', $combinations[2])
+                    ->where($filter)
+                    ->select('contract.id');
+                })
+            ->distinct()
+            ->count();
+    }
+
+    /**
+     * Get count of new customers
+     *
+     * @param array     [first, last] day of month
+     * @return Integer
+     *
+     * @author Nino Ryschawy
+     */
+    public static function getNewCustomerCount($month)
+    {
+        $filter = function ($query) { $query
+            ->where('contract.create_invoice', 1)
+            ->whereNull('contract.deleted_at')
+            ->whereNull('i.deleted_at')
+            ->where('i.valid_from_fixed', 1)
+            ->whereIn('p.type', ['Internet', 'Voip', 'TV']);
+        };
+
+        // Contract where (contract_start=month and item_start<=month) or (contract_start<=month and item_start=month and no item (tv, inet, voip) with valid_from in months before)
+        return Contract::join('item as i', 'i.contract_id', '=', 'contract.id')
+            ->join('product as p', 'i.product_id', '=', 'p.id')
+            ->where($filter)
+            ->where(function($query) use ($month, $filter) { $query
+                ->where(function($query) use ($month) { $query
+                    ->where('contract_start', '<=', $month['last'])
+                    ->where('contract_start', '>=', $month['first'])
+                    ->where('i.valid_from', '<=', $month['last']);
+                })
+                ->orWhere(function($query) use ($month, $filter) { $query
+                    ->where('contract_start', '<=', $month['last'])
+                    ->where('i.valid_from', '<=', $month['last'])
+                    ->where('i.valid_from', '>=', $month['first'])
+                    ->whereNotIn('contract.id', function ($query) use ($month, $filter) { $query
+                        ->from('contract')
+                        ->join('item as i', 'i.contract_id', '=', 'contract.id')
+                        ->join('product as p', 'i.product_id', '=', 'p.id')
+                        ->where($filter)
+                        ->where('i.valid_from', '<', $month['first'])
+                        ->select('contract.id');
+                    });
+                });
+            })
+            ->select('number')
+            ->distinct('number')
+            ->count('number');
+            // ->orderBy('number')->get()->pluck('number')->all();
+    }
+
+    /**
+     * Get count of customers that canceled their contract
+     *
+     * @param array     [first, last] day of month
+     * @return Integer
+     */
+    public static function getCancelationCount($month)
+    {
+        // Consider only contract_end, and contract must have had at least one item
+        return Contract::join('item as i', 'i.contract_id', '=', 'contract.id')
+            ->join('product as p', 'i.product_id', '=', 'p.id')
+            ->where('contract.create_invoice', 1)
+            ->whereNull('contract.deleted_at')
+            ->whereNull('i.deleted_at')
+            ->where('i.valid_from_fixed', 1)
+            ->whereIn('p.type', ['Internet', 'Voip', 'TV'])
+            ->where('contract_end', '<=', $month['last'])
+            ->where('contract_end', '>=', $month['first'])
+            ->select('number')
+            ->distinct('number')
+            ->count('number');
+            // ->orderBy('number')->get()->pluck('number')->all();
     }
 
     /**
