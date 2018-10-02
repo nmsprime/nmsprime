@@ -458,4 +458,11 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Yes'                       => 'Si',
     'No'                        => 'No',
     'telephony_only'            => 'Activar si el cliente sólo tiene telefonía, pero no a internet. Este ajuste influye en los parámetros del archivo de configuración de modems NetworkAcess y MaxCPE.',
+    'OID for PreConfiguration Setting' => 'OID for PreConfiguration Setting',
+    'PreConfiguration Value' => 'PreConfiguration Value',
+    'PreConfiguration Time Offset' => 'PreConfiguration Time Offset',
+    'Reload Time - Controlling View' => 'Reload Time - Controlling View',
+    'Due Date'                  => 'Due Date',
+    'Type'                      => 'Type',
+    'Assigned users'            => 'Assigned users',
 ];
