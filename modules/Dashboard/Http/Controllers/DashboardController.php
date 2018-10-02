@@ -697,20 +697,20 @@ class DashboardController extends BaseController
         }
 
         // add CMTS
-        if (\Module::collections()->has('ProvBase') && \Modules\ProvBase\Entities\Cmts::count() == 0) {
+        if (\Modules\ProvBase\Entities\Cmts::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=159&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Cmts.create', 'Create CMTS'), ];
         }
 
         // add IP-Pools
-        if (\Module::collections()->has('ProvBase') && \Modules\ProvBase\Entities\IpPool::count() == 0) {
+        if (\Modules\ProvBase\Entities\IpPool::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Cmts.edit', 'Create IP-Pools',
                         \Modules\ProvBase\Entities\Cmts::first()), ];
         }
 
         // QoS
-        if (\Module::collections()->has('ProvBase') && \Modules\ProvBase\Entities\Qos::count() == 0) {
+        if (\Modules\ProvBase\Entities\Qos::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=380&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Qos.create', 'Create QoS-Profile'), ];
         }
@@ -723,8 +723,7 @@ class DashboardController extends BaseController
         }
 
         // Configfile
-        if (\Module::collections()->has('ProvBase') &&
-            \Modules\ProvBase\Entities\Configfile::where('device', '=', 'cm')->where('public', '=', 'yes')->count() == 0) {
+        if (\Modules\ProvBase\Entities\Configfile::where('device', '=', 'cm')->where('public', '=', 'yes')->count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=500&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Configfile.create', 'Create Configfile'), ];
         }
@@ -736,15 +735,13 @@ class DashboardController extends BaseController
         }
 
         // add Contract
-        if (\Module::collections()->has('ProvBase') &&
-            \Modules\ProvBase\Entities\Contract::count() == 0) {
+        if (\Modules\ProvBase\Entities\Contract::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=0&',
                     'text' => '<li>Congratulations: now you can create a first '.\HTML::linkRoute('Contract.create', 'Contract'), ];
         }
 
         // add Modem
-        if (\Module::collections()->has('ProvBase') &&
-            \Modules\ProvBase\Entities\Modem::count() == 0) {
+        if (\Modules\ProvBase\Entities\Modem::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=40&',
                     'text' => '<li>Congratulations: now you can create a first '.\HTML::linkRoute('Contract.edit', 'Modem', \Modules\ProvBase\Entities\Contract::first()), ];
         }
