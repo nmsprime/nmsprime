@@ -469,4 +469,5 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Due Date'                  => 'Due Date',
     'Type'                      => 'Type',
     'Assigned users'            => 'Assigned users',
+    'active contracts'          => 'Active contracts',
 ];
