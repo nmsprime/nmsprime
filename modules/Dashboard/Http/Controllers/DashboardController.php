@@ -117,7 +117,7 @@ class DashboardController extends BaseController
     }
 
     /**
-     * Returns rehashed data for the line chart and total number of contracts for the widget
+     * Returns rehashed data for the line chart, total number of contracts for the widget and format the data for the table
      *
      * @return array 	[chart => Array, total => Integer]
      */
@@ -129,10 +129,56 @@ class DashboardController extends BaseController
             $content = Storage::disk('chart-data')->get('contracts.json');
         }
 
-        $data['chart'] = json_decode($content);
-        $data['total'] = end($data['chart']->contracts);
+        $array = json_decode($content, true);
+        $data['chart'] = array_slice($array, 0, 5);
+        $data['csv'] = array_slice($array, 5, 2) + array_slice($array, 8);
+        $data['table'] = array_slice($array, 7, 1);
+        $data['total'] = end(json_decode($content)->contracts);
 
         return $data;
+    }
+
+    /**
+     * Creates CSV from JSON(monthly: new customers, cancellations and balance) for the past and current year.
+     *
+     * @author Roy Schneider
+     */
+    public static function monthly_customers_csv()
+    {
+
+        $content = Storage::disk('chart-data')->get('contracts.json');
+        $array = json_decode($content, true);
+        $data = array_slice($array, 5);
+
+        $year = [date("Y",strtotime("-1 year")), date("Y",strtotime("this year"))];
+        $fileName = implode('_', $year);
+        $file = fopen('php://output', 'w');
+
+        for ($i = 11 + date('m'); $i >= 0; $i--) {
+            $temp =  \Carbon\Carbon::now()->subMonthNoOverflow($i);
+            $headings[] = $temp->format('Y/m');
+        }
+
+        array_unshift($headings, 'New items');
+        fputcsv($file, $headings);
+
+        $k = 0;
+        $field = ['+ Internet', '- Internet', '+ Voip', '- Voip', '+ TV', '- TV'];
+        foreach ([$data['monthly']['gain']['internet'], $data['monthly']['loss']['internet'], $data['monthly']['gain']['voip'], $data['monthly']['loss']['voip'], $data['monthly']['gain']['tv'], $data['monthly']['loss']['tv']] as $numbers) {
+            array_unshift($numbers, $field[$k++]);
+            fputcsv($file, $numbers);
+        }
+
+        array_unshift($data['monthly']['ratio'], ' Ratio');
+        fputcsv($file, $data['monthly']['ratio']);
+        fputcsv($file, ['']);
+        array_unshift($data['new'], ' New Customers');
+        fputcsv($file, $data['new']);
+        array_unshift($data['canceled'], ' Cancellations');
+        fputcsv($file, $data['canceled']);
+        fclose($file);
+        header('Content-Type: application/excel; charset=utf-8'); //application/excel
+        header('Content-Disposition: attachment; filename="' . $fileName . '.csv"');
     }
 
     /**
@@ -142,16 +188,16 @@ class DashboardController extends BaseController
      * @param string $date_interval_start
      * @return int
      */
-    private static function count_contracts($date_interval_start)
+    private static function count_contracts($date_interval)
     {
         $ret = 0;
 
         // for 800 contracts this is approximately 4x faster - DB::table is again 5x faster than Eloquents Contract::count -> (20x faster)
-        $ret = \DB::table('contract')->where('contract_start', '<=', $date_interval_start)
+        $ret = \DB::table('contract')->where('contract_start', '<=', $date_interval['first'])
             ->whereNull('deleted_at')
-            ->where(function ($query) {
+            ->where(function ($query) use ($date_interval) {
                 $query
-                ->where('contract_end', '>', date('Y-m-d'))
+                ->where('contract_end', '>=', $date_interval['last'])
                 ->orWhere('contract_end', '=', '0000-00-00')
                 ->orWhereNull('contract_end');
             })
@@ -236,30 +282,94 @@ class DashboardController extends BaseController
      */
     public static function save_contracts_to_json()
     {
+
         $queries = [
             'Internet_only'     => ['Internet', 'not', 'Voip'],
             'Voip_only'         => ['Voip', 'not', 'Internet'],
             'Internet_and_Voip' => ['Internet', '', 'Voip'],
             ];
 
-        $time = \Carbon\Carbon::now();
-
-        for ($i=0; $i < 12 + date('m'); $i++) {
+        //date array to count items for the line chart
+        for ($i=11; $i >= 0 ; $i--) {
+            $time = \Carbon\Carbon::now()->subMonthNoOverflow($i);
             $month['last'] = $time->lastOfMonth()->format('Y-m-d');
             $month['first'] = $time->firstOfMonth()->format('Y-m-d');
-            $time->subMonthNoOverflow();
-
-            // $index = $month['last'];
-            $index = $i;
-
-            $contracts['new'][$index] = self::getNewCustomerCount($month);
-            $contracts['canceled'][$index] = self::getCancelationCount($month);
+            $contracts['labels'][] = $time->lastOfMonth()->format('Y-m-d');
+            $contracts['contracts'][] = self::count_contracts($month);
 
             foreach ($queries as $name => $combinations) {
-                $contracts[$name][$index] = self::getContractCount($month, $combinations);
+                $contracts[$name][] = self::getContractCount($month, $combinations);
             }
+        }
 
-            // TODO: Internet+-, Voip+-, TV+-
+        $base = \DB::table('contract')
+            ->join('item', 'item.contract_id', 'contract.id')
+            ->join('product', 'product.id', 'item.product_id')
+            ->where('contract.create_invoice', 1)
+            ->where('item.valid_from_fixed', 1)
+            ->whereNull('item.deleted_at')
+            ->whereNull('contract.deleted_at');
+
+        //date array to count all items of type [internet, voip, tv] for each month from January last year to today
+        $dayOne = new \Carbon\Carbon('first day of January 0000');
+        for ($i = 11 + date('m'); $i >= 0 ; $i--) {
+            $tmp = \Carbon\Carbon::now()->startOfMonth()->subMonthNoOverflow($i);
+            $all['monthly'][] = [$tmp->format('Y-m-d'), $tmp->endOfMonth()->format('Y-m-d')];
+            $month['last'] = $tmp->lastOfMonth()->format('Y-m-d');
+            $month['first'] = $tmp->firstOfMonth()->format('Y-m-d');
+            $contracts['new'][] = self::getNewCustomerCount($month);
+            $contracts['canceled'][] = self::getCancelationCount($month);
+        }
+
+        //date array to count all items of type [internet, voip, tv] for the current and the last 3 weeks
+        $tmp = \Carbon\Carbon::now()->startOfWeek();
+        for ($i = 0; $i < 4; $i++) {
+            $all['weekly'][] = [$tmp->format('Y-m-d'), $tmp->copy()->endOfWeek()->format('Y-m-d')];
+            $contracts['weekly']['week'][] = $tmp->format('W');
+            $tmp->subWeek();
+        }
+
+        //calculate new items/customer every week or month
+        foreach ($all as $span => $dates) {
+            foreach ($dates as $date) {
+                foreach (['internet', 'voip', 'tv', 'other'] as $type) {
+                        $contracts[$span]['gain'][$type][] = with(clone $base)
+                            ->where('contract.contract_start', '<=', $date[1])
+                            ->where('product.type', $type)
+                            ->where(function ($query) use ($date) {
+                                $query->where('item.valid_from', '>=', $date[0])
+                                    ->where('item.valid_from', '<=', $date[1]);
+                            })->where(function ($query) use ($date) {
+                                $query->where('contract.contract_end', '>=', $date[1])
+                                    ->orWhere('contract.contract_end', '0000-00-00')
+                                    ->orWhereNull('contract.contract_end');
+                            })->where(function ($query) use ($date) {
+                                $query->where('item.valid_to', '>=', $date[1])
+                                    ->orWhere('item.valid_to', '0000-00-00')
+                                    ->orWhereNull('item.valid_to');
+                            })->sum('item.count');
+
+                            //cancellations every week or month
+                            $contracts[$span]['loss'][$type][] = with(clone $base)
+                                ->where('product.type', $type)
+                                ->where('contract.contract_start', '<=', $date[1])
+                                ->where(function ($query) use ($date) {
+                                    $query->where('contract.contract_end', '>=', $date[0])
+                                        ->where('contract.contract_end', '<=', $date[1])
+                                        ->orWhere(function ($query) use ($date) {
+                                            $query->where('item.valid_to', '>=', $date[0])
+                                                ->where('item.valid_to', '<=', $date[1]);
+                                });})->sum('item.count');
+
+                }
+
+                if ($span == 'weekly' || $span == 'monthly') {
+                    //weekly and monthly balance
+                    foreach (array_keys($contracts[$span]['gain'][$type]) as $key) {
+                        $contracts[$span]['ratio'][$key] = ($contracts[$span]['gain']['internet'][$key] + $contracts[$span]['gain']['voip'][$key] + $contracts[$span]['gain']['tv'][$key]) - ($contracts[$span]['loss']['internet'][$key] + $contracts[$span]['loss']['voip'][$key] + $contracts[$span]['loss']['tv'][$key]);
+                    }
+                }
+            }
         }
 
         Storage::disk('chart-data')->put('contracts.json', json_encode($contracts));
@@ -284,6 +394,7 @@ class DashboardController extends BaseController
                 ->orWhere('contract_end', '>=', $month['last']);
             })
             ->whereNull('i.deleted_at')
+            ->where('i.valid_from_fixed', 1)
             ->where('i.valid_from', '<=', $month['last'])
             ->where(function($query) use ($month) { $query
                 ->whereNull('i.valid_to')
