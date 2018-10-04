@@ -88,6 +88,11 @@ class ItemController extends \BaseController
             $data['valid_from_fixed'] = 1;
         }
 
+        $contract = Contract::find($data['contract_id']);
+        if ($data['valid_from'] < $thisContract->contract_start) {
+            $data['valid_from'] = $thisContract->contract_start;
+        }
+
         $data = parent::prepare_input($data);
 
         $nullable_fields = [
