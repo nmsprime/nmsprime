@@ -200,7 +200,7 @@
 						backgroundColor: 'rgb(0, 170, 132, 0.3)',
 						cubicInterpolationMode: 'monotone'
 					}, {
-						label:'active contracts',
+						label: "{!! trans('messages.active contracts') !!}",
 						data: contracts,
 						pointBackgroundColor: 'rgb(2, 207, 211, 1)',
 						borderColor: 'rgb(2, 207, 211, 1)',
