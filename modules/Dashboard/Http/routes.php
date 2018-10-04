@@ -9,5 +9,4 @@ BaseRoute::group([], function () {
     BaseRoute::get('createCSV', [
         'uses' => '\Modules\Dashboard\Http\Controllers\DashboardController@monthly_customers_csv',
     ]);
-
 });

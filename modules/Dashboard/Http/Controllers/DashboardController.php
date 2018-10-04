@@ -145,17 +145,16 @@ class DashboardController extends BaseController
      */
     public static function monthly_customers_csv()
     {
-
         $content = Storage::disk('chart-data')->get('contracts.json');
         $array = json_decode($content, true);
         $data = array_slice($array, 5);
 
-        $year = [date("Y",strtotime("-1 year")), date("Y",strtotime("this year"))];
+        $year = [date('Y', strtotime('-1 year')), date('Y', strtotime('this year'))];
         $fileName = implode('_', $year);
         $file = fopen('php://output', 'w');
 
         for ($i = 11 + date('m'); $i >= 0; $i--) {
-            $temp =  \Carbon\Carbon::now()->subMonthNoOverflow($i);
+            $temp = \Carbon\Carbon::now()->subMonthNoOverflow($i);
             $headings[] = $temp->format('Y/m');
         }
 
@@ -178,7 +177,7 @@ class DashboardController extends BaseController
         fputcsv($file, $data['canceled']);
         fclose($file);
         header('Content-Type: application/excel; charset=utf-8'); //application/excel
-        header('Content-Disposition: attachment; filename="' . $fileName . '.csv"');
+        header('Content-Disposition: attachment; filename="'.$fileName.'.csv"');
     }
 
     /**
@@ -282,7 +281,6 @@ class DashboardController extends BaseController
      */
     public static function save_contracts_to_json()
     {
-
         $queries = [
             'Internet_only'     => ['Internet', 'not', 'Voip'],
             'Voip_only'         => ['Voip', 'not', 'Internet'],
@@ -290,7 +288,7 @@ class DashboardController extends BaseController
             ];
 
         //date array to count items for the line chart
-        for ($i=11; $i >= 0 ; $i--) {
+        for ($i = 11; $i >= 0; $i--) {
             $time = \Carbon\Carbon::now()->subMonthNoOverflow($i);
             $month['last'] = $time->lastOfMonth()->format('Y-m-d');
             $month['first'] = $time->firstOfMonth()->format('Y-m-d');
@@ -312,7 +310,7 @@ class DashboardController extends BaseController
 
         //date array to count all items of type [internet, voip, tv] for each month from January last year to today
         $dayOne = new \Carbon\Carbon('first day of January 0000');
-        for ($i = 11 + date('m'); $i >= 0 ; $i--) {
+        for ($i = 11 + date('m'); $i >= 0; $i--) {
             $tmp = \Carbon\Carbon::now()->startOfMonth()->subMonthNoOverflow($i);
             $all['monthly'][] = [$tmp->format('Y-m-d'), $tmp->endOfMonth()->format('Y-m-d')];
             $month['last'] = $tmp->lastOfMonth()->format('Y-m-d');
@@ -333,34 +331,42 @@ class DashboardController extends BaseController
         foreach ($all as $span => $dates) {
             foreach ($dates as $date) {
                 foreach (['internet', 'voip', 'tv', 'other'] as $type) {
-                        $contracts[$span]['gain'][$type][] = with(clone $base)
-                            ->where('contract.contract_start', '<=', $date[1])
-                            ->where('product.type', $type)
-                            ->where(function ($query) use ($date) {
-                                $query->where('item.valid_from', '>=', $date[0])
-                                    ->where('item.valid_from', '<=', $date[1]);
-                            })->where(function ($query) use ($date) {
-                                $query->where('contract.contract_end', '>=', $date[1])
-                                    ->orWhere('contract.contract_end', '0000-00-00')
-                                    ->orWhereNull('contract.contract_end');
-                            })->where(function ($query) use ($date) {
-                                $query->where('item.valid_to', '>=', $date[1])
-                                    ->orWhere('item.valid_to', '0000-00-00')
-                                    ->orWhereNull('item.valid_to');
-                            })->sum('item.count');
+                    $contracts[$span]['gain'][$type][] = with(clone $base)
+                        ->where('contract.contract_start', '<=', $date[1])
+                        ->where('product.type', $type)
+                        ->where(function ($query) use ($date) {
+                            $query
+                            ->where('item.valid_from', '>=', $date[0])
+                            ->where('item.valid_from', '<=', $date[1]);
+                        })
+                        ->where(function ($query) use ($date) {
+                            $query
+                            ->where('contract.contract_end', '>=', $date[1])
+                            ->orWhere('contract.contract_end', '0000-00-00')
+                            ->orWhereNull('contract.contract_end');
+                        })
+                        ->where(function ($query) use ($date) {
+                            $query
+                            ->where('item.valid_to', '>=', $date[1])
+                            ->orWhere('item.valid_to', '0000-00-00')
+                            ->orWhereNull('item.valid_to');
+                        })
+                        ->sum('item.count');
 
-                            //cancellations every week or month
-                            $contracts[$span]['loss'][$type][] = with(clone $base)
-                                ->where('product.type', $type)
-                                ->where('contract.contract_start', '<=', $date[1])
-                                ->where(function ($query) use ($date) {
-                                    $query->where('contract.contract_end', '>=', $date[0])
-                                        ->where('contract.contract_end', '<=', $date[1])
-                                        ->orWhere(function ($query) use ($date) {
-                                            $query->where('item.valid_to', '>=', $date[0])
-                                                ->where('item.valid_to', '<=', $date[1]);
-                                });})->sum('item.count');
-
+                    //cancellations every week or month
+                    $contracts[$span]['loss'][$type][] = with(clone $base)
+                        ->where('product.type', $type)
+                        ->where('contract.contract_start', '<=', $date[1])
+                        ->where(function ($query) use ($date) {
+                            $query
+                            ->where('contract.contract_end', '>=', $date[0])
+                            ->where('contract.contract_end', '<=', $date[1])
+                            ->orWhere(function ($query) use ($date) {
+                                $query
+                                ->where('item.valid_to', '>=', $date[0])
+                                ->where('item.valid_to', '<=', $date[1]);
+                            });
+                        })->sum('item.count');
                 }
 
                 if ($span == 'weekly' || $span == 'monthly') {
@@ -384,11 +390,13 @@ class DashboardController extends BaseController
      */
     public static function getContractCount($month, $combinations)
     {
-        $filter = function ($query) use ($month) { $query
+        $filter = function ($query) use ($month) {
+            $query
             ->where('contract.create_invoice', 1)
             ->whereNull('contract.deleted_at')
             ->where('contract_start', '<=', $month['last'])
-            ->where(function($query) use ($month) { $query
+            ->where(function ($query) use ($month) {
+                $query
                 ->whereNull('contract_end')
                 ->orWhere('contract_end', '=', '0000-00-00')
                 ->orWhere('contract_end', '>=', $month['last']);
@@ -396,7 +404,8 @@ class DashboardController extends BaseController
             ->whereNull('i.deleted_at')
             ->where('i.valid_from_fixed', 1)
             ->where('i.valid_from', '<=', $month['last'])
-            ->where(function($query) use ($month) { $query
+            ->where(function ($query) use ($month) {
+                $query
                 ->whereNull('i.valid_to')
                 ->orWhere('i.valid_to', '=', '0000-00-00')
                 ->orWhere('i.valid_to', '>=', $month['last']);
@@ -408,29 +417,29 @@ class DashboardController extends BaseController
             ->where('p.type', $combinations[0])
             ->where($filter)
             ->select('contract.number')
-                ->{"where".ucwords($combinations[1])."In"}('contract.id', function ($query) use ($filter, $combinations) { $query
-                    ->from('contract')
+                ->{'where'.ucwords($combinations[1]).'In'}('contract.id', function ($query) use ($filter, $combinations) {
+                    $query->from('contract')
                     ->join('item as i', 'i.contract_id', '=', 'contract.id')
                     ->join('product as p', 'i.product_id', '=', 'p.id')
                     ->where('p.type', $combinations[2])
                     ->where($filter)
                     ->select('contract.id');
-                })
-            ->distinct()
-            ->count();
+                })->distinct()
+                ->count();
     }
 
     /**
      * Get count of new customers
      *
      * @param array     [first, last] day of month
-     * @return Integer
+     * @return int
      *
      * @author Nino Ryschawy
      */
     public static function getNewCustomerCount($month)
     {
-        $filter = function ($query) { $query
+        $filter = function ($query) {
+            $query
             ->where('contract.create_invoice', 1)
             ->whereNull('contract.deleted_at')
             ->whereNull('i.deleted_at')
@@ -442,17 +451,21 @@ class DashboardController extends BaseController
         return Contract::join('item as i', 'i.contract_id', '=', 'contract.id')
             ->join('product as p', 'i.product_id', '=', 'p.id')
             ->where($filter)
-            ->where(function($query) use ($month, $filter) { $query
-                ->where(function($query) use ($month) { $query
+            ->where(function ($query) use ($month, $filter) {
+                $query
+                ->where(function ($query) use ($month) {
+                    $query
                     ->where('contract_start', '<=', $month['last'])
                     ->where('contract_start', '>=', $month['first'])
                     ->where('i.valid_from', '<=', $month['last']);
                 })
-                ->orWhere(function($query) use ($month, $filter) { $query
+                ->orWhere(function ($query) use ($month, $filter) {
+                    $query
                     ->where('contract_start', '<=', $month['last'])
                     ->where('i.valid_from', '<=', $month['last'])
                     ->where('i.valid_from', '>=', $month['first'])
-                    ->whereNotIn('contract.id', function ($query) use ($month, $filter) { $query
+                    ->whereNotIn('contract.id', function ($query) use ($month, $filter) {
+                        $query
                         ->from('contract')
                         ->join('item as i', 'i.contract_id', '=', 'contract.id')
                         ->join('product as p', 'i.product_id', '=', 'p.id')
@@ -465,14 +478,13 @@ class DashboardController extends BaseController
             ->select('number')
             ->distinct('number')
             ->count('number');
-            // ->orderBy('number')->get()->pluck('number')->all();
     }
 
     /**
      * Get count of customers that canceled their contract
      *
      * @param array     [first, last] day of month
-     * @return Integer
+     * @return int
      */
     public static function getCancelationCount($month)
     {
@@ -489,7 +501,6 @@ class DashboardController extends BaseController
             ->select('number')
             ->distinct('number')
             ->count('number');
-            // ->orderBy('number')->get()->pluck('number')->all();
     }
 
     /**
