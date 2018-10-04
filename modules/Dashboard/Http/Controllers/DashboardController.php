@@ -2,6 +2,7 @@
 
 namespace Modules\Dashboard\Http\Controllers;
 
+use Log;
 use Auth;
 use View;
 use Module;
@@ -643,18 +644,18 @@ class DashboardController extends BaseController
         $support = 'https://support.nmsprime.com';
         $module = strtolower(\NamespaceController::module_get_pure_model_name());
 
-        try {
-            $url = "$support/news.php?ns=".urlencode($sla->get_sla_size()).'&sla='.urlencode($sla->name);
-            Storage::put("data/$module/news.json", file_get_contents($url));
-        } catch (\Exception $e) {
-            Storage::delete("data/$module/news.json");
-        }
+        $files = [
+            'news.json' => "$support/news.php?ns=".urlencode($sla->get_sla_size()).'&sla='.urlencode($sla->name),
+            'documentation.json' => "$support/documentation.json",
+        ];
 
-        try {
-            $url = "$support/documentation.json";
-            Storage::put("data/$module/documentation.json", file_get_contents($url));
-        } catch (\Exception $e) {
-            Storage::delete("data/$module/documentation.json");
+        foreach ($files as $name => $url) {
+            try {
+                Storage::put("data/$module/$name", file_get_contents($url));
+            } catch (\Exception $e) {
+                Log::error("Error retrieving $name (using installed version): ".$e->getMessage());
+                Storage::delete("data/$module/$name");
+            }
         }
     }
 
