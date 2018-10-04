@@ -2,6 +2,7 @@
 
 namespace Modules\Dashboard\Http\Controllers;
 
+use Log;
 use Auth;
 use View;
 use Module;
@@ -816,7 +817,7 @@ class DashboardController extends BaseController
             return $this->newsInstallAndSequenceCheck();
         }
 
-        // Check for official news from nmsprime.com
+        // Check for official news from support.nmsprime.com
         if ($news = $this->newsLoadOfficialSite()) {
             return $news;
         }
@@ -863,7 +864,8 @@ class DashboardController extends BaseController
     }
 
     /*
-     * For News Blade: Load News from REPO Server to JSON file in app/tmp
+     * News panel: load news from support server to json file
+     * Documentation panel: load documentation.json from support server
      *
      * Official News Parser
      */
@@ -874,25 +876,23 @@ class DashboardController extends BaseController
         }
 
         // get actual network size based on SLA table
-        $ns = \App\Sla::first()->get_sla_size();
-        $sla = \App\Sla::first()->name;
+        $sla = \App\Sla::first();
+        $support = 'https://support.nmsprime.com';
+        $module = strtolower(\NamespaceController::module_get_pure_model_name());
 
-        // prep json return array
-        $json = json_encode([
-            'youtube' => '',
-            'text' => '',
-        ]);
+        $files = [
+            'news.json' => "$support/news.php?ns=".urlencode($sla->get_sla_size()).'&sla='.urlencode($sla->name),
+            'documentation.json' => "$support/documentation.json",
+        ];
 
-        // parse
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://repo.roetzer-engineering.com/rpm/nmsprime-news/index.php?ns='.$ns.'&sla='.$sla);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
-        $result = curl_exec($ch);
-        curl_close($ch);
-
-        \File::put(storage_path('app/tmp/').'news.json', $result);
+        foreach ($files as $name => $url) {
+            try {
+                Storage::put("data/$module/$name", file_get_contents($url));
+            } catch (\Exception $e) {
+                Log::error("Error retrieving $name (using installed version): ".$e->getMessage());
+                Storage::delete("data/$module/$name");
+            }
+        }
     }
 
     /*
@@ -902,13 +902,14 @@ class DashboardController extends BaseController
      */
     private function newsLoadOfficialSite()
     {
-        $file = storage_path('app/tmp/').'news.json';
+        $module = strtolower(\NamespaceController::module_get_pure_model_name());
+        $file = "data/$module/news.json";
 
-        if (! \File::exists($file)) {
+        if (! Storage::exists($file)) {
             return;
         }
 
-        $json = json_decode(\File::get($file));
+        $json = json_decode(Storage::get($file));
 
         if (! isset($json->youtube) || ! isset($json->text)) {
             return;
@@ -932,20 +933,20 @@ class DashboardController extends BaseController
         }
 
         // add CMTS
-        if (\Module::collections()->has('ProvBase') && \Modules\ProvBase\Entities\Cmts::count() == 0) {
+        if (\Modules\ProvBase\Entities\Cmts::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=159&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Cmts.create', 'Create CMTS'), ];
         }
 
         // add IP-Pools
-        if (\Module::collections()->has('ProvBase') && \Modules\ProvBase\Entities\IpPool::count() == 0) {
+        if (\Modules\ProvBase\Entities\IpPool::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Cmts.edit', 'Create IP-Pools',
                         \Modules\ProvBase\Entities\Cmts::first()), ];
         }
 
         // QoS
-        if (\Module::collections()->has('ProvBase') && \Modules\ProvBase\Entities\Qos::count() == 0) {
+        if (\Modules\ProvBase\Entities\Qos::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=380&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Qos.create', 'Create QoS-Profile'), ];
         }
@@ -958,8 +959,7 @@ class DashboardController extends BaseController
         }
 
         // Configfile
-        if (\Module::collections()->has('ProvBase') &&
-            \Modules\ProvBase\Entities\Configfile::where('device', '=', 'cm')->where('public', '=', 'yes')->count() == 0) {
+        if (\Modules\ProvBase\Entities\Configfile::where('device', '=', 'cm')->where('public', '=', 'yes')->count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=500&',
                     'text' => '<li>Next: '.\HTML::linkRoute('Configfile.create', 'Create Configfile'), ];
         }
@@ -971,15 +971,24 @@ class DashboardController extends BaseController
         }
 
         // add Contract
-        if (\Module::collections()->has('ProvBase') &&
-            \Modules\ProvBase\Entities\Contract::count() == 0) {
+        if (\Modules\ProvBase\Entities\Contract::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=0&',
                     'text' => '<li>Congratulations: now you can create a first '.\HTML::linkRoute('Contract.create', 'Contract'), ];
         }
 
+        // check if nominatim email address is set, otherwise osm geocoding won't be possible
+        if (env('OSM_NOMINATIM_EMAIL') == '') {
+            return ['text' => '<li>Next: Set an email address (OSM_NOMINATIM_EMAIL) in /etc/nmsprime/env/global.env to enable geocoding for modems</li>'];
+        }
+
+        // check for local nameserver
+        preg_match('/^Server:\s*(\d{1,3}).\d{1,3}.\d{1,3}.\d{1,3}$/m', shell_exec('nslookup nmsprime.com'), $matches);
+        if (isset($matches[1]) && $matches[1] != '127') {
+            return ['text' => '<li>Next: Set your nameserver to 127.0.0.1 in /etc/resolv.conf and make sure it won\'t be overwritten via DHCP (see DNS and PEERDNS in /etc/sysconfig/network-scripts/ifcfg-*)</li>'];
+        }
+
         // add Modem
-        if (\Module::collections()->has('ProvBase') &&
-            \Modules\ProvBase\Entities\Modem::count() == 0) {
+        if (\Modules\ProvBase\Entities\Modem::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=40&',
                     'text' => '<li>Congratulations: now you can create a first '.\HTML::linkRoute('Contract.edit', 'Modem', \Modules\ProvBase\Entities\Contract::first()), ];
         }
