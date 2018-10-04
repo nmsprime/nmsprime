@@ -89,8 +89,8 @@ class ItemController extends \BaseController
         }
 
         $contract = Contract::find($data['contract_id']);
-        if ($data['valid_from'] < $thisContract->contract_start) {
-            $data['valid_from'] = $thisContract->contract_start;
+        if ($data['valid_from'] < $contract->contract_start) {
+            $data['valid_from'] = $contract->contract_start;
         }
 
         $data = parent::prepare_input($data);
