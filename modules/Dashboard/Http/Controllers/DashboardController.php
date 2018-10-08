@@ -878,7 +878,6 @@ class DashboardController extends BaseController
         // get actual network size based on SLA table
         $sla = \App\Sla::first();
         $support = 'https://support.nmsprime.com';
-        $module = strtolower(\NamespaceController::module_get_pure_model_name());
 
         $files = [
             'news.json' => "$support/news.php?ns=".urlencode($sla->get_sla_size()).'&sla='.urlencode($sla->name),
@@ -887,10 +886,10 @@ class DashboardController extends BaseController
 
         foreach ($files as $name => $url) {
             try {
-                Storage::put("data/$module/$name", file_get_contents($url));
+                Storage::put("data/dashboard/$name", file_get_contents($url));
             } catch (\Exception $e) {
                 Log::error("Error retrieving $name (using installed version): ".$e->getMessage());
-                Storage::delete("data/$module/$name");
+                Storage::delete("data/dashboard/$name");
             }
         }
     }
@@ -902,8 +901,7 @@ class DashboardController extends BaseController
      */
     private function newsLoadOfficialSite()
     {
-        $module = strtolower(\NamespaceController::module_get_pure_model_name());
-        $file = "data/$module/news.json";
+        $file = 'data/dashboard/news.json';
 
         if (! Storage::exists($file)) {
             return;
