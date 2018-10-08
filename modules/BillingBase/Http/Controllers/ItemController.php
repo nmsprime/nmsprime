@@ -47,7 +47,7 @@ class ItemController extends \BaseController
             ['form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt],
             ['form_type' => 'text', 'name' => 'valid_from', 'description' => 'Start date', 'options' => ['placeholder' => 'YYYY-MM-DD'], 'help' => trans('helper.Item_ValidFrom')],
             ['form_type' => 'checkbox', 'name' => 'valid_from_fixed', 'description' => 'Active from start date', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidFromFixed'), 'hidden' => $fluid, 'checked' => 1, 'value' => 1],
-            ['form_type' => 'text', 'name' => 'valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD']],
+            ['form_type' => 'text', 'name' => 'valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD | 12M'], 'help' => trans('helper.Item_validTo')],
             ['form_type' => 'checkbox', 'name' => 'valid_to_fixed', 'description' => 'Valid to fixed', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidToFixed'), 'hidden' => $fluid, 'checked' => 1, 'value' => 1],
             ['form_type' => 'text', 'name' => 'credit_amount', 'description' => 'Credit Amount', 'select' => 'Credit', 'help' => trans('helper.Item_CreditAmount')],
             ['form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs],
@@ -91,6 +91,24 @@ class ItemController extends \BaseController
         $contract = Contract::find($data['contract_id']);
         if ($data['valid_from'] < $contract->contract_start) {
             $data['valid_from'] = $contract->contract_start;
+        }
+
+        // allow valid to as number in months e.g. 12M
+        if (isset($data['valid_to']) && $data['valid_to']) {
+            preg_match('/^([1-9]\d*)M/', $data['valid_to'], $match);
+
+            // determine correct date
+            if ($match) {
+                $months = $match[1];
+                $product = Product::find($data['product_id']);
+                $time = \Carbon\Carbon::createFromFormat('Y-m-d', $data['valid_from']);
+
+                if ($product->billing_cycle == 'Once') {
+                    $data['valid_to'] = $time->addMonthNoOverflow($months - 1)->lastOfMonth()->format('Y-m-d');
+                } else {
+                    $data['valid_to'] = $time->addMonthNoOverflow($months)->format('Y-m-d');
+                }
+            }
         }
 
         $data = parent::prepare_input($data);
