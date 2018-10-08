@@ -143,10 +143,9 @@ class TreeTopographyController extends HfcBaseController
      *   [ [mpr.id] => [0 => [0=>x,1=>y], 1 => [0=>x,1=>y], ..], .. ]
      * enable and see dd() for a more detailed view
      *
-     * @param trees: The Tree Objects to be displayed
-     * @return array of MPS rules and geopos for all $tree objects
-     *
      * @author: Torsten Schmidt
+     * @param Illuminate\Database\Eloquent\Builder $trees The Tree Objects to be displayed
+     * @return array MPS rules and geopos for all $tree objects
      */
     public function mpr($trees)
     {
