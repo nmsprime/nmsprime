@@ -1,12 +1,10 @@
 {
-	"name": "pingpong-modules/billingbase",
-	"description": "",
-	"authors": [
-		{
-			"name": "Pingpong Labs",
-			"email": "pingpong.labs@gmail.com"
-		}
-	],
+	"name": "nmsprime-modules/billingbase",
+	"description": "Billing Module for NMS Prime",
+	"authors": [{
+		"name": "Roetzer engineering",
+		"email": "info@roetzer-engineering.com"
+	}],
 	"autoload": {
 		"psr-4": {
 			"Modules\\BillingBase\\": ""

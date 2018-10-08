@@ -7,6 +7,7 @@ composer.lock
 .DS_Store
 *.sublime*
 *.vscode*
+*.phpintel*
 *.fuse_hidden*
 Thumbs.db
 storage/systemd/
@@ -50,6 +51,7 @@ Documentation/doxywarn.log
 
 # ignore debug output from testing
 phpunit/*.htm
+phpunit/*.txt
 
 # ignore xml files created from template
 phpunit/*.xml

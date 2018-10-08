@@ -12,9 +12,8 @@
 */
 
 $app = new Illuminate\Foundation\Application(
-	realpath(__DIR__.'/../')
+    realpath(__DIR__.'/../')
 );
-
 
 /*
 |--------------------------------------------------------------------------
@@ -26,13 +25,13 @@ $app = new Illuminate\Foundation\Application(
 | @author Patrick Reichel
 */
 
-// force reading of .evn.testing – this seems not be done automatically every time
+// force reading of .env.testing – this seems not be done automatically every time
 if (env('APP_ENV') == 'testing') {
-	$dotenv = new \Dotenv\Dotenv(__DIR__.'/../', '.env.testing');
-	$dotenv->overload();
+    $dotenv = new \Dotenv\Dotenv(__DIR__.'/../', '.env.testing');
+    $dotenv->overload();
 }
 
-// directory holding our .env files
+// directory holding the NMS Prime .env files
 $env_dir = '/etc/nmsprime/env/';
 
 // get all .env files from /etc
@@ -40,14 +39,13 @@ $files = scandir($env_dir);
 
 // read environmental data from files ending with .env
 foreach ($files as $f) {
-	if (substr($f, -4) == '.env') {
-		$dotenv = new \Dotenv\Dotenv($env_dir, $f);
-		// do not use $dotenv->overload() as this overwrites data from .env.testing
-		// this results e.g. in app.env==local instead of testing
-		$dotenv->load();
-	}
+    if (substr($f, -4) == '.env') {
+        $dotenv = new \Dotenv\Dotenv($env_dir, $f);
+        // do not use $dotenv->overload() as this overwrites data from .env.testing
+        // this results e.g. in app.env==local instead of testing
+        $dotenv->load();
+    }
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -61,18 +59,18 @@ foreach ($files as $f) {
 */
 
 $app->singleton(
-	'Illuminate\Contracts\Http\Kernel',
-	'App\Http\Kernel'
+    Illuminate\Contracts\Http\Kernel::class,
+    App\Http\Kernel::class
 );
 
 $app->singleton(
-	'Illuminate\Contracts\Console\Kernel',
-	'App\Console\Kernel'
+    Illuminate\Contracts\Console\Kernel::class,
+    App\Console\Kernel::class
 );
 
 $app->singleton(
-	'Illuminate\Contracts\Debug\ExceptionHandler',
-	'App\Exceptions\Handler'
+    Illuminate\Contracts\Debug\ExceptionHandler::class,
+    App\Exceptions\Handler::class
 );
 
 /*

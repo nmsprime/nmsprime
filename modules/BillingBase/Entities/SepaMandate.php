@@ -2,155 +2,143 @@
 
 namespace Modules\BillingBase\Entities;
 
-use DB, Storage;
-use Modules\ProvBase\Entities\Contract;
 use Digitick\Sepa\PaymentInformation;
+use Modules\ProvBase\Entities\Contract;
 
-class SepaMandate extends \BaseModel {
+class SepaMandate extends \BaseModel
+{
+    // The associated SQL table for this Model
+    public $table = 'sepamandate';
 
-	// The associated SQL table for this Model
-	public $table = 'sepamandate';
+    // Add your validation rules here
+    public static function rules($id = null)
+    {
+        return [
+            'reference' 		=> 'required',
+            'sepa_iban' 		=> 'required|iban',
+            'sepa_bic' 			=> 'bic',			// see SepaMandateController@prep_rules
+            'signature_date' 	=> 'date|required',
+            'sepa_valid_from' 	=> 'date|required',
+            'sepa_valid_to'		=> 'dateornull',
+        ];
+    }
 
-	// Add your validation rules here
-	public static function rules($id = null)
-	{
-		return array(
-			'reference' 		=> 'required',
-			'sepa_iban' 		=> 'required|iban',
-			'sepa_bic' 			=> 'bic',			// see SepaMandateController@prep_rules
-			'signature_date' 	=> 'date|required',
-			'sepa_valid_from' 	=> 'date|required',
-			'sepa_valid_to'		=> 'dateornull'
-		);
-	}
+    /**
+     * View related stuff
+     */
 
+    // Name of View
+    public static function view_headline()
+    {
+        return 'SEPA Mandate';
+    }
 
-	/**
-	 * View related stuff
-	 */
+    public static function view_icon()
+    {
+        return '<i class="fa fa-handshake-o"></i>';
+    }
 
-	// Name of View
-	public static function view_headline()
-	{
-		return 'SEPA Mandate';
-	}
+    // AJAX Index list function
+    // generates datatable content and classes for model
+    public function view_index_label()
+    {
+        $bsclass = $this->get_bsclass();
+        $valid_to = $this->sepa_valid_to ? ' - '.$this->sepa_valid_to : '';
 
-	public static function view_icon()
-	{
-		return '<i class="fa fa-handshake-o"></i>';
-	}
+        return ['table' => $this->table,
+                'index_header' => [$this->table.'.sepa_holder', $this->table.'.sepa_valid_from', $this->table.'.sepa_valid_to', $this->table.'.reference'],
+                'bsclass' => $bsclass,
+                'order_by' => ['0' => 'asc'],
+                'header' =>  "$this->reference - $this->sepa_iban", ];
+    }
 
+    public function get_bsclass()
+    {
+        $bsclass = 'success';
 
-	// AJAX Index list function
-	// generates datatable content and classes for model
-	public function view_index_label()
-	{
-		$bsclass = $this->get_bsclass();
-		$valid_to = $this->sepa_valid_to ? ' - '.$this->sepa_valid_to : '';
+        if (isset($this->created_at) && ($this->get_start_time() > strtotime(date('Y-m-d'))) && ! $this->check_validity('Now')) {
+            $bsclass = 'danger';
+        }
 
-		return ['table' => $this->table,
-				'index_header' => [$this->table.'.sepa_holder', $this->table.'.sepa_valid_from', $this->table.'.sepa_valid_to', $this->table.'.reference'],
-				'bsclass' => $bsclass,
-				'order_by' => ['0' => 'asc'],
-				'header' =>  "$this->reference - $this->sepa_iban"];
-	}
+        return $bsclass;
+    }
 
+    public function view_belongs_to()
+    {
+        return $this->contract;
+    }
 
-	public function get_bsclass()
-	{
-		$bsclass = 'success';
+    /**
+     * Relationships:
+     */
+    public function contract()
+    {
+        return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
+    }
 
-		if ( isset($this->created_at) && ($this->get_start_time() > strtotime(date('Y-m-d'))) && !$this->check_validity('Now'))
-			$bsclass = 'danger';
+    public function costcenter()
+    {
+        return $this->belongsTo('Modules\BillingBase\Entities\CostCenter');
+    }
 
-		return $bsclass;
-	}
+    /*
+     * Init Observers
+     */
+    // public static function boot()
+    // {
+    // 	SepaMandate::observe(new SepaMandateObserver);
+    // 	parent::boot();
+    // }
 
+    /*
+     * Other Functions
+     */
 
-	public function view_belongs_to ()
-	{
-		return $this->contract;
-	}
+    /**
+     * Update SEPA-Mandate status during SettlementRun (accountingCommand) if it changes
+     */
+    public function update_status()
+    {
+        $end = $this->get_end_time();
+        $ends = $end && ($end < strtotime('first day of next month'));
 
+        $changed = false;
 
-	/**
-	 * Relationships:
-	 */
-	public function contract ()
-	{
-		return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
-	}
+        if ($this->state == PaymentInformation::S_FIRST) {
+            $this->state = $ends ? PaymentInformation::S_ONEOFF : PaymentInformation::S_RECURRING;
+            $changed = true;
+        } elseif ($ends) {
+            $this->state = PaymentInformation::S_FINAL;
+            $changed = true;
+        }
 
-	public function costcenter ()
-	{
-		return $this->belongsTo('Modules\BillingBase\Entities\CostCenter');
-	}
+        if ($changed) {
+            $this->save();
+        }
+    }
 
+    /**
+     * Returns start time of item - Note: sepa_valid_from field has higher priority than created_at
+     *
+     * @return int 		time in seconds after 1970
+     */
+    public function get_start_time()
+    {
+        $date = $this->sepa_valid_from && $this->sepa_valid_from != '0000-00-00' ? $this->sepa_valid_from : $this->created_at->toDateString();
 
-	/*
-	 * Init Observers
-	 */
-	// public static function boot()
-	// {
-	// 	SepaMandate::observe(new SepaMandateObserver);
-	// 	parent::boot();
-	// }
+        return strtotime($date);
+    }
 
-
-	/*
-	 * Other Functions
-	 */
-
-
-	/**
-	 * Update SEPA-Mandate status during SettlementRun (accountingCommand) if it changes
-	 */
-	public function update_status()
-	{
-		$end  = $this->get_end_time();
-		$ends = $end && ($end < strtotime('first day of next month'));
-
-		$changed = false;
-
-		if ($this->state == PaymentInformation::S_FIRST) {
-			$this->state = $ends ? PaymentInformation::S_ONEOFF : PaymentInformation::S_RECURRING;
-			$changed = true;
-		}
-
-		else if ($ends) {
-			$this->state = PaymentInformation::S_FINAL;
-			$changed = true;
-		}
-
-		if ($changed)
-			$this->save();
-	}
-
-	/**
-	 * Returns start time of item - Note: sepa_valid_from field has higher priority than created_at
-	 *
-	 * @return integer 		time in seconds after 1970
-	 */
-	public function get_start_time()
-	{
-		$date = $this->sepa_valid_from && $this->sepa_valid_from != '0000-00-00' ? $this->sepa_valid_from : $this->created_at->toDateString();
-		return strtotime($date);
-	}
-
-
-	/**
-	 * Returns start time of item - Note: sepa_valid_from field has higher priority than created_at
-	 *
-	 * @return integer 		time in seconds after 1970
-	 */
-	public function get_end_time()
-	{
-		return $this->sepa_valid_to && $this->sepa_valid_to != '0000-00-00' ? strtotime($this->sepa_valid_to) : null;
-	}
-
-
+    /**
+     * Returns start time of item - Note: sepa_valid_from field has higher priority than created_at
+     *
+     * @return int 		time in seconds after 1970
+     */
+    public function get_end_time()
+    {
+        return $this->sepa_valid_to && $this->sepa_valid_to != '0000-00-00' ? strtotime($this->sepa_valid_to) : null;
+    }
 }
-
 
 /**
  * Observer Class
@@ -161,13 +149,11 @@ class SepaMandate extends \BaseModel {
  */
 class SepaMandateObserver
 {
+    public function creating($mandate)
+    {
+    }
 
-	public function creating($mandate)
-	{
-	}
-
-	public function updating($mandate)
-	{
-	}
-
+    public function updating($mandate)
+    {
+    }
 }

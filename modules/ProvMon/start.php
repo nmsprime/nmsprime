@@ -14,4 +14,4 @@
 
 App::register('Modules\ProvMon\Providers\ProvMonServiceProvider');
 
-require __DIR__ . '/Http/routes.php';
+require __DIR__.'/Http/routes.php';

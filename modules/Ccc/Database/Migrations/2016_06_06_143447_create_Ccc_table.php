@@ -1,38 +1,34 @@
 <?php
 
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
 
-class CreateCccTable extends BaseMigration {
+class CreateCccTable extends BaseMigration
+{
+    protected $tablename = 'ccc';
 
-	protected $tablename = 'ccc';
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create($this->tablename, function (Blueprint $table) {
+            $this->up_table_generic($table);
 
-	/**
-	 * Run the migrations.
-	 *
-	 * @return void
-	 */
-	public function up()
-	{
-		Schema::create($this->tablename, function(Blueprint $table)
-		{
-			$this->up_table_generic($table);
+            $table->string('template_filename');
+        });
 
-			$table->string('template_filename');
-		});
+        DB::update('INSERT INTO '.$this->tablename.' (template_filename) VALUES("");');
+    }
 
-		DB::update("INSERT INTO ".$this->tablename.' (template_filename) VALUES("");');
-
-	}
-
-	/**
-	 * Reverse the migrations.
-	 *
-	 * @return void
-	 */
-	public function down()
-	{
-		Schema::drop($this->tablename);
-	}
-
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::drop($this->tablename);
+    }
 }

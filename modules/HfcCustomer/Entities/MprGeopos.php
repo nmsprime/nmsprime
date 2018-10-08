@@ -1,7 +1,8 @@
-<?php namespace Modules\HfcCustomer\Entities;
+<?php
+
+namespace Modules\HfcCustomer\Entities;
 
 use Illuminate\Database\Eloquent\Model;
-use Modules\HfcCustomer\Entities\Mpr;
 
 /*
  * Modem Positioning Rule Geo Position Model
@@ -15,66 +16,64 @@ use Modules\HfcCustomer\Entities\Mpr;
  *
  * Relations: Tree <- Mpr <- MprGeopos
  */
-class MprGeopos extends \BaseModel {
+class MprGeopos extends \BaseModel
+{
+    // The associated SQL table for this Model
+    public $table = 'mprgeopos';
 
-	// The associated SQL table for this Model
-	public $table = 'mprgeopos';
+    // Add your validation rules here
+    public static function rules($id = null)
+    {
+        return [
+            'name' => 'required|string',
+            'x' => 'required|numeric',
+            'y' => 'required|numeric',
+        ];
+    }
 
-	// Add your validation rules here
-	public static function rules($id = null)
-	{
-		return array(
-			'name' => 'required|string',
-			'x' => 'required|numeric',
-			'y' => 'required|numeric'
-		);
-	}
+    // Name of View
+    public static function view_headline()
+    {
+        return 'Modem Positioning Rule Geoposition';
+    }
 
-	// Name of View
-	public static function view_headline()
-	{
-		return 'Modem Positioning Rule Geoposition';
-	}
+    public static function view_icon()
+    {
+        return '<i class="fa fa-map-marker"></i>';
+    }
 
-	public static function view_icon()
-	{
-		return '<i class="fa fa-map-marker"></i>';
-	}
+    // link title in index view
+    public function view_index_label()
+    {
+        return 'GEOPOS'.$this->id.' : '.$this->x.', '.$this->y;
+    }
 
-	// link title in index view
-	public function view_index_label()
-	{
-		return 'GEOPOS'.$this->id.' : '.$this->x.', '.$this->y;
-	}
+    // Relation to Tree
+    // NOTE: HfcBase Module is required !
+    public function mpr()
+    {
+        return $this->belongsTo('Modules\HfcCustomer\Entities\Mpr');
+    }
 
-	// Relation to Tree
-	// NOTE: HfcBase Module is required !
-	public function mpr()
-	{
-		return $this->belongsTo('Modules\HfcCustomer\Entities\Mpr');
-	}
+    /*
+     * Relation Views
+     */
+    public function view_belongs_to()
+    {
+        return $this->mpr;
+    }
 
+    /**
+     * BOOT:
+     * - init MprGeopos Observer
+     */
+    public static function boot()
+    {
+        parent::boot();
 
-	/*
-	 * Relation Views
-	 */
-	public function view_belongs_to ()
-	{
-		return $this->mpr;
-	}
-
-	/**
-	 * BOOT:
-	 * - init MprGeopos Observer
-	 */
-	public static function boot()
-	{
-		parent::boot();
-
-		MprGeopos::observe(new MprGeoposObserver);
-	}
+        self::observe(new MprGeoposObserver);
+    }
 }
-
 
 /**
  * MprGeopos Observer Class
@@ -86,19 +85,21 @@ class MprGeopos extends \BaseModel {
  */
 class MprGeoposObserver
 {
-	public function updated($mprgeopos)
-	{
-		if (!$mprgeopos->observer_enabled)
-			return;
+    public function updated($mprgeopos)
+    {
+        if (! $mprgeopos->observer_enabled) {
+            return;
+        }
 
-		\Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
-	}
+        \Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
+    }
 
-	public function deleted($mprgeopos)
-	{
-		if (!$mprgeopos->observer_enabled)
-			return;
+    public function deleted($mprgeopos)
+    {
+        if (! $mprgeopos->observer_enabled) {
+            return;
+        }
 
-		\Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
-	}
+        \Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
+    }
 }

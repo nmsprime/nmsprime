@@ -18,21 +18,22 @@
 @section('content_top')
 	<li class="active">
 		<a href="{{route($route_name.'.index')}}">
-		    {{ $model->view_icon().' '.$headline}}
+		    {!! $model->view_icon().' '.$headline !!}
 		</a>
 	</li>
 @stop
 
 @section('content_left')
 	{{-- Headline: means icon followed by headline --}}
-    @DivOpen(12)
+    <div class="col-md-12">
         <div class="row m-b-25">
             <div class="col">
                 <h3 class="card-title">
-                    {{ $model->view_icon().' '.$headline}}
+                    {!! $model->view_icon().' '.$headline !!}
                 </h3>
             </div>
         {{-- Create Form --}}
+        @can('create', $model)
             <div class="align-self-end m-r-20">
                 @if ($create_allowed)
                     {{ Form::open(array('method' => 'GET', 'id' => 'createModel')) }}
@@ -44,7 +45,9 @@
                     {{ Form::close() }}
                 @endif
             </div>
-            <div class="align-self-end">
+        @endcan
+        @can('delete', $model)
+            <div class="align-self-end m-r-30">
                 @if ($delete_allowed)
                     <button type="submit" class="btn btn-outline-danger m-b-10 float-right" style="simple" data-toggle="tooltip" data-delay='{"show":"250"}' data-placement="top"
                     title="{{ \App\Http\Controllers\BaseViewController::translate_view('Delete', 'Button' ) }}" form="IndexForm" name="_delete">
@@ -52,8 +55,13 @@
                     </button>
                 @endif
             </div>
+        @endcan
+
+        {{--Help Section--}}
+        @include('Generic.documentation')
+
         </div>
-    @DivClose()
+    </div>
 
 	@include('Generic.above_infos')
 
@@ -78,6 +86,9 @@
                         @if ((!empty($model->view_index_label()['disable_sortsearch'])) && ($model->view_index_label()['disable_sortsearch'] == [$field => 'false']))
                             <i class="fa fa-info-circle text-info" data-trigger="hover" data-container="body" data-toggle="tooltip" data-placement="top" data-delay='{"show":"250"}'
                             data-original-title="{{trans('helper.SortSearchColumn')}}"></i>
+                        @elseif (!empty($model->view_index_label()['help'][$field]))
+                            <i class="fa fa-info-circle text-info" data-trigger="hover" data-container="body" data-toggle="tooltip" data-placement="top" data-delay='{"show":"250"}'
+                            data-original-title="{{trans('helper.'.$model->view_index_label()['help'][$field])}}"></i>
                         @endif
                         </th>
                     @endforeach

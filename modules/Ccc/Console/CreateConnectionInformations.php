@@ -3,149 +3,150 @@
 namespace Modules\Ccc\Console;
 
 use Illuminate\Console\Command;
+use Modules\ProvBase\Entities\Contract;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-use Modules\ProvBase\Entities\Contract;
+class CreateConnectionInformations extends Command
+{
+    /**
+     * The console command name.
+     *
+     * @var string
+     */
+    protected $name = 'ccc:connInfo';
 
-class CreateConnectionInformations extends Command {
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Create a list of connection informations as a single concatenated PDF';
 
-	/**
-	 * The console command name.
-	 *
-	 * @var string
-	 */
-	protected $name = 'ccc:connInfo';
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        parent::__construct();
+    }
 
-	/**
-	 * The console command description.
-	 *
-	 * @var string
-	 */
-	protected $description = 'Create a list of connection informations as a single concatenated PDF';
+    /**
+     * Execute the console command.
+     *
+     * @return mixed
+     */
+    public function fire()
+    {
+        $contracts = $this->select_contracts();
+        $dir_path = storage_path('app/tmp/');
+        $fn = 'connInfos.pdf';
+        $controller = new \Modules\Ccc\Http\Controllers\CccUserController;
 
-	/**
-	 * Create a new command instance.
-	 *
-	 * @return void
-	 */
-	public function __construct()
-	{
-		parent::__construct();
-	}
+        if (! $contracts) {
+            $msg = 'No Contracts selected to create connection informations!';
 
-	/**
-	 * Execute the console command.
-	 *
-	 * @return mixed
-	 */
-	public function fire()
-	{
-		$contracts  = $this->select_contracts();
-		$dir_path 	= storage_path('app/tmp/');
-		$fn 		= 'connInfos.pdf';
-		$controller = new \Modules\Ccc\Http\Controllers\CccAuthuserController;
+            if ($this->output) {
+                echo "\n$msg";
+            } else {
+                Log::error($msg);
+            }
 
-		if (!$contracts)
-		{
-			$msg = 'No Contracts selected to create connection informations!';
+            return 1;
+        }
 
-			if ($this->output)
-				echo "\n$msg";
-			else
-				Log::error($msg);
+        // Create PDFs and concatenate them
+        if ($this->output) {
+            $bar = $this->output->createProgressBar(count($contracts));
+        }
 
-			return 1;
-		}
+        foreach ($contracts as $c) {
+            $files[] = $controller->connection_info_download($c->id, false);
+            if ($this->output) {
+                $bar->advance();
+            }
+        }
 
-		// Create PDFs and concatenate them
-		if ($this->output)
-			$bar = $this->output->createProgressBar(count($contracts));
+        $files_string = '';
+        foreach ($files as $path) {
+            $files_string .= "\"$path\" ";
+        }
 
-		foreach ($contracts as $c)
-		{
-			$files[] = $controller->connection_info_download($c->id, false);
-			if ($this->output)
-				$bar->advance();
-		}
+        \Log::debug('gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile='.$dir_path.$fn.' <files>');
+        system('gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile='.$dir_path.$fn." $files_string", $ret);
 
-		$files_string = '';
-		foreach ($files as $path) {
-			$files_string .= "\"$path\" ";
-		}
+        $this->info("\nConnection Info created: ".$dir_path.$fn);
 
-		\Log::debug("gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=".$dir_path.$fn." <files>");
-		system("gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=".$dir_path.$fn." $files_string", $ret);
+        // Delete temp files
+        foreach ($files as $path) {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
 
-		$this->info("\nConnection Info created: ".$dir_path.$fn);
+        return $dir_path.$fn;
+    }
 
-		// Delete temp files
-		foreach ($files as $path) {
-			if (is_file($path))
-				unlink($path);
-		}
+    /**
+     * Select Contracts by the defined options
+     *
+     * @return array
+     */
+    private function select_contracts()
+    {
+        $contracts1 = $contracts2 = $ids = $values = [];
 
-		return $dir_path.$fn;
-	}
+        // get list of contracts
+        if ($this->option('file')) {
+            $content = file_get_contents($this->option('file'));
+            $content = str_replace(["\n\r", "\n", "\r"], ',', $content);
+            $values = explode(',', $content);
+        }
 
+        if ($this->option('list')) {
+            $values = explode(',', $this->option('list'));
+        }
 
-	/**
-	 * Select Contracts by the defined options
-	 *
-	 * @return array
-	 */
-	private function select_contracts()
-	{
-		$contracts1 = $contracts2 = $ids = $values = [];
+        foreach ($values as $v) {
+            if ($v) {
+                $ids[] = trim($v);
+            }
+        }
 
-		// get list of contracts
-		if ($this->option('file'))
-		{
-			$content = file_get_contents($this->option('file'));
-			$content = str_replace(["\n\r", "\n", "\r",], ',', $content);
-			$values  = explode(',', $content);
-		}
+        $contracts1 = Contract::whereIn('id', $ids, 'or')->orderBy('zip')->orderBy('city')->orderBy('street')->orderBy('house_number')->get()->all();
 
-		if ($this->option('list'))
-			$values = explode(',', $this->option('list'));
+        if ($this->option('after')) {
+            $contracts2 = Contract::where('created_at', '>', $this->option('after'))->get()->all();
+        }
 
-		foreach ($values as $v) {
-			if ($v)
-				$ids[] = trim($v);
-		}
+        return array_merge($contracts1, $contracts2);
+    }
 
-		$contracts1 = Contract::whereIn('id', $ids, 'or')->orderBy('zip')->orderBy('city')->orderBy('street')->orderBy('house_number')->get()->all();
+    /**
+     * Get the console command arguments.
+     *
+     * @return array
+     */
+    protected function getArguments()
+    {
+        return [
+            // array('example', InputArgument::REQUIRED, 'An example argument.'),
+        ];
+    }
 
-		if ($this->option('after'))
-			$contracts2 = Contract::where('created_at', '>', $this->option('after'))->get()->all();
-
-		return array_merge($contracts1, $contracts2);
-	}
-
-	/**
-	 * Get the console command arguments.
-	 *
-	 * @return array
-	 */
-	protected function getArguments()
-	{
-		return array(
-			// array('example', InputArgument::REQUIRED, 'An example argument.'),
-		);
-	}
-
-	/**
-	 * Get the console command options.
-	 *
-	 * @return array
-	 */
-	protected function getOptions()
-	{
-		return array(
-			array('after', null, InputOption::VALUE_OPTIONAL, 'Date String - all Contracts that where add after a specific Date, e.g. 2017-07-21', null),
-			array('file', null, InputOption::VALUE_OPTIONAL, 'File with Contract IDs - separated by newline and/or comma', []),
-			array('list', null, InputOption::VALUE_OPTIONAL, 'Comma separated list of Contract IDs, e.g. 500034, 512456,634612', []),
-		);
-	}
-
+    /**
+     * Get the console command options.
+     *
+     * @return array
+     */
+    protected function getOptions()
+    {
+        return [
+            ['after', null, InputOption::VALUE_OPTIONAL, 'Date String - all Contracts that where add after a specific Date, e.g. 2017-07-21', null],
+            ['file', null, InputOption::VALUE_OPTIONAL, 'File with Contract IDs - separated by newline and/or comma', []],
+            ['list', null, InputOption::VALUE_OPTIONAL, 'Comma separated list of Contract IDs, e.g. 500034, 512456,634612', []],
+        ];
+    }
 }

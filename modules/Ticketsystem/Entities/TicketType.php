@@ -2,46 +2,43 @@
 
 namespace Modules\Ticketsystem\Entities;
 
-class TicketType extends \BaseModel {
+class TicketType extends \BaseModel
+{
+    public $table = 'tickettype';
 
-	public $table = 'tickettype';
+    /**
+     * View Stuff
+     */
+    public static function view_headline()
+    {
+        return 'TicketTypes';
+    }
 
+    public static function view_icon()
+    {
+        return '<i class="fa fa-ticket"></i>';
+    }
 
-	/**
-	 * View Stuff
-	 */
-	public static function view_headline()
-	{
-		return 'TicketTypes';
-	}
+    public function view_index_label()
+    {
+        return $this->name;
+    }
 
-	public static function view_icon()
-	{
-		return '<i class="fa fa-ticket"></i>';
-	}
+    /**
+     * Relations
+     */
+    public function tickets()
+    {
+        return $this->belongsToMany('\Modules\Ticketsystem\Entities\Ticket', 'tickettype_ticket', 'ticket_id', 'tickettype_id');
+    }
 
-	public function view_index_label()
-	{
-		return $this->name;
-	}
+    public function children()
+    {
+        return $this->hasMany('\Modules\Ticketsystem\Entities\TicketType', 'parent_id');
+    }
 
-
-	/**
-	 * Relations
-	 */
-	public function tickets()
-	{
-		return $this->belongsToMany('\Modules\Ticketsystem\Entities\Ticket', 'tickettype_ticket', 'ticket_id', 'tickettype_id');
-	}
-
-	public function children ()
-	{
-		return $this->hasMany('\Modules\Ticketsystem\Entities\TicketType', 'parent_id');
-	}
-
-	public function parent ()
-	{
-		return $this->belongsTo('\Modules\Ticketsystem\Entities\TicketType');
-	}
-
+    public function parent()
+    {
+        return $this->belongsTo('\Modules\Ticketsystem\Entities\TicketType');
+    }
 }

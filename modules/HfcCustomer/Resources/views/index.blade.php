@@ -1,7 +1,7 @@
-@extends('hfccustomer::layouts.master')
+@extends('Hfccustomer::layouts.master')
 
 @section('content')
-	
+
 	<h1>Hello World</h1>
-	
+
 @stop

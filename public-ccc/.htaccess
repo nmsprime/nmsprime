@@ -1,11 +1,11 @@
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews
-	Options +FollowSymLinks
+        Options +FollowSymLinks
     </IfModule>
 
     RewriteEngine On
-    RewriteBase /nmsprime/
+    RewriteBase /ccc/
 
     # Redirect Trailing Slashes...
     RewriteRule ^(.*)/$ /$1 [L,R=301]

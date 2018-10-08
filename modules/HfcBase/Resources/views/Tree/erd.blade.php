@@ -7,20 +7,20 @@
 
 
 @section('content_top')
-	<li>{{ HTML::linkRoute('TreeErd.show', $view_header, [$field, $search]) }}</li>
+	<li>{!! HTML::linkRoute('TreeErd.show', $view_header, [$field, $search]) !!}</li>
 @stop
 
 @section('content_left')
 
 	@DivOpen(12)
-		<img usemap="#tree{{$gid}}" src="{{asset("$file.svg")}}"></img>
+		<img usemap="#tree{{$gid}}" src='{{asset("$file.svg")}}'></img>
 
-		{{ $usemap }}
+		{!! $usemap !!}
 
 		@if($is_pos)
 			<h4>
 				<div align="center">
-					<a href="{{ \BaseRoute::get_base_url().'/NetElement/create?pos='.$search }}">Add Device</a>
+					<a href="{!! \BaseRoute::get_base_url().'/NetElement/create?pos='.$search !!}">Add Device</a>
 				</div>
 			</h4>
 		@endif
@@ -35,10 +35,10 @@
 		{{-- Right Click in Schaltplan --}}
 		function getEl (id)
 		{
-				url    = '{{ \BaseRoute::get_base_url() }}'
+				url    = '{!! \BaseRoute::get_base_url() !!}'
 				kml    = 0;
 
-				alert ("Element Number: "+id, "<li><a href="+url+"/NetElement/"+id+"/edit>Change</a></li>" +
+				alert ("Element Number: "+id, "<li><a href="+url+"/NetElement/"+id+">Change</a></li>" +
 											"<li><a href="+url+"/NetElement/"+id+"/delete>Delete </a></li>", {width:150});
 				return false;
 		}

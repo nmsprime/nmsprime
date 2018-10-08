@@ -2,235 +2,237 @@
 
 namespace App\Console\Commands;
 
+use Log;
+use Bouncer;
+use App\Role;
+use App\BaseModel;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
-
-use \App\Authrole;
 
 /**
  * Add default roles
  *
  * @author Nino Ryschawy
  */
-class addDefaultRolesCommand extends Command {
+class addDefaultRolesCommand extends Command
+{
+    /**
+     * The console command name.
+     *
+     * @var string
+     */
+    protected $name = 'auth:roles';
 
-	/**
-	 * The console command name.
-	 *
-	 * @var string
-	 */
-	protected $name = 'nms:addDefaultRoles';
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'add default roles & access permissions';
 
-	/**
-	 * The console command description.
-	 *
-	 * @var string
-	 */
-	protected $description = 'add default roles & access permissions';
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        parent::__construct();
+    }
 
-	/**
-	 * Create a new command instance.
-	 *
-	 * @return void
-	 */
-	public function __construct()
-	{
-		parent::__construct();
-	}
+    /**
+     * Execute the console command.
+     *
+     * @return mixed
+     */
+    public function fire()
+    {
+        $roles = self::get_default_roles();
+        $roles_permissions = self::get_default_permissions();
+        $models = BaseModel::get_models();
 
+        foreach ($roles as $role) {
+            if (Role::find($role['id'])) {
+                echo 'Warning: Role with ID '.$role['id'].' already exists  ('.$role['name'].") - Discarding\n";
+                Log::warning('Discard adding Role \"'.$role['name'].'\" as there already is an entry in DB!');
+                continue;
+            } else {
+                $rules = Role::rules($role['id']);
+                $validator = \Validator::make($role, $rules);
 
-	/**
-	 * Execute the console command.
-	 *
-	 * @return mixed
-	 */
-	public function fire()
-	{
-		$roles = self::get_default_roles();
-		$role_permissions = self::get_default_permissions();
-		$models = \App\Authcore::where('type', 'LIKE', 'model')->get()->all();
+                if ($validator->fails()) {
+                    echo 'ERROR - Validation Rule Error for Role '.$role['name'].":\n ".$validator->errors()."\n";
+                    Log::warning('Validation Rule Error: '.$validator->errors());
+                    continue;
+                }
 
-		foreach ($roles as $properties)
-		{
-			// add new Role if the ID does not exist yet in DB
-			$role_id = $properties['id'];
+                Role::create($role);
+                echo "Created role: '".$role['name']."'\n";
+            }
 
-			if (Authrole::find($role_id)) {
-				echo "Error: Role with ID ".$role_id." already exists - Discard\n";
-				\Log::error('Discard adding Role '.$properties['name'].' as there already is an entry in DB!');
-				continue;
-				// throw new \Exception("Error: Role with ID ".$role_id." already exists", 1);
-			}
-			else {
-				Authrole::create($properties);
-				echo "Created role: '".$properties['name']."'\n";
-			}
+            if (! isset($roles_permissions[$role['id']])) {
+                echo "No Permissions set\n";
+                continue;
+            }
 
-			if (!isset($role_permissions[$role_id])) {
-				echo "No Permissions set\n";
-				continue;
-			}
+            $modules_allowed = $roles_permissions[$role['id']]['modules'];
+            $models_allowed = $roles_permissions[$role['id']]['models'];
 
-			$modules_allowed = $role_permissions[$role_id]['modules'];
-			$models_allowed  = $role_permissions[$role_id]['models'];
+            // Add all Models that shall have permitions for current role
+            foreach ($models as $model) {
+                $name = explode('\\', $model);
+                $module = $name[0] == 'Modules' ? $name[1] : $name[0];
+                $name = end($name);
 
-			// Add all Models that shall have permitions for current role
-			foreach ($models as $model)
-			{
-				$name = explode('\\', $model->name);
-				$module = $name[0] == 'Modules' ? $name[1] : $name[0];
-				$name = end($name);
+                if (array_key_exists($module, $modules_allowed)) {
+                    $permissions = $modules_allowed[$module];
+                } elseif (array_key_exists($name, $models_allowed)) {
+                    $permissions = $models_allowed[$name];
+                } else {
+                    continue;
+                }
 
-				if (array_key_exists($module, $modules_allowed))
-					$permissions = $modules_allowed[$module];
-				else if (array_key_exists($name, $models_allowed))
-					$permissions = $models_allowed[$name];
-				else
-					continue;
+                if (in_array('manage', $permissions)) {
+                    Bouncer::allow($role['name'])->toManage($model);
+                } else {
+                    if (in_array('view', $permissions)) {
+                        Bouncer::allow($role['name'])->to('view', $model);
+                    }
 
-				\App\Authmetacore::updateOrCreate([
-					'core_id' => $model->id,
-					'role_id' => $role_id,
-					'view' 	  => isset($permissions['view']) && $permissions['view'],
-					'create'  => isset($permissions['create']) && $permissions['create'],
-					'edit' 	  => isset($permissions['edit']) && $permissions['edit'],
-					'delete'  => isset($permissions['delete']) && $permissions['delete'],
-					]);
+                    if (in_array('create', $permissions)) {
+                        Bouncer::allow($role['name'])->to('create', $model);
+                    }
 
-				// Debugging Output
-				echo "Added Permission for Role '".$properties['name']."' to Model: $name\n";
-			}
-		}
+                    if (in_array('edit', $permissions)) {
+                        Bouncer::allow($role['name'])->to('edit', $model);
+                    }
 
-	}
+                    if (in_array('delete', $permissions)) {
+                        Bouncer::allow($role['name'])->to('delete', $model);
+                    }
+                }
 
-	/**
-	 * Data for Role Models
-	 *
-	 * TODO: translate role names
-	 */
-	public static function get_default_roles()
-	{
-		return array(
-			array(
-				'id' => 3,
-				'name' => 'director',
-				'type' => 'role',
-				'description' => 'Like super_admin but can see Income on Dashboard',
-				),
-			array(
-				'id' => 4,
-				'name' => 'technican',
-				'type' => 'role',
-				'description' => 'Allow only technical aspects',
-				),
-			array(
-				'id' => 5,
-				'name' => 'accounting',
-				'type' => 'role',
-				'description' => 'Only accounting relevant stuff',
-			));
-	}
+                echo "Added Ability for Role '".$role['name']."' to Model: $name\n";
+            }
+        }
+    }
 
-	/**
-	 * Data of Permissions for the Roles
-	 *
-	 * NOTE: Module has higher priority
-	 *	- so if a module is specified -> all models of this module will have the defined permission(s)
-	 */
-	public static function get_default_permissions()
-	{
-		// technican
-		$role[4] = array(
-			'modules' => [
-				'Dashboard' => ['view' => 1],
-				'HfcBase' => ['view' => 1],
-				'HfcCustomer' => ['view' => 1],
-				'HfcReq' => ['view' => 1],
-				'ProvVoipEnvia' => ['view' => 1],
-			],
-			'models' => [
-				'AddressFunctionsTrait' => ['view' => 1],
-				'Authmetacore' 	=> ['view' => 1],
-				'Authrole' 		=> ['view' => 1],
-				'Authuser' 		=> ['view' => 1],
-				'GlobalConfig' 	=> ['view' => 1],
+    /**
+     * Data for Role Models
+     *
+     * TODO: translate role names
+     */
+    public static function get_default_roles()
+    {
+        return [
+            [
+                'id' => 4,
+                'name' => 'technican',
+                'rank' => 40,
+                'description' => 'Allow only technical aspects',
+                ],
+            [
+                'id' => 5,
+                'name' => 'accounting',
+                'rank' => 40,
+                'description' => 'Only accounting relevant stuff',
+            ], ];
+    }
 
-				// 'BillingBase' 	=> ['view' => 1],
-				'Item' 			=> ['view' => 1], // really?
+    /**
+     * Data of Permissions for the Roles
+     *
+     * NOTE: Module has higher priority
+     *	- so if a module is specified -> all models of this module will have the defined permission(s)
+     */
+    public static function get_default_permissions()
+    {
+        // technican
+        $role[4] = [
+            'modules' => [
+                'Dashboard' 		=> ['view'],
+                'HfcBase' 			=> ['view'],
+                'HfcCustomer'		=> ['view'],
+                'HfcReq' 			=> ['view'],
+                'ProvVoipEnvia'		=> ['view'],
+            ],
+            'models' => [
+                'Role' 					=> ['view'],
+                'User' 					=> ['view'],
+                'GlobalConfig'			=> ['view'],
 
-				// 'Ccc' 			=> ['view' => 1],
-				'CccAuthuser' 	=> ['view' => 1],
+                'Item' 					=> ['view'],
 
-				'Cdr' 			=> ['view' => 1],
-				'GuiLog' 		=> ['view' => 1],
-				'Ticket' 		=> ['view' => 1],
+                'User' 					=> ['view'],
 
-				'Cmts' 			=> ['view' => 1],
-				'Contract' 		=> ['view' => 1],
-				'Modem' 		=> ['view' => 1],
-				'ProvBase' 		=> ['view' => 1],
+                'Cdr'					=> ['view'],
+                'GuiLog' 				=> ['view'],
+                'Ticket'				=> ['view'],
 
-				'Mta' 			=> ['view' => 1],
-				'PhonebookEntry' => ['view' => 1],
-				'Phonenumber' 	=> ['view' => 1],
-				'PhonenumberManagement' => ['view' => 1],
-				'ProvVoip' 		=> ['view' => 1],
+                'Cmts' 					=> ['view'],
+                'Contract' 				=> ['view'],
+                'Modem' 				=> ['view'],
+                'ProvBase' 				=> ['view'],
 
-				'EnviaOrderDocument' => ['view' => 1],
-				'ProvVoipEnvia' => ['view' => 1],
-				'ProvVoipEnviaHelpers' => ['view' => 1],
+                'Mta' 					=> ['view'],
+                'PhonebookEntry' 		=> ['view'],
+                'Phonenumber' 			=> ['view'],
+                'PhonenumberManagement' => ['view'],
+                'ProvVoip' 				=> ['view'],
 
-				'Parameter' 	=> ['view' => 1],
-				'Oid' 			=> ['view' => 1],
-				'SnmpValue' 	=> ['view' => 1],
-			]);
+                'EnviaOrderDocument' 	=> ['view'],
+                'ProvVoipEnvia' 		=> ['view'],
+                'ProvVoipEnviaHelpers' 	=> ['view'],
 
-		// accounting
-		$role[5] = array(
-			'modules' => [
-				'BillingBase',
-				'Dashboard',
-				'Ticketsystem',
-				],
-			'models' => [
-				'Contract',
-				'GlobalConfig',
-				'GuiLog',
-				'Modem',
-				'Mta',
-				'Phonenumber',
-				'PhonenumberManagement',
-				'PhoneTariff',
-				'ProvBase',
-			]);
+                'Parameter' 			=> ['view'],
+                'Oid' 					=> ['view'],
+                'SnmpValue' 			=> ['view'],
+            ], ];
 
-		return $role;
-	}
+        // accounting
+        $role[5] = [
+            'modules' => [
+                'BillingBase'			=> ['view'],
+                'Dashboard'				=> ['view'],
+                'Ticketsystem'			=> ['view'],
+                ],
+            'models' => [
+                'Contract'				=> ['manage'],
+                'GlobalConfig'			=> ['manage'],
+                'GuiLog'				=> ['view'],
+                'Modem'					=> ['manage'],
+                'Mta'					=> ['manage'],
+                'Phonenumber'			=> ['view'],
+                'PhonenumberManagement'	=> ['manage'],
+                'PhoneTariff'			=> ['view'],
+                'ProvBase'				=> ['view'],
+            ], ];
 
-	/**
-	 * Get the console command arguments.
-	 *
-	 * @return array
-	 */
-	protected function getArguments()
-	{
-		return array(
-			// array('example', InputArgument::REQUIRED, 'An example argument.'),
-		);
-	}
+        return $role;
+    }
 
-	/**
-	 * Get the console command options.
-	 *
-	 * @return array
-	 */
-	protected function getOptions()
-	{
-		return array(
-			// array('example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null),
-		);
-	}
+    /**
+     * Get the console command arguments.
+     *
+     * @return array
+     */
+    protected function getArguments()
+    {
+        return [
+            // array('example', InputArgument::REQUIRED, 'An example argument.'),
+        ];
+    }
 
+    /**
+     * Get the console command options.
+     *
+     * @return array
+     */
+    protected function getOptions()
+    {
+        return [
+            // array('example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null),
+        ];
+    }
 }

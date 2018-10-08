@@ -2,55 +2,50 @@
 
 namespace Modules\BillingBase\Entities;
 
-use File;
-use Modules\BillingBase\Entities\BillingLogger;
+class AccountingRecord extends \BaseModel
+{
+    // The associated SQL table for this Model
+    public $table = 'accountingrecord';
 
-class AccountingRecord extends \BaseModel {
+    public $observer_enabled = false;
 
-	// The associated SQL table for this Model
-	public $table = 'accountingrecord';
+    /**
+     * Stores a Record in the database - TODO: move to controller!
+     */
+    public function store_item($item, $acc)
+    {
+        // $count = $item->count ? $item->count : 1;
 
-	public $observer_enabled = false;
+        $data = [
+            'contract_id' 	=> $item->contract->id,
+            'name'			=> $item->product->name,
+            'product_id'	=> $item->product->id,
+            'ratio'			=> $item->ratio,
+            'count'			=> $item->count,
+            'charge'		=> $item->charge,
+            'invoice_nr'	=> $acc->invoice_nr,
+            'sepaaccount_id' => $acc->id,
+            ];
 
-	/**
-	 * Stores a Record in the database - TODO: move to controller!
-	 */
-	public function store_item($item, $acc)
-	{
-		// $count = $item->count ? $item->count : 1;
+        $this->create($data);
+    }
 
-		$data = array(
-			'contract_id' 	=> $item->contract->id,
-			'name'			=> $item->product->name,
-			'product_id'	=> $item->product->id,
-			'ratio'			=> $item->ratio,
-			'count'			=> $item->count,
-			'charge'		=> $item->charge,
-			'invoice_nr'	=> $acc->invoice_nr,
-			'sepa_account_id' => $acc->id,
-			);
+    /**
+     * Add a Call Data Record in the database - TODO: move to controller!
+     */
+    public function add_cdr($contract, $acc, $charge, $count)
+    {
+        $data = [
+            'contract_id' 	=> $contract->id,
+            'name'			=> 'Telefone Calls',
+            'product_id'	=> 0,
+            'ratio'			=> 1,
+            'count'			=> $count,
+            'charge'		=> $charge,
+            'invoice_nr'	=> $acc->invoice_nr,
+            'sepaaccount_id' => $acc->id,
+            ];
 
-		$this->create($data);
-	}
-
-	/**
-	 * Add a Call Data Record in the database - TODO: move to controller!
-	 */
-	public function add_cdr($contract, $acc, $charge, $count)
-	{
-		$data = array(
-			'contract_id' 	=> $contract->id,
-			'name'			=> 'Telefone Calls',
-			'product_id'	=> 0,
-			'ratio'			=> 1,
-			'count'			=> $count,
-			'charge'		=> $charge,
-			'invoice_nr'	=> $acc->invoice_nr,
-			'sepa_account_id' => $acc->id,
-			);
-
-		$this->create($data);
-	}
-
-
+        $this->create($data);
+    }
 }

@@ -1,22 +1,21 @@
-<?php 
+<?php
 
 namespace Modules\Hfcbase\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
-class HfcbaseDatabaseSeeder extends Seeder {
+class HfcBaseDatabaseSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        Model::unguard();
 
-	/**
-	 * Run the database seeds.
-	 *
-	 * @return void
-	 */
-	public function run()
-	{
-		Model::unguard();
-		
-		$this->call("Modules\HfcBase\Database\Seeders\HfcBaseConfigTableSeeder");
-	}
-
+        $this->call("Modules\HfcBase\Database\Seeders\HfcBaseConfigTableSeeder");
+    }
 }

@@ -94,6 +94,10 @@
 					@include('dashboard::widgets.hfc')
 				@DivClose()
 			@endif
+
+			<div class="col-auto-md">
+				@include('dashboard::widgets.documentation')
+			</div>
 		</div>
 
 
@@ -120,11 +124,25 @@
 				@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => 'Contract Analytics', 'md' => 8, 'height' => 'auto', 'i' => '3'))
 			@endif
 
+			@if ($view['contracts'] && $data['contracts']['table'])
+				@section ('weekly_contracts')
+					@include('dashboard::panels.weekly_contracts')
+				@stop
+				@include ('bootstrap.panel', array ('content' => "weekly_contracts", 'view_header' => 'Weekly Customers', 'md' => 4, 'height' => 'auto', 'i' => '1'))
+			@endif
+
 			@if ($view['income'])
 				@section ('income_analytics')
 					@include('dashboard::panels.income_analytics')
 				@stop
 				@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 4, 'height' => 'auto', 'i' => '4'))
+			@endif
+
+			@if (isset($data['news']) && $data['news'])
+				@section ('news')
+					@include('dashboard::panels.news')
+				@stop
+				@include ('bootstrap.panel', array ('content' => "news", 'view_header' => 'News', 'md' => 4, 'height' => '350px', 'i' => '5'))
 			@endif
 
 			@if ($view['tickets'] && $data['tickets']['total'])
@@ -146,31 +164,62 @@
 
 	$(window).on('localstorage-position-loaded load', function() {
 		// line chart contracts
-		var chart_data_contracts = {{ $view['contracts'] ? json_encode($data['contracts']['chart']) : '{}' }};
+		var chart_data_contracts = {!! $view['contracts'] ? json_encode($data['contracts']['chart']) : '{}' !!};
 
 		if (Object.getOwnPropertyNames(chart_data_contracts).length != 0) {
 
 			var labels = chart_data_contracts['labels'];
 			var contracts = chart_data_contracts['contracts'];
+			var internet = chart_data_contracts['Internet_only'];
+			var voip = chart_data_contracts['Voip_only'];
+			var internetAndVoip = chart_data_contracts['Internet_and_Voip'];
 			var ctx = document.getElementById('contracts-chart').getContext('2d');
 			var contractChart = new Chart(ctx, {
 				type: 'line',
 				data: {
 					labels: labels,
 					datasets: [{
+						label:'VoIP',
+						data: voip,
+						pointBackgroundColor: 'rgb(42, 98, 254, 1)',
+						borderColor: 'rgb(42, 98, 254, 1)',
+						backgroundColor: 'rgb(42, 98, 254, 0.3)',
+						cubicInterpolationMode: 'monotone'
+					}, {
+						label:'Internet & Voip',
+						data: internetAndVoip,
+						pointBackgroundColor: 'rgb(12, 40, 110, 1)',
+						borderColor: 'rgb(12, 40, 110, 1)',
+						backgroundColor: 'rgb(12, 40, 110, 0.3)',
+						cubicInterpolationMode: 'monotone'
+					}, {
+						label: 'Internet',
+						data: internet,
+						pointBackgroundColor: 'rgb(0, 170, 132, 1)',
+						borderColor: 'rgb(0, 170, 132, 1)',
+						backgroundColor: 'rgb(0, 170, 132, 0.3)',
+						cubicInterpolationMode: 'monotone'
+					}, {
+						label: "{!! trans('messages.active contracts') !!}",
 						data: contracts,
-						backgroundColor: "rgba(0, 172, 172, 0.8)",
+						pointBackgroundColor: 'rgb(2, 207, 211, 1)',
+						borderColor: 'rgb(2, 207, 211, 1)',
+						backgroundColor: 'rgb(2, 207, 211, 0.3)',
+						cubicInterpolationMode: 'monotone'
 					}],
 				},
 				options: {
+					animation: {
+						duration: 0,
+					},
 					legend: {
-						display: false
+						display: true,
 					},
 					maintainAspectRatio: false,
 					scales: {
 						yAxes: [{
 							ticks: {
-								beginAtZero: false
+								beginAtZero: false,
 							}
 						}]
 					}
@@ -179,7 +228,7 @@
 		}
 
 		// bar chart income
-		var chart_data_income = {{ $view['income'] ? json_encode($data['income']['chart']) : '{}' }};
+		var chart_data_income = {!! $view['income'] ? json_encode($data['income']['chart']) : '{}' !!};
 
 		if (Object.getOwnPropertyNames(chart_data_income).length != 0) {
 

@@ -1,47 +1,44 @@
 <?php
 
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
 
 /*
  * MPR: Modem Positioning Rule Geopos Table
  */
-class CreateMprGeoposTable extends BaseMigration {
+class CreateMprGeoposTable extends BaseMigration
+{
+    // name of the table to create
+    protected $tablename = 'mpr';
 
-	// name of the table to create
-	protected $tablename = "mpr";
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('mprgeopos', function (Blueprint $table) {
+            $this->up_table_generic($table);
 
-	/**
-	 * Run the migrations.
-	 *
-	 * @return void
-	 */
-	public function up()
-	{
-		Schema::create('mprgeopos', function(Blueprint $table)
-		{
-			$this->up_table_generic($table);
+            // general
+            $table->string('name');
+            $table->integer('mpr_id');	// reference to mpr
 
-			// general
-			$table->string('name');
-			$table->integer('mpr_id');	// reference to mpr
+            // geopos for rectangle
+            $table->double('x');
+            $table->double('y');
 
-			// geopos for rectangle
-			$table->double('x');
-			$table->double('y');
-            
             $table->text('description');
-		});
-	}
+        });
+    }
 
-	/**
-	 * Reverse the migrations.
-	 *
-	 * @return void
-	 */
-	public function down()
-	{
-		Schema::drop('mprgeopos');
-	}
-
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::drop('mprgeopos');
+    }
 }

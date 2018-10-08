@@ -9,33 +9,38 @@
 		<script>setTimeout("document.getElementById('error').style.display='none';", 3000);</script>
 	</head>
 
-	@include ('bootstrap.header')
-
 	<body class="pace-top">
 
 	{{-- Background Image --}}
 	<div class="login-cover">
-		<div class="login-cover-image"><img alt="" data-id="login-cover-image" src="{{asset('images/'.$image)}}"></div>
+		<div class="login-cover-image">
+			<img alt=""  data-id="login-cover-image" src="{{asset('images/'.$image)}}">
+		</div>
 		<div class="login-cover-bg"></div>
 	</div>
 
 		{{-- begin login --}}
 		<div class="login login-v2 animated fadeInDown">
 
-			{{-- begin brand --}}
-			<div class="login-header">
-				<div class="brand">
-					<span class="logo"></span> {{ $head1 }}
-					<small>{{ $head2 }}</small>
-				</div>
-				<div class="icon">
-					<i class="fa fa-sign-in"></i>
-				</div>
-			</div>
 
 			{{-- end brand --}}
 			<div class="login-content">
-				{{ Form::open(array('url' => $prefix.'/auth/login')) }}
+
+			{{-- begin brand --}}
+				<div class="login-header" style="margin-top:120px;">
+					<div class="icon">
+						<i class="fa fa-sign-in" style="font-color:#b7b7b7;"></i>
+					</div>
+				</div>
+				<div class="brand m-b-20">
+					<img src="{{asset('images/nmsprime-logo-white.png')}}" class="img-fluid">
+				</div>
+				<div align="center">
+					<h4>{{ $head1 }}</h4>
+					<h5>{{ $head2 }}</h5>
+				</div>
+				<div>
+					{{ Form::open(array('url' => $prefix.'/login')) }}
 
 					{{-- Username --}}
 					<div class="form-group m-b-20">
@@ -47,6 +52,14 @@
 					{{ Form::password('password', array('autofocus'=>'autofocus', 'class' => "form-control input-lg", 'placeholder' => \App\Http\Controllers\BaseViewController::translate_label('Password'), 'style' => 'simple')) }}
 					</div>
 
+					{{-- Remember Checkbox --}}
+					<div class="form-group m-b-20 d-flex align-items-center">
+						<input align="left" class="mt-0 mb-2" name="remember" type="checkbox" value="1">
+						<label for="remember" class="control-label px-2">
+							{{ \App\Http\Controllers\BaseViewController::translate_label('Remember Me') . '!' }}
+						</label>
+					</div>
+
 					{{-- Error Message --}}
 					<div class="m-t-20">
 						<p align="center"><font id="error" color="yellow">
@@ -56,28 +69,20 @@
 						</font></p>
 					</div>
 					<br>
-
-			{{-- Remember Me Checkbox is disabled !
-					<div class="checkbox m-b-20">
-						<label>
-							<input type="checkbox" /> Remember Me
-						</label>
-					</div>
-			--}}
-
 					{{-- Login Button --}}
 					<div class="login-buttons">
 						<button type="submit" class="btn btn-success btn-block btn-lg">{{ \App\Http\Controllers\BaseViewController::translate_label('Sign me in') }}</button>
 					</div>
 
 				{{ Form::close() }}
+				</div>
 			</div>
 		</div>
 		{{-- end login --}}
 
-	</body>
-
 	@include ('bootstrap.footer')
+	
+	</body>
 </html>
 
 

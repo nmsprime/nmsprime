@@ -1,39 +1,36 @@
 <?php
 
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
 
-class CreateTicketTypeTicketTable extends BaseMigration {
+class CreateTicketTypeTicketTable extends BaseMigration
+{
+    protected $tablename = 'tickettype_ticket';
 
-	protected $tablename = 'tickettype_ticket';
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create($this->tablename, function (Blueprint $table) {
+            $table->increments('id');
+            $table->timestamp('created_at')->nullable();
 
-	/**
-	 * Run the migrations.
-	 *
-	 * @return void
-	 */
-	public function up()
-	{
-		Schema::create($this->tablename, function(Blueprint $table)
-		{
-			$table->increments('id');
-			$table->timestamp('created_at')->nullable();
+            $table->integer('tickettype_id')->nullable();
+            $table->integer('ticket_id')->nullable();
 
-			$table->integer('tickettype_id')->nullable();
-			$table->integer('ticket_id')->nullable();
+            return parent::up();
+        });
+    }
 
-			return parent::up();
-		});
-	}
-
-	/**
-	 * Reverse the migrations.
-	 *
-	 * @return void
-	 */
-	public function down()
-	{
-		Schema::drop($this->tablename);
-	}
-
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::drop($this->tablename);
+    }
 }

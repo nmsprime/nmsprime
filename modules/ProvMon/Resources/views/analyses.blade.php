@@ -7,6 +7,10 @@
 	@else
 		<b>TODO</b>
 	@endif
+
+	<div class="btn pull-right">
+		@include('Generic.documentation', ['documentation' => $modem->help])
+	</div>
 @stop
 
 @section('content_cacti')
@@ -32,8 +36,7 @@
 		</div>
 
 		<div class="tab-pane fade in" id="flood-ping">
-			<?php $route = \Route::getCurrentRoute()->getUri(); ?>
-					<form route="$route" method="POST">Type:
+					<form method="POST">Type:
 						<input type="hidden" name="_token" value="{{ csrf_token() }}"></input>
 						<select class="select2 form-control m-b-20" name="flood_ping" style="width : 100 %">
 							<option value="1">low load: 500 packets of 56 Byte</option> {{-- needs approximately 5 sec --}}
@@ -87,7 +90,7 @@
 				<table>
 					<tr>
 						<td>
-							<font color="grey">{{$line}}</font>
+							<font color="grey">{!!$line!!}</font>
 						</td>
 					</tr>
 				</table>
@@ -147,15 +150,15 @@
 
 @stop
 
-@if (\Module::collections()->has('HfcCustomer'))
+@if (Module::collections()->has('HfcCustomer'))
 	@section('content_proximity_search')
 
-		{{ Form::open(array('route' => 'CustomerTopo.show_prox', 'method' => 'GET')) }}
-		{{ Form::label('radius', 'Radius / m', ['class' => 'col-md-2 control-label']) }}
-		{{ Form::hidden('id', $modem->id); }}
-		{{ Form::number('radius', '1000') }}
+		{!! Form::open(array('route' => 'CustomerTopo.show_prox', 'method' => 'GET')) !!}
+		{!! Form::label('radius', 'Radius / m', ['class' => 'col-md-2 control-label']) !!}
+		{!! Form::hidden('id', $modem->id) !!}
+		{!! Form::number('radius', '1000') !!}
 		<input type="submit" value="Search...">
-		{{ Form::close() }}
+		{!! Form::close() !!}
 
 	@stop
 @endif
@@ -268,27 +271,39 @@
 </script>
 
 <script language="javascript">
-	$(document).ready(function() {
-		$('table.streamtable').DataTable(
-		{
-		{{-- Translate Datatables Base --}}
-			@include('datatables.lang')
-		responsive: {
-			details: {
-				type: 'column' {{-- auto resize the Table to fit the viewing device --}}
-			}
-		},
-		autoWidth: false,
-		paging: false,
-		info: false,
-		searching: false,
-		aoColumnDefs: [ {
-			className: 'control',
-			orderable: false,
-			targets:   [0]
-		} ]
+	let targetPage = window.location.href;
+		targetPage = targetPage.split('?');
+		targetPage = targetPage[0];
+	let panelPositionData = localStorage.getItem(targetPage) ? localStorage.getItem(targetPage) : localStorage.getItem("{!! isset($view_header) ? $view_header : 'undefined'!!}");
+
+    let event = 'load';
+	if (panelPositionData)
+		event = 'localstorage-position-loaded';
+
+	$(window).on(event, function() {
+		$(document).ready(function() {
+			$('table.streamtable').DataTable({
+			{{-- Translate Datatables Base --}}
+				@include('datatables.lang')
+			responsive: {
+				details: {
+					type: 'column' {{-- auto resize the Table to fit the viewing device --}}
+				}
+			},
+			autoWidth: false,
+			paging: false,
+			info: false,
+			searching: false,
+			order: [[ 1, "asc" ]],
+			aoColumnDefs: [ {
+	            className: 'control',
+	            orderable: false,
+	            searchable: false,
+	            targets:   [0]
+			} ]
+			});
 		});
-});
+	});
 </script>
 @include('Generic.handlePanel')
 @stop

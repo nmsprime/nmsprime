@@ -1,4 +1,5 @@
 <?php
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -11,8 +12,8 @@ return [
     |
     */
     'defaults' => [
-        'guard' => 'admin',
-        'passwords' => 'users',
+        'guard'        => 'admin',
+        'passwords'    => 'admin',
     ],
     /*
     |--------------------------------------------------------------------------
@@ -32,17 +33,17 @@ return [
     */
     'guards' => [
         'admin' => [
-            'driver' => 'session',
+            'driver'   => 'session',
             'provider' => 'admin',
         ],
         'ccc' => [
-            'driver' => 'session',
+            'driver'   => 'session',
             'provider' => 'ccc',
         ],
-        //'api' => [
-        //    'driver' => 'token',
-        //    'provider' => 'users',
-        //],
+        'api' => [
+            'driver'   => 'token',
+            'provider' => 'admin',
+        ],
     ],
     /*
     |--------------------------------------------------------------------------
@@ -63,13 +64,12 @@ return [
     'providers' => [
         'admin' => [
             'driver' => 'eloquent',
-            'model' => \App\Authuser::class,
+            'model' => App\User::class,
         ],
         'ccc' => [
             'driver' => 'eloquent',
-            // TODO: check if absence of CCC module will break ?
-            'model' => \Modules\Ccc\Entities\CccAuthuser::class,
-        ]
+            'model' => \Modules\Ccc\Entities\CccUser::class,
+        ],
     ],
     /*
     |--------------------------------------------------------------------------
@@ -91,12 +91,17 @@ return [
     */
     // TODO:
     'passwords' => [
-        'users' => [
-            'provider' => 'users',
+        'admin' => [
+            'provider' => 'admin',
+            'email' => 'auth.emails.password', // TODO: set to ENV var
+            'table' => 'password_resets',
+            'expire' => 60,
+        ],
+        'ccc' => [
+            'provider' => 'ccc',
             'email' => 'auth.emails.password', // TODO: set to ENV var
             'table' => 'password_resets',
             'expire' => 60,
         ],
     ],
 ];
-

@@ -1,12 +1,10 @@
 {
-	"name": "pingpong-modules/ticketsystem",
-	"description": "",
-	"authors": [
-		{
-			"name": "Pingpong Labs",
-			"email": "pingpong.labs@gmail.com"
-		}
-	],
+	"name": "nmsprime-modules/ticketsystem",
+	"description": "NMS Prime Ticket Module",
+	"authors": [{
+		"name": "Roetzer engineering",
+		"email": "info@roetzer-engineering.com"
+	}],
 	"autoload": {
 		"psr-4": {
 			"Modules\\Ticketsystem\\": ""

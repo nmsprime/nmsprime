@@ -1,39 +1,39 @@
 <?php
+
 namespace Modules\BillingBase\Http\Controllers;
 
-use Modules\BillingBase\Entities\{Product, Salesman};
+use Modules\BillingBase\Entities\Product;
+use Modules\BillingBase\Entities\Salesman;
 
-class SalesmanController extends \BaseController {
-
+class SalesmanController extends \BaseController
+{
     /**
      * defines the formular fields for the edit and create view
      */
-	public function view_form_fields($model = null)
-	{
-		if (!$model)
-			$model = new Salesman;
+    public function view_form_fields($model = null)
+    {
+        if (! $model) {
+            $model = new Salesman;
+        }
 
-		$types = Product::getPossibleEnumValues('type');
-		unset($types['Credit']);
-		$types = implode(', ', $types);
+        $types = implode(', ', Product::getPossibleEnumValues('type'));
 
-		// label has to be the same like column in sql table
-		return array(
-			array('form_type' => 'text', 'name' => 'firstname', 'description' => 'Firstname'),
-			array('form_type' => 'text', 'name' => 'lastname', 'description' => 'Lastname'),
-			array('form_type' => 'text', 'name' => 'commission', 'description' => 'Commission in %'),
-			array('form_type' => 'text', 'name' => 'products', 'description' => 'Product List', 'help' => trans('helper.Salesman_ProductList').$types, 'options' => ['placeholder' => $types]),
-			array('form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'),
-		);
-	}
+        // label has to be the same like column in sql table
+        return [
+            ['form_type' => 'text', 'name' => 'firstname', 'description' => 'Firstname'],
+            ['form_type' => 'text', 'name' => 'lastname', 'description' => 'Lastname'],
+            ['form_type' => 'text', 'name' => 'commission', 'description' => 'Commission in %'],
+            ['form_type' => 'text', 'name' => 'products', 'description' => 'Product List', 'help' => trans('helper.Salesman_ProductList').$types, 'options' => ['placeholder' => $types]],
+            ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
+        ];
+    }
 
+    public function prepare_input($data)
+    {
+        // $data['products'] = str_replace(['/', '|', ';'], ',', trim(ucwords(strtolower($data['products']))));
+        $data['products'] = str_replace(['/', '|', ';'], ',', \Str::title($data['products']));
+        $data['products'] = str_replace('Tv', 'TV', $data['products']);
 
-
-	public function prepare_input($data)
-	{
-		$data['products'] = str_replace(['/', '|', ';'], ',', $data['products']);
-
-		return parent::prepare_input($data);
-	}
-
+        return parent::prepare_input($data);
+    }
 }

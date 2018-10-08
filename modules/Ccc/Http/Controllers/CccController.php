@@ -5,62 +5,60 @@ namespace Modules\Ccc\Http\Controllers;
 use Modules\Ccc\Entities\Ccc;
 use Modules\ProvBase\Entities\Contract;
 
-class CccController extends \BaseController {
+class CccController extends \BaseController
+{
+    /**
+     * defines the formular fields for the edit view
+     */
+    public function view_form_fields($model = null)
+    {
 
-	/**
-	 * defines the formular fields for the edit view
-	 */
-	public function view_form_fields($model = null)
-	{
+        // label has to be the same like column in sql table
+        $a = [
+            ['form_type' => 'text', 'name' => 'headline1', 'description' => 'Headline 1'],
+            ['form_type' => 'text', 'name' => 'headline2', 'description' => 'Headline 2'],
+        ];
 
-		// label has to be the same like column in sql table
-		$a = array(
-			array('form_type' => 'text', 'name' => 'headline1', 'description' => 'Headline 1'),
-			array('form_type' => 'text', 'name' => 'headline2', 'description' => 'Headline 2'),
-		);
+        $b = [];
+        if (! \Module::collections()->has('BillingBase')) {
+            // See CompanyController in Case BillingBase is active
+            $files = self::get_storage_file_list('ccc/template/');
 
-		$b = [];
-		if (!\Module::collections()->has('BillingBase'))
-		{
-			// See CompanyController in Case BillingBase is active
-			$files = self::get_storage_file_list('ccc/template/');
+            $b = [
+                ['form_type' => 'select', 'name' => 'template_filename', 'description' => 'Connection Info Template', 'value' => $files, 'help' => 'Tex Template used to Create Connection Information on the Contract Page for a Customer'],
+                ['form_type' => 'file', 'name' => 'template_filename_upload', 'description' => 'Upload Template'],
+                ];
+        }
 
-			$b = array(
-				array('form_type' => 'select', 'name' => 'template_filename', 'description' => 'Connection Info Template', 'value' => $files, 'help' => 'Tex Template used to Create Connection Information on the Contract Page for a Customer'),
-				array('form_type' => 'file', 'name' => 'template_filename_upload', 'description' => 'Upload Template'),
-				);
-		}
+        return array_merge($a, $b);
+    }
 
-		return array_merge($a,$b);
-	}
+    /**
+     * Overwrites the base methods to handle file uploads
+     */
+    public function store($redirect = true)
+    {
+        $dir = storage_path('app/config/ccc/template/');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0700, true);
+        }
 
+        // check and handle uploaded firmware files
+        $this->handle_file_upload('template_filename', $dir);
 
+        // finally: call base method
+        return parent::store();
+    }
 
-	/**
-	 * Overwrites the base methods to handle file uploads
-	 */
-	public function store($redirect = true)
-	{
-		$dir = storage_path('app/config/ccc/template/');
-		if (!is_dir($dir))
-			mkdir($dir, 0700, true);
+    public function update($id)
+    {
+        $dir = storage_path('app/config/ccc/template/');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0700, true);
+        }
 
-		// check and handle uploaded firmware files
-		$this->handle_file_upload('template_filename', $dir);
+        $this->handle_file_upload('template_filename', storage_path('app/config/ccc/template/'));
 
-		// finally: call base method
-		return parent::store();
-	}
-
-	public function update($id)
-	{
-		$dir = storage_path('app/config/ccc/template/');
-		if (!is_dir($dir))
-			mkdir($dir, 0700, true);
-
-		$this->handle_file_upload('template_filename', storage_path('app/config/ccc/template/'));
-
-		return parent::update($id);
-	}
-
+        return parent::update($id);
+    }
 }
