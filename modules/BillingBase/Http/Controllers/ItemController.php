@@ -159,11 +159,6 @@ class ItemController extends \BaseController
         return parent::prepare_rules($rules, $data);
     }
 
-    public function index()
-    {
-        return \View::make('errors.generic');
-    }
-
     /**
      * Show Alert when Credit Amount is negative and Customer will be charged
      */
