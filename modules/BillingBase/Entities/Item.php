@@ -50,11 +50,24 @@ class Item extends \BaseModel
         $count = $this->count > 1 ? "$this->count x " : '';
         $dates = $this->dateLabels();
         $price = $this->getItemPrice();
-        $ret = ['table' => $this->table,
-                'index_header' => ['contract.number', 'contract.firstname', 'contract.lastname', 'contract.city', 'contract.district', 'contract.contract_start', 'contract.contract_end', 'product.name', $this->table.'.valid_from', $this->table.'.valid_to', 'product.price'],
-                'eager_loading' => ['product', 'contract'],
-                'bsclass' => $this->get_bsclass()];
 
+        $ret = ['table' => $this->table,
+                'index_header' => [
+                    'contract.number',
+                    'contract.firstname',
+                    'contract.lastname',
+                    'contract.city',
+                    'contract.district',
+                    'contract.contract_start',
+                    'contract.contract_end',
+                    'product.name',
+                    $this->table.'.valid_from',
+                    $this->table.'.valid_to',
+                    'product.price',
+                ],
+                'eager_loading' => ['product', 'contract'],
+                'bsclass' => $this->get_bsclass(),
+            ];
 
         if (! $this->product) {
             $ret['bsclass'] = 'danger';
@@ -63,7 +76,13 @@ class Item extends \BaseModel
         }
 
         if ($this->product) {
-            $ret['header'] = $count.$this->product->name.$dates['start'].$dates['start_fixed'].$dates['end'].$dates['end_fixed'].$price;
+            $ret['header'] = $count.
+                $this->product->name.
+                $dates['start'].
+                $dates['startFixed'].
+                $dates['end'].
+                $dates['endFixed'].
+                $price;
         }
 
         return $ret;
@@ -76,10 +95,15 @@ class Item extends \BaseModel
         // blue:  new item - not yet considered for settlement run
         // yellow: item is outdated/expired and will not be charged this month
         // red: error error
-        $billing_valid = $this->check_validity($this->table.'.billing_cycle');
-        $bsclass = $billing_valid ? 'success' : ($this->get_start_time() < strtotime('midnight first day of this month') ? 'warning' : 'info');
+        if ($this->check_validity($this->table.'.billing_cycle')) {
+            return 'success';
+        }
 
-        return $bsclass;
+        if ($this->get_start_time() < strtotime('midnight first day of this month')) {
+            return 'warning';
+        }
+
+        return 'info';
     }
 
     public function dateLabels()
@@ -102,7 +126,7 @@ class Item extends \BaseModel
             }
         }
 
-        return $dates = ['end' => $end, 'start' => $start, 'end_fixed' => $endFixed, 'start_fixed' => $startFixed];
+        return compact('end', 'start', 'endFixed', 'startFixed');
     }
 
     public function getItemPrice()
@@ -110,10 +134,9 @@ class Item extends \BaseModel
         if ($this->product) {
             $price = floatval($this->credit_amount) ?: $this->product->price;
             $price = ' | '.round($price, 2).'€';
+
             return $price;
         }
-
-        return;
     }
 
     public function view_belongs_to()
