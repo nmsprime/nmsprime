@@ -170,7 +170,6 @@ class DashboardController extends BaseController
             foreach ($arrays as $key => $value) {
                 $data['monthly']['loss']["$array_key"][$key] = -1 * $value;
             }
-
         }
 
         $k = 0;
