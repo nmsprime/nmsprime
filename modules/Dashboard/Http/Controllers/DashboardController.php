@@ -131,10 +131,10 @@ class DashboardController extends BaseController
         }
 
         $array = json_decode($content, true);
-        $data['chart'] = array_slice($array, 0, 5);
-        $data['csv'] = array_slice($array, 5, 2) + array_slice($array, 8);
-        $data['table'] = array_slice($array, 7, 1);
-        $data['total'] = end(json_decode($content)->contracts);
+        $data = array_slice($array, 0, 1);
+        $data['chart'] = array_slice($array, 1, 5);
+        $data['csv'] = array_slice($array, 6, 2) + array_slice($array, 9);
+        $data['table'] = array_slice($array, 8, 1);
 
         return $data;
     }
@@ -198,16 +198,16 @@ class DashboardController extends BaseController
      * @param string $date_interval_start
      * @return int
      */
-    private static function count_contracts($date_interval)
+    private static function count_contracts($date)
     {
         $ret = 0;
 
         // for 800 contracts this is approximately 4x faster - DB::table is again 5x faster than Eloquents Contract::count -> (20x faster)
-        $ret = \DB::table('contract')->where('contract_start', '<=', $date_interval['first'])
+        $ret = Contract::where('contract_start', '<=', $date)
             ->whereNull('deleted_at')
-            ->where(function ($query) use ($date_interval) {
+            ->where(function ($query) use ($date) {
                 $query
-                ->where('contract_end', '>=', $date_interval['last'])
+                ->where('contract_end', '>=', $date)
                 ->orWhere('contract_end', '=', '0000-00-00')
                 ->orWhereNull('contract_end');
             })
@@ -298,16 +298,18 @@ class DashboardController extends BaseController
             'Internet_and_Voip' => ['Internet', '', 'Voip'],
             ];
 
-        //date array to count items for the line chart
+        $date = date('Y-m-d');
+        $contracts['total'] = self::count_contracts($date);
+
+        // date array to count items for the line chart
         for ($i = 11; $i >= 0; $i--) {
             $time = \Carbon\Carbon::now()->subMonthNoOverflow($i);
-            $month['last'] = $time->lastOfMonth()->format('Y-m-d');
-            $month['first'] = $time->firstOfMonth()->format('Y-m-d');
+            $date = $time->lastOfMonth()->format('Y-m-d');
             $contracts['labels'][] = $time->lastOfMonth()->format('Y-m-d');
-            $contracts['contracts'][] = self::count_contracts($month);
+            $contracts['contracts'][] = self::count_contracts($date);
 
             foreach ($queries as $name => $combinations) {
-                $contracts[$name][] = self::getContractCount($month, $combinations);
+                $contracts[$name][] = self::getContractCount($date, $combinations);
             }
         }
 
@@ -399,27 +401,27 @@ class DashboardController extends BaseController
      * @param array
      * @author Nino Ryschawy
      */
-    public static function getContractCount($month, $combinations)
+    public static function getContractCount($date, $combinations)
     {
-        $filter = function ($query) use ($month) {
+        $filter = function ($query) use ($date) {
             $query
             ->where('contract.create_invoice', 1)
             ->whereNull('contract.deleted_at')
-            ->where('contract_start', '<=', $month['last'])
-            ->where(function ($query) use ($month) {
+            ->where('contract_start', '<=', $date)
+            ->where(function ($query) use ($date) {
                 $query
                 ->whereNull('contract_end')
                 ->orWhere('contract_end', '=', '0000-00-00')
-                ->orWhere('contract_end', '>=', $month['last']);
+                ->orWhere('contract_end', '>=', $date);
             })
             ->whereNull('i.deleted_at')
             ->where('i.valid_from_fixed', 1)
-            ->where('i.valid_from', '<=', $month['last'])
-            ->where(function ($query) use ($month) {
+            ->where('i.valid_from', '<=', $date)
+            ->where(function ($query) use ($date) {
                 $query
                 ->whereNull('i.valid_to')
                 ->orWhere('i.valid_to', '=', '0000-00-00')
-                ->orWhere('i.valid_to', '>=', $month['last']);
+                ->orWhere('i.valid_to', '>=', $date);
             });
         };
 
