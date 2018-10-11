@@ -146,6 +146,10 @@ class DashboardController extends BaseController
      */
     public static function monthly_customers_csv()
     {
+        foreach (['total', 'new_items', 'new_customers', 'cancellations'] as  $trans) {
+            $$trans = trans("messages.$trans");
+        }
+
         $content = Storage::disk('chart-data')->get('contracts.json');
         $array = json_decode($content, true);
         $data = array_slice($array, 5);
@@ -159,23 +163,29 @@ class DashboardController extends BaseController
             $headings[] = $temp->format('Y/m');
         }
 
-        array_unshift($headings, 'New items');
-        fputcsv($file, $headings);
+        array_unshift($headings, $new_items);
+        fputcsv($file, $headings, ';');
 
-        $k = 0;
-        $field = ['+ Internet', '- Internet', '+ Voip', '- Voip', '+ TV', '- TV'];
-        foreach ([$data['monthly']['gain']['internet'], $data['monthly']['loss']['internet'], $data['monthly']['gain']['voip'], $data['monthly']['loss']['voip'], $data['monthly']['gain']['tv'], $data['monthly']['loss']['tv']] as $numbers) {
-            array_unshift($numbers, $field[$k++]);
-            fputcsv($file, $numbers);
+        foreach ($data['monthly']['loss'] as $array_key => $arrays) {
+            foreach ($arrays as $key => $value) {
+                $data['monthly']['loss']["$array_key"][$key] = -1 * $value;
+            }
         }
 
-        array_unshift($data['monthly']['ratio'], ' Ratio');
-        fputcsv($file, $data['monthly']['ratio']);
+        $k = 0;
+        $field = ['Internet+', 'Internet-', 'Voip+', 'Voip-', 'TV+', 'TV-'];
+        foreach ([$data['monthly']['gain']['internet'], $data['monthly']['loss']['internet'], $data['monthly']['gain']['voip'], $data['monthly']['loss']['voip'], $data['monthly']['gain']['tv'], $data['monthly']['loss']['tv']] as $numbers) {
+            array_unshift($numbers, $field[$k++]);
+            fputcsv($file, $numbers, ';');
+        }
+
+        array_unshift($data['monthly']['ratio'], $total);
+        fputcsv($file, $data['monthly']['ratio'], ';');
         fputcsv($file, ['']);
-        array_unshift($data['new'], ' New Customers');
-        fputcsv($file, $data['new']);
-        array_unshift($data['canceled'], ' Cancellations');
-        fputcsv($file, $data['canceled']);
+        array_unshift($data['new'], $new_customers);
+        fputcsv($file, $data['new'], ';');
+        array_unshift($data['canceled'], $cancellations);
+        fputcsv($file, $data['canceled'], ';');
         fclose($file);
         header('Content-Type: application/excel; charset=utf-8'); //application/excel
         header('Content-Disposition: attachment; filename="'.$fileName.'.csv"');
