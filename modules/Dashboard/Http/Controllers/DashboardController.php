@@ -187,7 +187,7 @@ class DashboardController extends BaseController
         array_unshift($data['canceled'], $cancellations);
         fputcsv($file, $data['canceled'], ';');
         fclose($file);
-        header('Content-Type: application/excel; charset=utf-8'); //application/excel
+        header('Content-Type: application/excel; charset=utf-8');
         header('Content-Disposition: attachment; filename="'.$fileName.'.csv"');
     }
 
@@ -321,7 +321,7 @@ class DashboardController extends BaseController
             ->whereNull('item.deleted_at')
             ->whereNull('contract.deleted_at');
 
-        //date array to count all items of type [internet, voip, tv] for each month from January last year to today
+        // date array to count all items of type [internet, voip, tv] for each month from January last year to today for the CSV
         $dayOne = new \Carbon\Carbon('first day of January 0000');
         for ($i = 11 + date('m'); $i >= 0; $i--) {
             $tmp = \Carbon\Carbon::now()->startOfMonth()->subMonthNoOverflow($i);
@@ -332,7 +332,7 @@ class DashboardController extends BaseController
             $contracts['canceled'][] = self::getCancelationCount($month);
         }
 
-        //date array to count all items of type [internet, voip, tv] for the current and the last 3 weeks
+        // date array to count all items of type [internet, voip, tv] for the last 4 weeks for the table
         $tmp = \Carbon\Carbon::now()->startOfWeek();
         for ($i = 0; $i < 4; $i++) {
             $all['weekly'][] = [$tmp->format('Y-m-d'), $tmp->copy()->endOfWeek()->format('Y-m-d')];
@@ -340,7 +340,7 @@ class DashboardController extends BaseController
             $tmp->subWeek();
         }
 
-        //calculate new items/customer every week or month
+        // calculate new items/customer every week or month
         foreach ($all as $span => $dates) {
             foreach ($dates as $date) {
                 foreach (['internet', 'voip', 'tv', 'other'] as $type) {
@@ -366,7 +366,7 @@ class DashboardController extends BaseController
                         })
                         ->sum('item.count');
 
-                    //cancellations every week or month
+                    // cancellations every week or month
                     $contracts[$span]['loss'][$type][] = with(clone $base)
                         ->where('product.type', $type)
                         ->where('contract.contract_start', '<=', $date[1])
@@ -383,7 +383,7 @@ class DashboardController extends BaseController
                 }
 
                 if ($span == 'weekly' || $span == 'monthly') {
-                    //weekly and monthly balance
+                    // weekly and monthly balance
                     foreach (array_keys($contracts[$span]['gain'][$type]) as $key) {
                         $contracts[$span]['ratio'][$key] = ($contracts[$span]['gain']['internet'][$key] + $contracts[$span]['gain']['voip'][$key] + $contracts[$span]['gain']['tv'][$key]) - ($contracts[$span]['loss']['internet'][$key] + $contracts[$span]['loss']['voip'][$key] + $contracts[$span]['loss']['tv'][$key]);
                     }
