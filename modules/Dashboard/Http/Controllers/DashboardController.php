@@ -833,7 +833,7 @@ class DashboardController extends BaseController
         }
 
         // crowdin - check if language is still supported, otherwise show crowdin link
-        if (! in_array(\Auth::user()->language, config('app.supported_locale'))) {
+        if (! in_array(\Auth::user()->language, config('app.supported_locales'))) {
             return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
                     'text' => ' <li>NMS PRIME is not yet translated to your language. Help translating NMS PRIME with
                     <a href="https://crowdin.com/project/nmsprime/'.\Auth::user()->language.'" target="_blank">Crowdin</a></li>', ];

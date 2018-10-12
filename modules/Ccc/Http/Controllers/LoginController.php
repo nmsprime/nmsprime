@@ -2,7 +2,7 @@
 
 namespace Modules\Ccc\Http\Controllers;
 
-use App;
+use Session;
 use Modules\Ccc\Entities\Ccc;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -58,7 +58,7 @@ class LoginController extends Controller
         $head2 = $conf->headline2;
         $image = 'main-pic-3.png';
 
-        App::setLocale(\App\Http\Controllers\BaseViewController::get_user_lang());
+        Session::put('ccc-language', $conf->language);
 
         return \View::make('auth.login', compact('head1', 'head2', 'prefix', 'image'));
     }
