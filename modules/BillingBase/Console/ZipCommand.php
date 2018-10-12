@@ -64,7 +64,8 @@ class ZipCommand extends Command
             return;
         }
 
-        $settlementrun->directory = SettlementRunCommand::get_absolute_accounting_dir_path();
+        // get directory from mutator function
+        $settlementrun->directory = $settlementrun->directory;
 
         ChannelLog::debug('billing', "Zip accounting files for SettlementRun $settlementrun->month/$settlementrun->year [ID: $settlementrun->id]");
 
