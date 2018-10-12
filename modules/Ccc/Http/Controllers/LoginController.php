@@ -2,7 +2,6 @@
 
 namespace Modules\Ccc\Http\Controllers;
 
-use App;
 use Session;
 use Modules\Ccc\Entities\Ccc;
 use App\Http\Controllers\Controller;
