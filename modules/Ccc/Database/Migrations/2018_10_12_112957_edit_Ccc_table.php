@@ -2,9 +2,8 @@
 
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
 
-class EditCccTable extends Migration
+class EditCccTable extends BaseMigration
 {
     protected $tablename = 'ccc';
 
