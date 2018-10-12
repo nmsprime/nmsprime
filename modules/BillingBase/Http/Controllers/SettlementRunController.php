@@ -46,13 +46,18 @@ class SettlementRunController extends \BaseController
     }
 
     /**
-     * Remove Index Create button when actual Run was already created and is verified - so it's not possible
-     * to overwrite accidentially the verified data
+     * Remove Index Create button when actual Run was already created
      */
     public function __construct()
     {
-        $last_run = SettlementRun::get_last_run();
-        $this->index_create_allowed = ! is_object($last_run) || ! ($last_run->verified && ($last_run->month == date('m', strtotime('first day of last month'))));
+        $time  = strtotime('first day of last month');
+        $count = SettlementRun::where('month', intval(date('m', $time)))->where('year', date('Y', $time))->count();
+
+        if ($count) {
+            $this->index_create_allowed = false;
+        }
+
+        $this->index_create_allowed = true;
 
         return parent::__construct();
     }
