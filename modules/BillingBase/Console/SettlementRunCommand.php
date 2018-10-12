@@ -579,7 +579,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
         foreach ($csv as $line) {
             $arr = str_getcsv($line, ';');
-            $customer_nr = intval(str_replace(['002-', '010-'], '', $arr[0]));
+            $customer_nr = str_replace(['002-', '010-'], '', $arr[0]);
 
             $data = [
                 'calling_nr' => $arr[3],
