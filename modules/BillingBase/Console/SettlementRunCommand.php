@@ -614,7 +614,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
         $this->_log_unassigned_calls($unassigned);
 
         // warning when there are 5 times more customers then calls
-        if ($calls && (count($customer_nrs) > 10 * count($calls))) {
+        if ($csv && (count($customer_nrs) > 10 * count($csv))) {
             Log::warning('billing', 'Very little data in enviatel call data record file ('.count($csv).' records). Possibly missing data!');
         }
 
