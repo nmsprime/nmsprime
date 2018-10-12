@@ -472,7 +472,6 @@ class SettlementRunCommand extends Command implements ShouldQueue
         }
 
         // create zip file
-        echo "\nZIP all Files...";
         \Artisan::call('billing:zip', ['sepaacc_id' => $this->sepaacc ? $this->sepaacc->id : 0]);
     }
 
