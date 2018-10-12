@@ -2,9 +2,9 @@
 
 namespace Modules\ProvVoip\Http\Controllers;
 
-use Illuminate\Support\Facades\Input;
 use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvBase\Entities\Modem;
+use Illuminate\Support\Facades\Input;
 use Modules\ProvBase\Entities\Configfile;
 
 class MtaController extends \BaseController
@@ -17,7 +17,7 @@ class MtaController extends \BaseController
      */
     public function view_form_fields($model = null)
     {
-        if (!$model) {
+        if (! $model) {
             $model = new Mta;
         }
 
