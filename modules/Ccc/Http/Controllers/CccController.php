@@ -12,11 +12,20 @@ class CccController extends \BaseController
      */
     public function view_form_fields($model = null)
     {
+        $languageDirectories = collect(glob(base_path('resources/lang').'/*'))
+            ->mapWithKeys(function ($path) {
+                $langShortcut = collect(explode('/', $path))->last();
+
+                return [$langShortcut  => $langShortcut];
+            });
 
         // label has to be the same like column in sql table
         $a = [
             ['form_type' => 'text', 'name' => 'headline1', 'description' => 'Headline 1'],
             ['form_type' => 'text', 'name' => 'headline2', 'description' => 'Headline 2'],
+            ['form_type' => 'select', 'name' => 'language', 'description' => 'Language',
+                'value' => $languageDirectories,
+                'help' => trans('helper.translate').' https://crowdin.com/project/nmsprime', ],
         ];
 
         $b = [];
