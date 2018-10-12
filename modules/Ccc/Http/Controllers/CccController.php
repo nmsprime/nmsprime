@@ -14,7 +14,7 @@ class CccController extends \BaseController
     {
         $languageDirectories = collect(glob(base_path('resources/lang').'/*'))
             ->mapWithKeys(function ($path) {
-                $langShortcut = collect(explode('/', $path))->last();
+                $langShortcut = basename($path);
 
                 return [$langShortcut  => $langShortcut];
             });
