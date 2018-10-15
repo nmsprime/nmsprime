@@ -1,7 +1,7 @@
 @extends ('Layout.default')
 
 
-<!-- Widgets -->
+{{--  Widgets --}}
 @foreach ($view as $content => $bool)
 	@section ($content)
 		@if ($bool && \View::exists('dashboard::widgets.'.$content))
@@ -157,9 +157,9 @@
 @stop
 
 
-<script src="{{asset('components/assets-admin/plugins/chart/Chart.min.js')}}"></script>
 
 @section('javascript')
+<script src="{{asset('components/assets-admin/plugins/chart/Chart.min.js')}}"></script>
 <script language="javascript">
 
 	$(window).on('localstorage-position-loaded load', function() {

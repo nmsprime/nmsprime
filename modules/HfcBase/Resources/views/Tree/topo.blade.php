@@ -1,6 +1,6 @@
 @extends ('Layout.split-nopanel')
 
-<head>
+@section('head')
 
 	<link href="{{asset('/modules/hfcbase/alert.css')}}" rel="stylesheet" type="text/css" media="screen"/>
 	<script type="text/javascript" src="{{asset('/modules/hfcbase/alert.js')}}"></script>
@@ -10,8 +10,7 @@
 
 	@include ('HfcBase::Tree.topo-api')
 
-</head>
-
+@stop
 
 
 @section('content_top')
@@ -56,4 +55,3 @@
 		<div class="col-md-12 d-flex" id="map" style="height:75vh"></div>
 	</div>
 @stop
-
