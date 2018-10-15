@@ -4,6 +4,7 @@ namespace Modules\Dashboard\Entities;
 
 use Module;
 use Storage;
+use Modules\ProvBase\Entities\Contract;
 
 class BillingAnalysis
 {
@@ -247,6 +248,10 @@ class BillingAnalysis
             }
         }
 
+        if (! Module::collections()->has('BillingBase')) {
+            return self::saveDataToStorage($contracts);
+        }
+
         $base = \DB::table('contract')
             ->join('item', 'item.contract_id', 'contract.id')
             ->join('product', 'product.id', 'item.product_id')
@@ -255,18 +260,14 @@ class BillingAnalysis
             ->whereNull('item.deleted_at')
             ->whereNull('contract.deleted_at');
 
-        if (! Module::collections()->has('BillingBase')) {
-            return $this->saveToStorage($contracts);
-        }
-
-        $dayOne = new \Carbon\Carbon('first day of January 0000');
-
         // date array to count all items of type [internet, voip, tv] for each month from January last year to today for the CSV
         for ($i = 11 + date('m'); $i >= 0; $i--) {
-            $tmp = \Carbon\Carbon::now()->startOfMonth()->subMonthNoOverflow($i);
-            $all['monthly'][] = [$tmp->format('Y-m-d'), $tmp->endOfMonth()->format('Y-m-d')];
-            $month['last'] = $tmp->lastOfMonth()->format('Y-m-d');
-            $month['first'] = $tmp->firstOfMonth()->format('Y-m-d');
+            $date = \Carbon\Carbon::now()->subMonthNoOverflow($i);
+            $start = $date->startOfMonth()->format('Y-m-d');
+            $end = $date->endOfMonth()->format('Y-m-d');
+            $all['monthly'][] = [$start, $end];
+            $month['last'] = $end;
+            $month['first'] = $start;
             $contracts['new'][] = self::getNewCustomerCount($month);
             $contracts['canceled'][] = self::getCancelationCount($month);
         }
@@ -322,24 +323,22 @@ class BillingAnalysis
                         })->sum('item.count');
                 }
 
-                if ($span == 'weekly' || $span == 'monthly') {
-                    // weekly and monthly balance
-                    foreach (array_keys($contracts[$span]['gain'][$type]) as $key) {
-                        $contracts[$span]['ratio'][$key] = ($contracts[$span]['gain']['internet'][$key]
-                            + $contracts[$span]['gain']['voip'][$key]
-                            + $contracts[$span]['gain']['tv'][$key])
-                            - ($contracts[$span]['loss']['internet'][$key]
-                            + $contracts[$span]['loss']['voip'][$key]
-                            + $contracts[$span]['loss']['tv'][$key]);
-                    }
+                // weekly and monthly balance
+                foreach (array_keys($contracts[$span]['gain'][$type]) as $key) {
+                    $contracts[$span]['ratio'][$key] = ($contracts[$span]['gain']['internet'][$key]
+                        + $contracts[$span]['gain']['voip'][$key]
+                        + $contracts[$span]['gain']['tv'][$key])
+                        - ($contracts[$span]['loss']['internet'][$key]
+                        + $contracts[$span]['loss']['voip'][$key]
+                        + $contracts[$span]['loss']['tv'][$key]);
                 }
             }
         }
 
-        return $this->saveToStorage($contracts);
+        return self::saveDataToStorage($contracts);
     }
 
-    protected function saveToStorage($contracts)
+    private static function saveDataToStorage($contracts)
     {
         return Storage::disk('chart-data')->put('contracts.json', json_encode($contracts));
     }
