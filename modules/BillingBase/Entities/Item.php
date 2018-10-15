@@ -47,45 +47,96 @@ class Item extends \BaseModel
     // link title in index view
     public function view_index_label()
     {
+        $count = $this->count > 1 ? "$this->count x " : '';
+        $dates = $this->dateLabels();
+        $price = $this->getItemPrice();
+
+        $ret = ['table' => $this->table,
+                'index_header' => [
+                    'contract.number',
+                    'contract.firstname',
+                    'contract.lastname',
+                    'contract.city',
+                    'contract.district',
+                    'contract.contract_start',
+                    'contract.contract_end',
+                    'product.name',
+                    $this->table.'.valid_from',
+                    $this->table.'.valid_to',
+                    'product.price',
+                ],
+                'eager_loading' => ['product', 'contract'],
+                'bsclass' => $this->get_bsclass(),
+            ];
+
+        if (! $this->product) {
+            $ret['bsclass'] = 'danger';
+            $ret['order_by'] = ['0' => 'asc'];
+            $ret['header'] = trans('messages.missing_product');
+        }
+
+        if ($this->product) {
+            $ret['header'] = $count.
+                $this->product->name.
+                $dates['start'].
+                $dates['startFixed'].
+                $dates['end'].
+                $dates['endFixed'].
+                $price;
+        }
+
+        return $ret;
+    }
+
+    public function get_bsclass()
+    {
+        // Evaluate Colours
+        // green: it will be considered for next accounting cycle
+        // blue:  new item - not yet considered for settlement run
+        // yellow: item is outdated/expired and will not be charged this month
+        // red: error error
+        if ($this->check_validity($this->table.'.billing_cycle')) {
+            return 'success';
+        }
+
+        if ($this->get_start_time() < strtotime('midnight first day of this month')) {
+            return 'warning';
+        }
+
+        return 'info';
+    }
+
+    public function dateLabels()
+    {
         // TODO: simplify when it's secure that 0000-00-00 doesn't occure
         $start = $this->valid_from && $this->valid_from != '0000-00-00' ? ' - '.$this->valid_from : '';
         $end = $this->valid_to && $this->valid_to != '0000-00-00' ? ' - '.$this->valid_to : '';
 
-        if (! $this->product) {
-            return ['bsclass' => 'danger', 'header' => trans('messages.missing_product').$start.$end];
-        }
-
         // default value for fixed dates indicator – empty in most cases
-        $start_fixed = '';
-        $end_fixed = '';
+        $startFixed = '';
+        $endFixed = '';
 
         // for internet and voip items: mark not fixed dates (because they are possibly changed by daily conversion)
-        if (in_array(\Str::lower($this->product->type), ['voip', 'internet'])) {
+        if (in_array(\Str::lower($this->type), ['voip', 'internet'])) {
             if ($start) {
-                $start_fixed = ! boolval($this->valid_from_fixed) ? '(!)' : '';
+                $startFixed = ! boolval($this->valid_from_fixed) ? '(!)' : '';
             }
             if ($end) {
-                $end_fixed = ! boolval($this->valid_to_fixed) ? '(!)' : '';
+                $endFixed = ! boolval($this->valid_to_fixed) ? '(!)' : '';
             }
         }
 
-        $count = $this->count > 1 ? "$this->count x " : '';
-        $price = floatval($this->credit_amount) ?: $this->product->price;
-        $price = ' | '.round($price, 2).'€';
+        return compact('end', 'start', 'endFixed', 'startFixed');
+    }
 
-        /* Evaluate Colours
-             * green: it will be considered for next accounting cycle
-             * blue:  new item - not yet considered for settlement run
-            * yellow: item is outdated/expired and will not be charged this month
-            * red: error error
-         */
-        $billing_valid = $this->check_validity($this->product->billing_cycle);
-        $bsclass = $billing_valid ? 'success' : ($this->get_start_time() < strtotime('midnight first day of this month') ? 'warning' : 'info');
+    public function getItemPrice()
+    {
+        if ($this->product) {
+            $price = floatval($this->credit_amount) ?: $this->product->price;
+            $price = ' | '.round($price, 2).'€';
 
-        return ['index' => [$this->product->name, $start, $end],
-                'index_header' => ['Type', 'Name', 'Price'],
-                'bsclass' => $bsclass,
-                'header' => $count.$this->product->name.$start.$start_fixed.$end.$end_fixed.$price, ];
+            return $price;
+        }
     }
 
     public function view_belongs_to()
@@ -152,7 +203,7 @@ class Item extends \BaseModel
      */
     public function get_start_time()
     {
-        $date = $this->valid_from && $this->valid_from != '0000-00-00' ? $this->valid_from : $this->created_at->toDateString();
+        $date = $this->valid_from != '0000-00-00' ? $this->valid_from : $this->created_at->toDateString();
 
         return strtotime($date);
     }
