@@ -21,6 +21,6 @@
         </div>
     </div>
     {{-- reference link --}}
-    <div class="stats-link"><a href="#">External</a></div>
+    <div class="stats-link"><a href="#">{{trans('view.Dashboard_External')}}</a></div>
 </div>
 

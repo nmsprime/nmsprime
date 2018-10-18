@@ -1,14 +1,14 @@
 
-<a href="/admin/createCSV" class="btn btn-primary">Download CSV</a>
+<a href="/admin/createCSV" class="btn btn-primary">{{ trans('view.Button_downloadCSV') }}</a>
 
 <!-- Table -->
 <table class="table table-hover table-bordered">
 	<thead>
 		<tr>
-			@foreach (['Week', 'Balance'] as $column => $name)
+			@foreach ([trans('messages.Week'), trans('messages.Balance')] as $column => $name)
 				<th scope="col" rowspan="2" class="text-center" width="20">{{$name}}</th>
 			@endforeach
-			@foreach (['Internet', 'VoIP', 'TV', 'Other'] as $column => $value)
+			@foreach (['Internet', 'VoIP', 'TV', trans('view.Dashboard_Other')] as $column => $value)
 				<th scope="col" colspan="2" class="text-center">{{ $value }}</th>
 			@endforeach
 		</tr>
