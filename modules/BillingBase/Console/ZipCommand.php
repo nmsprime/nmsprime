@@ -4,8 +4,12 @@ namespace Modules\BillingBase\Console;
 
 use Storage;
 use ChannelLog;
+use Illuminate\Bus\Queueable;
 use Illuminate\Console\Command;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
 use Modules\BillingBase\Entities\Invoice;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use App\Http\Controllers\BaseViewController;
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\SepaAccount;
@@ -13,16 +17,18 @@ use Modules\BillingBase\Entities\SettlementRun;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-class ZipCommand extends Command
+class ZipCommand extends Command implements ShouldQueue
 {
+    use InteractsWithQueue, Queueable, SerializesModels;
+
     /**
      * The console command & table name
      *
      * @var string
      */
-    protected $name = 'billing:zip';
-    protected $description = 'Build Zip File file with all relevant Accounting Files for one specified Month';
-    protected $signature = 'billing:zip {sepaacc_id?} {--settlementrun=}';
+    public $name = 'billing:zip';
+    protected $description = 'Build Zip file with all relevant Accounting Files of specified SettlementRun';
+    protected $signature = 'billing:zip {sepaacc_id?} {--settlementrun=} {--postal-invoices}';
 
     /**
      * @var Maximum number of files ghost script shall concatenate at once
@@ -32,12 +38,25 @@ class ZipCommand extends Command
     private $split = 1000;
 
     /**
+     * @var object  SettlementRun the ZIP shall be built for
+     */
+    private $settlementrun;
+
+    /**
+     * @var bool    If true -> concatenate invoices to single PDF that need to be sent via post
+     */
+    private $postalInvoices;
+
+    /**
      * Create a new command instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(SettlementRun $sr, $postalInvoices = false)
     {
+        $this->settlementrun = $sr;
+        $this->postalInvoices = $postalInvoices;
+
         parent::__construct();
     }
 
@@ -49,14 +68,14 @@ class ZipCommand extends Command
      *
      * @author Nino Ryschawy
      */
-    public function fire()
+    public function handle()
     {
         $conf = BillingBase::first();
         \App::setLocale($conf->userlang);
 
-        $settlementrun = $this->getRelevantSettlementRun();
+        $this->settlementrun = $this->getRelevantSettlementRun();
 
-        if (! $settlementrun) {
+        if (! $this->settlementrun) {
             $msg = 'Could not find SettlementRun for last month or wrong SettlementRun ID specified!';
             \ChannelLog::error('billing', $msg);
             echo "$msg\n";
@@ -64,39 +83,119 @@ class ZipCommand extends Command
             return;
         }
 
-        // get directory from mutator function
-        $settlementrun->directory = $settlementrun->directory;
+        // set directory via mutator function
+        $this->settlementrun->directory = $this->settlementrun->directory;
+        $this->settlementrun->txt = $this->settlementrun->year.'-'.$this->settlementrun->month.' [ID: '.$this->settlementrun->id.']';
 
-        ChannelLog::debug('billing', "Zip accounting files for SettlementRun $settlementrun->month/$settlementrun->year [ID: $settlementrun->id]");
+        // Only concatenate postal invoices if flag is set
+        if ($this->postalInvoices || ($this->output && $this->option('postal-invoices'))) {
+            $this->concatPostalInvoices();
 
-        $sepaaccs = $this->getRelevantSepaAccounts($settlementrun);
+            goto end;
+        }
 
-        if (! $sepaaccs) {
-            $msg = "No invoices found for SettlementRun $settlementrun->year-$settlementrun->month [ID: $settlementrun->id]!";
+        ChannelLog::debug('billing', 'Zip accounting files for SettlementRun '.$this->settlementrun->txt);
+
+        $sepaAccs = $this->getRelevantSepaAccounts($this->settlementrun);
+
+        if (! $sepaAccs) {
+            $msg = 'No invoices found for SettlementRun '.$this->settlementrun->txt;
             \ChannelLog::error('billing', $msg);
             echo "$msg\n";
 
             return;
         }
 
-        $this->concatenateInvoices($settlementrun, $sepaaccs);
-        $this->zipDirectory($settlementrun);
+        $this->concatenateInvoicesForSepaAccounts($sepaAccs);
+        $this->zipDirectory();
 
-        system('chmod -R 0700 '. $settlementrun->directory);
-        system('chown -R apache '. $settlementrun->directory);
-
+end:
+        system('chmod -R 0700 '. $this->settlementrun->directory);
+        system('chown -R apache '. $this->settlementrun->directory);
         Storage::delete('tmp/accCmdStatus');
     }
 
 
     private function getRelevantSettlementRun()
     {
-        if ($this->option('settlementrun'))
-            return SettlementRun::find($this->option('settlementrun'));
+        if ($this->settlementrun->id) {
+            return $this->settlementrun;
+        }
 
+        if ($this->output && $this->option('settlementrun')) {
+            return SettlementRun::find($this->option('settlementrun'));
+        }
+
+        // Default
         $time = strtotime('last month');
 
         return SettlementRun::where('month', date('m', $time))->where('year', date('Y', $time))->orderBy('id', 'desc')->first();
+    }
+
+    /**
+     * TODO: merge with concatenateInvoicesForSepaAccounts()
+     */
+    private function concatPostalInvoices()
+    {
+        $prod_fpath_rel = 'config/billingbase/post-invoice-product-ids';
+        $prod_fpath_abs = storage_path("app/$prod_fpath_rel");
+
+        if (! \Storage::exists($prod_fpath_rel)) {
+            ChannelLog::error('billing', 'Build postal invoices PDF failed: Missing file '.$prod_fpath_abs);
+
+            return;
+        }
+
+        $prod_ids = \Storage::get($prod_fpath_rel);
+        $prod_ids = str_replace(' ', '', $prod_ids);
+        $prod_ids = explode(',', trim(str_replace([';', PHP_EOL], ',', $prod_ids), ','));
+
+        SettlementRunCommand::push_state(0, 'Get data...');
+
+        $invoices = Invoice::join('contract', 'contract.id', '=', 'invoice.contract_id')
+            ->join('item', 'contract.id', '=', 'item.contract_id')
+            ->where('invoice.settlementrun_id', $this->settlementrun->id)
+            ->whereIn('item.product_id', $prod_ids)
+            ->orderBy('contract.number')->orderBy('invoice.type')
+            ->get();
+
+        $num = count($invoices);
+
+        SettlementRunCommand::push_state(0, 'Concatenate postal invoices...');
+        echo "Concatenate $num postal invoices...";
+        ChannelLog::debug('billing', "Concatenate $num postal invoices for SettlementRun ".$this->settlementrun->txt);
+
+        $files = [];
+        foreach ($invoices as $inv) {
+            $files[] = $inv->get_invoice_dir_path().$inv->filename;
+        }
+
+        // build temporary PDFs if more than 1000 invoices
+        $files = $this->_concat_split_pdfs($files);
+
+        // wait for all background processes to be finished if some exist and get next invoices already
+        if (count($invoices) > $this->split) {
+            $this->_wait_for_background_processes($files, true);
+            $files = array_keys($files);
+        }
+
+        SettlementRunCommand::push_state(50, 'Concatenate postal invoices...');
+
+        // Concat Invoices/temporary files to final target file
+        $targetFilepath = $this->settlementrun->directory."/".trans('messages.postalInvoices').'.pdf';
+
+        concat_pdfs($files, $targetFilepath, false);
+        echo "\nNew file: $targetFilepath\n";
+        SettlementRunCommand::push_state(100, 'Concatenate postal invoices...');
+
+        // delete temp files
+        if (count($files) >= $this->split) {
+            foreach ($files as $fn) {
+                if (is_file($fn)) {
+                    unlink($fn);
+                }
+            }
+        }
     }
 
     /**
@@ -106,46 +205,53 @@ class ZipCommand extends Command
      *
      * @return Collection
      */
-    private function getRelevantSepaAccounts($settlementrun)
+    private function getRelevantSepaAccounts()
     {
-        if ($this->argument('sepaacc_id')) {
-            $sepaacc_ids = [$this->argument('sepaacc_id')];
+        if ($this->input && $this->argument('sepaacc_id')) {
+            $sepaAcc_ids = $this->argument('sepaacc_id');
 
             // Get invoice count
-            $counts[$sepaacc_ids] = Invoice::where('settlementrun_id', $settlementrun->id)->where('sepaaccount_id', $sepaacc_ids)->count();
+            $counts[$sepaAcc_ids] = Invoice::where('settlementrun_id', $this->settlementrun->id)->where('sepaaccount_id', $sepaAcc_ids)->count();
+            $sepaAcc_ids = [$sepaAcc_ids];
         } else {
-            $sepaaccs = Invoice::where('settlementrun_id', $settlementrun->id)
+            $sepaAccs = Invoice::where('settlementrun_id', $this->settlementrun->id)
                 ->groupBy('sepaaccount_id')
                 ->select('sepaaccount_id', \DB::raw('count(*) as invoice_cnt'))
                 ->get();
 
-            foreach ($sepaaccs as $acc) {
+            foreach ($sepaAccs as $acc) {
                 $counts[$acc->sepaaccount_id] = $acc->invoice_cnt;
             }
 
-            $sepaacc_ids = $sepaaccs->pluck('sepaaccount_id')->all();
+            $sepaAcc_ids = $sepaAccs->pluck('sepaaccount_id')->all();
         }
 
-        $sepaaccs = SepaAccount::whereIn('id', $sepaacc_ids)->get();
+        $sepaAccs = SepaAccount::whereIn('id', $sepaAcc_ids)->get();
 
         // append invoice_cnt
-        foreach ($sepaaccs as $acc) {
+        foreach ($sepaAccs as $acc) {
             $acc->invoice_cnt = $counts[$acc->id];
         }
 
-        return $sepaaccs;
+        return $sepaAccs;
     }
 
-    private function getRelevantInvoices($settlementrun, $sepaacc)
+    private function getRelevantInvoices($sepaAcc)
     {
-        return Invoice::where('settlementrun_id', $settlementrun->id)->where('sepaaccount_id', $sepaacc->id)->get();
+        return Invoice::where('settlementrun_id', $this->settlementrun->id)->where('sepaaccount_id', $sepaAcc->id)->get();
     }
 
-    private function concatenateInvoices($settlementrun, $sepaaccs)
+    /**
+     * Concatenate Invoices of specific SettlementRun for specific SepaAccounts (performance optimized)
+     *
+     * Show actual (but imprecise) status
+     */
+    private function concatenateInvoicesForSepaAccounts($sepaAccs)
     {
         // variable initialization
-        $num = ['total' => 0, 'current' => 0, 'sum' => 0];
-        foreach ($sepaaccs as $acc) {
+        $num = ['total' => 0, 'current' => 0, 'sum' => 0, 'percentage' => 0];
+        $invoices = [];
+        foreach ($sepaAccs as $acc) {
             $num['total'] += $acc->invoice_cnt <= $this->split ? $acc->invoice_cnt : 2 * $acc->invoice_cnt;
         }
 
@@ -156,31 +262,31 @@ class ZipCommand extends Command
         }
         SettlementRunCommand::push_state(0, 'Concatenate invoices');
 
-        foreach ($sepaaccs as $i => $sepaacc) {
-            $invoices = isset($invoices) ? $invoices : $this->getRelevantInvoices($settlementrun, $sepaacc);
+        foreach ($sepaAccs as $i => $sepaAcc) {
+            $invoices = $invoices ?: $this->getRelevantInvoices($sepaAcc);
 
-            // build temporary PDFs for 1000 invoices
             $files = [];
             foreach ($invoices as $inv) {
                 $files[] = $inv->get_invoice_dir_path().$inv->filename;
             }
 
+            // build temporary PDFs if more than 1000 invoices
             $files = $this->_concat_split_pdfs($files);
 
             $num['current'] = count($invoices);
-            unset($invoices);
+            $invoices = [];
 
             // wait for all background processes to be finished if some exist and get next invoices already
             if ($num['current'] > $this->split) {
-                if (isset($sepaaccs[$i + 1]))
-                    $invoices = $this->getRelevantInvoices($settlementrun, $sepaaccs[$i + 1]);
+                if (isset($sepaAccs[$i + 1]))
+                    $invoices = $this->getRelevantInvoices($sepaAccs[$i + 1]);
 
                 $this->_wait_for_background_processes($files, $num);
                 $files = array_keys($files);
             }
 
             // Concat Invoices/temporary files to final target file
-            $fpath = $settlementrun->directory.'/'.sanitize_filename($sepaacc->name);
+            $fpath = $this->settlementrun->directory.'/'.sanitize_filename($sepaAcc->name);
             $fpath .= '/'.BaseViewController::translate_label('Invoices').'.pdf';
 
             $pid = concat_pdfs($files, $fpath, true);
@@ -221,10 +327,10 @@ class ZipCommand extends Command
         }
     }
 
-    private function zipDirectory ($settlementrun)
+    private function zipDirectory ()
     {
-        $filename = $settlementrun->year.'-'.str_pad($settlementrun->month, 2, '0', STR_PAD_LEFT).'.zip';
-        chdir($settlementrun->directory);
+        $filename = $this->settlementrun->year.'-'.str_pad($this->settlementrun->month, 2, '0', STR_PAD_LEFT).'.zip';
+        chdir($this->settlementrun->directory);
 
         ChannelLog::debug('billing', "ZIP Files to $filename");
         echo "\nZIP accounting files and directories...\n";
@@ -234,7 +340,7 @@ class ZipCommand extends Command
         system("zip -r $filename *");
         ob_end_clean();
 
-        echo "New file: $settlementrun->directory/$filename\n";
+        echo 'New file: '.$this->settlementrun->directory."/$filename\n";
     }
 
     /**
@@ -274,6 +380,8 @@ class ZipCommand extends Command
 
     /**
      * Wait for processes when ghost script was started in background to concatenate invoices in multiple threads
+     *
+     * Sets a value for the progress bar too (with the help of $num array)
      *
      * @param array 	[temporary file paths => process IDs]
      */

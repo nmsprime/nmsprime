@@ -24,6 +24,18 @@
             </div>
         @endif
 
+        <!-- button  to create invoices PDF for postal delivery -->
+        @if ($rerun_button && Storage::exists('config/billingbase/post-invoice-product-ids'))
+            <div class="col-md-12 text-center m-b-20">
+                <div class="row">
+                    <div class="col-md-1"></div>
+                    {{ Form::open(array('route' => ['SettlementRun.create_post_invoices_pdf', $view_var->id,] ,'method' => 'put')) }}
+                    {{ Form::submit( \App\Http\Controllers\BaseViewController::translate_view('create_post_invoices_pdf', 'Button') , ['style' => 'simple']) }}
+                    {{ Form::close() }}
+                </div>
+            </div>
+        @endif
+
         <!-- progress bar + message -->
         @if (\Session::get('job_id'))
             {{-- SettlementRunCommand running --}}

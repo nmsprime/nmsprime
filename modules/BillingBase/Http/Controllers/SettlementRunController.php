@@ -183,6 +183,23 @@ class SettlementRunController extends \BaseController
     }
 
     /**
+     * Concatenate invoices that need to be sent by post
+     *
+     * Note: you need to set Product IDs in storage/app/config/billingbase/post-invoice-product-ids
+     *
+     * @return view  SettlementRun edit page
+     */
+    public function create_post_invoices_pdf($id)
+    {
+        $settlementrun = SettlementRun::find($id);
+
+        $id = \Queue::push(new \Modules\BillingBase\Console\ZipCommand($settlementrun, true));
+        \Session::put('job_id', $id);
+
+        return \Redirect::route('SettlementRun.edit', $settlementrun->id);
+    }
+
+    /**
      * Get Logs from Parent Function from billing.log and Format for table view
      *
      * @param date_time 	Unix Timestamp  	Return only Log entries after this timestamp
