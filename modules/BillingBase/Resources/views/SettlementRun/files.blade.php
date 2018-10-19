@@ -39,7 +39,7 @@
         <!-- progress bar + message -->
         @if (\Session::get('job_id'))
             {{-- SettlementRunCommand running --}}
-            <div class="alert alert-warning fade in m-b-15">{{ trans('messages.accCmd_processing') }}</div>
+            <div class="alert alert-warning fade in m-b-15">{{ $status_msg }}</div>
             <div id="progress-msg" class="col-10"></div>
             <div class="col-10">
                 <div class="progress">

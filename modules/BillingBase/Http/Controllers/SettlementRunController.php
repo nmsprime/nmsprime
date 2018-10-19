@@ -73,30 +73,32 @@ class SettlementRunController extends \BaseController
     {
         $logs = $failed_jobs = [];
         $sr = SettlementRun::find($id);
-        $bool = true;
-        $job_queued = \DB::table('jobs')->where('payload', 'like', '%SettlementRunCommand%')->get();
+        $rerun_button = true;
+        $status_msg = '';
+        $job_queued = \DB::table('jobs')->where('payload', 'like', '%SettlementRunCommand%')->orWhere('payload', 'like', '%ZipCommand%')->get();
         $job_queued = $job_queued->isNotEmpty() ? $job_queued[0] : null;
 
-        if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified) {
-            $bool = false;
+        if ($job_queued) {
+            // get status message
+            $job = json_decode($job_queued->payload);
+            $status_msg = self::getStatusMessage($job->data->commandName);
+
+            // dont let multiple users create a lot of jobs - Session key is checked in blade
+            \Session::put('job_id', $job_queued->id);
+        } elseif (\Session::get('job_id')) {
+            // delete Session job id if job is done in case someone broke the tcp connection (close tab/window) manually
+            \Session::remove('job_id');
         }
 
-        // delete Session job id if job is done in case someone broke the tcp connection (close tab/window) manually
-        if (\Session::get('job_id')) {
-            if (! \DB::table('jobs')->find(\Session::get('job_id'))) {
-                \Session::remove('job_id');
-            }
-        }
-        // dont let multiple users create a lot of jobs
-        elseif ($job_queued) {
-            \Session::put('job_id', $job_queued->id);
+        if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified) {
+            $rerun_button = false;
         }
 
         // get error logs in case job failed and remove failed job from table
         $failed_jobs = \DB::table('failed_jobs')->get();
         foreach ($failed_jobs as $failed_job) {
             $obj = unserialize((json_decode($failed_job->payload)->data->command));
-            if ($obj->name == 'billing:settlementrun') {
+            if (\Str::contains($obj->name, 'billing:')) {
                 \Artisan::call('queue:forget', ['id' => $failed_job->id]);
                 $logs = self::get_logs($sr->updated_at->subSeconds(1)->__get('timestamp'), Logger::ERROR);
                 break;
@@ -108,7 +110,22 @@ class SettlementRunController extends \BaseController
         // $logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
         $logs = $logs ?: self::get_logs($sr->updated_at->__get('timestamp'));
 
-        return parent::edit($id)->with('rerun_button', $bool)->with('logs', $logs);
+        return parent::edit($id)->with(compact('rerun_button', 'logs', 'status_msg'));
+        return parent::edit($id)->with('rerun_button', $rerun_button)->with('logs', $logs);
+    }
+
+    public static function getStatusMessage($commandName)
+    {
+        switch ($commandName) {
+            case 'Modules\BillingBase\Console\ZipCommand':
+                return trans('messages.zipCmdProcessing');
+
+            case 'Modules\BillingBase\Console\SettlementRunCommand':
+                return trans('messages.accCmd_processing');
+
+            default:
+                return '';
+        }
     }
 
     /**
@@ -127,6 +144,10 @@ class SettlementRunController extends \BaseController
             $job = true;
             while ($job) {
                 $job = \DB::table('jobs')->find(\Session::get('job_id'));
+
+                if (! isset($commandName) && $job) {
+                    $commandName = self::getJobCommandName($job);
+                }
 
                 $state = \Storage::exists('tmp/accCmdStatus') ? \Storage::get('tmp/accCmdStatus') : '';
 
@@ -147,7 +168,11 @@ class SettlementRunController extends \BaseController
                 sleep(2);
             }
 
-            \Log::debug('SettlementRun Job ['.\Session::get('job_id').'] stopped');
+            if (! isset($commandName)) {
+                $commandName = 'Modules\BillingBase\Console\SettlementRunCommand';
+            }
+
+            \Log::debug("Job $commandName \[".\Session::get('job_id').'] stopped');
 
             \Session::remove('job_id');
 
@@ -159,7 +184,7 @@ class SettlementRunController extends \BaseController
                 $i--;
                 $failed_jobs = \DB::table('failed_jobs')->get();
                 foreach ($failed_jobs as $job) {
-                    $obj = unserialize((json_decode($job->payload)->data->command));
+                    $obj = unserialize(json_decode($job->payload)->data->command);
                     if ($obj->name == 'billing:accounting') {
                         $success = false;
                         break;
@@ -169,7 +194,7 @@ class SettlementRunController extends \BaseController
                 sleep(2);
             }
             reload:
-            $success ? \Log::info('Settlementrun finished successfully') : \Log::error('Settlementrun failed!');
+            $success ? \Log::info("$commandName finished successfully") : \Log::error("$commandName failed!");
 
             \Log::debug('Reload Settlementrun Edit View');
             echo "data: reload\n\n";
@@ -180,6 +205,16 @@ class SettlementRunController extends \BaseController
         $response->headers->set('Content-Type', 'text/event-stream');
 
         return $response;
+    }
+
+    /**
+     * Get name of a job inside the jobs/failed_jobs table
+     *
+     * @return string
+     */
+    public static function getJobCommandName($job)
+    {
+        return json_decode($job->payload)->data->commandName;
     }
 
     /**
