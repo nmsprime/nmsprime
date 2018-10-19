@@ -111,7 +111,7 @@ class SettlementRun extends \BaseModel
      * Mutator function to get accounting storage directory path via: model->directory
      * (so calling it in e.g. constructor is superfluous, used in e.g. ZipCommand)
      *
-     * @return String   SettlementRun absolute directory path
+     * @return string   SettlementRun absolute directory path
      */
     public function getDirectoryAttribute()
     {
@@ -121,7 +121,7 @@ class SettlementRun extends \BaseModel
     /**
      * Mutator function to get accounting storage directory path via: model->relativeDirectory
      *
-     * @return String   SettlementRun relative directory path
+     * @return string   SettlementRun relative directory path
      */
     public function getRelativeDirectoryAttribute()
     {

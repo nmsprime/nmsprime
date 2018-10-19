@@ -109,12 +109,11 @@ class ZipCommand extends Command implements ShouldQueue
         $this->concatenateInvoicesForSepaAccounts($sepaAccs);
         $this->zipDirectory();
 
-end:
-        system('chmod -R 0700 '. $this->settlementrun->directory);
-        system('chown -R apache '. $this->settlementrun->directory);
+        end:
+        system('chmod -R 0700 '.$this->settlementrun->directory);
+        system('chown -R apache '.$this->settlementrun->directory);
         Storage::delete('tmp/accCmdStatus');
     }
-
 
     private function getRelevantSettlementRun()
     {
@@ -182,7 +181,7 @@ end:
         SettlementRunCommand::push_state(50, 'Concatenate postal invoices...');
 
         // Concat Invoices/temporary files to final target file
-        $targetFilepath = $this->settlementrun->directory."/".trans('messages.postalInvoices').'.pdf';
+        $targetFilepath = $this->settlementrun->directory.'/'.trans('messages.postalInvoices').'.pdf';
 
         concat_pdfs($files, $targetFilepath, false);
         echo "\nNew file: $targetFilepath\n";
@@ -278,8 +277,9 @@ end:
 
             // wait for all background processes to be finished if some exist and get next invoices already
             if ($num['current'] > $this->split) {
-                if (isset($sepaAccs[$i + 1]))
+                if (isset($sepaAccs[$i + 1])) {
                     $invoices = $this->getRelevantInvoices($sepaAccs[$i + 1]);
+                }
 
                 $this->_wait_for_background_processes($files, $num);
                 $files = array_keys($files);
@@ -304,10 +304,11 @@ end:
             // Output
             $num['sum'] += $num['current'];
 
-            if ($num['sum'] == $num['total'])
+            if ($num['sum'] == $num['total']) {
                 $num['percentage'] = 100 - (100 - $num['percentage']) / 2;
-            else
+            } else {
                 $num['percentage'] = $num['sum'] / $num['total'] * 100;
+            }
 
             SettlementRunCommand::push_state($num['percentage'], 'Concatenate invoices');
             if ($this->output) {
@@ -327,7 +328,7 @@ end:
         }
     }
 
-    private function zipDirectory ()
+    private function zipDirectory()
     {
         $filename = $this->settlementrun->year.'-'.str_pad($this->settlementrun->month, 2, '0', STR_PAD_LEFT).'.zip';
         chdir($this->settlementrun->directory);

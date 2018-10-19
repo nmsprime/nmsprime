@@ -8,8 +8,8 @@ use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Console\cdrCommand;
 use Modules\BillingBase\Entities\SettlementRun;
-use Modules\BillingBase\Console\SettlementRunCommand;
 use Modules\BillingBase\Entities\AccountingRecord;
+use Modules\BillingBase\Console\SettlementRunCommand;
 
 class SettlementRunController extends \BaseController
 {
@@ -50,7 +50,7 @@ class SettlementRunController extends \BaseController
      */
     public function __construct()
     {
-        $time  = strtotime('first day of last month');
+        $time = strtotime('first day of last month');
         $count = SettlementRun::where('month', intval(date('m', $time)))->where('year', date('Y', $time))->count();
 
         if ($count) {
@@ -111,7 +111,6 @@ class SettlementRunController extends \BaseController
         $logs = $logs ?: self::get_logs($sr->updated_at->__get('timestamp'));
 
         return parent::edit($id)->with(compact('rerun_button', 'logs', 'status_msg'));
-        return parent::edit($id)->with('rerun_button', $rerun_button)->with('logs', $logs);
     }
 
     public static function getStatusMessage($commandName)
