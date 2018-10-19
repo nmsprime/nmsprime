@@ -331,7 +331,7 @@ class SettlementRunController extends \BaseController
             Salesman::remove_account_specific_entries_from_csv($sepaacc->id);
 
             // delete account specific dir
-            $dir = $sepaacc->get_relativ_accounting_dir_path();
+            $dir = $sepaacc->get_relative_accounting_dir_path();
             foreach (\Storage::files($dir) as $f) {
                 \Storage::delete($f);
             }
