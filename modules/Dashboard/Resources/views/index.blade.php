@@ -121,7 +121,7 @@
 				@section ('contract_analytics')
 					@include('dashboard::panels.contract_analytics')
 				@stop
-				@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => 'Contract Analytics', 'md' => 8, 'height' => 'auto', 'i' => '3'))
+				@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => trans('view.Dashboard_ContractAnalytics'), 'md' => 8, 'height' => 'auto', 'i' => '3'))
 			@endif
 
 			@if (Module::collections()->has('BillingBase'))
@@ -129,7 +129,7 @@
 					@section ('weekly_contracts')
 						@include('dashboard::panels.weekly_contracts')
 					@stop
-					@include ('bootstrap.panel', array ('content' => "weekly_contracts", 'view_header' => 'Weekly Customers', 'md' => 4, 'height' => 'auto', 'i' => '1'))
+					@include ('bootstrap.panel', array ('content' => "weekly_contracts", 'view_header' => trans('view.Dashboard_WeeklyCustomers'), 'md' => 4, 'height' => 'auto', 'i' => '1'))
 				@endif
 			@endif
 
@@ -137,7 +137,7 @@
 				@section ('income_analytics')
 					@include('dashboard::panels.income_analytics')
 				@stop
-				@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 4, 'height' => 'auto', 'i' => '4'))
+				@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => trans('view.Dashboard_IncomeAnalytics'), 'md' => 4, 'height' => 'auto', 'i' => '4'))
 			@endif
 
 			@if (isset($data['news']) && $data['news'])
