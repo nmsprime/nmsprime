@@ -7,10 +7,15 @@
 				{{ Form::open(array('route' => ['SettlementRun.update', $view_var->id,] ,'method' => 'put')) }}
 					{{ Form::hidden('rerun', true) }}
 					<div class="row">
-						<label for="description" style="margin-top: 10px;" class="col-md-3,5 control-label">{{ trans('messages.sr_repeat') }}</label>
-						<div class="col-md-4">
-							{{ Form::select('sepaaccount', $relation['view']['vars']['sepaaccs'], 0, ['style' => 'simple']) }}
-						</div>
+						@if (isset($relation['view']['vars']['sepaaccs']))
+							<label for="description" style="margin-top: 10px;" class="col-md-3,5 control-label">{{ trans('messages.sr_repeat') }}</label>
+							<div class="col-md-4">
+								{{ Form::select('sepaaccount', $relation['view']['vars']['sepaaccs'], 0, ['style' => 'simple']) }}
+							</div>
+						@else
+							@DivOpen(4)
+							@DivClose
+						@endif
 						<div class="col-md-3">
 						{{ Form::submit( \App\Http\Controllers\BaseViewController::translate_view('Rerun Accounting Command', 'Button') , ['style' => 'simple']) }}
 						</div>
