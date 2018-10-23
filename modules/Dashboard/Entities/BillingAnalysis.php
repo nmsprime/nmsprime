@@ -217,6 +217,20 @@ class BillingAnalysis
     }
 
     /**
+     * Check if Json key exists
+     *
+     * @author Roy Schneider
+     * @param array
+     * @return void
+     */
+    public static function checkJson($data)
+    {
+        if (! array_key_exists('total', $data)) {
+            self::saveContractsToJson();
+        }
+    }
+
+    /**
      * Determine the total count of contracts (Internet only, Voip only, Internet + Voip) for current & last year
      * Format and save to json.
      * Note: used by cronjob
