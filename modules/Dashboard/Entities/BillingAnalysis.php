@@ -79,6 +79,10 @@ class BillingAnalysis
             $data['table'] = array_slice($array, 8, 1);
         }
 
+        if (self::checkJson($data) == true) {
+            return self::getContractData();
+        }
+
         return $data;
     }
 
@@ -226,7 +230,7 @@ class BillingAnalysis
     public static function checkJson($data)
     {
         if (! array_key_exists('total', $data)) {
-            self::saveContractsToJson();
+            return self::saveContractsToJson();
         }
     }
 

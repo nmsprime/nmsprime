@@ -18,7 +18,6 @@ class DashboardController extends BaseController
      */
     public function index()
     {
-        BillingAnalysis::checkJson(BillingAnalysis::getContractData());
         $title = 'Dashboard';
         $netelements = $services = [];
         $view = self::_get_view_permissions();
