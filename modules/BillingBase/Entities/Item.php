@@ -64,16 +64,12 @@ class Item extends \BaseModel
                     $this->table.'.valid_from',
                     $this->table.'.valid_to',
                     'product.price',
+                    $this->table.'.valid_from_fixed',
+                    $this->table.'.valid_to_fixed',
                 ],
                 'eager_loading' => ['product', 'contract'],
                 'bsclass' => $this->get_bsclass(),
             ];
-
-        if (! $this->product) {
-            $ret['bsclass'] = 'danger';
-            $ret['order_by'] = ['0' => 'asc'];
-            $ret['header'] = trans('messages.missing_product');
-        }
 
         if ($this->product) {
             $ret['header'] = $count.
@@ -94,12 +90,12 @@ class Item extends \BaseModel
         // green: it will be considered for next accounting cycle
         // blue:  new item - not yet considered for settlement run
         // yellow: item is outdated/expired and will not be charged this month
-        // red: error error
-        if ($this->check_validity($this->table.'.billing_cycle')) {
+        // '$this->id' to dont check when index table header is determined!
+        if ($this->id && $this->check_validity($this->product->billing_cycle)) {
             return 'success';
         }
 
-        if ($this->get_start_time() < strtotime('midnight first day of this month')) {
+        if ($this->id && $this->get_start_time() < strtotime('midnight first day of this month')) {
             return 'warning';
         }
 
@@ -117,7 +113,7 @@ class Item extends \BaseModel
         $endFixed = '';
 
         // for internet and voip items: mark not fixed dates (because they are possibly changed by daily conversion)
-        if (in_array(\Str::lower($this->type), ['voip', 'internet'])) {
+        if ($this->product && in_array(\Str::lower($this->product->type), ['voip', 'internet'])) {
             if ($start) {
                 $startFixed = ! boolval($this->valid_from_fixed) ? '(!)' : '';
             }
