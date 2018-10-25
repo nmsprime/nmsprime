@@ -118,10 +118,10 @@ class Item extends \BaseModel
         // for internet and voip items: mark not fixed dates (because they are possibly changed by daily conversion)
         if ($this->product && in_array(\Str::lower($this->product->type), ['voip', 'internet'])) {
             if ($start) {
-                $startFixed = ! boolval($this->valid_from_fixed) ? '(!)' : '';
+                $startFixed = ! boolval($this->valid_from_fixed) ? ' (!)' : '';
             }
             if ($end) {
-                $endFixed = ! boolval($this->valid_to_fixed) ? '(!)' : '';
+                $endFixed = ! boolval($this->valid_to_fixed) ? ' (!)' : '';
             }
         }
 
