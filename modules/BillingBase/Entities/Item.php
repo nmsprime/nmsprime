@@ -64,12 +64,15 @@ class Item extends \BaseModel
                     $this->table.'.valid_from',
                     $this->table.'.valid_to',
                     'product.price',
-                    $this->table.'.valid_from_fixed',
-                    $this->table.'.valid_to_fixed',
                 ],
                 'eager_loading' => ['product', 'contract'],
                 'bsclass' => $this->get_bsclass(),
             ];
+
+        // if enabled add item.valid_from and item.valid_to to index page
+        if ($this->fluidDates()) {
+            array_push($ret['index_header'], $this->table.'.valid_from_fixed', $this->table.'.valid_to_fixed');
+        }
 
         if ($this->product) {
             $ret['header'] = $count.
@@ -133,6 +136,18 @@ class Item extends \BaseModel
 
             return $price;
         }
+    }
+
+    /**
+     * Check if item.valid_from/valid_to is enabled.
+     *
+     * @author Roy Schneider
+     * @param void
+     * @return bool
+     */
+    protected function fluidDates()
+    {
+        return BillingBase::first()->fluid_valid_dates;
     }
 
     public function view_belongs_to()
