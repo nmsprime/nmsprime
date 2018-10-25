@@ -79,6 +79,10 @@ class BillingAnalysis
             $data['table'] = array_slice($array, 8, 1);
         }
 
+        if (self::checkJson($data) == true) {
+            return self::getContractData();
+        }
+
         return $data;
     }
 
@@ -214,6 +218,20 @@ class BillingAnalysis
         $income = self::formatChartDataIncome($income);
 
         Storage::disk('chart-data')->put('income.json', json_encode($income));
+    }
+
+    /**
+     * Check if Json key exists
+     *
+     * @author Roy Schneider
+     * @param array
+     * @return void
+     */
+    public static function checkJson($data)
+    {
+        if (! array_key_exists('total', $data)) {
+            return self::saveContractsToJson();
+        }
     }
 
     /**
