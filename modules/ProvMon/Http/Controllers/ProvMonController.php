@@ -29,24 +29,63 @@ class ProvMonController extends \BaseController
         parent::__construct();
     }
 
-    /*
-     * Prepares Sidebar in View
+    /**
+     * Creates tabs to analysis pages.
+     *
+     * @author Roy Schneider
+     * @param int
+     * @return array
      */
-    public function prep_sidebar($id)
+    public function analysisPages($id)
     {
-        $modem = Modem::find($id);
-        $this->modem = $modem;
+        $modem = $this->findModem($id);
 
-        $a = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]],
-                        ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => [$id]],
-                        ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => [$id]],
+        $tabs = [['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => [$id]],
+                ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => [$id]],
                 ];
 
+        array_unshift($tabs, $this->defineEditRoute($id));
+
         if (isset($modem->mtas[0])) {
-            array_push($a, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => [$id]]);
+            array_push($tabs, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => [$id]]);
         }
 
-        return $a;
+        return $tabs;
+    }
+
+    /**
+     * Find Modem
+     *
+     * @author Roy Schneider
+     * @param int
+     * @return Modules\ProvBase\Entities\Modem
+     */
+    public function findModem($id)
+    {
+        $this->modem = Modem::findOrFail($id);
+
+        return $this->modem;
+    }
+
+    /**
+     * Route for Modem or MTA edit page
+     *
+     * @author Roy Schneider
+     * @param int
+     * @return array
+     */
+    public function defineEditRoute($id)
+    {
+        $session = \Session::get('Edit');
+        $modem = $this->findModem($id);
+
+        $edit = ['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]];
+
+        if (isset($modem->mtas[0]) && $session = 'MTA') {
+            $edit = ['name' => 'Edit', 'route' => 'Mta.edit', 'link' => [$modem->mtas[0]->id]];
+        }
+
+        return $edit;
     }
 
     /**
@@ -101,7 +140,7 @@ class ProvMonController extends \BaseController
 
         // TODO: Dash / Forecast
 
-        $panel_right = $this->prep_sidebar($id);
+        $panel_right = $this->analysisPages($id);
         $view_header = 'ProvMon-Analyses';
 
         // View
@@ -305,7 +344,7 @@ class ProvMonController extends \BaseController
             }
         }
 
-        $panel_right = $this->prep_sidebar($id);
+        $panel_right = $this->analysisPages($id);
 
         $view_header = 'Provmon-CPE';
 
@@ -358,7 +397,7 @@ class ProvMonController extends \BaseController
         // exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
         end:
-        $panel_right = $this->prep_sidebar($id);
+        $panel_right = $this->analysisPages($id);
 
         $view_header = 'Provmon-MTA';
 
