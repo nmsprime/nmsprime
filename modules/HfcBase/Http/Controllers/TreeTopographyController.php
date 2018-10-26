@@ -4,6 +4,7 @@ namespace Modules\HfcBase\Http\Controllers;
 
 use Acme\php\ArrayHelper;
 use Modules\HfcReq\Entities\NetElement;
+use Modules\HfcBase\Http\Controllers\TreeErdController;
 
 /*
  * Tree Topography Controller
@@ -69,9 +70,7 @@ class TreeTopographyController extends HfcBaseController
         $view_header = 'Topography';
         $body_onload = 'init_for_map';
 
-        $panel_right = [['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$field, $search]],
-                        ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]],
-                        ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$search, 0, 0]], ];
+        $panel_right = TreeErdController::defineRightPanel($field, $search);
 
         // MPS: get all Modem Positioning Rules
         $mpr = $this->mpr(NetElement::whereRaw($s));

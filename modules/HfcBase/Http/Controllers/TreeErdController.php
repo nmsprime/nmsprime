@@ -109,17 +109,36 @@ class TreeErdController extends HfcBaseController
         $view_header = 'Entity Relation Diagram';
         $route_name = 'Tree';
 
-        $panel_right = [['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$field, $search]],
-                        ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]],
-                        ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$search, 0, 0]],
-                        ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => [$search]], ];
-
         $preselect_field = $field;
         $preselect_value = $search;
+        $panel_right = self::defineRightPanel($field, $search);
 
         $file = route('HfcBase.get_file', ['type' => 'erd', 'filename' => basename($file)]);
 
         return \View::make('HfcBase::Tree.erd', $this->compact_prep_view(compact('route_name', 'file', 'target', 'is_pos', 'gid', 'usemap', 'preselect_field', 'view_header', 'panel_right', 'view_var', 'preselect_value', 'field', 'search')));
+    }
+
+    /**
+     * Shows all necessary tabs for Erd view.
+     *
+     * @author Roy Schneider
+     * @param Modules\HfcReq\Entities\NetElement ->netelementtype, ->id
+     * @return array
+     */
+    public static function defineRightPanel($netelementtype, $id)
+    {
+        $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => [$id]],
+                ['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$netelementtype, $id]],
+                ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$netelementtype, $id]],
+                ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$id, 0, 0]],
+                ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => [$id]],
+                ];
+
+        if (strtolower($netelementtype) == 'net') {
+            unset($tabs[3]);
+        }
+
+        return $tabs;
     }
 
     /**
