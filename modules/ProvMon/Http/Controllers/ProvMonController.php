@@ -8,6 +8,7 @@ use Modules\ProvBase\Entities\Cmts;
 use Modules\ProvBase\Entities\Modem;
 use Modules\HfcReq\Entities\NetElement;
 use Modules\ProvBase\Entities\ProvBase;
+use App\Http\Controllers\BaseController;
 use Modules\ProvBase\Entities\Configfile;
 
 /**
@@ -1124,6 +1125,7 @@ class ProvMonController extends \BaseController
     {
         $monitoring = [];
         $dia = $this->monitoring(NetElement::findOrFail($id));
+        $netelem = NetElement::findOrFail($id);
 
         // reshape array according to HfcCustomer::Tree.dias
         // we might want to split these in the future, to avoid the module dependency
@@ -1135,7 +1137,62 @@ class ProvMonController extends \BaseController
             }
         }
 
-        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring')));
+        $panel_right = self::checkNetelementtype($netelem);
+
+        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'panel_right')));
+    }
+
+    /**
+     * Defines all tabs for the Netelementtypes.
+     * Note: 1 = Net, 2 = Cluster, 3 = Cmts, 4 = Amplifier, 5 = Node, 6 = Data, 7 = UPS
+     *
+     * @author Roy Schneider
+     * @param Modules\HfcReq\Entities\NetElement
+     * @return array
+     */
+    public static function checkNetelementtype($model)
+    {
+        $type = $model->netelementtype->get_base_type();
+
+        $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => [$model->id]], ];
+
+        if ($type <= 2) {
+            array_push($tabs,
+                ['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$model->netelementtype->name, $model->id]],
+                ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$model->netelementtype->name, $model->id]]
+            );
+        }
+
+        if ($type != 1) {
+            array_push($tabs, ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$model->id, 0, 0]]);
+        }
+
+        if ($type == 4 || $type == 5) {
+
+            array_push($tabs, ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => [substr($model->ip, 3, 6)]]);
+        }
+
+        if ($type != 4  && $type != 5) {
+            array_push($tabs, ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => [$model->id]]);
+        }
+
+        return $tabs;
+    }
+
+    /**
+     * Add Logging tab in edit page.
+     * from BaseController
+     *
+     * @author Roy Schneider
+     * @param array, Modules\HfcReq\Entities\NetElement
+     * @return array
+     */
+    public function loggingTab($array, $model)
+    {
+        $baseController = new BaseController;
+        array_push($array, $baseController->get_form_tabs($model)[0]);
+
+        return $array;
     }
 
     /*
