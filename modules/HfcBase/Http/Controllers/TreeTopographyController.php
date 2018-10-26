@@ -4,7 +4,6 @@ namespace Modules\HfcBase\Http\Controllers;
 
 use Acme\php\ArrayHelper;
 use Modules\HfcReq\Entities\NetElement;
-use Modules\HfcBase\Http\Controllers\TreeErdController;
 
 /*
  * Tree Topography Controller

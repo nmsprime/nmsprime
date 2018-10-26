@@ -1154,7 +1154,7 @@ class ProvMonController extends \BaseController
     {
         $type = $model->netelementtype->get_base_type();
 
-        $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => [$model->id]], ];
+        $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => [$model->id]]];
 
         if ($type <= 2) {
             array_push($tabs,
@@ -1168,11 +1168,10 @@ class ProvMonController extends \BaseController
         }
 
         if ($type == 4 || $type == 5) {
-
             array_push($tabs, ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => [substr($model->ip, 3, 6)]]);
         }
 
-        if ($type != 4  && $type != 5) {
+        if ($type != 4 && $type != 5) {
             array_push($tabs, ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => [$model->id]]);
         }
 
