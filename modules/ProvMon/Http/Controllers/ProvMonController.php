@@ -141,11 +141,11 @@ class ProvMonController extends \BaseController
 
         // TODO: Dash / Forecast
 
-        $panel_right = $this->analysisPages($id);
+        $tabs = $this->analysisPages($id);
         $view_header = 'ProvMon-Analyses';
 
         // View
-        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header')));
+        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header')));
     }
 
     /**
@@ -345,11 +345,11 @@ class ProvMonController extends \BaseController
             }
         }
 
-        $panel_right = $this->analysisPages($id);
+        $tabs = $this->analysisPages($id);
 
         $view_header = 'Provmon-CPE';
 
-        return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var', 'view_header')));
+        return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'tabs', 'lease', 'log', 'dash', 'realtime', 'view_var', 'view_header')));
     }
 
     /**
@@ -398,11 +398,11 @@ class ProvMonController extends \BaseController
         // exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
         end:
-        $panel_right = $this->analysisPages($id);
+        $tabs = $this->analysisPages($id);
 
         $view_header = 'Provmon-MTA';
 
-        return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'configfile', 'view_var', 'view_header')));
+        return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'tabs', 'lease', 'log', 'dash', 'realtime', 'configfile', 'view_var', 'view_header')));
     }
 
     /**
@@ -429,14 +429,14 @@ class ProvMonController extends \BaseController
 
         $host_id = $this->monitoring_get_host_id($cmts);
 
-        $panel_right = [
-            ['name' => 'Edit', 'route' => 'Cmts.edit', 'link' => [$id]],
-            ['name' => 'Analysis', 'route' => 'ProvMon.cmts', 'link' => [$id]],
+        $tabs = [
+            ['name' => 'Edit', 'route' => 'Cmts.edit', 'link' => $id],
+            ['name' => 'Analysis', 'route' => 'ProvMon.cmts', 'link' => $id],
         ];
 
         $view_header = 'Provmon-CMTS';
 
-        return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var', 'view_header')));
+        return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'tabs', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var', 'view_header')));
     }
 
     /**
@@ -1137,9 +1137,9 @@ class ProvMonController extends \BaseController
             }
         }
 
-        $panel_right = self::checkNetelementtype($netelem);
+        $tabs = self::checkNetelementtype($netelem);
 
-        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'panel_right')));
+        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs')));
     }
 
     /**

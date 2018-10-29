@@ -111,11 +111,11 @@ class TreeErdController extends HfcBaseController
 
         $preselect_field = $field;
         $preselect_value = $search;
-        $panel_right = self::defineRightPanel($field, $search);
+        $tabs = self::getTabs($field, $search);
 
         $file = route('HfcBase.get_file', ['type' => 'erd', 'filename' => basename($file)]);
 
-        return \View::make('HfcBase::Tree.erd', $this->compact_prep_view(compact('route_name', 'file', 'target', 'is_pos', 'gid', 'usemap', 'preselect_field', 'view_header', 'panel_right', 'view_var', 'preselect_value', 'field', 'search')));
+        return \View::make('HfcBase::Tree.erd', $this->compact_prep_view(compact('route_name', 'file', 'target', 'is_pos', 'gid', 'usemap', 'preselect_field', 'view_header', 'tabs', 'view_var', 'preselect_value', 'field', 'search')));
     }
 
     /**
