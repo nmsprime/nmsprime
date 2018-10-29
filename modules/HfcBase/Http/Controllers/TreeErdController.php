@@ -125,13 +125,13 @@ class TreeErdController extends HfcBaseController
      * @param Modules\HfcReq\Entities\NetElement ->netelementtype, ->id
      * @return array
      */
-    public static function defineRightPanel($netelementtype, $id)
+    public static function getTabs($netelementtype, $id)
     {
-        $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => [$id]],
+        $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $id],
                 ['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$netelementtype, $id]],
                 ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$netelementtype, $id]],
                 ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$id, 0, 0]],
-                ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => [$id]],
+                ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => $id],
                 ];
 
         if (strtolower($netelementtype) == 'net') {

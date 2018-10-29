@@ -39,33 +39,19 @@ class ProvMonController extends \BaseController
      */
     public function analysisPages($id)
     {
-        $modem = $this->findModem($id);
+        $modem = $this->modem ?: Modem::findOrFail($id);
 
-        $tabs = [['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => [$id]],
-                ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => [$id]],
+        $tabs = [['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $id],
+                ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => $id],
                 ];
 
         array_unshift($tabs, $this->defineEditRoute($id));
 
         if (isset($modem->mtas[0])) {
-            array_push($tabs, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => [$id]]);
+            array_push($tabs, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => $id]);
         }
 
         return $tabs;
-    }
-
-    /**
-     * Find Modem
-     *
-     * @author Roy Schneider
-     * @param int
-     * @return Modules\ProvBase\Entities\Modem
-     */
-    public function findModem($id)
-    {
-        $this->modem = Modem::findOrFail($id);
-
-        return $this->modem;
     }
 
     /**
@@ -78,12 +64,12 @@ class ProvMonController extends \BaseController
     public function defineEditRoute($id)
     {
         $session = \Session::get('Edit');
-        $modem = $this->findModem($id);
+        $modem = $this->modem ?: Modem::findOrFail($id);
 
-        $edit = ['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]];
+        $edit = ['name' => 'Edit', 'route' => 'Modem.edit', 'link' => $id];
 
-        if (isset($modem->mtas[0]) && $session = 'MTA') {
-            $edit = ['name' => 'Edit', 'route' => 'Mta.edit', 'link' => [$modem->mtas[0]->id]];
+        if (isset($modem->mtas[0]) && $session == 'MTA') {
+            $edit = ['name' => 'Edit', 'route' => 'Mta.edit', 'link' => $modem->mtas[0]->id];
         }
 
         return $edit;
@@ -1152,9 +1138,16 @@ class ProvMonController extends \BaseController
      */
     public static function checkNetelementtype($model)
     {
+        if (! isset($model->netelementtype)) {
+            return [
+                ['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $model->id],
+                ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$model->id, 0, 0]],
+            ];
+        }
+
         $type = $model->netelementtype->get_base_type();
 
-        $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => [$model->id]]];
+        $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $model->id]];
 
         if ($type <= 2) {
             array_push($tabs,
