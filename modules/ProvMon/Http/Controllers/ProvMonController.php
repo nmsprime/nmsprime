@@ -1138,13 +1138,6 @@ class ProvMonController extends \BaseController
      */
     public static function checkNetelementtype($model)
     {
-        if (! isset($model->netelementtype)) {
-            return [
-                ['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $model->id],
-                ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$model->id, 0, 0]],
-            ];
-        }
-
         $type = $model->netelementtype->get_base_type();
 
         $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $model->id]];
@@ -1160,7 +1153,7 @@ class ProvMonController extends \BaseController
             array_push($tabs, ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$model->id, 0, 0]]);
         }
 
-        if ($type == 4 || $type == 5) {
+        if ($type == 4 || $type == 5 && \Bouncer::can('view_analysis_pages_of', Modem::class)) {
             array_push($tabs, ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => [substr($model->ip, 3, 6)]]);
         }
 
