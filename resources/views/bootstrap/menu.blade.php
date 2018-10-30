@@ -46,8 +46,8 @@
 						<a class="dropdown-item" href="https://www.youtube.com/channel/UCpFaWPpJLQQQLpTVeZnq_qA" target="_blank">
 							<i class="fa fa-tv" aria-hidden="true" style="width: 20px;"></i>Youtube
 						</a>
-						<a class="dropdown-item" href="" target="_blank">
-							<i class="fa fa-wpforms" aria-hidden="true" style="width: 20px;"></i>Forum (coming soon)
+						<a class="dropdown-item" href="https://nmsprime.com/forum" target="_blank">
+							<i class="fa fa-wpforms" aria-hidden="true" style="width: 20px;"></i>Forum
 						</a>
 						<div class="dropdown-divider"></div>
 						<a class="dropdown-item" href={{route('SupportRequest.index')}}>
@@ -119,7 +119,7 @@
 						@endif
 						<div class="dropdown-divider"></div>
 						{!! Form::open(['url' => route('logout.post')]) !!}
-							<button class="dropdown-item" href="#">
+							<button class="dropdown-item">
 								<i class="fa fa-sign-out" aria-hidden="true"></i>
 								{{ \App\Http\Controllers\BaseViewController::translate_view('Logout', 'Menu')}}
 							</button>

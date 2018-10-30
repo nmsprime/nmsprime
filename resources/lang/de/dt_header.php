@@ -29,8 +29,11 @@ return [
     'invoice.type' => 'Typ',
     'invoice.year' => 'Jahr',
     'invoice.month' => 'Monat',
-    //Item //**
-
+    //Item
+    'item.valid_from' => 'Posten Gültig ab',
+    'item.valid_from_fixed' => 'Ab Startdatum aktiv',
+    'item.valid_to' => 'Posten Gültig bis',
+    'item.valid_to_fixed' => 'Festes Enddatum',
     // Product
     'product.type' => 'Typ',
     'product.name' => 'Produkt',
@@ -76,6 +79,8 @@ return [
     'netelement.ip' => 'IP Adresse',
     'netelement.state' => 'Status',
     'netelement.pos' => 'Position',
+    'netelement.options' => 'Optionen',
+
     // NetElementType
     'netelementtype.name' => 'Netzelementtyp',
     //HfcSnmp
@@ -114,8 +119,8 @@ return [
     'contract.street' => 'Straße',
     'contract.house_number' => 'Hausnr',
     'contract.district' => 'Bezirk',
-    'contract.contract_start' => 'Beginn',
-    'contract.contract_end' => 'Ende',
+    'contract.contract_start' => 'Vertragsbeginn',
+    'contract.contract_end' => 'Vertragsende',
     // Domain
     'domain.name' => 'Domäne',
     'domain.type' => 'Typ',

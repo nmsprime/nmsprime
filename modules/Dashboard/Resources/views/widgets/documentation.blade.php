@@ -10,8 +10,8 @@
         <div class="btn btn-dark m-5 m-r-10">
             {!! HTML::decode (HTML::link('https://devel.roetzer-engineering.com',
                 '<h3><div class="text-center"><i style="color: white;" class="img-center fa fa-question-circle"></i></div></h3>
-                <div style="color: white;" class="username text-ellipsis text-center">Documentation</div>', ['target' => '_blank']))
-            !!}
+                <div style="color: white;" class="username text-ellipsis text-center">', ['target' => '_blank']))
+            !!}{{ trans('view.Dashboard_Docu') }}</div>
         </div>
 
         <div class="btn btn-dark m-5 m-r-10">
@@ -31,12 +31,12 @@
         <div class="btn btn-dark m-5 m-r-10">
             {!! HTML::decode (HTML::link(route('SupportRequest.index'),
                 '<h3><div class="text-center"><i style="color: white;" class="img-center fa fa-envelope-open"></i></div></h3>
-                <div style="color: white;" class="username text-ellipsis text-center">Request Help</div>'))
-            !!}
+                <div style="color: white;" class="username text-ellipsis text-center">'))
+            !!}{{ trans('view.Dashboard_RequestHelp') }}</div>
         </div>
 
     </div>
     {{-- reference link --}}
-    <div class="stats-link"><a href="#">Help</a></div>
+    <div class="stats-link"><a href="#">{{ trans('view.Dashboard_Help') }}</a></div>
 </div>
 

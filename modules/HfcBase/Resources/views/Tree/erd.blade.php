@@ -13,7 +13,7 @@
 @section('content_left')
 
 	@DivOpen(12)
-		<img usemap="#tree{{$gid}}" src='{{asset("$file.svg")}}'></img>
+		<img usemap="#tree{{$gid}}" src='{{asset("$file.svg")}}' />
 
 		{!! $usemap !!}
 

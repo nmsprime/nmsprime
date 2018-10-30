@@ -1,7 +1,7 @@
 @extends ('Layout.default')
 
 
-<!-- Widgets -->
+{{--  Widgets --}}
 @foreach ($view as $content => $bool)
 	@section ($content)
 		@if ($bool && \View::exists('dashboard::widgets.'.$content))
@@ -121,21 +121,23 @@
 				@section ('contract_analytics')
 					@include('dashboard::panels.contract_analytics')
 				@stop
-				@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => 'Contract Analytics', 'md' => 8, 'height' => 'auto', 'i' => '3'))
+				@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => trans('view.Dashboard_ContractAnalytics'), 'md' => 8, 'height' => 'auto', 'i' => '3'))
 			@endif
 
-			@if ($view['contracts'] && $data['contracts']['table'])
-				@section ('weekly_contracts')
-					@include('dashboard::panels.weekly_contracts')
-				@stop
-				@include ('bootstrap.panel', array ('content' => "weekly_contracts", 'view_header' => 'Weekly Customers', 'md' => 4, 'height' => 'auto', 'i' => '1'))
+			@if (Module::collections()->has('BillingBase'))
+				@if ($view['contracts'] && $data['contracts']['table'])
+					@section ('weekly_contracts')
+						@include('dashboard::panels.weekly_contracts')
+					@stop
+					@include ('bootstrap.panel', array ('content' => "weekly_contracts", 'view_header' => trans('view.Dashboard_WeeklyCustomers'), 'md' => 4, 'height' => 'auto', 'i' => '1'))
+				@endif
 			@endif
 
 			@if ($view['income'])
 				@section ('income_analytics')
 					@include('dashboard::panels.income_analytics')
 				@stop
-				@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => 'Income Details', 'md' => 4, 'height' => 'auto', 'i' => '4'))
+				@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => trans('view.Dashboard_IncomeAnalytics'), 'md' => 4, 'height' => 'auto', 'i' => '4'))
 			@endif
 
 			@if (isset($data['news']) && $data['news'])
@@ -157,9 +159,9 @@
 @stop
 
 
-<script src="{{asset('components/assets-admin/plugins/chart/Chart.min.js')}}"></script>
 
 @section('javascript')
+<script src="{{asset('components/assets-admin/plugins/chart/Chart.min.js')}}"></script>
 <script language="javascript">
 
 	$(window).on('localstorage-position-loaded load', function() {
@@ -168,17 +170,20 @@
 
 		if (Object.getOwnPropertyNames(chart_data_contracts).length != 0) {
 
-			var labels = chart_data_contracts['labels'];
-			var contracts = chart_data_contracts['contracts'];
-			var internet = chart_data_contracts['Internet_only'];
-			var voip = chart_data_contracts['Voip_only'];
-			var internetAndVoip = chart_data_contracts['Internet_and_Voip'];
-			var ctx = document.getElementById('contracts-chart').getContext('2d');
+			var labels = chart_data_contracts['labels'],
+				contracts = chart_data_contracts['contracts'],
+				internet = chart_data_contracts['Internet_only'],
+				voip = chart_data_contracts['Voip_only'],
+				internetAndVoip = chart_data_contracts['Internet_and_Voip'],
+				ctx = document.getElementById('contracts-chart').getContext('2d');
+
 			var contractChart = new Chart(ctx, {
 				type: 'line',
 				data: {
 					labels: labels,
-					datasets: [{
+					datasets: [
+					@if (Module::collections()->has('BillingBase'))
+					{
 						label:'VoIP',
 						data: voip,
 						pointBackgroundColor: 'rgb(42, 98, 254, 1)',
@@ -199,7 +204,9 @@
 						borderColor: 'rgb(0, 170, 132, 1)',
 						backgroundColor: 'rgb(0, 170, 132, 0.3)',
 						cubicInterpolationMode: 'monotone'
-					}, {
+					},
+					@endif
+					{
 						label: "{!! trans('messages.active contracts') !!}",
 						data: contracts,
 						pointBackgroundColor: 'rgb(2, 207, 211, 1)',

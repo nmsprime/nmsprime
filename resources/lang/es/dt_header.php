@@ -29,8 +29,11 @@ return [
     'invoice.type' => 'Tipo',
     'invoice.year' => 'Año',
     'invoice.month' => 'Mes',
-    //Item //**
-
+    //Item
+    'item.valid_from' => 'Item Valid from',
+    'item.valid_from_fixed' => 'Item Valid from fixed',
+    'item.valid_to' => 'Item Valid to',
+    'item.valid_to_fixed' => 'Item Valid to fixed',
     // Product
     'product.type' => 'Tipo',
     'product.name' => 'Nombre del producto',
@@ -76,6 +79,7 @@ return [
     'netelement.ip' => 'Direccion IP',
     'netelement.state' => 'Estado',
     'netelement.pos' => 'Posición',
+    'netelement.options' => 'Options',
     // NetElementType
     'netelementtype.name' => 'Tipo de elemento de red',
     //HfcSnmp
@@ -114,8 +118,8 @@ return [
     'contract.street' => 'Calle',
     'contract.house_number' => 'Numero de vivienda',
     'contract.district' => 'Provincia',
-    'contract.contract_start' => 'Fecha de inicio',
-    'contract.contract_end' => 'Fecha final',
+    'contract.contract_start' => 'Contract Start',
+    'contract.contract_end' => 'Contract End',
     // Domain
     'domain.name' => 'Nombre del dominio',
     'domain.type' => 'Tipo',

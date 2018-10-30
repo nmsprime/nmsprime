@@ -3,6 +3,8 @@
 namespace Modules\BillingBase\Entities;
 
 use DB;
+use Str;
+use Session;
 
 class Product extends \BaseModel
 {
@@ -100,43 +102,46 @@ class Product extends \BaseModel
     }
 
     /**
-     *	Recursive delete of all children objects
+     * Check if product can be deleted
      *
-     *	@author Torsten Schmidt
+     * @author Roy Schneider
      *
-     *	@return void
-     *
-     *  @todo return state on success, should also take care of deleted children
-     *  @TODO check if BaseModel::delete() can be used here
+     * @return bool
      */
     public function delete()
     {
-        foreach ($this->item as $child) {
-            $child->accounting_text = $this->name;
-            $child->save();
+        // only delete if there are no items assigned for this product
+        if ($this->item()->count() > 0) {
+            Session::push('tmp_error_above_index_list', trans('messages.assigned_items'));
+
+            return false;
         }
 
+        return $this->generateAboveInfo($this->_delete());
+    }
+
+    /**
+     * Generate general above message when deleting a product
+     *
+     * @author Roy Schneider
+     *
+     * @return null
+     *
+     * @param bool     deleted
+     */
+    public function generateAboveInfo($deleted)
+    {
         // check from where the deletion request has been triggered and set the correct var to show information
         $prev = explode('?', \URL::previous())[0];
-        $prev = \Str::lower($prev);
-        $deleted = $this->_delete();
-        if (! $deleted) {
-            $msg = "Could not delete Product $this->id";
-            if (\Str::endsWith($prev, 'edit')) {
-                \Session::push('tmp_error_above_relations', $msg);
-            } else {
-                \Session::push('tmp_error_above_index_list', $msg);
-            }
-        } else {
-            $msg = "Deleted Product $this->id";
-            if (\Str::endsWith($prev, 'edit')) {
-                \Session::push('tmp_success_above_relations', $msg);
-            } else {
-                \Session::push('tmp_success_above_index_list', $msg);
-            }
+        $prev = Str::lower($prev);
+
+        $msg = trans('messages.Product_Successfully_Deleted', ['id' => $this->id]);
+
+        if (Str::endsWith($prev, 'edit')) {
+            Session::push('tmp_success_above_relations', $msg);
         }
 
-        return $deleted;
+        return Session::push('tmp_success_above_index_list', $msg);
     }
 
     /*

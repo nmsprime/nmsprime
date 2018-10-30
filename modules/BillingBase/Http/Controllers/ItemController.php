@@ -9,6 +9,9 @@ use Modules\BillingBase\Entities\BillingBase;
 
 class ItemController extends \BaseController
 {
+    // cannot create items if they aren't assigned to a contract
+    protected $index_create_allowed = false;
+
     /**
      * defines the formular fields for the edit and create view
      */
@@ -157,11 +160,6 @@ class ItemController extends \BaseController
         }
 
         return parent::prepare_rules($rules, $data);
-    }
-
-    public function index()
-    {
-        return \View::make('errors.generic');
     }
 
     /**
