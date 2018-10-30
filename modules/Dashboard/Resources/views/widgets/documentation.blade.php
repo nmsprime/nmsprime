@@ -7,36 +7,36 @@
 <div class="widget widget-stats bg-aqua-darker">
     {{-- info/data --}}
     <div class="stats-info d-flex">
-        <div class="btn btn-dark m-5 m-r-10">
-            {!! HTML::decode (HTML::link('https://devel.roetzer-engineering.com',
-                '<h3><div class="text-center"><i style="color: white;" class="img-center fa fa-question-circle"></i></div></h3>
-                <div style="color: white;" class="username text-ellipsis text-center">', ['target' => '_blank']))
-            !!}{{ trans('view.Dashboard_Docu') }}</div>
-        </div>
 
-        <div class="btn btn-dark m-5 m-r-10">
-            {!! HTML::decode (HTML::link('https://www.youtube.com/channel/UCpFaWPpJLQQQLpTVeZnq_qA',
-                '<h3><div class="text-center"><i style="color: white;" class="img-center fa fa-tv"></i></div></h3>
-                <div style="color: white;" class="username text-ellipsis text-center">Youtube</div>', ['target' => '_blank']))
-            !!}
-        </div>
+      {!! HTML::decode (HTML::link('https://devel.roetzer-engineering.com',
+  			'<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
+  				<i style="font-size: 25px;" class="img-center fa fa-question-circle p-10"></i><br />
+  				<span class="username text-ellipsis text-center">'.trans('view.Dashboard_Docu').'</span>
+  			</span>',['target' => '_blank']))
+  		!!}
 
-        <div class="btn btn-dark m-5 m-r-10">
-            {!! HTML::decode (HTML::link('https://nmsprime.com/forum',
-                '<h3><div class="text-center"><i style="color: white;" class="img-center fa fa-wpforms"></i></div></h3>
-                <div style="color: white;" class="username text-ellipsis text-center">Forum <br></div>', ['target' => '_blank']))
-            !!}
-        </div>
+      {!! HTML::decode (HTML::link('https://www.youtube.com/channel/UCpFaWPpJLQQQLpTVeZnq_qA',
+  			'<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
+  				<i style="font-size: 25px;" class="img-center fa fa-tv p-10"></i><br />
+  				<span class="username text-ellipsis text-center">Youtube</span>
+  			</span>', ['target' => '_blank']))
+  		!!}
 
-        <div class="btn btn-dark m-5 m-r-10">
-            {!! HTML::decode (HTML::link(route('SupportRequest.index'),
-                '<h3><div class="text-center"><i style="color: white;" class="img-center fa fa-envelope-open"></i></div></h3>
-                <div style="color: white;" class="username text-ellipsis text-center">'))
-            !!}{{ trans('view.Dashboard_RequestHelp') }}</div>
-        </div>
+      {!! HTML::decode (HTML::link('https://nmsprime.com/forum',
+  			'<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
+  				<i style="font-size: 25px;" class="img-center fa fa-wpforms p-10"></i><br />
+  				<span class="username text-ellipsis text-center">Forum</span>
+  			</span>', ['target' => '_blank']))
+  		!!}
+
+      {!! HTML::decode (HTML::linkRoute('SupportRequest.index',
+  			'<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
+  				<i style="font-size: 25px;" class="img-center fa fa-envelope-open p-10"></i><br />
+  				<span class="username text-ellipsis text-center">'.trans('view.Dashboard_RequestHelp').'</span>
+  			</span>'))
+  		!!}
 
     </div>
     {{-- reference link --}}
     <div class="stats-link"><a href="#">{{ trans('view.Dashboard_Help') }}</a></div>
 </div>
-
