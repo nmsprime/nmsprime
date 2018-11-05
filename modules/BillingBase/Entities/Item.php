@@ -432,12 +432,13 @@ class Item extends \BaseModel
 
                     // $part = totm - (to - this)
                     $part = round((($tot_months) * $dates['m_in_sec'] + strtotime($dates['lastm_01']) - $valid_to) / $dates['m_in_sec']);
-                    $text = " | part $part/$tot_months";
+                    $text = ' | '.trans_choice('messages.parts', 1)." $part/$tot_months";
 
                     // items with valid_to in future, but contract expires
                     if ($this->contract->expires) {
                         $ratio *= $tot_months - $part + 1;
-                        $text = ' | last '.($tot_months - $part + 1)." part(s) of $tot_months";
+                        $total = $tot_months - $part + 1;
+                        $text = ' | '.trans_choice('messages.last', $total)." $total ".trans_choice('messages.parts', $total).' '.trans('messages.of')." $tot_months";
                     }
                 }
 
@@ -458,8 +459,8 @@ class Item extends \BaseModel
         $this->charge *= $ratio * $this->count;
 
         $this->ratio = $ratio ?: 1;
-        $this->invoice_description = $this->product->name.' '.$text;
-        $this->invoice_description .= $this->accounting_text ? ' - '.$this->accounting_text : '';
+        $this->invoice_description = $this->accounting_text ?: $this->product->name;
+        $this->invoice_description .= " $text";
 
         if ($return_array === true) {
             return ['charge' => $this->charge, 'ratio' => $this->ratio, 'invoice_description' => $this->invoice_description];
