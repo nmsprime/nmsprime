@@ -57,8 +57,6 @@ class SettlementRunController extends \BaseController
             $this->index_create_allowed = false;
         }
 
-        $this->index_create_allowed = true;
-
         return parent::__construct();
     }
 
