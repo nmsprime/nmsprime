@@ -195,11 +195,29 @@ class Invoice extends \BaseModel
     }
 
     /**
-     * @param string
+     * Format date string dependent of set locale/billing language
+     *
+     * @param string/integer
+     * @return string
      */
-    public static function german_dateformat($date)
+    public static function langDateFormat($date)
     {
-        return $date ? date('d.m.Y', strtotime($date)) : $date;
+        if (! $date) {
+            return $date;
+        }
+
+        $date = is_int($date) ? $date : strtotime($date);
+
+        switch (\App::getLocale()) {
+            case 'de':
+                return date('d.m.Y', $date);
+
+            case 'es':
+                return date('d/m/Y', $date);
+
+            default:
+                return $date;
+        }
     }
 
     public function add_contract_data($contract, $config, $invoice_nr)
@@ -214,7 +232,7 @@ class Invoice extends \BaseModel
         $this->data['contract_zip'] = $contract->zip;
         $this->data['contract_city'] = escape_latex_special_chars($contract->city);
         $this->data['contract_address'] = ($contract->company ? $this->data['contract_company'].'\\\\' : '').($contract->academic_degree ? escape_latex_special_chars($contract->academic_degree).' ' : '').$this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\'.$this->data['contract_street']."\\\\$contract->zip ".$this->data['contract_city'];
-        $this->data['start_of_term'] = \App::getLocale() == 'de' ? self::german_dateformat($contract->contract_start) : $contract->contract_start;
+        $this->data['start_of_term'] = self::langDateFormat($contract->contract_start);
 
         $this->data['rcd'] = $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
         $this->data['invoice_nr'] = $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
@@ -269,10 +287,10 @@ class Invoice extends \BaseModel
 
         $german = \App::getLocale() == 'de';
         $cancel_dates = [
-            'end_of_term' => $german ? self::german_dateformat($ret['end_of_term']) : $ret['end_of_term'],
+            'end_of_term' => self::langDateFormat($ret['end_of_term']),
             'maturity' 		=> $txt_m,
             'period_of_notice' => $txt_pon,
-            'last_cancel_date' => $german ? self::german_dateformat($ret['cancelation_day']) : $ret['cancelation_day'],
+            'last_cancel_date' => self::langDateFormat($ret['cancelation_day']),
         ];
 
         $this->data = array_merge($this->data, $cancel_dates);
