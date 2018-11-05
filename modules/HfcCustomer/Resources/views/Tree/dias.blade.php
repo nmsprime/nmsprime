@@ -1,4 +1,4 @@
-@extends ('Layout.single')
+@extends ('Layout.split-nopanel')
 
 <head>
 </head>
