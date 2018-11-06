@@ -8,14 +8,14 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 use Modules\ProvMon\Http\Controllers\ProvMonController;
 
-class apcCommand extends Command
+class agcCommand extends Command
 {
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'nms:apc';
+    protected $name = 'nms:agc';
 
     /**
      * The console command description.

@@ -17,7 +17,7 @@ class ProvMonServiceProvider extends ServiceProvider
      * The artisan commands provided by this module
      */
     protected $commands = [
-        'Modules\ProvMon\Console\apcCommand',
+        'Modules\ProvMon\Console\agcCommand',
         'Modules\ProvMon\Console\cactiCommand',
     ];
 
