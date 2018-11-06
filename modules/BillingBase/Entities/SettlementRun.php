@@ -89,20 +89,20 @@ class SettlementRun extends \BaseModel
 
     public function view_has_many()
     {
-        $ret['Files']['Files']['view']['view'] = 'billingbase::SettlementRun.files';
-        $ret['Files']['Files']['view']['vars']['files'] = $this->accounting_files();
+        $ret['Edit']['Files']['view']['view'] = 'billingbase::SettlementRun.files';
+        $ret['Edit']['Files']['view']['vars']['files'] = $this->accounting_files();
 
         // option to rerun settlementrun only for a specific SepaAccount
         if (SepaAccount::count() > 1) {
             $accs1 = [0 => trans('messages.ALL')];
             $accs2 = $this->html_list(SepaAccount::orderBy('id')->get(), ['id', 'name'], false, ': ');
             $accs = $accs1 + $accs2;
-            $ret['Files']['Files']['view']['vars']['sepaaccs'] = $accs;
+            $ret['Edit']['Files']['view']['vars']['sepaaccs'] = $accs;
         }
 
         // NOTE: logs are fetched in SettlementRunController::edit
-        $ret['Files']['Logs']['view']['view'] = 'billingbase::SettlementRun.logs';
-        $ret['Files']['Logs']['view']['vars']['md_size'] = 12;
+        $ret['Edit']['Logs']['view']['view'] = 'billingbase::SettlementRun.logs';
+        $ret['Edit']['Logs']['view']['vars']['md_size'] = 12;
 
         return $ret;
     }
