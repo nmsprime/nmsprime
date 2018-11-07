@@ -107,14 +107,25 @@ class SettlementRun extends \BaseModel
         return $ret;
     }
 
-    public function get_files_dir()
+    /**
+     * Mutator function to get accounting storage directory path via: model->directory
+     * (so calling it in e.g. constructor is superfluous, used in e.g. ZipCommand)
+     *
+     * @return string   SettlementRun absolute directory path
+     */
+    public function getDirectoryAttribute()
     {
-        return storage_path('app/data/billingbase/accounting/'.$this->year.'-'.sprintf('%02d', $this->month));
+        return storage_path('app/'.$this->getRelativeDirectoryAttribute());
     }
 
-    public static function get_last_run()
+    /**
+     * Mutator function to get accounting storage directory path via: model->relativeDirectory
+     *
+     * @return string   SettlementRun relative directory path
+     */
+    public function getRelativeDirectoryAttribute()
     {
-        return self::orderBy('id', 'desc')->get()->first();
+        return 'data/billingbase/accounting/'.$this->year.'-'.str_pad($this->month, 2, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -132,13 +143,13 @@ class SettlementRun extends \BaseModel
      */
     public function accounting_files()
     {
-        if (! is_dir($this->get_files_dir())) {
+        if (! is_dir($this->directory)) {
             return [];
         }
 
         $arr = [];
 
-        $files = \File::allFiles($this->get_files_dir());
+        $files = \File::allFiles($this->directory);
 
         //order files
         foreach ($files as $file) {
@@ -166,7 +177,7 @@ class SettlementRunObserver
         }
 
         // NOTE: Make sure that we use Database Queue Driver - See .env!
-        $job_id = \Queue::push(new \Modules\BillingBase\Console\accountingCommand($settlementrun));
+        $job_id = \Queue::push(new \Modules\BillingBase\Console\SettlementRunCommand($settlementrun));
         // \Artisan::call('billing:accounting', ['--debug' => 1]);
         \Session::put('job_id', $job_id);
     }
@@ -181,7 +192,7 @@ class SettlementRunObserver
 
     public function deleted($settlementrun)
     {
-        // delete all invoices & accounting record files - maybe use accountingCommand@_directory_cleanup
+        // delete all invoices & accounting record files - maybe use SettlementRunCommand@_directory_cleanup
         $date = $settlementrun->year.'-'.str_pad($settlementrun->month, 2, '0', STR_PAD_LEFT);
         $dir = 'data/billingbase/accounting/'.$date;
 

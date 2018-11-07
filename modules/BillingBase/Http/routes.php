@@ -30,4 +30,10 @@ BaseRoute::group([], function () {
         'uses' => 'Modules\BillingBase\Http\Controllers\SettlementRunController@download_logs',
         'middleware' => ['can:download,Modules\BillingBase\Entities\SettlementRun'],
     ]);
+
+    BaseRoute::put('SettlementRun/create_post_invoices_pdf/{id}', [
+        'as' => 'SettlementRun.create_post_invoices_pdf',
+        'uses' => 'Modules\BillingBase\Http\Controllers\SettlementRunController@create_post_invoices_pdf',
+        'middleware' => ['can:download,Modules\BillingBase\Entities\SettlementRun'],
+    ]);
 });

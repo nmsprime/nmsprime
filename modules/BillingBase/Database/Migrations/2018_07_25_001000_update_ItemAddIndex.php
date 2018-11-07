@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 /**
  * Add Index to improve performance
  *
- * e.g. time to get 5k contracts in accountingCommand reduces from 8 sec to 0,22 sec
+ * e.g. time to get 5k contracts in SettlementRunCommand reduces from 8 sec to 0,22 sec
  *
  * @author Nino Ryschawy
  */

@@ -95,7 +95,7 @@ class SepaMandate extends \BaseModel
      */
 
     /**
-     * Update SEPA-Mandate status during SettlementRun (accountingCommand) if it changes
+     * Update SEPA-Mandate status during SettlementRun (SettlementRunCommand) if it changes
      */
     public function update_status()
     {

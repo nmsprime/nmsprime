@@ -316,10 +316,10 @@ class Item extends \BaseModel
                 // started last month
                 if (date('Y-m', $start) == $dates['lastm_Y']) {
                     $ratio = 1 - (date('d', $start) - 1) / date('t', $start);
-                    $text = date('Y-m-d', $start);
+                    $text = Invoice::langDateFormat($start);
                 } else {
                     $ratio = 1;
-                    $text = $dates['lastm_01'];
+                    $text = Invoice::langDateFormat($dates['lastm_01']);
                 }
 
                 $text .= ' - ';
@@ -327,9 +327,9 @@ class Item extends \BaseModel
                 // ended last month
                 if ($end && $end < strtotime($dates['thism_01'])) {
                     $ratio += date('d', $end) / date('t', $end) - 1;
-                    $text .= date('Y-m-d', $end);
+                    $text .= Invoice::langDateFormat($end);
                 } else {
-                    $text .= date('Y-m-d', strtotime('last day of last month'));
+                    $text .= Invoice::langDateFormat(strtotime('last day of last month'));
                 }
 
                 break;
@@ -354,10 +354,10 @@ class Item extends \BaseModel
                 // started this yr
                 if (date('Y', $start) == $dates['Y']) {
                     $ratio = 1 - date('z', $start) / (365 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1
-                    $text = date('Y-m-d', $start);
+                    $text = Invoice::langDateFormat($start);
                 } else {
                     $ratio = 1;
-                    $text = date('Y-01-01');
+                    $text = Invoice::langDateFormat(date('Y-01-01'));
                 }
 
                 $text .= ' - ';
@@ -365,9 +365,9 @@ class Item extends \BaseModel
                 // ended this yr
                 if ($end && (date('Y', $end) == $dates['Y'])) {
                     $ratio += $ratio ? (date('z', $end) + 1) / (365 + date('L')) - 1 : 0;
-                    $text .= date('Y-m-d', $end);
+                    $text .= Invoice::langDateFormat($end);
                 } else {
-                    $text .= date('Y-12-31');
+                    $text .= Invoice::langDateFormat(date('Y-12-31'));
                 }
 
                 // set payed flag to avoid double payment in case of billing month is changed during year
@@ -395,10 +395,10 @@ class Item extends \BaseModel
                     $days = date('z', strtotime('last day of this month')) - date('z', $start) + 1;
                     $total_days = date('t') + date('t', strtotime('first day of last month')) + date('t', $start);
                     $ratio = $days / $total_days;
-                    $text = date('Y-m-d', $start);
+                    $text = Invoice::langDateFormat($start);
                 } else {
                     $ratio = 1;
-                    $text = date('Y-m-01', $period_start);
+                    $text = Invoice::langDateFormat(date('Y-m-01', $period_start));
                 }
 
                 // ended in last 3 months
@@ -406,9 +406,9 @@ class Item extends \BaseModel
                     $days = date('z', strtotime('last day of this month')) - date('z', $end);
                     $total_days = date('t') + date('t', strtotime('first day of last month')) + date('t', $start);
                     $ratio -= $days / $total_days;
-                    $text .= date('Y-m-d', $end);
+                    $text .= Invoice::langDateFormat($end);
                 } else {
-                    $text .= date('Y-m-31');
+                    $text .= Invoice::langDateFormat(date('Y-m-31'));
                 }
 
                 break;
@@ -432,12 +432,13 @@ class Item extends \BaseModel
 
                     // $part = totm - (to - this)
                     $part = round((($tot_months) * $dates['m_in_sec'] + strtotime($dates['lastm_01']) - $valid_to) / $dates['m_in_sec']);
-                    $text = " | part $part/$tot_months";
+                    $text = ' | '.trans_choice('messages.parts', 1)." $part/$tot_months";
 
                     // items with valid_to in future, but contract expires
                     if ($this->contract->expires) {
                         $ratio *= $tot_months - $part + 1;
-                        $text = ' | last '.($tot_months - $part + 1)." part(s) of $tot_months";
+                        $total = $tot_months - $part + 1;
+                        $text = ' | '.trans_choice('messages.last', $total)." $total ".trans_choice('messages.parts', $total).' '.trans('messages.of')." $tot_months";
                     }
                 }
 
@@ -458,8 +459,8 @@ class Item extends \BaseModel
         $this->charge *= $ratio * $this->count;
 
         $this->ratio = $ratio ?: 1;
-        $this->invoice_description = $this->product->name.' '.$text;
-        $this->invoice_description .= $this->accounting_text ? ' - '.$this->accounting_text : '';
+        $this->invoice_description = $this->accounting_text ?: $this->product->name;
+        $this->invoice_description .= " $text";
 
         if ($return_array === true) {
             return ['charge' => $this->charge, 'ratio' => $this->ratio, 'invoice_description' => $this->invoice_description];

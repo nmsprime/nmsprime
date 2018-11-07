@@ -8,8 +8,8 @@ use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Console\cdrCommand;
 use Modules\BillingBase\Entities\SettlementRun;
-use Modules\BillingBase\Console\accountingCommand;
 use Modules\BillingBase\Entities\AccountingRecord;
+use Modules\BillingBase\Console\SettlementRunCommand;
 
 class SettlementRunController extends \BaseController
 {
@@ -46,13 +46,16 @@ class SettlementRunController extends \BaseController
     }
 
     /**
-     * Remove Index Create button when actual Run was already created and is verified - so it's not possible
-     * to overwrite accidentially the verified data
+     * Remove Index Create button when actual Run was already created
      */
     public function __construct()
     {
-        $last_run = SettlementRun::get_last_run();
-        $this->index_create_allowed = ! is_object($last_run) || ! ($last_run->verified && ($last_run->month == date('m', strtotime('first day of last month'))));
+        $time = strtotime('first day of last month');
+        $count = SettlementRun::where('month', intval(date('m', $time)))->where('year', date('Y', $time))->count();
+
+        if ($count) {
+            $this->index_create_allowed = false;
+        }
 
         return parent::__construct();
     }
@@ -60,7 +63,7 @@ class SettlementRunController extends \BaseController
     /**
      * Extends generic edit function from Basecontroller for own view
      * Removes Rerun Button when next month has begun
-     * passes logs dependent of execution status of accountingCommand
+     * passes logs dependent of execution status of SettlementRunCommand
      *
      * @return View
      */
@@ -68,30 +71,32 @@ class SettlementRunController extends \BaseController
     {
         $logs = $failed_jobs = [];
         $sr = SettlementRun::find($id);
-        $bool = true;
-        $job_queued = \DB::table('jobs')->where('payload', 'like', '%accountingCommand%')->get();
+        $rerun_button = true;
+        $status_msg = '';
+        $job_queued = \DB::table('jobs')->where('payload', 'like', '%SettlementRunCommand%')->orWhere('payload', 'like', '%ZipCommand%')->get();
         $job_queued = $job_queued->isNotEmpty() ? $job_queued[0] : null;
 
-        if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified) {
-            $bool = false;
+        if ($job_queued) {
+            // get status message
+            $job = json_decode($job_queued->payload);
+            $status_msg = self::getStatusMessage($job->data->commandName);
+
+            // dont let multiple users create a lot of jobs - Session key is checked in blade
+            \Session::put('job_id', $job_queued->id);
+        } elseif (\Session::get('job_id')) {
+            // delete Session job id if job is done in case someone broke the tcp connection (close tab/window) manually
+            \Session::remove('job_id');
         }
 
-        // delete Session job id if job is done in case someone broke the tcp connection (close tab/window) manually
-        if (\Session::get('job_id')) {
-            if (! \DB::table('jobs')->find(\Session::get('job_id'))) {
-                \Session::remove('job_id');
-            }
-        }
-        // dont let multiple users create a lot of jobs
-        elseif ($job_queued) {
-            \Session::put('job_id', $job_queued->id);
+        if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified) {
+            $rerun_button = false;
         }
 
         // get error logs in case job failed and remove failed job from table
         $failed_jobs = \DB::table('failed_jobs')->get();
         foreach ($failed_jobs as $failed_job) {
             $obj = unserialize((json_decode($failed_job->payload)->data->command));
-            if ($obj->name == 'billing:accounting') {
+            if (\Str::contains($obj->name, 'billing:')) {
                 \Artisan::call('queue:forget', ['id' => $failed_job->id]);
                 $logs = self::get_logs($sr->updated_at->subSeconds(1)->__get('timestamp'), Logger::ERROR);
                 break;
@@ -103,11 +108,25 @@ class SettlementRunController extends \BaseController
         // $logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
         $logs = $logs ?: self::get_logs($sr->updated_at->__get('timestamp'));
 
-        return parent::edit($id)->with('rerun_button', $bool)->with('logs', $logs);
+        return parent::edit($id)->with(compact('rerun_button', 'logs', 'status_msg'));
+    }
+
+    public static function getStatusMessage($commandName)
+    {
+        switch ($commandName) {
+            case 'Modules\BillingBase\Console\ZipCommand':
+                return trans('messages.zipCmdProcessing');
+
+            case 'Modules\BillingBase\Console\SettlementRunCommand':
+                return trans('messages.accCmd_processing');
+
+            default:
+                return '';
+        }
     }
 
     /**
-     * Check State of Job "accountingCommand"
+     * Check State of Job "SettlementRunCommand"
      * Send Reload info when job has finished
      *
      * @return 	response 	Stream
@@ -122,6 +141,10 @@ class SettlementRunController extends \BaseController
             $job = true;
             while ($job) {
                 $job = \DB::table('jobs')->find(\Session::get('job_id'));
+
+                if (! isset($commandName) && $job) {
+                    $commandName = self::getJobCommandName($job);
+                }
 
                 $state = \Storage::exists('tmp/accCmdStatus') ? \Storage::get('tmp/accCmdStatus') : '';
 
@@ -142,7 +165,11 @@ class SettlementRunController extends \BaseController
                 sleep(2);
             }
 
-            \Log::debug('SettlementRun Job ['.\Session::get('job_id').'] stopped');
+            if (! isset($commandName)) {
+                $commandName = 'Modules\BillingBase\Console\SettlementRunCommand';
+            }
+
+            \Log::debug("Job $commandName \[".\Session::get('job_id').'] stopped');
 
             \Session::remove('job_id');
 
@@ -154,7 +181,7 @@ class SettlementRunController extends \BaseController
                 $i--;
                 $failed_jobs = \DB::table('failed_jobs')->get();
                 foreach ($failed_jobs as $job) {
-                    $obj = unserialize((json_decode($job->payload)->data->command));
+                    $obj = unserialize(json_decode($job->payload)->data->command);
                     if ($obj->name == 'billing:accounting') {
                         $success = false;
                         break;
@@ -164,7 +191,7 @@ class SettlementRunController extends \BaseController
                 sleep(2);
             }
             reload:
-            $success ? \Log::info('Settlementrun finished successfully') : \Log::error('Settlementrun failed!');
+            $success ? \Log::info("$commandName finished successfully") : \Log::error("$commandName failed!");
 
             \Log::debug('Reload Settlementrun Edit View');
             echo "data: reload\n\n";
@@ -175,6 +202,33 @@ class SettlementRunController extends \BaseController
         $response->headers->set('Content-Type', 'text/event-stream');
 
         return $response;
+    }
+
+    /**
+     * Get name of a job inside the jobs/failed_jobs table
+     *
+     * @return string
+     */
+    public static function getJobCommandName($job)
+    {
+        return json_decode($job->payload)->data->commandName;
+    }
+
+    /**
+     * Concatenate invoices that need to be sent by post
+     *
+     * Note: you need to set Product IDs in storage/app/config/billingbase/post-invoice-product-ids
+     *
+     * @return view  SettlementRun edit page
+     */
+    public function create_post_invoices_pdf($id)
+    {
+        $settlementrun = SettlementRun::find($id);
+
+        $id = \Queue::push(new \Modules\BillingBase\Console\ZipCommand($settlementrun, true));
+        \Session::put('job_id', $id);
+
+        return \Redirect::route('SettlementRun.edit', $settlementrun->id);
     }
 
     /**
@@ -261,7 +315,7 @@ class SettlementRunController extends \BaseController
      * This function removes all "old" files and DB Entries created by the previous called accounting Command
      * This is necessary because otherwise e.g. after deleting contracts the invoice would be kept and is still
      * available in customer control center
-     * Used in: SettlementRunObserver@deleted, accountingCommand
+     * Used in: SettlementRunObserver@deleted, SettlementRunCommand
      *
      * USE WITH CARE!
      *
@@ -271,7 +325,7 @@ class SettlementRunController extends \BaseController
      */
     public static function directory_cleanup($settlementrun = null, $sepaacc = null)
     {
-        $dir = accountingCommand::get_relative_accounting_dir_path();
+        $dir = SettlementRunCommand::get_relative_accounting_dir_path();
         $start = $settlementrun ? date('Y-m-01 00:00:00', strtotime($settlementrun->created_at)) : date('Y-m-01');
         $end = $settlementrun ? date('Y-m-01 00:00:00', strtotime('+1 month', strtotime($settlementrun->created_at))) : date('Y-m-01', strtotime('+1 month'));
 
@@ -326,7 +380,7 @@ class SettlementRunController extends \BaseController
             Salesman::remove_account_specific_entries_from_csv($sepaacc->id);
 
             // delete account specific dir
-            $dir = $sepaacc->get_relativ_accounting_dir_path();
+            $dir = $sepaacc->get_relative_accounting_dir_path();
             foreach (\Storage::files($dir) as $f) {
                 \Storage::delete($f);
             }
