@@ -20,7 +20,7 @@ use Modules\HfcReq\Http\Controllers\NetElementController;
  *
  * Note: Right Panel for Switching between topography and diagrams does only use show_modem_ids().
  *       There is no seperate diagram function for show() and show_rect(). Instead show_topo and
- *       show_diagrams() call make_right_panel_links() which generates topography and diagram links
+ *       show_diagrams() call makeTabs() which generates topography and diagram links
  *       to show_modem_ids().
  *
  * @author: Torsten Schmidt
@@ -222,11 +222,11 @@ class CustomerTopoController extends NetElementController
         $route_name = 'Tree';
         $view_header = 'Topography - Modems';
         $body_onload = 'init_for_map';
-        $panel_right = $this->make_right_panel_links($modems);
+        $tabs = $this->makeTabs($modems);
         $kmls = $this->__kml_to_modems($modems);
         $file = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
-        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'modems', 'panel_right', 'kmls')));
+        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'modems', 'tabs', 'kmls')));
     }
 
     /*
@@ -312,14 +312,14 @@ class CustomerTopoController extends NetElementController
         }
 
         // prepare/load panel right
-        $panel_right = $this->make_right_panel_links($modems);
+        $tabs = $this->makeTabs($modems);
 
         // Log: time measurement
         $after = microtime(true);
         \Log::info('DIA: load of entire set takes '.($after - $before).' s');
 
         // show view
-        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'panel_right')));
+        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs')));
     }
 
     /*
@@ -347,21 +347,22 @@ class CustomerTopoController extends NetElementController
     }
 
     /*
-    * Prepare $panel_right vaiable for switching topography/diagrams mode
+    * Prepare $tabs vaiable for switching topography/diagrams mode
     *
     * @param modems: the preselected Modem model, like Modem::where()
-    * @return: prepared $panel_right variable
+    * @return: prepared $tabs variable
     *
     * @author: Torsten Schmidt
     */
-    private function make_right_panel_links($modems)
+    private function makeTabs($modems)
     {
         $ids = '0';
         foreach ($modems->get() as $modem) {
             $ids .= '+'.$modem->id;
         }
 
-        return [['name' => 'Topography', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => \Input::get('row')]],
+        return [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $modem->netelement_id],
+                ['name' => 'Topography', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => \Input::get('row')]],
                 ['name' => 'Diagramms', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => \Input::get('row')]], ];
     }
 

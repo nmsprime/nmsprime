@@ -1138,6 +1138,9 @@ class ProvMonController extends \BaseController
      */
     public static function checkNetelementtype($model)
     {
+        if (! isset($model->netelementtype)) {
+            return [];
+        }
         $type = $model->netelementtype->get_base_type();
 
         $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $model->id]];
