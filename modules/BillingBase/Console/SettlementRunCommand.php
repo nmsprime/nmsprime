@@ -574,7 +574,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
         // skip first line of csv (column description)
         unset($csv[0]);
         $price = $count = 0;
-        $unassigned = [];
+        $unassigned = $mismatches = [];
         $customer_nrs = self::_get_customer_nrs();
 
         foreach ($csv as $line) {
