@@ -19,6 +19,7 @@ class Product extends \BaseModel
      * @var string  maturity
      */
     public static $pon = '14D';
+    public static $maturity_min = '1M';
     public static $maturity = '1M';
 
     // Add your validation rules here
