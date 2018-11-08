@@ -490,7 +490,7 @@ class Item extends \BaseModel
     public function getNextCancelationDate()
     {
         if (! $this->product) {
-            return null;
+            return;
         }
 
         // determine tariff/item's end of term (minimum maturity) and when the next last day to cancel before runtime is extended by maturity

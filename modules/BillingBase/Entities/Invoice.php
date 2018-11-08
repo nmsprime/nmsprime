@@ -248,10 +248,10 @@ class Invoice extends \BaseModel
 
     /**
      * Set:
-        * actual end of term
-        * period of notice
-        * latest possible date of cancelation
-    */
+     *  actual end of term
+     *  period of notice
+     *  latest possible date of cancelation
+     */
     private function setCancelationDates($contract)
     {
         $ret = $contract->getCancelationDates();
