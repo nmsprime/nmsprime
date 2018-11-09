@@ -31,10 +31,15 @@ class BillingBaseController extends \BaseController
             }
         }
 
+        $languages = collect(BillingBase::getPossibleEnumValues('userlang'))
+            ->mapWithKeys(function ($langShortcut) {
+                return [$langShortcut  => config('language.'.$langShortcut)];
+            })->all();
+
         $cols = implode(', ', $cols);
 
         return [
-            ['form_type' => 'select', 'name' => 'userlang', 'description' => 'Language for settlement run', 'value' => BillingBase::getPossibleEnumValues('userlang')],
+            ['form_type' => 'select', 'name' => 'userlang', 'description' => 'Language for settlement run', 'value' => $languages],
             ['form_type' => 'select', 'name' => 'currency', 'description' => 'Currency', 'value' => BillingBase::getPossibleEnumValues('currency')],
             ['form_type' => 'text', 'name' => 'tax', 'description' => 'Tax in %'],
             ['form_type' => 'select', 'name' => 'rcd', 'description' => 'Day of Requested Collection Date', 'value' => $days],
