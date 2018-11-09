@@ -85,6 +85,16 @@ class ProvMonController extends \BaseController
         $ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = null;
         $modem = $this->modem ? $this->modem : Modem::find($id);
         $view_var = $modem; // for top header
+        $error = '';
+        $message = trans('view.error_specify_id');
+
+        try {
+            $modem->hostname;
+        }
+        catch (\Exception $e) {
+            return \View::make('errors.generic', compact('error', 'message'));
+        }
+
         $hostname = $modem->hostname.'.'.$this->domain_name;
         $mac = strtolower($modem->mac);
         $modem->help = 'modem_analysis';
@@ -1138,6 +1148,7 @@ class ProvMonController extends \BaseController
      */
     public static function checkNetelementtype($model)
     {
+        $provmon = new ProvMonController;
         if (! isset($model->netelementtype)) {
             return [];
         }
@@ -1157,7 +1168,8 @@ class ProvMonController extends \BaseController
         }
 
         if ($type == 4 || $type == 5 && \Bouncer::can('view_analysis_pages_of', Modem::class)) {
-            array_push($tabs, ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => [substr($model->ip, 3, 6)]]);
+            //create Analyses tab (for ORA/VGP) if IP address is no valid IP
+            array_push($tabs, ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $provmon->createAnalysisTab($model->ip)]);
         }
 
         if ($type != 4 && $type != 5) {
@@ -1165,6 +1177,23 @@ class ProvMonController extends \BaseController
         }
 
         return $tabs;
+    }
+
+    /**
+     * Return number from IP address field if the record is written like: 'cm-...'.
+     *
+     * @author Roy Schneider
+     * @param string
+     * @return string
+     */
+    public function createAnalysisTab($ip)
+    {
+        preg_match('/[c][m]\-\d+/', $ip, $return);
+
+        if (! empty($return)) {
+            return substr($return[0], 3);
+        }
+        return 'error';
     }
 
     /**
