@@ -90,8 +90,7 @@ class ProvMonController extends \BaseController
 
         try {
             $modem->hostname;
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return \View::make('errors.generic', compact('error', 'message'));
         }
 
@@ -1148,7 +1147,7 @@ class ProvMonController extends \BaseController
      */
     public static function checkNetelementtype($model)
     {
-        $provmon = new ProvMonController;
+        $provmon = new self;
         if (! isset($model->netelementtype)) {
             return [];
         }
@@ -1193,6 +1192,7 @@ class ProvMonController extends \BaseController
         if (! empty($return)) {
             return substr($return[0], 3);
         }
+
         return 'error';
     }
 
