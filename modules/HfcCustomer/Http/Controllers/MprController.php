@@ -7,6 +7,7 @@ use Modules\HfcCustomer\Entities\Mpr;
 use Modules\HfcReq\Entities\NetElement;
 use Nwidart\Modules\Routing\Controller;
 use Modules\HfcCustomer\Entities\MprGeopos;
+use App\Http\Controllers\BaseViewController;
 
 class MprController extends \BaseController
 {
@@ -22,10 +23,13 @@ class MprController extends \BaseController
                 ->select(['netelement.id as id', 'netelement.name as name', 'nt.name as ntname'])
                 ->get();
 
-        $types = collect([1 => 'position rectangle', 2 => 'position polygon', 3 => 'nearest amp/node object', 4 => 'assosicated upstream interface', 5 => 'cluster (deprecated)'])
-            ->map(function ($string) {
-                return trans("messages.{$string}");
-            });
+        $types = BaseviewController::translateArray([
+            1 => 'position rectangle',
+            2 => 'position polygon',
+            3 => 'nearest amp/node object',
+            4 => 'assosicated upstream interface',
+            5 => 'cluster (deprecated)'
+        ]);
 
         // label has to be the same like column in sql table
         return [

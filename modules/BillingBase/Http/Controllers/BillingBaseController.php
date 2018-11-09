@@ -4,6 +4,7 @@ namespace Modules\BillingBase\Http\Controllers;
 
 use Schema;
 use Modules\ProvBase\Entities\Contract;
+use App\Http\Controllers\BaseViewController;
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\SepaMandate;
 
@@ -13,6 +14,8 @@ class BillingBaseController extends \BaseController
 
     public function view_form_fields($model = null)
     {
+        $languages = BaseViewController::generateLanguageArray(BillingBase::getPossibleEnumValues('userlang'));
+
         $days[0] = null;
         for ($i = 1; $i < 29; $i++) {
             $days[$i] = $i;
@@ -30,11 +33,6 @@ class BillingBaseController extends \BaseController
                 unset($cols[$key]);
             }
         }
-
-        $languages = collect(BillingBase::getPossibleEnumValues('userlang'))
-            ->mapWithKeys(function ($langShortcut) {
-                return [$langShortcut  => config('language.'.$langShortcut)];
-            })->all();
 
         $cols = implode(', ', $cols);
 

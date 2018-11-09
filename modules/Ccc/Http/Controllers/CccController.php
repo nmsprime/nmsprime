@@ -4,6 +4,7 @@ namespace Modules\Ccc\Http\Controllers;
 
 use Modules\Ccc\Entities\Ccc;
 use Modules\ProvBase\Entities\Contract;
+use App\Http\Controllers\BaseViewController;
 
 class CccController extends \BaseController
 {
@@ -12,19 +13,15 @@ class CccController extends \BaseController
      */
     public function view_form_fields($model = null)
     {
-        $languageDirectories = collect(glob(base_path('resources/lang').'/*'))
-            ->mapWithKeys(function ($path) {
-                $langShortcut = basename($path);
-
-                return [$langShortcut  => config('language.'.$langShortcut)];
-            });
+        $languageDirectories = BaseViewController::getAllLanguages();
+        $languages = BaseViewController::generateLanguageArray($languageDirectories);
 
         // label has to be the same like column in sql table
         $a = [
             ['form_type' => 'text', 'name' => 'headline1', 'description' => 'Headline 1'],
             ['form_type' => 'text', 'name' => 'headline2', 'description' => 'Headline 2'],
             ['form_type' => 'select', 'name' => 'language', 'description' => 'Language',
-                'value' => $languageDirectories,
+                'value' => $languages,
                 'help' => trans('helper.translate').' https://crowdin.com/project/nmsprime', ],
         ];
 
