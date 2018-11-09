@@ -16,7 +16,7 @@ class CccController extends \BaseController
             ->mapWithKeys(function ($path) {
                 $langShortcut = basename($path);
 
-                return [$langShortcut  => $langShortcut];
+                return [$langShortcut  => config('language.'.$langShortcut)];
             });
 
         // label has to be the same like column in sql table
