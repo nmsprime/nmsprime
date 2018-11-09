@@ -204,7 +204,7 @@ class DashboardController extends BaseController
             ->where('name2', '<>', 'ping4')
             ->where('last_hard_state', '<>', '0')
             ->where('problem_has_been_acknowledged', '<>', '1')
-            ->orderByRaw("name2='ms_helper' desc")
+            ->orderByRaw("name2='cluster' desc")
             ->orderBy('last_time_ok', 'desc');
 
         foreach ($objs->get() as $service) {

@@ -8,14 +8,14 @@ use Modules\HfcCustomer\Entities\ModemHelper;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-class MsHelperCommand extends Command
+class ClusterCommand extends Command
 {
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'nms:ms_helper';
+    protected $name = 'nms:cluster';
 
     /**
      * The console command description.
