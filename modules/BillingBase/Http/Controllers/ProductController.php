@@ -43,7 +43,7 @@ class ProductController extends \BaseController
             ['form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)'],
             array_merge(['form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV Credit'], $model->tax === null ? ['checked' => true, 'value' => 1] : []),
             ['form_type' => 'text', 'name' => 'email_count', 'description' => 'No. of email addresses', 'select' => 'Internet', 'hidden' => 1],
-            ['form_type' => 'checkbox', 'name' => 'bundled_with_voip', 'description' => 'Bundled with VoIP product?', 'select' => 'Internet'],
+            ['form_type' => 'checkbox', 'name' => 'bundled_with_voip', 'description' => 'Bundled with VoIP product?', 'select' => 'Internet', 'help' => trans('helper.Product_bundle')],
         ];
     }
 
