@@ -13,19 +13,13 @@ class Item extends \BaseModel
     // Add your validation rules here
     public static function rules($id = null)
     {
-        // $tariff_prods = Product::whereIn('type', ['internet', 'tv', 'voip'])->lists('id')->all();
-        // $tariff_ids   = implode(',', $tariff_prods);
-
-        // $credit_prods = Product::where('type', '=', 'credit')->lists('id')->all();
-        // $credit_ids   = implode(',', $credit_prods);
+        // see ItemController@prepare_rules
 
         return [
-            // 'name' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
             'product_id' 	=> 'required|numeric|Min:1',
             'valid_from'	=> 'date',	//|in_future ??
             'valid_to'		=> 'date',
             'credit_amount' => 'nullable|numeric',
-            // 'count'			=> 'null_if:product_id,'.$tariff_ids.','.$credit_ids,
         ];
     }
 
