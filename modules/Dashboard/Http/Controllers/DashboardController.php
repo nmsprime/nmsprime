@@ -204,7 +204,7 @@ class DashboardController extends BaseController
             ->where('name2', '<>', 'ping4')
             ->where('last_hard_state', '<>', '0')
             ->where('problem_has_been_acknowledged', '<>', '1')
-            ->orderByRaw("name2='ms_helper' desc")
+            ->orderByRaw("name2='cluster' desc")
             ->orderBy('last_time_ok', 'desc');
 
         foreach ($objs->get() as $service) {
@@ -429,71 +429,78 @@ class DashboardController extends BaseController
      */
     private function newsInstallAndSequenceCheck()
     {
+        $text = '<li>'.trans('helper.next');
         // set ISP name
         if (! \GlobalConfig::first()->name) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s',
-                    'text' => '<li>Next: Set Global Config ISP name: '.\HTML::linkRoute('Config.index', 'Global Config'), ];
+                    'text' => $text.\HTML::linkRoute('Config.index', trans('helper.set_isp_name')), ];
         }
 
         // add CMTS
         if (\Modules\ProvBase\Entities\Cmts::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=159&',
-                    'text' => '<li>Next: '.\HTML::linkRoute('Cmts.create', 'Create CMTS'), ];
+                    'text' => $text.\HTML::linkRoute('Cmts.create', trans('helper.create_cmts')), ];
         }
 
-        // add IP-Pools
-        if (\Modules\ProvBase\Entities\IpPool::count() == 0) {
-            return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
-                    'text' => '<li>Next: '.\HTML::linkRoute('Cmts.edit', 'Create IP-Pools',
-                        \Modules\ProvBase\Entities\Cmts::first()), ];
+        // add CM and CPEPriv IP-Pool
+        foreach (['CM', 'CPEPriv'] as $type) {
+            if (\Modules\ProvBase\Entities\IpPool::where('type', $type)->count() == 0) {
+                return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
+                        'text' => $text.\HTML::linkRoute('IpPool.create', trans('helper.create_'.strtolower($type).'_pool'),
+                        ['cmts_id' => \Modules\ProvBase\Entities\Cmts::first()->id, 'type' => $type]), ];
+            }
         }
 
         // QoS
         if (\Modules\ProvBase\Entities\Qos::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=380&',
-                    'text' => '<li>Next: '.\HTML::linkRoute('Qos.create', 'Create QoS-Profile'), ];
+                    'text' => $text.\HTML::linkRoute('Qos.create', trans('helper.create_qos')), ];
         }
 
         // Product
         if (\Module::collections()->has('BillingBase') &&
             \Modules\BillingBase\Entities\Product::where('type', '=', 'Internet')->count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=425&',
-                    'text' => '<li>Next: '.\HTML::linkRoute('Product.create', 'Create Billing Product'), ];
+                    'text' => $text.\HTML::linkRoute('Product.create', trans('helper.create_product')), ];
         }
 
         // Configfile
         if (\Modules\ProvBase\Entities\Configfile::where('device', '=', 'cm')->where('public', '=', 'yes')->count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=500&',
-                    'text' => '<li>Next: '.\HTML::linkRoute('Configfile.create', 'Create Configfile'), ];
+                    'text' => $text.\HTML::linkRoute('Configfile.create', trans('helper.create_configfile')), ];
+        }
+
+        // add sepa account
+        if (\Module::collections()->has('BillingBase') && \Modules\BillingBase\Entities\SepaAccount::count() == 0) {
+            return ['text' => $text.\HTML::linkRoute('SepaAccount.create', trans('helper.create_sepa_account'))];
         }
 
         // add costcenter
         if (\Module::collections()->has('BillingBase') && \Modules\BillingBase\Entities\CostCenter::count() == 0) {
-            return ['youtube' => null,
-                    'text' => '<li>Next: '.\HTML::linkRoute('CostCenter.create', 'Create a first Cost Center'), ];
+            return ['text' => $text.\HTML::linkRoute('CostCenter.create', trans('helper.create_cost_center'))];
         }
 
         // add Contract
         if (\Modules\ProvBase\Entities\Contract::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=0&',
-                    'text' => '<li>Congratulations: now you can create a first '.\HTML::linkRoute('Contract.create', 'Contract'), ];
+                    'text' => $text.\HTML::linkRoute('Contract.create', trans('helper.create_contract')), ];
         }
 
         // check if nominatim email address is set, otherwise osm geocoding won't be possible
         if (env('OSM_NOMINATIM_EMAIL') == '') {
-            return ['text' => '<li>Next: Set an email address (OSM_NOMINATIM_EMAIL) in /etc/nmsprime/env/global.env to enable geocoding for modems</li>'];
+            return ['text' => $text.trans('helper.create_nominatim')];
         }
 
         // check for local nameserver
         preg_match('/^Server:\s*(\d{1,3}).\d{1,3}.\d{1,3}.\d{1,3}$/m', shell_exec('nslookup nmsprime.com'), $matches);
         if (isset($matches[1]) && $matches[1] != '127') {
-            return ['text' => '<li>Next: Set your nameserver to 127.0.0.1 in /etc/resolv.conf and make sure it won\'t be overwritten via DHCP (see DNS and PEERDNS in /etc/sysconfig/network-scripts/ifcfg-*)</li>'];
+            return ['text' => $text.trans('helper.create_nameserver')];
         }
 
         // add Modem
         if (\Modules\ProvBase\Entities\Modem::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=40&',
-                    'text' => '<li>Congratulations: now you can create a first '.\HTML::linkRoute('Contract.edit', 'Modem', \Modules\ProvBase\Entities\Contract::first()), ];
+                    'text' => $text.\HTML::linkRoute('Contract.edit', trans('helper.create_modem'), \Modules\ProvBase\Entities\Contract::first()), ];
         }
 
         return false;
