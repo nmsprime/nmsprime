@@ -88,9 +88,9 @@ class ProvMonController extends \BaseController
         $error = '';
         $message = trans('view.error_specify_id');
 
-        try {
-            $modem->hostname;
-        } catch (\Exception $e) {
+        // if there is no valid hostname specified, then return error view
+        // to get the regular Analyses tab the hostname should be: cm-...
+        if ($id == 'error') {
             return \View::make('errors.generic', compact('error', 'message'));
         }
 
@@ -1189,11 +1189,11 @@ class ProvMonController extends \BaseController
     {
         preg_match('/[c][m]\-\d+/', $ip, $return);
 
-        if (! empty($return)) {
-            return substr($return[0], 3);
+        if (empty($return)) {
+            return 'error';
         }
 
-        return 'error';
+        return substr($return[0], 3);
     }
 
     /**
