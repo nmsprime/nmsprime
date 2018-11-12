@@ -6,6 +6,7 @@ use Log;
 use Auth;
 use View;
 use Module;
+use Bouncer;
 use Storage;
 use Modules\ProvBase\Entities\Contract;
 use App\Http\Controllers\BaseController;
@@ -51,22 +52,18 @@ class DashboardController extends BaseController
      */
     private static function _get_view_permissions()
     {
-        $user = Auth::user();
-
-        $view = [
+        return [
             'date'          => true,
             'provvoipenvia' => false,
             'income'        => (Module::collections()->has('BillingBase') &&
-                               $user->can('see income chart')),
+                               Bouncer::can('see income chart')),
             'contracts'     => (Module::collections()->has('ProvBase') &&
-                               $user->can('view', \Modules\ProvBase\Entities\Contract::class)),
+                               Bouncer::can('view', \Modules\ProvBase\Entities\Contract::class)),
             'tickets'       => (Module::collections()->has('Ticketsystem') &&
-                               $user->can('view', \Modules\Ticketsystem\Entities\Ticket::class)),
+                               Bouncer::can('view', \Modules\Ticketsystem\Entities\Ticket::class)),
             'hfc'           => (Module::collections()->has('HfcReq') &&
-                               $user->can('view', \Modules\HfcReq\Entities\NetElement::class)),
+                               Bouncer::can('view', \Modules\HfcReq\Entities\NetElement::class)),
         ];
-
-        return $view;
     }
 
     /**
