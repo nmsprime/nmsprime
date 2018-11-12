@@ -28,7 +28,7 @@ class MprController extends \BaseController
             2 => 'position polygon',
             3 => 'nearest amp/node object',
             4 => 'assosicated upstream interface',
-            5 => 'cluster (deprecated)'
+            5 => 'cluster (deprecated)',
         ]);
 
         // label has to be the same like column in sql table
