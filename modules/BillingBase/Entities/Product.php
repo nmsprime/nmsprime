@@ -19,6 +19,7 @@ class Product extends \BaseModel
      * @var string  maturity
      */
     public static $pon = '14D';
+    public static $maturity_min = '1M';
     public static $maturity = '1M';
 
     // Add your validation rules here
@@ -33,6 +34,7 @@ class Product extends \BaseModel
             'voip_purchase_tariff_id' => 'required_if:type,Voip',
             'qos_id' => 'required_if:type,Internet',
             'price'  => 'required_if:type,Internet,Voip,TV,Other,Device,Mixed',
+            'maturity_min' => 'nullable|regex:/^\d+[dDmMyY]$/',
             'maturity' => 'nullable|regex:/^\d+[dDmMyY]$/',
             'period_of_notice' => 'nullable|regex:/^\d+[dDmMyY]$/',
         ];

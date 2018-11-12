@@ -13,19 +13,13 @@ class Item extends \BaseModel
     // Add your validation rules here
     public static function rules($id = null)
     {
-        // $tariff_prods = Product::whereIn('type', ['internet', 'tv', 'voip'])->lists('id')->all();
-        // $tariff_ids   = implode(',', $tariff_prods);
-
-        // $credit_prods = Product::where('type', '=', 'credit')->lists('id')->all();
-        // $credit_ids   = implode(',', $credit_prods);
+        // see ItemController@prepare_rules
 
         return [
-            // 'name' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
             'product_id' 	=> 'required|numeric|Min:1',
             'valid_from'	=> 'date',	//|in_future ??
             'valid_to'		=> 'date',
             'credit_amount' => 'nullable|numeric',
-            // 'count'			=> 'null_if:product_id,'.$tariff_ids.','.$credit_ids,
         ];
     }
 
@@ -485,46 +479,44 @@ class Item extends \BaseModel
      * @author Nino Ryschawy
      *
      * @return array 	[End of Term, Last possible Cancelation Day]
+     *         null     on error
      */
-    public function get_next_cancel_date()
+    public function getNextCancelationDate()
     {
-        $default_pon = Product::$pon; 				// Default period of notice
-
-        // Tariff with maturity (m) (Laufzeit) but open end
-        if ($this->product->maturity) {
-            $end = \Carbon\Carbon::createFromFormat('Y-m-d', $this->valid_from);
-            $end->subDay();
-
-            // add maturity period until the tarif end time is in future
-            do {
-                $end = self::_add_period($end, $this->product->maturity);
-            } while ($end->toDateString() < date('Y-m-01', strtotime('first day of last month')));
-
-            // get last day of period of notice (pon)
-            $cancel_day = self::_add_period(clone $end, $this->product->period_of_notice ?: $default_pon, 'sub');
-
-            // period of notice expired - extend runtime - Kündigungsfrist abgelaufen
-            if ($cancel_day->isPast()) {
-                $end = self::_add_period($end, $this->product->maturity);
-                $cancel_day = self::_add_period($cancel_day, $this->product->maturity);
-            }
-        } else {
-            $end = \Carbon\Carbon::create();
-            $end = self::_add_period($end, $this->product->period_of_notice ?: $default_pon);
-            $end->lastOfMonth();
-
-            $cancel_day = self::_add_period(clone $end, $this->product->period_of_notice ?: $default_pon, 'sub');
-
-            // period of notice expired - extend runtime
-            if ($cancel_day->isPast()) {
-                $end->addMonthNoOverflow();
-                $cancel_day->addMonthNoOverflow();
-            }
+        if (! $this->product) {
+            return;
         }
 
+        // determine tariff/item's end of term (minimum maturity) and when the next last day to cancel before runtime is extended by maturity
+        $endDate = \Carbon\Carbon::createFromFormat('Y-m-d', $this->valid_from);
+        $endDate->subDay();
+
+        // set defaults
+        $maturity_min = $this->product->maturity_min ?: Product::$maturity_min;
+        $maturity = $this->product->maturity ?: Product::$maturity;
+        $pon = $this->product->period_of_notice ?: Product::$pon;
+
+        // add minimum maturity and set endDate to last of month as default if no maturity is specified
+        // TODO?: Always set to end of month?
+        $endDate = self::add_period($endDate, $maturity_min);
+        if (! $this->product->maturity) {
+            $endDate->lastOfMonth();
+        }
+        $invoiceDate = \Carbon\Carbon::createFromTimestamp(strtotime('last day of last month'));
+        $firstPonDate = self::sub_period(clone $endDate, $pon);
+
+        // add maturity until endDate is after first possible date of period of notice
+        if ($invoiceDate->gte($firstPonDate)) {
+            do {
+                $endDate = self::add_period($endDate, $maturity);
+                $firstPonDate = self::sub_period(clone $endDate, $pon);
+            } while ($invoiceDate->gte($firstPonDate));
+        }
+
+        // return end_of_term and (last) cancelation_day
         return [
-            'end_of_term' => $end->toDateString(),
-            'cancelation_day' => $cancel_day->toDateString(),
+            'end_of_term' => $endDate->toDateString(),
+            'cancelation_day' => $firstPonDate->toDateString(),
             ];
     }
 
@@ -537,7 +529,7 @@ class Item extends \BaseModel
      * @param string 	e.g. 14D|3M|1Y (14 days|3 month|1 year)
      * @param string 	subtract or add time period
      */
-    private static function _add_period(\Carbon\Carbon $dt, $period, $method = 'add')
+    public static function add_period(\Carbon\Carbon $dt, $period, $method = 'add')
     {
         // split nr from timespan
         $nr = preg_replace('/[^0-9]/', '', $period);
@@ -574,6 +566,11 @@ class Item extends \BaseModel
         }
 
         return $dt;
+    }
+
+    public static function sub_period(\Carbon\Carbon $dt, $period)
+    {
+        return self::add_period($dt, $period, 'sub');
     }
 }
 
@@ -631,6 +628,8 @@ class ItemObserver
                 \Session::push('tmp_warning_above_form', 'ATTENTION: You have to “Change tariff” (envia TEL API), too!');
             }
         }
+
+        // TODO: warn user if end_of_term is now earlier by adding this item ?
     }
 
     public function updating($item)
