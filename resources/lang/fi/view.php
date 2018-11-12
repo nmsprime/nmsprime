@@ -347,4 +347,7 @@ return [
     'Numberrange_Suffix' => 'Suffix',
     'Numberrange_Prefix' => 'Präfix',
     'Numberrange_Type' => 'Typ',
+
+// Error
+    'error_specify_id'          => 'Please specify the hostname instead of the ip address.',
 ];
