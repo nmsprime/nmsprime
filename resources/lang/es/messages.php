@@ -488,4 +488,5 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'last'                      => 'last',
     'of'                        => 'of',
     'parts'                     => 'part|parts',
+    'Minimum Maturity'          => 'Minimum Maturity',
 ];
