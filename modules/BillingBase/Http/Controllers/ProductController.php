@@ -31,11 +31,11 @@ class ProductController extends \BaseController
         // label has to be the same like column in sql table
         return [
             ['form_type' => 'text', 'name' => 'name', 'description' => 'Name', 'help' => trans('helper.Product_Name')],
-            ['form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => $types, 'select' => $type_selects, 'help' => trans('helper.Product_Type')],
+            ['form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => $types, 'select' => $type_selects, 'options' => ['translate' => true], 'help' => trans('helper.Product_Type')],
             ['form_type' => 'select', 'name' => 'qos_id', 'description' => 'Qos (Data Rate)', 'value' => $qos_val, 'select' => 'Internet'],
             ['form_type' => 'select', 'name' => 'voip_sales_tariff_id', 'description' => 'Phone Sales Tariff', 'value' => $sales_tariffs, 'select' => 'Voip'],
             ['form_type' => 'select', 'name' => 'voip_purchase_tariff_id', 'description' => 'Phone Purchase Tariff', 'value' => $purchase_tariffs, 'select' => 'Voip'],
-            ['form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle')],
+            ['form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle'), 'options' => ['translate' => true]],
             ['form_type' => 'text', 'name' => 'maturity_min', 'description' => 'Minimum Maturity', 'select' => 'Internet', 'help' => trans('helper.Product_maturity_min')],         // Laufzeit, tarif life time
             ['form_type' => 'text', 'name' => 'maturity', 'description' => 'Maturity', 'select' => 'Internet', 'help' => trans('helper.Product_maturity')],         // Laufzeit, tarif life time
             ['form_type' => 'text', 'name' => 'period_of_notice', 'description' => 'Period of Notice', 'select' => 'Internet', 'help' => trans('helper.Product_pod')], 		// Kündigungsfrist

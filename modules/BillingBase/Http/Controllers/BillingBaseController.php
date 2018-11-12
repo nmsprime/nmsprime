@@ -4,6 +4,7 @@ namespace Modules\BillingBase\Http\Controllers;
 
 use Schema;
 use Modules\ProvBase\Entities\Contract;
+use App\Http\Controllers\BaseViewController;
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\SepaMandate;
 
@@ -13,6 +14,8 @@ class BillingBaseController extends \BaseController
 
     public function view_form_fields($model = null)
     {
+        $languages = BaseViewController::generateLanguageArray(BillingBase::getPossibleEnumValues('userlang'));
+
         $days[0] = null;
         for ($i = 1; $i < 29; $i++) {
             $days[$i] = $i;
@@ -34,7 +37,7 @@ class BillingBaseController extends \BaseController
         $cols = implode(', ', $cols);
 
         return [
-            ['form_type' => 'select', 'name' => 'userlang', 'description' => 'Language for settlement run', 'value' => BillingBase::getPossibleEnumValues('userlang')],
+            ['form_type' => 'select', 'name' => 'userlang', 'description' => 'Language for settlement run', 'value' => $languages],
             ['form_type' => 'select', 'name' => 'currency', 'description' => 'Currency', 'value' => BillingBase::getPossibleEnumValues('currency')],
             ['form_type' => 'text', 'name' => 'tax', 'description' => 'Tax in %'],
             ['form_type' => 'select', 'name' => 'rcd', 'description' => 'Day of Requested Collection Date', 'value' => $days],
