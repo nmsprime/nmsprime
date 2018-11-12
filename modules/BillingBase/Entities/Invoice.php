@@ -243,25 +243,18 @@ class Invoice extends \BaseModel
         $this->currency = strtolower($config->currency) == 'eur' ? '€' : $config->currency;
         $this->tax = $config->tax;
 
-        /* Set:
-            * actual end of term
-            * period of notice
-            * latest possible date of cancelation
-        */
-        $txt_pon = $txt_m = '';
+        $this->setCancelationDates($contract);
+    }
 
-        // Contract already canceled
-        if ($contract->get_end_time()) {
-            $ret = [
-                'end_of_term' => $contract->contract_end,
-                'cancelation_day' => '',
-                'tariff' => null,
-                ];
-        }
-        // Get next cancelation date
-        else {
-            $ret = $contract->get_next_cancel_date();
-        }
+    /**
+     * Set:
+     *  actual end of term
+     *  period of notice
+     *  latest possible date of cancelation
+     */
+    private function setCancelationDates($contract)
+    {
+        $ret = $contract->getCancelationDates();
 
         // e.g. customers that get tv amplifier refund, but dont have any tariff
         if (! array_key_exists('tariff', $ret)) {
@@ -269,6 +262,8 @@ class Invoice extends \BaseModel
 
             return;
         }
+
+        $txt_pon = $txt_m = '';
 
         if ($ret['tariff']) {
             // Set period of notice and maturity string of last tariff
@@ -285,7 +280,6 @@ class Invoice extends \BaseModel
             ChannelLog::info('billing', "Contract $contract->number was canceled with target ".$ret['end_of_term']);
         }
 
-        $german = \App::getLocale() == 'de';
         $cancel_dates = [
             'end_of_term' => self::langDateFormat($ret['end_of_term']),
             'maturity' 		=> $txt_m,
