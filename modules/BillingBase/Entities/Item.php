@@ -66,7 +66,6 @@ class Item extends \BaseModel
                     'product.price',
                 ],
                 'eager_loading' => ['product', 'contract'],
-                'bsclass' => $this->get_bsclass(),
             ];
 
         // if enabled add item.valid_from and item.valid_to to index page
@@ -82,6 +81,10 @@ class Item extends \BaseModel
                 $dates['end'].
                 $dates['endFixed'].
                 $price;
+            $ret['bsclass'] = $this->get_bsclass();
+        } else {
+            $ret['bsclass'] = 'danger';
+            $ret['header'] = trans('messages.missing_product').$dates['start'].$dates['end'];
         }
 
         return $ret;
