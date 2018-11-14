@@ -25,7 +25,7 @@
         @endif
 
         <!-- button  to create invoices PDF for postal delivery -->
-        @if ($rerun_button && Storage::exists('config/billingbase/post-invoice-product-ids'))
+        @if (Storage::exists('config/billingbase/post-invoice-product-ids') && ! \Session::get('job_id'))
             <div class="col-md-12 text-center m-b-20">
                 <div class="row">
                     <div class="col-md-1"></div>
