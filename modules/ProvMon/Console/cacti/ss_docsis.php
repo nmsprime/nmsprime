@@ -66,7 +66,7 @@ function ss_docsis_ppp($hostname)
     return $row;
 }
 
-function ss_docsis($hostname, $snmp_community)
+function ss_docsis($hostname, $snmp_community = null)
 {
     if (substr($hostname, 0, 4) === 'ppp-') {
         $bytes = ss_docsis_ppp(explode('.', $hostname)[0]);
@@ -126,117 +126,175 @@ function ss_docsis($hostname, $snmp_community)
     }
     $file = file_get_contents($filename);
 
-    $res = [];
+    $cactiStats = [];
     foreach (array_merge($reps, $helper, $non_reps) as $name => $oid) {
         preg_match_all("/^$oid\.(\d+) (.+)/m", $file, $match);
-        $res[$name] = array_combine($match[1], $match[2]);
+        $cactiStats[$name] = array_combine($match[1], $match[2]);
     }
 
     // DS SNR: fallback to D2.0 values, if D3.0 ones are not available
-    if (! count($res['DsSNR'])) {
-        $res['DsSNR'] = $res['DsSNR2'];
+    if (! count($cactiStats['DsSNR'])) {
+        $cactiStats['DsSNR'] = $cactiStats['DsSNR2'];
     }
-    unset($res['DsSNR2']);
+    unset($cactiStats['DsSNR2']);
 
     // US Power: fallback to D2.0 values, if D3.0 ones are not available
-    if (! count($res['UsPow'])) {
-        $res['UsPow'] = $res['UsPow2'];
+    if (! count($cactiStats['UsPow'])) {
+        $cactiStats['UsPow'] = $cactiStats['UsPow2'];
     } else {
         // in case of D3.0 values check ranging status
         // array_filter should be used, see below
         // however php5.4 does not support ARRAY_FILTER_USE_KEY
-        foreach ($res['UsPow'] as $idx => $pow) {
-            if ($res['UsRng'][$idx] != 4) {
-                unset($res['UsPow'][$idx]);
+        foreach ($cactiStats['UsPow'] as $idx => $pow) {
+            if ($cactiStats['UsRng'][$idx] != 4) {
+                unset($cactiStats['UsPow'][$idx]);
             }
         }
         /*
-        $rng = $res['UsRng'];
-        $res['UsPow'] = array_filter($res['UsPow'], function ($key) use ($rng) {
+        $rng = $cactiStats['UsRng'];
+        $cactiStats['UsPow'] = array_filter($cactiStats['UsPow'], function ($key) use ($rng) {
             return $rng[$key] == 4;
         }, ARRAY_FILTER_USE_KEY);
         */
     }
-    unset($res['UsPow2'], $res['UsRng']);
+    unset($cactiStats['UsPow2'], $cactiStats['UsRng']);
 
     // convert TenthdB to dB
     foreach (['DsPow', 'UsPow', 'DsSNR'] as $name) {
-        $res[$name] = array_map(function ($val) {
+        $cactiStats[$name] = array_map(function ($val) {
             return $val / 10;
-        }, $res[$name]);
+        }, $cactiStats[$name]);
     }
 
     // evaluate US SNR values from the CMTS
     $ip = gethostbyname($hostname);
     if (array_key_exists($ip, $GLOBALS['snrs'])) {
         $snrs = $GLOBALS['snrs'][$ip];
-        foreach ($res['UsFreq'] as $freq) {
+        foreach ($cactiStats['UsFreq'] as $freq) {
             if (! isset($snrs[strval($freq / 1000000)]) || ! $snrs[strval($freq / 1000000)]) {
                 continue;
             }
-            $res['UsSNR'][] = $snrs[strval($freq / 1000000)];
+            $cactiStats['UsSNR'][] = $snrs[strval($freq / 1000000)];
         }
     }
-    unset($res['UsFreq']);
+    unset($cactiStats['UsFreq']);
 
     // calculate sum for non-rep elements
     foreach ($non_reps as $name => $non_rep) {
-        $res[$name] = array_sum($res[$name]);
+        $cactiStats[$name] = array_sum($cactiStats[$name]);
     }
 
     // calculate min, avg, max for rep elements
-    foreach ($reps as $name => $rep) {
-        if (count($res[$name])) {
-            $res['min'.$name] = min($res[$name]);
-            $res['avg'.$name] = array_sum($res[$name]) / count($res[$name]);
-            $res['max'.$name] = max($res[$name]);
+    foreach (array_keys($reps) as $name) {
+        if (count($cactiStats[$name])) {
+            $cactiStats['min'.$name] = min($cactiStats[$name]);
+            $cactiStats['avg'.$name] = array_sum($cactiStats[$name]) / count($cactiStats[$name]);
+            $cactiStats['max'.$name] = max($cactiStats[$name]);
         }
-        unset($res[$name]);
+        unset($cactiStats[$name]);
     }
 
     // pre-equalization-related data
-    $json_file = "/usr/share/cacti/rra/$hostname.json";
-    $rates = ['+8 hours', '+4 hours', '+10 minutes'];
-    $preq = json_decode(file_exists($json_file) ? file_get_contents($json_file) : '{"rate":0}', true);
-    if (! isset($preq['next']) || time() > $preq['next']) {
-        $res_json = [];
-        foreach ($json as $name => $oid) {
-            preg_match_all("/^$oid\.(\d+) (.+)/m", $file, $match);
-            $res_json[$name] = array_combine($match[1], $match[2]);
+    $basepath = '/usr/share/cacti/rra';
+    $deviceFile = "{$basepath}/{$hostname}.json";
+    $rates = ['+8 hours', '+4 hours', '+6 minutes'];
+    $deviceStats = json_decode(file_exists($deviceFile) ? file_get_contents($deviceFile) : '{"rate":2}', true);
+
+    if (! isset($deviceStats['next']) || time() > $deviceStats['next']) {
+        $monPath = "{$basepath}/".date('Ymd');
+        $monFile = "{$monPath}/{$hostname}.csv";
+        $columns = 'Timestamp;PNM;Bandwidth;'
+            .'US SNR min;US SNR avg;US SNR max;US Power min;US Power avg;US Power max;'
+            .'DS SNR min;DS SNR avg;DS SNR max;DS Power min;DS Power avg;DS Power max;'
+            ."MuRef min;MuRef avg;MuRef max;T3Timeout;T4Timeout;Corrected;Uncorrectable\n";
+
+        if (! file_exists($monFile)) {
+            mkdir($monPath);
+            file_put_contents($monFile, $columns, LOCK_EX);
         }
 
-        $preq['preEqu'] = $res_json['PreEqu'] ? preg_replace('/[^A-Fa-f0-9]/', '', reset($res_json['PreEqu'])) : '';
-        // assume US bandwidth of 3.2MHz, if we can't get the actual value
-        $preq['width'] = $res_json['UsWidth'] ? reset($res_json['UsWidth']) : 3200000;
-        $preq['next'] = strtotime($rates[$preq['rate']]);
-        $preq['descr'] = isset($res_json['SysDescr']) ? reset($res_json['SysDescr']) : 'n/a';
+        $deviceStats['next'] = strtotime($rates[2]);
 
-        file_put_contents($json_file, json_encode($preq));
+        $cactiStatsJson = [];
+        foreach ($json as $name => $oid) {
+            preg_match_all("/^$oid\.(\d+) (.+)/m", $file, $match);
+            $cactiStatsJson[$name] = array_combine($match[1], $match[2]);
+        }
+
+        $deviceStats['preEqu'] = $cactiStatsJson['PreEqu'] ? preg_replace('/[^A-Fa-f0-9]/', '', reset($cactiStatsJson['PreEqu'])) : '';
+        // assume US bandwidth of 3.2MHz, if we can't get the actual value
+        $deviceStats['width'] = $cactiStatsJson['UsWidth'] ? reset($cactiStatsJson['UsWidth']) : 3200000;
+        $deviceStats['next'] = strtotime($rates[$deviceStats['rate']]);
+        $deviceStats['descr'] = isset($cactiStatsJson['SysDescr']) ? reset($cactiStatsJson['SysDescr']) : 'n/a';
+
+        /* pre-equalization calculations */
+        $freq = $deviceStats['width'];
+        $hexs = str_split($deviceStats['preEqu'], 8);
+        $or_hexs = array_shift($hexs);
+        $maintap = 2 * $or_hexs[1] - 2;
+        $energymain = $maintap / 2;
+        array_splice($hexs, 0, 0);
+        $hexs = implode('', $hexs);
+        $hexs = str_split($hexs, 4);
+        $hexcall = $hexs;
+        $counter = 0;
+        foreach ($hexs as $hex) {
+            $hsplit = str_split($hex, 1);
+            $counter++;
+            if (is_numeric($hsplit[0]) && $hsplit[0] == 0 && $counter >= 46) {
+                $decimal = _threenibble($hexcall);
+                break;
+            } elseif (ctype_alpha($hsplit[0]) || $hsplit[0] != 0 && $counter >= 46) {
+                $decimal = _fournibble($hexcall);
+                break;
+            }
+        }
+        $pwr = _nePwr($decimal, $maintap);
+        $ene = _energy($pwr, $maintap, $energymain);
+        $fft = _fft($pwr);
+        $tdr = _tdr($ene, $energymain, $freq);
+        $preEquData['power'] = $pwr;
+        $preEquData['energy'] = $ene;
+        $preEquData['tdr'] = $tdr;
+        $preEquData['max'] = $fft[1];
+        $preEquData['fft'] = $fft[0];
+
+        $monitorString = date('YmdHi').";{$deviceStats['preEqu']};{$deviceStats['width']};"
+            ."{$cactiStats['minUsSNR']};{$cactiStats['avgUsSNR']};{$cactiStats['maxUsSNR']};"
+            ."{$cactiStats['minUsPow']};{$cactiStats['avgUsPow']};{$cactiStats['maxUsPow']};"
+            ."{$cactiStats['minDsSNR']};{$cactiStats['avgDsSNR']};{$cactiStats['maxDsSNR']};"
+            ."{$cactiStats['minDsPow']};{$cactiStats['avgDsPow']};{$cactiStats['maxDsPow']};"
+            ."{$cactiStats['minMuRef']};{$cactiStats['avgMuRef']};{$cactiStats['maxMuRef']};"
+            ."{$cactiStats['T3Timeout']};{$cactiStats['T4Timeout']};"
+            ."{$cactiStats['Corrected']};{$cactiStats['Uncorrectable']};\n";
+
+        file_put_contents($deviceFile, json_encode(array_merge($deviceStats, $preEquData)));
+        file_put_contents($monFile, $monitorString, FILE_APPEND);
     }
 
-    if (isset($res['avgUsPow']) && is_numeric($res['avgUsPow']) &&
-        isset($res['avgUsSNR']) && is_numeric($res['avgUsSNR']) &&
-        isset($res['avgDsPow']) && is_numeric($res['avgDsPow']) &&
-        isset($res['avgDsSNR']) && is_numeric($res['avgDsSNR']) &&
+    if (isset($cactiStats['avgUsPow']) && is_numeric($cactiStats['avgUsPow']) &&
+        isset($cactiStats['avgUsSNR']) && is_numeric($cactiStats['avgUsSNR']) &&
+        isset($cactiStats['avgDsPow']) && is_numeric($cactiStats['avgDsPow']) &&
+        isset($cactiStats['avgDsSNR']) && is_numeric($cactiStats['avgDsSNR']) &&
         preg_match('/^cm-(\d+)\./m', $hostname, $match)) {
         $content = sprintf(
             "UPDATE modem SET us_pwr = %d, us_snr = %d, ds_pwr = %d, ds_snr = %d WHERE id = %d;\n",
-            round($res['avgUsPow']),
-            round($res['avgUsSNR']),
-            round($res['avgDsPow']),
-            round($res['avgDsSNR']),
+            round($cactiStats['avgUsPow']),
+            round($cactiStats['avgUsSNR']),
+            round($cactiStats['avgDsPow']),
+            round($cactiStats['avgDsSNR']),
             $match[1]
         );
 
         file_put_contents("$path/update.sql", $content, FILE_APPEND | LOCK_EX);
     }
 
-    $result = '';
-    foreach ($res as $key => $val) {
-        $result .= is_numeric($val) ? "$key:$val " : "$key:NaN ";
+    $cactiString = '';
+    foreach ($cactiStats as $key => $val) {
+        $cactiString .= is_numeric($val) ? "$key:$val " : "$key:NaN ";
     }
 
-    return trim($result);
+    return trim($cactiString);
 }
 
 function _threenibble($hexcall)
