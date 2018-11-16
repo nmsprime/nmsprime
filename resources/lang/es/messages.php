@@ -500,4 +500,5 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'CPE Public'                => 'CPE Public',
     'MTA'                       => 'MTA',
     'Minimum Maturity'          => 'Minimum Maturity',
+    'Concatenate postal invoices...' => 'Concatenate postal invoices...',
 ];
