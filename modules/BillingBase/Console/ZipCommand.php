@@ -151,11 +151,25 @@ class ZipCommand extends Command implements ShouldQueue
 
         SettlementRunCommand::push_state(0, 'Get data...');
 
+        $month = $this->settlementrun->year.'-'.str_pad($this->settlementrun->month, 2, '0', STR_PAD_LEFT);
+        $start = date('Y-m-d', strtotime('first day of next month', strtotime($month)));
+        $end = date('Y-m-d', strtotime('first day of this month', strtotime($month)));
+
         $invoices = Invoice::join('contract', 'contract.id', '=', 'invoice.contract_id')
             ->join('item', 'contract.id', '=', 'item.contract_id')
             ->where('invoice.settlementrun_id', $this->settlementrun->id)
             ->whereIn('item.product_id', $prod_ids)
+            ->whereNull('item.deleted_at')
+            ->where('item.valid_from', '<', $start)
+            ->where(function ($query) use ($end) {
+                $query
+                ->where('item.valid_to', '>=', $end)
+                ->orWhereNull('item.valid_to');
+            })
+            // ->where('contract.number', 35129)
             ->orderBy('contract.number')->orderBy('invoice.type')
+            ->groupBy('invoice.id')
+            ->select('invoice.*')
             ->get();
 
         $num = count($invoices);
