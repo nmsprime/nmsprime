@@ -501,4 +501,6 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'MTA'                       => 'MTA',
     'Minimum Maturity'          => 'Minimum Maturity',
     'Concatenate postal invoices...' => 'Concatenate postal invoices...',
+    'Enable AGC'                => 'Enable AGC',
+    'AGC offset'                => 'AGC offset',
 ];
