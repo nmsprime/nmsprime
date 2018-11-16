@@ -131,6 +131,8 @@ return [
     'mac_formats'					=> "Formatos permitidos (case-insensitive):\n\n1) AA:BB:CC:DD:EE:FF\n2) AABB.CCDD.EEFF\n3) AABBCCDDEEFF",
     'fixed_ip_warning'				=> 'Usar una IP fija es altamente no recomendado, ya que pierde la habilidad de mover modems y sus CPEs libremente entre CMTSes. Envez de dar una IP fija al cliente, deberan ser provistos del hostname, el cual no cambiara.',
     'modem_update_frequency'		=> 'Este campo se actualiza una vez al día.',
+    'enable_agc'					=> 'Enable upstream automatic gain control.',
+    'agc_offset'					=> 'Upstream automatic gain control offset in dB. (default: 0.0)',
 
  /*
   *	MODULE: ProvVoip
