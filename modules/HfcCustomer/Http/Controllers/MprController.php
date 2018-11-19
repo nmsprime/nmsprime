@@ -7,6 +7,7 @@ use Modules\HfcCustomer\Entities\Mpr;
 use Modules\HfcReq\Entities\NetElement;
 use Nwidart\Modules\Routing\Controller;
 use Modules\HfcCustomer\Entities\MprGeopos;
+use App\Http\Controllers\BaseViewController;
 
 class MprController extends \BaseController
 {
@@ -22,12 +23,20 @@ class MprController extends \BaseController
                 ->select(['netelement.id as id', 'netelement.name as name', 'nt.name as ntname'])
                 ->get();
 
+        $types = BaseviewController::translateArray([
+            1 => 'position rectangle',
+            2 => 'position polygon',
+            3 => 'nearest amp/node object',
+            4 => 'assosicated upstream interface',
+            5 => 'cluster (deprecated)',
+        ]);
+
         // label has to be the same like column in sql table
         return [
             ['form_type' => 'text', 'name' => 'name', 'description' => 'Name'],
             ['form_type' => 'text', 'name' => 'value', 'description' => 'Value (deprecated)', 'options' => ['readonly']],
             ['form_type' => 'select', 'name' => 'netelement_id', 'description' => 'NetElement', 'hidden' => '0', 'value' => $model->html_list($netelems, ['ntname', 'name'], $empty_field, ': ')],
-            ['form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => [1 => 'position rectangle', 2 => 'position polygon', 3 => 'nearest amp/node object', 4 => 'assosicated upstream interface', 5 => 'cluster (deprecated)']],
+            ['form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => $types, 'options' => ['translate' => true]],
             ['form_type' => 'text', 'name' => 'prio', 'description' => 'Priority', 'help' => "1) lower priority values are runs first\n2) later runs will overwrite former runs\ni.e. highest priority value will take precedence"],
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
         ];

@@ -84,7 +84,7 @@ class cdrCommand extends Command
 
     /**
      * Public function to get CDR's pathname dependent a provider - should be used
-     *  everywhere else in source code where pathname is needed (accountingCommand, Invoice, ...) to be consistent
+     *  everywhere else in source code where pathname is needed (SettlementRunCommand, Invoice, ...) to be consistent
      *
      * @param  string   envia|hlkomm|purtel
      * @param  int 	Optional timestamp if you want a previous CDR (with records of that timestamps month)
@@ -99,7 +99,7 @@ class cdrCommand extends Command
         $time_dir = self::_get_time_of_dir($offset, $timestamp);
         $time_file = self::_get_time_of_file($offset, $timestamp);
 
-        $dir = accountingCommand::get_absolute_accounting_dir_path($time_dir);
+        $dir = SettlementRunCommand::get_absolute_accounting_dir_path($time_dir);
 
         return "$dir/".BaseViewController::translate_label('Call_Data_Records').'_'.$provider.'_'.date('Y_m', $time_file).'.csv';
     }
@@ -173,7 +173,7 @@ class cdrCommand extends Command
         \Storage::put("tmp/$tmp_file", $data);
 
         $tmp_dir = storage_path('app/tmp');
-        $target_dir = accountingCommand::get_absolute_accounting_dir_path($this->time_of_dir);
+        $target_dir = SettlementRunCommand::get_absolute_accounting_dir_path($this->time_of_dir);
         $target_filepath = self::get_cdr_pathname('envia', $this->timestamp);
 
         if (! is_dir($target_dir)) {
@@ -249,7 +249,7 @@ class cdrCommand extends Command
             return -1;
         }
 
-        $target_dir = accountingCommand::get_absolute_accounting_dir_path($this->time_of_dir);
+        $target_dir = SettlementRunCommand::get_absolute_accounting_dir_path($this->time_of_dir);
         $target_filepath = self::get_cdr_pathname('hlkomm', $this->timestamp);
 
         if (! is_dir($target_dir)) {
@@ -294,7 +294,7 @@ class cdrCommand extends Command
             return -1;
         }
 
-        $target_dir = accountingCommand::get_absolute_accounting_dir_path($this->time_of_dir);
+        $target_dir = SettlementRunCommand::get_absolute_accounting_dir_path($this->time_of_dir);
         $target_filepath = self::get_cdr_pathname('purtel', $this->timestamp);
 
         if (! is_dir($target_dir)) {

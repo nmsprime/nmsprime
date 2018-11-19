@@ -8,6 +8,7 @@ use Modules\ProvBase\Entities\Cmts;
 use Modules\ProvBase\Entities\Modem;
 use Modules\HfcReq\Entities\NetElement;
 use Modules\ProvBase\Entities\ProvBase;
+use App\Http\Controllers\BaseController;
 use Modules\ProvBase\Entities\Configfile;
 
 /**
@@ -29,24 +30,49 @@ class ProvMonController extends \BaseController
         parent::__construct();
     }
 
-    /*
-     * Prepares Sidebar in View
+    /**
+     * Creates tabs to analysis pages.
+     *
+     * @author Roy Schneider
+     * @param int
+     * @return array
      */
-    public function prep_sidebar($id)
+    public function analysisPages($id)
     {
-        $modem = Modem::find($id);
-        $this->modem = $modem;
+        $modem = $this->modem ?: Modem::findOrFail($id);
 
-        $a = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => [$id]],
-                        ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => [$id]],
-                        ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => [$id]],
+        $tabs = [['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $id],
+                ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => $id],
                 ];
 
+        array_unshift($tabs, $this->defineEditRoute($id));
+
         if (isset($modem->mtas[0])) {
-            array_push($a, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => [$id]]);
+            array_push($tabs, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => $id]);
         }
 
-        return $a;
+        return $tabs;
+    }
+
+    /**
+     * Route for Modem or MTA edit page
+     *
+     * @author Roy Schneider
+     * @param int
+     * @return array
+     */
+    public function defineEditRoute($id)
+    {
+        $session = \Session::get('Edit');
+        $modem = $this->modem ?: Modem::findOrFail($id);
+
+        $edit = ['name' => 'Edit', 'route' => 'Modem.edit', 'link' => $id];
+
+        if (isset($modem->mtas[0]) && $session == 'MTA') {
+            $edit = ['name' => 'Edit', 'route' => 'Mta.edit', 'link' => $modem->mtas[0]->id];
+        }
+
+        return $edit;
     }
 
     /**
@@ -59,6 +85,15 @@ class ProvMonController extends \BaseController
         $ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = null;
         $modem = $this->modem ? $this->modem : Modem::find($id);
         $view_var = $modem; // for top header
+        $error = '';
+        $message = trans('view.error_specify_id');
+
+        // if there is no valid hostname specified, then return error view
+        // to get the regular Analyses tab the hostname should be: cm-...
+        if ($id == 'error') {
+            return \View::make('errors.generic', compact('error', 'message'));
+        }
+
         $hostname = $modem->hostname.'.'.$this->domain_name;
         $mac = strtolower($modem->mac);
         $modem->help = 'modem_analysis';
@@ -101,11 +136,11 @@ class ProvMonController extends \BaseController
 
         // TODO: Dash / Forecast
 
-        $panel_right = $this->prep_sidebar($id);
+        $tabs = $this->analysisPages($id);
         $view_header = 'ProvMon-Analyses';
 
         // View
-        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'panel_right', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header')));
+        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header')));
     }
 
     /**
@@ -305,11 +340,11 @@ class ProvMonController extends \BaseController
             }
         }
 
-        $panel_right = $this->prep_sidebar($id);
+        $tabs = $this->analysisPages($id);
 
         $view_header = 'Provmon-CPE';
 
-        return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'view_var', 'view_header')));
+        return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'tabs', 'lease', 'log', 'dash', 'realtime', 'view_var', 'view_header')));
     }
 
     /**
@@ -358,11 +393,11 @@ class ProvMonController extends \BaseController
         // exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
         end:
-        $panel_right = $this->prep_sidebar($id);
+        $tabs = $this->analysisPages($id);
 
         $view_header = 'Provmon-MTA';
 
-        return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'configfile', 'view_var', 'view_header')));
+        return View::make('provmon::cpe_analysis', $this->compact_prep_view(compact('modem', 'ping', 'type', 'tabs', 'lease', 'log', 'dash', 'realtime', 'configfile', 'view_var', 'view_header')));
     }
 
     /**
@@ -389,14 +424,14 @@ class ProvMonController extends \BaseController
 
         $host_id = $this->monitoring_get_host_id($cmts);
 
-        $panel_right = [
-            ['name' => 'Edit', 'route' => 'Cmts.edit', 'link' => [$id]],
-            ['name' => 'Analysis', 'route' => 'ProvMon.cmts', 'link' => [$id]],
+        $tabs = [
+            ['name' => 'Edit', 'route' => 'Cmts.edit', 'link' => $id],
+            ['name' => 'Analysis', 'route' => 'ProvMon.cmts', 'link' => $id],
         ];
 
         $view_header = 'Provmon-CMTS';
 
-        return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'panel_right', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var', 'view_header')));
+        return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'tabs', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var', 'view_header')));
     }
 
     /**
@@ -601,50 +636,6 @@ class ProvMonController extends \BaseController
     }
 
     /**
-     * Calculate and set "Actual RX Power" of CMTS
-     *
-     * @param cmts:	CMTS object
-     * @param com:	SNMP RW community
-     * @param us:	Upstream values
-     * @return: array[section][Fieldname][Values]
-     */
-    protected function _set_new_rx_power($cmts, $com, $us)
-    {
-        echo "$cmts->hostname\n";
-
-        $rx_pwr = [];
-        foreach (array_keys($us['Frequency MHz']) as $idx) {
-            // continue if rx power is not available or zero (i.e. no CM on the channel)
-            if ($us['Rx Power dBmV'][$idx] === 'n/a' || ! $us['SNR dB'][$idx]) {
-                continue;
-            }
-            // the reference SNR is 24 dB
-            $r = round($us['Rx Power dBmV'][$idx] + 24 - $us['SNR dB'][$idx]);
-            // minimum actual power is 0 dB
-            if ($r < 0) {
-                $r = 0;
-            }
-            // maximum actual power is 10 dB
-            if ($r > 10) {
-                $r = 10;
-            }
-
-            echo "$idx: $r\t(".$us['SNR dB'][$idx].")\n";
-            try {
-                snmpset($cmts->ip, $com, ".1.3.6.1.4.1.4491.2.1.20.1.25.1.2.$idx", 'i', 10 * $r);
-            } catch (\Exception $e) {
-                $out = "error while setting new exptected us power on CMTS $cmts->hostname ($idx: $r)\n";
-                echo $out;
-                \Log::error($out);
-            }
-
-            $rx_pwr[$idx] = $r;
-        }
-
-        return $rx_pwr;
-    }
-
-    /**
      * The CMTS Realtime Measurement Function
      * Fetches all realtime values from CMTS with SNMP
      *
@@ -653,7 +644,7 @@ class ProvMonController extends \BaseController
      * @param ctrl:	shall the RX power be controlled?
      * @return: array[section][Fieldname][Values]
      */
-    public function realtime_cmts($cmts, $com, $ctrl = false)
+    public function realtime_cmts($cmts, $com)
     {
         // Copy from SnmpController
         $this->snmp_def_mode();
@@ -708,10 +699,6 @@ class ProvMonController extends \BaseController
                     unset($us[$entry][$idx]);
                 }
             }
-        }
-
-        if ($ctrl) {
-            $us['Rx Power dBmV'] = $this->_set_new_rx_power($cmts, $cmts->get_rw_community(), $us);
         }
 
         $ret['System'] = $sys;
@@ -1085,6 +1072,7 @@ class ProvMonController extends \BaseController
     {
         $monitoring = [];
         $dia = $this->monitoring(NetElement::findOrFail($id));
+        $netelem = NetElement::findOrFail($id);
 
         // reshape array according to HfcCustomer::Tree.dias
         // we might want to split these in the future, to avoid the module dependency
@@ -1096,7 +1084,84 @@ class ProvMonController extends \BaseController
             }
         }
 
-        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring')));
+        $tabs = self::checkNetelementtype($netelem);
+
+        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs')));
+    }
+
+    /**
+     * Defines all tabs for the Netelementtypes.
+     * Note: 1 = Net, 2 = Cluster, 3 = Cmts, 4 = Amplifier, 5 = Node, 6 = Data, 7 = UPS
+     *
+     * @author Roy Schneider
+     * @param Modules\HfcReq\Entities\NetElement
+     * @return array
+     */
+    public static function checkNetelementtype($model)
+    {
+        $provmon = new self;
+        if (! isset($model->netelementtype)) {
+            return [];
+        }
+        $type = $model->netelementtype->get_base_type();
+
+        $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $model->id]];
+
+        if ($type <= 2) {
+            array_push($tabs,
+                ['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$model->netelementtype->name, $model->id]],
+                ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$model->netelementtype->name, $model->id]]
+            );
+        }
+
+        if ($type != 1) {
+            array_push($tabs, ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$model->id, 0, 0]]);
+        }
+
+        if ($type == 4 || $type == 5 && \Bouncer::can('view_analysis_pages_of', Modem::class)) {
+            //create Analyses tab (for ORA/VGP) if IP address is no valid IP
+            array_push($tabs, ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $provmon->createAnalysisTab($model->ip)]);
+        }
+
+        if ($type != 4 && $type != 5) {
+            array_push($tabs, ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => [$model->id]]);
+        }
+
+        return $tabs;
+    }
+
+    /**
+     * Return number from IP address field if the record is written like: 'cm-...'.
+     *
+     * @author Roy Schneider
+     * @param string
+     * @return string
+     */
+    public function createAnalysisTab($ip)
+    {
+        preg_match('/[c][m]\-\d+/', $ip, $return);
+
+        if (empty($return)) {
+            return 'error';
+        }
+
+        return substr($return[0], 3);
+    }
+
+    /**
+     * Add Logging tab in edit page.
+     * from BaseController
+     *
+     * @author Roy Schneider
+     * @param array, Modules\HfcReq\Entities\NetElement
+     * @return array
+     */
+    public function loggingTab($array, $model)
+    {
+        $baseController = new BaseController;
+        array_push($array, $baseController->get_form_tabs($model)[0]);
+
+        return $array;
     }
 
     /*

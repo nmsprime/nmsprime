@@ -25,7 +25,7 @@ use Modules\BillingBase\Entities\AccountingRecord;
 use Symfony\Component\Console\Input\InputArgument;
 use Modules\BillingBase\Http\Controllers\SettlementRunController;
 
-class accountingCommand extends Command implements ShouldQueue
+class SettlementRunCommand extends Command implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, SerializesModels;
 
@@ -34,9 +34,8 @@ class accountingCommand extends Command implements ShouldQueue
      *
      * @var string
      */
-    public $name = 'billing:accounting';
-    protected $tablename = 'accounting';
-    protected $description = 'Create accounting records table, Direct Debit XML, invoice and transaction list from contracts and related items';
+    public $name = 'billing:settlementrun';
+    protected $description = 'Execute/Create SettlementRun - create Direct Debit/Credit XML, invoices and accounting/booking record files';
 
     protected $dates;					// offen needed time strings for faster access - see constructor
     protected $sr;
@@ -358,6 +357,7 @@ class accountingCommand extends Command implements ShouldQueue
 
             return Contract::orderBy('number')->with('items.product', 'costcenter')
                 ->where('create_invoice', '!=', 0)
+                // ->where('contract.number', '>', 21870)->where('contract.number', '<', 21890)
                 // ->where('salesman_id', '!=', 0)
                 // ->whereIn('number', [50746, /*45570, 45061,*/ 45950])
                 ->get();
@@ -472,7 +472,6 @@ class accountingCommand extends Command implements ShouldQueue
         }
 
         // create zip file
-        echo "\nZIP all Files...";
         \Artisan::call('billing:zip', ['sepaacc_id' => $this->sepaacc ? $this->sepaacc->id : 0]);
     }
 
@@ -567,15 +566,20 @@ class accountingCommand extends Command implements ShouldQueue
             return $calls;
         }
 
+        $pns = $this->_get_phonenumbers('sip.enviatel.net');
+        foreach ($pns as $pn) {
+            $pn_customer[substr_replace($pn->prefix_number, '49', 0, 1).$pn->number][] = $pn->contractnr;
+        }
+
         // skip first line of csv (column description)
         unset($csv[0]);
         $price = $count = 0;
-        $unassigned = [];
+        $unassigned = $mismatches = [];
         $customer_nrs = self::_get_customer_nrs();
 
         foreach ($csv as $line) {
             $arr = str_getcsv($line, ';');
-            $customer_nr = intval(str_replace(['002-', '010-'], '', $arr[0]));
+            $customer_nr = str_replace(['002-', '010-'], '', $arr[0]);
 
             $data = [
                 'calling_nr' => $arr[3],
@@ -588,6 +592,13 @@ class accountingCommand extends Command implements ShouldQueue
 
             if (in_array($customer_nr, $customer_nrs)) {
                 $calls[$customer_nr][] = $data;
+
+                // check and log if phonenumber does not exist or does not belong to contract
+                if (! isset($pn_customer[$data['calling_nr']])) {
+                    $mismatches[$customer_nr][$data['calling_nr']] = 'missing';
+                } elseif (! in_array($customer_nr, $pn_customer[$data['calling_nr']])) {
+                    $mismatches[$customer_nr][$data['calling_nr']] = 'mismatch';
+                }
             } else {
                 // cumulate price of calls that can not be assigned to any contract
                 if (! isset($unassigned[$arr[0]][$data['calling_nr']])) {
@@ -599,10 +610,11 @@ class accountingCommand extends Command implements ShouldQueue
             }
         }
 
+        $this->_log_phonenumber_mismatches($mismatches);
         $this->_log_unassigned_calls($unassigned);
 
         // warning when there are 5 times more customers then calls
-        if ($calls && (count($customer_nrs) > 10 * count($calls))) {
+        if ($csv && (count($customer_nrs) > 10 * count($csv))) {
             Log::warning('billing', 'Very little data in enviatel call data record file ('.count($csv).' records). Possibly missing data!');
         }
 
@@ -821,7 +833,28 @@ class accountingCommand extends Command implements ShouldQueue
             })
             ->select('modem.contract_id', 'c.number as contractnr', 'c.create_invoice', 'p.*')
             ->orderBy('p.deleted_at', 'asc')->orderBy('p.created_at', 'desc')
+            // ->limit(50)
             ->get();
+    }
+
+    /**
+     * Log all phonenumbers that actually do not belong to the identifier/contract number labeled in CSV
+     *
+     * @param array      [customer_id][phonenr] => true
+     */
+    private function _log_phonenumber_mismatches($mismatches)
+    {
+        foreach ($mismatches as $contract_nr => $pns) {
+            foreach ($pns as $p => $type) {
+
+                // NOTE: type actually can be missing or mismatch
+                Log::warning('billing', trans("messages.phonenumber_$type", [
+                    'provider' => 'EnviaTel',
+                    'contractnr' => $contract_nr,
+                    'phonenr' => $p,
+                    ]));
+            }
+        }
     }
 
     /**

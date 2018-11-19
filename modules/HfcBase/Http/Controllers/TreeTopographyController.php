@@ -69,9 +69,7 @@ class TreeTopographyController extends HfcBaseController
         $view_header = 'Topography';
         $body_onload = 'init_for_map';
 
-        $panel_right = [['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$field, $search]],
-                        ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$field, $search]],
-                        ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$search, 0, 0]], ];
+        $tabs = TreeErdController::getTabs($field, $search);
 
         // MPS: get all Modem Positioning Rules
         $mpr = $this->mpr(NetElement::whereRaw($s));
@@ -80,7 +78,7 @@ class TreeTopographyController extends HfcBaseController
         $kmls = $this->kml_file_array(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' ')->get());
         $file = route('HfcBase.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
-        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'panel_right', 'body_onload', 'field', 'search', 'mpr', 'kmls')));
+        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'tabs', 'body_onload', 'field', 'search', 'mpr', 'kmls')));
     }
 
     /*

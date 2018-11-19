@@ -1,28 +1,27 @@
 <?php
 
-namespace Modules\provmon\Console;
+namespace Modules\HfcReq\Console;
 
 use Illuminate\Console\Command;
-use Modules\ProvBase\Entities\Cmts;
+use Modules\HfcReq\Entities\NetElement;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
-use Modules\ProvMon\Http\Controllers\ProvMonController;
 
-class apcCommand extends Command
+class agcCommand extends Command
 {
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'nms:apc';
+    protected $name = 'nms:agc';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Execute Automatic Power Control based on measured SNR';
+    protected $description = 'Execute Automatic Gain Control based on measured SNR';
 
     /**
      * Create a new command instance.
@@ -42,10 +41,9 @@ class apcCommand extends Command
      */
     public function fire()
     {
-        foreach (Cmts::all() as $cmts) {
-            $ctrl = new ProvMonController();
-            $ctrl->realtime_cmts($cmts, $cmts->get_ro_community(), true);
-            unset($ctrl);
+        // get all clusters having a non-null AGC offset
+        foreach (NetElement::where('netelementtype_id', 2)->whereNotNull('agc_offset')->get() as $netelement) {
+            $netelement->apply_agc();
         }
 
         return true;

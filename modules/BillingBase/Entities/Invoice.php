@@ -195,11 +195,29 @@ class Invoice extends \BaseModel
     }
 
     /**
-     * @param string
+     * Format date string dependent of set locale/billing language
+     *
+     * @param string/integer
+     * @return string
      */
-    public static function german_dateformat($date)
+    public static function langDateFormat($date)
     {
-        return $date ? date('d.m.Y', strtotime($date)) : $date;
+        if (! $date) {
+            return $date;
+        }
+
+        $date = is_int($date) ? $date : strtotime($date);
+
+        switch (\App::getLocale()) {
+            case 'de':
+                return date('d.m.Y', $date);
+
+            case 'es':
+                return date('d/m/Y', $date);
+
+            default:
+                return $date;
+        }
     }
 
     public function add_contract_data($contract, $config, $invoice_nr)
@@ -214,7 +232,7 @@ class Invoice extends \BaseModel
         $this->data['contract_zip'] = $contract->zip;
         $this->data['contract_city'] = escape_latex_special_chars($contract->city);
         $this->data['contract_address'] = ($contract->company ? $this->data['contract_company'].'\\\\' : '').($contract->academic_degree ? escape_latex_special_chars($contract->academic_degree).' ' : '').$this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\'.$this->data['contract_street']."\\\\$contract->zip ".$this->data['contract_city'];
-        $this->data['start_of_term'] = \App::getLocale() == 'de' ? self::german_dateformat($contract->contract_start) : $contract->contract_start;
+        $this->data['start_of_term'] = self::langDateFormat($contract->contract_start);
 
         $this->data['rcd'] = $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
         $this->data['invoice_nr'] = $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
@@ -225,25 +243,18 @@ class Invoice extends \BaseModel
         $this->currency = strtolower($config->currency) == 'eur' ? '€' : $config->currency;
         $this->tax = $config->tax;
 
-        /* Set:
-            * actual end of term
-            * period of notice
-            * latest possible date of cancelation
-        */
-        $txt_pon = $txt_m = '';
+        $this->setCancelationDates($contract);
+    }
 
-        // Contract already canceled
-        if ($contract->get_end_time()) {
-            $ret = [
-                'end_of_term' => $contract->contract_end,
-                'cancelation_day' => '',
-                'tariff' => null,
-                ];
-        }
-        // Get next cancelation date
-        else {
-            $ret = $contract->get_next_cancel_date();
-        }
+    /**
+     * Set:
+     *  actual end of term
+     *  period of notice
+     *  latest possible date of cancelation
+     */
+    private function setCancelationDates($contract)
+    {
+        $ret = $contract->getCancelationDates();
 
         // e.g. customers that get tv amplifier refund, but dont have any tariff
         if (! array_key_exists('tariff', $ret)) {
@@ -251,6 +262,8 @@ class Invoice extends \BaseModel
 
             return;
         }
+
+        $txt_pon = $txt_m = '';
 
         if ($ret['tariff']) {
             // Set period of notice and maturity string of last tariff
@@ -267,12 +280,11 @@ class Invoice extends \BaseModel
             ChannelLog::info('billing', "Contract $contract->number was canceled with target ".$ret['end_of_term']);
         }
 
-        $german = \App::getLocale() == 'de';
         $cancel_dates = [
-            'end_of_term' => $german ? self::german_dateformat($ret['end_of_term']) : $ret['end_of_term'],
+            'end_of_term' => self::langDateFormat($ret['end_of_term']),
             'maturity' 		=> $txt_m,
             'period_of_notice' => $txt_pon,
-            'last_cancel_date' => $german ? self::german_dateformat($ret['cancelation_day']) : $ret['cancelation_day'],
+            'last_cancel_date' => self::langDateFormat($ret['cancelation_day']),
         ];
 
         $this->data = array_merge($this->data, $cancel_dates);
@@ -384,7 +396,7 @@ class Invoice extends \BaseModel
     }
 
     /**
-     * @param 	cdrs 	Array		Call Data Record array designated for this Invoice formatted by parse_cdr_data in accountingCommand
+     * @param 	cdrs 	Array		Call Data Record array designated for this Invoice formatted by parse_cdr_data in SettlementRunCommand
      * @param   conf   	model 		BillingBase
      */
     public function add_cdr_data($cdrs, $conf)
@@ -564,8 +576,8 @@ class Invoice extends \BaseModel
 
     /**
      * Deletes currently created invoices (created in actual month)
-     * Used to delete invoices created by previous settlement run (SR) in current month - executed in accountingCommand
-     * is used to remove files before settlement run is repeatedly created (accountingCommand executed again)
+     * Used to delete invoices created by previous settlement run (SR) in current month - executed in SettlementRunCommand
+     * is used to remove files before settlement run is repeatedly created (SettlementRunCommand executed again)
      * NOTE: Use Carefully!!
      *
      * @param int 	Delete only invoices related to specific SepaAccount, 0 - delete all invoices of current SR

@@ -109,7 +109,7 @@ class ItemController extends \BaseController
                 if ($product->billing_cycle == 'Once') {
                     $data['valid_to'] = $time->addMonthNoOverflow($months - 1)->lastOfMonth()->format('Y-m-d');
                 } else {
-                    $data['valid_to'] = $time->addMonthNoOverflow($months)->format('Y-m-d');
+                    $data['valid_to'] = $time->addMonthNoOverflow($months)->subDay()->format('Y-m-d');
                 }
             }
         }

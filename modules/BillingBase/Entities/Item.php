@@ -13,19 +13,13 @@ class Item extends \BaseModel
     // Add your validation rules here
     public static function rules($id = null)
     {
-        // $tariff_prods = Product::whereIn('type', ['internet', 'tv', 'voip'])->lists('id')->all();
-        // $tariff_ids   = implode(',', $tariff_prods);
-
-        // $credit_prods = Product::where('type', '=', 'credit')->lists('id')->all();
-        // $credit_ids   = implode(',', $credit_prods);
+        // see ItemController@prepare_rules
 
         return [
-            // 'name' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
             'product_id' 	=> 'required|numeric|Min:1',
             'valid_from'	=> 'date',	//|in_future ??
             'valid_to'		=> 'date',
             'credit_amount' => 'nullable|numeric',
-            // 'count'			=> 'null_if:product_id,'.$tariff_ids.','.$credit_ids,
         ];
     }
 
@@ -66,7 +60,6 @@ class Item extends \BaseModel
                     'product.price',
                 ],
                 'eager_loading' => ['product', 'contract'],
-                'bsclass' => $this->get_bsclass(),
             ];
 
         // if enabled add item.valid_from and item.valid_to to index page
@@ -82,6 +75,10 @@ class Item extends \BaseModel
                 $dates['end'].
                 $dates['endFixed'].
                 $price;
+            $ret['bsclass'] = $this->get_bsclass();
+        } else {
+            $ret['bsclass'] = 'danger';
+            $ret['header'] = trans('messages.missing_product').$dates['start'].$dates['end'];
         }
 
         return $ret;
@@ -316,10 +313,10 @@ class Item extends \BaseModel
                 // started last month
                 if (date('Y-m', $start) == $dates['lastm_Y']) {
                     $ratio = 1 - (date('d', $start) - 1) / date('t', $start);
-                    $text = date('Y-m-d', $start);
+                    $text = Invoice::langDateFormat($start);
                 } else {
                     $ratio = 1;
-                    $text = $dates['lastm_01'];
+                    $text = Invoice::langDateFormat($dates['lastm_01']);
                 }
 
                 $text .= ' - ';
@@ -327,9 +324,9 @@ class Item extends \BaseModel
                 // ended last month
                 if ($end && $end < strtotime($dates['thism_01'])) {
                     $ratio += date('d', $end) / date('t', $end) - 1;
-                    $text .= date('Y-m-d', $end);
+                    $text .= Invoice::langDateFormat($end);
                 } else {
-                    $text .= date('Y-m-d', strtotime('last day of last month'));
+                    $text .= Invoice::langDateFormat(strtotime('last day of last month'));
                 }
 
                 break;
@@ -354,10 +351,10 @@ class Item extends \BaseModel
                 // started this yr
                 if (date('Y', $start) == $dates['Y']) {
                     $ratio = 1 - date('z', $start) / (365 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1
-                    $text = date('Y-m-d', $start);
+                    $text = Invoice::langDateFormat($start);
                 } else {
                     $ratio = 1;
-                    $text = date('Y-01-01');
+                    $text = Invoice::langDateFormat(date('Y-01-01'));
                 }
 
                 $text .= ' - ';
@@ -365,9 +362,9 @@ class Item extends \BaseModel
                 // ended this yr
                 if ($end && (date('Y', $end) == $dates['Y'])) {
                     $ratio += $ratio ? (date('z', $end) + 1) / (365 + date('L')) - 1 : 0;
-                    $text .= date('Y-m-d', $end);
+                    $text .= Invoice::langDateFormat($end);
                 } else {
-                    $text .= date('Y-12-31');
+                    $text .= Invoice::langDateFormat(date('Y-12-31'));
                 }
 
                 // set payed flag to avoid double payment in case of billing month is changed during year
@@ -395,10 +392,10 @@ class Item extends \BaseModel
                     $days = date('z', strtotime('last day of this month')) - date('z', $start) + 1;
                     $total_days = date('t') + date('t', strtotime('first day of last month')) + date('t', $start);
                     $ratio = $days / $total_days;
-                    $text = date('Y-m-d', $start);
+                    $text = Invoice::langDateFormat($start);
                 } else {
                     $ratio = 1;
-                    $text = date('Y-m-01', $period_start);
+                    $text = Invoice::langDateFormat(date('Y-m-01', $period_start));
                 }
 
                 // ended in last 3 months
@@ -406,9 +403,9 @@ class Item extends \BaseModel
                     $days = date('z', strtotime('last day of this month')) - date('z', $end);
                     $total_days = date('t') + date('t', strtotime('first day of last month')) + date('t', $start);
                     $ratio -= $days / $total_days;
-                    $text .= date('Y-m-d', $end);
+                    $text .= Invoice::langDateFormat($end);
                 } else {
-                    $text .= date('Y-m-31');
+                    $text .= Invoice::langDateFormat(date('Y-m-31'));
                 }
 
                 break;
@@ -432,12 +429,13 @@ class Item extends \BaseModel
 
                     // $part = totm - (to - this)
                     $part = round((($tot_months) * $dates['m_in_sec'] + strtotime($dates['lastm_01']) - $valid_to) / $dates['m_in_sec']);
-                    $text = " | part $part/$tot_months";
+                    $text = ' | '.trans_choice('messages.parts', 1)." $part/$tot_months";
 
                     // items with valid_to in future, but contract expires
                     if ($this->contract->expires) {
                         $ratio *= $tot_months - $part + 1;
-                        $text = ' | last '.($tot_months - $part + 1)." part(s) of $tot_months";
+                        $total = $tot_months - $part + 1;
+                        $text = ' | '.trans_choice('messages.last', $total)." $total ".trans_choice('messages.parts', $total).' '.trans('messages.of')." $tot_months";
                     }
                 }
 
@@ -458,8 +456,8 @@ class Item extends \BaseModel
         $this->charge *= $ratio * $this->count;
 
         $this->ratio = $ratio ?: 1;
-        $this->invoice_description = $this->product->name.' '.$text;
-        $this->invoice_description .= $this->accounting_text ? ' - '.$this->accounting_text : '';
+        $this->invoice_description = $this->accounting_text ?: $this->product->name;
+        $this->invoice_description .= " $text";
 
         if ($return_array === true) {
             return ['charge' => $this->charge, 'ratio' => $this->ratio, 'invoice_description' => $this->invoice_description];
@@ -484,46 +482,44 @@ class Item extends \BaseModel
      * @author Nino Ryschawy
      *
      * @return array 	[End of Term, Last possible Cancelation Day]
+     *         null     on error
      */
-    public function get_next_cancel_date()
+    public function getNextCancelationDate()
     {
-        $default_pon = Product::$pon; 				// Default period of notice
-
-        // Tariff with maturity (m) (Laufzeit) but open end
-        if ($this->product->maturity) {
-            $end = \Carbon\Carbon::createFromFormat('Y-m-d', $this->valid_from);
-            $end->subDay();
-
-            // add maturity period until the tarif end time is in future
-            do {
-                $end = self::_add_period($end, $this->product->maturity);
-            } while ($end->toDateString() < date('Y-m-01', strtotime('first day of last month')));
-
-            // get last day of period of notice (pon)
-            $cancel_day = self::_add_period(clone $end, $this->product->period_of_notice ?: $default_pon, 'sub');
-
-            // period of notice expired - extend runtime - Kündigungsfrist abgelaufen
-            if ($cancel_day->isPast()) {
-                $end = self::_add_period($end, $this->product->maturity);
-                $cancel_day = self::_add_period($cancel_day, $this->product->maturity);
-            }
-        } else {
-            $end = \Carbon\Carbon::create();
-            $end = self::_add_period($end, $this->product->period_of_notice ?: $default_pon);
-            $end->lastOfMonth();
-
-            $cancel_day = self::_add_period(clone $end, $this->product->period_of_notice ?: $default_pon, 'sub');
-
-            // period of notice expired - extend runtime
-            if ($cancel_day->isPast()) {
-                $end->addMonthNoOverflow();
-                $cancel_day->addMonthNoOverflow();
-            }
+        if (! $this->product) {
+            return;
         }
 
+        // determine tariff/item's end of term (minimum maturity) and when the next last day to cancel before runtime is extended by maturity
+        $endDate = \Carbon\Carbon::createFromFormat('Y-m-d', $this->valid_from);
+        $endDate->subDay();
+
+        // set defaults
+        $maturity_min = $this->product->maturity_min ?: Product::$maturity_min;
+        $maturity = $this->product->maturity ?: Product::$maturity;
+        $pon = $this->product->period_of_notice ?: Product::$pon;
+
+        // add minimum maturity and set endDate to last of month as default if no maturity is specified
+        // TODO?: Always set to end of month?
+        $endDate = self::add_period($endDate, $maturity_min);
+        if (! $this->product->maturity) {
+            $endDate->lastOfMonth();
+        }
+        $invoiceDate = \Carbon\Carbon::createFromTimestamp(strtotime('last day of last month'));
+        $firstPonDate = self::sub_period(clone $endDate, $pon);
+
+        // add maturity until endDate is after first possible date of period of notice
+        if ($invoiceDate->gte($firstPonDate)) {
+            do {
+                $endDate = self::add_period($endDate, $maturity);
+                $firstPonDate = self::sub_period(clone $endDate, $pon);
+            } while ($invoiceDate->gte($firstPonDate));
+        }
+
+        // return end_of_term and (last) cancelation_day
         return [
-            'end_of_term' => $end->toDateString(),
-            'cancelation_day' => $cancel_day->toDateString(),
+            'end_of_term' => $endDate->toDateString(),
+            'cancelation_day' => $firstPonDate->toDateString(),
             ];
     }
 
@@ -536,7 +532,7 @@ class Item extends \BaseModel
      * @param string 	e.g. 14D|3M|1Y (14 days|3 month|1 year)
      * @param string 	subtract or add time period
      */
-    private static function _add_period(\Carbon\Carbon $dt, $period, $method = 'add')
+    public static function add_period(\Carbon\Carbon $dt, $period, $method = 'add')
     {
         // split nr from timespan
         $nr = preg_replace('/[^0-9]/', '', $period);
@@ -573,6 +569,11 @@ class Item extends \BaseModel
         }
 
         return $dt;
+    }
+
+    public static function sub_period(\Carbon\Carbon $dt, $period)
+    {
+        return self::add_period($dt, $period, 'sub');
     }
 }
 
@@ -630,6 +631,8 @@ class ItemObserver
                 \Session::push('tmp_warning_above_form', 'ATTENTION: You have to “Change tariff” (envia TEL API), too!');
             }
         }
+
+        // TODO: warn user if end_of_term is now earlier by adding this item ?
     }
 
     public function updating($item)

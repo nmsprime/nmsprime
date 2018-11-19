@@ -65,7 +65,10 @@ class SepaMandateController extends \BaseController
 
     public function prepare_rules($rules, $data)
     {
-        $rules['sepa_bic'] .= $data['sepa_bic'] ? '' : '|required';
+        // don't let BIC be empty when it's not found automatically (in prepare_input())
+        if (! $data['sepa_bic']) {
+            $rules['sepa_bic'] .= '|required';
+        }
 
         return parent::prepare_rules($rules, $data);
     }

@@ -17,10 +17,10 @@ class BillingBaseServiceProvider extends ServiceProvider
      * The artisan commands provided by this module
      */
     protected $commands = [
-        'Modules\BillingBase\Console\accountingCommand',
+        'Modules\BillingBase\Console\SettlementRunCommand',
         'Modules\BillingBase\Console\fetchBicCommand',
         'Modules\BillingBase\Console\cdrCommand',
-        'Modules\BillingBase\Console\zipCommand',
+        'Modules\BillingBase\Console\ZipCommand',
     ];
 
     /**

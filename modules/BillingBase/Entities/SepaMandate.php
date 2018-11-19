@@ -16,7 +16,7 @@ class SepaMandate extends \BaseModel
         return [
             'reference' 		=> 'required',
             'sepa_iban' 		=> 'required|iban',
-            'sepa_bic' 			=> 'bic',			// see SepaMandateController@prep_rules
+            'sepa_bic' 			=> 'bic|regex:/^[A-Z]{6}[A-Z2-9][A-NP-Z0-9]([A-Z0-9]{3}){0,3}$/',			// see SepaMandateController@prep_rules, Sparkasse/S-Firm regex from error message of sepa-xml upload
             'signature_date' 	=> 'date|required',
             'sepa_valid_from' 	=> 'date|required',
             'sepa_valid_to'		=> 'dateornull',
@@ -95,7 +95,7 @@ class SepaMandate extends \BaseModel
      */
 
     /**
-     * Update SEPA-Mandate status during SettlementRun (accountingCommand) if it changes
+     * Update SEPA-Mandate status during SettlementRun (SettlementRunCommand) if it changes
      */
     public function update_status()
     {

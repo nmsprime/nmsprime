@@ -3,16 +3,14 @@
 use Illuminate\Database\Schema\Blueprint;
 
 /**
- * Add Index to improve performance
- *
- * e.g. time to get 5k contracts in SettlementRunCommand reduces from 8 sec to 0,22 sec
+ * Add minimum maturity (german: Laufzeit) to products
  *
  * @author Nino Ryschawy
  */
-class UpdateItemAddIndex extends BaseMigration
+class UpdateProductAddMaturityMin extends BaseMigration
 {
     // name of the table to create
-    protected $tablename = 'item';
+    protected $tablename = 'product';
 
     /**
      * Run the migrations.
@@ -22,7 +20,7 @@ class UpdateItemAddIndex extends BaseMigration
     public function up()
     {
         Schema::table($this->tablename, function (Blueprint $table) {
-            $table->index('contract_id', 'by_contract_id');
+            $table->string('maturity_min', 20)->nullable();
         });
     }
 
@@ -34,7 +32,7 @@ class UpdateItemAddIndex extends BaseMigration
     public function down()
     {
         Schema::table($this->tablename, function (Blueprint $table) {
-            $table->dropIndex('by_contract_id');
+            $table->dropColumn(['maturity_min']);
         });
     }
 }

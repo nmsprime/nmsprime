@@ -288,9 +288,10 @@ return [
         // //Configfiles
         'Button_Create Configfiles'		=> 'Konfigurationsdatei erstellen',
         // //QoS
-        'Button_Create Settlement Run'	=> 'Abrechnungslauf erstellen',
+        'Button_create_post_invoices_pdf' => 'Erstelle PDF mit postalischen Rechnungen',
+        'Button_Create Settlement Run'  => 'Abrechnungslauf erstellen',
         'Button_Rerun Accounting Command' => 'Rechnungslauf neu starten',
-        'Button_Create QoS'				=> 'QoS-Regel erstellen',
+        'Button_Create QoS'             => 'QoS-Regel erstellen',
         // //CMTS
         'Button_Create CMTS'			=> 'CMTS anlegen',
         // //IpPool
@@ -346,4 +347,7 @@ return [
     'Numberrange_Suffix' => 'Suffix',
     'Numberrange_Prefix' => 'Präfix',
     'Numberrange_Type' => 'Typ',
+
+// Error
+    'error_specify_id'          => 'Bitte geben Sie den Hostnamen des zugehörigen Modems anstelle der IP Adresse an.',
 ];

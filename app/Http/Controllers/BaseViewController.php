@@ -94,6 +94,49 @@ class BaseViewController extends Controller
     }
 
     /**
+     * Translate every value of a given Array
+     *
+     * @param array $array or iterable
+     * @param string $file
+     * @return Illuminate\Support\Collection
+     */
+    public static function translateArray($array, $file = 'messages')
+    {
+        return collect($array)->map(function ($string) use ($file) {
+            return trans("{$file}.{$string}");
+        });
+    }
+
+    /**
+     * Get all two letter language strings as array
+     *
+     * @return Illuminate\Support\Collection
+     */
+    public static function getAllLanguages()
+    {
+        return collect(glob(base_path('resources/lang').'/*'))
+            ->mapWithKeys(function ($path) {
+                $langShortcut = basename($path);
+
+                return [$langShortcut => $langShortcut];
+            });
+    }
+
+    /**
+     * Generate the Array for Language selection in select fields
+     *
+     * @param array $languageArray or iterable
+     * @return Illuminate\Support\Collection
+     */
+    public static function generateLanguageArray($languageArray)
+    {
+        return collect($languageArray)
+            ->mapWithKeys(function ($langShortcut) {
+                return [$langShortcut  => config('language.'.$langShortcut)];
+            });
+    }
+
+    /**
      * Detect the user language from Session or browser
      *
      * @return string
@@ -110,7 +153,7 @@ class BaseViewController extends Controller
 
         $user = Auth::user();
 
-        if (! $user) {
+        if (! $user || $user->language == 'browser') {
             // check the Browser for the accepted language
             return checkLocale(substr(explode(',', $_SERVER['HTTP_ACCEPT_LANGUAGE'])[0], 0, 2));
         }
@@ -469,7 +512,7 @@ class BaseViewController extends Controller
      */
     public static function view_main_menus() : array
     {
-        if (Session::has('menu')) {
+        if (Session::has('menu') && Auth::user()->language !== 'browser') {
             return Session::get('menu');
         }
 

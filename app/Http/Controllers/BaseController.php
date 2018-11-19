@@ -184,14 +184,9 @@ class BaseController extends Controller
      */
     protected function _nullify_fields($data, $nullable_fields = [])
     {
-        foreach ($this->view_form_fields(static::get_model_obj()) as $field) {
-            // set all nullable fields to null if not given
-            if (array_key_exists($field['name'], $data)) {
-                if (array_search($field['name'], $nullable_fields) !== false) {
-                    if ($data[$field['name']] == '') {
-                        $data[$field['name']] = null;
-                    }
-                }
+        foreach ($nullable_fields as $field) {
+            if (isset($data[$field]) && ! $data[$field]) {
+                $data[$field] = null;
             }
         }
 
@@ -279,23 +274,19 @@ class BaseController extends Controller
     {
         // Version 1
         $ret = $this->get_form_tabs($view_var);
-
         if (count($ret) > 2) {
             return $ret;
         }
-
         // view_has_many() Version 2
         $a = $view_var->view_has_many();
         if (BaseViewController::get_view_has_many_api_version($a) == 2) {
             // get actual blade to $b
             $b = current($a);
             $c = [];
-
             for ($i = 0; $i < count($a); $i++) {
                 array_push($c, ['name' => key($a), 'route' => NamespaceController::get_route_name().'.edit', 'link' => [$view_var->id, 'blade='.$i]]);
                 $b = next($a);
             }
-
             // add tab for GuiLog
             if ($ret) {
                 array_push($c, $ret[0]);
@@ -374,6 +365,7 @@ class BaseController extends Controller
         $a['user'] = Auth::user();
 
         $model = static::get_model_obj();
+
         if (! $model) {
             $model = new BaseModel;
         }
@@ -453,7 +445,9 @@ class BaseController extends Controller
         $a['save_button_title_key'] = $this->save_button_title_key;
 
         // Get Framework Informations
-        $gc = GlobalConfig::first();
+        $gc = \Cache::remember('GlobalConfig', 60, function () {
+            return GlobalConfig::first();
+        });
         $a['framework']['header1'] = $gc->headline1;
         $a['framework']['header2'] = $gc->headline2;
         $a['framework']['version'] = $gc->version();
@@ -723,7 +717,8 @@ class BaseController extends Controller
         // $form_fields	= BaseViewController::add_html_string (static::get_controller_obj()->view_form_fields($view_var), $view_var, 'edit');
 
         // prepare_tabs & prep_right_panels are redundant - TODO: improve
-        $panel_right = $this->prepare_tabs($view_var);
+        $tabs = $this->prepare_tabs($view_var);
+
         $relations = BaseViewController::prep_right_panels($view_var);
 
         // check if there is additional data to be passed to blade template
@@ -752,8 +747,8 @@ class BaseController extends Controller
         }
 
         // $config_routes = BaseController::get_config_modules();
-        // return View::make ($view_path, $this->compact_prep_view(compact('model_name', 'view_var', 'view_header', 'form_path', 'form_fields', 'config_routes', 'link_header', 'panel_right', 'relations', 'extra_data')));
-        return View::make($view_path, $this->compact_prep_view(compact('model_name', 'view_var', 'view_header', 'form_path', 'form_fields', 'headline', 'panel_right', 'relations', 'method', 'action', 'additional_data')));
+        // return View::make ($view_path, $this->compact_prep_view(compact('model_name', 'view_var', 'view_header', 'form_path', 'form_fields', 'config_routes', 'link_header', 'tabs', 'relations', 'extra_data')));
+        return View::make($view_path, $this->compact_prep_view(compact('model_name', 'view_var', 'view_header', 'form_path', 'form_fields', 'headline', 'tabs', 'relations', 'method', 'action', 'additional_data')));
     }
 
     /**

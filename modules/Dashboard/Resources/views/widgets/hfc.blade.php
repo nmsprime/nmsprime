@@ -7,20 +7,22 @@
 <div class="widget widget-stats bg-blue">
     {{-- info/data --}}
     <div class="stats-info d-flex">
-        <div class="btn btn-dark m-5 m-r-10">
-            {!! HTML::decode (HTML::link('https://'.\Request::server('HTTP_HOST').'/cacti',
-                '<h3><div class="text-center"><i style="color: white;" class="img-center fa fa-tachometer"></i></div></h3>
-                <div style="color: white;" class="username text-ellipsis text-center">Cacti System</div>', ['target' => '_blank']))
-            !!}
-        </div>
-        <div class="btn btn-dark m-5 m-r-10 m-l-10">
-            {!! HTML::decode (HTML::link('https://'.\Request::server('HTTP_HOST').'/icingaweb2',
-                '<h3><div class="text-center"><i style="color: white;" class="img-center fa fa-info-circle"></i></div></h3>
-                <div style="color: white;" class="username text-ellipsis text-center">Icinga2 System</div>', ['target' => '_blank']))
-            !!}
-        </div>
+
+      {!! HTML::decode (HTML::link('https://'.\Request::server('HTTP_HOST').'/cacti',
+  			'<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
+  				<i style="font-size: 25px;" class="img-center fa fa-tachometer p-10"></i><br />
+  				<span class="username text-ellipsis text-center">Cacti System</span>
+  			</span>', ['target' => '_blank']))
+  		!!}
+
+      {!! HTML::decode (HTML::link('https://'.\Request::server('HTTP_HOST').'/icingaweb2',
+  			'<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
+  				<i style="font-size: 25px;" class="img-center fa fa-info-circle p-10"></i><br />
+  				<span class="username text-ellipsis text-center">Icinga2 System</span>
+  			</span>', ['target' => '_blank']))
+  		!!}
+
     </div>
     {{-- reference link --}}
     <div class="stats-link"><a href="#">{{trans('view.Dashboard_External')}}</a></div>
 </div>
-
