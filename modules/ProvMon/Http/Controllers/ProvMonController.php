@@ -606,7 +606,11 @@ class ProvMonController extends \BaseController
         } else {
             $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
         }
-        $us['SNR dB'] = $cmts->get_us_snr($ip);
+
+        $snrs = $cmts->get_us_snr($ip);
+        foreach ($us['Frequency MHz'] as $freq) {
+            $us['SNR dB'][] = isset($snrs[strval($freq)]) ? $snrs[strval($freq)] : 'n/a';
+        }
 
         // remove all inactive channels (no range success)
         foreach ($ds['Power dBmV'] as $key => $val) {
