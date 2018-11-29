@@ -37,6 +37,7 @@
 
 	<div class="col-md-12 ui-sortable">
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'md' => 12, 'i' => 3))
+		@include ('bootstrap.panel-no-div', array ('content' => 'spectrum-analysis', 'view_header' => trans('messages.spectrum'), 'md' => 12, 'i' => '3'))
 	</div>
 
 </div>

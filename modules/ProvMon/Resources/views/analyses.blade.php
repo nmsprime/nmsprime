@@ -1,6 +1,5 @@
 @extends ('provmon::split')
 
-
 @section('content_dash')
 	@if ($dash)
 		<font color="grey">{{$dash}}</font>
@@ -11,6 +10,11 @@
 	<div class="btn pull-right">
 		@include('Generic.documentation', ['documentation' => $modem->help])
 	</div>
+@stop
+
+
+@section('spectrum-analysis')
+	@include('provmon::spectrum-analysis')
 @stop
 
 @section('content_cacti')
@@ -37,8 +41,8 @@
 
 		<div class="tab-pane fade in" id="flood-ping">
 					<form method="POST">Type:
-						<input type="hidden" name="_token" value="{{ csrf_token() }}"></input>
-						<select class="select2 form-control m-b-20" name="flood_ping" style="width : 100 %">
+						<input type="hidden" name="_token" value="{{ csrf_token() }}" />
+						<select class="select2 form-control m-b-20" name="flood_ping" style="width: 100%;">
 							<option value="1">low load: 500 packets of 56 Byte</option> {{-- needs approximately 5 sec --}}
 							<option value="2">average load: 1000 packets of 736 Byte</option> {{-- needs approximately 10 sec --}}
 							<option value="3">big load: 2500 packets of 56 Byte</option> {{-- needs approximately 30 sec --}}
