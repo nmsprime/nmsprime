@@ -82,7 +82,7 @@ class ProvMonController extends \BaseController
      */
     public function analyses($id)
     {
-        $ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = null;
+        $ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = $data = null;
         $modem = $this->modem ? $this->modem : Modem::find($id);
         $view_var = $modem; // for top header
         $error = '';
@@ -91,7 +91,7 @@ class ProvMonController extends \BaseController
         // if there is no valid hostname specified, then return error view
         // to get the regular Analyses tab the hostname should be: cm-...
         if ($id == 'error') {
-            return \View::make('errors.generic', compact('error', 'message'));
+            return View::make('errors.generic', compact('error', 'message'));
         }
 
         $hostname = $modem->hostname.'.'.$this->domain_name;
@@ -140,7 +140,8 @@ class ProvMonController extends \BaseController
         $view_header = 'ProvMon-Analyses';
 
         // View
-        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header')));
+        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
+                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id')));
     }
 
     /**
@@ -1211,5 +1212,58 @@ class ProvMonController extends \BaseController
         }
 
         return View::make('provbase::Modem.log', compact('modem', 'out'));
+    }
+
+
+    /**
+     * Retrieve Data via SNMP and create Array for spectrum in Modem Analyses page.
+     *
+     * @author Roy Schneider
+     * @param Modules\ProvBase\Entities\Modem
+     * @return JSON response
+     */
+    public function getSpectrumData($modem)
+    {
+        $provbase = ProvBase::first();
+        $roCommunity = $provbase->ro_community;
+        $rwCommunity = $provbase->rw_community;
+        $data = null;
+
+        try {
+            snmpwalk($modem->ip, $rw_community, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3');
+        } catch (\Exception $e) {
+            return $data;
+        }
+
+        // enable docsIf3CmSpectrumAnalysisCtrlCmd
+        snmpset($modem->ip, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.1.0', 'i', 1);
+
+        // set frequency span from 150 to 862 MHz
+        snmpset($modem->ip, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3', 'u', 150000000);
+        snmpset($modem->ip, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4', 'u', 862000000);
+
+        // every 8 MHz
+        snmpset($modem->ip, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5', 'u', 8000000);
+
+        // after enabling docsIf3CmSpectrumAnalysisCtrlCmd it may take a few seconds to start the snmpwalḱ (error: End of MIB)
+        sleep(5);
+        $expressions = snmpwalk($modem->ip, $rw_community, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3');
+
+        // in case we don't get return values
+        if (! isset($expressions)) {
+            return $data;
+        }
+
+        // filter expression for ampitude and frequency
+        // returned values: level in 10th dB and frequency in Hz
+        // Example: SNMPv2-SMI::enterprises.4491.2.1.20.1.35.1.3.985500000 = INTEGER: -361
+        foreach ($expressions as $key => $expression) {
+            preg_match('/[0-9]{9}/', $expression, $frequency);
+            preg_match('/[ ]-?\d+/', $expression, $level);
+            $data['amplitudes'][] = intval($level[0]) / 10;
+            $data['span'][] = $frequency[0] / 1000000;
+        }
+
+        return response()->json($data);
     }
 }
