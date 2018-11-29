@@ -1214,7 +1214,6 @@ class ProvMonController extends \BaseController
         return View::make('provbase::Modem.log', compact('modem', 'out'));
     }
 
-
     /**
      * Retrieve Data via SNMP and create Array for spectrum in Modem Analyses page.
      *
