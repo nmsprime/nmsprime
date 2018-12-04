@@ -85,6 +85,9 @@ $(document).ready(function() {
             	}
 
                	makeSpectrum(result.amplitudes, result.span);
+            },
+            error: function() {
+				document.getElementById("notValid").innerHTML = "{{ trans('messages.noSpectrum') }}";
             }
         });
     });
