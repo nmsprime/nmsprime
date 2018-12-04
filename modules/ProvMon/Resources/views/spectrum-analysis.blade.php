@@ -10,7 +10,7 @@
     <canvas id="spectrum"></canvas>
 </div>
 
-@section('javascript')
+@section('spectrum')
 <script src="{{asset('components/assets-admin/plugins/chart/Chart.min.js')}}"></script>
 <script language="javascript">
 

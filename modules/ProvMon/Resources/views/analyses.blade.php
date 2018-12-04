@@ -309,5 +309,6 @@
 		});
 	});
 </script>
+@yield('spectrum')
 @include('Generic.handlePanel')
 @stop
