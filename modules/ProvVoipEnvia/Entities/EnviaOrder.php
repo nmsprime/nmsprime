@@ -157,8 +157,7 @@ class EnviaOrder extends \BaseModel
                 'orderstatus' => 'Fehlgeschlagen, Details siehe Bemerkung',
                 'view_class' => 'danger',
                 'state_type' => 'failed',
-                //'final' => True,      // according to documentation state is final – but comment changed in real life
-                'final' => false,
+                'final' => true,
             ],
             [
                 'orderstatus_id' => 1015,
@@ -235,7 +234,6 @@ class EnviaOrder extends \BaseModel
                 'orderstatus' => 'Portierungsablehnung, siehe Bemerkung',
                 'view_class' => 'danger',
                 'state_type' => 'failed',
-                //'final' => True,      // according to documentation state is final – but comment changed in real life
                 'final' => false,
             ],
             [
