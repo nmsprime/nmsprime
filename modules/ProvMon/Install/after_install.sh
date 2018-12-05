@@ -71,3 +71,25 @@ chmod o+w /var/www/nmsprime/storage/framework/views
 chgrp -R apache /etc/nmsprime/env
 chmod -R o-rwx /etc/nmsprime/env
 chmod -R g-w /etc/nmsprime/env
+
+# add our css rules to cacti, if they haven't been added yet (see after_upgrade.sh as well)
+file='/usr/share/cacti/include/themes/modern/main.css'
+if [[ -e "$file" && -z $(grep -o nmsprime "$file") ]]; then
+cat << EOF >> "$file"
+
+/* nmsprime */
+
+html {
+	overflow-x: auto;
+}
+
+table {
+	margin: 0 !important;
+}
+
+.cactiGraphContentAreaPreview {
+	overflow-y: unset !important;
+	overflow-x: unset !important;
+}
+EOF
+fi
