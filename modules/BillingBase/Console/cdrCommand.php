@@ -162,7 +162,8 @@ class cdrCommand extends Command
 
         try {
             \ChannelLog::debug('billing', "GET: https://$user:$password@portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $this->time_of_file));
-            $data = file_get_contents("https://$user:$password@portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $this->time_of_file));
+            $context = stream_context_create(['http' => ['header'  => 'Authorization: Basic '.base64_encode("$user:$password")]]);
+            $data = file_get_contents("https://portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $this->time_of_file), false, $context);
         } catch (\Exception $e) {
             \ChannelLog::alert('billing', 'CDR-Import: Could not get Call Data Records from envia TEL for month: '.date('m', $this->time_of_file), ["portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $this->time_of_file)]);
 
