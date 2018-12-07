@@ -129,7 +129,7 @@ class Item extends \BaseModel
     {
         if ($this->product) {
             $price = floatval($this->credit_amount) ?: $this->product->price;
-            $price = ' | '.round($price, 2).'€';
+            $price = ' | '.round($price, 4).'€';
 
             return $price;
         }
