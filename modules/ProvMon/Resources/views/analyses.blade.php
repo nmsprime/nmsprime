@@ -101,8 +101,11 @@
 	</div>
 	<div class="tab-pane fade in" id="configfile">
 		@if ($configfile)
-			<font color="green"><b>Modem Configfile</b></font><br>
-			@foreach ($configfile as $line)
+			<font color="green"><b>Modem Configfile ({{$configfile['mtime']}})</b></font><br>
+			@if (isset($configfile['warn']))
+				<font color="red"><b>{{$configfile['warn']}}</b></font><br>
+			@endif
+			@foreach ($configfile['text'] as $line)
 				<table>
 					<tr>
 						<td>
