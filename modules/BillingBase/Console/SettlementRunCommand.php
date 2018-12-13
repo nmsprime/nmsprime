@@ -739,15 +739,6 @@ class SettlementRunCommand extends Command implements ShouldQueue
         foreach ($csv as $line) {
             $arr = str_getcsv($line, ';');
 
-            // Discard Drebach Customers in a first step
-            if (strpos($arr[7], '013-') !== false) {
-                if (! in_array($arr[7], $logged)) {
-                    $logged[] = $arr[7];
-                }
-
-                continue;
-            }
-
             $customer_nr = intval(str_replace(['010-'], '', $arr[7]));
             $username = $arr[2];
             $date = explode(' ', $arr[1]);
