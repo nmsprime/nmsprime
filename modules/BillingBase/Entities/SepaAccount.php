@@ -263,7 +263,6 @@ class SepaAccount extends \BaseModel
         }
 
         if ($this->setContact) {
-
             if (! isset($this->agContacts)) {
                 $this->agContacts = require storage_path('app/config/billingbase/ags.php');
             }
