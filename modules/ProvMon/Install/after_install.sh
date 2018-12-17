@@ -55,9 +55,6 @@ su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules
 su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_casa_cmts.xml" apache
 su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_cisco_cmts.xml" apache
 
-# add cacti to group apache, so it is able to read the .env file
-gpasswd -a cacti apache
-
 /opt/rh/rh-php71/root/usr/bin/php /var/www/nmsprime/artisan view:clear
 
 # we call ProvMonController from cacti and thus need to be able to write to the following folder
