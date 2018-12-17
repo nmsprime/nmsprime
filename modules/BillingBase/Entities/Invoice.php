@@ -116,7 +116,6 @@ class Invoice extends \BaseModel
         'company_registration_court_3' => '',
         'company_management' 	=> '',
         'company_directorate' 	=> '',
-        'company_web'			=> '',
         'company_tax_id_nr' 	=> '',
         'company_tax_nr' 		=> '',
         'company_logo'			=> '',
