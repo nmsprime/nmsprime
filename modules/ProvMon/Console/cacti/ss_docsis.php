@@ -88,7 +88,15 @@ function ss_docsis($hostname, $snmp_community)
         $ds['SNR'] = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.1.4.1.5', 10);
         $us['Pow'] = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2', 10);
     }
-    $us['SNR'] = $GLOBALS['snrs'][gethostbyname($hostname)];
+    $snrs = $GLOBALS['snrs'][gethostbyname($hostname)];
+    $freqs = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.1.2.1.2', 1000000);
+
+    foreach ($freqs as $freq) {
+        if (! isset($snrs[strval($freq)])) {
+            continue;
+        }
+        $us['SNR'][] = $snrs[strval($freq)];
+    }
 
     foreach ($ds['Pow'] as $key => $val) {
         if ($ds['SNR'][$key] == 0) {

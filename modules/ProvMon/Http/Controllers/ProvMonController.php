@@ -113,8 +113,7 @@ class ProvMonController extends \BaseController
         $lease = $this->validate_lease($lease, $type);
 
         // Configfile
-        $cf_path = "/tftpboot/cm/$modem->hostname.conf";
-        $configfile = is_file($cf_path) ? file($cf_path) : null;
+        $configfile = self::_get_configfile("/tftpboot/cm/$modem->hostname");
 
         // Realtime Measure - this takes the most time
         // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
@@ -141,6 +140,31 @@ class ProvMonController extends \BaseController
 
         // View
         return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header')));
+    }
+
+    /**
+     * Get contents, mtime of configfile and warn if it is outdated
+     *
+     * @author  Ole Ernst
+     * @param   path    String  Path of the configfile excluding its extension
+     * @return  array
+     */
+    private static function _get_configfile($path)
+    {
+        if (! is_file("$path.conf") || ! is_file("$path.cfg")) {
+            return;
+        }
+
+        if (filemtime("$path.conf") > filemtime("$path.cfg")) {
+            $conf['warn'] = trans('messages.configfile_outdated');
+        }
+
+        $conf['mtime'] = strftime('%c', filemtime("$path.cfg"));
+
+        exec("docsis -d $path.cfg", $conf['text']);
+        $conf['text'] = str_replace("\t", '&nbsp;&nbsp;&nbsp;&nbsp;', $conf['text']);
+
+        return $conf;
     }
 
     /**
@@ -381,8 +405,7 @@ class ProvMonController extends \BaseController
         $lease = $this->validate_lease($lease, $type);
 
         // configfile
-        $cf_path = "/tftpboot/mta/$mta->hostname.conf";
-        $configfile = is_file($cf_path) ? file($cf_path) : null;
+        $configfile = self::_get_configfile("/tftpboot/mta/$mta->hostname");
 
         // log
         $ip = gethostbyname($mta->hostname);
@@ -606,7 +629,11 @@ class ProvMonController extends \BaseController
         } else {
             $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
         }
-        $us['SNR dB'] = $cmts->get_us_snr($ip);
+
+        $snrs = $cmts->get_us_snr($ip);
+        foreach ($us['Frequency MHz'] as $freq) {
+            $us['SNR dB'][] = isset($snrs[strval($freq)]) ? $snrs[strval($freq)] : 'n/a';
+        }
 
         // remove all inactive channels (no range success)
         foreach ($ds['Power dBmV'] as $key => $val) {

@@ -102,18 +102,18 @@ class cactiCommand extends Command
                 ->where('name', '=', 'cablemodem')
                 ->select('id')->first()->id;
 
-            $out = system("php -q $path/add_device.php --description=$name --ip=$hostname --template=$host_template_id --community=$community --avail=snmp --version=2");
-            preg_match('/^Success - new device-id: \(([0-9]+)\)$/', $out, $matches);
+            exec("php -q $path/add_device.php --description=$name --ip=$hostname --template=$host_template_id --community=$community --avail=snmp --version=2", $out);
+            preg_match('/^Success - new device-id: \(([0-9]+)\)$/', end($out), $matches);
             if (count($matches) != 2) {
                 continue;
             }
 
             // add host to cabelmodem tree
-            // system("php -q $path/add_tree.php --type=node --node-type=host --tree-id=$tree_id --host-id=$matches[1]");
+            // exec("php -q $path/add_tree.php --type=node --node-type=host --tree-id=$tree_id --host-id=$matches[1]");
 
             // create all graphs belonging to host template cablemodem
             foreach ($graph_template_ids as $id) {
-                system("php -q $path/add_graphs.php --host-id=$matches[1] --graph-type=cg --graph-template-id=$id");
+                exec("php -q $path/add_graphs.php --host-id=$matches[1] --graph-type=cg --graph-template-id=$id");
             }
 
             // get first RRD belonging to newly created host
@@ -139,10 +139,10 @@ class cactiCommand extends Command
             $stmnt->where('t.id', '!=', $first->id)->update(['t.active' => '']);
 
             // rebuild poller cache, since we changed the database manually
-            system("php -q $path/rebuild_poller_cache.php --host-id=$matches[1]");
+            exec("php -q $path/rebuild_poller_cache.php --host-id=$matches[1]");
 
             // Info Message
-            echo "\ncacti: create diagrams for Modem: $name";
+            //echo "\ncacti: create diagrams for Modem: $name";
             \Log::info("cacti: create diagrams for Modem: $name");
         }
 
@@ -177,16 +177,17 @@ class cactiCommand extends Command
                 continue;
             }
 
-            $out = system("php -q $path/add_device.php --description=\"$name\" --ip=$hostname --template=$host_template->id --community=\"$community\" --avail=snmp --version=2");
-            preg_match('/^Success - new device-id: \(([0-9]+)\)$/', $out, $matches);
+            $out = [];
+            exec("php -q $path/add_device.php --description=\"$name\" --ip=$hostname --template=$host_template->id --community=\"$community\" --avail=snmp --version=2", $out);
+            preg_match('/^Success - new device-id: \(([0-9]+)\)$/', end($out), $matches);
             if (count($matches) != 2) {
                 continue;
             }
 
             // add "SNMP - Interface Statistics" query
-            system("php -q $path/add_data_query.php --host-id=$matches[1] --data-query-id=$query->id --reindex-method=1");
+            exec("php -q $path/add_data_query.php --host-id=$matches[1] --data-query-id=$query->id --reindex-method=1");
             // add host to cmts tree
-            system("php -q $path/add_tree.php --type=node --node-type=host --tree-id=$tree_id --host-id=$matches[1]");
+            exec("php -q $path/add_tree.php --type=node --node-type=host --tree-id=$tree_id --host-id=$matches[1]");
         }
 
         echo "\n";
