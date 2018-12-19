@@ -6,7 +6,7 @@
 	<script type="text/javascript" src="{{asset('/modules/hfcbase/alert.js')}}"></script>
 
 	<script async defer src="{{asset('/modules/hfcbase/OpenLayers-2.13.1/OpenLayers.js')}}"></script>
-	<script async defer src="https://maps.google.com/maps/api/js?v=3.2&sensor=false&key={{env('GOOGLE_API_KEY')}}"></script>
+	<script async defer src="https://maps.google.com/maps/api/js?v=3.2&sensor=false&key={{config('app.googleApiKey')}}"></script>
 
 	@include ('HfcBase::Tree.topo-api')
 
