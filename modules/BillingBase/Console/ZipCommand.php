@@ -263,7 +263,7 @@ class ZipCommand extends Command implements ShouldQueue
     {
         // variable initialization
         $num = ['total' => 0, 'current' => 0, 'sum' => 0, 'percentage' => 0];
-        $invoices = [];
+        $invoices = $final_files = [];
         foreach ($sepaAccs as $acc) {
             $num['total'] += $acc->invoice_cnt <= $this->split ? $acc->invoice_cnt : 2 * $acc->invoice_cnt;
         }

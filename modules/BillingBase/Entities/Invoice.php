@@ -256,7 +256,7 @@ class Invoice extends \BaseModel
         $ret = $contract->getCancelationDates();
 
         // e.g. customers that get tv amplifier refund, but dont have any tariff
-        if (! array_key_exists('tariff', $ret)) {
+        if (is_null($ret) || ! array_key_exists('tariff', $ret)) {
             ChannelLog::debug('billing', 'Customer has no tariff - dont set cancelation dates.', [$this->data['contract_id']]);
 
             return;
@@ -270,8 +270,8 @@ class Invoice extends \BaseModel
             $span = str_replace($nr, '', $ret['tariff']->product->period_of_notice ?: Product::$pon);
             $txt_pon = $nr.' '.trans_choice("messages.$span", $nr).($ret['tariff']->product->maturity ? '' : ' '.trans('messages.eom'));
 
-            $nr = preg_replace('/[^0-9]/', '', $ret['tariff']->product->maturity ?: Product::$maturity);
-            $span = str_replace($nr, '', $ret['tariff']->product->maturity ?: Product::$maturity);
+            $nr = preg_replace('/[^0-9]/', '', $ret['maturity']);
+            $span = str_replace($nr, '', $ret['maturity']);
             $txt_m = $nr.' '.trans_choice("messages.$span", $nr);
         }
 
