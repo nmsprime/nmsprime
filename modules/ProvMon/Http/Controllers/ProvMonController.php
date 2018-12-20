@@ -1280,7 +1280,7 @@ class ProvMonController extends \BaseController
         // Example: SNMPv2-SMI::enterprises.4491.2.1.20.1.35.1.3.985500000 = INTEGER: -361
         foreach ($expressions as $oid => $level) {
             preg_match('/[0-9]{9}/', $oid, $frequency);
-            $data['span'][] = $frequency[0] /1000000;
+            $data['span'][] = $frequency[0] / 1000000;
             $data['amplitudes'][] = intval($level) / 10;
         }
 
