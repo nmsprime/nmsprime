@@ -55,9 +55,6 @@ su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules
 su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_casa_cmts.xml" apache
 su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_cisco_cmts.xml" apache
 
-# add cacti to group apache, so it is able to read the .env file
-gpasswd -a cacti apache
-
 /opt/rh/rh-php71/root/usr/bin/php /var/www/nmsprime/artisan view:clear
 
 # we call ProvMonController from cacti and thus need to be able to write to the following folder
@@ -71,3 +68,25 @@ chmod o+w /var/www/nmsprime/storage/framework/views
 chgrp -R apache /etc/nmsprime/env
 chmod -R o-rwx /etc/nmsprime/env
 chmod -R g-w /etc/nmsprime/env
+
+# add our css rules to cacti, if they haven't been added yet (see after_upgrade.sh as well)
+file='/usr/share/cacti/include/themes/modern/main.css'
+if [[ -e "$file" && -z $(grep -o nmsprime "$file") ]]; then
+cat << EOF >> "$file"
+
+/* nmsprime */
+
+html {
+	overflow-x: auto;
+}
+
+table {
+	margin: 0 !important;
+}
+
+.cactiGraphContentAreaPreview {
+	overflow-y: unset !important;
+	overflow-x: unset !important;
+}
+EOF
+fi
