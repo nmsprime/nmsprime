@@ -1239,25 +1239,21 @@ class ProvMonController extends \BaseController
         // every 8 MHz
         snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', 8000000);
 
-        // create array of frequencies
-        for ($i = 150; $i <= 862; $i++) {
-            $data['span'][] = $i;
-            $i = $i + 7;
-        }
-
         // after enabling docsIf3CmSpectrumAnalysisCtrlCmd it may take a few seconds to start the snmpwalḱ (error: End of MIB)
         sleep(15);
-        $output = snmp2_real_walk($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3');
+        $expressions = snmp2_real_walk($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3');
 
         // in case we don't get return values
-        if (! isset($output)) {
+        if (! isset($expressions)) {
             return;
         }
 
         // filter expression for ampitude
-        // returned values: level in 10th dB
+        // returned values: level in 10th dB and frequency in Hz
         // Example: SNMPv2-SMI::enterprises.4491.2.1.20.1.35.1.3.985500000 = INTEGER: -361
-        foreach ($output as $oid => $level) {
+        foreach ($expressions as $oid => $level) {
+            preg_match('/[0-9]{9}/', $oid, $frequency);
+            $data['span'][] = $frequency[0] /1000000;
             $data['amplitudes'][] = intval($level) / 10;
         }
 

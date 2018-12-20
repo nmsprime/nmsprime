@@ -42,8 +42,7 @@ function makeSpectrum(amplitudes, span) {
         			    labelString: 'f/MHz',
         			},
         			ticks: {
-						autoSkip: true,
-						maxTicksLimit: 20,
+						maxTicksLimit: 21,
         			}
     			}],
 				yAxes: [{
