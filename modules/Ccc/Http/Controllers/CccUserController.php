@@ -51,7 +51,6 @@ class CccUserController extends \BaseController
         'company_registration_court_3' => '',
         'company_management' 	=> '',
         'company_directorate' 	=> '',
-        'company_web'			=> '',
         'company_tax_id_nr' 	=> '',
         'company_tax_nr' 		=> '',
         'company_logo'			=> '',
@@ -85,12 +84,17 @@ class CccUserController extends \BaseController
         }
         if (! $login_data) {
             Log::error('CustomerConnectionInfo: Error Creating Login Data', [$c->id]);
-
-            return \Redirect::back()->with('error_msg', 'Error Creating Login Data - See Logfiles or ask Admin!');
+            return \Redirect::back()->with('error_msg', trans('messages.conn_info_err_create'));
         }
 
         // get data to fill placeholders in tex template
-        $this->fill_template_data($login_data, $c);
+        $ret = $this->fill_template_data($login_data, $c);
+
+        //temporary solution to display a general message
+        if(!empty($ret ) && $ret < 0)
+        {
+            return \Redirect::back()->with('error_msg', trans('messages.conn_info_err_create'));
+        }
 
         // create pdf
         // TODO: try - catch exceptions that this function shall throw
@@ -177,7 +181,7 @@ class CccUserController extends \BaseController
         $this->data['psw'] = $login_data['password'];
 
         if (! \Module::collections()->has('BillingBase')) {
-            return;
+            return -1;
         }
 
         $costcenter = $contract->costcenter;
@@ -185,15 +189,16 @@ class CccUserController extends \BaseController
         if (! is_object($costcenter)) {
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - no CostCenter assigned', [$contract->id]);
 
-            return;
+            return -1;
         }
 
         $sepa_account = $costcenter->sepaaccount;
 
         if (! is_object($sepa_account)) {
+            //todo: msg should be display in admin
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - CostCenter has no SepaAccount assigned', ['Costcenter' => $costcenter->name]);
 
-            return;
+            return -1;
         }
 
         $this->data['company_creditor_id'] = $sepa_account->creditorid;
@@ -204,14 +209,30 @@ class CccUserController extends \BaseController
         $company = $sepa_account->company;
 
         if (! is_object($company)) {
+            //todo: msg should be display in admin
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
 
-            return;
+            return -1;
         }
 
         $this->data = array_merge($this->data, $company->template_data());
 
+        if(empty($this->data['company_logo']))
+        {
+            //todo: msg should be display in admin
+            Log::error('Company Logo not set');
+            return -1;
+        }
+
         $this->data['company_logo'] = storage_path('app/config/billingbase/logo/'.$this->data['company_logo']);
+
+        if(!file_exists($this->data['company_logo']))
+        {
+            //todo: should tbe display in admin
+            Log::error('File Company Log not found');
+            return -1;
+        }
+        return 0;
     }
 
     /**
