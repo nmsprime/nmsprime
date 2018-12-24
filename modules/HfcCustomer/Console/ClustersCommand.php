@@ -64,8 +64,8 @@ class ClustersCommand extends Command
             $warn_us = ModemHelper::$avg_warning_us;
             $crit_us = ModemHelper::$avg_critical_us;
 
-            $perf .= "'$element->name (online)'=$num;$warn_per;$crit_per;0;$numa ";
-            $perf .= "'$element->name ($avg dBuV, #crit:$cm_cri)'=$avg;$warn_us;$crit_us;20;55 ";
+            $perf .= "'$element->name'=$num;$warn_per;$crit_per;0;$numa ";
+            $perf .= "'$element->name ($avg dBuV, #crit:$cm_cri)'=$avg;$warn_us;$crit_us ";
         }
         echo $ret.' | '.$perf;
 
