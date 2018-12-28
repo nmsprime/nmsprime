@@ -254,7 +254,21 @@ class SepaAccount extends \BaseModel
             'Housenr' 		=> $contract->house_number,
             'Zip'			=> $contract->zip,
             'City' 			=> $contract->city,
+            'District'      => $contract->district,
             ];
+
+        // Set AG contact if present - cache file exists query for better performance
+        if (! isset($this->setContact)) {
+            $this->setContact = Storage::exists('config/billingbase/ags.php');
+        }
+
+        if ($this->setContact) {
+            if (! isset($this->agContacts)) {
+                $this->agContacts = require storage_path('app/config/billingbase/ags.php');
+            }
+
+            $data['AG'] = isset($this->agContacts[$contract->contact]) ? $this->agContacts[$contract->contact] : '';
+        }
 
         if ($mandate) {
             $data2 = [
