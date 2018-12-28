@@ -96,6 +96,15 @@ class CccUserController extends \BaseController
             return \Redirect::back()->with('error_msg', trans('messages.conn_info_err_create'));
         }
 
+        //writ empty values into log
+        foreach ($this->data as $key => $value)
+        {
+            if(empty($value))
+            {
+                Log::info('Value for '.$key.' not set or empty. Mayby cause an error on creating pdf-file.');
+            }
+        }
+
         // create pdf
         // TODO: try - catch exceptions that this function shall throw
         $ret = $this->make_conn_info_pdf($c);
@@ -265,9 +274,9 @@ class CccUserController extends \BaseController
             $year = $invoice->year;
 
             $invoice_links[] = [
-                    'link' => \HTML::linkRoute('Customer.Download', str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''), ['invoice' => $invoice->id]),
-                    'bsclass' => $bsclass[$start],
-                ];
+            'link' => \HTML::linkRoute('Customer.Download', str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''), ['invoice' => $invoice->id]),
+            'bsclass' => $bsclass[$start],
+            ];
         }
 
         $emails = \Module::collections()->has('Mail') ? Auth::guard('ccc')->user()->contract->emails : collect();
