@@ -255,28 +255,70 @@ class CccUserController extends \BaseController
      */
     public function show()
     {
-        $invoices = Auth::guard('ccc')->user()->contract->invoices()->with('settlementrun')->get();
+        $invoices = Auth::guard('ccc')->user()->contract->invoices()->with('settlementrun')->orderBy('year','desc')->orderBy('type','desc')->get();
         $invoice_links = [];
 
         $bsclass = ['info', 'active'];
-        $start = $year = 0;
+        $start = $month = 0;
         foreach ($invoices as $key => $invoice) {
             // dont show unverified invoices
             if (! $invoice->settlementrun->verified) {
                 continue;
             }
 
-            if ($invoice->year != $year) {
+            if ($invoice->month != $month) {
                 $start = ($start + 1) % 2;
             }
 
             $year = $invoice->year;
+            $month = $invoice->month;
+            $invoicetype = strtoupper($invoice->type);
 
-            $invoice_links[] = [
+            $invoice_links[$year][$invoice->month][$invoicetype] = [
                 'link' => \HTML::linkRoute('Customer.Download', str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''), ['invoice' => $invoice->id]),
                 'bsclass' => $bsclass[$start],
+                //'type' => $invoicetype,
             ];
         }
+        $tmpinvoice_links = $invoice_links;
+
+        /*fill up array with only one item*/
+        foreach ($tmpinvoice_links as $year => $ayear)
+        {
+            foreach ($ayear as $month => $amonth)
+            {
+                if(count($amonth) == 1 )
+                {
+                    #print_r($amonth);
+
+                    if(isset($amonth['CDR']))
+                    {
+                        $invoice_links[$year][$month]['INVOICE']  = [
+                            'link' => '',
+                            'bsclass' => $amonth['CDR']['bsclass'],
+                            //'type' => 'INVOICE',
+                        ];
+                    }
+                    elseif(isset($amonth['INVOICE'])){
+                        $invoice_links[$year][$month]['CDR']  =  [
+                            'link' => '',
+                            'bsclass' => $amonth['INVOICE']['bsclass'],
+                            //'type' => 'CDR',
+                        ];
+                    }
+                }
+                if(count($amonth) == 2 )
+                {
+                    if($amonth['CDR']['bsclass'] != $amonth['INVOICE']['bsclass'])
+                    {
+                        #$invoice_links[$year][$month]['CDR']['bsclass'] = ;
+                        $invoice_links[$year][$month]['INVOICE']['bsclass'] = $tmpinvoice_links[$year][$month]['CDR']['bsclass'];
+                    }
+                }
+            }
+        }
+
+        #print_r($invoice_links);
 
         $emails = \Module::collections()->has('Mail') ? Auth::guard('ccc')->user()->contract->emails : collect();
 
