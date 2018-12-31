@@ -282,7 +282,7 @@ class CccUserController extends \BaseController
         }
         $tmpinvoice_links = $invoice_links;
 
-        /*fill up array with only one item*/
+        /*fill up array with only one item, in case there is no cdr*/
         foreach ($tmpinvoice_links as $year => $ayear)
         {
             foreach ($ayear as $month => $amonth)

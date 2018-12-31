@@ -6,7 +6,7 @@
 				<div class="panel panel-inverse card-2 d-flex flex-column">
 					<div class="panel-heading d-flex flex-row justify-content-between">
 						<h4 class="panel-title d-flex">
-							Rechnungen {{$year}}
+							{{ trans('messages.Invoices') }} {{$year}}
 						</h4>
 						<div class="panel-heading-btn d-flex flex-row">
 							<a href="javascript:;"
