@@ -1,7 +1,7 @@
 @extends('ccc::layouts.master')
 
 @section('content_left')
-		@foreach($invoice_links as $year => $ayear)
+		@foreach($invoice_links as $year => $years)
 			<div class="col-md-6 ui-sortable">
 				<div class="panel panel-inverse card-2 d-flex flex-column">
 					<div class="panel-heading d-flex flex-row justify-content-between">
@@ -19,9 +19,9 @@
 					</div>
 					<div class="panel-body fader d-flex flex-column" style="overflow-y:auto;@if($loop->first)@else display: none;@endif; height:100%">
 						<table class="table table-bordered">
-							@foreach($ayear as $month => $amonth)
+							@foreach($years as $month => $months)
 								<tr>
-									@foreach($amonth as $type => $invoice)
+									@foreach($months as $type => $invoice)
 										@if($type == 'CDR')
 											@if($invoice['link'] != '')
 												<td class="{{$invoice['bsclass']}}" align="center"> {{$invoice['link']}} </td>
