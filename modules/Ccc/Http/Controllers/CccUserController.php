@@ -5,6 +5,7 @@ namespace Modules\Ccc\Http\Controllers;
 use Log;
 use Auth;
 use File;
+use Storage;
 use Modules\Ccc\Entities\Ccc;
 use Modules\NmsMail\Entities\Email;
 use Modules\ProvBase\Entities\Contract;
@@ -93,7 +94,6 @@ class CccUserController extends \BaseController
         $this->fill_template_data($login_data, $c);
 
         // create pdf
-        // TODO: try - catch exceptions that this function shall throw
         $ret = $this->make_conn_info_pdf($c);
 
         Log::info('Download Connection Information for CccUser: '.$customer->first_name.' '.$customer->last_name.' ('.$customer->id.')', [$c->id]);
@@ -102,26 +102,76 @@ class CccUserController extends \BaseController
             return $return_pdf ? response()->download($ret) : $ret;
         }
 
-        $err_msg = is_int($ret) ? trans('messages.conn_info_err_template') : trans('messages.conn_info_err_create');
-
-        return \Redirect::back()->with('error_msg', $err_msg);
+        return \Redirect::back();
     }
 
     /**
      * Make Connection Info PDF File for Download
      *
-     * @return string 	Absolute Path of PDF, Null on Error
+     * @return string   Absolute Path of PDF, Null on Error
      *
      * @author Nino Ryschawy
      */
     private function make_conn_info_pdf($contract)
     {
-        // load template
-        $template_dir = storage_path('app/config/ccc/template/');
-        $template_filename = \Module::collections()->has('BillingBase') ? $contract->costcenter->sepaaccount->company->conn_info_template_fn : Ccc::first()->template_filename;
+        // TODO: Check if these messages that have been return before are still relevant
+        // $err_msg = is_int($ret) ? trans('messages.conn_info_err_template') : trans('messages.conn_info_err_create');
 
-        if (! $template = file_get_contents($template_dir.$template_filename)) {
-            Log::error('ConnectionInfo: Could not read template', [$template_dir.$template_filename]);
+        // $template_dir = storage_path('app/config/ccc/template/');
+        $rel_template_dir_path = 'config/ccc/template';
+
+        // Check for Errors and push message to Session (download_error key in conn_info.blade)
+        $msg_key = $default = $template_fn = '';
+
+        if (! $contract->costcenter) {
+            $msg_key = 'missing_costcenter';
+            $msg_var = null;
+        } elseif (! $contract->costcenter->sepaaccount) {
+            $msg_key = 'missing_sepaaccount';
+            $msg_var = $contract->costcenter->name;
+        } elseif (! $contract->costcenter->sepaaccount->company) {
+            $msg_key = 'missing_company';
+            $msg_var = $contract->costcenter->sepaaccount->name;
+        } elseif (! $contract->costcenter->sepaaccount->company->conn_info_template_fn) {
+            $msg_key = 'missing_template';
+            $msg_var = $contract->costcenter->sepaaccount->company->name;
+        } elseif (! Storage::exists("$rel_template_dir_path/".$contract->costcenter->sepaaccount->company->conn_info_template_fn)) {
+            $msg_key = 'missing_template_file';
+            $msg_var = $contract->costcenter->sepaaccount->company->name;
+        } else {
+            // found template
+            $template_fn = "$rel_template_dir_path/".$contract->costcenter->sepaaccount->company->conn_info_template_fn;
+        }
+
+        // CCC Default Template can at the time not be set - code is kept here in case it will be reimplemented
+        // if (! $template_fn) {
+        //     $default = Ccc::first()->template_filename;
+
+        //     if (! $default) {
+        //         $msg_key = $msg_key ?: 'missing_template_default';
+        //     } elseif (! Storage::exists("$rel_template_dir_path/$default")) {
+        //         $msg_key = $msg_key ?: 'missing_template_default_file';
+        //     } else {
+        //         $template_fn = "$rel_template_dir_path/$default";
+        //     }
+        // }
+
+        if ($msg_key) {
+            $msg = trans('messages.conninfo.error').trans("messages.conninfo.$msg_key", $msg_var ? ['var' => $msg_var] : null);
+
+            Log::error($msg);
+            \Session::flash('download_error', $msg);
+
+            return;
+        }
+
+        $template = Storage::get($template_fn);
+
+        if (! $template) {
+            $msg = trans('messages.conninfo.read_failure');
+
+            Log::error($msg, [$template_fn]);
+            \Session::flash('download_error', $msg);
 
             return -1;
         }
@@ -133,10 +183,7 @@ class CccUserController extends \BaseController
             mkdir($dir_path, 0733, true);
         }
 
-        // $filename = str_replace(['.', ' ', '&', '|', ',', ';', '/', '"', "'", '>', '<'], '', $contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info');
         $filename = sanitize_filename($contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info');
-
-        // echo "$filename\n";
 
         // Replace placeholder by value
         $template = str_replace('\\_', '_', $template);
@@ -146,7 +193,13 @@ class CccUserController extends \BaseController
 
         File::put($dir_path.$filename, $template);
 
-        pdflatex($dir_path, $filename);
+        $ret = pdflatex($dir_path, $filename);
+
+        if ($ret) {
+            \Session::flash('download_error', pdflatex_error_msg($ret));
+
+            return -1;
+        }
 
         // remove temporary files
         unlink($filename);

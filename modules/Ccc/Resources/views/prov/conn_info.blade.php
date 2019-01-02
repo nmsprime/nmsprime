@@ -1,8 +1,9 @@
 {{-- Error Message --}}
-@if (Session::get('error_msg'))
+@if (Session::has('download_error'))
 	@DivOpen(12)
-		<h5 style='color:red' id='delete_msg'>{{ Session::get('error_msg') }}</h5>
+		<h5 style='color:red' id=''>{{ Session::get('download_error') }}</h5>
 	@DivClose()
+	{{ Session::forget('download_error') }}
 @endif
 
 <h3>
