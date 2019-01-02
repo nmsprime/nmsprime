@@ -133,6 +133,7 @@ class CccUserController extends \BaseController
 
         if (! $template = file_get_contents($template_dir.$template_filename)) {
             Log::error('ConnectionInfo: Could not read template', [$template_dir.$template_filename]);
+
             return -1;
         }
 
@@ -194,6 +195,7 @@ class CccUserController extends \BaseController
 
         if (! is_object($costcenter)) {
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - no CostCenter assigned', [$contract->id]);
+
             return -1;
         }
 
@@ -202,6 +204,7 @@ class CccUserController extends \BaseController
         if (! is_object($sepa_account)) {
             //todo: msg should be display in admin
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - CostCenter has no SepaAccount assigned', ['Costcenter' => $costcenter->name]);
+
             return -1;
         }
 
@@ -215,6 +218,7 @@ class CccUserController extends \BaseController
         if (! is_object($company)) {
             //todo: msg should be display in admin
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
+
             return -1;
         }
 
@@ -223,6 +227,7 @@ class CccUserController extends \BaseController
         if (empty($this->data['company_logo'])) {
             //todo: msg should be display in admin
             Log::error('Company Logo not set');
+
             return -1;
         }
 
@@ -231,8 +236,10 @@ class CccUserController extends \BaseController
         if (! file_exists($this->data['company_logo'])) {
             //todo: should tbe display in admin
             Log::error('File Company Log not found');
+
             return -1;
         }
+
         return 0;
     }
 
