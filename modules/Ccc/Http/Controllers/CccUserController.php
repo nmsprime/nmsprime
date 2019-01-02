@@ -84,6 +84,7 @@ class CccUserController extends \BaseController
         }
         if (! $login_data) {
             Log::error('CustomerConnectionInfo: Error Creating Login Data', [$c->id]);
+
             return \Redirect::back()->with('error_msg', trans('messages.conn_info_err_create'));
         }
 
@@ -132,7 +133,6 @@ class CccUserController extends \BaseController
 
         if (! $template = file_get_contents($template_dir.$template_filename)) {
             Log::error('ConnectionInfo: Could not read template', [$template_dir.$template_filename]);
-
             return -1;
         }
 
@@ -194,7 +194,6 @@ class CccUserController extends \BaseController
 
         if (! is_object($costcenter)) {
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - no CostCenter assigned', [$contract->id]);
-
             return -1;
         }
 
@@ -203,7 +202,6 @@ class CccUserController extends \BaseController
         if (! is_object($sepa_account)) {
             //todo: msg should be display in admin
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - CostCenter has no SepaAccount assigned', ['Costcenter' => $costcenter->name]);
-
             return -1;
         }
 
@@ -217,7 +215,6 @@ class CccUserController extends \BaseController
         if (! is_object($company)) {
             //todo: msg should be display in admin
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
-
             return -1;
         }
 
@@ -269,8 +266,8 @@ class CccUserController extends \BaseController
             $year = $invoice->year;
 
             $invoice_links[] = [
-            'link' => \HTML::linkRoute('Customer.Download', str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''), ['invoice' => $invoice->id]),
-            'bsclass' => $bsclass[$start],
+                'link' => \HTML::linkRoute('Customer.Download', str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''), ['invoice' => $invoice->id]),
+                'bsclass' => $bsclass[$start],
             ];
         }
 
