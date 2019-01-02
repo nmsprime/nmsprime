@@ -202,7 +202,7 @@ class CccUserController extends \BaseController
         $sepa_account = $costcenter->sepaaccount;
 
         if (! is_object($sepa_account)) {
-            //todo: msg should be display in admin
+            //todo: msg should be appear in BE
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - CostCenter has no SepaAccount assigned', ['Costcenter' => $costcenter->name]);
 
             return -1;
@@ -216,7 +216,7 @@ class CccUserController extends \BaseController
         $company = $sepa_account->company;
 
         if (! is_object($company)) {
-            //todo: msg should be display in admin
+            //todo: msg should be appear in BE
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
 
             return -1;
@@ -225,7 +225,7 @@ class CccUserController extends \BaseController
         $this->data = array_merge($this->data, $company->template_data());
 
         if (empty($this->data['company_logo'])) {
-            //todo: msg should be display in admin
+            //todo: msg should be appear in admin
             Log::error('Company Logo not set');
 
             return -1;
@@ -234,7 +234,7 @@ class CccUserController extends \BaseController
         $this->data['company_logo'] = storage_path('app/config/billingbase/logo/'.$this->data['company_logo']);
 
         if (! file_exists($this->data['company_logo'])) {
-            //todo: should tbe display in admin
+            //todo: should be appear in admin
             Log::error('File Company Log not found');
 
             return -1;
@@ -255,7 +255,7 @@ class CccUserController extends \BaseController
      */
     public function show()
     {
-        $invoices = Auth::guard('ccc')->user()->contract->invoices()->with('settlementrun')->orderBy('year','desc')->orderBy('type','desc')->get();
+        $invoices = Auth::guard('ccc')->user()->contract->invoices()->with('settlementrun')->orderBy('year', 'desc')->orderBy('type', 'desc')->get();
         $invoice_links = [];
 
         $bsclass = ['info', 'active'];
@@ -277,48 +277,35 @@ class CccUserController extends \BaseController
             $invoice_links[$year][$invoice->month][$invoicetype] = [
                 'link' => \HTML::linkRoute('Customer.Download', str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''), ['invoice' => $invoice->id]),
                 'bsclass' => $bsclass[$start],
-                //'type' => $invoicetype,
             ];
         }
         $tmpinvoice_links = $invoice_links;
 
         /*fill up array with only one item, in case there is no cdr*/
-        foreach ($tmpinvoice_links as $year => $ayear)
-        {
-            foreach ($ayear as $month => $amonth)
-            {
-                if(count($amonth) == 1 )
-                {
-                    #print_r($amonth);
-
-                    if(isset($amonth['CDR']))
-                    {
+        foreach ($tmpinvoice_links as $year => $years) {
+            foreach ($years as $month => $months) {
+                if (count($months) == 1) {
+                    if (isset($months['CDR'])) {
                         $invoice_links[$year][$month]['INVOICE']  = [
                             'link' => '',
-                            'bsclass' => $amonth['CDR']['bsclass'],
-                            //'type' => 'INVOICE',
+                            'bsclass' => $months['CDR']['bsclass'],
                         ];
-                    }
-                    elseif(isset($amonth['INVOICE'])){
+                    } elseif (isset($months['INVOICE'])) {
                         $invoice_links[$year][$month]['CDR']  =  [
                             'link' => '',
-                            'bsclass' => $amonth['INVOICE']['bsclass'],
-                            //'type' => 'CDR',
+                            'bsclass' => $months['INVOICE']['bsclass'],
                         ];
                     }
                 }
-                if(count($amonth) == 2 )
-                {
-                    if($amonth['CDR']['bsclass'] != $amonth['INVOICE']['bsclass'])
-                    {
+
+                if (count($months) == 2) {
+                    if ($months['CDR']['bsclass'] != $months['INVOICE']['bsclass']) {
                         #$invoice_links[$year][$month]['CDR']['bsclass'] = ;
                         $invoice_links[$year][$month]['INVOICE']['bsclass'] = $tmpinvoice_links[$year][$month]['CDR']['bsclass'];
                     }
                 }
             }
         }
-
-        #print_r($invoice_links);
 
         $emails = \Module::collections()->has('Mail') ? Auth::guard('ccc')->user()->contract->emails : collect();
 
