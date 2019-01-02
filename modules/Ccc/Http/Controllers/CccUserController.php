@@ -91,16 +91,14 @@ class CccUserController extends \BaseController
         $ret = $this->fill_template_data($login_data, $c);
 
         //temporary solution to display a general message
-        if(!empty($ret ) && $ret < 0)
-        {
+        if (! empty($ret ) && $ret < 0) {
             return \Redirect::back()->with('error_msg', trans('messages.conn_info_err_create'));
         }
 
         //writ empty values into log
         foreach ($this->data as $key => $value)
         {
-            if(empty($value))
-            {
+            if (empty($value)) {
                 Log::info('Value for '.$key.' not set or empty. Mayby cause an error on creating pdf-file.');
             }
         }
@@ -226,8 +224,7 @@ class CccUserController extends \BaseController
 
         $this->data = array_merge($this->data, $company->template_data());
 
-        if(empty($this->data['company_logo']))
-        {
+        if (empty($this->data['company_logo'])) {
             //todo: msg should be display in admin
             Log::error('Company Logo not set');
             return -1;
@@ -235,8 +232,7 @@ class CccUserController extends \BaseController
 
         $this->data['company_logo'] = storage_path('app/config/billingbase/logo/'.$this->data['company_logo']);
 
-        if(!file_exists($this->data['company_logo']))
-        {
+        if ( !file_exists($this->data['company_logo'])) {
             //todo: should tbe display in admin
             Log::error('File Company Log not found');
             return -1;
