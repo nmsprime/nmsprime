@@ -79,7 +79,7 @@ class Company extends \BaseModel
      */
     public static function boot()
     {
-        // Company::observe(new CompanyObserver);
+        self::observe(new CompanyObserver);
         parent::boot();
     }
 
@@ -121,5 +121,13 @@ class Company extends \BaseModel
         }
 
         return $data;
+    }
+}
+
+class CompanyObserver
+{
+    public function updated($company)
+    {
+        \Artisan::call('queue:restart');
     }
 }
