@@ -286,12 +286,12 @@ class CccUserController extends \BaseController
             foreach ($years as $month => $months) {
                 if (count($months) == 1) {
                     if (isset($months['CDR'])) {
-                        $invoice_links[$year][$month]['INVOICE']  = [
+                        $invoice_links[$year][$month]['INVOICE'] = [
                             'link' => '',
                             'bsclass' => $months['CDR']['bsclass'],
                         ];
                     } elseif (isset($months['INVOICE'])) {
-                        $invoice_links[$year][$month]['CDR']  =  [
+                        $invoice_links[$year][$month]['CDR'] = [
                             'link' => '',
                             'bsclass' => $months['INVOICE']['bsclass'],
                         ];
@@ -300,7 +300,7 @@ class CccUserController extends \BaseController
 
                 if (count($months) == 2) {
                     if ($months['CDR']['bsclass'] != $months['INVOICE']['bsclass']) {
-                        #$invoice_links[$year][$month]['CDR']['bsclass'] = ;
+                        // $invoice_links[$year][$month]['CDR']['bsclass'] = ;
                         $invoice_links[$year][$month]['INVOICE']['bsclass'] = $tmpinvoice_links[$year][$month]['CDR']['bsclass'];
                     }
                 }
