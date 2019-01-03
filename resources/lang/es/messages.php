@@ -239,7 +239,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'modem_restart_success_direct' => 'Modem reiniciado directamente por SNMP',
     'Item'						=> 'Artículo',
     'Items'						=> 'Artículos',
-    'modem_save_button_title' 	=> 'Guarda datos cambiados. Determina una nueva geoposition cuando los datos de direccion han sido cambiados (y lo asigna a un nuevo MPR si es necesario). Reconstruye el archivo de configuracion y reinicia el modem si por lo menos algo de lo siguiente ha sido cambiado: IP Publica, acceso a la red, archivo de configuracion, QoS, direccion-MAC',
+    'modem_save_button_title' 	=> 'Saves changed data. Determines new geoposition when address data was changed and assigns it to a new MPR (if x/y coordinate was automatically or manually changed). Rebuilds the configfile and restarts the modem if at least one of the following has changed: Public IP, network access, configfile, QoS, MAC-address.',
     'Product'					=> 'Producto',
     'Start date' 				=> 'Fecha de inicio',
     'Active from start date' 	=> 'Activo a partir de la fecha de inicio',
