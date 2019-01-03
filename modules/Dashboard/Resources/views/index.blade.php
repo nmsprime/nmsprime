@@ -90,9 +90,9 @@
 			</div>
 
 			@if ($view['hfc'])
-				@DivOpen(3)
+				<div class="col-auto-md">
 					@include('dashboard::widgets.hfc')
-				@DivClose()
+				</div>
 			@endif
 
 			<div class="col-auto-md">
