@@ -16,6 +16,7 @@
 	<div class="col-md-7 ui-sortable">
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_dash', 'view_header' => 'Dashboard', 'md' => 8, 'i' => 1))
 		@include ('bootstrap.panel-no-div', array ('content' => 'content_realtime', 'view_header' => \App\Http\Controllers\BaseViewController::translate_label('Real Time Values'), 'md' => 8, 'i' => 2))
+		@include ('bootstrap.panel-no-div', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'md' => 8, 'i' => 3))
 	</div>
 
 	<div class="col-md-5 ui-sortable">
@@ -36,7 +37,6 @@
 	</div>
 
 	<div class="col-md-12 ui-sortable">
-		@include ('bootstrap.panel-no-div', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'md' => 12, 'i' => 3))
 		@include ('bootstrap.panel-no-div', array ('content' => 'spectrum-analysis', 'view_header' => trans('messages.spectrum'), 'md' => 12, 'i' => '3'))
 	</div>
 
