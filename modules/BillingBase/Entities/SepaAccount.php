@@ -90,6 +90,15 @@ class SepaAccount extends \BaseModel
     }
 
     /**
+     * Observers
+     */
+    public static function boot()
+    {
+        self::observe(new SepaAccountObserver);
+        parent::boot();
+    }
+
+    /**
      * BILLING STUFF
      */
     public $invoice_nr = 100000; 			// invoice number counter - default start nr is replaced by global config field
@@ -614,5 +623,13 @@ class SepaAccount extends \BaseModel
                 return $entry[3];
             }
         }
+    }
+}
+
+class SepaAccountObserver
+{
+    public function updated($sepaaccount)
+    {
+        \Artisan::call('queue:restart');
     }
 }
