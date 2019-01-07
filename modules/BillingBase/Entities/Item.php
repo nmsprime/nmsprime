@@ -129,7 +129,7 @@ class Item extends \BaseModel
     {
         if ($this->product) {
             $price = floatval($this->credit_amount) ?: $this->product->price;
-            $price = ' | '.round($price, 2).'€';
+            $price = ' | '.round($price, 4).'€';
 
             return $price;
         }
@@ -495,8 +495,7 @@ class Item extends \BaseModel
         $endDate->subDay();
 
         // set defaults
-        $maturity_min = $this->product->maturity_min ?: Product::$maturity_min;
-        $maturity = $this->product->maturity ?: Product::$maturity;
+        $maturity = $maturity_min = $this->product->maturity_min ?: Product::$maturity_min;
         $pon = $this->product->period_of_notice ?: Product::$pon;
 
         // add minimum maturity and set endDate to last of month as default if no maturity is specified
@@ -510,6 +509,7 @@ class Item extends \BaseModel
 
         // add maturity until endDate is after first possible date of period of notice
         if ($invoiceDate->gte($firstPonDate)) {
+            $maturity = $this->product->maturity ?: Product::$maturity;
             do {
                 $endDate = self::add_period($endDate, $maturity);
                 $firstPonDate = self::sub_period(clone $endDate, $pon);
@@ -518,8 +518,9 @@ class Item extends \BaseModel
 
         // return end_of_term and (last) cancelation_day
         return [
-            'end_of_term' => $endDate->toDateString(),
             'cancelation_day' => $firstPonDate->toDateString(),
+            'end_of_term' => $endDate->toDateString(),
+            'maturity' => $maturity,
             ];
     }
 

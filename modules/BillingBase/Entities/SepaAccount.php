@@ -90,6 +90,15 @@ class SepaAccount extends \BaseModel
     }
 
     /**
+     * Observers
+     */
+    public static function boot()
+    {
+        self::observe(new SepaAccountObserver);
+        parent::boot();
+    }
+
+    /**
      * BILLING STUFF
      */
     public $invoice_nr = 100000; 			// invoice number counter - default start nr is replaced by global config field
@@ -254,7 +263,21 @@ class SepaAccount extends \BaseModel
             'Housenr' 		=> $contract->house_number,
             'Zip'			=> $contract->zip,
             'City' 			=> $contract->city,
+            'District'      => $contract->district,
             ];
+
+        // Set AG contact if present - cache file exists query for better performance
+        if (! isset($this->setContact)) {
+            $this->setContact = Storage::exists('config/billingbase/ags.php');
+        }
+
+        if ($this->setContact) {
+            if (! isset($this->agContacts)) {
+                $this->agContacts = require storage_path('app/config/billingbase/ags.php');
+            }
+
+            $data['AG'] = isset($this->agContacts[$contract->contact]) ? $this->agContacts[$contract->contact] : '';
+        }
 
         if ($mandate) {
             $data2 = [
@@ -600,5 +623,13 @@ class SepaAccount extends \BaseModel
                 return $entry[3];
             }
         }
+    }
+}
+
+class SepaAccountObserver
+{
+    public function updated($sepaaccount)
+    {
+        \Artisan::call('queue:restart');
     }
 }

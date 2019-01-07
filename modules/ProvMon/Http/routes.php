@@ -31,6 +31,12 @@ BaseRoute::group([], function () {
         'middleware' => ['can:view_analysis_pages_of,Modules\ProvBase\Entities\Modem'],
     ]);
 
+    BaseRoute::get('provmon/{id}/spectrum', [
+        'as' => 'ProvMon.createSpectrum',
+        'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@getSpectrumData',
+        'middleware' => ['can:view_analysis_pages_of,Modules\ProvBase\Entities\Modem'],
+    ]);
+
     BaseRoute::get('provmon/ping/{ip}', [
         'as' => 'ProvMon.realtime_ping',
         'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@realtime_ping',

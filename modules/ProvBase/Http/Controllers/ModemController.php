@@ -113,11 +113,6 @@ class ModemController extends \BaseController
         return array_merge($a, $b, $c);
     }
 
-    protected function prepare_input_post_validation($data)
-    {
-        return unify_mac($data);
-    }
-
     /**
      * Get all management jobs for envia TEL
      *
@@ -253,6 +248,58 @@ class ModemController extends \BaseController
     }
 
     /**
+     * Return status of modem via API
+     *
+     * @return JsonResponse
+     *
+     * @author Ole Ernst
+     */
+    public function api_status($ver, $id)
+    {
+        if ($ver !== '0') {
+            return response()->json(['ret' => "Version $ver not supported"]);
+        }
+
+        if (! $modem = static::get_model_obj()->find($id)) {
+            return response()->json(['ret' => 'Object not found']);
+        }
+
+        $domain_name = \Modules\ProvBase\Entities\ProvBase::first()->domain_name;
+        exec("sudo ping -c1 -i0 -w1 {$modem->hostname}.$domain_name", $ping, $offline);
+
+        return response()->json(['ret' => 'success', 'online' => ! $offline]);
+    }
+
+    /**
+     * Restart modem via API
+     *
+     * @return JsonResponse
+     *
+     * @author Ole Ernst
+     */
+    public function api_restart($ver, $id)
+    {
+        if ($ver !== '0') {
+            return response()->json(['ret' => "Version $ver not supported"]);
+        }
+
+        if (! $modem = static::get_model_obj()->find($id)) {
+            return response()->json(['ret' => 'Object not found']);
+        }
+
+        $modem->restart_modem();
+
+        $err = collect([
+            \Session::get('tmp_info_above_form'),
+            \Session::get('tmp_warning_above_form'),
+            \Session::get('tmp_error_above_form'),
+        ])->collapse()
+        ->implode(', ');
+
+        return response()->json(['ret' => $err ?: 'success']);
+    }
+
+    /**
      * Set nullable fields.
      *
      * @author Patrick Reichel
@@ -272,7 +319,7 @@ class ModemController extends \BaseController
         // ISO 3166 country codes are uppercase
         $data['country_code'] = \Str::upper($data['country_code']);
 
-        return $data;
+        return unify_mac($data);
     }
 
     public function prepare_rules($rules, $data)

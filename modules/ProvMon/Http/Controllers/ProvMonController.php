@@ -82,7 +82,7 @@ class ProvMonController extends \BaseController
      */
     public function analyses($id)
     {
-        $ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = null;
+        $ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = $data = null;
         $modem = $this->modem ? $this->modem : Modem::find($id);
         $view_var = $modem; // for top header
         $error = '';
@@ -91,7 +91,7 @@ class ProvMonController extends \BaseController
         // if there is no valid hostname specified, then return error view
         // to get the regular Analyses tab the hostname should be: cm-...
         if ($id == 'error') {
-            return \View::make('errors.generic', compact('error', 'message'));
+            return View::make('errors.generic', compact('error', 'message'));
         }
 
         $hostname = $modem->hostname.'.'.$this->domain_name;
@@ -113,8 +113,7 @@ class ProvMonController extends \BaseController
         $lease = $this->validate_lease($lease, $type);
 
         // Configfile
-        $cf_path = "/tftpboot/cm/$modem->hostname.conf";
-        $configfile = is_file($cf_path) ? file($cf_path) : null;
+        $configfile = self::_get_configfile("/tftpboot/cm/$modem->hostname");
 
         // Realtime Measure - this takes the most time
         // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
@@ -140,7 +139,33 @@ class ProvMonController extends \BaseController
         $view_header = 'ProvMon-Analyses';
 
         // View
-        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header')));
+        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
+                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id')));
+    }
+
+    /**
+     * Get contents, mtime of configfile and warn if it is outdated
+     *
+     * @author  Ole Ernst
+     * @param   path    String  Path of the configfile excluding its extension
+     * @return  array
+     */
+    private static function _get_configfile($path)
+    {
+        if (! is_file("$path.conf") || ! is_file("$path.cfg")) {
+            return;
+        }
+
+        if (filemtime("$path.conf") > filemtime("$path.cfg")) {
+            $conf['warn'] = trans('messages.configfile_outdated');
+        }
+
+        $conf['mtime'] = strftime('%c', filemtime("$path.cfg"));
+
+        exec("docsis -d $path.cfg", $conf['text']);
+        $conf['text'] = str_replace("\t", '&nbsp;&nbsp;&nbsp;&nbsp;', $conf['text']);
+
+        return $conf;
     }
 
     /**
@@ -381,8 +406,7 @@ class ProvMonController extends \BaseController
         $lease = $this->validate_lease($lease, $type);
 
         // configfile
-        $cf_path = "/tftpboot/mta/$mta->hostname.conf";
-        $configfile = is_file($cf_path) ? file($cf_path) : null;
+        $configfile = self::_get_configfile("/tftpboot/mta/$mta->hostname");
 
         // log
         $ip = gethostbyname($mta->hostname);
@@ -606,7 +630,11 @@ class ProvMonController extends \BaseController
         } else {
             $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
         }
-        $us['SNR dB'] = $cmts->get_us_snr($ip);
+
+        $snrs = $cmts->get_us_snr($ip);
+        foreach ($us['Frequency MHz'] as $freq) {
+            $us['SNR dB'][] = isset($snrs[strval($freq)]) ? $snrs[strval($freq)] : 'n/a';
+        }
 
         // remove all inactive channels (no range success)
         foreach ($ds['Power dBmV'] as $key => $val) {
@@ -1211,5 +1239,51 @@ class ProvMonController extends \BaseController
         }
 
         return View::make('provbase::Modem.log', compact('modem', 'out'));
+    }
+
+    /**
+     * Retrieve Data via SNMP and create Array for spectrum in Modem Analyses page.
+     *
+     * @author Roy Schneider
+     * @param Modules\ProvBase\Entities\Modem
+     * @return JSON response
+     */
+    public function getSpectrumData($id)
+    {
+        $provbase = ProvBase::first();
+        $modem = Modem::find($id);
+        $hostname = $modem->hostname;
+        $roCommunity = $provbase->ro_community;
+        $rwCommunity = $provbase->rw_community;
+
+        // enable docsIf3CmSpectrumAnalysisCtrlCmd
+        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.1.0', 'i', 1);
+
+        // set frequency span from 150 to 862 MHz
+        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', 150000000);
+        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', 862000000);
+
+        // every 8 MHz
+        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', 8000000);
+
+        // after enabling docsIf3CmSpectrumAnalysisCtrlCmd it may take a few seconds to start the snmpwalḱ (error: End of MIB)
+        sleep(15);
+        $expressions = snmp2_real_walk($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3');
+
+        // in case we don't get return values
+        if (! isset($expressions)) {
+            return;
+        }
+
+        // filter expression for ampitude
+        // returned values: level in 10th dB and frequency in Hz
+        // Example: SNMPv2-SMI::enterprises.4491.2.1.20.1.35.1.3.985500000 = INTEGER: -361
+        foreach ($expressions as $oid => $level) {
+            preg_match('/[0-9]{9}/', $oid, $frequency);
+            $data['span'][] = $frequency[0] / 1000000;
+            $data['amplitudes'][] = intval($level) / 10;
+        }
+
+        return response()->json($data);
     }
 }

@@ -5,7 +5,7 @@
 	<table class="table table-bordered">
 		@foreach($invoice_links as $key => $link)
 			@if ($key % 2)
-				<td class="{{$link['bsclass']}}" align="center"=> {{ $link['link'] }} </td></tr>
+				<td class="{{$link['bsclass']}}" align="center"> {{ $link['link'] }} </td></tr>
 			@else
 				<tr><td class="{{$link['bsclass']}}" align="center"> {{ $link['link'] }} </td>
 			@endif

@@ -206,7 +206,13 @@ class DashboardController extends BaseController
 
         foreach ($objs->get() as $service) {
             $tmp = \Modules\HfcReq\Entities\NetElement::find($service->name1);
+
             $link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/service/show?host='.$service->name1.'&service='.$service->name2, $tmp ? $tmp->name : $service->name1);
+            // add additional controlling link if available
+            if (is_numeric($service->name1)) {
+                $link .= '<br>'.link_to_route('NetElement.controlling_edit', '(Controlling)', [$service->name1, 0, 0]);
+            }
+
             $ret['clr'][] = $clr[$service->last_hard_state];
             $ret['row'][] = [$link, $service->name2, $service->output, $service->last_time_ok];
             $ret['perf'][] = self::_get_impaired_services_perfdata($service->perfdata);

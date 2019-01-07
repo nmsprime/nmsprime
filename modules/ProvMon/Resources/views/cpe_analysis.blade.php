@@ -51,8 +51,11 @@
 
 @section('content_configfile')
 	@if (isset($configfile))
-		<font color="green"><b>{{$type}} Configfile</b></font><br>
-		@foreach ($configfile as $line)
+		<font color="green"><b>{{$type}} Configfile ({{$configfile['mtime']}})</b></font><br>
+		@if (isset($configfile['warn']))
+			<font color="red"><b>{{$configfile['warn']}}</b></font><br>
+		@endif
+		@foreach ($configfile['text'] as $line)
 			<table>
 				<tr>
 					<td>

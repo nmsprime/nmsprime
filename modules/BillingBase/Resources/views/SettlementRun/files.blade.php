@@ -1,3 +1,7 @@
+<!-- Dont cache Files for download as they would never change -->
+<META HTTP-EQUIV="Pragma" CONTENT="no-cache">
+<META HTTP-EQUIV="Expires" CONTENT="-1">
+
 @if (isset($relation['view']['vars']))
     <div class="row">
 
@@ -62,7 +66,6 @@
 
     </div>
 @endif
-
 
 @section ('javascript_extra')
 

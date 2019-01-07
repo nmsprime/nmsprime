@@ -1,6 +1,5 @@
 @extends ('provmon::split')
 
-
 @section('content_dash')
 	@if ($dash)
 		<font color="grey">{{$dash}}</font>
@@ -13,10 +12,15 @@
 	</div>
 @stop
 
+
+@section('spectrum-analysis')
+	@include('provmon::spectrum-analysis')
+@stop
+
 @section('content_cacti')
 
 	@if ($host_id)
-		<iframe id="cacti-diagram" src="/cacti/graph_view.php?action=preview&columns=2&host_id={{$host_id}}" sandbox="allow-scripts allow-same-origin" width="100%" height="100%" onload="resizeIframe(this)" scrolling="no" style="min-height: 100%; border: none;"></iframe>
+		<iframe id="cacti-diagram" src="/cacti/graph_view.php?action=preview&columns=1&host_id={{$host_id}}" sandbox="allow-scripts allow-same-origin" onload="resizeIframe(this);" style="width: 100%;"></iframe>
 	@else
 		<font color="red">{{trans('messages.modem_no_diag')}}</font><br>
 		{{ trans('messages.modem_monitoring_error') }}
@@ -37,8 +41,8 @@
 
 		<div class="tab-pane fade in" id="flood-ping">
 					<form method="POST">Type:
-						<input type="hidden" name="_token" value="{{ csrf_token() }}"></input>
-						<select class="select2 form-control m-b-20" name="flood_ping" style="width : 100 %">
+						<input type="hidden" name="_token" value="{{ csrf_token() }}" />
+						<select class="select2 form-control m-b-20" name="flood_ping" style="width: 100%;">
 							<option value="1">low load: 500 packets of 56 Byte</option> {{-- needs approximately 5 sec --}}
 							<option value="2">average load: 1000 packets of 736 Byte</option> {{-- needs approximately 10 sec --}}
 							<option value="3">big load: 2500 packets of 56 Byte</option> {{-- needs approximately 30 sec --}}
@@ -101,8 +105,11 @@
 	</div>
 	<div class="tab-pane fade in" id="configfile">
 		@if ($configfile)
-			<font color="green"><b>Modem Configfile</b></font><br>
-			@foreach ($configfile as $line)
+			<font color="green"><b>Modem Configfile ({{$configfile['mtime']}})</b></font><br>
+			@if (isset($configfile['warn']))
+				<font color="red"><b>{{$configfile['warn']}}</b></font><br>
+			@endif
+			@foreach ($configfile['text'] as $line)
 				<table>
 					<tr>
 						<td>
@@ -305,5 +312,6 @@
 		});
 	});
 </script>
+@yield('spectrum')
 @include('Generic.handlePanel')
 @stop

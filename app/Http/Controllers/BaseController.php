@@ -1085,6 +1085,22 @@ class BaseController extends Controller
     }
 
     /**
+     * Get status of object via API
+     *
+     * @author Ole Ernst
+     *
+     * @return JsonResponse
+     */
+    public function api_status($ver, $id)
+    {
+        if ($ver === '0') {
+            return response()->json(['ret' => 'success']);
+        } else {
+            return response()->json(['ret' => "Version $ver not supported"]);
+        }
+    }
+
+    /**
      * API equivalent of index()
      *
      * @author Ole Ernst
@@ -1093,10 +1109,19 @@ class BaseController extends Controller
      */
     public function api_index($ver)
     {
-        if ($ver === '0') {
-            return static::get_model_obj()->all();
-        } else {
+        if ($ver !== '0') {
             return response()->json(['ret' => "Version $ver not supported"]);
+        }
+
+        $query = static::get_model_obj();
+        foreach (Input::all() as $key => $val) {
+            $query = $query->where($key, $val);
+        }
+
+        try {
+            return $query->get();
+        } catch (\Exception $e) {
+            return response()->json(['ret' => $e]);
         }
     }
 

@@ -269,7 +269,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
         // avoid deleting temporary latex files before last invoice was built (multiple threads are used)
         // and wait for all invoice pdfs to be created for concatenation in zipCommand@_make_billing_files()
-        usleep(200000);
+        usleep(500000);
 
         // while removing it's tested if all PDFs were created successfully
         Invoice::remove_templatex_files($this->sepaacc ?: null);
@@ -571,6 +571,16 @@ class SettlementRunCommand extends Command implements ShouldQueue
             $pn_customer[substr_replace($pn->prefix_number, '49', 0, 1).$pn->number][] = $pn->contractnr;
         }
 
+        // this is needed for backward compatibility to old system
+        $cdr_nr_prefix_replacements = [];
+        if (Storage::exists('config/billingbase/cdr-nr-prefix-replacements')) {
+            $cdr_nr_prefix_replacements = explode(PHP_EOL, Storage::get('config/billingbase/cdr-nr-prefix-replacements'));
+
+            array_filter($cdr_nr_prefix_replacements, function ($value) {
+                return $value !== '';
+            });
+        }
+
         // skip first line of csv (column description)
         unset($csv[0]);
         $price = $count = 0;
@@ -579,7 +589,9 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
         foreach ($csv as $line) {
             $arr = str_getcsv($line, ';');
-            $customer_nr = str_replace(['002-', '010-'], '', $arr[0]);
+
+            // replace prefixes of enviatel customer numbers that not exist in NMSPrime
+            $customer_nr = $cdr_nr_prefix_replacements ? str_replace($cdr_nr_prefix_replacements, '', $arr[0]) : $arr[0];
 
             $data = [
                 'calling_nr' => $arr[3],
@@ -738,15 +750,6 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
         foreach ($csv as $line) {
             $arr = str_getcsv($line, ';');
-
-            // Discard Drebach Customers in a first step
-            if (strpos($arr[7], '013-') !== false) {
-                if (! in_array($arr[7], $logged)) {
-                    $logged[] = $arr[7];
-                }
-
-                continue;
-            }
 
             $customer_nr = intval(str_replace(['010-'], '', $arr[7]));
             $username = $arr[2];
