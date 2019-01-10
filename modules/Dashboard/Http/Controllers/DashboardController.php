@@ -337,9 +337,14 @@ class DashboardController extends BaseController
                     <a href="https://crowdin.com/project/nmsprime/'.\Auth::user()->language.'" target="_blank">Crowdin</a></li>', ];
         }
 
+        // set mail parameters for .env
+        if (env('MAIL_HOST') == null || env('MAIL_USERNAME') == null || env('MAIL_PASSWORD') == null) {
+            return ['text' => '<li> '.trans('helper.mail_env').' </li>'];
+        }
+
         // links need to be in embedded style, like:
-        //return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
-        //		'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
+        // return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
+        //      'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
     }
 
     /*
