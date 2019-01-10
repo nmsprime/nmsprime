@@ -159,6 +159,141 @@ class Ticket extends \BaseModel
     {
         return $this->belongsToMany('Modules\Ticketsystem\Entities\TicketType', 'tickettype_ticket', 'ticket_id', 'tickettype_id');
     }
+
+    /**
+     * Send Email to all assigned users from noreply@roetzer-engineering.com.
+     * See: .env and mail.php
+     *
+     * @author Roy Schneider
+     */
+    public function mailAssignedUser($ticketUsers)
+    {
+        // init
+        $this->duedate = $this->duedate ?: null;
+        $author = ['0' => $this->user_id];
+        $input = $ticketUsers;
+        $now = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+        $subject = trans('messages.ticketUpdated', ['id' => $this->id]);
+        $ticketAssigned = trans('messages.ticketUpdatedMessage');
+        $ids = $this->users->pluck('id')->toArray();
+
+        // creator of the ticket should get an email too
+        // creator and editor can be 2 different users
+        if (isset($ticketUsers)) {
+            array_merge($ticketUsers, $author);
+        }
+
+        // get collection of users
+        $users = $this->getTicketUsers($ticketUsers);
+
+        // the user that edits the ticket shouldn't reveive an email
+        $author = $users->pluck('id')->search(\Auth::user()->id);
+        if (is_int($author)) {
+            $users->forget($author);
+        }
+
+        foreach ($users as $user) {
+            // send mail to assigned users and if more than only updated_at has changed
+            if (isset($user->email) && $ids !== $input) {
+
+                // message for new ticket
+                if (! $this->created_at || array_search($user->id, $ids) == false) {
+                    $subject = trans('messages.newTicket');
+                    $ticketAssigned = trans('messages.newTicketAssigned');
+                }
+
+                \Mail::send('ticketsystem::emails.assignticket', ['user' => $user, 'ticket' => $this, 'ticketAssigned' => $ticketAssigned],
+                    function ($message) use ($user, $subject) {
+                        $message->from('noreply@roetzer-engineering.com', 'NMS Prime')
+                                ->to($user->email, $user->last_name.', '.$user->first_name)
+                                ->subject($subject);
+                });
+            }
+        }
+    }
+
+    /**
+     * Send Email to users who were deleted from the ticket.
+     *
+     * @author Roy Schneider
+     * @param  array
+     */
+    public function mailDeletedTicketUser($deletedUsers)
+    {
+        $subject = trans('messages.deletedTicketUsers', ['id' => $this->id]);
+
+        // get collection of users
+        $users = $this->getTicketUsers($deletedUsers);
+
+        // the user that edits the ticket shouldn't reveive an email
+        $author = $users->pluck('id')->search(\Auth::user()->id);
+        if (is_int($author)) {
+            $users->forget($author);
+        }
+
+        foreach ($users as $user) {
+            \Mail::raw(trans('messages.deletedTicketUsersMessage', ['id' => $this->id]),
+                function ($message) use ($user, $subject) {
+                    $message->from('noreply@roetzer-engineering.com', 'NMS Prime')
+                            ->to($user->email, $user->last_name.', '.$user->first_name)
+                            ->subject($subject);
+            });
+        }
+    }
+
+    /**
+     * Get entire input.
+     *
+     * @author Roy Schneider
+     * @param  Illuminate\Support\Facades\Input
+     */
+    public function getTicketInput()
+    {
+        $input = \Input::all();
+
+        return $input;
+    }
+
+    /**
+     * Compare with previous input.
+     * Check if there are changes in name, state, priority, duedate, users_ids and description.
+     *
+     * @author Roy Schneider
+     * @return mixed values
+     */
+    public function importantChanges()
+    {
+        $changes = $this->getTicketInput();
+        $original = $this['original'];
+
+        if ($changes['description'] == $original['description']
+             && $changes['state'] == $original['state']
+              && $changes['priority'] == $original['priority']
+               && $changes['duedate'] == $original['duedate']
+                && $changes['name'] == $original['name']) {
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Return collection of users.
+     *
+     * @author Roy Schneider
+     * @param array $ticketUsers
+     * @return collection $users
+     */
+    public function getTicketUsers($ticketUsers)
+    {
+        foreach ($ticketUsers as $id) {
+            $users[] = \DB::table('users')->where('id', $id)->first();
+            $users = collect($users);
+        }
+
+        return $users;
+    }
 }
 
 class TicketObserver
@@ -166,30 +301,44 @@ class TicketObserver
     public function creating($ticket)
     {
         $ticket->duedate = $ticket->duedate ?: null;
+        if (isset($ticket->getTicketInput()['users_ids'])) {
+            $users = $ticket->getTicketInput()['users_ids'];
+            $ticket->mailAssignedUser($users);
+        }
     }
 
     public function created($ticket)
     {
-        foreach ($ticket->users as $user) {
-            // send mail to assigned users
-            if (empty($user->email)) {
-                continue;
-            }
-
-            \Mail::send('ticketsystem::emails.assignticket', ['user' => $user, 'ticket' => $ticket], function ($m) use ($user, $ticket) {
-                $m->from('noreply@roetzer-engineering.com', 'NMS Prime');
-                $m->to($user->email, $user->last_name.', '.$user->first_name)->subject(trans('new_ticket')."\n\n".$ticket->description);
-            });
-        }
     }
 
     public function updating($ticket)
     {
         $ticket->duedate = $ticket->duedate ?: null;
+        // get assigned users and previously assigned users
+        $ticketUsers = $ticket->users;
+        $input = $ticket->getTicketInput()['users_ids'];
+
+        // create array with user ids
+        foreach ($ticketUsers as $key => $user) {
+            $users[$key] = $user->id;
+        }
+
+        // compare input and saved users
+        if (isset($users) && $input !== null && ! empty(array_diff($users, $input))) {
+            $deletedUser = array_diff($users, $input);
+            $ticket->mailDeletedTicketUser($deletedUser);
+        }
+
+        if ($ticket->importantChanges()) {
+            $ticket->mailAssignedUser($users);
+        }
+
+        if ($newUsers = array_diff($input, $users)) {
+            $ticket->mailAssignedUser($newUsers);
+        }
     }
 
     public function updated($ticket)
     {
-        // TODO: send mail, too
     }
 }
