@@ -12,11 +12,11 @@
             <tr class = "clickable {{$services['clr'][$i]}}" data-toggle="collapse" data-target=".{{$i}}collapsedservice">
                 @foreach ($row as $j => $data)
                     @if($j)
-                        <td class='f-s-13'>{{$data}}</td>
+                        <td class='f-s-13'>{!!$data!!}</td>
                     @elseif(count($services['perf'][$i]))
-                        <td class='f-s-13'><i class="fa fa-plus"></i>{{$data}}</td>
+                        <td class='f-s-13'><i class="fa fa-plus"></i>{!!$data!!}</td>
                     @else
-                        <td class='f-s-13'><i class="fa fa-info"></i>{{$data}}</td>
+                        <td class='f-s-13'><i class="fa fa-info"></i>{!!$data!!}</td>
                     @endif
                 @endforeach
             </tr>
