@@ -207,7 +207,7 @@ class Ticket extends \BaseModel
                         $message->from('noreply@roetzer-engineering.com', 'NMS Prime')
                                 ->to($user->email, $user->last_name.', '.$user->first_name)
                                 ->subject($subject);
-                });
+                    });
             }
         }
     }
@@ -237,7 +237,7 @@ class Ticket extends \BaseModel
                     $message->from('noreply@roetzer-engineering.com', 'NMS Prime')
                             ->to($user->email, $user->last_name.', '.$user->first_name)
                             ->subject($subject);
-            });
+                });
         }
     }
 
@@ -271,7 +271,6 @@ class Ticket extends \BaseModel
               && $changes['priority'] == $original['priority']
                && $changes['duedate'] == $original['duedate']
                 && $changes['name'] == $original['name']) {
-
             return false;
         }
 
