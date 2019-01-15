@@ -8,6 +8,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Console\Command;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
+use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Invoice;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use App\Http\Controllers\BaseViewController;
@@ -136,18 +137,18 @@ class ZipCommand extends Command implements ShouldQueue
      */
     private function concatPostalInvoices()
     {
-        $prod_fpath_rel = 'config/billingbase/post-invoice-product-ids';
-        $prod_fpath_abs = storage_path("app/$prod_fpath_rel");
+        $ids = Product::where('type', 'Postal')->get();
+        $prod_ids = [];
 
-        if (! \Storage::exists($prod_fpath_rel)) {
-            ChannelLog::error('billing', 'Build postal invoices PDF failed: Missing file '.$prod_fpath_abs);
+        if (! $ids) {
+            ChannelLog::error('billing', 'Build postal invoices PDF failed: No product is of type Postal!');
 
             return;
         }
 
-        $prod_ids = \Storage::get($prod_fpath_rel);
-        $prod_ids = str_replace(' ', '', $prod_ids);
-        $prod_ids = explode(',', trim(str_replace([';', PHP_EOL], ',', $prod_ids), ','));
+        foreach ($ids as $id) {
+            $prod_ids[] = $id->id;
+        }
 
         SettlementRunCommand::push_state(0, 'Get data...');
 
