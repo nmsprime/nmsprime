@@ -1,6 +1,7 @@
 @extends('ccc::layouts.master')
 
 @section('content_left')
+	<div class="row">
 		@foreach($invoice_links as $year => $years)
 			<div class="col-md-6 ui-sortable">
 				<div class="panel panel-inverse card-2 d-flex flex-column">
@@ -45,6 +46,7 @@
 				</div>
 			</div>
 		@endforeach
+	</div>
 @stop
 
 @section('content_emails')
