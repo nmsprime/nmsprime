@@ -169,13 +169,12 @@ class Ticket extends \BaseModel
     public function mailAssignedUser($ticketUsers)
     {
         // init
-        $this->duedate = $this->duedate ?: null;
         $author = ['0' => $this->user_id];
         $input = $ticketUsers;
-        $now = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
         $subject = trans('messages.ticketUpdated', ['id' => $this->id]);
         $ticketAssigned = trans('messages.ticketUpdatedMessage');
         $ids = $this->users->pluck('id')->toArray();
+        $settings = $this->validGlobalSettings();
 
         // creator of the ticket should get an email too
         // creator and editor can be 2 different users
@@ -194,21 +193,22 @@ class Ticket extends \BaseModel
 
         foreach ($users as $user) {
             // send mail to assigned users and if more than only updated_at has changed
-            if (isset($user->email) && $ids !== $input) {
-
-                // message for new ticket
-                if (! $this->created_at || array_search($user->id, $ids) == false) {
-                    $subject = trans('messages.newTicket');
-                    $ticketAssigned = trans('messages.newTicketAssigned');
-                }
-
-                \Mail::send('ticketsystem::emails.assignticket', ['user' => $user, 'ticket' => $this, 'ticketAssigned' => $ticketAssigned],
-                    function ($message) use ($user, $subject) {
-                        $message->from('noreply@roetzer-engineering.com', 'NMS Prime')
-                                ->to($user->email, $user->last_name.', '.$user->first_name)
-                                ->subject($subject);
-                    });
+            if (! isset($user->email) || $ids == $input) {
+                continue;
             }
+
+            // message for new ticket
+            if (! $this->created_at || array_search($user->id, $ids) == false) {
+                $subject = trans('messages.newTicket');
+                $ticketAssigned = trans('messages.newTicketAssigned');
+            }
+
+            \Mail::send('ticketsystem::emails.assignticket', ['user' => $user, 'ticket' => $this, 'ticketAssigned' => $ticketAssigned],
+                function ($message) use ($user, $subject, $settings) {
+                    $message->from($settings['noReplyMail'], $settings['noReplyName'])
+                            ->to($user->email, $user->last_name.', '.$user->first_name)
+                            ->subject($subject);
+                });
         }
     }
 
@@ -221,6 +221,7 @@ class Ticket extends \BaseModel
     public function mailDeletedTicketUser($deletedUsers)
     {
         $subject = trans('messages.deletedTicketUsers', ['id' => $this->id]);
+        $settings = $this->validGlobalSettings();
 
         // get collection of users
         $users = $this->getTicketUsers($deletedUsers);
@@ -233,8 +234,8 @@ class Ticket extends \BaseModel
 
         foreach ($users as $user) {
             \Mail::raw(trans('messages.deletedTicketUsersMessage', ['id' => $this->id]),
-                function ($message) use ($user, $subject) {
-                    $message->from('noreply@roetzer-engineering.com', 'NMS Prime')
+                function ($message) use ($user, $subject, $settings) {
+                    $message->from($settings['noReplyMail'], $settings['noReplyName'])
                             ->to($user->email, $user->last_name.', '.$user->first_name)
                             ->subject($subject);
                 });
@@ -249,9 +250,7 @@ class Ticket extends \BaseModel
      */
     public function getTicketInput()
     {
-        $input = \Input::all();
-
-        return $input;
+        return \Input::all();
     }
 
     /**
@@ -292,6 +291,24 @@ class Ticket extends \BaseModel
         }
 
         return $users;
+    }
+
+    /**
+     * Get app/GlobalConfig.php and check if noReplyName and noReplyMail are set.
+     *
+     * @author Roy Schneider
+     * @return array $settings
+     */
+    public function validGlobalSettings()
+    {
+        $all = \DB::table('global_config')->first();
+        $settings = ['noReplyName' => $all->noReplyName, 'noReplyMail' => $all->noReplyMail];
+
+        if (empty($settings['noReplyName']) || empty($settings['noReplyMail'])) {
+            abort('403', trans('view.error_ticket_settings'));
+        }
+
+        return $settings;
     }
 }
 
