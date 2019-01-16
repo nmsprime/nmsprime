@@ -325,6 +325,11 @@ class DashboardController extends BaseController
             return $this->newsInstallAndSequenceCheck();
         }
 
+        // check if E-mails and names are set in Clobal Config Page/.env for Ticket module
+        if ($ticket = $this->checkTicketSettings()) {
+            return $ticket;
+        }
+
         // Check for official news from support.nmsprime.com
         if ($news = $this->newsLoadOfficialSite()) {
             return $news;
@@ -335,11 +340,6 @@ class DashboardController extends BaseController
             return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
                     'text' => ' <li>NMS PRIME is not yet translated to your language. Help translating NMS PRIME with
                     <a href="https://crowdin.com/project/nmsprime/'.\Auth::user()->language.'" target="_blank">Crowdin</a></li>', ];
-        }
-
-        // set mail parameters for .env
-        if (env('MAIL_HOST') == null || env('MAIL_USERNAME') == null || env('MAIL_PASSWORD') == null) {
-            return ['text' => '<li> '.trans('helper.mail_env').' </li>'];
         }
 
         // links need to be in embedded style, like:
@@ -512,5 +512,25 @@ class DashboardController extends BaseController
         }
 
         return false;
+    }
+
+    /**
+     * Check if the User can send/receive E-mails via Ticketsystem.
+     *
+     * @author Roy Schneider
+     */
+    private function checkTicketSettings()
+    {
+        // set mail parameters for .env
+        if (env('MAIL_HOST') == null || env('MAIL_USERNAME') == null || env('MAIL_PASSWORD') == null) {
+            return ['text' => '<li> '.trans('helper.mail_env').' </li>'];
+        }
+
+        // set noreply name and address in Global Config Page
+        $globalConfig = \GlobalConfig::first();
+
+        if (\Schema::hasColumn('global_config', 'noReplyMail') && (empty($globalConfig->noReplyName) || empty($globalConfig->noReplyMail))) {
+            return ['text' => '<li>'.trans('helper.ticket_settings').'</li>'];
+        }
     }
 }
