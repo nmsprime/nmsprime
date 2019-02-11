@@ -9,6 +9,7 @@ use Module;
 use Schema;
 use Bouncer;
 use Session;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model as Eloquent;
 use App\Extensions\Database\EmptyRelation as EmptyRelation;
@@ -665,33 +666,27 @@ class BaseModel extends Eloquent
 
     /**
      * Generic function to build a list with key of id
-     * @param 	array 			$array 	 		list of Models/Objects
+     * @param 	array 			$data 	 		list of Models/Objects
      * @param 	String/Array 	$column 		sql column name(s) that contain(s) the description of the entry
-     * @param 	bool 			$empty_option 	true it first entry shall be empty
+     * @param 	bool 			$withEmptyOption 	true if first entry shall be empty
      * @return  array 			$ret 			list
      */
-    public function html_list($array, $columns, $empty_option = false, $separator = '--')
+    public function html_list($data, $columns, $withEmptyOption = false, $separator = '--')
     {
-        $ret = $empty_option ? [0 => null] : [];
+        if (! $data instanceof \Illuminate\Support\Collection) {
+            $data = collect($data);
+        }
+
+        $prepend = $withEmptyOption ? [0 => null] : [];
 
         if (is_string($columns)) {
-            foreach ($array as $a) {
-                $ret[$a->id] = $a->{$columns};
-            }
-
-            return $ret;
+            return $prepend + $data->pluck($columns, 'id')->toArray();
         }
 
-        // column is array
-        foreach ($array as $a) {
-            foreach ($columns as $key => $c) {
-                $desc[$key] = $a->{$c};
-            }
-
-            $ret[$a->id] = implode($separator, $desc);
-        }
-
-        return $ret;
+        return $prepend + $data->keyBy('id')
+            ->map(function($model) use ($columns, $separator) {
+                return collect($model)->only($columns)->implode($separator);
+            })->toArray();
     }
 
     /**
