@@ -684,7 +684,7 @@ class BaseModel extends Eloquent
         }
 
         return $prepend + $data->keyBy('id')
-            ->map(function($model) use ($columns, $separator) {
+            ->map(function ($model) use ($columns, $separator) {
                 return collect($model)->only($columns)->implode($separator);
             })->toArray();
     }
@@ -694,37 +694,27 @@ class BaseModel extends Eloquent
      *
      * @param array         $array          list of Models/Objects
      * @param String/Array  $column         sql column name(s) that contain(s) the description of the entry
-     * @param bool          $empty_option   true it first entry shall be empty
-     * @param string        $colname        the column to count
-     * @param string        $count_at       the database table to count at
+     * @param bool          $withEmptyOption   true it first entry shall be empty
+     * @param string        $model          the Model Classname to count at
+     * @param string        $relation       relationship to count
      * @return array        $ret            list
      *
      * @author Patrick Reichel
      */
-    public function html_list_with_count($array, $columns, $empty_option = false, $separator = '--', $colname = '', $count_at = '')
+    public function html_list_with_count($array, $columns, $withEmptyOption = false, $separator = '--', $model = '', $relation = '')
     {
-        $tmp = $this->html_list($array, $columns, $empty_option, $separator);
-        if (! $colname || ! $count_at) {
-            return $tmp;
+        $htmlList = $this->html_list($array, $columns, $withEmptyOption, $separator);
+        if (! $relation || ! $model) {
+            return $htmlList;
         }
 
-        $counts_raw = \DB::select("SELECT $colname AS value, COUNT($colname) AS count FROM $count_at WHERE deleted_at IS NULL GROUP BY $colname");
-        $counts = [];
-        foreach ($counts_raw as $entry) {
-            $counts[$entry->value] = $entry->count;
-        }
+        $counts = Cache::remember($model.$relation.'_count', 10, function () use ($model, $relation) {
+            return $model::withCount($relation)->pluck($relation.'_count', 'id');
+        });
 
-        $ret = [];
-        foreach ($tmp as $id => $value) {
-            if (array_key_exists($id, $counts)) {
-                $value .= ' ('.$counts[$id].')';
-            } else {
-                $value .= ' (0)';
-            }
-            $ret[$id] = $value;
-        }
-
-        return $ret;
+        return collect($htmlList)->mapWithKeys(function ($description, $id) use ($counts) {
+            return [$id => "{$description} ({$counts->pull($id)})"];
+        })->toArray();
     }
 
     // Placeholder
