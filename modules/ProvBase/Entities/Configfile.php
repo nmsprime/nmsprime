@@ -410,6 +410,8 @@ class ConfigfileObserver
 {
     public function created($configfile)
     {
+        \Cache::forget('Modules\ProvBase\Entities\Configfilemodem_count');
+
         // When a Configfile was created we can not already have a relation - so dont call command
     }
 
