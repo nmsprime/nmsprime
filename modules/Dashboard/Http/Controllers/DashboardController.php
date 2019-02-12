@@ -521,7 +521,7 @@ class DashboardController extends BaseController
      */
     private function checkTicketSettings()
     {
-        // set mail parameters for .env
+        // set variables in .env
         if (env('MAIL_HOST') == null || env('MAIL_USERNAME') == null || env('MAIL_PASSWORD') == null) {
             return ['text' => '<li> '.trans('helper.mail_env').' </li>'];
         }
@@ -529,7 +529,7 @@ class DashboardController extends BaseController
         // set noreply name and address in Global Config Page
         $globalConfig = \GlobalConfig::first();
 
-        if (\Schema::hasColumn('global_config', 'noReplyMail') && (empty($globalConfig->noReplyName) || empty($globalConfig->noReplyMail))) {
+        if (Module::collections()->has('Ticketsystem') && (empty($globalConfig->noReplyName) || empty($globalConfig->noReplyMail))) {
             return ['text' => '<li>'.trans('helper.ticket_settings').'</li>'];
         }
     }

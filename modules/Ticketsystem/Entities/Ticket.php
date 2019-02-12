@@ -301,11 +301,11 @@ class Ticket extends \BaseModel
      */
     public function validGlobalSettings()
     {
-        $all = \DB::table('global_config')->first();
+        $all =  \App\GlobalConfig::first();
         $settings = ['noReplyName' => $all->noReplyName, 'noReplyMail' => $all->noReplyMail];
 
         if (empty($settings['noReplyName']) || empty($settings['noReplyMail'])) {
-            abort('403', trans('view.error_ticket_settings'));
+            abort('422', trans('view.error_ticket_settings'));
         }
 
         return $settings;
