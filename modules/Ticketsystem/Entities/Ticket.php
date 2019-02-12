@@ -24,7 +24,7 @@ class Ticket extends \BaseModel
         return '<i class="fa fa-ticket"></i>';
     }
 
-    public static function rules($id = NULL)
+    public static function rules($id = null)
     {
         return [
             'users_ids' => 'required',
@@ -312,7 +312,7 @@ class Ticket extends \BaseModel
      */
     public function validGlobalSettings()
     {
-        $all =  \App\GlobalConfig::first();
+        $all = \App\GlobalConfig::first();
         $settings = ['noReplyName' => $all->noReplyName, 'noReplyMail' => $all->noReplyMail];
 
         if (empty($settings['noReplyName']) || empty($settings['noReplyMail'])) {
