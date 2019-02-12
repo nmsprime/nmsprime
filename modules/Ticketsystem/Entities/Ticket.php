@@ -24,6 +24,13 @@ class Ticket extends \BaseModel
         return '<i class="fa fa-ticket"></i>';
     }
 
+    public static function rules($id = NULL)
+    {
+        return [
+            'users_ids' => 'required',
+        ];
+    }
+
     public function view_index_label()
     {
         $bsclass = $this->get_bsclass();
@@ -193,12 +200,12 @@ class Ticket extends \BaseModel
 
         foreach ($users as $user) {
             // send mail to assigned users and if more than only updated_at has changed
-            if (! isset($user->email) || $ids == $input) {
+            if (empty($user->email) || ($ids == $input && ! $this->importantChanges())) {
                 continue;
             }
 
             // message for new ticket
-            if (! $this->created_at || array_search($user->id, $ids) == false) {
+            if (! $this->created_at || ! in_array($user->id, $ids)) {
                 $subject = trans('messages.newTicket');
                 $ticketAssigned = trans('messages.newTicketAssigned');
             }
@@ -233,6 +240,10 @@ class Ticket extends \BaseModel
         }
 
         foreach ($users as $user) {
+            if (empty($user->email)) {
+                continue;
+            }
+
             \Mail::raw(trans('messages.deletedTicketUsersMessage', ['id' => $this->id]),
                 function ($message) use ($user, $subject, $settings) {
                     $message->from($settings['noReplyMail'], $settings['noReplyName'])
@@ -290,7 +301,7 @@ class Ticket extends \BaseModel
             $users = collect($users);
         }
 
-        return $users;
+        return $users ?? collect($ticketUsers);
     }
 
     /**
@@ -314,22 +325,20 @@ class Ticket extends \BaseModel
 
 class TicketObserver
 {
-    public function creating($ticket)
-    {
-        $ticket->duedate = $ticket->duedate ?: null;
-        if (isset($ticket->getTicketInput()['users_ids'])) {
-            $users = $ticket->getTicketInput()['users_ids'];
-            $ticket->mailAssignedUser($users);
-        }
-    }
-
     public function created($ticket)
     {
+        $ticket->duedate = $ticket->duedate ?: null;
+
+        // get assigned users and previously assigned users
+        $input = $ticket->getTicketInput()['users_ids'];
+
+        $ticket->mailAssignedUser($input);
     }
 
     public function updating($ticket)
     {
         $ticket->duedate = $ticket->duedate ?: null;
+
         // get assigned users and previously assigned users
         $ticketUsers = $ticket->users;
         $input = $ticket->getTicketInput()['users_ids'];
@@ -339,10 +348,16 @@ class TicketObserver
             $users[$key] = $user->id;
         }
 
+        $users = $users ?? [];
+
         // compare input and saved users
-        if (isset($users) && $input !== null && ! empty(array_diff($users, $input))) {
+        if ($input !== null && ! empty(array_diff($users, $input))) {
             $deletedUser = array_diff($users, $input);
             $ticket->mailDeletedTicketUser($deletedUser);
+
+            foreach ($deletedUser as $key => $id) {
+                unset($users[$key]);
+            }
         }
 
         if ($ticket->importantChanges()) {
@@ -352,9 +367,5 @@ class TicketObserver
         if ($newUsers = array_diff($input, $users)) {
             $ticket->mailAssignedUser($newUsers);
         }
-    }
-
-    public function updated($ticket)
-    {
     }
 }
