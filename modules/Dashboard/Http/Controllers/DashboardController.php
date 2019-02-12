@@ -44,10 +44,6 @@ class DashboardController extends BaseController
 
         $data['news'] = $this->news();
 
-        if (Module::collections()->has('BillingBase')) {
-            $this->downloadBicCsv();
-        }
-
         return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'data', 'view', 'netelements', 'services')));
     }
 
@@ -403,22 +399,6 @@ class DashboardController extends BaseController
                 Log::error("Error retrieving $name (using installed version): ".$e->getMessage());
                 Storage::delete("data/dashboard/$name");
             }
-        }
-    }
-
-    /**
-     * Download bic_de.csv from support.nmsprime.com, if this file doesn't already exist.
-     *
-     * @author Roy Schneider
-     * @return Illuminate\Support\Facades\Storage
-     */
-    private function downloadBicCsv()
-    {
-        $path = 'config/billingbase/';
-        $name = 'bic_de.csv';
-
-        if (! Storage::exists($path.$name)) {
-            return Storage::put($path.$name, file_get_contents('https://support.nmsprime.com/'.$name));
         }
     }
 
