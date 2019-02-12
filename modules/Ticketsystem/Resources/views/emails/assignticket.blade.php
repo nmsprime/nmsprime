@@ -1,6 +1,6 @@
 {{ trans('messages.hello') }} {{ $user->first_name }},
 
-{{ $ticketAssigned }}. <br />
+{{ $ticketAssigned }} <br />
 
 {{ trans('messages.ticket') }} ID: {{ link_to_route('Ticket.edit', $ticket->id, ['id' => $ticket->id]) }} <br />
 @if (isset($ticket->name))
