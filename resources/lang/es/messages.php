@@ -531,4 +531,5 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'newUser'                   => 'Welcome to NMS Prime. Please change your Passwort to secure your account properly. Thank You!',
     'Password Reset Interval'   => 'Password Reset Interval',
     'PasswordClick'             => 'Please click HERE to change your password.',
+    'created'                   => 'Created!',
 ];
