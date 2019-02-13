@@ -401,7 +401,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Created at'			=> 'Fecha de creación',
     'Activation date'       => 'Fecha de activación',
     'Deactivation date'     => 'Fecha de desactivacion',
-    'SIP domain'            => 'Dominio SIP',
+    'SIP domain'            => 'Registrar',
     'Created at' 			=> 'Fecha de creación',
     'Last status update'	=> 'Última actualización de estado',
     'Last user interaction' => 'Última interacción con el usuario',
@@ -531,5 +531,6 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'newUser'                   => 'Welcome to NMS Prime. Please change your Passwort to secure your account properly. Thank You!',
     'Password Reset Interval'   => 'Password Reset Interval',
     'PasswordClick'             => 'Please click HERE to change your password.',
+    'deleteSettlementRun'       => 'Deleting settlementrun :time...',
     'created'                   => 'Created!',
 ];
