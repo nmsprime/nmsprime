@@ -89,19 +89,7 @@ class CccUserController extends \BaseController
         }
 
         // get data to fill placeholders in tex template
-        $ret = $this->fill_template_data($login_data, $c);
-
-        //temporary solution to display a general message
-        if (! empty($ret) && $ret < 0) {
-            return \Redirect::back()->with('error_msg', trans('messages.conn_info_err_create'));
-        }
-
-        //writ empty values into log
-        foreach ($this->data as $key => $value) {
-            if (empty($value)) {
-                Log::info('Value for '.$key.' not set or empty. Mayby cause an error on creating pdf-file.');
-            }
-        }
+        $this->fill_template_data($login_data, $c);
 
         // create pdf
         // TODO: try - catch exceptions that this function shall throw
@@ -216,8 +204,8 @@ class CccUserController extends \BaseController
         $company = $sepa_account->company;
 
         if (! is_object($company)) {
-            //todo: msg should be appear in BE
-            Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
+            //todo: msg should appear in BE
+            Log::warning('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
 
             return -1;
         }
@@ -225,8 +213,8 @@ class CccUserController extends \BaseController
         $this->data = array_merge($this->data, $company->template_data());
 
         if (empty($this->data['company_logo'])) {
-            //todo: msg should be appear in admin
-            Log::error('Company Logo not set');
+            //todo: msg should appear in admin
+            Log::warning('Company Logo not set');
 
             return -1;
         }
@@ -235,7 +223,7 @@ class CccUserController extends \BaseController
 
         if (! file_exists($this->data['company_logo'])) {
             //todo: should be appear in admin
-            Log::error('File Company Log not found');
+            Log::warning('Company Logo file not found');
 
             return -1;
         }
