@@ -32,6 +32,6 @@ class DeleteSettlementRun implements ShouldQueue
 
     public function failed(Exception $exception)
     {
-        \Info::log($exception);
+        \Log::error($exception);
     }
 }
