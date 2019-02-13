@@ -173,7 +173,7 @@ class Ticket extends \BaseModel
      *
      * @author Roy Schneider
      */
-    public function mailAssignedUser($ticketUsers)
+    public function mailAssignedUsers($ticketUsers)
     {
         // init
         $author = ['0' => $this->user_id];
@@ -225,7 +225,7 @@ class Ticket extends \BaseModel
      * @author Roy Schneider
      * @param  array
      */
-    public function mailDeletedTicketUser($deletedUsers)
+    public function mailDeletedTicketUsers($deletedUsers)
     {
         $subject = trans('messages.deletedTicketUsers', ['id' => $this->id]);
         $settings = $this->validGlobalSettings();
@@ -254,17 +254,6 @@ class Ticket extends \BaseModel
     }
 
     /**
-     * Get entire input.
-     *
-     * @author Roy Schneider
-     * @param  Illuminate\Support\Facades\Input
-     */
-    public function getTicketInput()
-    {
-        return \Input::all();
-    }
-
-    /**
      * Compare with previous input.
      * Check if there are changes in name, state, priority, duedate, users_ids and description.
      *
@@ -273,7 +262,7 @@ class Ticket extends \BaseModel
      */
     public function importantChanges()
     {
-        $changes = $this->getTicketInput();
+        $changes = \Input::all();
         $original = $this['original'];
 
         if ($changes['description'] == $original['description']
@@ -308,18 +297,17 @@ class Ticket extends \BaseModel
      * Get app/GlobalConfig.php and check if noReplyName and noReplyMail are set.
      *
      * @author Roy Schneider
-     * @return array $settings
+     * @return array
      */
     public function validGlobalSettings()
     {
         $all = \App\GlobalConfig::first();
-        $settings = ['noReplyName' => $all->noReplyName, 'noReplyMail' => $all->noReplyMail];
 
-        if (empty($settings['noReplyName']) || empty($settings['noReplyMail'])) {
+        if (! isset($all->noReplyName) || ! isset($all->noReplyMail)) {
             abort('422', trans('view.error_ticket_settings'));
         }
 
-        return $settings;
+        return ['noReplyName' => $all->noReplyName, 'noReplyMail' => $all->noReplyMail];
     }
 }
 
@@ -330,9 +318,9 @@ class TicketObserver
         $ticket->duedate = $ticket->duedate ?: null;
 
         // get assigned users and previously assigned users
-        $input = $ticket->getTicketInput()['users_ids'];
+        $input = \Input::all()['users_ids'];
 
-        $ticket->mailAssignedUser($input);
+        $ticket->mailAssignedUsers($input);
     }
 
     public function updating($ticket)
@@ -341,19 +329,15 @@ class TicketObserver
 
         // get assigned users and previously assigned users
         $ticketUsers = $ticket->users;
-        $input = $ticket->getTicketInput()['users_ids'];
+        $input = \Input::all()['users_ids'];
 
         // create array with user ids
-        foreach ($ticketUsers as $key => $user) {
-            $users[$key] = $user->id;
-        }
-
-        $users = $users ?? [];
+        $users = $ticketUsers->pluck('id', 'id')->toArray() ?? [];
 
         // compare input and saved users
         if ($input !== null && ! empty(array_diff($users, $input))) {
             $deletedUser = array_diff($users, $input);
-            $ticket->mailDeletedTicketUser($deletedUser);
+            $ticket->mailDeletedTicketUsers($deletedUser);
 
             foreach ($deletedUser as $key => $id) {
                 unset($users[$key]);
@@ -361,11 +345,11 @@ class TicketObserver
         }
 
         if ($ticket->importantChanges()) {
-            $ticket->mailAssignedUser($users);
+            $ticket->mailAssignedUsers($users);
         }
 
         if ($newUsers = array_diff($input, $users)) {
-            $ticket->mailAssignedUser($newUsers);
+            $ticket->mailAssignedUsers($newUsers);
         }
     }
 }

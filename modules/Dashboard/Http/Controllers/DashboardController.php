@@ -325,11 +325,6 @@ class DashboardController extends BaseController
             return $this->newsInstallAndSequenceCheck();
         }
 
-        // check if E-mails and names are set in Clobal Config Page/.env for Ticket module
-        if ($ticket = $this->checkTicketSettings()) {
-            return $ticket;
-        }
-
         // Check for official news from support.nmsprime.com
         if ($news = $this->newsLoadOfficialSite()) {
             return $news;
@@ -497,6 +492,11 @@ class DashboardController extends BaseController
         // check if nominatim email address is set, otherwise osm geocoding won't be possible
         if (env('OSM_NOMINATIM_EMAIL') == '') {
             return ['text' => $text.trans('helper.create_nominatim')];
+        }
+
+        // check if E-mails and names are set in Global Config Page/.env for Ticket module
+        if ($text = $this->checkTicketSettings()) {
+            return $text;
         }
 
         // check for local nameserver
