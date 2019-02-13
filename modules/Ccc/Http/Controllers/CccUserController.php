@@ -176,7 +176,7 @@ class CccUserController extends \BaseController
         $this->data['psw'] = $login_data['password'];
 
         if (! \Module::collections()->has('BillingBase')) {
-            return -1;
+            return;
         }
 
         $costcenter = $contract->costcenter;
@@ -184,7 +184,7 @@ class CccUserController extends \BaseController
         if (! is_object($costcenter)) {
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - no CostCenter assigned', [$contract->id]);
 
-            return -1;
+            return;
         }
 
         $sepa_account = $costcenter->sepaaccount;
@@ -193,7 +193,7 @@ class CccUserController extends \BaseController
             //todo: msg should be appear in BE
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - CostCenter has no SepaAccount assigned', ['Costcenter' => $costcenter->name]);
 
-            return -1;
+            return;
         }
 
         $this->data['company_creditor_id'] = $sepa_account->creditorid;
@@ -207,28 +207,26 @@ class CccUserController extends \BaseController
             //todo: msg should appear in BE
             Log::warning('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
 
-            return -1;
+            return;
         }
 
         $this->data = array_merge($this->data, $company->template_data());
 
         if (empty($this->data['company_logo'])) {
             //todo: msg should appear in admin
-            Log::warning('Company Logo not set');
+            Log::warning("Company Logo in $company->name (ID: $company->id) not set");
 
-            return -1;
+            return;
         }
 
         $this->data['company_logo'] = storage_path('app/config/billingbase/logo/'.$this->data['company_logo']);
 
-        if (! file_exists($this->data['company_logo'])) {
+        if (! Storage::exists('config/billingbase/logo/'.$this->data['company_logo'])) {
             //todo: should be appear in admin
-            Log::warning('Company Logo file not found');
+            Log::warning("Company Logo file for $company->name (ID: $company->id) not found");
 
-            return -1;
+            return;
         }
-
-        return 0;
     }
 
     /**
