@@ -601,6 +601,10 @@ class SepaAccount extends \BaseModel
 
     /**
      * Returns BIC from iban and parsed config/data-file
+     *
+     * @TODO: store csv as php array for faster access!?
+     *
+     * @return string
      */
     public static function get_bic($iban)
     {
@@ -618,7 +622,7 @@ class SepaAccount extends \BaseModel
 
         foreach ($data_a as $key => $entry) {
             if (strpos($entry, $bank) !== false) {
-                $entry = explode(',', $entry);
+                $entry = explode(';', $entry);
 
                 return $entry[3];
             }

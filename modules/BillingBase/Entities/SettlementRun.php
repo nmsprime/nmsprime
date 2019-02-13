@@ -189,13 +189,4 @@ class SettlementRunObserver
             \Session::put('job_id', \Queue::push(new \Modules\BillingBase\Console\SettlementRunCommand($settlementrun, $acc)));
         }
     }
-
-    public function deleted($settlementrun)
-    {
-        // delete all invoices & accounting record files - maybe use SettlementRunCommand@_directory_cleanup
-        $date = $settlementrun->year.'-'.str_pad($settlementrun->month, 2, '0', STR_PAD_LEFT);
-        $dir = 'data/billingbase/accounting/'.$date;
-
-        \Modules\BillingBase\Http\Controllers\SettlementRunController::directory_cleanup($settlementrun);
-    }
 }
