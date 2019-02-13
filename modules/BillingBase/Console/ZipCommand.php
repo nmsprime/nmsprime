@@ -137,17 +137,12 @@ class ZipCommand extends Command implements ShouldQueue
      */
     private function concatPostalInvoices()
     {
-        $ids = Product::where('type', 'Postal')->get();
-        $prod_ids = [];
+        $prod_ids = Product::where('type', 'Postal')->pluck('id', 'id')->all();
 
-        if (! $ids) {
+        if (! $prod_ids) {
             ChannelLog::error('billing', 'Build postal invoices PDF failed: No product is of type Postal!');
 
             return;
-        }
-
-        foreach ($ids as $id) {
-            $prod_ids[] = $id->id;
         }
 
         SettlementRunCommand::push_state(0, 'Get data...');
