@@ -331,7 +331,9 @@ class SettlementRunCommand extends Command implements ShouldQueue
             $acc->settlementrun_init($this->conf->rcd ? date('Y-m-'.$this->conf->rcd) : date('Y-m-d', strtotime('+1 day')));
         }
 
-        // reset yearly payed items payed_month column
+        // Reset yearly payed items payed_month column
+        Item::where('payed_month', (int) $this->dates['lastm'])->update(['payed_month' => 0]);
+
         if ($this->dates['lastm'] == '01') {
             Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
         }
