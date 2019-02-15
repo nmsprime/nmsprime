@@ -635,6 +635,10 @@ class ItemObserver
             }
         }
 
+        if ($item->credit_amount < 0) {
+            \Session::put('alert.warning', trans('messages.item_credit_amount_negative'));
+        }
+
         // TODO: warn user if end_of_term is now earlier by adding this item ?
     }
 
