@@ -343,7 +343,9 @@ class Item extends \BaseModel
                 // calculate only for billing month
                 if ($billing_month != $dates['lastm']) {
                     // or tariff started after billing month - then only pay on first settlement run - break otherwise
-                    if (! ((date('m', $start) >= $billing_month) && (date('Y-m', $start) == $dates['lastm_Y']))) {
+                    // or contract ended last month (before billing month)
+                    if (! (((date('m', $start) >= $billing_month) && (date('Y-m', $start) == $dates['lastm_Y'])) ||
+                        (date('Y-m', $end) == $dates['lastm_Y']))) {
                         break;
                     }
                 }
