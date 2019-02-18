@@ -350,28 +350,31 @@ class Item extends \BaseModel
                     }
                 }
 
+                // in case billing month is december we have to consider the last year as current month is january of this year
+                $year = (int) $billing_month == 12 ? date('Y') - 1 : date('Y');
+
                 // started this yr
-                if (date('Y', $start) == $dates['Y']) {
-                    $ratio = 1 - date('z', $start) / (365 + date('L'));		// date('z')+1 is day in year, 365 + 1 for leap year + 1
+                if (date('Y', $start) == $year) {
+                    $ratio = 1 - date('z', $start) / (365 + date('L', strtotime("$year-01-01")));     // date('z')+1 is day in year, 365 + 1 for leap year + 1
                     $text = Invoice::langDateFormat($start);
                 } else {
                     $ratio = 1;
-                    $text = Invoice::langDateFormat(date('Y-01-01'));
+                    $text = Invoice::langDateFormat("$year-01-01");
                 }
 
                 $text .= ' - ';
 
                 // ended this yr
-                if ($end && (date('Y', $end) == $dates['Y'])) {
-                    $ratio += $ratio ? (date('z', $end) + 1) / (365 + date('L')) - 1 : 0;
+                if ($end && (date('Y', $end) == $year)) {
+                    $ratio += $ratio ? (date('z', $end) + 1) / (365 + date('L', strtotime("$year-01-01"))) - 1 : 0;
                     $text .= Invoice::langDateFormat($end);
                 } else {
-                    $text .= Invoice::langDateFormat(date('Y-12-31'));
+                    $text .= Invoice::langDateFormat("$year-12-31");
                 }
 
                 // set payed flag to avoid double payment in case of billing month is changed during year
                 if ($ratio && $update) {
-                    $this->payed_month = $dates['m'] - 1;				// is set to 0 every new year
+                    $this->payed_month = $dates['lastm'];				// is set to 0 every new year
                     $this->observer_enabled = false;
                     $this->save();
                 }
