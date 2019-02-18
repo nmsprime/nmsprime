@@ -692,6 +692,17 @@ class ItemObserver
 
         // \Log::debug('updated item', [$item->id]);
 
+        // TODO: adapt when product has new flag of partly calculation (show message only if partly=true)
+        // Check if yearly charged item was already charged - maybe customer should get a credit then
+        if ($item->isDirty('valid_to') && $item->product->billing_cycle == 'Yearly' &&
+            ($item->payed_month != 0 && date('Y', strtotime($item->valid_to)) == date('Y')) ||
+                (date('m') == '01' && $item->valid_to != date('Y-12-31', strtotime('last year')) &&
+                    date('Y-m', strtotime($item->valid_to)) == date('Y-12', strtotime('last year'))
+                    )
+            ) {
+            \Session::put('alert.warning', trans('messages.iteM.concede_credit'));
+        }
+
         // this is ab(used) here for easily setting the correct values
         $item->contract->daily_conversion();
     }
