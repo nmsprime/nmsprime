@@ -798,9 +798,10 @@ class ProvMonController extends \BaseController
         // actual strategy: if possible grep active lease, otherwise return all entries
         //                  in reverse ordered format from dhcpd.leases
         if (count($ret) > 1) {
-            foreach (preg_grep('/(.*?)binding state active(.*?)/', $ret) as $str) {
-                if (preg_match('/starts \d ([^;]+);/', $str, $s)) {
-                    $start[] = $s[1];
+            foreach ($ret as $text) {
+                if (preg_match('/starts \d ([^;]+);.*;binding state active;/', $text, $match)) {
+                    $start[] = $match[1];
+                    $lease[] = $text;
                 }
             }
 
@@ -809,7 +810,7 @@ class ProvMonController extends \BaseController
                 natsort($start);
                 end($start);
 
-                return [$ret[each($start)[0]]];
+                return [$lease[key($start)]];
             }
         }
 
