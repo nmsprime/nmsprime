@@ -43,7 +43,7 @@ EOF
 ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/ss_docsis.php /usr/share/cacti/scripts/ss_docsis.php
 ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/cisco_cmts.xml /usr/share/cacti/resource/snmp_queries/cisco_cmts.xml
 
-echo "*/5 * * * * cacti /usr/bin/php /usr/share/cacti/poller.php > /dev/null 2>&1" > /etc/cron.d/cacti
+sed -i 's/^#//' /etc/cron.d/cacti
 sed -i 's/Require host localhost$/Require all granted\n\t\tDirectoryIndex index.php/' /etc/httpd/conf.d/cacti.conf
 systemctl reload httpd.service
 
