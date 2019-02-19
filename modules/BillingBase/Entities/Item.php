@@ -279,23 +279,17 @@ class Item extends \BaseModel
         $contract_start = $this->contract->get_start_time();
         $contract_end = $this->contract->get_end_time();
 
-        if ($billing_cycle == 'once') {
-            $start = $item_start;
-            $end = $item_end;
-        } else {
-            // Note: start will always be set - end date can be open (null)
-            $start = $contract_start > $item_start ? $contract_start : $item_start;
+        // Note: start will always be set - end date can be open (null)
+        $start = $contract_start > $item_start ? $contract_start : $item_start;
+        $end = null;    // if (! $contract_end && ! $item_end) {
 
-            // Note: cases are sorted by likelihood
-            if (! $contract_end && ! $item_end) {
-                $end = null;
-            } elseif ($contract_end && ! $item_end) {
-                $end = $contract_end;
-            } elseif (! $contract_end && $item_end) {
-                $end = $item_end;
-            } elseif ($contract_end && $item_end) {
-                $end = $contract_end < $item_end ? $contract_end : $item_end;
-            }
+        // Note: cases are sorted by likelihood
+        if ($contract_end && ! $item_end) {
+            $end = $contract_end;
+        } elseif (! $contract_end && $item_end) {
+            $end = $item_end;
+        } elseif ($contract_end && $item_end) {
+            $end = $contract_end < $item_end ? $contract_end : $item_end;
         }
 
         // skip invalid items
@@ -309,6 +303,11 @@ class Item extends \BaseModel
 
         switch ($billing_cycle) {
             case 'monthly':
+
+                if (! $this->product->proportional) {
+                    $start = strtotime('first day of last month');
+                    $end = strtotime('last day of last month');
+                }
 
                 // started last month
                 if (date('Y-m', $start) == $dates['lastm_Y']) {
@@ -353,6 +352,13 @@ class Item extends \BaseModel
                 // in case billing month is december we have to consider the last year as current month is january of this year
                 $year = (int) $billing_month == 12 ? date('Y') - 1 : date('Y');
 
+                if (! $this->product->proportional) {
+                    $start = strtotime("$year-01-01");
+                    $end = strtotime("$year-12-31");
+
+                    break;
+                }
+
                 // started this yr
                 if (date('Y', $start) == $year) {
                     $ratio = 1 - date('z', $start) / (365 + date('L', strtotime("$year-01-01")));     // date('z')+1 is day in year, 365 + 1 for leap year + 1
@@ -383,14 +389,18 @@ class Item extends \BaseModel
 
             case 'quarterly':
 
-                // always after 3 months
-                $billing_month = date('m', strtotime('+2 month', $start));
+                $billing_months = ['02', '05', '08', '11'];
 
-                if ($dates['m'] % 3 != $billing_month % 3) {
+                if (! in_array($dates['lastm'], $billing_months)) {
                     break;
                 }
 
-                $period_start = strtotime('midnight first day of -2 month');
+                $period_start = strtotime('first day of -2 month');
+
+                if (! $this->product->proportional) {
+                    $start = strtotime('first day of -2 month');
+                    $end = strtotime('last day of this month');
+                }
 
                 // started in last 3 months
                 if ($start > $period_start) {
@@ -410,7 +420,7 @@ class Item extends \BaseModel
                     $ratio -= $days / $total_days;
                     $text .= Invoice::langDateFormat($end);
                 } else {
-                    $text .= Invoice::langDateFormat(date('Y-m-31'));
+                    $text .= Invoice::langDateFormat(date('Y-m-d', strtotime('last day of this month')));
                 }
 
                 break;
@@ -423,8 +433,29 @@ class Item extends \BaseModel
 
                 $valid_to = $this->valid_to && $this->valid_to != $dates['null'] ? strtotime(date('Y-m', strtotime($this->valid_to))) : null;		// only month is considered
 
-                // if payment is split
-                if ($valid_to) {
+                if ($this->product->proportional) {
+                    // started last month
+                    if (date('Y-m-d', $start) != date('Y-m-01', strtotime('first day of last month'))) {
+                        $ratio = 1 - (date('d', $start) - 1) / date('t', $start);
+                        $text = Invoice::langDateFormat($start);
+                    }
+
+                    // ended last month - same as in monthly case
+                    if ($end && $end < strtotime('first day of this month')) {
+                        $ratio += date('d', $end) / date('t', $end) - 1;
+                        $text = $text ?: Invoice::langDateFormat(strtotime('first day of last month'));
+                        $text .= ' - '.Invoice::langDateFormat($end);
+                    } elseif ($text) {
+                        $text .= ' - '.Invoice::langDateFormat(strtotime('last day of last month'));
+                    }
+                } elseif ($valid_to) {
+                    if (date('Y-m', $start) == $dates['lastm_Y'] && $end < strtotime('first day of this month')) {
+                        $ratio = 1;
+
+                        break;
+                    }
+
+                    // Payment is split over several months
                     if ($dates['lastm_Y'] > date('Y-m', $start) && $dates['lastm_Y'] <= date('Y-m', $valid_to)) {
                         $ratio = 1;
                     }
@@ -445,7 +476,6 @@ class Item extends \BaseModel
                 }
 
                 break;
-
         }
 
         if (! $ratio) {
@@ -695,9 +725,8 @@ class ItemObserver
 
         // \Log::debug('updated item', [$item->id]);
 
-        // TODO: adapt when product has new flag of partly calculation (show message only if partly=true)
         // Check if yearly charged item was already charged - maybe customer should get a credit then
-        if ($item->isDirty('valid_to') && $item->product->billing_cycle == 'Yearly' &&
+        if ($item->isDirty('valid_to') && $item->product->proportional && $item->product->billing_cycle == 'Yearly' &&
             ($item->payed_month != 0 && date('Y', strtotime($item->valid_to)) == date('Y')) ||
                 (date('m') == '01' && $item->valid_to != date('Y-12-31', strtotime('last year')) &&
                     date('Y-m', strtotime($item->valid_to)) == date('Y-12', strtotime('last year'))
