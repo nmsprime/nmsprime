@@ -85,20 +85,20 @@ return [
  /*
   * MODULE: Dashboard
   */
-    'next'							=> 'Next step: ',
-    'set_isp_name'					=> 'Set internet service provider name',
-    'create_cmts'					=> 'Create first CMTS',
-    'create_cm_pool'				=> 'Create first cablemodem IP pool',
-    'create_cpepriv_pool'			=> 'Create first private CPE IP pool',
-    'create_qos'					=> 'Create first QoS profile',
-    'create_product'				=> 'Create first billing product',
-    'create_configfile'				=> 'Create first configfile',
-    'create_sepa_account'			=> 'Create first SEPA account',
-    'create_cost_center'			=> 'Create first cost center',
-    'create_contract'				=> 'Create first contract',
-    'create_nominatim'				=> 'Set an email address (OSM_NOMINATIM_EMAIL) in /etc/nmsprime/env/global.env to enable geocoding for modems',
-    'create_nameserver'				=> 'Set your nameserver to 127.0.0.1 in /etc/resolv.conf and make sure it won\'t be overwritten via DHCP (see DNS and PEERDNS in /etc/sysconfig/network-scripts/ifcfg-*)',
-    'create_modem'					=> 'Create first modem',
+    'next'							=> 'Siguiente paso: ',
+    'set_isp_name'					=> 'Nombre de proveedor de servicio de red',
+    'create_cmts'					=> 'Crear el primer CMTS',
+    'create_cm_pool'				=> 'Crear primer IP Pool para Cable Modem',
+    'create_cpepriv_pool'			=> 'Crear primer pool privado CPE IP',
+    'create_qos'					=> 'Crear primer perfil QoS',
+    'create_product'				=> 'Crear primer producto de facturación',
+    'create_configfile'				=> 'Crear primer archivo de configuración',
+    'create_sepa_account'			=> 'Crear cuenta SEPA',
+    'create_cost_center'			=> 'Crear primer centro de costo',
+    'create_contract'				=> 'Crear contrato',
+    'create_nominatim'				=> 'Establecer una dirección de correo electrónico (OSM_NOMINATIM_EMAIL) en /etc/nmsprime/env/global.env para habilitar geocodificación para módem',
+    'create_nameserver'				=> 'Establezca su servidor de nombres a 127.0.0.1 en /etc/resolv.conf y asegúrese de que no será sobreescrito a través de DHCP (vea DNS y PEERDNS en /etc/sysconfig/network-scripts/ifcfg-*)',
+    'create_modem'					=> 'Crear primer módem',
 
  /*
   *	MODULE: HfcReq
@@ -132,8 +132,8 @@ return [
     'mac_formats'					=> "Formatos permitidos (case-insensitive):\n\n1) AA:BB:CC:DD:EE:FF\n2) AABB.CCDD.EEFF\n3) AABBCCDDEEFF",
     'fixed_ip_warning'				=> 'Usar una IP fija es altamente no recomendado, ya que pierde la habilidad de mover modems y sus CPEs libremente entre CMTSes. Envez de dar una IP fija al cliente, deberan ser provistos del hostname, el cual no cambiara.',
     'modem_update_frequency'		=> 'Este campo se actualiza una vez al día.',
-    'enable_agc'					=> 'Enable upstream automatic gain control.',
-    'agc_offset'					=> 'Upstream automatic gain control offset in dB. (default: 0.0)',
+    'enable_agc'					=> 'Activar el control automático de ganancia para upstream.',
+    'agc_offset'					=> 'Control de ganancia automática en dB (por defecto: 0.0)',
 
  /*
   *	MODULE: ProvVoip
@@ -166,8 +166,8 @@ return [
  * Module Ticketsystem
  */
     'assign_user' => ' Permitido de asignar un usuario a un ticket',
-    'mail_env'    => 'Next: Set your Host/Username/Password in /etc/nmsprime/env/global.env to enable receiving Emails concerning Tickets',
-    'noReplyMail' => 'The E-mail address which should be displayed as the sender, while creating/editing tickets. This address does not have to exist. For example: example@example.com',
-    'noReplyName' => 'The name which should be displayed as the sender, while creating/editing tickets. For example: NMS Prime',
-    'ticket_settings' => 'Next: Set noreply name and address in Global Config Page.',
+    'mail_env'    => 'Siguiente: Establece tu Host/Usuario/Contraseña en /etc/nmsprime/env/global.env para permitir recibir Emails en Tickets',
+    'noReplyMail' => 'La dirección de correo electrónico que debe ser mostrada como remitente, al crear/editar tickets. Esta dirección no tiene que existir. Por ejemplo: ejemplo@ejemplo.com',
+    'noReplyName' => 'El nombre que debe mostrarse como remitente, al crear/editar tickets. Por ejemplo: NMS Prime',
+    'ticket_settings' => 'Siguiente: Establecer nombre y dirección no responder en la página de configuración global.',
  ];
