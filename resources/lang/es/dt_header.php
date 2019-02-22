@@ -3,7 +3,7 @@
 return [
     // Index DataTable Header
     'id'            => 'ID',
-    'prio'          => 'Priority',
+    'prio'          => 'Prioridad',
     // Auth
     'users.login_name' => 'Nombre de usuario',
     'users.first_name' => 'Nombre',
@@ -30,10 +30,10 @@ return [
     'invoice.year' => 'Año',
     'invoice.month' => 'Mes',
     //Item
-    'item.valid_from' => 'Item Valid from',
-    'item.valid_from_fixed' => 'Item Valid from fixed',
-    'item.valid_to' => 'Item Valid to',
-    'item.valid_to_fixed' => 'Item Valid to fixed',
+    'item.valid_from' => 'Artículo válido desde',
+    'item.valid_from_fixed' => 'Artículo válido de fijo',
+    'item.valid_to' => 'Artículo válido para',
+    'item.valid_to_fixed' => 'Artículo válido a fijo',
     // Product
     'product.type' => 'Tipo',
     'product.name' => 'Nombre del producto',
@@ -79,7 +79,7 @@ return [
     'netelement.ip' => 'Direccion IP',
     'netelement.state' => 'Estado',
     'netelement.pos' => 'Posición',
-    'netelement.options' => 'Options',
+    'netelement.options' => 'Opciones',
     // NetElementType
     'netelementtype.name' => 'Tipo de elemento de red',
     //HfcSnmp
@@ -118,8 +118,8 @@ return [
     'contract.street' => 'Calle',
     'contract.house_number' => 'Numero de vivienda',
     'contract.district' => 'Provincia',
-    'contract.contract_start' => 'Contract Start',
-    'contract.contract_end' => 'Contract End',
+    'contract.contract_start' => 'Inicio de Contrato',
+    'contract.contract_end' => 'Fin de Contrato',
     // Domain
     'domain.name' => 'Nombre del dominio',
     'domain.type' => 'Tipo',
