@@ -355,8 +355,6 @@ class Item extends \BaseModel
                 if (! $this->product->proportional) {
                     $start = strtotime("$year-01-01");
                     $end = strtotime("$year-12-31");
-
-                    break;
                 }
 
                 // started this yr
