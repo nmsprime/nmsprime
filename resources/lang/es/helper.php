@@ -25,7 +25,7 @@ return [
 
     // GlobalConfig
     'ISO_3166_ALPHA-2'				=> 'ISO 3166 ALPHA-2 (dos caracteres, p.e. “US”). Usado en formularios de direccion para especificar el pais.',
-    'PasswordReset'           => 'This property defines the timespan in days in which the users of the administration panel should change their passwords. If you want to disable the password reset message, set the value to 0.',
+    'PasswordReset'           => 'Esta propiedad define el intervalo de tiempo en días en los que los usuarios del panel de administración deben cambiar sus contraseñas. Si desea deshabilitar el mensaje de restablecimiento de contraseña, establezca el valor en 0.',
 
  /*
   *	MODULE: BillingBase
@@ -54,17 +54,17 @@ return [
     'Item_ProductId'				=> 'Todos los campos ademas del Ciclo de Facturacion tienen que ser despejados antes de algun cambio! De otra manera, los articulos no podran ser guardados en la mayoria de los casos',
     'Item_ValidFrom'				=> 'Para Pagos de Una Vez los campos pueden ser usados para dividir pagos - Solo YYYY-MM es considerado entonces!',
     'Item_ValidFromFixed'			=> 'Marcado por defecto! Desmarque si la tarifa deberia quedar inactiva cuando una fecha de inicio es alcanzada (p.ej. si el cliente esta esperando por transferencia de numero telefonico). La tarifa no sera iniciada y no sera cargada hasta que active la casilla. Luego, la fecha de inicio sera incrementada cada dia un dia despues de alcanzar la fecha de inicio. Nota: La fecha no es actualizada por ordenes externas (p.ej. desde proveedor de telefonia).',
-    'Item_validTo'                  => 'It\'s possible to specify the number of months here - e.g. \'12M\' for 12 months. For monthly paid products it will just add the number of months - so start date 2018-05-04 will be valid to 2019-05-04. Single paid items with splitted payment will be charged 12 times - end date will be 2019-04-31 then.',
+    'Item_validTo'                  => 'Es posible especificar el número de meses aquí-por ejemplo, \' 12M \' durante 12 meses. Para los productos de pago mensuales sólo agregará el número de meses-por lo que la fecha de inicio 2018-05-04 será válida para 2019-05-04. Los artículos pagados individuales con el pago dividido serán cargados 12 veces-la fecha del final será 2019-04-31 entonces.',
     'Item_ValidToFixed'				=> 'Marcado por defecto! Desmarcar si la fecha de pazo es desconocida. Si es desmarcada, la tarifa no acabara y sera cargada hasta que active la casilla. Luego, cuando la fecha de plazo es alcanzada, sera incrementada cada dia en un dia. Nota: La fecha no es actualizada por ordenes externas (p.ej. desde proveedor de telefonia).',
     'Item_CreditAmount'				=> 'Cantidad Neta a ser acreditada al Cliente. Cuidado: una cantidad negativa viene a ser un debito!',
 
     //ProductController
-    'Product_bundle'                => 'On bundled tarifs the minimum runtime of the contract is determined only be the internet tariff. Otherwise the last starting valid tariff (Voip or Internet) dictates this date.',
-    'Product_maturity_min'          => 'Tariff minimum period/runtime/term. E.g. 14D (14 days), 3M (three months), 1Y (one year)',
-    'Product_maturity'              => 'Tariff period/runtime/term extension after the minimum runtime. Will be automatically added when tariff was not canceled before period of notice. Default 1 month. E.g. 14D (14 days), 3M (three months), 1Y (one year)',
+    'Product_bundle'                => 'En las tarifas empaquetadas el tiempo de ejecución mínimo del contrato se determina solamente sea la tarifa de Internet. Si no la última tarifa válida que comienza (VoIP o Internet) dicta esta fecha.',
+    'Product_maturity_min'          => 'Período/tiempo de ejecución/término de mínimo de la tarifa. P.ej. 14D (14 días), 3M (tres meses), 1Y (un año)',
+    'Product_maturity'              => 'Período de duración/tiempo de ejecución/plazo después de la duración mínima de ejecución. Se añadirá automáticamente cuando la tarifa no haya sido cancelada antes del período de notificación. Por defecto 1 mes. E.g. 14D (14 días), 3M (tres meses), 1Y (un año)',
     'Product_Name' 					=> 'Para creditos es posible de asignar un Tipo aniadiendo el tipo de nombre al Nombre del Credito - p.ej.: \'Credito de Dispositivo\'',
     'Product_Number_of_Cycles' 		=> 'Ten cuidado!: para todos los productos pagados repetidos, el precio aplica para cada deuda, para productos pagados de una, el Precio es dividido por el numero de ciclos',
-    'Product_pod'                   => 'E.g. 14D (14 days), 3M (three months), 1Y (one year)',
+    'Product_pod'                   => 'E.g. 14D (14 días), 3M (tres meses), 1Y (un año)',
     'Product_Type'					=> 'Todos los campos ademas del Ciclo de Facturacion tienen que ser despejados antes de algun cambio! De otra manera, los productos no seran guardados en la mayoria de los casos',
 
     //SalesmanController
