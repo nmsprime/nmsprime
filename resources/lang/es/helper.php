@@ -59,13 +59,16 @@ return [
     'Item_CreditAmount'				=> 'Cantidad Neta a ser acreditada al Cliente. Cuidado: una cantidad negativa viene a ser un debito!',
 
     //ProductController
-    'Product_bundle'                => 'En las tarifas empaquetadas el tiempo de ejecución mínimo del contrato se determina solamente sea la tarifa de Internet. Si no la última tarifa válida que comienza (VoIP o Internet) dicta esta fecha.',
-    'Product_maturity_min'          => 'Período/tiempo de ejecución/término de mínimo de la tarifa. P.ej. 14D (14 días), 3M (tres meses), 1Y (un año)',
-    'Product_maturity'              => 'Período de duración/tiempo de ejecución/plazo después de la duración mínima de ejecución. Se añadirá automáticamente cuando la tarifa no haya sido cancelada antes del período de notificación. Por defecto 1 mes. E.g. 14D (14 días), 3M (tres meses), 1Y (un año)',
-    'Product_Name' 					=> 'Para creditos es posible de asignar un Tipo aniadiendo el tipo de nombre al Nombre del Credito - p.ej.: \'Credito de Dispositivo\'',
+    'product' => [
+        'bundle'                => 'On bundled tarifs the minimum runtime of the contract is determined only be the internet tariff. Otherwise the last starting valid tariff (Voip or Internet) dictates this date.',
+        'maturity_min'          => 'Tariff minimum period/runtime/term. E.g. 14D (14 days), 3M (three months), 1Y (one year)',
+        'maturity'              => 'Tariff period/runtime/term extension after the minimum runtime. Will be automatically added when tariff was not canceled before period of notice. Default 1 month. E.g. 14D (14 days), 3M (three months), 1Y (one year)',
+        'Name'                  => 'For Credits it is possible to assign a Type by adding the type name to the Name of the Credit - e.g.: \'Credit Device\'',
+        'pod'                   => 'E.g. 14D (14 days), 3M (three months), 1Y (one year)',
+        'proportional'          => 'Activate this checkbox when items that begin during the current settlement run shall be charged proportionately. E.g. if an monthly paid item starts in the middle of the month the customer would be charged only half of the full price in this settlement run.',
+        'Type'                  => 'All fields besides Billing Cycle have to be cleared before a type change! Otherwise products can not be saved in most cases',
+        ],
     'Product_Number_of_Cycles' 		=> 'Ten cuidado!: para todos los productos pagados repetidos, el precio aplica para cada deuda, para productos pagados de una, el Precio es dividido por el numero de ciclos',
-    'Product_pod'                   => 'E.g. 14D (14 días), 3M (tres meses), 1Y (un año)',
-    'Product_Type'					=> 'Todos los campos ademas del Ciclo de Facturacion tienen que ser despejados antes de algun cambio! De otra manera, los productos no seran guardados en la mayoria de los casos',
 
     //SalesmanController
     'Salesman_ProductList'			=> 'Aniadir todos los tipos de Producto por los cuales se obtiene comision - posible: ',
