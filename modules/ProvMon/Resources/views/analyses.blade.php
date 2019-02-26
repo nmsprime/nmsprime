@@ -12,7 +12,6 @@
 	</div>
 @stop
 
-
 @section('spectrum-analysis')
 	@include('provmon::spectrum-analysis')
 @stop
@@ -312,6 +311,6 @@
 		});
 	});
 </script>
-@yield('spectrum')
 @include('Generic.handlePanel')
+@yield('spectrum')
 @stop
