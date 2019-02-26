@@ -100,7 +100,13 @@ return [
     'cdr_missing_reseller_data' => 'Faltan Datos del Revendedor en Archivo de Entorno!',
     'cdr_offset' 			=> 'CDR diferencia de tiempo de Factura en Meses',
     'close' 				=> 'Cerrar',
-    'contract_early_cancel' => 'En serio quiere cancelar este contrato antes de que el fin de termino de las tarifas :date sea alcanzado?',
+    'contract' => [
+        'concede_credit' => 'There are yearly charged items that were already charged (by full price). Please check if the customer shall get a credit!',
+        'early_cancel' => 'Do you really want to cancel this contract before tariffs end of term :date is reached?',
+        ],
+    'iteM' => [
+        'concede_credit' => 'This item was already charged (by full price). Please check if the customer shall get a credit!',
+    ],
     'contract_nr_mismatch'  => 'No se pudo encontrar el siguiente número de contrato porque la consulta de la base de datos falló. Esto se debe a que los siguientes contratos tienen un número de contrato que no pertenece a su centro de costo seleccionado: :nrs. Cambie el centro de costos o permita que el sistema asigne un nuevo número de contrato para estos contratos.',
     'contract_numberrange_failure' => 'No se encuentra disponible el numero de contrato para el centro de costos seleccionado!',
     'cpe_log_error' 		=> 'No se estuvo registrando en el Servidor - No se encontro registro',
@@ -312,6 +318,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'snmp_query_failed' 	=> 'Consulta SNMP fallo debido a los siguientes OIDs: ',
     'Billing Cycle'				=> 'Ciclo de Facturación',
     'Bundled with VoIP product?'=> '¿Incluido con el producto de VoIP?',
+    'Calculate proportionately' => 'Calculate proportionately',
     'Price (Net)'				=> 'Precio (neto)',
     'Number of Cycles'			=> 'Número de ciclos',
     'Product Entry'				=> 'Producto',
@@ -560,4 +567,10 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'created'                   => 'Creado!',
     'Urban district'            => 'Distrito Urbano',
     'Zipcode'                   => 'Código postal',
+    'base' => [
+        'delete' => [
+            'success' => 'Deleted :model :id',
+            'fail' => 'Could not delete :model :id',
+        ],
+    ],
 ];
