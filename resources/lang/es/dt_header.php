@@ -34,10 +34,12 @@ return [
     'item.valid_from_fixed' => 'Artículo válido de fijo',
     'item.valid_to' => 'Artículo válido para',
     'item.valid_to_fixed' => 'Artículo válido a fijo',
-    // Product
-    'product.type' => 'Tipo',
-    'product.name' => 'Nombre del producto',
-    'product.price' => 'Precio',
+    'product' => [
+        'proportional' => 'Proportionate',
+        'type' => 'Type',
+        'name' => 'Product Name',
+        'price' => 'Price',
+    ],
     // Salesman
     'salesman.id' => 'ID',
     'salesman_id' 		=> 'ID del vendedor',
