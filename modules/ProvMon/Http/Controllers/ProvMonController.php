@@ -1267,8 +1267,18 @@ class ProvMonController extends \BaseController
         snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', 8000000);
 
         // after enabling docsIf3CmSpectrumAnalysisCtrlCmd it may take a few seconds to start the snmpwalḱ (error: End of MIB)
-        sleep(15);
-        $expressions = snmp2_real_walk($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3');
+        $time = 1;
+        while ($time <= 30) {
+            try {
+                $expressions = snmp2_real_walk($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3');
+            } catch (\Exception $e) {
+                $time++;
+                sleep(1);
+                continue;
+            }
+
+            break;
+        }
 
         // in case we don't get return values
         if (! isset($expressions)) {
