@@ -1,10 +1,11 @@
 <!-- DFT Spectrum -->
 
 <center>
-	<button id="showSpectrum" class="btn btn-primary" style="padding: 10px">{{trans('messages.createSpectrum')}}</button>
-	<font color="red">
-		<p id="notValid" style="padding: 10px"></p>
-	</font>
+	<div style="padding-bottom: 10px">
+		<button id="showSpectrum" class="btn btn-primary">{{trans('messages.createSpectrum')}}</button>
+	</div>
+		<span id='pleaseWait' class="alert-info fade in m-b-15" style="color: #00f"></span>
+		<span id='notValid' class="alert-danger fade in m-b-15" style="color: #f00"></span>
 </center>
 <div>
     <canvas id="spectrum"></canvas>
@@ -71,6 +72,8 @@ function makeSpectrum(amplitudes, span) {
 
 $(document).ready(function() {
 	$('#showSpectrum').click( function(e) {
+		document.getElementById("pleaseWait").innerHTML = "{{trans('messages.pleaseWait')}}";
+		document.getElementById("notValid").innerHTML = '';
         $.ajax({
             type:"GET",
             url:"{{route('ProvMon.createSpectrum', ['id' => $id])}}",
@@ -78,14 +81,18 @@ $(document).ready(function() {
             dataType:"json",
             success: function(result) {
             	if (result == null) {
+					document.getElementById("pleaseWait").innerHTML = '';
 					document.getElementById("notValid").innerHTML = "{{ trans('messages.noSpectrum') }}";
 
             		return;
             	}
+				document.getElementById("pleaseWait").innerHTML = '';
+				document.getElementById("notValid").innerHTML = '';
 
                	makeSpectrum(result.amplitudes, result.span);
             },
             error: function() {
+				document.getElementById("pleaseWait").innerHTML = '';
 				document.getElementById("notValid").innerHTML = "{{ trans('messages.noSpectrum') }}";
             }
         });
