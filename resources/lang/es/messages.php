@@ -542,8 +542,8 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Enable AGC'                => 'Habilitar AGC',
     'AGC offset'                => 'AGC compensado',
     'spectrum'                  => 'Espectro',
-    'levelTenthDb'              => 'Nivel en dB',
-    'noSpectrum'                => 'No hay Spectrum disponible para este módem',
+    'levelDb'                   => 'Level in dBmV',
+    'noSpectrum'                => 'No Spectrum available for this Modem.',
     'createSpectrum'            => 'Crear Espectro',
     'configfile_outdated'       => 'Configfile está desactualizado - ¡Error al generar el archivo!',
     'shouldChangePassword'       => 'Por favor, cambie su contraseña!',
@@ -573,4 +573,5 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
             'fail' => 'Could not delete :model :id',
         ],
     ],
+    'pleaseWait'                => 'This may take a few seconds. Please wait until the process has finished.',
 ];
