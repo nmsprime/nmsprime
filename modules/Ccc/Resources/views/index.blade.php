@@ -22,7 +22,7 @@
 					</div>
 					<div class="panel-body fader d-flex flex-column" style="overflow-y:auto;@if($loop->first)@else display: none;@endif; height:100%">
 						<table class="table table-bordered">
-							@foreach($years as $month => $months)
+							@foreach($years as $months)
 								<tr>
 									<td class="{{$months['CDR']['bsclass']}}" align="center" style="width: 50%">
 										@if($months['CDR']['link'] != '')
