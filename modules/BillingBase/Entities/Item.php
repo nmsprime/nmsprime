@@ -10,6 +10,13 @@ class Item extends \BaseModel
     // The associated SQL table for this Model
     public $table = 'item';
 
+    /**
+     * Call daily conversion in observer - disabled in Contract::daily_conversion to avoid endless loops
+     *
+     * @var bool
+     */
+    public $observer_dailyconversion = true;
+
     // Add your validation rules here
     public static function rules($id = null)
     {
@@ -697,16 +704,12 @@ class ItemObserver
                 ($tariff->id != $item->id)
             ) {
                 \Log::debug('update old tariff', [$item->id]);
-                $tariff->valid_to = date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from)));
-                $tariff->valid_to_fixed = $item->valid_from_fixed || $tariff->valid_to_fixed ? true : false;
-                // Maybe implement this as DB-Update-Statement to not call observer and daily conversion multiple times ??
-                $tariff->observer_enabled = false;
-                $tariff->save();
-            }
 
-            // check if we have to update product related data (qos, voip tariff, etc.) in contract
-            // this has to be done for both objects - why? - is done for both in daily conversion after
-            // $item->contract->update_product_related_data([$item, $tariff]);
+                Item::where('id', $tariff->id)->update([
+                    'valid_to' => date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from))),
+                    'valid_to_fixed' => $item->valid_from_fixed || $tariff->valid_to_fixed ? true : false,
+                    ]);
+            }
         }
 
         // \Log::debug('updating item', [$item->id]);
@@ -734,7 +737,9 @@ class ItemObserver
         }
 
         // this is ab(used) here for easily setting the correct values
-        $item->contract->daily_conversion();
+        if ($item->observer_dailyconversion) {
+            $item->contract->daily_conversion();
+        }
     }
 
     public function deleted($item)
