@@ -161,19 +161,4 @@ class ItemController extends \BaseController
 
         return parent::prepare_rules($rules, $data);
     }
-
-    /**
-     * Show Alert when Credit Amount is negative and Customer will be charged
-     */
-    public function store($redirect = true)
-    {
-        if (\Input::get('credit_amount') && \Input::get('credit_amount') < 0) {
-            \Session::put('alert', trans('messages.item_credit_amount_negative'));
-        }
-
-        // NOTE: ->with or Session::put is the same
-        // return parent::store($redirect = true)->with('alert', trans('messages.item_credit_amount_negative'));
-
-        return parent::store($redirect = true);
-    }
 }

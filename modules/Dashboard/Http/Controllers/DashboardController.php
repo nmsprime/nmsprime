@@ -338,8 +338,8 @@ class DashboardController extends BaseController
         }
 
         // links need to be in embedded style, like:
-        //return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
-        //		'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
+        // return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
+        //      'text' => "You should do: <a href=https://lifeisgood.com>BlaBlaBla</a>"];
     }
 
     /*
@@ -494,6 +494,11 @@ class DashboardController extends BaseController
             return ['text' => $text.trans('helper.create_nominatim')];
         }
 
+        // check if E-mails and names are set in Global Config Page/.env for Ticket module
+        if ($text = $this->checkTicketSettings()) {
+            return $text;
+        }
+
         // check for local nameserver
         preg_match('/^Server:\s*(\d{1,3}).\d{1,3}.\d{1,3}.\d{1,3}$/m', shell_exec('nslookup nmsprime.com'), $matches);
         if (isset($matches[1]) && $matches[1] != '127') {
@@ -507,5 +512,25 @@ class DashboardController extends BaseController
         }
 
         return false;
+    }
+
+    /**
+     * Check if the User can send/receive E-mails via Ticketsystem.
+     *
+     * @author Roy Schneider
+     */
+    private function checkTicketSettings()
+    {
+        // set variables in .env
+        if (env('MAIL_HOST') == null || env('MAIL_USERNAME') == null || env('MAIL_PASSWORD') == null) {
+            return ['text' => '<li> '.trans('helper.mail_env').' </li>'];
+        }
+
+        // set noreply name and address in Global Config Page
+        $globalConfig = \GlobalConfig::first();
+
+        if (Module::collections()->has('Ticketsystem') && (empty($globalConfig->noReplyName) || empty($globalConfig->noReplyMail))) {
+            return ['text' => '<li>'.trans('helper.ticket_settings').'</li>'];
+        }
     }
 }

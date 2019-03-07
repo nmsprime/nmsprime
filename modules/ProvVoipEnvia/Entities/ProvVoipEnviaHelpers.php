@@ -100,7 +100,7 @@ class ProvVoipEnviaHelpers
 
         array_push($row, boolval($contract->contract_start) ? $contract->contract_start : 'placeholder_unset');
         array_push($row, boolval($contract->contract_end) ? $contract->contract_end : 'placeholder_unset');
-        array_push($row, ($contract->network_access > 0 ? 'placeholder_yes' : 'placeholder_no'));
+        array_push($row, ($contract->internet_access > 0 ? 'placeholder_yes' : 'placeholder_no'));
 
         array_push($data, $row);
 
@@ -211,7 +211,7 @@ class ProvVoipEnviaHelpers
         } else {
             array_push($row, '–');
         }
-        array_push($row, ($modem->network_access > 0 ? 'placeholder_yes' : 'placeholder_no'));
+        array_push($row, ($modem->internet_access > 0 ? 'placeholder_yes' : 'placeholder_no'));
 
         array_push($data, $row);
 

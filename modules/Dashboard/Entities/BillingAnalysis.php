@@ -166,7 +166,7 @@ class BillingAnalysis
 
         // manipulate dates array for charge calculation for coming month (not last one)
         $conf = \Modules\BillingBase\Entities\BillingBase::first();
-        $dates = \Modules\BillingBase\Console\accountingCommand::create_dates_array();
+        $dates = \Modules\BillingBase\Console\SettlementRunCommand::create_dates_array();
 
         $dates['lastm_Y'] = date('Y-m');
         $dates['lastm_01'] = date('Y-m-01');
@@ -214,7 +214,7 @@ class BillingAnalysis
      */
     public static function saveIncomeToJson()
     {
-        $income = self::geIncomeTotal();
+        $income = self::getIncomeTotal();
         $income = self::formatChartDataIncome($income);
 
         Storage::disk('chart-data')->put('income.json', json_encode($income));

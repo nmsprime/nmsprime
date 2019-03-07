@@ -388,4 +388,15 @@ class SettlementRunController extends \BaseController
             \Storage::deleteDirectory($dir);
         }
     }
+
+    public function destroy($id)
+    {
+        $id = key(\Input::get('ids'));
+        $settlementrun = SettlementRun::find($id);
+
+        \Session::push('tmp_info_above_index_list', trans('messages.deleteSettlementRun', ['time' => $settlementrun->year.'-'.$settlementrun->month]));
+        dispatch(new \Modules\BillingBase\Jobs\DeleteSettlementRun($settlementrun));
+
+        return redirect()->back();
+    }
 }
