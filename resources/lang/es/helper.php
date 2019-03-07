@@ -128,7 +128,7 @@ return [
   */
     'rate_coefficient'				=> 'La Maxima Tarifa Sostenida sera multiplicada por este valor para otorgar al usuario mas (> 1.0) rendimiento que el suscrito.',
     //ModemController
-    'Modem_NetworkAccess'			=> 'Acceso a la Red para CPEs. (MTAs no son considerados y iran siempre online cuando las demas configuraciones sean correctas). Cuidado: Con el Modulo-Facturacion, esta casilla sera siempre sobrescrita diariamente si la tarifa cambia.',
+    'Modem_InternetAccess'			=> 'Internet Access for CPEs. (MTAs are not considered and will always go online when all other configurations are correct). Take care: With Billing-Module this checkbox will be overwritten by daily check if tariff changes.',
     'Modem_InstallationAddressChangeDate'	=> 'En caso de (fisico) reubicacion del modem: Agregar fecha de inicio para la nueva direccion ahi. Si es solo lectura, hay una orden de cambio de direccion pendiente en Envia.',
     'Modem_GeocodeOrigin'			=> 'De donde vienen los datos geocode? Si se establece a "n/a", la direccion no podra ser geocoded para cualquier API. Sera establecido a su nombre en cambios manuales de geodata.',
     'contract_number' 				=> 'Atencion - Contrasena del Cliente es cambiado automaticamente cuando se cambia este campo!',
@@ -137,6 +137,7 @@ return [
     'modem_update_frequency'		=> 'Este campo se actualiza una vez al día.',
     'enable_agc'					=> 'Activar el control automático de ganancia para upstream.',
     'agc_offset'					=> 'Control de ganancia automática en dB (por defecto: 0.0)',
+    'has_telephony'                 => 'Activate if customer shall have telephony but has no internet. This flag can actually not be used to disable telephony on contracts with internet. Please delete the MTA or disable the phonenumber for that. Info: The setting influences the modems configfile parameters NetworkAcess and MaxCPE - see modems analyses page tab \'Configfile\'',
 
  /*
   *	MODULE: ProvVoip
