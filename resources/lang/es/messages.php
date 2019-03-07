@@ -158,6 +158,8 @@ return [
     'snmp' => [
         'errors_walk' => 'Querying the following OIDs failed: :oids.',
         'errors_set' => 'Los siguientes parámetros no se pudieron establecer: :oids.',
+        'missing_cmts' => 'The cluster misses a superior CMTS as parent device.',
+        'undefined' => 'For this netelementtype is no controlling defined.',
         'unreachable' => 'El dispositivo no es accesible vía el SNMP.',
     ],
     'State'						=> 'Estado',
@@ -245,6 +247,12 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Start ID Endpoints'		=> 'ID de Inicio para terminales "Endpoints"',
     'Downstream rate coefficient' => 'Coeficiente de velocidad de descarga',
     'Upstream rate coefficient' => 'Coeficiente de velocidad de subida',
+    'modemAnalysis' => [
+        'cpeMacMissmatch' => 'The state of internet access and telephony could not be determined as minimum 1 CPE MAC address differs from the MACs of the assigned MTAs.',
+        'fullAccess' => 'Internet access and telephony is allowed. (according to configfile)',
+        'noNetworkAccess' => 'Internet access and telephony is blocked. (according to configfile)',
+        'onlyVoip' => 'Internet access is blocked. Only telephony is allowed. (according to configfile)',
+    ],
     'modem_no_diag'			=> 'Diagrams no disponibles',
     'Start ID MTA´s'			=> 'Inicio de ID para MTA\'s',
     'modem_lease_error'		=> 'No se encontro Arrendamientos dhcp valido',
