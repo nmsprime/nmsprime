@@ -524,10 +524,28 @@ class Item extends \BaseModel
      * @return array 	[End of Term, Last possible Cancelation Day]
      *         null     on error
      */
-    public function getNextCancelationDate()
+    public function getNextCancelationDate($date = '')
     {
         if (! $this->product) {
             return;
+        }
+
+        $ret = [
+            'cancelation_day' => '',
+            'canceled_to' => '',
+            'end_of_term' => '',
+            'maturity' => '',
+        ];
+
+        // Item was already canceled
+        if (! $this->isDirty('valid_to') && $this->valid_to && ($tmp = $this->get_end_time())) {
+            $ret['canceled_to'] = date('Y-m-d', $tmp);
+
+            return $ret;
+        }
+
+        if (! $date) {
+            $date = date('Y-m-d');
         }
 
         // determine tariff/item's end of term (minimum maturity) and when the next last day to cancel before runtime is extended by maturity
@@ -544,7 +562,7 @@ class Item extends \BaseModel
         if (! $this->product->maturity) {
             $endDate->lastOfMonth();
         }
-        $invoiceDate = \Carbon\Carbon::createFromTimestamp(strtotime('last day of last month'));
+        $invoiceDate = \Carbon\Carbon::createFromTimestamp(strtotime($date));
         $firstPonDate = self::sub_period(clone $endDate, $pon);
 
         // add maturity until endDate is after first possible date of period of notice
@@ -557,11 +575,11 @@ class Item extends \BaseModel
         }
 
         // return end_of_term and (last) cancelation_day
-        return [
-            'cancelation_day' => $firstPonDate->toDateString(),
-            'end_of_term' => $endDate->toDateString(),
-            'maturity' => $maturity,
-            ];
+        $ret['cancelation_day'] = $firstPonDate->toDateString();
+        $ret['end_of_term'] = $endDate->toDateString();
+        $ret['maturity'] = $maturity;
+
+        return $ret;
     }
 
     /**

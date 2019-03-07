@@ -2,7 +2,9 @@
 
 @section('content_dash')
 	@if ($dash)
-		<font color="grey">{{$dash}}</font>
+		@foreach ($dash as $info)
+			<div class="note note-{{$info['bsclass']}} fade in m-b-15"> {{ $info['text'] }} </div>
+		@endforeach
 	@else
 		<b>TODO</b>
 	@endif

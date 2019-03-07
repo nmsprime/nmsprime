@@ -568,7 +568,11 @@ class SettlementRunCommand extends Command implements ShouldQueue
             return $calls;
         }
 
-        $pns = $this->_get_phonenumbers('sip.enviatel.net');
+        $pns = $this->_get_phonenumbers('sip.enviatel.net')->all();
+        $pns2 = $this->_get_phonenumbers('verbindet.net', false)->all();
+
+        $pns = array_merge($pns, $pns2);
+
         foreach ($pns as $pn) {
             $pn_customer[substr_replace($pn->prefix_number, '49', 0, 1).$pn->number][] = $pn->contractnr;
         }
@@ -817,20 +821,29 @@ class SettlementRunCommand extends Command implements ShouldQueue
      *
      * @return array
      */
-    private function _get_phonenumbers($registrar)
+    private function _get_phonenumbers($registrar, $withEmptyRegistrar = true)
     {
         $cdr_first_day_of_month = date('Y-m-01', strtotime('first day of -'.(1 + $this->conf->cdr_offset).' month'));
+
+        if ($withEmptyRegistrar) {
+            $whereCondition = function ($query) use ($registrar) {
+                $query
+                ->where('sipdomain', 'like', "%$registrar%")
+                ->orWhereNull('sipdomain')
+                ->orWhere('sipdomain', '=', '');
+            };
+        } else {
+            $whereCondition = function ($query) use ($registrar) {
+                $query
+                ->where('sipdomain', 'like', "%$registrar%");
+            };
+        }
 
         return \DB::table('phonenumber as p')
             ->join('mta', 'p.mta_id', '=', 'mta.id')
             ->join('modem', 'modem.id', '=', 'mta.modem_id')
             ->join('contract as c', 'c.id', '=', 'modem.contract_id')
-            ->where(function ($query) use ($registrar) {
-                $query
-                ->where('sipdomain', 'like', "%$registrar%")
-                ->orWhereNull('sipdomain')
-                ->orWhere('sipdomain', '=', '');
-            })
+            ->where($whereCondition)
             ->where(function ($query) use ($cdr_first_day_of_month) {
                 $query
                 ->whereNull('p.deleted_at')

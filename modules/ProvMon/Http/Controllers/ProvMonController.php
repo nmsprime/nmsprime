@@ -115,6 +115,8 @@ class ProvMonController extends \BaseController
         // Configfile
         $configfile = self::_get_configfile("/tftpboot/cm/$modem->hostname");
 
+        $dash['modemServicesStatus'] = self::modemServicesStatus($modem, $configfile['text']);
+
         // Realtime Measure - this takes the most time
         // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
         if ($online) {
@@ -166,6 +168,54 @@ class ProvMonController extends \BaseController
         $conf['text'] = str_replace("\t", '&nbsp;&nbsp;&nbsp;&nbsp;', $conf['text']);
 
         return $conf;
+    }
+
+    /**
+     * Determine modem status of internet access and telephony for analyses dashboard
+     *
+     * @param object    Modem
+     * @param array     Lines of Configfile
+     * @return array    Color & status text
+     */
+    public static function modemServicesStatus($modem, $config)
+    {
+        $networkAccess = preg_grep('/NetworkAccess \d/', $config);
+        preg_match('/NetworkAccess (\d)/', end($networkAccess), $match);
+        $networkAccess = $match[1];
+
+        // Internet and voip blocked
+        if (! $networkAccess) {
+            return ['bsclass' => 'danger', 'text' => trans('messages.modemAnalysis.noNetworkAccess')];
+        }
+
+        $maxCpe = preg_grep('/MaxCPE \d/', $config);
+        preg_match('/MaxCPE (\d)/', end($maxCpe), $match);
+        $maxCpe = $match[1];
+
+        $cpeMacs = preg_grep('/CpeMacAddress (.*?);/', $config);
+
+        // Internet and voip allowed
+        if ($maxCpe > count($cpeMacs)) {
+            return ['bsclass' => 'success', 'text' => trans('messages.modemAnalysis.fullAccess')];
+        }
+
+        // Only voip allowed
+        // Check if configfile contains a different CPE MTA than the MTAs have - this case is actually [2019-03-06] not valid
+        $mtaMacs = $modem->mtas->each(function ($mac) {
+            $mac->mac = strtolower($mac->mac);
+        })->pluck('mac')->all();
+
+        foreach ($cpeMacs as $line) {
+            preg_match('/CpeMacAddress (.*?);/', $line, $match);
+
+            $cpeMac = strtolower($match[1]);
+
+            if (! in_array($cpeMac, $mtaMacs)) {
+                return ['bsclass' => '', 'text' => trans('messages.modemAnalysis.cpeMacMissmatch')];
+            }
+        }
+
+        return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.onlyVoip')];
     }
 
     /**
