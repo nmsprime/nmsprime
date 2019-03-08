@@ -294,55 +294,37 @@ class CccUserController extends \BaseController
      */
     public function show()
     {
-        $invoices = Auth::guard('ccc')->user()->contract->invoices()->with('settlementrun')->orderBy('year', 'desc')->orderBy('month', 'desc')->orderBy('type', 'desc')->get();
+        $invoices = Auth::guard('ccc')->user()->contract->invoices()
+            ->join('settlementrun', 'invoice.settlementrun_id', '=', 'settlementrun.id')
+            ->where('settlementrun.verified', 1)        // dont show unverified invoices
+            ->orderBy('year', 'desc')->orderBy('month', 'desc')->orderBy('type', 'desc')
+            ->select('invoice.*', 'settlementrun.verified')
+            ->get();
+
         $invoice_links = [];
+        $year = 0;
+        $cdr = false;
 
-        $bsclass = ['info', 'active'];
-        $start = $month = 0;
         foreach ($invoices as $key => $invoice) {
-            // dont show unverified invoices
-            if (! $invoice->settlementrun->verified) {
-                continue;
-            }
-
-            if ($invoice->month != $month) {
-                $start = ($start + 1) % 2;
+            if ($year && $invoice->year != $year) {
+                $invoice_links[$year]['formatting']['cdr'] = $cdr;
+                $cdr = false;
             }
 
             $year = $invoice->year;
-            $month = $invoice->month;
             $invoicetype = strtoupper($invoice->type);
 
-            $invoice_links[$year][$invoice->month][$invoicetype] = [
-                'link' => \HTML::linkRoute('Customer.Download', str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''), ['invoice' => $invoice->id]),
-                'bsclass' => $bsclass[$start],
-            ];
-        }
-        $tmpinvoice_links = $invoice_links;
-
-        /*fill up array with only one item, in case there is no cdr*/
-        foreach ($tmpinvoice_links as $year => $years) {
-            foreach ($years as $month => $months) {
-                if (count($months) == 1) {
-                    if (isset($months['CDR'])) {
-                        $invoice_links[$year][$month]['INVOICE'] = [
-                            'link' => '',
-                            'bsclass' => $months['CDR']['bsclass'],
-                        ];
-                    } elseif (isset($months['INVOICE'])) {
-                        $invoice_links[$year][$month]['CDR'] = [
-                            'link' => '',
-                            'bsclass' => $months['INVOICE']['bsclass'],
-                        ];
-                    }
-                }
-
-                if (count($months) == 2) {
-                    if ($months['CDR']['bsclass'] != $months['INVOICE']['bsclass']) {
-                        $invoice_links[$year][$month]['INVOICE']['bsclass'] = $tmpinvoice_links[$year][$month]['CDR']['bsclass'];
-                    }
-                }
+            if ($invoicetype == 'CDR') {
+                $cdr = true;
             }
+
+            $invoice_links[$year][$invoice->month][$invoicetype][] = \HTML::linkRoute('Customer.Download',
+                str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''),
+                ['invoice' => $invoice->id]);
+        }
+
+        if ($invoices) {
+            $invoice_links[$year]['formatting']['cdr'] = $cdr;
         }
 
         $emails = \Module::collections()->has('Mail') ? Auth::guard('ccc')->user()->contract->emails : collect();
