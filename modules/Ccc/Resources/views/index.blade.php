@@ -7,7 +7,9 @@
 				<div class="panel panel-inverse card-2 d-flex flex-column">
 					<div class="panel-heading d-flex flex-row justify-content-between">
 						<h4 class="panel-title d-flex">
-							{{ trans('messages.Invoices') }} {{$year}}
+							<span data-click="panel-collapse">
+								{{ trans('messages.Invoices') }} {{$year}}
+							</span>
 						</h4>
 						<div class="panel-heading-btn d-flex flex-row">
 							<a href="javascript:;"
@@ -20,25 +22,22 @@
 					</div>
 					<div class="panel-body fader d-flex flex-column" style="overflow-y:auto;@if($loop->first)@else display: none;@endif; height:100%">
 						<table class="table table-bordered">
-							@foreach($years as $month => $months)
+							@foreach($years as $months)
 								<tr>
-									@foreach($months as $type => $invoice)
-										@if($type == 'CDR')
-											@if($invoice['link'] != '')
-												<td class="{{$invoice['bsclass']}}" align="center"> {{$invoice['link']}} </td>
-											@else
-												<td class="{{$invoice['bsclass']}}" align="center">-</td>
-											@endif
-										@elseif($type == 'INVOICE')
-											@if($invoice['link'] != '')
-												<td class="{{$invoice['bsclass']}}" align="center"> {{$invoice['link']}} </td>
-											@else
-												<td class="{{$invoice['bsclass']}}" align="center">-</td>
-											@endif
+									<td class="{{$months['CDR']['bsclass']}}" align="center" style="width: 50%">
+										@if($months['CDR']['link'] != '')
+											{{$months['CDR']['link']}}
 										@else
-											<td class="{{$invoice['bsclass']}}" align="center">-</td>
+											-
 										@endif
-									@endforeach
+									</td>
+									<td class="{{$months['INVOICE']['bsclass']}}" align="center">
+										@if($months['INVOICE']['link'] != '')
+											{{$months['INVOICE']['link']}}
+										@else
+											-
+										@endif
+									</td>
 								</tr>
 							@endforeach
 						</table>
