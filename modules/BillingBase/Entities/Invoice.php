@@ -38,8 +38,23 @@ class Invoice extends \BaseModel
     public function view_index_label()
     {
         $type = $this->type == 'CDR' ? ' ('.trans('messages.Call Data Record').')' : '';
+        $bsclass = $this->get_bsclass();
 
-        return $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT).$type;
+        return ['table' => $this->table,
+                'header' =>  $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT).$type,
+                'bsclass' => $bsclass,
+            ];
+    }
+
+    public function get_bsclass()
+    {
+        if ($this->charge < 0) {
+            return 'info';
+        } elseif ($this->charge == 0) {
+            return 'active';
+        }
+
+        return '';
     }
 
     /**
