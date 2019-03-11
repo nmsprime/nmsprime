@@ -150,7 +150,7 @@ class Invoice extends \BaseModel
 
         // Charges
         'item_table_positions'  => '', 			// tex table of all items to be charged for this invoice
-        'cdr_charge' 			=> '', 			// Integer with costs resulted from telephone calls
+        'cdr_charge' 			=> '', 			// Float with costs resulted from telephone calls
         'cdr_table_positions'	=> '',			// tex table of all call data records
         'table_summary' 		=> '', 			// preformatted table - use following three keys to set table by yourself
         'table_sum_tax_percent' => '', 			// The tax percentage with % character
@@ -438,9 +438,9 @@ class Invoice extends \BaseModel
             $count++;
         }
 
-        $sum = \App::getLocale() == 'de' ? number_format($sum, 2, ',', '.') : number_format($sum, 2);
-
         $this->data['cdr_charge'] = $sum;
+
+        $sum = \App::getLocale() == 'de' ? number_format($sum, 2, ',', '.') : number_format($sum, 2);
         $this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'.$sum.'}\\\\';
         $plural = $count > 1 ? 'en' : '';
         $this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural.' & '.$sum.$this->currency.' & '.$sum.$this->currency.'\\\\';
