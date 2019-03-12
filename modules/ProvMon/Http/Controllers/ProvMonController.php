@@ -98,10 +98,12 @@ class ProvMonController extends \BaseController
         $mac = strtolower($modem->mac);
         $modem->help = 'modem_analysis';
 
+        // takes approx 0.1 sec
         $ip = gethostbyname($hostname);
         $ip = ($ip == $hostname) ? null : $ip;
 
         // Ping: Only check if device is online
+        // takes approx 0.1 sec
         exec('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
         $online = $ret ? false : true;
 
@@ -131,6 +133,8 @@ class ProvMonController extends \BaseController
 
         // Log dhcp (discover, ...), tftp (configfile or firmware)
         $search = $ip ? "$mac|$modem->hostname|$ip " : "$mac|$modem->hostname";
+
+        // NOTE: This function takes a long time if syslog file is large - 0.4 to 0.6 sec
         $log = self::_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
 
         $host_id = $this->monitoring_get_host_id($modem);
@@ -185,7 +189,7 @@ class ProvMonController extends \BaseController
 
         // Internet and voip blocked
         if (! $networkAccess) {
-            return ['bsclass' => 'danger', 'text' => trans('messages.modemAnalysis.noNetworkAccess')];
+            return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.noNetworkAccess')];
         }
 
         $maxCpe = preg_grep('/MaxCPE \d/', $config);
