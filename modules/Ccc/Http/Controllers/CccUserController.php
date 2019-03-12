@@ -294,7 +294,7 @@ class CccUserController extends \BaseController
      */
     public function show()
     {
-        $invoices = Auth::guard('ccc')->user()->contract->invoices()->with('settlementrun')->orderBy('year', 'desc')->orderBy('type', 'desc')->get();
+        $invoices = Auth::guard('ccc')->user()->contract->invoices()->with('settlementrun')->orderBy('year', 'desc')->orderBy('month', 'desc')->orderBy('type', 'desc')->get();
         $invoice_links = [];
 
         $bsclass = ['info', 'active'];
@@ -339,7 +339,6 @@ class CccUserController extends \BaseController
 
                 if (count($months) == 2) {
                     if ($months['CDR']['bsclass'] != $months['INVOICE']['bsclass']) {
-                        // $invoice_links[$year][$month]['CDR']['bsclass'] = ;
                         $invoice_links[$year][$month]['INVOICE']['bsclass'] = $tmpinvoice_links[$year][$month]['CDR']['bsclass'];
                     }
                 }

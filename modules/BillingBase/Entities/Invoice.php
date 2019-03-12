@@ -167,6 +167,7 @@ class Invoice extends \BaseModel
         'end_of_term' 		=> '', 				// Aktuelles Vertragsende
         'period_of_notice' 	=> '', 				// Kündigungsfrist
         'last_cancel_date' 	=> '', 				// letzter Kündigungszeitpunkt der aktuellen Laufzeit, if empty -> contract was already canceled!
+        'canceled_to'       => '',              // Contract was already canceled
     ];
 
     public function get_invoice_dir_path()
@@ -253,11 +254,28 @@ class Invoice extends \BaseModel
      */
     private function setCancelationDates($contract)
     {
-        $ret = $contract->getCancelationDates();
+        $ret = $contract->getCancelationDates(date('Y-m-d', strtotime('last day of last month')));
 
+        // Canceled contract or tariff
         // e.g. customers that get tv amplifier refund, but dont have any tariff
-        if (is_null($ret) || ! array_key_exists('tariff', $ret)) {
-            ChannelLog::debug('billing', 'Customer has no tariff - dont set cancelation dates.', [$this->data['contract_id']]);
+        if ($ret['canceled_to'] || ! $ret['tariff']) {
+            ChannelLog::debug('billing', "Contract $contract->number is already canceled", [$this->data['contract_id']]);
+
+            // Set cancelation date contracts valid_to
+            if ($ret['canceled_to']) {
+                $this->data['canceled_to'] = self::langDateFormat($ret['canceled_to']);
+
+                return;
+            }
+
+            // Get end of term of canceled tariff
+            $tariff = $contract->items()
+                ->join('product as p', 'item.product_id', '=', 'p.id')
+                ->whereIn('type', ['Internet', 'Voip'])
+                ->orderBy('item.valid_to', 'desc')
+                ->first();
+
+            $this->data['canceled_to'] = self::langDateFormat($tariff->valid_to);
 
             return;
         }

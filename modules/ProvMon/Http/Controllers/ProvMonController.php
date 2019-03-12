@@ -115,6 +115,8 @@ class ProvMonController extends \BaseController
         // Configfile
         $configfile = self::_get_configfile("/tftpboot/cm/$modem->hostname");
 
+        $dash['modemServicesStatus'] = self::modemServicesStatus($modem, $configfile['text']);
+
         // Realtime Measure - this takes the most time
         // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
         if ($online) {
@@ -166,6 +168,54 @@ class ProvMonController extends \BaseController
         $conf['text'] = str_replace("\t", '&nbsp;&nbsp;&nbsp;&nbsp;', $conf['text']);
 
         return $conf;
+    }
+
+    /**
+     * Determine modem status of internet access and telephony for analyses dashboard
+     *
+     * @param object    Modem
+     * @param array     Lines of Configfile
+     * @return array    Color & status text
+     */
+    public static function modemServicesStatus($modem, $config)
+    {
+        $networkAccess = preg_grep('/NetworkAccess \d/', $config);
+        preg_match('/NetworkAccess (\d)/', end($networkAccess), $match);
+        $networkAccess = $match[1];
+
+        // Internet and voip blocked
+        if (! $networkAccess) {
+            return ['bsclass' => 'danger', 'text' => trans('messages.modemAnalysis.noNetworkAccess')];
+        }
+
+        $maxCpe = preg_grep('/MaxCPE \d/', $config);
+        preg_match('/MaxCPE (\d)/', end($maxCpe), $match);
+        $maxCpe = $match[1];
+
+        $cpeMacs = preg_grep('/CpeMacAddress (.*?);/', $config);
+
+        // Internet and voip allowed
+        if ($maxCpe > count($cpeMacs)) {
+            return ['bsclass' => 'success', 'text' => trans('messages.modemAnalysis.fullAccess')];
+        }
+
+        // Only voip allowed
+        // Check if configfile contains a different CPE MTA than the MTAs have - this case is actually [2019-03-06] not valid
+        $mtaMacs = $modem->mtas->each(function ($mac) {
+            $mac->mac = strtolower($mac->mac);
+        })->pluck('mac')->all();
+
+        foreach ($cpeMacs as $line) {
+            preg_match('/CpeMacAddress (.*?);/', $line, $match);
+
+            $cpeMac = strtolower($match[1]);
+
+            if (! in_array($cpeMac, $mtaMacs)) {
+                return ['bsclass' => '', 'text' => trans('messages.modemAnalysis.cpeMacMissmatch')];
+            }
+        }
+
+        return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.onlyVoip')];
     }
 
     /**
@@ -1261,15 +1311,25 @@ class ProvMonController extends \BaseController
         snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.1.0', 'i', 1);
 
         // set frequency span from 150 to 862 MHz
-        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', 150000000);
-        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', 862000000);
+        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', 154000000);
+        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', 866000000);
 
         // every 8 MHz
         snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', 8000000);
 
         // after enabling docsIf3CmSpectrumAnalysisCtrlCmd it may take a few seconds to start the snmpwalḱ (error: End of MIB)
-        sleep(15);
-        $expressions = snmp2_real_walk($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3');
+        $time = 1;
+        while ($time <= 30) {
+            try {
+                $expressions = snmp2_real_walk($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3');
+            } catch (\Exception $e) {
+                $time++;
+                sleep(1);
+                continue;
+            }
+
+            break;
+        }
 
         // in case we don't get return values
         if (! isset($expressions)) {
