@@ -305,7 +305,7 @@ class CccUserController extends \BaseController
         $year = 0;
         $cdr = false;
 
-        foreach ($invoices as $key => $invoice) {
+        foreach ($invoices as $invoice) {
             if ($year && $invoice->year != $year) {
                 $invoice_links[$year]['formatting']['cdr'] = $cdr;
                 $cdr = false;
