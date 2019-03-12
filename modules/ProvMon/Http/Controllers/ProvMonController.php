@@ -117,8 +117,6 @@ class ProvMonController extends \BaseController
         // Configfile
         $configfile = self::_get_configfile("/tftpboot/cm/$modem->hostname");
 
-        $dash['modemServicesStatus'] = self::modemServicesStatus($modem, $configfile['text']);
-
         // Realtime Measure - this takes the most time
         // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
         if ($online) {
@@ -137,9 +135,15 @@ class ProvMonController extends \BaseController
         // NOTE: This function takes a long time if syslog file is large - 0.4 to 0.6 sec
         $log = self::_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
 
-        $host_id = $this->monitoring_get_host_id($modem);
+        // Dashboard
+        $dash['modemServicesStatus'] = self::modemServicesStatus($modem, $configfile['text']);
+        // time of this function should be observerd - can take a huge time as well
+        $modemConfigfileStatus = self::modemConfigfileStatus($modem, $log, $configfile['mtime']);
+        if ($modemConfigfileStatus) {
+            $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
+        }
 
-        // TODO: Dash / Forecast
+        $host_id = $this->monitoring_get_host_id($modem);
 
         $tabs = $this->analysisPages($id);
         $view_header = 'ProvMon-Analyses';
@@ -215,11 +219,52 @@ class ProvMonController extends \BaseController
             $cpeMac = strtolower($match[1]);
 
             if (! in_array($cpeMac, $mtaMacs)) {
-                return ['bsclass' => '', 'text' => trans('messages.modemAnalysis.cpeMacMissmatch')];
+                return ['bsclass' => 'info', 'text' => trans('messages.modemAnalysis.cpeMacMissmatch')];
             }
         }
 
-        return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.onlyVoip')];
+        return ['bsclass' => 'info', 'text' => trans('messages.modemAnalysis.onlyVoip')];
+    }
+
+    /**
+     * Determine if modem runs with/has already downloaded actual configfile
+     *
+     * @param object    Modem
+     * @param array     Lines of Log messages
+     * @return array    Color & status text
+     */
+    public static function modemConfigfileStatus($modem, $log, $configDate)
+    {
+        $lastDownload = preg_grep('/in.tftpd/', $log);
+
+        if (! $lastDownload) {
+            $logfiles = glob('/var/log/messages*');
+            // $logfiles = glob('/var/log/messages-mablx10/messages*');
+            arsort($logfiles);
+
+            foreach ($logfiles as $path) {
+                exec("grep -m 1 $modem->hostname $path | grep tftpd", $lastDownload);
+
+                if ($lastDownload) {
+                    break;
+                }
+            }
+        }
+
+        if (! $lastDownload) {
+            // return ['bsclass' => 'info', 'text' => trans('messages.modemAnalysis.missingLD')];
+            return;
+        }
+
+        preg_match('/[A-Z][a-z]{2} {1,2}\d{1,2} \d\d:\d\d:\d\d/', $lastDownload[0], $lastDownload);
+        preg_match('/[A-Z][a-z]{2} {1,2}\d{1,2} \d\d:\d\d:\d\d/', $configDate, $configDate);
+
+        $ts_dl = strtotime($lastDownload[0]);
+        $ts_cf = strtotime($configDate[0]);
+
+        if ($ts_dl <= $ts_cf) {
+            return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.cfOutdated')];
+        }
     }
 
     /**
