@@ -348,8 +348,11 @@ class Item extends \BaseModel
 
                 // calculate only for billing month
                 if ($billing_month != $dates['lastm']) {
-                    // or tariff started after billing month - then only pay on first settlement run - break otherwise
-                    // or contract ended last month (before billing month)
+                    /* or tariff started after billing month - then only pay on first settlement run - break otherwise
+                     * or contract ended last month (before billing month)
+                     *   TODO: consider only contract_end instead of items valid_to too??
+                     *   e.g. item ends and next one starts and contract doesnt end -> one single invoice in billing month would maybe better than 2 invoices
+                     */
                     if (! (((date('m', $start) >= $billing_month) && (date('Y-m', $start) == $dates['lastm_Y'])) ||
                         (date('Y-m', $end) == $dates['lastm_Y']))) {
                         break;

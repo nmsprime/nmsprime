@@ -332,8 +332,6 @@ class SettlementRunCommand extends Command implements ShouldQueue
         }
 
         // Reset yearly payed items payed_month column
-        Item::where('payed_month', (int) $this->dates['lastm'])->update(['payed_month' => 0]);
-
         if ($this->dates['lastm'] == '01') {
             Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
         }
