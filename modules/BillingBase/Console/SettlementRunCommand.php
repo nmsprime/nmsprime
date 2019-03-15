@@ -91,6 +91,8 @@ class SettlementRunCommand extends Command implements ShouldQueue
             throw new Exception('There are no Sepa Accounts to create Billing Files for');
         }
 
+        // TODO: set full run flag here as well?
+
         if ($sepaaccs->count() == 1) {
             $a = $sepaaccs->first();
             Log::info('billing', "Execute settlementrun for SepaAccount $a->name (ID: $a->id)");
