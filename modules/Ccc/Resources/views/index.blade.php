@@ -1,5 +1,7 @@
 @extends('ccc::layouts.master')
 
+<?php $classes = ['info', 'active']; ?>
+
 @section('content_left')
 	<div class="row">
 		@foreach($invoice_links as $year => $years)
@@ -22,22 +24,34 @@
 					</div>
 					<div class="panel-body fader d-flex flex-column" style="overflow-y:auto;@if($loop->first)@else display: none;@endif; height:100%">
 						<table class="table table-bordered">
-							@foreach($years as $months)
-								<tr>
-									<td class="{{$months['CDR']['bsclass']}}" align="center" style="width: 50%">
-										@if($months['CDR']['link'] != '')
-											{{$months['CDR']['link']}}
-										@else
-											-
+							@foreach($years as $month => $months)
+								<?php
+									if (! is_int($month)) {
+										continue;
+									}
+									$bsclass = $classes[$month % 2];
+								?>
+								<tr class="{{$bsclass}}">
+									<!-- Invoice(s) -->
+									<td class="" align="center">
+									@foreach($months['INVOICE'] as $i => $invoice)
+										<i class="fa fa-id-card-o"></i>&nbsp; {{ $invoice }}
+										@if(isset($months['INVOICE'][$i+1]))
+											&emsp; | &emsp;
 										@endif
+									@endforeach
 									</td>
-									<td class="{{$months['INVOICE']['bsclass']}}" align="center">
-										@if($months['INVOICE']['link'] != '')
-											{{$months['INVOICE']['link']}}
-										@else
-											-
-										@endif
-									</td>
+
+									<!-- CDR -->
+									@if($years['formatting']['cdr'])
+										<td class="" align="center" style="width: 50%">
+											@if(isset($months['CDR'][0]))
+												<i class="fa fa-id-card-o"></i>&nbsp; {{ $months['CDR'][0] }}
+											@else
+												-
+											@endif
+										</td>
+									@endif
 								</tr>
 							@endforeach
 						</table>
