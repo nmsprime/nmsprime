@@ -62,7 +62,7 @@ class SepaMandate extends \BaseModel
     {
         // Dont check when table header of index page is assembled
         if (! $this->id) {
-            return;
+            return '';
         }
 
         if ($this->check_validity('now')) {

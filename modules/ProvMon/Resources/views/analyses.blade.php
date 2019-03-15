@@ -7,7 +7,7 @@
 
 	@if ($dash)
 		@foreach ($dash as $key => $info)
-			<div class="alert alert-{{$info['bsclass']}} fade show" style="width: 83%"> {{ $info['text'] }} </div>
+			<div class="alert alert-{{$info['bsclass']}} fade show col-md-10"> {{ $info['text'] }} </div>
 		@endforeach
 	@else
 		<b>TODO</b>
