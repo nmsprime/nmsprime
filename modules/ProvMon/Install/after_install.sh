@@ -77,16 +77,23 @@ cat << EOF >> "$file"
 /* nmsprime */
 
 html {
-	overflow-x: auto;
+	overflow: unset !important;
+	overflow-x:hidden !important;
+	overflow-y: visible !important;
+	height: auto !important;
+}
+
+body:not(.loginBody) {
+	overflow: unset !important;
+	overlow-y: visible !important;
 }
 
 table {
 	margin: 0 !important;
 }
 
-.cactiGraphContentAreaPreview {
-	overflow-y: unset !important;
-	overflow-x: unset !important;
+#cactiContent, #navigation_right {
+	height: auto !important;
 }
 EOF
 fi
