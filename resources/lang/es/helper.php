@@ -127,6 +127,7 @@ return [
   *	MODULE: ProvBase
   */
     'rate_coefficient'				=> 'La Maxima Tarifa Sostenida sera multiplicada por este valor para otorgar al usuario mas (> 1.0) rendimiento que el suscrito.',
+    'additional_modem_reset'		=> 'Check if an additional button should be displayed, which resets the modem via SNMP without querying the CMTS.',
     //ModemController
     'Modem_InternetAccess'			=> 'Internet Access for CPEs. (MTAs are not considered and will always go online when all other configurations are correct). Take care: With Billing-Module this checkbox will be overwritten by daily check if tariff changes.',
     'Modem_InstallationAddressChangeDate'	=> 'En caso de (fisico) reubicacion del modem: Agregar fecha de inicio para la nueva direccion ahi. Si es solo lectura, hay una orden de cambio de direccion pendiente en Envia.',
