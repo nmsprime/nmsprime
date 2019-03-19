@@ -220,6 +220,7 @@ return [
     'missing_product' 		=> 'Falta Producto!',
     'modem_eventlog_error'	=> 'Modem eventlog no encontrado',
     'modem_force_restart_button_title' => 'Solo reinicia el modem. No guarda algun dato cambiado!',
+    'modem_reset_button_title' => 'Only resets the modem. Doesn\'t save any changed data!',
     'CDR retention period' 		=> 'Período de retención de CDR',
     'Day of Requested Collection Date'	=> 'Fecha de facturación',
     'Tax in %'					=> 'Impuestos en %',
@@ -247,6 +248,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Start ID Endpoints'		=> 'ID de Inicio para terminales "Endpoints"',
     'Downstream rate coefficient' => 'Coeficiente de velocidad de descarga',
     'Upstream rate coefficient' => 'Coeficiente de velocidad de subida',
+    'Additional modem reset button' => 'Additional modem reset button',
     'modemAnalysis' => [
         'cpeMacMissmatch' => 'The state of internet access and telephony could not be determined as minimum 1 CPE MAC address differs from the MACs of the assigned MTAs.',
         'fullAccess' => 'Internet access and telephony is allowed. (according to configfile)',
@@ -582,4 +584,5 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
         ],
     ],
     'pleaseWait'                => 'This may take a few seconds. Please wait until the process has finished.',
+    'proximity'                 => 'Proximity search',
 ];
