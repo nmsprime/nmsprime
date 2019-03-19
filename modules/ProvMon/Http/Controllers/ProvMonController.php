@@ -130,7 +130,7 @@ class ProvMonController extends \BaseController
         }
 
         // Log dhcp (discover, ...), tftp (configfile or firmware)
-        $search = $ip ? "$mac|$modem->hostname|$ip " : "$mac|$modem->hostname";
+        $search = $ip ? "$mac|$modem->hostname[^0-9]|$ip " : "$mac|$modem->hostname[^0-9]";
         $log = self::_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
 
         $host_id = $this->monitoring_get_host_id($modem);
@@ -848,9 +848,10 @@ class ProvMonController extends \BaseController
         // actual strategy: if possible grep active lease, otherwise return all entries
         //                  in reverse ordered format from dhcpd.leases
         if (count($ret) > 1) {
-            foreach (preg_grep('/(.*?)binding state active(.*?)/', $ret) as $str) {
-                if (preg_match('/starts \d ([^;]+);/', $str, $s)) {
-                    $start[] = $s[1];
+            foreach ($ret as $text) {
+                if (preg_match('/starts \d ([^;]+);.*;binding state active;/', $text, $match)) {
+                    $start[] = $match[1];
+                    $lease[] = $text;
                 }
             }
 
@@ -859,7 +860,7 @@ class ProvMonController extends \BaseController
                 natsort($start);
                 end($start);
 
-                return [$ret[each($start)[0]]];
+                return [$lease[key($start)]];
             }
         }
 
