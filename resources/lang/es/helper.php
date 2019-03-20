@@ -83,7 +83,7 @@ return [
     'tex_template' 					=> 'Plantilla TeX',
 
     // SettlementrunController
-    'settlement_verification' 		=> 'Si es activada, no es posible de repetir el Acuerdo. Las Facturas del Cliente son solo visibles cuando esta casilla esta marcada.',
+    'settlement_verification' 		=> 'Customer Invoices are only visible when this checkbox is activated. The checkbox can only be activated if the last run was executed for ALL SEPA accounts (to not miss any changes). Info: If activated it\'s not possible to repeat the Settlement Run.',
 
  /*
   * MODULE: Dashboard
