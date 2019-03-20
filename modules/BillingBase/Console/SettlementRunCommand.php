@@ -91,6 +91,15 @@ class SettlementRunCommand extends Command implements ShouldQueue
             throw new Exception('There are no Sepa Accounts to create Billing Files for');
         }
 
+        // TODO: set full run flag here as well?
+
+        if ($sepaaccs->count() == 1) {
+            $a = $sepaaccs->first();
+            Log::info('billing', "Execute settlementrun for SepaAccount $a->name (ID: $a->id)");
+        } else {
+            Log::info('billing', 'Execute settlementrun for all SepaAccounts');
+        }
+
         // init must be before _get_cdr_data()
         $this->_init($sepaaccs);
 
@@ -335,6 +344,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
         Item::where('payed_month', (int) $this->dates['lastm'])->update(['payed_month' => 0]);
 
         if ($this->dates['lastm'] == '01') {
+            // Senseless where statement is necessary because update can not be called directly
             Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
         }
     }
@@ -359,9 +369,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
             return Contract::orderBy('number')->with('items.product', 'costcenter')
                 ->where('create_invoice', '!=', 0)
-                // ->where('contract.number', '>', 21870)->where('contract.number', '<', 21890)
-                // ->where('salesman_id', '!=', 0)
-                // ->whereIn('number', [50746, /*45570, 45061,*/ 45950])
+                ->where(whereLaterOrEqualThanDate('contract_end', date('Y-m-d', strtotime('last day of nov last year'))))
                 ->get();
         }
 
@@ -372,6 +380,8 @@ class SettlementRunCommand extends Command implements ShouldQueue
             ->leftJoin('product as p', 'i.product_id', '=', 'p.id')
             ->leftJoin('costcenter as ccp', 'p.costcenter_id', '=', 'ccp.id')
             ->where('create_invoice', '=', 0)
+            ->where(whereLaterOrEqualThanDate('contract.contract_end', date('Y-m-d', strtotime('last day of nov last year'))))
+            ->where('i.valid_from_fixed', 1)
             ->where(function ($query) use ($sepaaccount_id) {
                 $query
                 ->where('ccc.sepaaccount_id', '=', $sepaaccount_id)
@@ -392,6 +402,8 @@ class SettlementRunCommand extends Command implements ShouldQueue
             ->leftJoin('product as p', 'i.product_id', '=', 'p.id')
             ->leftJoin('costcenter as ccp', 'p.costcenter_id', '=', 'ccp.id')
             ->where('create_invoice', '!=', 0)
+            ->where(whereLaterOrEqualThanDate('contract.contract_end', date('Y-m-d', strtotime('last day of nov last year'))))
+            ->where('i.valid_from_fixed', 1)
             ->where(function ($query) use ($sepaaccount_id) {
                 $query
                 ->where('ccc.sepaaccount_id', '=', $sepaaccount_id)

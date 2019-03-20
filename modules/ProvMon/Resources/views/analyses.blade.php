@@ -1,17 +1,18 @@
 @extends ('provmon::split')
 
 @section('content_dash')
+	<div class="btn pull-right">
+		@include('Generic.documentation', ['documentation' => $modem->help])
+	</div>
+
 	@if ($dash)
-		@foreach ($dash as $info)
-			<div class="note note-{{$info['bsclass']}} fade in m-b-15"> {{ $info['text'] }} </div>
+		@foreach ($dash as $key => $info)
+			<div class="alert alert-{{$info['bsclass']}} fade show col-md-10"> {{ $info['text'] }} </div>
 		@endforeach
 	@else
 		<b>TODO</b>
 	@endif
 
-	<div class="btn pull-right">
-		@include('Generic.documentation', ['documentation' => $modem->help])
-	</div>
 @stop
 
 @section('spectrum-analysis')

@@ -24,6 +24,7 @@ class SettlementRunController extends \BaseController
             // array('form_type' => 'text', 'name' => 'path', 'description' => 'Path'),
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
             ['form_type' => 'checkbox', 'name' => 'verified', 'description' => 'Verified', 'hidden' => 'C', 'help' => trans('helper.settlement_verification')],
+            ['form_type' => 'checkbox', 'name' => 'fullrun', 'description' => 'For internal use', 'hidden' => 1],
         ];
     }
 
@@ -43,6 +44,15 @@ class SettlementRunController extends \BaseController
         }
 
         return parent::prepare_input($data);
+    }
+
+    public function prepare_rules($rules, $data)
+    {
+        if (! $data['fullrun']) {
+            $rules['verified'] = 'In:0';
+        }
+
+        return parent::prepare_rules($rules, $data);
     }
 
     /**

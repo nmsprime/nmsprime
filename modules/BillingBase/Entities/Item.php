@@ -94,16 +94,16 @@ class Item extends \BaseModel
     public function get_bsclass()
     {
         // Evaluate Colours
-        // green: it will be considered for next accounting cycle
-        // blue:  new item - not yet considered for settlement run
-        // yellow: item is outdated/expired and will not be charged this month
+        // green: valid
+        // blue:  starts in future
+        // grey:  outdated/expired
         // '$this->id' to dont check when index table header is determined!
-        if ($this->id && $this->check_validity($this->product->billing_cycle)) {
+        if ($this->id && $this->check_validity('now')) {
             return 'success';
         }
 
         if ($this->id && $this->get_start_time() < strtotime('midnight first day of this month')) {
-            return 'warning';
+            return 'active';
         }
 
         return 'info';

@@ -8,13 +8,13 @@ class SettlementRun extends \BaseModel
     public $table = 'settlementrun';
 
     // don't try to add these Input fields to Database of this model
-    public $guarded = ['rerun', 'sepaaccount'];
+    public $guarded = ['rerun', 'sepaaccount', 'fullrun'];
 
     // Add your validation rules here
     public static function rules($id = null)
     {
         return [
-            // 'month' => 'unique:settlementrun,month,'.$id.',id,year,'.$year.',deleted_at,NULL', //,year,'.$year
+            // see SettlementRunController@prepare_rules
         ];
     }
 
@@ -168,6 +168,7 @@ class SettlementRunObserver
         // dont show every settlementrun that was created in one month
         $time = strtotime('first day of last month');
         SettlementRun::where('month', '=', date('m', $time))->where('year', '=', date('Y', $time))->delete();
+        $settlementrun->fullrun = 1;
     }
 
     public function created($settlementrun)
