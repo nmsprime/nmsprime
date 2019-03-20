@@ -155,6 +155,7 @@ return [
         //Modems
         'Header_Modems'				=> 'Modem|Modems', //workaround
         'Header_Invoice' 			=> 'Facturas',
+        'Header_OldInvoices'        => 'Old Invoices',
         'Header_EditModems'			=> 'Editar modem',
         'Header_Modem'				=> 'Modem|Modems',
         'Header_SEPA Mandate' 		=> 'Mandatos-SEPA',
