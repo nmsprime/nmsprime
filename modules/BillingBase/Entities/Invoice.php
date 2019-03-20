@@ -291,7 +291,7 @@ class Invoice extends \BaseModel
                 ->orderBy('item.valid_to', 'desc')
                 ->first();
 
-            $this->data['canceled_to'] = self::langDateFormat($tariff->valid_to);
+            $this->data['canceled_to'] = $tariff ? self::langDateFormat($tariff->valid_to) : '';
 
             return;
         }
