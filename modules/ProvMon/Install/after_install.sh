@@ -17,7 +17,7 @@ cd /var/lib/cacti
 md5sum cli/add_graphs.php | grep -q '1416f1ddae7fb14a4acc64008c146524' && wget -qO- https://github.com/Cacti/cacti/commit/2609d5892cb9b8d284fe090538f023664c06c24c.patch | head -n -13 | patch -p1
 
 # create DB accessed by cactiuser
-mysqladmin -u root create cacti
+mysql -u root -e "CREATE DATABASE cacti CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';"
 mysql -u root -e "GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY '$mysql_cacti_psw';";
 
 # allow cacti to access time_zone_name table
