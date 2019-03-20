@@ -2,11 +2,16 @@
     function resizeIframe(obj) {
         setTimeout(function() {
             var height = obj.contentWindow.document.body.scrollHeight;
-            /* workaround ipad (safari?) bug */
-            if (height < 1000) {
-                height *= 15;
-            }
             obj.style.height = height + 'px';
+            reloadIframeQuick(obj);
         }, 5000);
     };
+
+    var rif = 0;
+    function reloadIframeQuick(obj) {
+        if (rif != 1) {
+            rif = 1;
+            obj.src = obj.src;
+        }
+    }
 </script>
