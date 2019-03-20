@@ -43,7 +43,7 @@ EOF
 ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/ss_docsis.php /usr/share/cacti/scripts/ss_docsis.php
 ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/cisco_cmts.xml /usr/share/cacti/resource/snmp_queries/cisco_cmts.xml
 
-echo "*/5 * * * * cacti /usr/bin/php /usr/share/cacti/poller.php > /dev/null 2>&1" > /etc/cron.d/cacti
+sed -i 's/^#//' /etc/cron.d/cacti
 sed -i 's/Require host localhost$/Require all granted\n\t\tDirectoryIndex index.php/' /etc/httpd/conf.d/cacti.conf
 systemctl reload httpd.service
 
@@ -77,16 +77,23 @@ cat << EOF >> "$file"
 /* nmsprime */
 
 html {
-	overflow-x: auto;
+	overflow: unset !important;
+	overflow-x:hidden !important;
+	overflow-y: visible !important;
+	height: auto !important;
+}
+
+body:not(.loginBody) {
+	overflow: unset !important;
+	overlow-y: visible !important;
 }
 
 table {
 	margin: 0 !important;
 }
 
-.cactiGraphContentAreaPreview {
-	overflow-y: unset !important;
-	overflow-x: unset !important;
+#cactiContent, #navigation_right {
+	height: auto !important;
 }
 EOF
 fi
