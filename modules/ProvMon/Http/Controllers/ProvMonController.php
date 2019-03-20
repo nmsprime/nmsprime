@@ -234,7 +234,7 @@ class ProvMonController extends \BaseController
      */
     public static function modemConfigfileStatus($modem, $log, $configDate)
     {
-        $lastDownload = preg_grep('/in.tftpd/', $log);
+        $lastDownload = preg_grep('/in.tftpd(.*?) cm\//', $log);
 
         if (! $lastDownload) {
             $logfiles = glob('/var/log/messages*');
@@ -255,7 +255,9 @@ class ProvMonController extends \BaseController
             return;
         }
 
-        preg_match('/[A-Z][a-z]{2} {1,2}\d{1,2} \d\d:\d\d:\d\d/', $lastDownload[0], $lastDownload);
+        $firstKey = key($lastDownload);
+
+        preg_match('/[A-Z][a-z]{2} {1,2}\d{1,2} \d\d:\d\d:\d\d/', $lastDownload[$firstKey], $lastDownload);
         preg_match('/[A-Z][a-z]{2} {1,2}\d{1,2} \d\d:\d\d:\d\d/', $configDate, $configDate);
 
         $ts_dl = strtotime($lastDownload[0]);
