@@ -24,7 +24,7 @@
 					</div>
 					<div class="panel-body fader d-flex flex-column" style="overflow-y:auto;@if($loop->first)@else display: none;@endif; height:100%">
 						<table class="table table-bordered">
-							@foreach($years as $month => $months)
+							@foreach($years as $month => $types)
 								<?php
 									if (! is_int($month)) {
 										continue;
@@ -34,10 +34,10 @@
 								<tr class="{{$bsclass}}">
 									<!-- Invoice(s) -->
 									<td class="" align="center">
-									@if(isset($months['INVOICE']))
-										@foreach($months['INVOICE'] as $i => $invoice)
+									@if(isset($types['INVOICE']))
+										@foreach($types['INVOICE'] as $i => $invoice)
 											<i class="fa fa-id-card-o"></i>&nbsp; {{ $invoice }}
-											@if(isset($months['INVOICE'][$i+1]))
+											@if(isset($types['INVOICE'][$i+1]))
 												&emsp; | &emsp;
 											@endif
 										@endforeach
@@ -46,8 +46,8 @@
 									<!-- CDR -->
 									@if($years['formatting']['cdr'])
 										<td class="" align="center" style="width: 50%">
-											@if(isset($months['CDR'][0]))
-												<i class="fa fa-id-card-o"></i>&nbsp; {{ $months['CDR'][0] }}
+											@if(isset($types['CDR'][0]))
+												<i class="fa fa-id-card-o"></i>&nbsp; {{ $types['CDR'][0] }}
 											@else
 												-
 											@endif
