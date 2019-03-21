@@ -34,14 +34,15 @@
 								<tr class="{{$bsclass}}">
 									<!-- Invoice(s) -->
 									<td class="" align="center">
-									@foreach($months['INVOICE'] as $i => $invoice)
-										<i class="fa fa-id-card-o"></i>&nbsp; {{ $invoice }}
-										@if(isset($months['INVOICE'][$i+1]))
-											&emsp; | &emsp;
-										@endif
-									@endforeach
+									@if(isset($months['INVOICE']))
+										@foreach($months['INVOICE'] as $i => $invoice)
+											<i class="fa fa-id-card-o"></i>&nbsp; {{ $invoice }}
+											@if(isset($months['INVOICE'][$i+1]))
+												&emsp; | &emsp;
+											@endif
+										@endforeach
+									@endif
 									</td>
-
 									<!-- CDR -->
 									@if($years['formatting']['cdr'])
 										<td class="" align="center" style="width: 50%">
