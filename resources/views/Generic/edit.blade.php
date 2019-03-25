@@ -25,7 +25,7 @@
 	?>
 
 	@include('Generic.above_infos')
-	{!! Form::model($view_var, array('route' => array($form_update, $view_var->id), 'method' => 'put', 'files' => true, 'id' => 'EditForm')) !!}
+	{!! Form::model($view_var, ['route' => [$form_update, $view_var->id], 'method' => 'put', 'files' => true, 'id' => 'EditForm']) !!}
 
 		@include($form_path, $view_var)
 
@@ -85,24 +85,28 @@
 		@stop
 
 		{{-- The Bootstap Panel to include --}}
-		@include ('bootstrap.panel', array ('content' => "content_$i",
-											'view_header' => \App\Http\Controllers\BaseViewController::translate_view('Assigned', 'Header').' '.\App\Http\Controllers\BaseViewController::translate_view($view, 'Header' , 2),
-											'md' => 12))
-											{{-- 'md' => isset($md_size) ? $md_size : (isset($edit_right_md_size) ? $edit_right_md_size : 4))) --}}
-
+		@include ('bootstrap.panel', [
+			'content' => "content_$i",
+			'view_header' => \App\Http\Controllers\BaseViewController::translate_view($view, 'Header' , 2),
+			'md' => 12,
+			'options' => $relation['panelOptions'] ?? null,
+			])
+			{{-- 'md' => isset($md_size) ? $md_size : (isset($edit_right_md_size) ? $edit_right_md_size : 4))) --}}
 
 	@endforeach
 	</div>
 
-	{{-- Alert / Info --}}
-	@foreach (['alert', 'info'] as $notif)
-		@if (Session::has($notif))
-			@include('bootstrap.alert', array('message' => Session::get($notif), 'color' => $notif == 'alert' ? 'danger' : $notif))
-			<?php Session::forget($notif); ?>
-		@endif
-	@endforeach
 
 @endif
+
+	{{-- Alert --}}
+	@if (Session::has('alert'))
+		@foreach (Session::get('alert') as $notif => $message)
+			@include('bootstrap.alert', array('message' => $message, 'color' => $notif))
+			<?php Session::forget("alert.$notif"); ?>
+		@endforeach
+	@endif
+
 @stop
 
 @section('javascript')

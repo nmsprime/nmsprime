@@ -24,6 +24,13 @@ class Ticket extends \BaseModel
         return '<i class="fa fa-ticket"></i>';
     }
 
+    public static function rules($id = null)
+    {
+        return [
+            'users_ids' => 'required',
+        ];
+    }
+
     public function view_index_label()
     {
         $bsclass = $this->get_bsclass();
@@ -159,37 +166,190 @@ class Ticket extends \BaseModel
     {
         return $this->belongsToMany('Modules\Ticketsystem\Entities\TicketType', 'tickettype_ticket', 'ticket_id', 'tickettype_id');
     }
-}
 
-class TicketObserver
-{
-    public function creating($ticket)
+    /**
+     * Send Email to all assigned users from noreply@roetzer-engineering.com.
+     * See: .env and mail.php
+     *
+     * @author Roy Schneider
+     */
+    public function mailAssignedUsers($ticketUsers)
     {
-        $ticket->duedate = $ticket->duedate ?: null;
+        // init
+        $author = ['0' => $this->user_id];
+        $input = $ticketUsers;
+        $subject = trans('messages.ticketUpdated', ['id' => $this->id]);
+        $ticketAssigned = trans('messages.ticketUpdatedMessage');
+        $ids = $this->users->pluck('id')->toArray();
+        $settings = $this->validGlobalSettings();
+
+        // creator of the ticket should get an email too
+        // creator and editor can be 2 different users
+        if (isset($ticketUsers)) {
+            array_merge($ticketUsers, $author);
+        }
+
+        // get collection of users
+        $users = $this->getTicketUsers($ticketUsers);
+
+        // the user that edits the ticket shouldn't reveive an email
+        $author = $users->pluck('id')->search(\Auth::user()->id);
+        if (is_int($author)) {
+            $users->forget($author);
+        }
+
+        foreach ($users as $user) {
+            // send mail to assigned users and if more than only updated_at has changed
+            if (empty($user->email) || ($ids == $input && ! $this->importantChanges())) {
+                continue;
+            }
+
+            // message for new ticket
+            if (! $this->created_at || ! in_array($user->id, $ids)) {
+                $subject = trans('messages.newTicket');
+                $ticketAssigned = trans('messages.newTicketAssigned');
+            }
+
+            \Mail::send('ticketsystem::emails.assignticket', ['user' => $user, 'ticket' => $this, 'ticketAssigned' => $ticketAssigned],
+                function ($message) use ($user, $subject, $settings) {
+                    $message->from($settings['noReplyMail'], $settings['noReplyName'])
+                            ->to($user->email, $user->last_name.', '.$user->first_name)
+                            ->subject($subject);
+                });
+        }
     }
 
-    public function created($ticket)
+    /**
+     * Send Email to users who were deleted from the ticket.
+     *
+     * @author Roy Schneider
+     * @param  array
+     */
+    public function mailDeletedTicketUsers($deletedUsers)
     {
-        foreach ($ticket->users as $user) {
-            // send mail to assigned users
+        $subject = trans('messages.deletedTicketUsers', ['id' => $this->id]);
+        $settings = $this->validGlobalSettings();
+
+        // get collection of users
+        $users = $this->getTicketUsers($deletedUsers);
+
+        // the user that edits the ticket shouldn't reveive an email
+        $author = $users->pluck('id')->search(\Auth::user()->id);
+        if (is_int($author)) {
+            $users->forget($author);
+        }
+
+        foreach ($users as $user) {
             if (empty($user->email)) {
                 continue;
             }
 
-            \Mail::send('ticketsystem::emails.assignticket', ['user' => $user, 'ticket' => $ticket], function ($m) use ($user, $ticket) {
-                $m->from('noreply@roetzer-engineering.com', 'NMS Prime');
-                $m->to($user->email, $user->last_name.', '.$user->first_name)->subject(trans('new_ticket')."\n\n".$ticket->description);
-            });
+            \Mail::raw(trans('messages.deletedTicketUsersMessage', ['id' => $this->id]),
+                function ($message) use ($user, $subject, $settings) {
+                    $message->from($settings['noReplyMail'], $settings['noReplyName'])
+                            ->to($user->email, $user->last_name.', '.$user->first_name)
+                            ->subject($subject);
+                });
         }
+    }
+
+    /**
+     * Compare with previous input.
+     * Check if there are changes in name, state, priority, duedate, users_ids and description.
+     *
+     * @author Roy Schneider
+     * @return mixed values
+     */
+    public function importantChanges()
+    {
+        $changes = \Input::all();
+        $original = $this['original'];
+
+        if ($changes['description'] == $original['description']
+             && $changes['state'] == $original['state']
+              && $changes['priority'] == $original['priority']
+               && $changes['duedate'] == $original['duedate']
+                && $changes['name'] == $original['name']) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Return collection of users.
+     *
+     * @author Roy Schneider
+     * @param array $ticketUsers
+     * @return collection $users
+     */
+    public function getTicketUsers($ticketUsers)
+    {
+        foreach ($ticketUsers as $id) {
+            $users[] = \DB::table('users')->where('id', $id)->first();
+            $users = collect($users);
+        }
+
+        return $users ?? collect($ticketUsers);
+    }
+
+    /**
+     * Get app/GlobalConfig.php and check if noReplyName and noReplyMail are set.
+     *
+     * @author Roy Schneider
+     * @return array
+     */
+    public function validGlobalSettings()
+    {
+        $all = \App\GlobalConfig::first();
+
+        if (! isset($all->noReplyName) || ! isset($all->noReplyMail)) {
+            abort('422', trans('view.error_ticket_settings'));
+        }
+
+        return ['noReplyName' => $all->noReplyName, 'noReplyMail' => $all->noReplyMail];
+    }
+}
+
+class TicketObserver
+{
+    public function created($ticket)
+    {
+        $ticket->duedate = $ticket->duedate ?: null;
+
+        // get assigned users and previously assigned users
+        $input = \Input::all()['users_ids'];
+
+        $ticket->mailAssignedUsers($input);
     }
 
     public function updating($ticket)
     {
         $ticket->duedate = $ticket->duedate ?: null;
-    }
 
-    public function updated($ticket)
-    {
-        // TODO: send mail, too
+        // get assigned users and previously assigned users
+        $ticketUsers = $ticket->users;
+        $input = \Input::all()['users_ids'];
+
+        // create array with user ids
+        $users = $ticketUsers->pluck('id', 'id')->toArray() ?? [];
+
+        // compare input and saved users
+        if ($input !== null && ! empty(array_diff($users, $input))) {
+            $deletedUser = array_diff($users, $input);
+            $ticket->mailDeletedTicketUsers($deletedUser);
+
+            foreach ($deletedUser as $key => $id) {
+                unset($users[$key]);
+            }
+        }
+
+        if ($ticket->importantChanges()) {
+            $ticket->mailAssignedUsers($users);
+        }
+
+        if ($newUsers = array_diff($input, $users)) {
+            $ticket->mailAssignedUsers($newUsers);
+        }
     }
 }

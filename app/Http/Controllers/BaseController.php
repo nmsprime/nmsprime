@@ -39,6 +39,10 @@ class BaseController extends Controller
     protected $second_button_name = 'Missing action name';
     protected $second_button_title_key = null;
 
+    protected $edit_view_third_button = false;
+    protected $third_button_name = 'Missing action name';
+    protected $third_button_title_key = null;
+
     protected $relation_create_button = 'Create';
 
     // if set to true a create button on index view is available
@@ -442,6 +446,9 @@ class BaseController extends Controller
         $a['second_button_name'] = $this->second_button_name;
         $a['edit_view_second_button'] = $this->edit_view_second_button;
         $a['second_button_title_key'] = $this->second_button_title_key;
+        $a['third_button_name'] = $this->third_button_name;
+        $a['edit_view_third_button'] = $this->edit_view_third_button;
+        $a['third_button_title_key'] = $this->third_button_title_key;
         $a['save_button_title_key'] = $this->save_button_title_key;
 
         // Get Framework Informations
@@ -652,7 +659,7 @@ class BaseController extends Controller
             return $id;
         }
 
-        $msg = 'Created!';
+        $msg = trans('messages.created');
         Session::push('tmp_success_above_form', $msg);
 
         return Redirect::route(NamespaceController::get_route_name().'.edit', $id)->with('message', $msg)->with('message_color', 'success');
@@ -897,9 +904,13 @@ class BaseController extends Controller
      */
     private function _set_many_to_many_relations($obj, $data)
     {
+        if (Bouncer::cannot('update', get_class($obj))) {
+            return;
+        }
+
         foreach ($this->many_to_many as $key => $field) {
             if (isset($field['classes']) &&
-                (Bouncer::cannot('edit', $field['classes'][0]) || Bouncer::cannot('edit', $field['classes'][1]))) {
+                (Bouncer::cannot('update', $field['classes'][0]) || Bouncer::cannot('update', $field['classes'][1]))) {
                 Session::push('error', "You are not allowed to edit {$field['classes'][0]} or {$field['classes'][1]}");
                 continue;
             }
@@ -1008,12 +1019,12 @@ class BaseController extends Controller
 
         if (! $deleted && ! $obj->force_delete) {
             $message = 'Could not delete '.$class;
+            // Session::push('tmp_error_above_form', $message);
             $color = 'danger';
-            Session::push('tmp_error_above_form', $message);
         } elseif (($deleted == $to_delete) || $obj->force_delete) {
             $message = 'Successful deleted '.$class;
+            // Session::push('tmp_success_above_form', $message);
             $color = 'success';
-            Session::push('tmp_success_above_form', $message);
         } else {
             $message = 'Deleted '.$deleted.' out of '.$to_delete.' '.$class;
             $color = 'warning';

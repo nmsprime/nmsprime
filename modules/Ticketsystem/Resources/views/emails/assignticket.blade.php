@@ -1,6 +1,12 @@
-Hallo {{ $user->first_name }},
+{{ trans('messages.hello') }} {{ $user->first_name }},
 
-Dir wurde ein neues {{ link_to_route('Ticket.edit', 'Ticket', ['id' => $ticket->id]) }} zugewiesen.
+{{ $ticketAssigned }} <br />
 
-Ticket ID: {{ $ticket->id }} <br />
-Titel: {{ $ticket->name }}
+{{ trans('messages.ticket') }} ID: {{ link_to_route('Ticket.edit', $ticket->id, ['id' => $ticket->id]) }} <br />
+@if (isset($ticket->name))
+{{ trans('messages.title') }}: {{ $ticket->name }} <br />
+@endif
+@if (isset($ticket->description))
+{{ trans('messages.description') }}: {{ $ticket->description }} <br />
+@endif
+

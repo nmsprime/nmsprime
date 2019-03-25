@@ -52,7 +52,6 @@ class CccUserController extends \BaseController
         'company_registration_court_3' => '',
         'company_management' 	=> '',
         'company_directorate' 	=> '',
-        'company_web'			=> '',
         'company_tax_id_nr' 	=> '',
         'company_tax_nr' 		=> '',
         'company_logo'			=> '',
@@ -87,7 +86,7 @@ class CccUserController extends \BaseController
         if (! $login_data) {
             Log::error('CustomerConnectionInfo: Error Creating Login Data', [$c->id]);
 
-            return \Redirect::back()->with('error_msg', 'Error Creating Login Data - See Logfiles or ask Admin!');
+            return \Redirect::back()->with('error_msg', trans('messages.conn_info_err_create'));
         }
 
         // get data to fill placeholders in tex template
@@ -244,6 +243,7 @@ class CccUserController extends \BaseController
         $sepa_account = $costcenter->sepaaccount;
 
         if (! is_object($sepa_account)) {
+            //todo: msg should be appear in BE
             Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (SepaAccount/Company) to fill template - CostCenter has no SepaAccount assigned', ['Costcenter' => $costcenter->name]);
 
             return;
@@ -257,14 +257,29 @@ class CccUserController extends \BaseController
         $company = $sepa_account->company;
 
         if (! is_object($company)) {
-            Log::error('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
+            //todo: msg should appear in BE
+            Log::warning('ConnectionInfoTemplate: Cannot use Billing specific data (Company) to fill template - SepaAccount has no Company assigned', ['SepaAccount' => $sepa_account->name]);
 
             return;
         }
 
         $this->data = array_merge($this->data, $company->template_data());
 
+        if (empty($this->data['company_logo'])) {
+            //todo: msg should appear in admin
+            Log::warning("Company Logo in $company->name (ID: $company->id) not set");
+
+            return;
+        }
+
         $this->data['company_logo'] = storage_path('app/config/billingbase/logo/'.$this->data['company_logo']);
+
+        if (! Storage::exists('config/billingbase/logo/'.$this->data['company_logo'])) {
+            //todo: should be appear in admin
+            Log::warning("Company Logo file for $company->name (ID: $company->id) not found");
+
+            return;
+        }
     }
 
     /**
@@ -279,27 +294,37 @@ class CccUserController extends \BaseController
      */
     public function show()
     {
-        $invoices = Auth::guard('ccc')->user()->contract->invoices()->with('settlementrun')->get();
+        $invoices = Auth::guard('ccc')->user()->contract->invoices()
+            ->join('settlementrun', 'invoice.settlementrun_id', '=', 'settlementrun.id')
+            ->where('settlementrun.verified', 1)        // dont show unverified invoices
+            ->orderBy('year', 'desc')->orderBy('month', 'desc')->orderBy('type', 'desc')
+            ->select('invoice.*', 'settlementrun.verified')
+            ->get();
+
         $invoice_links = [];
+        $year = 0;
+        $cdr = false;
 
-        $bsclass = ['info', 'active'];
-        $start = $year = 0;
-        foreach ($invoices as $key => $invoice) {
-            // dont show unverified invoices
-            if (! $invoice->settlementrun->verified) {
-                continue;
-            }
-
-            if ($invoice->year != $year) {
-                $start = ($start + 1) % 2;
+        foreach ($invoices as $invoice) {
+            if ($year && $invoice->year != $year) {
+                $invoice_links[$year]['formatting']['cdr'] = $cdr;
+                $cdr = false;
             }
 
             $year = $invoice->year;
+            $invoicetype = strtoupper($invoice->type);
 
-            $invoice_links[] = [
-                    'link' => \HTML::linkRoute('Customer.Download', str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''), ['invoice' => $invoice->id]),
-                    'bsclass' => $bsclass[$start],
-                ];
+            if ($invoicetype == 'CDR') {
+                $cdr = true;
+            }
+
+            $invoice_links[$year][$invoice->month][$invoicetype][] = \HTML::linkRoute('Customer.Download',
+                str_pad($invoice->month, 2, 0, STR_PAD_LEFT).'/'.$invoice->year.($invoice->type == 'CDR' ? '-'.trans('messages.cdr') : ''),
+                ['invoice' => $invoice->id]);
+        }
+
+        if ($invoices) {
+            $invoice_links[$year]['formatting']['cdr'] = $cdr;
         }
 
         $emails = \Module::collections()->has('Mail') ? Auth::guard('ccc')->user()->contract->emails : collect();

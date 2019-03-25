@@ -98,10 +98,12 @@ class ProvMonController extends \BaseController
         $mac = strtolower($modem->mac);
         $modem->help = 'modem_analysis';
 
+        // takes approx 0.1 sec
         $ip = gethostbyname($hostname);
         $ip = ($ip == $hostname) ? null : $ip;
 
         // Ping: Only check if device is online
+        // takes approx 0.1 sec
         exec('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
         $online = $ret ? false : true;
 
@@ -128,12 +130,19 @@ class ProvMonController extends \BaseController
         }
 
         // Log dhcp (discover, ...), tftp (configfile or firmware)
-        $search = $ip ? "$mac|$modem->hostname|$ip " : "$mac|$modem->hostname";
+        // NOTE: This function takes a long time if syslog file is large - 0.4 to 0.6 sec
+        $search = $ip ? "$mac|$modem->hostname[^0-9]|$ip " : "$mac|$modem->hostname[^0-9]";
         $log = self::_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
 
-        $host_id = $this->monitoring_get_host_id($modem);
+        // Dashboard
+        $dash['modemServicesStatus'] = self::modemServicesStatus($modem, $configfile['text']);
+        // time of this function should be observerd - can take a huge time as well
+        $modemConfigfileStatus = self::modemConfigfileStatus($modem, $log, $configfile['mtime']);
+        if ($modemConfigfileStatus) {
+            $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
+        }
 
-        // TODO: Dash / Forecast
+        $host_id = $this->monitoring_get_host_id($modem);
 
         $tabs = $this->analysisPages($id);
         $view_header = 'ProvMon-Analyses';
@@ -166,6 +175,97 @@ class ProvMonController extends \BaseController
         $conf['text'] = str_replace("\t", '&nbsp;&nbsp;&nbsp;&nbsp;', $conf['text']);
 
         return $conf;
+    }
+
+    /**
+     * Determine modem status of internet access and telephony for analyses dashboard
+     *
+     * @param object    Modem
+     * @param array     Lines of Configfile
+     * @return array    Color & status text
+     */
+    public static function modemServicesStatus($modem, $config)
+    {
+        $networkAccess = preg_grep('/NetworkAccess \d/', $config);
+        preg_match('/NetworkAccess (\d)/', end($networkAccess), $match);
+        $networkAccess = $match[1];
+
+        // Internet and voip blocked
+        if (! $networkAccess) {
+            return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.noNetworkAccess')];
+        }
+
+        $maxCpe = preg_grep('/MaxCPE \d/', $config);
+        preg_match('/MaxCPE (\d)/', end($maxCpe), $match);
+        $maxCpe = $match[1];
+
+        $cpeMacs = preg_grep('/CpeMacAddress (.*?);/', $config);
+
+        // Internet and voip allowed
+        if ($maxCpe > count($cpeMacs)) {
+            return ['bsclass' => 'success', 'text' => trans('messages.modemAnalysis.fullAccess')];
+        }
+
+        // Only voip allowed
+        // Check if configfile contains a different CPE MTA than the MTAs have - this case is actually [2019-03-06] not valid
+        $mtaMacs = $modem->mtas->each(function ($mac) {
+            $mac->mac = strtolower($mac->mac);
+        })->pluck('mac')->all();
+
+        foreach ($cpeMacs as $line) {
+            preg_match('/CpeMacAddress (.*?);/', $line, $match);
+
+            $cpeMac = strtolower($match[1]);
+
+            if (! in_array($cpeMac, $mtaMacs)) {
+                return ['bsclass' => 'info', 'text' => trans('messages.modemAnalysis.cpeMacMissmatch')];
+            }
+        }
+
+        return ['bsclass' => 'info', 'text' => trans('messages.modemAnalysis.onlyVoip')];
+    }
+
+    /**
+     * Determine if modem runs with/has already downloaded actual configfile
+     *
+     * @param object    Modem
+     * @param array     Lines of Log messages
+     * @return array    Color & status text
+     */
+    public static function modemConfigfileStatus($modem, $log, $configDate)
+    {
+        $lastDownload = preg_grep('/in.tftpd(.*?) cm\//', $log);
+
+        if (! $lastDownload) {
+            $logfiles = glob('/var/log/messages*');
+            // $logfiles = glob('/var/log/messages-mablx10/messages*');
+            arsort($logfiles);
+
+            foreach ($logfiles as $path) {
+                exec("grep -m 1 $modem->hostname $path | grep tftpd", $lastDownload);
+
+                if ($lastDownload) {
+                    break;
+                }
+            }
+        }
+
+        if (! $lastDownload) {
+            // return ['bsclass' => 'info', 'text' => trans('messages.modemAnalysis.missingLD')];
+            return;
+        }
+
+        $firstKey = key($lastDownload);
+
+        preg_match('/[A-Z][a-z]{2} {1,2}\d{1,2} \d\d:\d\d:\d\d/', $lastDownload[$firstKey], $lastDownload);
+        preg_match('/[A-Z][a-z]{2} {1,2}\d{1,2} \d\d:\d\d:\d\d/', $configDate, $configDate);
+
+        $ts_dl = strtotime($lastDownload[0]);
+        $ts_cf = strtotime($configDate[0]);
+
+        if ($ts_dl <= $ts_cf) {
+            return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.cfOutdated')];
+        }
     }
 
     /**
@@ -798,9 +898,10 @@ class ProvMonController extends \BaseController
         // actual strategy: if possible grep active lease, otherwise return all entries
         //                  in reverse ordered format from dhcpd.leases
         if (count($ret) > 1) {
-            foreach (preg_grep('/(.*?)binding state active(.*?)/', $ret) as $str) {
-                if (preg_match('/starts \d ([^;]+);/', $str, $s)) {
-                    $start[] = $s[1];
+            foreach ($ret as $text) {
+                if (preg_match('/starts \d ([^;]+);.*;binding state active;/', $text, $match)) {
+                    $start[] = $match[1];
+                    $lease[] = $text;
                 }
             }
 
@@ -809,7 +910,7 @@ class ProvMonController extends \BaseController
                 natsort($start);
                 end($start);
 
-                return [$ret[each($start)[0]]];
+                return [$lease[key($start)]];
             }
         }
 
@@ -1260,15 +1361,25 @@ class ProvMonController extends \BaseController
         snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.1.0', 'i', 1);
 
         // set frequency span from 150 to 862 MHz
-        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', 150000000);
-        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', 862000000);
+        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', 154000000);
+        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', 866000000);
 
         // every 8 MHz
         snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', 8000000);
 
         // after enabling docsIf3CmSpectrumAnalysisCtrlCmd it may take a few seconds to start the snmpwalḱ (error: End of MIB)
-        sleep(15);
-        $expressions = snmp2_real_walk($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3');
+        $time = 1;
+        while ($time <= 30) {
+            try {
+                $expressions = snmp2_real_walk($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3');
+            } catch (\Exception $e) {
+                $time++;
+                sleep(1);
+                continue;
+            }
+
+            break;
+        }
 
         // in case we don't get return values
         if (! isset($expressions)) {

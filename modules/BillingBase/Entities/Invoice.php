@@ -39,7 +39,23 @@ class Invoice extends \BaseModel
     {
         $type = $this->type == 'CDR' ? ' ('.trans('messages.Call Data Record').')' : '';
 
-        return $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT).$type;
+        return ['table' => $this->table,
+                'header' =>  $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT).$type,
+                'bsclass' => $this->get_bsclass(),
+            ];
+    }
+
+    public function get_bsclass()
+    {
+        if ($this->charge < 0) {
+            return 'info';
+        }
+
+        if ($this->charge == 0) {
+            return 'active';
+        }
+
+        return '';
     }
 
     /**
@@ -150,7 +166,7 @@ class Invoice extends \BaseModel
 
         // Charges
         'item_table_positions'  => '', 			// tex table of all items to be charged for this invoice
-        'cdr_charge' 			=> '', 			// Integer with costs resulted from telephone calls
+        'cdr_charge' 			=> '', 			// Float with costs resulted from telephone calls
         'cdr_table_positions'	=> '',			// tex table of all call data records
         'table_summary' 		=> '', 			// preformatted table - use following three keys to set table by yourself
         'table_sum_tax_percent' => '', 			// The tax percentage with % character
@@ -167,6 +183,7 @@ class Invoice extends \BaseModel
         'end_of_term' 		=> '', 				// Aktuelles Vertragsende
         'period_of_notice' 	=> '', 				// Kündigungsfrist
         'last_cancel_date' 	=> '', 				// letzter Kündigungszeitpunkt der aktuellen Laufzeit, if empty -> contract was already canceled!
+        'canceled_to'       => '',              // Contract was already canceled
     ];
 
     public function get_invoice_dir_path()
@@ -253,11 +270,28 @@ class Invoice extends \BaseModel
      */
     private function setCancelationDates($contract)
     {
-        $ret = $contract->getCancelationDates();
+        $ret = $contract->getCancelationDates(date('Y-m-d', strtotime('last day of last month')));
 
+        // Canceled contract or tariff
         // e.g. customers that get tv amplifier refund, but dont have any tariff
-        if (is_null($ret) || ! array_key_exists('tariff', $ret)) {
-            ChannelLog::debug('billing', 'Customer has no tariff - dont set cancelation dates.', [$this->data['contract_id']]);
+        if ($ret['canceled_to'] || ! $ret['tariff']) {
+            ChannelLog::debug('billing', "Contract $contract->number is already canceled", [$this->data['contract_id']]);
+
+            // Set cancelation date contracts valid_to
+            if ($ret['canceled_to']) {
+                $this->data['canceled_to'] = self::langDateFormat($ret['canceled_to']);
+
+                return;
+            }
+
+            // Get end of term of canceled tariff
+            $tariff = $contract->items()
+                ->join('product as p', 'item.product_id', '=', 'p.id')
+                ->whereIn('type', ['Internet', 'Voip'])
+                ->orderBy('item.valid_to', 'desc')
+                ->first();
+
+            $this->data['canceled_to'] = $tariff ? self::langDateFormat($tariff->valid_to) : '';
 
             return;
         }
@@ -420,9 +454,9 @@ class Invoice extends \BaseModel
             $count++;
         }
 
-        $sum = \App::getLocale() == 'de' ? number_format($sum, 2, ',', '.') : number_format($sum, 2);
-
         $this->data['cdr_charge'] = $sum;
+
+        $sum = \App::getLocale() == 'de' ? number_format($sum, 2, ',', '.') : number_format($sum, 2);
         $this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'.$sum.'}\\\\';
         $plural = $count > 1 ? 'en' : '';
         $this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural.' & '.$sum.$this->currency.' & '.$sum.$this->currency.'\\\\';

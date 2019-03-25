@@ -20,6 +20,15 @@ class CostCenter extends \BaseModel
     }
 
     /**
+     * Observers
+     */
+    public static function boot()
+    {
+        self::observe(new CostCenterObserver);
+        parent::boot();
+    }
+
+    /**
      * View related stuff
      */
 
@@ -83,6 +92,50 @@ class CostCenter extends \BaseModel
      */
     public function get_billing_month()
     {
-        return $this->billing_month ? ($this->billing_month > 9 ? $this->billing_month : '0'.$this->billing_month) : '06';
+        return $this->billing_month ? str_pad($this->billing_month, 2, '0', STR_PAD_LEFT) : '06';
+    }
+}
+
+class CostCenterObserver
+{
+    public function updated($costcenter)
+    {
+        $changes = $costcenter->getDirty();
+
+        // Reset payed_month flag for all items belonging directly or indirectly to costcenter
+        if (isset($changes['billing_month']) && $costcenter['original']['billing_month'] < $costcenter->billing_month) {
+            $m = str_pad($costcenter['original']['billing_month'], 2, '0', STR_PAD_LEFT);
+            $filter = $m == 12 ? date('Y', strtotime('last year')).'-12' : date('Y')."-$m";
+
+            // Note: Update doesnt work with Eloquent as automatically added 'updated_at'-column is ambigous
+            $query = \DB::table('item')
+                    ->join('contract as c', 'c.id', '=', 'item.contract_id')
+                    ->join('product as p', 'item.product_id', '=', 'p.id')
+                    ->where(function ($query) use ($costcenter) {
+                        $query
+                        ->where('item.costcenter_id', $costcenter['original']['id'])
+                        ->orWhere(function ($query) use ($costcenter) {
+                            $query
+                            ->where('p.costcenter_id', $costcenter['original']['id'])
+                            ->where('item.costcenter_id', 0);
+                        })
+                        ->orWhere(function ($query) use ($costcenter) {
+                            $query
+                            ->where('c.costcenter_id', $costcenter['original']['id'])
+                            ->where('p.costcenter_id', 0)
+                            ->where('item.costcenter_id', 0);
+                        });
+                    })
+                    ->where('p.billing_cycle', 'Yearly')
+                    ->where('payed_month', $costcenter['original']['billing_month']);
+
+            // Log all updated items
+            $items = implode(',', $query->pluck('item.id')->all());
+
+            // Update
+            $count = $query->update(['payed_month' => 0]);
+
+            \Log::info("Changed billing month of CostCenter $costcenter->name [$costcenter->id] - Set payed_month column to 0 for $count items: $items");
+        }
     }
 }

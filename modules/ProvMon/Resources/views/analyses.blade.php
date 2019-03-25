@@ -1,17 +1,19 @@
 @extends ('provmon::split')
 
 @section('content_dash')
+	<div class="btn pull-right">
+		@include('Generic.documentation', ['documentation' => $modem->help])
+	</div>
+
 	@if ($dash)
-		<font color="grey">{{$dash}}</font>
+		@foreach ($dash as $key => $info)
+			<div class="alert alert-{{$info['bsclass']}} fade show col-md-10"> {{ $info['text'] }} </div>
+		@endforeach
 	@else
 		<b>TODO</b>
 	@endif
 
-	<div class="btn pull-right">
-		@include('Generic.documentation', ['documentation' => $modem->help])
-	</div>
 @stop
-
 
 @section('spectrum-analysis')
 	@include('provmon::spectrum-analysis')
@@ -20,7 +22,7 @@
 @section('content_cacti')
 
 	@if ($host_id)
-		<iframe id="cacti-diagram" src="/cacti/graph_view.php?action=preview&columns=1&host_id={{$host_id}}" sandbox="allow-scripts allow-same-origin" onload="resizeIframe(this);" style="width: 100%;"></iframe>
+		<iframe id="cacti-diagram" src="/cacti/graph_view.php?action=preview&columns=1&host_id={{$host_id}}" sandbox="allow-scripts allow-same-origin" onload="resizeIframe(this);" scrolling="no" style="width: 100%;"></iframe>
 	@else
 		<font color="red">{{trans('messages.modem_no_diag')}}</font><br>
 		{{ trans('messages.modem_monitoring_error') }}
@@ -312,6 +314,6 @@
 		});
 	});
 </script>
-@yield('spectrum')
 @include('Generic.handlePanel')
+@yield('spectrum')
 @stop

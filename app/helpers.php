@@ -238,3 +238,52 @@ function checkLocale($locale = null) : string
             $locale :
             config('app.locale', config('app.fallback_locale', 'en'));
 }
+
+/**
+ * Get the chained subquery for db where statements to filter by a date string column
+ * where the date is larger/later or equal then the specified date
+ * NOTE: For end dates an empty column is later - it's cumbersome to always write these 5 lines of code
+ *
+ * @param string    db column name - must be table.column in joined statements
+ * @param string    date string like '2019-02-06' - default is today
+ * @return function db query to use in (chained) where clause
+ *
+ * @author Nino Ryschawy
+ */
+function whereLaterOrEqualThanDate($column, $date = '')
+{
+    if (! $date) {
+        $date = date('Y-m-d');
+    }
+
+    return function ($query) use ($column, $date) {
+        $query
+            ->where($column, '>=', $date)
+            ->orWhereNull($column)
+            ->orWhere($column, '=', '');
+    };
+}
+
+/**
+ * Clear failed jobs table in database for specific command or the whole table
+ *
+ * @param string
+ */
+function clearFailedJobs($command = 'all')
+{
+    if ($command == 'all') {
+        \DB::table('failed_jobs')->delete();
+
+        return;
+    }
+
+    $failed_jobs = \DB::table('failed_jobs')->get();
+
+    foreach ($failed_jobs as $failed_job) {
+        $commandName = json_decode($failed_job->payload)->data->commandName;
+
+        if (\Str::contains($commandName, $command)) {
+            \Artisan::call('queue:forget', ['id' => $failed_job->id]);
+        }
+    }
+}

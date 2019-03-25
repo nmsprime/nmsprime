@@ -63,9 +63,11 @@ class Product extends \BaseModel
         $bsclass = $this->get_bsclass();
 
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price'],
+                'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price', 'costcenter.name', $this->table.'.proportional'],
                 'header' =>  $this->type.' - '.$this->name.' | '.$this->price.' €',
                 'bsclass' => $bsclass,
+                'eager_loading' => ['costcenter'],
+                'edit' => ['costcenter.name' => 'getCostcenterName'],
                 'order_by' => ['0' => 'asc'], ];  // columnindex => direction
     }
 
@@ -83,6 +85,11 @@ class Product extends \BaseModel
         }
 
         return $bsclass;
+    }
+
+    public function getCostcenterName()
+    {
+        return $costcenter = $this->costcenter ? $this->costcenter->name : '';
     }
 
     /**

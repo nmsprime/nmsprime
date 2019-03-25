@@ -59,13 +59,16 @@ return [
     'Item_CreditAmount'				=> 'Nettobetrag, der dem Kunde gutgeschrieben werden soll. Achtung: Ein negativer Betrag wird dem Kunde abgezogen!',
 
     //ProductController
-    'Product_bundle'                => 'Ist der Tarif mit dem Voip-Tarif gebündelt, wird die Gesamtvertragslaufzeit eines Kunden nur anhand des Internet-Tarifs bestimmt. Anderenfalls bestimmt der Tarif (Voip oder Internet) darüber, der zuletzt begonnen hat.',
-    'Product_maturity_min'          => 'Beispiele: 14D (14 Tage), 3M (Drei Monate), 1Y (Ein Jahr)',
-    'Product_maturity' 				=> 'Laufzeitverlängerung nach der Mindestlaufzeit. Die Gesamtlaufzeit wird automatisch um diese Zeit verlängert, wenn der Tarif nicht vor der Kündigungsfrist gekündigt wurde. Default: 1 Monat. Beispiele: 14D (14 Tage), 3M (Drei Monate), 1Y (Ein Jahr)',
-    'Product_Name' 					=> 'Für Kredite ist es möglich einen Typ zuzuweisen, indem der Typname dem Namen des Kredits angefügt wird - z.B.: \'Kredit Gerät\'',
-    'Product_Number_of_Cycles' 		=> 'Achtung! Für alle Produkte, die in einem wiederkehrenden Zyklus bezahlt werden steht der Preis für jede einzelne Zahlung. Für Produkte, die einmalig bezahlt werden wird der Preis durch die Anzahl der Zyklen geteilt.',
-    'Product_pod'                   => 'Beispiele: 14D (14 Tage), 3M (Drei Monate), 1Y (Ein Jahr)',
-    'Product_Type'					=> 'Alle Felder außer dem Abrechnungszyklus müssen vor eine Änderung des Produkts gelöscht werde! Andernfalls können die Produkte in den meisten Fällen nicht gespeichert werden.',
+    'product' => [
+        'bundle'                => 'Ist der Tarif mit dem Voip-Tarif gebündelt, wird die Gesamtvertragslaufzeit eines Kunden nur anhand des Internet-Tarifs bestimmt. Anderenfalls bestimmt der Tarif (Voip oder Internet) darüber, der zuletzt begonnen hat.',
+        'maturity_min'          => 'Beispiele: 14D (14 Tage), 3M (Drei Monate), 1Y (Ein Jahr)',
+        'maturity'              => 'Laufzeitverlängerung nach der Mindestlaufzeit. Die Gesamtlaufzeit wird automatisch um diese Zeit verlängert, wenn der Tarif nicht vor der Kündigungsfrist gekündigt wurde. Default: 1 Monat. Beispiele: 14D (14 Tage), 3M (Drei Monate), 1Y (Ein Jahr)',
+        'Name'                  => 'Für Kredite ist es möglich einen Typ zuzuweisen, indem der Typname dem Namen des Kredits angefügt wird - z.B.: \'Kredit Gerät\'',
+        'pod'                   => 'Beispiele: 14D (14 Tage), 3M (Drei Monate), 1Y (Ein Jahr)',
+        'proportional'          => 'Setzen Sie diesen Haken, wenn Posten, die innerhalb des aktuellen Abrechnungszyklus beginnen, anteilig berechnet werden sollen. Somit würde bei einem monatlich abzurechnenden Produkt mit Beginn in der Mitte des Monats im aktuellen Abrechnungszyklus nur die Hälfte des vollen Preises abgerechnet werden.',
+        'Type'                  => 'Alle Felder außer dem Abrechnungszyklus müssen vor einer Änderung des Produkts gelöscht werden! Andernfalls können die Produkte in den meisten Fällen nicht gespeichert werden.',
+        ],
+    'Product_Number_of_Cycles'      => 'Achtung! Für alle Produkte, die in einem wiederkehrenden Zyklus bezahlt werden steht der Preis für jede einzelne Zahlung. Für Produkte, die einmalig bezahlt werden wird der Preis durch die Anzahl der Zyklen geteilt.',
 
     //SalesmanController
     'Salesman_ProductList'			=> 'Füge alle Produkttypen an, für die eine Provision erzielt werden kann - möglich:',
@@ -80,7 +83,7 @@ return [
     'tex_template' 					=> 'TeX Vorlage',
 
     // SettlementrunController
-    'settlement_verification' 		=> 'Mit aktivierter Checkbox kann der Abrechnungslauf nicht wiederholt werden. Rechnungen der Kunden werden nur mit aktivierter Checkbox angezeigt.',
+    'settlement_verification' 		=> 'Die Rechnungen der Kunden werden nur mit aktivierter Checkbox angezeigt. Der Haken kann nur gesetzt werden, wenn der letzte Rechnungslauf für ALLE SEPA-Konten ausgeführt wurde (damit keine Änderungen missachtet werden). Info: Mit aktivierter Checkbox kann der Abrechnungslauf nicht wiederholt werden.',
 
  /*
   * MODULE: Dashboard
@@ -124,8 +127,9 @@ return [
   *	MODULE: ProvBase
   */
     'rate_coefficient'				=> 'MaxRateSustained wird mit diesem Wert multipliziert, um den Nutzer eine höhere (> 1.0) Übertragungsrate als gebucht zu gewähren.',
+    'additional_modem_reset'		=> 'Zeigt einen zusätzlichen Modem Reset Button an, um das Modem ohne Hilfe der CMTS direkt per SNMP neu zu starten.',
     //ModemController
-    'Modem_NetworkAccess'			=> 'Netzwerkzugriff für CPEs. (MTAs werden nicht beachtet und gehen immer online, wenn alle restlich notwendigen Konfigurationen korrekt vorgenommen wurden) - Achtung: Mit Billingmodul wird diese Checkbox während der nächtlichen Prüfung (nur) bei Tarifänderung überschrieben.',
+    'Modem_InternetAccess'			=> 'Internetzugriff für CPEs. (MTAs werden nicht beachtet und gehen immer online, wenn alle restlich notwendigen Konfigurationen korrekt vorgenommen wurden) - Achtung: Mit Billingmodul wird diese Checkbox während der nächtlichen Prüfung (nur) bei Tarifänderung überschrieben.',
     'Modem_InstallationAddressChangeDate'	=> 'Datum der Änderung der Installationsadresse. Wenn nur lesbar existiert bereits ein offener Auftrag.',
     'Modem_GeocodeOrigin'			=> 'Quelle der Geodaten. Falls hier „n/a“ steht konnte die Adresse nicht aufgelöst werden. Bei manueller Änderung der Geodaten wird der aktuelle Nutzer eingetragen.',
     'contract_number' 				=> 'Achtung - Kundenkennwort wird bei Änderung automatisch geändert!',
@@ -134,6 +138,8 @@ return [
     'modem_update_frequency'		=> 'Dieses Feld wird einmal täglich aktualisiert.',
     'enable_agc'					=> 'Aktiviere automatische Verstärkungsregelung in Rückkanalrichtung.',
     'agc_offset'					=> 'Verschiebung des automatischen Verstärkungsregelungwertes in Rückkanalrichtung in dB. (Vorgabewert: 0.0)',
+    'configfile_count'              => 'Die Zahl in Klammern zeigt an, wie häufig die jeweilige Konfigurationsdatei bereits verwendet wird.',
+    'has_telephony'                 => 'Muss aktiv sein, wenn der Kunde Telefonie haben soll, aber kein Internet hat. Das Flag kann aktuell nicht genutzt werden, um die Telefonie bei Verträgen mit Internet zu deaktivieren. Dazu muss das MTA gelöscht oder die Telefonnummer deaktiviert werden. Info: Die Einstellung hat Einfluss auf NetworkAccess und MaxCPE im Modem Configfile - siehe Modem-Analyse im Tab \'Configfile\'',
 
  /*
   *	MODULE: ProvVoip
@@ -166,4 +172,8 @@ return [
  * Module Ticketsystem
  */
     'assign_user' => 'Zuweisen eines Users zu einem Ticket.',
+    'mail_env'    => 'Nächster Schritt: Host/Nutzernamen/Passwort in /etc/nmsprime/env/global.env eintragen, um Emails im Bezug auf Tickets zu erhalten.',
+    'noReplyMail' => 'Die E-Mail-Adresse, die als Absender angezeigt werden soll, wenn Tickets geändert/erstellt werden. Die Adresse muss nicht existieren. Z.B. example@example.com',
+    'noReplyName' => 'Der Name, der als Absender angezeigt werden soll, wenn Tickets geändert/erstellt werden. Z.B: NMS Prime',
+    'ticket_settings' => 'Nächster Schritt: Den Namen und die E-Mail-Adresse des Noreply Absenders in der Systemkonfiguration angeben.',
  ];

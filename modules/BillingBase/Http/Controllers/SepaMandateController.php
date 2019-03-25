@@ -58,7 +58,7 @@ class SepaMandateController extends \BaseController
         $data = parent::prepare_input($data);
 
         // set this to null if no value is given
-        $data = $this->_nullify_fields($data, ['sepa_valid_to']);
+        $data = $this->_nullify_fields($data, ['costcenter_id', 'sepa_valid_to']);
 
         return $data;
     }

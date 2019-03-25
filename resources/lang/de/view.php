@@ -154,7 +154,8 @@ return [
         'Header_SepaMandate'		=> 'SEPA-Mandat|SEPA-Mandate',
         //Modems
         'Header_Modems'				=> 'Modem|Modems', //workaround
-        'Header_Invoice' 			=> 'Rechnung|Rechnungen',
+        'Header_Invoice'            => 'Rechnung|Rechnungen',
+        'Header_OldInvoices'        => 'Ältere Rechnungen',
         'Header_EditModems'			=> 'Modem bearbeiten',
         'Header_Modem'				=> 'Modem|Modems',
         'Header_SEPA Mandate' 		=> 'SEPA Mandat',
@@ -350,4 +351,5 @@ return [
 
 // Error
     'error_specify_id'          => 'Bitte geben Sie den Hostnamen des zugehörigen Modems anstelle der IP Adresse an.',
+    'error_ticket_settings'     => 'Bitte geben Sie den Namen und die E-Mail-Adresse des Noreply Absenders in der Systemkonfiguration an.',
 ];

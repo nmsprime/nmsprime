@@ -155,6 +155,11 @@ class Configfile extends \BaseModel
      */
     private function __text_make($device, $type, $sw_up = false)
     {
+        // for cfs of type modem, mta or generic
+        // get global config - provisioning settings
+        $db_schemata ['provbase'][0] = Schema::getColumnListing('provbase');
+        $provbase = ProvBase::get();
+
         // array to extend the configfile; e.g. for firmware
         $config_extensions = [];
 
@@ -223,15 +228,31 @@ class Configfile extends \BaseModel
                 // get description of table mtas
                 $db_schemata['mta'][0] = Schema::getColumnListing('mta');
 
+                // check if MTA is an AVM FritzBox to disable deactivated phonenumbers by rewriting a wrong password
+                preg_match('/SnmpMibObject .*?.872.1.4.3.1.5.[\d] String/', $this->text, $hit);
+                $avm = $hit ? true : false;
+
                 // get Phonenumbers to MTA
                 foreach (Phonenumber::where('mta_id', '=', $device->id)->orderBy('port')->get() as $phone) {
-                    $phone->active = ($phone->active ? 1 : 2);
+                    if (! $phone->active) {
+                        $phone->active = 2;
+
+                        // deactivate AVM FritzBox phonenumber via wrong password
+                        if ($avm) {
+                            $phone->password = 'deactivated number';
+                        }
+                    }
+
                     // use the port number as primary index key, so {phonenumber.number.1} will be the phone with port 1, not id 1 !
                     $phonenumber[$phone->port] = $phone;
                     // get description of table phonennumbers; one subarray per (possible) number
                     $db_schemata['phonenumber'][$phone->port] = Schema::getColumnListing('phonenumber');
                 }
 
+                break;
+
+            // for Base
+            case 'generic':
                 break;
 
             // this is for unknown types – atm we do nothing
