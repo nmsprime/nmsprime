@@ -1,8 +1,7 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
 
-class ChangeProductTypesToPostalDelivery extends Migration
+class ChangeProductTypesToPostalDelivery extends BaseMigration
 {
     /**
      * Run the migrations.
