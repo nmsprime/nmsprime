@@ -260,11 +260,12 @@ class DashboardController extends BaseController
             }
             $ret[$idx]['cls'] = $cls;
 
-            // set the percentage according to the current $p[0], minimum $p[3] and maximum $p[4] value
-            $per = null;
-            if (isset($p[3]) && isset($p[4]) && ($p[4] - $p[3])) {
+            try {
+                // set the percentage according to the current $p[0], minimum $p[3] and maximum $p[4] value
                 $per = ($p[0] - $p[3]) / ($p[4] - $p[3]) * 100;
                 $ret[$idx]['text'] .= sprintf(' (%.1f%%)', $per);
+            } catch (\ErrorException $e) {
+                $per = null;
             }
             $ret[$idx]['per'] = $per;
         }

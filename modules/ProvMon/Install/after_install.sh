@@ -39,7 +39,7 @@ UPDATE user_auth SET password='$(php -r "echo password_hash('$admin_psw', PASSWO
 UPDATE user_auth SET password='invalidated', must_change_password='', enabled='on' WHERE username='guest';
 EOF
 
-# link ss_docsis.php in git to the correct location, this way its automatically updated
+# link git files to the correct location, this way they are automatically updated
 ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/ss_docsis.php /usr/share/cacti/scripts/ss_docsis.php
 ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/cisco_cmts.xml /usr/share/cacti/resource/snmp_queries/cisco_cmts.xml
 
