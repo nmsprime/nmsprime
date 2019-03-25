@@ -13,7 +13,6 @@ class InstallSetCharsetCacti extends BaseMigration
     {
         require_once '/etc/cacti/db.php';
         system("echo 'ALTER DATABASE $database_default CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;' | mysql -u $database_username -p$database_password");
-        system("echo \"UPDATE poller SET processes = (SELECT value FROM settings WHERE name = 'concurrent_processes') WHERE name = 'Main Poller';\" | mysql $database_default -u $database_username -p$database_password");
         system('systemctl restart rh-php71-php-fpm');
     }
 
