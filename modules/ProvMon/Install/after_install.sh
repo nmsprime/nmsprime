@@ -34,7 +34,8 @@ mysql -u root cacti < "$cacti_file"
 # allow guest user to access graphs without login (also invalidate its password, by setting an imposible bcrypt hash)
 # send SNMP queries concurrenly to modems (depending on no of cpus)
 mysql cacti -u cactiuser --password="$mysql_cacti_psw" << EOF
-REPLACE INTO settings VALUES ('guest_user','guest'),('concurrent_processes','$(nproc)');
+REPLACE INTO settings VALUES ('guest_user','guest');
+UPDATE poller SET processes = $(nproc) WHERE name = 'Main Poller';
 UPDATE user_auth SET password='$(php -r "echo password_hash('$admin_psw', PASSWORD_DEFAULT);")', must_change_password='' WHERE username='admin';
 UPDATE user_auth SET password='invalidated', must_change_password='', enabled='on' WHERE username='guest';
 EOF
