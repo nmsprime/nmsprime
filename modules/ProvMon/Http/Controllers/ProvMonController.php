@@ -234,11 +234,11 @@ class ProvMonController extends \BaseController
      */
     public static function modemConfigfileStatus($modem, $log, $configDate)
     {
+        $logfile = $path = '/var/log/messages';
         $lastDownload = preg_grep('/in.tftpd(.*?) cm\//', $log);
 
         if (! $lastDownload) {
-            $logfiles = glob('/var/log/messages*');
-            // $logfiles = glob('/var/log/messages-mablx10/messages*');
+            $logfiles = glob("$logfile*");
             arsort($logfiles);
 
             foreach ($logfiles as $path) {
@@ -256,12 +256,30 @@ class ProvMonController extends \BaseController
         }
 
         $firstKey = key($lastDownload);
-
         preg_match('/[A-Z][a-z]{2} {1,2}\d{1,2} \d\d:\d\d:\d\d/', $lastDownload[$firstKey], $lastDownload);
-        preg_match('/[A-Z][a-z]{2} {1,2}\d{1,2} \d\d:\d\d:\d\d/', $configDate, $configDate);
 
         $ts_dl = strtotime($lastDownload[0]);
-        $ts_cf = strtotime($configDate[0]);
+        $ts_cf = strtotime($configDate);
+
+        if (! $ts_dl || ! $ts_cf) {
+            \Log::error('Strtotime() could not parse string in '.__CLASS__.'::'.__FUNCTION__);
+
+            return;
+        }
+
+        // Consider change of year - get year of log entry
+        if ($path == $logfile) {
+            if (date('d H:i:s', $ts_dl) > date('d H:i:s')) {
+                $ts_dl = strtotime('-1 year', $ts_dl);
+            }
+        } else {
+            $path = str_replace("$logfile-", '', $path);
+            $ts_log = strtotime(substr($path, 0, 4).'-'.substr($path, 4, 2).'-'.substr($path, 6, 2));
+
+            if (date('Y', $ts_log) < date('Y') || $ts_dl > $ts_log) {
+                $ts_dl = strtotime('-1 year', $ts_dl);
+            }
+        }
 
         if ($ts_dl <= $ts_cf) {
             return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.cfOutdated')];
