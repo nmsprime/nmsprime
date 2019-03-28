@@ -8,7 +8,7 @@ BaseRoute::group([], function () {
     BaseRoute::get('ticket/dashboard', [
         'as' => 'Ticket.dashboard',
         'uses' => 'Modules\Ticketsystem\Http\Controllers\TicketController@dashboard',
-        'middleware' => ['can:view,Modules\Ticketsystem\Entities\Ticket']
+        'middleware' => ['can:view,Modules\Ticketsystem\Entities\Ticket'],
     ]);
 
     BaseRoute::post('Ticket/detach/{id}/{func}', [

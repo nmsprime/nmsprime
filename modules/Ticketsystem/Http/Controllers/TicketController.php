@@ -2,10 +2,10 @@
 
 namespace Modules\Ticketsystem\Http\Controllers;
 
+use View;
 use App\User;
 use Modules\Ticketsystem\Entities\Ticket;
 use Modules\Ticketsystem\Entities\TicketType;
-use View;
 
 class TicketController extends \BaseController
 {
@@ -18,8 +18,10 @@ class TicketController extends \BaseController
         ],
     ];
 
-    public function dashboard(){
+    public function dashboard()
+    {
         $title = 'Tickets Dashboard';
+
         return View::make('ticketsystem::dashboard', $this->compact_prep_view(compact('title')));
     }
 
