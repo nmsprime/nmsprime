@@ -5,6 +5,7 @@ namespace Modules\Ticketsystem\Http\Controllers;
 use App\User;
 use Modules\Ticketsystem\Entities\Ticket;
 use Modules\Ticketsystem\Entities\TicketType;
+use View;
 
 class TicketController extends \BaseController
 {
@@ -16,6 +17,11 @@ class TicketController extends \BaseController
             'field' => 'tickettypes_ids',
         ],
     ];
+
+    public function dashboard(){
+        $title = 'Tickets Dashboard';
+        return View::make('ticketsystem::dashboard', $this->compact_prep_view(compact('title')));
+    }
 
     public function view_form_fields($model = null)
     {

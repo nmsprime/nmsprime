@@ -2,6 +2,9 @@
 
 namespace Modules\BillingBase\Http\Controllers;
 
+use Illuminate\Support\Facades\Storage;
+use View;
+use Modules\Dashboard\Entities\BillingAnalysis;
 use Schema;
 use Modules\ProvBase\Entities\Contract;
 use App\Http\Controllers\BaseViewController;
@@ -11,6 +14,14 @@ use Modules\BillingBase\Entities\SepaMandate;
 class BillingBaseController extends \BaseController
 {
     public $name = 'BillingBase';
+
+    public function index(){
+
+        $title = 'Billing Dashboard';
+        $income_data = BillingAnalysis::getIncomeData();
+        $news = $this->newsLoadOfficialSite();
+        return View::make('billingbase::index', $this->compact_prep_view(compact('title', 'income_data', 'news')));
+    }
 
     public function view_form_fields($model = null)
     {
@@ -53,5 +64,23 @@ class BillingBaseController extends \BaseController
             ['form_type' => 'checkbox', 'name' => 'termination_fix', 'description' => 'Item Termination only end of month', 'help' => trans('helper.BillingBase_ItemTermination')],
             ['form_type' => 'checkbox', 'name' => 'show_ags', 'description' => trans('messages.show_ags'), 'help' => trans('helper.BillingBase_showAGs')],
         ];
+    }
+
+    private function newsLoadOfficialSite()
+    {
+        $file = 'data/dashboard/news.json';
+
+        if (! Storage::exists($file)) {
+            return;
+        }
+
+        $json = json_decode(Storage::get($file));
+
+        if (! isset($json->youtube) || ! isset($json->text)) {
+            return;
+        }
+
+        return ['youtube' => $json->youtube,
+            'text' => $json->text, ];
     }
 }
