@@ -2,20 +2,21 @@
 
 namespace Modules\HfcBase\Http\Controllers;
 
-use App\Http\Controllers\BaseController;
 use View;
+use App\Http\Controllers\BaseController;
 
 class HfcBaseController extends BaseController
 {
     // The Html Link Target
     protected $html_target = '';
 
-    public function index(){
-
+    public function index()
+    {
         $title = 'Hfc Dashboard';
 
         $netelements = $this->_get_impaired_netelements();
         $services = $this->_get_impaired_services();
+
         return View::make('HfcBase::index', $this->compact_prep_view(compact('title', 'netelements', 'services')));
     }
 

@@ -2,24 +2,25 @@
 
 namespace Modules\BillingBase\Http\Controllers;
 
-use Illuminate\Support\Facades\Storage;
 use View;
-use Modules\Dashboard\Entities\BillingAnalysis;
 use Schema;
+use Illuminate\Support\Facades\Storage;
 use Modules\ProvBase\Entities\Contract;
 use App\Http\Controllers\BaseViewController;
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\SepaMandate;
+use Modules\Dashboard\Entities\BillingAnalysis;
 
 class BillingBaseController extends \BaseController
 {
     public $name = 'BillingBase';
 
-    public function index(){
-
+    public function index()
+    {
         $title = 'Billing Dashboard';
         $income_data = BillingAnalysis::getIncomeData();
         $news = $this->newsLoadOfficialSite();
+
         return View::make('billingbase::index', $this->compact_prep_view(compact('title', 'income_data', 'news')));
     }
 
