@@ -136,10 +136,12 @@ class ProvMonController extends \BaseController
 
         // Dashboard
         $dash['modemServicesStatus'] = self::modemServicesStatus($modem, $configfile['text']);
-        // time of this function should be observerd - can take a huge time as well
-        $modemConfigfileStatus = self::modemConfigfileStatus($modem, $log, $configfile['mtime']);
-        if ($modemConfigfileStatus) {
-            $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
+        // time of this function should be observed - can take a huge time as well
+        if ($online) {
+            $modemConfigfileStatus = self::modemConfigfileStatus($modem, $log, $configfile['mtime']);
+            if ($modemConfigfileStatus) {
+                $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
+            }
         }
 
         $host_id = $this->monitoring_get_host_id($modem);
