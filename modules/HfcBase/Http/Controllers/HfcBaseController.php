@@ -191,4 +191,37 @@ class HfcBaseController extends BaseController
 
         return $ret;
     }
+
+    /**
+     * Return performance data colour class according to given limits
+     *
+     * @author Ole Ernst
+     * @return string
+     */
+    private static function _get_perfdata_class($cur, $warn, $crit)
+    {
+        if ($crit > $warn) {
+            if ($cur < $warn) {
+                return 'success';
+            }
+            if ($cur < $crit) {
+                return 'warning';
+            }
+            if ($cur > $crit) {
+                return 'danger';
+            }
+        } elseif ($crit < $warn) {
+            if ($cur > $warn) {
+                return 'success';
+            }
+            if ($cur > $crit) {
+                return 'warning';
+            }
+            if ($cur < $crit) {
+                return 'danger';
+            }
+        } else {
+            return 'warning';
+        }
+    }
 }

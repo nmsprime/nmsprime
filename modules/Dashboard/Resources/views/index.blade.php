@@ -17,145 +17,146 @@
 		<h1 class="page-header">{{ $title }}</h1>
 
 		<!-- Widgets -->
-		<div class="row">
-			@if ($view['contracts'])
-				@DivOpen(3)
-					@include ('bootstrap.widget', array (
-							'content' => 'contracts',
-							'widget_icon' => 'users',
-							'widget_bg_color' => 'green',
-							'link_target' => '#anchor-contracts',
-						)
-					)
-				@DivClose()
-			@endif
+		@include('dashboard::timeline.logs', array('content'=>'logs'))
+		{{--<div class="row">--}}
+			{{--@if ($view['contracts'])--}}
+				{{--@DivOpen(3)--}}
+					{{--@include ('bootstrap.widget', array (--}}
+							{{--'content' => 'contracts',--}}
+							{{--'widget_icon' => 'users',--}}
+							{{--'widget_bg_color' => 'green',--}}
+							{{--'link_target' => '#anchor-contracts',--}}
+						{{--)--}}
+					{{--)--}}
+				{{--@DivClose()--}}
+			{{--@endif--}}
 
-			@if ($view['income'])
-				@DivOpen(3)
-					@include ('bootstrap.widget',
-						array (
-							'content' => 'income',
-							'widget_icon' => 'euro',
-							'widget_bg_color' => 'blue',
-							'link_target' => '#anchor-income',
-						)
-					)
-				@DivClose()
-			@endif
+			{{--@if ($view['income'])--}}
+				{{--@DivOpen(3)--}}
+					{{--@include ('bootstrap.widget',--}}
+						{{--array (--}}
+							{{--'content' => 'income',--}}
+							{{--'widget_icon' => 'euro',--}}
+							{{--'widget_bg_color' => 'blue',--}}
+							{{--'link_target' => '#anchor-income',--}}
+						{{--)--}}
+					{{--)--}}
+				{{--@DivClose()--}}
+			{{--@endif--}}
 
-			@if ($view['provvoipenvia'])
-				<!-- placeholder -->
-				@DivOpen(3)
-					@include ('bootstrap.widget',
-						array (
-							'content' => 'provvoipenvia',
-							'widget_icon' => 'info',
-							'widget_bg_color' => 'aqua',
-							'link_target' => '#anchor-provvoipenvia',
-						)
-					)
-				@DivClose()
-			@endif
+			{{--@if ($view['provvoipenvia'])--}}
+				{{--<!-- placeholder -->--}}
+				{{--@DivOpen(3)--}}
+					{{--@include ('bootstrap.widget',--}}
+						{{--array (--}}
+							{{--'content' => 'provvoipenvia',--}}
+							{{--'widget_icon' => 'info',--}}
+							{{--'widget_bg_color' => 'aqua',--}}
+							{{--'link_target' => '#anchor-provvoipenvia',--}}
+						{{--)--}}
+					{{--)--}}
+				{{--@DivClose()--}}
+			{{--@endif--}}
 
-			@if ($view['tickets'])
-				@DivOpen(3)
-					@include ('bootstrap.widget',
-						array (
-							'content' => 'tickets',
-							'widget_icon' => 'ticket',
-							'widget_bg_color' => 'orange',
-							'link_target' => '#anchor-tickets',
-						)
-					)
-				@DivClose()
-			@endif
+			{{--@if ($view['tickets'])--}}
+				{{--@DivOpen(3)--}}
+					{{--@include ('bootstrap.widget',--}}
+						{{--array (--}}
+							{{--'content' => 'tickets',--}}
+							{{--'widget_icon' => 'ticket',--}}
+							{{--'widget_bg_color' => 'orange',--}}
+							{{--'link_target' => '#anchor-tickets',--}}
+						{{--)--}}
+					{{--)--}}
+				{{--@DivClose()--}}
+			{{--@endif--}}
 
-			@if ($view['date'])
-				@DivOpen(3)
-					@include ('bootstrap.widget',
-						array (
-							'content' => 'date',
-							'widget_icon' => 'calendar',
-							'widget_bg_color' => 'purple',
-						)
-					)
-				@DivClose()
-			@endif
-		</div>
+			{{--@if ($view['date'])--}}
+				{{--@DivOpen(3)--}}
+					{{--@include ('bootstrap.widget',--}}
+						{{--array (--}}
+							{{--'content' => 'date',--}}
+							{{--'widget_icon' => 'calendar',--}}
+							{{--'widget_bg_color' => 'purple',--}}
+						{{--)--}}
+					{{--)--}}
+				{{--@DivClose()--}}
+			{{--@endif--}}
+		{{--</div>--}}
 
-		<!-- Quickstart -->
-		<div class="row">
-			<div class="col-auto-md">
-				@include('dashboard::widgets.quickstart')
-			</div>
+		{{--<!-- Quickstart -->--}}
+		{{--<div class="row">--}}
+			{{--<div class="col-auto-md">--}}
+				{{--@include('dashboard::widgets.quickstart')--}}
+			{{--</div>--}}
 
-			@if ($view['hfc'])
-				<div class="col-auto-md">
-					@include('dashboard::widgets.hfc')
-				</div>
-			@endif
+			{{--@if ($view['hfc'])--}}
+				{{--<div class="col-auto-md">--}}
+					{{--@include('dashboard::widgets.hfc')--}}
+				{{--</div>--}}
+			{{--@endif--}}
 
-			<div class="col-auto-md">
-				@include('dashboard::widgets.documentation')
-			</div>
-		</div>
+			{{--<div class="col-auto-md">--}}
+				{{--@include('dashboard::widgets.documentation')--}}
+			{{--</div>--}}
+		{{--</div>--}}
 
 
-		<!-- Panels -->
-		<div class="row">
-			@if($netelements)
-				@section ('impaired_netelements')
-					@include('dashboard::panels.impaired_netelements')
-				@stop
-				@include ('bootstrap.panel', array ('content' => "impaired_netelements", 'view_header' => 'Impaired Netelements', 'md' => 6, 'height' => 'auto', 'i' => '1'))
-			@endif
+		{{--<!-- Panels -->--}}
+		{{--<div class="row">--}}
+			{{--@if($netelements)--}}
+				{{--@section ('impaired_netelements')--}}
+					{{--@include('dashboard::panels.impaired_netelements')--}}
+				{{--@stop--}}
+				{{--@include ('bootstrap.panel', array ('content' => "impaired_netelements", 'view_header' => 'Impaired Netelements', 'md' => 6, 'height' => 'auto', 'i' => '1'))--}}
+			{{--@endif--}}
 
-			@if($services)
-				@section ('impaired_services')
-					@include('dashboard::panels.impaired_services')
-				@stop
-				@include ('bootstrap.panel', array ('content' => "impaired_services", 'view_header' => 'Impaired Services', 'md' => 6, 'height' => 'auto', 'i' => '2'))
-			@endif
+			{{--@if($services)--}}
+				{{--@section ('impaired_services')--}}
+					{{--@include('dashboard::panels.impaired_services')--}}
+				{{--@stop--}}
+				{{--@include ('bootstrap.panel', array ('content' => "impaired_services", 'view_header' => 'Impaired Services', 'md' => 6, 'height' => 'auto', 'i' => '2'))--}}
+			{{--@endif--}}
 
-			@if ($view['contracts'])
-				@section ('contract_analytics')
-					@include('dashboard::panels.contract_analytics')
-				@stop
-				@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => trans('view.Dashboard_ContractAnalytics'), 'md' => 8, 'height' => 'auto', 'i' => '3'))
-			@endif
+			{{--@if ($view['contracts'])--}}
+				{{--@section ('contract_analytics')--}}
+					{{--@include('dashboard::panels.contract_analytics')--}}
+				{{--@stop--}}
+				{{--@include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => trans('view.Dashboard_ContractAnalytics'), 'md' => 8, 'height' => 'auto', 'i' => '3'))--}}
+			{{--@endif--}}
 
-			@if (Module::collections()->has('BillingBase'))
-				@if ($view['contracts'] && $data['contracts']['table'])
-					@section ('weekly_contracts')
-						@include('dashboard::panels.weekly_contracts')
-					@stop
-					@include ('bootstrap.panel', array ('content' => "weekly_contracts", 'view_header' => trans('view.Dashboard_WeeklyCustomers'), 'md' => 4, 'height' => 'auto', 'i' => '1'))
-				@endif
-			@endif
+			{{--@if (Module::collections()->has('BillingBase'))--}}
+				{{--@if ($view['contracts'] && $data['contracts']['table'])--}}
+					{{--@section ('weekly_contracts')--}}
+						{{--@include('dashboard::panels.weekly_contracts')--}}
+					{{--@stop--}}
+					{{--@include ('bootstrap.panel', array ('content' => "weekly_contracts", 'view_header' => trans('view.Dashboard_WeeklyCustomers'), 'md' => 4, 'height' => 'auto', 'i' => '1'))--}}
+				{{--@endif--}}
+			{{--@endif--}}
 
-			@if ($view['income'])
-				@section ('income_analytics')
-					@include('dashboard::panels.income_analytics')
-				@stop
-				@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => trans('view.Dashboard_IncomeAnalytics'), 'md' => 4, 'height' => 'auto', 'i' => '4'))
-			@endif
+			{{--@if ($view['income'])--}}
+				{{--@section ('income_analytics')--}}
+					{{--@include('dashboard::panels.income_analytics')--}}
+				{{--@stop--}}
+				{{--@include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => trans('view.Dashboard_IncomeAnalytics'), 'md' => 4, 'height' => 'auto', 'i' => '4'))--}}
+			{{--@endif--}}
 
-			@if (isset($data['news']) && $data['news'])
-				@section ('news')
-					@include('dashboard::panels.news')
-				@stop
-				@include ('bootstrap.panel', array ('content' => "news", 'view_header' => 'News', 'md' => 4, 'height' => '350px', 'i' => '5'))
-			@endif
+			{{--@if (isset($data['news']) && $data['news'])--}}
+				{{--@section ('news')--}}
+					{{--@include('dashboard::panels.news')--}}
+				{{--@stop--}}
+				{{--@include ('bootstrap.panel', array ('content' => "news", 'view_header' => 'News', 'md' => 4, 'height' => '350px', 'i' => '5'))--}}
+			{{--@endif--}}
 
-			@if ($view['tickets'] && $data['tickets']['total'])
-				@section ('ticket_table')
-					@include('dashboard::panels.ticket_table')
-				@stop
-				@include ('bootstrap.panel', array ('content' => "ticket_table", 'view_header' => trans('messages.dashbrd_ticket'), 'md' => 4, 'height' => 'auto', 'i' => '5'))
-			@endif
+			{{--@if ($view['tickets'] && $data['tickets']['total'])--}}
+				{{--@section ('ticket_table')--}}
+					{{--@include('dashboard::panels.ticket_table')--}}
+				{{--@stop--}}
+				{{--@include ('bootstrap.panel', array ('content' => "ticket_table", 'view_header' => trans('messages.dashbrd_ticket'), 'md' => 4, 'height' => 'auto', 'i' => '5'))--}}
+			{{--@endif--}}
 
-		</div>
-	</div>
+		{{--</div>--}}
+	{{--</div>--}}
 @stop
 
 

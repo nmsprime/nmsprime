@@ -2,6 +2,7 @@
 
 namespace Modules\Dashboard\Http\Controllers;
 
+use App\GuiLog;
 use Log;
 use Auth;
 use View;
@@ -44,7 +45,9 @@ class DashboardController extends BaseController
 
         $data['news'] = $this->news();
 
-        return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'data', 'view', 'netelements', 'services')));
+        $logs = GuiLog::where('username', '!=', 'cronjob')->orderBy('updated_at','desc')->limit(20)->get();
+
+        return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'data', 'view', 'netelements', 'services', 'logs')));
     }
 
     /**
