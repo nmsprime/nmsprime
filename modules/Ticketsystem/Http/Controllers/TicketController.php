@@ -2,9 +2,9 @@
 
 namespace Modules\Ticketsystem\Http\Controllers;
 
-use Illuminate\Support\Facades\Auth;
 use View;
 use App\User;
+use Illuminate\Support\Facades\Auth;
 use Modules\Ticketsystem\Entities\Ticket;
 use Modules\Ticketsystem\Entities\TicketType;
 
@@ -53,5 +53,4 @@ class TicketController extends \BaseController
                 'selected' => $model->html_list($model->users, ['last_name', 'first_name'], false, ', '), ],
         ];
     }
-
 }
