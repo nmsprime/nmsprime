@@ -1,3 +1,9 @@
+<?php $bclasses = [
+  'created' => 'fa-plus-square-o',
+  'updated' => 'fa-pencil-square-o',
+  'updated N:M' => 'fa-pencil-square-o'
+];
+?>
 <ul class="timeline">
     @foreach($logs as $log)
         <li>
@@ -21,8 +27,8 @@
                 </div>
                 <div class="timeline-content">
                     <p class="lead">
-                        <i class="fa fa-pencil-square-o"></i>
-                        {{$log->username}} {{$log->method}} {{$log->model}}
+                        <i class="fa {{$bclasses[$log->method]}}"></i>
+                        {{$log->username}} {{$log->method}} <a href="admin/{{$log->model}}/{{$log->model_id}}">{{$log->model}}</a>
                     </p>
                 </div>
             </div>
