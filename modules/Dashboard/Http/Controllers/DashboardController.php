@@ -2,16 +2,10 @@
 
 namespace Modules\Dashboard\Http\Controllers;
 
-use App\GuiLog;
-use Log;
-use Auth;
 use View;
-use Module;
-use Bouncer;
-use Storage;
+use App\GuiLog;
 use Modules\ProvBase\Entities\Contract;
 use App\Http\Controllers\BaseController;
-use Modules\Dashboard\Entities\BillingAnalysis;
 
 class DashboardController extends BaseController
 {
@@ -22,7 +16,7 @@ class DashboardController extends BaseController
     {
         $title = 'Dashboard';
 
-        $logs = GuiLog::where('username', '!=', 'cronjob')->orderBy('updated_at','desc')->limit(20)->get();
+        $logs = GuiLog::where('username', '!=', 'cronjob')->orderBy('updated_at', 'desc')->limit(20)->get();
 
         return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'logs')));
     }
@@ -88,6 +82,4 @@ class DashboardController extends BaseController
 
         return $a;
     }
-
-
 }
