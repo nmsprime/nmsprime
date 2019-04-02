@@ -182,7 +182,11 @@ class CccUserController extends \BaseController
             mkdir($dir_path, 0733, true);
         }
 
-        $filename = sanitize_filename($contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info');
+        if ($contract->company) {
+            $filename = sanitize_filename($contract->number.'_'.$contract->company.'_info');
+        } else {
+            $filename = sanitize_filename($contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info');
+        }
 
         // Replace placeholder by value
         $template = str_replace('\\_', '_', $template);
@@ -223,7 +227,9 @@ class CccUserController extends \BaseController
         $this->data['contract_zip'] = $contract->zip;
         $this->data['contract_city'] = escape_latex_special_chars($contract->city);
         $this->data['contract_district'] = escape_latex_special_chars($contract->district);
-        $this->data['contract_address'] = ($contract->company ? escape_latex_special_chars($contract->company).'\\\\' : '').($contract->academic_degree ? "$contract->academic_degree " : '').($this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\');
+        $this->data['contract_address'] = ($contract->company ? escape_latex_special_chars($contract->company).'\\\\' : '').
+            ($contract->academic_degree ? "$contract->academic_degree " : '').
+            (($this->data['contract_firstname'] || $this->data['contract_lastname']) ? ($this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\') : '');
         $this->data['contract_address'] .= $this->data['contract_district'] ? $this->data['contract_district'].'\\\\' : '';
         $this->data['contract_address'] .= $this->data['contract_street'].' '.$this->data['contract_housenumber']."\\\\$contract->zip ".$this->data['contract_city'];
         $this->data['login_name'] = $login_data['login_name'];
