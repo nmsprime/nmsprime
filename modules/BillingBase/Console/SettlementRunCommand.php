@@ -67,11 +67,13 @@ class SettlementRunCommand extends Command implements ShouldQueue
         // Determine SR (SettlementRun) ID as this is necessary to create relation between Invoice & SR
         if (! $this->sr->getAttribute('id')) {
             $this->sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->first();
+            SettlementRun::where('id', $this->sr->id)->update(['updated_at' => date('Y-m-d H:i:s')]);
         }
 
         if (! $this->sr || ! $this->sr->getAttribute('id')) {
             // Note: create will run the observer that calls this command again with this SR
             SettlementRun::create(['year' => $this->dates['Y'], 'month' => $this->dates['lastm']]);
+            echo "\nSettlementRun is called in background via Queue\n";
             exit(0);
         }
 
@@ -274,6 +276,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
         if ($this->output) {
             $bar->finish();
+            echo "\n";
         }
 
         // avoid deleting temporary latex files before last invoice was built (multiple threads are used)
@@ -783,11 +786,11 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
             $data = [
                 'calling_nr' => $phonenumbers[$username],
-                'date' 		=> $date[0],
+                'date'      => $date[0],
                 'starttime' => $date[1],
-                'duration' 	=> gmdate('H:i:s', $arr[4]),
+                'duration'  => gmdate('H:i:s', $arr[4]),
                 'called_nr' => $arr[3],
-                'price' 	=> $arr[10] / 100,
+                'price'     => $arr[10] / 100,
                 ];
 
             if (in_array($customer_nr, $customer_nrs)) {
