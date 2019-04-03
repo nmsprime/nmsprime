@@ -542,7 +542,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
      */
     private function _get_cdr_data()
     {
-        $calls = [[]];
+        $calls = $calls_total = [[]];
 
         \Artisan::call('billing:cdr');
 
@@ -554,10 +554,17 @@ class SettlementRunCommand extends Command implements ShouldQueue
                 throw new Exception("Missing call data record file from $provider");
             }
 
-            $calls += $this->{"_parse_$provider".'_csv'}($filepath);
+            $calls = $this->{"_parse_$provider".'_csv'}($filepath);
+
+            // combine arrays - NOTE: Dont simplify by array_merge or + operator here!
+            foreach ($calls as $cnr => $entries) {
+                foreach ($entries as $entry) {
+                    $calls_total[$cnr][] = $entry;
+                }
+            }
         }
 
-        return $calls;
+        return $calls_total;
     }
 
     /**
