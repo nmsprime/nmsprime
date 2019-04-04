@@ -706,6 +706,7 @@ class ProvMonController extends \BaseController
             $sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')];
             $sys['Firmware'] = [snmpget($host, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
             $sys['Uptime'] = [$this->_secondsToTime(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
+            $sys['Status Code'] = [snmpget($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.2.2')];
             $sys['DOCSIS'] = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
             $sys['CMTS'] = [$cmts->hostname];
             $ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
