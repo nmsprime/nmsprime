@@ -91,18 +91,29 @@ class Item extends \BaseModel
         return $ret;
     }
 
+    /**
+     * Get label bootstrap class for colorization
+     *
+     * green: valid
+     * blue:  starts in future
+     * grey:  outdated/expired
+     */
     public function get_bsclass()
     {
-        // Evaluate Colours
-        // green: valid
-        // blue:  starts in future
-        // grey:  outdated/expired
-        // '$this->id' to dont check when index table header is determined!
-        if ($this->id && $this->check_validity('now')) {
+        // Dont check when index table header is determined!
+        if (! $this->id) {
+            return '';
+        }
+
+        if ($this->product->billing_cycle == 'Once' && ! $this->get_end_time() && $this->get_start_time() < strtotime('midnight first day of this month')) {
+            return 'active';
+        }
+
+        if ($this->check_validity('now')) {
             return 'success';
         }
 
-        if ($this->id && $this->get_start_time() < strtotime('midnight first day of this month')) {
+        if ($this->get_start_time() < strtotime('midnight first day of this month')) {
             return 'active';
         }
 
