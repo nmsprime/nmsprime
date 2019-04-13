@@ -17,7 +17,7 @@ cd /var/lib/cacti
 md5sum cli/add_graphs.php | grep -q '1416f1ddae7fb14a4acc64008c146524' && wget -qO- https://github.com/Cacti/cacti/commit/2609d5892cb9b8d284fe090538f023664c06c24c.patch | head -n -13 | patch -p1
 
 # create DB accessed by cactiuser
-mysqladmin -u root create cacti
+mysql -u root -e "CREATE DATABASE cacti CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';"
 mysql -u root -e "GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY '$mysql_cacti_psw';";
 
 # allow cacti to access time_zone_name table
@@ -34,16 +34,17 @@ mysql -u root cacti < "$cacti_file"
 # allow guest user to access graphs without login (also invalidate its password, by setting an imposible bcrypt hash)
 # send SNMP queries concurrenly to modems (depending on no of cpus)
 mysql cacti -u cactiuser --password="$mysql_cacti_psw" << EOF
-REPLACE INTO settings VALUES ('guest_user','guest'),('concurrent_processes','$(nproc)');
+REPLACE INTO settings VALUES ('guest_user','guest');
+UPDATE poller SET processes = $(nproc) WHERE name = 'Main Poller';
 UPDATE user_auth SET password='$(php -r "echo password_hash('$admin_psw', PASSWORD_DEFAULT);")', must_change_password='' WHERE username='admin';
 UPDATE user_auth SET password='invalidated', must_change_password='', enabled='on' WHERE username='guest';
 EOF
 
-# link ss_docsis.php in git to the correct location, this way its automatically updated
+# link git files to the correct location, this way they are automatically updated
 ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/ss_docsis.php /usr/share/cacti/scripts/ss_docsis.php
 ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/cisco_cmts.xml /usr/share/cacti/resource/snmp_queries/cisco_cmts.xml
 
-echo "*/5 * * * * cacti /usr/bin/php /usr/share/cacti/poller.php > /dev/null 2>&1" > /etc/cron.d/cacti
+sed -i 's/^#//' /etc/cron.d/cacti
 sed -i 's/Require host localhost$/Require all granted\n\t\tDirectoryIndex index.php/' /etc/httpd/conf.d/cacti.conf
 systemctl reload httpd.service
 
@@ -77,16 +78,23 @@ cat << EOF >> "$file"
 /* nmsprime */
 
 html {
-	overflow-x: auto;
+	overflow: unset !important;
+	overflow-x:hidden !important;
+	overflow-y: visible !important;
+	height: auto !important;
+}
+
+body:not(.loginBody) {
+	overflow: unset !important;
+	overlow-y: visible !important;
 }
 
 table {
 	margin: 0 !important;
 }
 
-.cactiGraphContentAreaPreview {
-	overflow-y: unset !important;
-	overflow-x: unset !important;
+#cactiContent, #navigation_right {
+	height: auto !important;
 }
 EOF
 fi

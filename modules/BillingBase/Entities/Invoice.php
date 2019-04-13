@@ -39,7 +39,23 @@ class Invoice extends \BaseModel
     {
         $type = $this->type == 'CDR' ? ' ('.trans('messages.Call Data Record').')' : '';
 
-        return $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT).$type;
+        return ['table' => $this->table,
+                'header' =>  $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT).$type,
+                'bsclass' => $this->get_bsclass(),
+            ];
+    }
+
+    public function get_bsclass()
+    {
+        if ($this->charge < 0) {
+            return 'info';
+        }
+
+        if ($this->charge == 0) {
+            return 'active';
+        }
+
+        return '';
     }
 
     /**
@@ -275,7 +291,7 @@ class Invoice extends \BaseModel
                 ->orderBy('item.valid_to', 'desc')
                 ->first();
 
-            $this->data['canceled_to'] = self::langDateFormat($tariff->valid_to);
+            $this->data['canceled_to'] = $tariff ? self::langDateFormat($tariff->valid_to) : '';
 
             return;
         }

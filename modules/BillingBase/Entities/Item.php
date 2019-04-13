@@ -94,16 +94,16 @@ class Item extends \BaseModel
     public function get_bsclass()
     {
         // Evaluate Colours
-        // green: it will be considered for next accounting cycle
-        // blue:  new item - not yet considered for settlement run
-        // yellow: item is outdated/expired and will not be charged this month
+        // green: valid
+        // blue:  starts in future
+        // grey:  outdated/expired
         // '$this->id' to dont check when index table header is determined!
-        if ($this->id && $this->check_validity($this->product->billing_cycle)) {
+        if ($this->id && $this->check_validity('now')) {
             return 'success';
         }
 
         if ($this->id && $this->get_start_time() < strtotime('midnight first day of this month')) {
-            return 'warning';
+            return 'active';
         }
 
         return 'info';
@@ -351,7 +351,7 @@ class Item extends \BaseModel
                     // or tariff started after billing month - then only pay on first settlement run - break otherwise
                     // or contract ended last month (before billing month)
                     if (! (((date('m', $start) >= $billing_month) && (date('Y-m', $start) == $dates['lastm_Y'])) ||
-                        (date('Y-m', $end) == $dates['lastm_Y']))) {
+                        (date('Y-m', $contract_end) == $dates['lastm_Y']))) {
                         break;
                     }
                 }
