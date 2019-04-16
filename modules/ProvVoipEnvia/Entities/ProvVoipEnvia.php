@@ -506,63 +506,63 @@ class ProvVoipEnvia extends \BaseModel
         // misc jobs – available on all levels and without any preconditions
         if (in_array($view_level, ['contract', 'modem', 'phonenumber', 'phonenumbermanagement', 'phonebookentry'])) {
             $ret = [
-                ['class' => 'Misc'],
+                ['class' => trans('provvoipenvia::api.misc')],
                 [
-                    'linktext' => 'Ping envia TEL API',
+                    'linktext' => trans('provvoipenvia::api.misc_ping'),
                     'url' => $base.'misc_ping'.$origin.$really,
-                    'help' => 'Checks if envia TEL API is reachable and running.',
+                    'help' => trans('provvoipenvia::api.misc_ping_help'),
                 ],
                 [
-                    'linktext' => 'Get free numbers',
+                    'linktext' => trans('provvoipenvia::api.misc_getfreenumbers'),
                     'url' => $base.'misc_get_free_numbers'.$origin.$really,
-                    'help' => 'Gets all currently unused numbers from envia TEL.',
+                    'help' => trans('provvoipenvia::api.misc_getfreenumbers_help'),
                 ],
             ];
 
-            if ($this->api_version_greater_or_equal('1.7')) {
-                array_push($ret, [
-                    'linktext' => 'Get values for use in other methods',
-                    'url' => $base.'misc_get_keys'.$origin.'&amp;keyname=index'.$really,
-                    'help' => 'This method gets e.g. EKP codes, carrier codes, phonebook entry related data, …',
-                ]);
-            }
+            /* if ($this->api_version_greater_or_equal('1.7')) { */
+            /*     array_push($ret, [ */
+            /*         'linktext' => trans('provvoipenvia::api.misc_getkeys'), */
+            /*         'url' => $base.'misc_get_keys'.$origin.'&amp;keyname=index'.$really, */
+            /*         'help' => trans('provvoipenvia::api.misc_getkeys'), */
+            /*     ]); */
+            /* } */
 
             array_push($ret, [
-                'linktext' => 'Get (current) usage CSV',
+                'linktext' => trans('provvoipenvia::api.misc_getusagecsv'),
                 'url' => $base.'misc_get_usage_csv'.$origin.$really,
-                'help' => 'This method gets CSV containing usage statistic for the current month',
+                'help' => trans('provvoipenvia::api.misc_getusagecsv'),
             ]);
         }
 
         ////////////////////////////////////////
         // contract related jobs
         if (in_array($view_level, ['contract', 'modem', 'phonenumbermanagement'])) {
-            array_push($ret, ['class' => 'Customer']);
+            array_push($ret, ['class' => trans('provvoipenvia::api.customer')]);
 
             if ($this->api_version_greater_or_equal('2.2')) {
                 array_push($ret, [
-                    'linktext' => 'Get envia TEL contracts for this customer',
+                    'linktext' => trans('provvoipenvia::api.customer_getcontracts'),
                     'url' => $base.'customer_get_contracts'.$origin.'&amp;contract_id='.$contract_id,
-                    'help' => 'Tries to get the envia TEL contracts for this customer',
+                    'help' => trans('provvoipenvia::api.customer_getcontracts_help'),
                 ]);
             }
 
             // customer data change possible if there is an active contract for this user
             if ($this->at_least_one_contract_available) {
                 array_push($ret, [
-                    'linktext' => 'Get envia TEL customer reference',
+                    'linktext' => trans('provvoipenvia::api.customer_getreference'),
                     'url' => $base.'customer_get_reference'.$origin.'&amp;contract_id='.$contract_id,
-                    'help' => 'Tries to get the envia TEL ID for this customer',
+                    'help' => trans('provvoipenvia::api.customer_getreference_help'),
                 ]);
                 array_push($ret, [
-                    'linktext' => 'Get envia TEL customer reference by lecacy customer number',
+                    'linktext' => trans('provvoipenvia::api.customer_getreferencelegacy'),
                     'url' => $base.'customer_get_reference_by_legacy_number'.$origin.'&amp;contract_id='.$contract_id,
-                    'help' => 'Tries to get the envia TEL ID for this customer',
+                    'help' => trans('provvoipenvia::api.customer_getreferencelegacy_help'),
                 ]);
                 array_push($ret, [
-                    'linktext' => 'Update customer',
+                    'linktext' => trans('provvoipenvia::api.customer_update'),
                     'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id,
-                    'help' => "Pushes changes on customer data to envia TEL.\nChanges of modem installation address have to be sent separately (using “Relocate contract”)!",
+                    'help' => trans('provvoipenvia::api.customer_update_help'),
                 ]);
             }
         }
@@ -570,25 +570,24 @@ class ProvVoipEnvia extends \BaseModel
         ////////////////////////////////////////
         // modem related jobs
         if (in_array($view_level, ['modem', 'phonenumbermanagement'])) {
-            array_push($ret, ['class' => 'Telephone connection (= envia TEL contract)']);
+            array_push($ret, ['class' => trans('provvoipenvia::api.contract')]);
 
             // special case contract reference – now stored in phonenumber instead of modem
             if (in_array($view_level, ['phonenumbermanagement'])) {
                 // can get reference if phonenumber exists at envia TEL
                 array_push($ret, [
-                    'linktext' => 'Get envia TEL contract reference',
+                    'linktext' => trans('provvoipenvia::api.contract_getreference'),
                     'url' => $base.'contract_get_reference'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
-                    'help' => 'You can get the envia TEL reference for a contract using a phonenumber related to this contract',
+                    'help' => trans('provvoipenvia::api.contract_getreference_help'),
                 ]);
             }
-
             // “normal“ jobs
             $phonenumbers_to_create = '&amp;phonenumbers_to_create=';
             if (! $this->contract_available) {
                 array_push($ret, [
-                    'linktext' => 'Create contract',
+                    'linktext' => trans('provvoipenvia::api.contract_create'),
                     'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id.$phonenumbers_to_create,
-                    'help' => 'Creates a envia TEL contract (= telephone connection)',
+                    'help' => trans('provvoipenvia::api.contract_create_help'),
                 ]);
             }
 
@@ -596,9 +595,9 @@ class ProvVoipEnvia extends \BaseModel
             if ($this->contract_available) {
                 if ($this->api_version_greater_or_equal('1.4')) {
                     array_push($ret, [
-                        'linktext' => 'Relocate contract',
+                        'linktext' => trans('provvoipenvia::api.contract_relocate'),
                         'url' => $base.'contract_relocate'.$origin.'&amp;modem_id='.$modem_id,
-                        'help' => "Changes (physical) installation address of this modem.\n\nATTENTION: Changes of customer address have to be sent separately (using “Update customer”)!",
+                        'help' => trans('provvoipenvia::api.contract_relocate_help'),
                     ]);
                 }
             }
@@ -621,9 +620,9 @@ class ProvVoipEnvia extends \BaseModel
                     $id = "modem_id=$modem_id";
                 }
                 array_push($ret, [
-                    'linktext' => 'Get voice data',
+                    'linktext' => trans('provvoipenvia::api.contract_getvoicedata'),
                     'url' => $base.'contract_get_voice_data'.$origin.'&amp;'.$id.$really,
-                    'help' => 'Get SIP and TRC data for all phonenumbers on this envia TEL contract.',
+                    'help' => trans('provvoipenvia::api.contract_getvoicedata_help'),
                 ]);
             }
 
@@ -634,9 +633,9 @@ class ProvVoipEnvia extends \BaseModel
                 if (boolval($this->contract->next_voip_id) && boolval($this->contract->voip_id)) {
                     if ($this->contract->voip_id != $this->contract->next_voip_id) {
                         array_push($ret, [
-                            'linktext' => 'Change tariff (EXPERIMENTAL)',
+                            'linktext' => trans('provvoipenvia::api.contract_changetariff'),
                             'url' => $base.'contract_change_tariff'.$origin.'&amp;modem_id='.$modem_id,
-                            'help' => "Changes the VoIP sales tariff for this modem (=envia TEL contract).\n\nATTENTION: Has also to be changed for all other modems related to this customer!",
+                            'help' => trans('provvoipenvia::api.contract_changetariff_help'),
                         ]);
                     }
                 }
@@ -644,29 +643,29 @@ class ProvVoipEnvia extends \BaseModel
 
             // changes method from MGCP to SIP and vice versa
             // ATM we don't create MGCP accounts – so this method is only usable to change imported old contracts
-            if ($this->contract_available) {
-                if (boolval($this->contract->next_purchase_tariff) && boolval($this->contract->purchase_tariff)) {
-                    if ($this->contract->purchase_tariff != $this->contract->next_purchase_tariff) {
-                        $old_proto = $this->contract->phonetariff_purchase->voip_protocol;
-                        $new_proto = $this->contract->phonetariff_purchase_next->voip_protocol;
+            /* if ($this->contract_available) { */
+            /*     if (boolval($this->contract->next_purchase_tariff) && boolval($this->contract->purchase_tariff)) { */
+            /*         if ($this->contract->purchase_tariff != $this->contract->next_purchase_tariff) { */
+            /*             $old_proto = $this->contract->phonetariff_purchase->voip_protocol; */
+            /*             $new_proto = $this->contract->phonetariff_purchase_next->voip_protocol; */
 
-                        if ($old_proto != $new_proto) {
-                            // here we have to distinct between origin modem and phonenumber
-                            // ATM we only can handle one contract_id per request – to update multiple contracts per modem we have to be at least in level phonenumber
-                            if ($this->phonenumber->exists) {
-                                $id = "phonenumber_id=$phonenumber_id";
-                            } else {
-                                $id = "modem_id=$modem_id";
-                            }
-                            array_push($ret, [
-                                'linktext' => 'Change method (MGCP⇔SIP) (EXPERIMENTAL).',
-                                'url' => $base.'contract_change_method'.$origin.'&amp;'.$id,
-                                'help' => 'Changes method of an envia TEL contract depending on values of the future VoIP item.',
-                            ]);
-                        }
-                    }
-                }
-            }
+            /*             if ($old_proto != $new_proto) { */
+            /*                 // here we have to distinct between origin modem and phonenumber */
+            /*                 // ATM we only can handle one contract_id per request – to update multiple contracts per modem we have to be at least in level phonenumber */
+            /*                 if ($this->phonenumber->exists) { */
+            /*                     $id = "phonenumber_id=$phonenumber_id"; */
+            /*                 } else { */
+            /*                     $id = "modem_id=$modem_id"; */
+            /*                 } */
+            /*                 array_push($ret, [ */
+            /*                     'linktext' => 'Change method (MGCP⇔SIP) (EXPERIMENTAL).', */
+            /*                     'url' => $base.'contract_change_method'.$origin.'&amp;'.$id, */
+            /*                     'help' => 'Changes method of an envia TEL contract depending on values of the future VoIP item.', */
+            /*                 ]); */
+            /*             } */
+            /*         } */
+            /*     } */
+            /* } */
 
             // variation can only be changed if contract exists and a variation change is wanted
             // TODO: implement checks for current change state; otherwise we get an error from envia TEL (change into the same variation is not possible)
@@ -675,9 +674,9 @@ class ProvVoipEnvia extends \BaseModel
                 if (boolval($this->contract->next_purchase_tariff) && boolval($this->contract->purchase_tariff)) {
                     if ($this->contract->purchase_tariff != $this->contract->next_purchase_tariff) {
                         array_push($ret, [
-                            'linktext' => 'Change purchase tariff (EXPERIMENTAL)',
+                            'linktext' => trans('provvoipenvia::api.contract_changevariation'),
                             'url' => $base.'contract_change_variation'.$origin.'&amp;modem_id='.$modem_id,
-                            'help' => "Changes the VoIP purchase tariff for this envia TEL contract.\n\nATTENTION: Has also to be changed for all other envia TEL contracts related to this customer!",
+                            'help' => trans('provvoipenvia::api.contract_changevariation_help'),
                         ]);
                     }
                 }
@@ -687,38 +686,39 @@ class ProvVoipEnvia extends \BaseModel
         ////////////////////////////////////////
         // voip account related jobs
         if (in_array($view_level, ['phonenumbermanagement'])) {
-            array_push($ret, ['class' => 'Phonenumber (= envia TEL VoIP account)']);
+            array_push($ret, ['class' => trans('provvoipenvia::api.voipaccount')]);
 
             // voip account needs a contract
             if (! $this->voipaccount_created && $this->contract_available) {
                 array_push($ret, [
-                    'linktext' => 'Create VoIP account',
+                    'linktext' => trans('provvoipenvia::api.voipaccount_create'),
                     'url' => $base.'voip_account_create'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
-                    'help' => 'Creates the phonenumber at envia TEL',
+                    'help' => trans('provvoipenvia::api.voipaccount_create_help'),
                 ]);
             }
 
             if ($this->voipaccount_available) {
                 array_push($ret, [
-                    'linktext' => 'Terminate VoIP account',
+                    'linktext' => trans('provvoipenvia::api.voipaccount_terminate'),
                     'url' => $base.'voip_account_terminate'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
-                    'help' => 'Terminates the phonenumber at envia TEL',
+                    'help' => trans('provvoipenvia::api.voipaccount_terminate_help'),
                 ]);
             }
 
             if ($this->voipaccount_available) {
                 array_push($ret, [
-                    'linktext' => 'Update VoIP account',
+                    'linktext' => trans('provvoipenvia::api.voipaccount_update'),
                     'url' => $base.'voip_account_update'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
                     'help' => 'Updates phonenumber related data (TRC class, SIP data) at envia TEL',
+                    'help' => trans('provvoipenvia::api.voipaccount_update_help'),
                 ]);
             }
 
             if ($this->voipaccount_available) {
                 array_push($ret, [
-                    'linktext' => 'Clear envia TEL reference',
+                    'linktext' => trans('provvoipenvia::view.clear_envia_contract_reference'),
                     'url' => \Request::getRequestUri().'?clear_envia_reference=1',
-                    'help' => 'Use this for re-creation of rejected creates.',
+                    'help' => trans('provvoipenvia::view.clear_envia_contract_reference_help'),
                 ]);
             }
         }
@@ -726,29 +726,29 @@ class ProvVoipEnvia extends \BaseModel
         ////////////////////////////////////////
         // phonebookentry related jobs
         if (in_array($view_level, ['phonenumbermanagement', 'phonebookentry'])) {
-            array_push($ret, ['class' => 'Phonebook entry']);
+            array_push($ret, ['class' => trans('provvoipenvia::api.phonebookentry')]);
 
             // only if there is a phonenumber to add the entry to
             if ($this->voipaccount_available) {
                 array_push($ret, [
-                    'linktext' => 'Get phonebook entry',
+                    'linktext' => trans('provvoipenvia::api.phonebookentry_get'),
                     'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id,
-                    'help' => 'Gets the current phonebook entry for this phonenumber (EXPERIMENTAL).',
+                    'help' => trans('provvoipenvia::api.phonebookentry_get_help'),
                 ]);
 
                 if ($view_level == 'phonebookentry') {
                     array_push($ret, [
-                        'linktext' => 'Create/change phonebook entry (EXPERIMENTAL)',
-                        'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
-                        'help' => 'Creates a new or updates an existing phonebook entry for this phonenumber (EXPERIMENTAL).',
+                    'linktext' => trans('provvoipenvia::api.phonebookentry_create'),
+                    'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
+                    'help' => trans('provvoipenvia::api.phonebookentry_create_help'),
                     ]);
                 }
 
                 if ($view_level == 'phonebookentry') {
                     array_push($ret, [
-                        'linktext' => 'Delete phonebook entry (EXPERIMENTAL)',
-                        'url' => $base.'phonebookentry_delete'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
-                        'help' => 'Deletes an existing phonebook entry for this phonenumber (EXPERIMENTAL).',
+                    'linktext' => trans('provvoipenvia::api.phonebookentry_delete'),
+                    'url' => $base.'phonebookentry_delete'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
+                    'help' => trans('provvoipenvia::api.phonebookentry_delete_help'),
                     ]);
                 }
             }
@@ -757,16 +757,18 @@ class ProvVoipEnvia extends \BaseModel
         ////////////////////////////////////////
         // order related jobs
         if (in_array($view_level, ['contract', 'modem', 'phonenumber', 'phonenumbermanagement'])) {
-            array_push($ret, ['class' => 'Orders']);
-            array_push($ret, [
-                'linktext' => 'Get all phonenumber related orders',
-                'url' => $base.'misc_get_orders_csv'.$origin.$really,
-                'help' => "Fetches all phonenumber related orders from envia TEL.\n\nATTENTION: This will not include orders for e.g. changing addresses or tariffs!",
-            ]);
+
+            /* // this method is only used via artisan (because of timeout on larger number of orders) */
+            /* array_push($ret, ['class' => 'Orders']); */
+            /* array_push($ret, [ */
+            /*     'linktext' => 'Get all phonenumber related orders', */
+            /*     'url' => $base.'misc_get_orders_csv'.$origin.$really, */
+            /*     'help' => "Fetches all phonenumber related orders from envia TEL.\n\nATTENTION: This will not include orders for e.g. changing addresses or tariffs!", */
+            /* ]); */
 
             // order(s) exist if at least one contract has been created
             if ($this->at_least_one_contract_created) {
-                array_push($ret, ['class' => 'Related orders (click to get status update)']);
+                array_push($ret, ['class' => trans('provvoipenvia::api.order')]);
                 foreach (EnviaOrder::withTrashed()->where('contract_id', '=', $contract_id)->orderBy('created_at')->get() as $order) {
 
                     // if in view modem: don't show orders for other than the current modem (=envia TEL contract)
@@ -799,7 +801,7 @@ class ProvVoipEnvia extends \BaseModel
                         // if order is not in final state: add link to get current status
                         if (! EnviaOrder::orderstate_is_final($order)) {
                             $url = $base.'order_get_status'.$origin.'&amp;order_id='.$order_id.$really;
-                            $help = 'Gets the current state of this order from envia TEL (if orderstate is not final).';
+                            $help = trans('provvoipenvia::api.order_getstatus_help');
                         } else {
                             $url = '';
                             $help = '';
