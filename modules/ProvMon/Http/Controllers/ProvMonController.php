@@ -253,8 +253,8 @@ class ProvMonController extends \BaseController
         }
 
         if (! $lastDownload) {
-            // return ['bsclass' => 'info', 'text' => trans('messages.modemAnalysis.missingLD')];
-            return;
+            // inform the user that last download was to long ago to check if the configfile is up-to-date
+            return ['bsclass' => 'info', 'text' => trans('messages.modemAnalysis.missingLD')];
         }
 
         $firstKey = key($lastDownload);
