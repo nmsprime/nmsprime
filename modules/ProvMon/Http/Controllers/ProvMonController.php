@@ -240,11 +240,17 @@ class ProvMonController extends \BaseController
         $lastDownload = preg_grep('/in.tftpd(.*?) cm\//', $log);
 
         if (! $lastDownload) {
-            $logfiles = glob("$logfile*");
+            // get all but the current logfile and order descending
+            // we assume that logrotate adds “-TIMESTAMP” to the logfile's name
+            $logfiles = glob($logfile."-*");
             arsort($logfiles);
+            
+            // add the current logfile at first position (shall be grepped first)
+            array_unshift($logfiles, $logfile);
 
             foreach ($logfiles as $path) {
-                exec("grep -m 1 $modem->hostname $path | grep tftpd", $lastDownload);
+                // get the latest line indicating a configfile download
+                exec("grep $modem->hostname $path | grep tftpd | tail -1", $lastDownload);
 
                 if ($lastDownload) {
                     break;
