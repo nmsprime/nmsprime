@@ -91,19 +91,30 @@ class Item extends \BaseModel
         return $ret;
     }
 
+    /**
+     * Get label bootstrap class for colorization
+     *
+     * green: valid
+     * blue:  starts in future
+     * grey:  outdated/expired
+     */
     public function get_bsclass()
     {
-        // Evaluate Colours
-        // green: it will be considered for next accounting cycle
-        // blue:  new item - not yet considered for settlement run
-        // yellow: item is outdated/expired and will not be charged this month
-        // '$this->id' to dont check when index table header is determined!
-        if ($this->id && $this->check_validity($this->product->billing_cycle)) {
+        // Dont check when index table header is determined!
+        if (! $this->id) {
+            return '';
+        }
+
+        if ($this->product->billing_cycle == 'Once' && ! $this->get_end_time() && $this->get_start_time() < strtotime('midnight first day of this month')) {
+            return 'active';
+        }
+
+        if ($this->check_validity('now')) {
             return 'success';
         }
 
-        if ($this->id && $this->get_start_time() < strtotime('midnight first day of this month')) {
-            return 'warning';
+        if ($this->get_start_time() < strtotime('midnight first day of this month')) {
+            return 'active';
         }
 
         return 'info';
@@ -351,7 +362,7 @@ class Item extends \BaseModel
                     // or tariff started after billing month - then only pay on first settlement run - break otherwise
                     // or contract ended last month (before billing month)
                     if (! (((date('m', $start) >= $billing_month) && (date('Y-m', $start) == $dates['lastm_Y'])) ||
-                        (date('Y-m', $end) == $dates['lastm_Y']))) {
+                        (date('Y-m', $contract_end) == $dates['lastm_Y']))) {
                         break;
                     }
                 }
@@ -651,8 +662,6 @@ class ItemObserver
         $item->valid_to = $item->valid_to ?: null;
         $tariff = $item->contract->get_valid_tariff($item->product->type);
 
-        // \Log::debug('creating item');
-
         // set end date of old tariff to starting date of new tariff
         if (in_array($item->product->type, ['Internet', 'Voip', 'TV'])) {
             if ($tariff) {
@@ -672,10 +681,10 @@ class ItemObserver
 
     public function created($item)
     {
-        // \Log::debug('created item', [$item->id]);
-
         // this is ab(used) here for easily setting the correct values
-        $item->contract->daily_conversion();
+        if (in_array($item->product->type, ['Internet', 'Voip'])) {
+            $item->contract->daily_conversion();
+        }
 
         // on enabled envia module: check if data has to be changed via envia TEL API
         if (\Module::collections()->has('ProvVoipEnvia')) {
@@ -730,8 +739,6 @@ class ItemObserver
             }
         }
 
-        // \Log::debug('updating item', [$item->id]);
-
         // set end date for products with fixed number of cycles
         $this->handle_fixed_cycles($item);
     }
@@ -741,8 +748,6 @@ class ItemObserver
         if (! $item->observer_enabled) {
             return;
         }
-
-        // \Log::debug('updated item', [$item->id]);
 
         // Check if yearly charged item was already charged - maybe customer should get a credit then
         if ($item->isDirty('valid_to') && $item->product->proportional && $item->product->billing_cycle == 'Yearly' &&
@@ -756,16 +761,20 @@ class ItemObserver
 
         // this is ab(used) here for easily setting the correct values
         if ($item->observer_dailyconversion) {
-            $item->contract->daily_conversion();
+            // Only call for Internet & Voip Items
+            if (in_array($item->product->type, ['Internet', 'Voip']) ||
+                    ($item->isDirty('product_id') && in_array(Product::where('id', $item->getOriginal()['product_id'])->first()->type, ['Internet', 'Voip']))) {
+                $item->contract->daily_conversion();
+            }
         }
     }
 
     public function deleted($item)
     {
-        // \Log::debug('deleted item', [$item->id]);
-
         // this is ab(used) here for easily setting the correct values
-        $item->contract->daily_conversion();
+        if (in_array($item->product->type, ['Internet', 'Voip'])) {
+            $item->contract->daily_conversion();
+        }
     }
 
     /**

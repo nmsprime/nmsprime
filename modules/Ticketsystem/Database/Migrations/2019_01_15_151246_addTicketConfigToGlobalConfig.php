@@ -2,9 +2,8 @@
 
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
 
-class AddTicketConfigToGlobalConfig extends Migration
+class AddTicketConfigToGlobalConfig extends BaseMigration
 {
     /**
      * Run the migrations.

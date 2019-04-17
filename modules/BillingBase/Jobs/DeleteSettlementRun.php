@@ -27,11 +27,13 @@ class DeleteSettlementRun implements ShouldQueue
     public function handle()
     {
         $this->settlementrun->delete();
-        \Modules\BillingBase\Http\Controllers\SettlementRunController::directory_cleanup($settlementrun);
+        \Modules\BillingBase\Http\Controllers\SettlementRunController::directory_cleanup($this->settlementrun);
     }
 
-    public function failed(Exception $exception)
+    public function failed(\ErrorException $exception)
     {
         \Log::error($exception);
+
+        clearFailedJobs('\\DeleteSettlementRun');
     }
 }

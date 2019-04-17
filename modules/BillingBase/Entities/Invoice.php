@@ -39,7 +39,23 @@ class Invoice extends \BaseModel
     {
         $type = $this->type == 'CDR' ? ' ('.trans('messages.Call Data Record').')' : '';
 
-        return $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT).$type;
+        return ['table' => $this->table,
+                'header' =>  $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT).$type,
+                'bsclass' => $this->get_bsclass(),
+            ];
+    }
+
+    public function get_bsclass()
+    {
+        if ($this->charge < 0) {
+            return 'info';
+        }
+
+        if ($this->charge == 0) {
+            return 'active';
+        }
+
+        return '';
     }
 
     /**
@@ -150,7 +166,7 @@ class Invoice extends \BaseModel
 
         // Charges
         'item_table_positions'  => '', 			// tex table of all items to be charged for this invoice
-        'cdr_charge' 			=> '', 			// Integer with costs resulted from telephone calls
+        'cdr_charge' 			=> '', 			// Float with costs resulted from telephone calls
         'cdr_table_positions'	=> '',			// tex table of all call data records
         'table_summary' 		=> '', 			// preformatted table - use following three keys to set table by yourself
         'table_sum_tax_percent' => '', 			// The tax percentage with % character
@@ -275,7 +291,7 @@ class Invoice extends \BaseModel
                 ->orderBy('item.valid_to', 'desc')
                 ->first();
 
-            $this->data['canceled_to'] = self::langDateFormat($tariff->valid_to);
+            $this->data['canceled_to'] = $tariff ? self::langDateFormat($tariff->valid_to) : '';
 
             return;
         }
@@ -438,9 +454,9 @@ class Invoice extends \BaseModel
             $count++;
         }
 
-        $sum = \App::getLocale() == 'de' ? number_format($sum, 2, ',', '.') : number_format($sum, 2);
-
         $this->data['cdr_charge'] = $sum;
+
+        $sum = \App::getLocale() == 'de' ? number_format($sum, 2, ',', '.') : number_format($sum, 2);
         $this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'.$sum.'}\\\\';
         $plural = $count > 1 ? 'en' : '';
         $this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural.' & '.$sum.$this->currency.' & '.$sum.$this->currency.'\\\\';

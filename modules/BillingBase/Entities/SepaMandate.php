@@ -49,18 +49,31 @@ class SepaMandate extends \BaseModel
                 'index_header' => [$this->table.'.sepa_holder', $this->table.'.sepa_valid_from', $this->table.'.sepa_valid_to', $this->table.'.reference'],
                 'bsclass' => $bsclass,
                 'order_by' => ['0' => 'asc'],
-                'header' =>  "$this->reference - $this->sepa_iban", ];
+                'header' =>  "$this->reference - $this->sepa_iban - $this->sepa_valid_from $valid_to",
+            ];
     }
 
+    /**
+     * Get bootstrap class for colorization of model in GUI
+     *
+     * @return string
+     */
     public function get_bsclass()
     {
-        $bsclass = 'success';
-
-        if (isset($this->created_at) && ($this->get_start_time() > strtotime(date('Y-m-d'))) && ! $this->check_validity('Now')) {
-            $bsclass = 'danger';
+        // Dont check when table header of index page is assembled
+        if (! $this->id) {
+            return '';
         }
 
-        return $bsclass;
+        if ($this->check_validity('now')) {
+            return 'success';
+        }
+
+        if ($this->get_start_time() > strtotime(date('Y-m-d'))) {
+            return 'info';
+        }
+
+        return 'active';
     }
 
     public function view_belongs_to()

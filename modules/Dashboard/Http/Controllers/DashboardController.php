@@ -169,7 +169,7 @@ class DashboardController extends BaseController
             }
 
             $status = $element->icingaobjects->icingahoststatus;
-            $link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/host/show?host='.$element->id, $element->name);
+            $link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/host/show?host='.$element->id.'_'.$element->name, $element->name);
             $ret['clr'][] = $state;
             $ret['row'][] = [$link, $status->output, $status->last_time_up];
         }
@@ -209,8 +209,9 @@ class DashboardController extends BaseController
 
             $link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/service/show?host='.$service->name1.'&service='.$service->name2, $tmp ? $tmp->name : $service->name1);
             // add additional controlling link if available
-            if (is_numeric($service->name1)) {
-                $link .= '<br>'.link_to_route('NetElement.controlling_edit', '(Controlling)', [$service->name1, 0, 0]);
+            $id = explode('_', $service->name1)[0];
+            if (is_numeric($id)) {
+                $link .= '<br>'.link_to_route('NetElement.controlling_edit', '(Controlling)', [$id, 0, 0]);
             }
 
             $ret['clr'][] = $clr[$service->last_hard_state];
@@ -259,11 +260,12 @@ class DashboardController extends BaseController
             }
             $ret[$idx]['cls'] = $cls;
 
-            // set the percentage according to the current $p[0], minimum $p[3] and maximum $p[4] value
-            $per = null;
-            if (isset($p[3]) && isset($p[4]) && ($p[4] - $p[3])) {
+            try {
+                // set the percentage according to the current $p[0], minimum $p[3] and maximum $p[4] value
                 $per = ($p[0] - $p[3]) / ($p[4] - $p[3]) * 100;
                 $ret[$idx]['text'] .= sprintf(' (%.1f%%)', $per);
+            } catch (\ErrorException $e) {
+                $per = null;
             }
             $ret[$idx]['per'] = $per;
         }

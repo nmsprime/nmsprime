@@ -24,6 +24,7 @@ class SettlementRunController extends \BaseController
             // array('form_type' => 'text', 'name' => 'path', 'description' => 'Path'),
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
             ['form_type' => 'checkbox', 'name' => 'verified', 'description' => 'Verified', 'hidden' => 'C', 'help' => trans('helper.settlement_verification')],
+            ['form_type' => 'checkbox', 'name' => 'fullrun', 'description' => 'For internal use', 'hidden' => 1],
         ];
     }
 
@@ -43,6 +44,15 @@ class SettlementRunController extends \BaseController
         }
 
         return parent::prepare_input($data);
+    }
+
+    public function prepare_rules($rules, $data)
+    {
+        if (! $data['fullrun']) {
+            $rules['verified'] = 'In:0';
+        }
+
+        return parent::prepare_rules($rules, $data);
     }
 
     /**
@@ -95,8 +105,8 @@ class SettlementRunController extends \BaseController
         // get error logs in case job failed and remove failed job from table
         $failed_jobs = \DB::table('failed_jobs')->get();
         foreach ($failed_jobs as $failed_job) {
-            $obj = unserialize((json_decode($failed_job->payload)->data->command));
-            if (\Str::contains($obj->name, 'billing:')) {
+            $commandName = json_decode($failed_job->payload)->data->commandName;
+            if (\Str::contains($commandName, '\\SettlementRun')) {
                 \Artisan::call('queue:forget', ['id' => $failed_job->id]);
                 $logs = self::get_logs($sr->updated_at->subSeconds(1)->__get('timestamp'), Logger::ERROR);
                 break;
@@ -181,8 +191,8 @@ class SettlementRunController extends \BaseController
                 $i--;
                 $failed_jobs = \DB::table('failed_jobs')->get();
                 foreach ($failed_jobs as $job) {
-                    $obj = unserialize(json_decode($job->payload)->data->command);
-                    if ($obj->name == 'billing:accounting') {
+                    $commandName = self::getJobCommandName($job);
+                    if (\Str::contains($commandName, '\\SettlementRun')) {
                         $success = false;
                         break;
                     }
