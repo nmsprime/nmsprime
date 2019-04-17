@@ -242,9 +242,9 @@ class ProvMonController extends \BaseController
         if (! $lastDownload) {
             // get all but the current logfile and order descending
             // we assume that logrotate adds “-TIMESTAMP” to the logfile's name
-            $logfiles = glob($logfile."-*");
+            $logfiles = glob($logfile.'-*');
             arsort($logfiles);
-            
+
             // add the current logfile at first position (shall be grepped first)
             array_unshift($logfiles, $logfile);
 
