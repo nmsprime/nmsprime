@@ -135,7 +135,7 @@ class HfcBaseController extends BaseController
             }
 
             $ret['clr'][] = $clr[$service->last_hard_state];
-            $ret['row'][] = [$link, $service->name2, $service->output, $service->last_time_ok];
+            $ret['row'][] = [$link, $service->name2, preg_replace('/[<>]/m', '', $service->output), $service->last_time_ok];
             $ret['perf'][] = self::_get_impaired_services_perfdata($service->perfdata);
         }
 
