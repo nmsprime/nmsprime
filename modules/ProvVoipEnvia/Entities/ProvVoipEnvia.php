@@ -716,9 +716,9 @@ class ProvVoipEnvia extends \BaseModel
 
             if ($this->voipaccount_available) {
                 array_push($ret, [
-                    'linktext' => trans('provvoipenvia::view.clear_envia_contract_reference'),
+                    'linktext' => trans('provvoipenvia::api.clear_envia_contract_reference'),
                     'url' => \Request::getRequestUri().'?clear_envia_reference=1',
-                    'help' => trans('provvoipenvia::view.clear_envia_contract_reference_help'),
+                    'help' => trans('provvoipenvia::api.clear_envia_contract_reference_help'),
                 ]);
             }
         }
@@ -1567,7 +1567,7 @@ class ProvVoipEnvia extends \BaseModel
         // if given: localareacode has to be numeric
         // TODO: error handling
         if (! is_numeric($localareacode)) {
-            throw new XmlCreationError('localareacode has to be numeric');
+            throw new XmlCreationError(trans('provvoipenvia::errors.hastobenumeric', ['value' => 'localareacode']));
         }
 
         // localareacode is valid: add filter
@@ -1580,7 +1580,7 @@ class ProvVoipEnvia extends \BaseModel
         // if given: baseno has to be numeric
         // TODO: error handling
         if (! is_numeric($baseno)) {
-            throw new XmlCreationError('baseno has to be numeric');
+            throw new XmlCreationError(trans('provvoipenvia::errors.hastobenumeric', ['value' => 'baseno']));
         }
 
         // baseno is valid
@@ -1616,13 +1616,13 @@ class ProvVoipEnvia extends \BaseModel
         if ($this->job == 'customer_get_reference') {
             $customerno = $this->contract->customer_number();
             if (! $customerno) {
-                throw new XmlCreationError('Customernumber does not exist – try using legacy version.');
+                throw new XmlCreationError(trans('provvoipenvia::errors.customernumbernotexisting'));
             }
             $inner_xml->addChild('customerno', $customerno);
         } elseif ($this->job == 'customer_get_reference_by_legacy_number') {
             $customerno_legacy = $this->contract->customer_number_legacy();
             if ((! boolval($customerno_legacy)) || ($customerno_legacy == 'n/a')) {
-                throw new XmlCreationError('Legacy customernumber does not exist – try using normal version.');
+                throw new XmlCreationError(trans('provvoipenvia::errors.legacycustomernumbernotexisting'));
             }
             $inner_xml->addChild('customerno', $customerno_legacy);
         } else {
@@ -1748,9 +1748,10 @@ class ProvVoipEnvia extends \BaseModel
         // therefore we also have to update Contract::daily_conversion()!
         if (! boolval($this->contract->phonetariff_purchase_next)) {
             $value_missing = true;
-            $msg = 'next_purchase_tariff not set in contract '.$this->contract->id;
+            $msg = trans('provvoipenvia::messages.anotsetinb', ['next_purchase_tariff', 'contract '.$this->contract->id]);
+            /* $msg = 'next_purchase_tariff not set in contract '.$this->contract->id; */
             if (\Module::collections()->has('BillingBase')) {
-                $msg .= ' – maybe you have to create a Voip item with future start date?';
+                $msg .= ' – '.trans('provvoipenvia::messages.addfuturevoipitem');
             }
         }
 
@@ -1759,16 +1760,16 @@ class ProvVoipEnvia extends \BaseModel
         // therefore we also have to update Contract::daily_conversion()!
         if (! boolval($this->contract->phonetariff_sale_next)) {
             $value_missing = true;
-            $msg = 'next_voip_id not set in contract '.$this->contract->id;
+            $msg = trans('provvoipenvia::messages.anotsetinb', ['next_voip_id', 'contract '.$this->contract->id]);
             if (\Module::collections()->has('BillingBase')) {
-                $msg .= ' – maybe you have to create a Voip item with future start date?';
+                $msg .= ' – '.trans('provvoipenvia::messages.addfuturevoipitem');
             }
         }
 
         // check if at least one phonenumber is given
         $phonenumbers_to_create = \Input::get('phonenumbers_to_create', []);
         if (! $phonenumbers_to_create) {
-            $msg = 'Can only create contract with at least one phonenumber, but none given';
+            $msg = trans('provvoipenvia::messages.phonenumberneededtocreatecontract');
             $value_missing = true;
         } else {
             $numbers_on_modem = $this->get_numbers_related_to_modem_for_contract_create();
@@ -1804,7 +1805,7 @@ class ProvVoipEnvia extends \BaseModel
 
                 // check if number belongs to current modem
                 if (! array_key_exists($nr_id, $numbers_on_modem_rearranged)) {
-                    $msg = "Phonenumber $nr_id does not belong to modem";
+                    $msg = trans('provvoipenvia::messages.phonenumbernotbelongstomodem', [$nr_id]);
                     $value_missing = true;
                     break;
                 }
@@ -1813,14 +1814,14 @@ class ProvVoipEnvia extends \BaseModel
 
                 // check if cur number has management
                 if (is_null($mgmt)) {
-                    $msg = "Chosen phonenumber $nr_id has no management.";
+                    $msg = trans('provvoipenvia::messages.phonenumberhasnomanagement', [$nr_id]);
                     $value_missing = true;
                     break;
                 }
 
                 // check if activation date set
                 if (is_null($mgmt->activation_date)) {
-                    $msg = "No activation date set for number $nr_id";
+                    $msg = trans('provvoipenvia::messages.activationdatenotsetfornumber', [$nr_id]);
                     $value_missing = true;
                     break;
                 }
@@ -1828,6 +1829,7 @@ class ProvVoipEnvia extends \BaseModel
                 // check if activation  dates of all numbers are identical
                 $orderdate = $mgmt->activation_date;
                 if (! is_null($last_mgmt) && ($last_mgmt->activation_date != $orderdate)) {
+                    $msg = trans('provvoipenvia::messages.differentactivationdates', [$orderdate, $mgmt->activation_date]);
                     $msg = "Given numbers have different activation dates ($orderdate, $mgmt->activation_date)";
                     $value_missing = true;
                     break;
