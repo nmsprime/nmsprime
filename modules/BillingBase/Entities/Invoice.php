@@ -215,6 +215,7 @@ class Invoice extends \BaseModel
      *
      * @param string/integer
      * @return string
+     * @deprecated use app/heplers function with the same name
      */
     public static function langDateFormat($date)
     {

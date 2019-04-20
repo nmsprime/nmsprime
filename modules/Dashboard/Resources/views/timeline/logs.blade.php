@@ -5,11 +5,14 @@
 ];
 ?>
 <ul class="timeline">
+    <?php
+        \Carbon\Carbon::setLocale(\App::getLocale());
+    ?>
     @foreach($logs as $log)
         <li>
             <!-- begin timeline-time -->
             <div class="timeline-time">
-                <span class="date">{{$log->updated_at->format('d-m-Y')}}</span>
+                <span class="date">{{langDateFormat($log->updated_at->timestamp)}}</span>
                 <span class="time">{{$log->updated_at->format('H:i:s')}}</span>
             </div>
             <!-- end timeline-time -->
