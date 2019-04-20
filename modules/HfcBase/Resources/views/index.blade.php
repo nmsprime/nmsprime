@@ -26,7 +26,7 @@
 
         <div class="row">
             <div class="col-md-12">
-                @include('HfcBase::widgets.quickstart')
+                @include('Generic.quickstart')
             </div>
         </div>
         <div class="row">
