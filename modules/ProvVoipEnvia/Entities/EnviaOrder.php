@@ -878,17 +878,17 @@ class EnviaOrder extends \BaseModel
 
         if ($this->contract_id) {
             $contract = Contract::withTrashed()->find($this->contract_id);
-            $user_actions['hints']['Contract (= envia TEL  Customer)'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
+            $user_actions['hints'][trans('provvoipenvia::messages.order_contract')] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
             $items = $contract->items;
         }
 
         if ($items) {
-            $user_actions['hints']['Items (Internet and VoIP only)'] = ProvVoipEnviaHelpers::get_user_action_information_items($items);
+            $user_actions['hints'][trans('provvoipenvia::messages.order_items')] = ProvVoipEnviaHelpers::get_user_action_information_items($items);
         }
 
         if ($this->modem_id) {
             $modem = Modem::withTrashed()->find($this->modem_id);
-            $user_actions['hints']['Modem (can hold multiple envia TEL contracts)'] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
+            $user_actions['hints'][trans('provvoipenvia::messages.order_modem')] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
         }
 
         if ($modem) {
@@ -905,23 +905,23 @@ class EnviaOrder extends \BaseModel
         }
 
         if ($phonenumbers) {
-            $user_actions['hints']['Phonenumbers (= envia TEL VoipAccounts)'] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $phonenumbers);
+            $user_actions['hints'][trans('provvoipenvia::messages.order_phonenumbers')] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $phonenumbers);
         }
 
         // show headline and link to solve if order has changed since the last user interaction
         if ($this->user_interaction_necessary()) {
 
             // show that user interaction is necessary
-            $user_actions['head'] = '<h5 class="text-danger">envia TEL Order has been updated</h5>';
-            $user_actions['head'] .= 'Please check if user interaction is necessary.<br><br>';
+            $user_actions['head'] = '<h5 class="text-danger">'.trans('provvoipenvia::messages.order_has_been_updated').'</h5>';
+            $user_actions['head'] .= trans('provvoipenvia::messages.order_check_interaction').'<br><br>';
 
             // finally add link to mark open order as solved
-            $user_actions['links']['Mark as solved'] = \URL::route('EnviaOrder.marksolved', ['EnviaOrder' => $this->id]);
+            $user_actions['links'][trans('provvoipenvia::messages.order_mark_as_solved')] = \URL::route('EnviaOrder.marksolved', ['EnviaOrder' => $this->id]);
         }
 
         $enviacontract = $this->enviacontract;
         if ($enviacontract) {
-            $user_actions['hints']['envia TEL contract'] = ProvVoipEnviaHelpers::get_user_action_information_enviacontract($enviacontract);
+            $user_actions['hints'][trans('provvoipenvia::messages.order_envia_tel_contract')] = ProvVoipEnviaHelpers::get_user_action_information_enviacontract($enviacontract);
         }
 
         return $user_actions;
