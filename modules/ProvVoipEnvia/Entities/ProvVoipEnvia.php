@@ -4296,11 +4296,9 @@ class ProvVoipEnvia extends \BaseModel
                     $out .= '<br> ⇒ PhonenumberManagement->activation_date set to '.$order->orderdate;
                     $phonenumbermanagement_changed = true;
                 }
-                if (is_null($phonenumbermanagement->external_activation_date)) {
-                    $phonenumbermanagement->external_activation_date = $order->orderdate;
-                    $out .= '<br> ⇒ PhonenumberManagement->external_activation_date set to '.$order->orderdate;
-                    $phonenumbermanagement_changed = true;
-                }
+                $phonenumbermanagement->external_activation_date = $order->orderdate;
+                $out .= '<br> ⇒ PhonenumberManagement->external_activation_date set to '.$order->orderdate;
+                $phonenumbermanagement_changed = true;
             } elseif (
                 (EnviaOrder::order_terminates_voip_account($order))
                 ||
@@ -4316,11 +4314,9 @@ class ProvVoipEnvia extends \BaseModel
                     $out .= '<br> ⇒ PhonenumberManagement->deactivation_date set to '.$order->orderdate;
                     $phonenumbermanagement_changed = true;
                 }
-                if (is_null($phonenumbermanagement->external_deactivation_date)) {
-                    $phonenumbermanagement->external_deactivation_date = $order->orderdate;
-                    $out .= '<br> ⇒ PhonenumberManagement->external_deactivation_date set to '.$order->orderdate;
-                    $phonenumbermanagement_changed = true;
-                }
+                $phonenumbermanagement->external_deactivation_date = $order->orderdate;
+                $out .= '<br> ⇒ PhonenumberManagement->external_deactivation_date set to '.$order->orderdate;
+                $phonenumbermanagement_changed = true;
             }
         }
 
@@ -4673,7 +4669,7 @@ class ProvVoipEnvia extends \BaseModel
             $phonenumbermanagement = $phonenumber->PhonenumberManagement;
 
             // actions to perform if order handles creation of voip account
-            if (EnviaOrder::order_creates_voip_account($order)) {
+            if (EnviaOrder::order_creates_voip_account($order) || EnviaOrder::order_possibly_creates_voip_account($order)) {
 
                 // we got a new target date
                 // TODO: check if we should change our activation_date depending on orderdate
@@ -4695,7 +4691,7 @@ class ProvVoipEnvia extends \BaseModel
             }
 
             // actions to perform if order handles termination of voip account
-            if (EnviaOrder::order_terminates_voip_account($order)) {
+            if (EnviaOrder::order_terminates_voip_account($order) || EnviaOrder::order_possibly_terminates_voip_account($order)) {
                 // we got a new target date
                 // TODO: check if we should change our deactivation_date depending on orderdate
                 // this should be save but needs to be validated
