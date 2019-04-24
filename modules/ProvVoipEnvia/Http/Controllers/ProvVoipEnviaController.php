@@ -126,6 +126,9 @@ class ProvVoipEnviaController extends \BaseController
             exit(1);
         }
 
+        // prepare the model
+        $this->model->set_model_data();
+
         // execute only if job is currently allowed
         if (! $this->_job_allowed($job)) {
             $view_var = $this->_show_job_not_allowed_info($job, $origin);

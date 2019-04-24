@@ -12,8 +12,6 @@ return [
 	| for other languages is needed at the moment.
     |
     */
-	"order_" => "",
-	"order__help" => "",
 
 	"contract" => "Telephone connection (= envia TEL contract)",
 	"contract_changetariff" => "Change tariff",
@@ -37,7 +35,9 @@ return [
 	"customer_getreferencelegacy" => "Get envia TEL customer reference (using legacy customer number)",
 	"customer_getreferencelegacy_help" => "This method determines the unique customer reference assigned by envia TEL on the basis of the legacy end customer number (e.g. from previous NMS) assigned by the reseller himself.",
 	"customer_update" => "Update customer at envia TEL",
+	"customer_update_number" => "Update customer number at envia TEL",
 	"customer_update_help" => "Pushes changes on customer data to envia TEL.\n\nATTENTION: Changes of modem installation address have to be sent separately (using “Relocate contract”)!",
+	"customer_update_number_help" => "Sends a changed customer number to envia TEL.",
 
 	"misc" => "Miscellaneous",
 	"misc_getfreenumbers" => "Get free phonenumbers",

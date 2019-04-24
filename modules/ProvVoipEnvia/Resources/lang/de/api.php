@@ -35,7 +35,9 @@ return [
 	"customer_getreferencelegacy" => "Hole envia TEL Kundenreferenz (mit alter Kundennummer)",
 	"customer_getreferencelegacy_help" => "Diese Methode ermittelt die durch envia TEL vergebene eindeutige Kundenreferenz anhand der durch den Reseller selbst vergebenen alten Endkundennummer (z.B. aus altem NMS).",
 	"customer_update" => "Ändere Kundendaten bei envia TEL",
+	"customer_update_number" => "Ändere Kundennummer bei envia TEL",
 	"customer_update_help" => "Diese Methode führt eine Aktualisierung der Endkundendaten durch.\n\nACHTUNG: Änderungen am Installationsort des Modems müssen separat an envia TEL übermittelt werden (Methode „Installationsadresse bei envia TEL ändern“)!",
+	"customer_update_number_help" => "Diese Methode ändert die bei envia TEL hinterlegte Kundennummer.",
 
 	"misc" => "Verschiedenes",
 	"misc_getfreenumbers" => "Hole freie Rufnummern",

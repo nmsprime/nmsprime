@@ -564,6 +564,11 @@ class ProvVoipEnvia extends \BaseModel
                     'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id,
                     'help' => trans('provvoipenvia::api.customer_update_help'),
                 ]);
+                array_push($ret, [
+                    'linktext' => trans('provvoipenvia::api.customer_update_number'),
+                    'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id.'&amp;customer_update=number',
+                    'help' => trans('provvoipenvia::api.customer_update_number_help'),
+                ]);
             }
         }
 
@@ -1661,6 +1666,8 @@ class ProvVoipEnvia extends \BaseModel
 
         $inner_xml = $this->xml->addChild('customer_data');
 
+        $to_update = \Input::get('customer_update', 'default');
+
         // mapping xml to database
         $fields = [
             'salutation' => 'salutation',
@@ -1675,6 +1682,9 @@ class ProvVoipEnvia extends \BaseModel
             'company' => 'company',
             'department' => 'department',
         ];
+        if ($to_update == 'number') {
+            $fields['customerno'] = 'number';
+        }
 
         $this->_add_fields($inner_xml, $fields, $this->contract);
     }
