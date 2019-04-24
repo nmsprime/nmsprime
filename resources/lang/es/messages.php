@@ -586,5 +586,11 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
         ],
     ],
     'pleaseWait'                => 'This may take a few seconds. Please wait until the process has finished.',
+    'import'                    => 'Import',
+    'exportConfigfiles'         => 'Export this Configfile and all it\'s children.',
+    'importTree'                => 'Please specify the related parent configfile.',
+    'exportSuccess'             => ':name exported!',
+    'setManually'               => ':file of :name has to be set manually.',
+    'invalidJson'               => 'The selected file is not correctly formatted or not a JSON!',
     'proximity'                 => 'Proximity search',
 ];
