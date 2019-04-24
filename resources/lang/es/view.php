@@ -224,7 +224,8 @@ return [
 
 //BUTTON
         'Sign me in'				=> 'Iniciar sesion',
-        'Button_Create'				=> 'Crear',
+        'Button_Create'             => 'Crear',
+        'Button_Create'				=> 'Export',
         'Button_Delete'				=> 'Borrar elementos marcados',
         'Button_Force Restart'		=> 'Forzar reinicio',
         'Button_Save'				=> 'Guardar',
