@@ -94,6 +94,58 @@ void initialize(void)
     }
 }
 
+/*****************************************************************************/
+
+void connectToMySql(void)
+{
+    MYSQL *con = mysql_init(NULL);
+    char host[16] = "localhost";
+    char user[16] = "cactiuser";
+    char pass[16] = "secret";
+    char db[16] = "cacti";
+
+    if (con == NULL)
+    {
+        fprintf(stderr, "%s\n", mysql_error(con));
+        exit(1);
+    }
+
+    if (mysql_real_connect(con, host, user, pass, db, 0, NULL, 0) == NULL)
+    {
+        fprintf(stderr, "%s\n", mysql_error(con));
+        mysql_close(con);
+        exit(1);
+    }
+
+    if (mysql_query(con, "SELECT hostname, snmp_community FROM host WHERE hostname LIKE 'cm-%' ORDER BY hostname"))
+    {
+        fprintf(stderr, "%s\n", mysql_error(con));
+        //finish_with_error(con);
+    }
+
+    MYSQL_RES *result = mysql_store_result(con);
+
+    int num_fields = mysql_num_fields(result);
+
+    MYSQL_ROW row;
+
+    while (row = mysql_fetch_row(result))
+    {
+        int i;
+
+        for (i = 0; i < num_fields; i++)
+        {
+            printf("%s ", row[i] ? row[i] : "NULL");
+        }
+        printf("\n");
+    }
+
+    mysql_free_result(result);
+    mysql_close(con);
+}
+
+/*****************************************************************************/
+
 /*
  * simple printing of returned data
  */
