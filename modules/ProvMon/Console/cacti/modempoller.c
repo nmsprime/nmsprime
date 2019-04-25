@@ -19,19 +19,6 @@ int active_hosts, num_rows;
 MYSQL_RES *result;
 
 /* ---------- Global Structures ---------- */
-/* a list of hosts to query*/
-struct host
-{
-    const char *name;
-    const char *community;
-
-} hosts[] = {
-    {"test1", "public"},
-    {"test2", "public"},
-    {"test3", "public"},
-    {"test4", "public"},
-    {NULL}};
-
 /* a list of variables to query for */
 struct oid
 {
@@ -56,11 +43,11 @@ struct oid
     {NULL}};
 
 /* poll all hosts in parallel */
-struct session
+typedef struct session
 {
     struct snmp_session *sess; /* SNMP session data */
     struct oid *current_oid;   /* How far in our poll are we */
-} sessions[sizeof(hosts) / sizeof(hosts[0])];
+} session_t;
 
 /* ---------- Functions ---------- */
 void initialize(void)
@@ -217,19 +204,21 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
 
 void asynchronous(void)
 {
+    int i;
     struct session *hs;
-    struct host *hp;
+    MYSQL_ROW currentHost;
+    session_t allHosts[num_rows];
 
     /* startup all hosts */
 
-    for (hs = sessions, hp = hosts; hp->name; hs++, hp++)
+    for (hs = allHosts; (currentHost = mysql_fetch_row(result)); hs++)
     {
         struct snmp_pdu *req;
         struct snmp_session sess;
         snmp_sess_init(&sess); /* initialize session */
         sess.version = SNMP_VERSION_2c;
-        sess.peername = strdup(hp->name);
-        sess.community = strdup(hp->community);
+        sess.peername = strdup(currentHost[0]);
+        sess.community = strdup(currentHost[1]);
         sess.community_len = strlen(sess.community);
         sess.callback = asynch_response; /* default callback */
         sess.callback_magic = hs;
@@ -274,7 +263,7 @@ void asynchronous(void)
 
     /* cleanup */
 
-    for (hp = hosts, hs = sessions; hp->name; hs++, hp++)
+    for (hs = allHosts, i = 0; i < num_rows; hs++, i++)
     {
         if (hs->sess)
             snmp_close(hs->sess);
