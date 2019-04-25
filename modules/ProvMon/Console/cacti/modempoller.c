@@ -24,7 +24,7 @@ struct oid
 {
     const char *Name;
     oid Oid[MAX_OID_LEN];
-    int OidLen;
+    size_t OidLen;
 } oids[] = {
     {"1.3.6.1.2.1.1.1"},                  // SysDescr
     {".1.3.6.1.2.1.10.127.1.2.2.1.3"},    // # US Power (2.0)
