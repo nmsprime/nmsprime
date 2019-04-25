@@ -96,7 +96,7 @@ void connectToMySql(void)
         exit(1);
     }
 
-    if (mysql_query(con, "SELECT hostname, snmp_community FROM host WHERE hostname LIKE 'cm-%' ORDER BY hostname LIMIT 10"))
+    if (mysql_query(con, "SELECT hostname, snmp_community FROM host WHERE hostname LIKE 'cm-%' ORDER BY hostname"))
     {
         fprintf(stderr, "%s\n", mysql_error(con));
     }
@@ -124,7 +124,7 @@ int print_result(int status, struct snmp_session *sp, struct snmp_pdu *pdu)
 
     gettimeofday(&now, &tz);
     tm = localtime(&now.tv_sec);
-    fprintf(stdout, "%.2d:%.2d:%.2d.%.6d ", tm->tm_hour, tm->tm_min, tm->tm_sec,
+    fprintf(stdout, "%.2d|%.2d|%.2d.%.6d: ", tm->tm_hour, tm->tm_min, tm->tm_sec,
             now.tv_usec);
     switch (status)
     {
@@ -239,24 +239,32 @@ void asynchronous(void)
         }
     }
 
-    /* loop while any active hosts */
-
+    /* async event loop - loops while any active hosts */
     while (active_hosts)
     {
         int fds = 0, block = 1;
-        fd_set fdset;
         struct timeval timeout;
+        netsnmp_large_fd_set fdset;
+        //fd_set fdset; // not used due to large amount of Hosts
 
-        FD_ZERO(&fdset);
-        snmp_select_info(&fds, &fdset, &timeout, &block);
-        fds = select(fds, &fdset, NULL, NULL, block ? NULL : &timeout);
+        //FD_ZERO(&fdset);
+        //NETSNMP_LARGE_FD_ZERO(&fdset);
+
+        //snmp_select_info(&fds, &fdset, &timeout, &block);
+        snmp_sess_select_info2(NULL, &fds, &fdset, &timeout, &block);
+
+        //fds = select(fds, &fdset, NULL, NULL, block ? NULL : &timeout);
+        fds = netsnmp_large_fd_set_select(fds, &fdset, NULL, NULL, block ? NULL : &timeout);
+
         if (fds < 0)
         {
             perror("select failed");
             exit(1);
         }
+
         if (fds)
-            snmp_read(&fdset);
+            // snmp_read(&fdset);
+            snmp_read2(&fdset);
         else
             snmp_timeout();
     }
