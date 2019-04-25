@@ -15,7 +15,7 @@
 
 /* ---------- Global Variables ---------- */
 int active_hosts, num_rows;
-
+int requestRetries = 2, requestTimeout = 5000000;
 MYSQL_RES *result;
 
 /* ---------- Global Structures ---------- */
@@ -217,6 +217,8 @@ void asynchronous(void)
         struct snmp_session sess;
         snmp_sess_init(&sess); /* initialize session */
         sess.version = SNMP_VERSION_2c;
+        sess.retries = requestRetries;
+        sess.timeout = requestTimeout;
         sess.peername = strdup(currentHost[0]);
         sess.community = strdup(currentHost[1]);
         sess.community_len = strlen(sess.community);
