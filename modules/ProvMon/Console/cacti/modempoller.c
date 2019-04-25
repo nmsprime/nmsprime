@@ -25,7 +25,9 @@
 /* ---------- Defines ---------- */
 
 /* ---------- Global Variables ---------- */
-int active_hosts; /* hosts that we have not completed */
+int active_hosts, num_rows;
+
+MYSQL_RES *result;
 
 /* ---------- Global Structures ---------- */
 /* a list of hosts to query*/
@@ -33,6 +35,7 @@ struct host
 {
     const char *name;
     const char *community;
+
 } hosts[] = {
     {"test1", "public"},
     {"test2", "public"},
@@ -117,30 +120,15 @@ void connectToMySql(void)
         exit(1);
     }
 
-    if (mysql_query(con, "SELECT hostname, snmp_community FROM host WHERE hostname LIKE 'cm-%' ORDER BY hostname"))
+    if (mysql_query(con, "SELECT hostname, snmp_community FROM host WHERE hostname LIKE 'cm-%' ORDER BY hostname LIMIT 10"))
     {
         fprintf(stderr, "%s\n", mysql_error(con));
-        //finish_with_error(con);
     }
 
-    MYSQL_RES *result = mysql_store_result(con);
+    result = mysql_store_result(con);
 
-    int num_fields = mysql_num_fields(result);
+    num_rows = mysql_num_rows(result);
 
-    MYSQL_ROW row;
-
-    while (row = mysql_fetch_row(result))
-    {
-        int i;
-
-        for (i = 0; i < num_fields; i++)
-        {
-            printf("%s ", row[i] ? row[i] : "NULL");
-        }
-        printf("\n");
-    }
-
-    mysql_free_result(result);
     mysql_close(con);
 }
 
@@ -310,7 +298,11 @@ int main(int argc, char **argv)
 {
     initialize();
 
+    connectToMySql();
+
     asynchronous();
+
+    mysql_free_result(result);
 
     return 0;
 }
