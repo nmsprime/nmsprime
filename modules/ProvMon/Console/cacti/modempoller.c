@@ -190,7 +190,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
             host->current_oid++; /* send next GET (if any) */
             if (host->current_oid->Name)
             {
-                req = snmp_pdu_create(SNMP_MSG_GET);
+                req = snmp_pdu_create(SNMP_MSG_GETNEXT);
                 snmp_add_null_var(req, host->current_oid->Oid, host->current_oid->OidLen);
                 if (snmp_send(host->sess, req))
                     return 1;
@@ -239,7 +239,7 @@ void asynchronous(void)
             continue;
         }
         hs->current_oid = oids;
-        req = snmp_pdu_create(SNMP_MSG_GET); /* send the first GET */
+        req = snmp_pdu_create(SNMP_MSG_GETNEXT); /* send the first GET */
         snmp_add_null_var(req, hs->current_oid->Oid, hs->current_oid->OidLen);
         if (snmp_send(hs->sess, req))
             active_hosts++;
