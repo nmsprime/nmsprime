@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /*
  * NET-SNMP modempoller
  *
@@ -6,16 +7,27 @@
  *
  */
 
+=======
+/* ---------- Incluides ---------- */
+#include <stdio.h>
+#include <mysql.h>
+#include <string.h>
+#include <stdlib.h>
+#include <my_global.h>
+>>>>>>> 0666391... Add includes and structural comments
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/net-snmp-includes.h>
 
+/* ---------- Check-Ups ---------- */
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
+/* ---------- Defines ---------- */
 
-/*
- * a list of hosts to query
- */
+/* ---------- Global Variables ---------- */
+
+/* ---------- Global Structures ---------- */
+/* a list of hosts to query*/
 struct host
 {
     const char *name;
@@ -27,9 +39,7 @@ struct host
     {"test4", "public"},
     {NULL}};
 
-/*
- * a list of variables to query for
- */
+/* a list of variables to query for */
 struct oid
 {
     const char *Name;
@@ -52,9 +62,7 @@ struct oid
     {"1.3.6.1.4.1.4491.2.1.20.1.2.1.9"},  // # Ranging Status
     {NULL}};
 
-/*
- * initialize
- */
+/* ---------- Functions ---------- */
 void initialize(void)
 {
     struct oid *op = oids;
@@ -142,6 +150,8 @@ struct session
 
 int active_hosts; /* hosts that we have not completed */
 
+/*****************************************************************************/
+
 /*
  * response handler
  */
@@ -179,6 +189,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
     active_hosts--;
     return 1;
 }
+/*****************************************************************************/
 
 void asynchronous(void)
 {
