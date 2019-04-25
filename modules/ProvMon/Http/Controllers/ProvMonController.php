@@ -138,7 +138,7 @@ class ProvMonController extends \BaseController
         $dash['modemServicesStatus'] = self::modemServicesStatus($modem, $configfile['text']);
         // time of this function should be observed - can take a huge time as well
         if ($online) {
-            $modemConfigfileStatus = self::modemConfigfileStatus($modem, $log, $configfile['mtime']);
+            $modemConfigfileStatus = self::modemConfigfileStatus($modem);
             if ($modemConfigfileStatus) {
                 $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
             }
@@ -230,63 +230,35 @@ class ProvMonController extends \BaseController
     /**
      * Determine if modem runs with/has already downloaded actual configfile
      *
-     * @param object    Modem
-     * @param array     Lines of Log messages
-     * @return array    Color & status text
+     * @param object Modem
      */
-    public static function modemConfigfileStatus($modem, $log, $configDate)
+    public static function modemConfigfileStatus($modem)
     {
-        $logfile = $path = '/var/log/messages';
-        $lastDownload = preg_grep('/in.tftpd(.*?) cm\//', $log);
+        $path = '/var/log/nmsprime/tftpd-cm.log';
+        $ts_cf = filemtime("/tftpboot/cm/$modem->hostname.cfg");
+        $ts_dl = exec("zgrep $modem->hostname $path | tail -1 | cut -d' ' -f1");
 
-        if (! $lastDownload) {
-            // get all but the current logfile and order descending
-            // we assume that logrotate adds “-TIMESTAMP” to the logfile's name
-            $logfiles = glob($logfile.'-*');
-            arsort($logfiles);
-
-            // add the current logfile at first position (shall be grepped first)
-            array_unshift($logfiles, $logfile);
+        if (! $ts_dl) {
+            // get all but the current logfile, order them descending by file modification time
+            // we assume that logrotate adds "-TIMESTAMP" to the logfiles name
+            $logfiles = glob("$path-*");
+            usort($logfiles, function ($a, $b) {
+                return filemtime($b) - filemtime($a);
+            });
 
             foreach ($logfiles as $path) {
                 // get the latest line indicating a configfile download
-                exec("grep $modem->hostname $path | grep tftpd | tail -1", $lastDownload);
+                $ts_dl = exec("zgrep $modem->hostname $path | tail -1 | cut -d' ' -f1");
 
-                if ($lastDownload) {
+                if ($ts_dl) {
                     break;
                 }
             }
         }
 
-        if (! $lastDownload) {
+        if (! $ts_dl) {
             // inform the user that last download was to long ago to check if the configfile is up-to-date
             return ['bsclass' => 'info', 'text' => trans('messages.modemAnalysis.missingLD')];
-        }
-
-        $firstKey = key($lastDownload);
-        preg_match('/[A-Z][a-z]{2} {1,2}\d{1,2} \d\d:\d\d:\d\d/', $lastDownload[$firstKey], $lastDownload);
-
-        $ts_dl = strtotime($lastDownload[0]);
-        $ts_cf = strtotime($configDate);
-
-        if (! $ts_dl || ! $ts_cf) {
-            \Log::error('Strtotime() could not parse string in '.__CLASS__.'::'.__FUNCTION__);
-
-            return;
-        }
-
-        // Consider change of year - get year of log entry
-        if ($path == $logfile) {
-            if (date('d H:i:s', $ts_dl) > date('d H:i:s')) {
-                $ts_dl = strtotime('-1 year', $ts_dl);
-            }
-        } else {
-            $path = str_replace("$logfile-", '', $path);
-            $ts_log = strtotime(substr($path, 0, 4).'-'.substr($path, 4, 2).'-'.substr($path, 6, 2));
-
-            if (date('Y', $ts_log) < date('Y') || $ts_dl > $ts_log) {
-                $ts_dl = strtotime('-1 year', $ts_dl);
-            }
         }
 
         if ($ts_dl <= $ts_cf) {
