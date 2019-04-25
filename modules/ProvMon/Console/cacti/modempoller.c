@@ -14,6 +14,7 @@
 /* ---------- Defines ---------- */
 
 /* ---------- Global Variables ---------- */
+int active_hosts; /* hosts that we have not completed */
 
 /* ---------- Global Structures ---------- */
 /* a list of hosts to query*/
@@ -50,6 +51,13 @@ struct oid
     {"1.3.6.1.4.1.4491.2.1.20.1.2.1.1"},  // # Power (3.0)
     {"1.3.6.1.4.1.4491.2.1.20.1.2.1.9"},  // # Ranging Status
     {NULL}};
+
+/* poll all hosts in parallel */
+struct session
+{
+    struct snmp_session *sess; /* SNMP session data */
+    struct oid *current_oid;   /* How far in our poll are we */
+} sessions[sizeof(hosts) / sizeof(hosts[0])];
 
 /* ---------- Functions ---------- */
 void initialize(void)
@@ -125,19 +133,6 @@ int print_result(int status, struct snmp_session *sp, struct snmp_pdu *pdu)
     }
     return 0;
 }
-
-/*****************************************************************************/
-
-/*
- * poll all hosts in parallel
- */
-struct session
-{
-    struct snmp_session *sess; /* SNMP session data */
-    struct oid *current_oid;   /* How far in our poll are we */
-} sessions[sizeof(hosts) / sizeof(hosts[0])];
-
-int active_hosts; /* hosts that we have not completed */
 
 /*****************************************************************************/
 
