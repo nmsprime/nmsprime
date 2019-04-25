@@ -1,16 +1,3 @@
-/*
- * NET-SNMP demo
- *
- * This program demonstrates different ways to query a list of hosts
- * for a list of variables.
- *
- * It would of course be faster just to send one query for all variables,
- * but the intention is to demonstrate the difference between synchronous
- * and asynchronous operation.
- *
- * Niels Baggesen (Niels.Baggesen@uni-c.dk), 1999.
- */
-
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/net-snmp-includes.h>
 
@@ -121,45 +108,6 @@ int print_result(int status, struct snmp_session *sp, struct snmp_pdu *pdu)
         return 0;
     }
     return 0;
-}
-
-/*****************************************************************************/
-
-/*
- * simple synchronous loop
- */
-void synchronous(void)
-{
-    struct host *hp;
-
-    for (hp = hosts; hp->name; hp++)
-    {
-        struct snmp_session ss, *sp;
-        struct oid *op;
-
-        snmp_sess_init(&ss); /* initialize session */
-        ss.version = SNMP_VERSION_2c;
-        ss.peername = strdup(hp->name);
-        ss.community = strdup(hp->community);
-        ss.community_len = strlen(ss.community);
-        if (!(sp = snmp_open(&ss)))
-        {
-            snmp_perror("snmp_open");
-            continue;
-        }
-        for (op = oids; op->Name; op++)
-        {
-            struct snmp_pdu *req, *resp;
-            int status;
-            req = snmp_pdu_create(SNMP_MSG_GET);
-            snmp_add_null_var(req, op->Oid, op->OidLen);
-            status = snmp_synch_response(sp, req, &resp);
-            if (!print_result(status, sp, resp))
-                break;
-            snmp_free_pdu(resp);
-        }
-        snmp_close(sp);
-    }
 }
 
 /*****************************************************************************/
@@ -285,10 +233,6 @@ int main(int argc, char **argv)
 {
     initialize();
 
-    printf("---------- synchronous -----------\n");
-    synchronous();
-
-    printf("---------- asynchronous -----------\n");
     asynchronous();
 
     return 0;
