@@ -15,7 +15,7 @@
 
 /* ---------- Global Variables ---------- */
 int active_hosts, num_rows;
-int reps = 9, non_reps = 0;
+int reps = 9, non_reps = 5;
 int requestRetries = 2, requestTimeout = 5000000;
 MYSQL_RES *result;
 
@@ -190,11 +190,13 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
             if (host->currentOid->Name)
             {
                 request = snmp_pdu_create(SNMP_MSG_GETBULK);
-                request->non_repeaters = non_reps;
+                request->non_repeaters = 0;
                 request->max_repetitions = reps;
                 snmp_add_null_var(request, host->currentOid->Oid, host->currentOid->OidLen);
                 if (snmp_send(host->sess, request))
+                {
                     return 1;
+                }
                 else
                 {
                     snmp_perror("snmp_send");
@@ -222,11 +224,12 @@ void asynchronous(void)
     session_t allHosts[num_rows];
 
     /* startup all hosts */
-
     for (hostStatePointer = allHosts; (currentHost = mysql_fetch_row(result)); hostStatePointer++)
     {
         struct snmp_pdu *request;
+        struct oid_s *currentOid = oids;
         struct snmp_session newSnmpSocket;
+
         snmp_sess_init(&newSnmpSocket); /* initialize session */
         newSnmpSocket.version = SNMP_VERSION_2c;
         newSnmpSocket.retries = requestRetries;
@@ -236,19 +239,23 @@ void asynchronous(void)
         newSnmpSocket.community_len = strlen(newSnmpSocket.community);
         newSnmpSocket.callback = asynch_response; /* default callback */
         newSnmpSocket.callback_magic = hostStatePointer;
+
+        request = snmp_pdu_create(SNMP_MSG_GETBULK); /* send the first GET */
+        request->non_repeaters = non_reps;
+        request->max_repetitions = 0;
+
+        for (i = 0; (i < non_reps); i++, currentOid++)
+        {
+            snmp_add_null_var(request, currentOid->Oid, currentOid->OidLen);
+        }
+
         if (!(hostStatePointer->sess = snmp_open(&newSnmpSocket)))
         {
             snmp_perror("snmp_open");
             continue;
         }
+        hostStatePointer->currentOid = currentOid - 1;
 
-        hostStatePointer->currentOid = oids;
-
-        request = snmp_pdu_create(SNMP_MSG_GETBULK); /* send the first GET */
-        request->non_repeaters = non_reps;
-        request->max_repetitions = reps;
-
-        snmp_add_null_var(request, hostStatePointer->currentOid->Oid, hostStatePointer->currentOid->OidLen);
         if (snmp_send(hostStatePointer->sess, request))
             active_hosts++;
         else
