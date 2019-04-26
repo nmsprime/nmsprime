@@ -225,17 +225,17 @@ void asynchronous(void)
     for (hostStatePointer = allHosts; (currentHost = mysql_fetch_row(result)); hostStatePointer++)
     {
         struct snmp_pdu *request;
-        struct snmp_session sess;
-        snmp_sess_init(&sess); /* initialize session */
-        sess.version = SNMP_VERSION_2c;
-        sess.retries = requestRetries;
-        sess.timeout = requestTimeout;
-        sess.peername = strdup(currentHost[0]);
-        sess.community = strdup(currentHost[1]);
-        sess.community_len = strlen(sess.community);
-        sess.callback = asynch_response; /* default callback */
-        sess.callback_magic = hostStatePointer;
-        if (!(hostStatePointer->sess = snmp_open(&sess)))
+        struct snmp_session newSnmpSocket;
+        snmp_sess_init(&newSnmpSocket); /* initialize session */
+        newSnmpSocket.version = SNMP_VERSION_2c;
+        newSnmpSocket.retries = requestRetries;
+        newSnmpSocket.timeout = requestTimeout;
+        newSnmpSocket.peername = strdup(currentHost[0]);
+        newSnmpSocket.community = strdup(currentHost[1]);
+        newSnmpSocket.community_len = strlen(newSnmpSocket.community);
+        newSnmpSocket.callback = asynch_response; /* default callback */
+        newSnmpSocket.callback_magic = hostStatePointer;
+        if (!(hostStatePointer->sess = snmp_open(&newSnmpSocket)))
         {
             snmp_perror("snmp_open");
             continue;
