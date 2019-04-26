@@ -205,13 +205,13 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
 void asynchronous(void)
 {
     int i;
-    struct session *hs;
+    struct session *hostStatePointer;
     MYSQL_ROW currentHost;
     session_t allHosts[num_rows];
 
     /* startup all hosts */
 
-    for (hs = allHosts; (currentHost = mysql_fetch_row(result)); hs++)
+    for (hostStatePointer = allHosts; (currentHost = mysql_fetch_row(result)); hostStatePointer++)
     {
         struct snmp_pdu *req;
         struct snmp_session sess;
@@ -223,16 +223,16 @@ void asynchronous(void)
         sess.community = strdup(currentHost[1]);
         sess.community_len = strlen(sess.community);
         sess.callback = asynch_response; /* default callback */
-        sess.callback_magic = hs;
-        if (!(hs->sess = snmp_open(&sess)))
+        sess.callback_magic = hostStatePointer;
+        if (!(hostStatePointer->sess = snmp_open(&sess)))
         {
             snmp_perror("snmp_open");
             continue;
         }
-        hs->current_oid = oids;
+        hostStatePointer->current_oid = oids;
         req = snmp_pdu_create(SNMP_MSG_GETNEXT); /* send the first GET */
-        snmp_add_null_var(req, hs->current_oid->Oid, hs->current_oid->OidLen);
-        if (snmp_send(hs->sess, req))
+        snmp_add_null_var(req, hostStatePointer->current_oid->Oid, hostStatePointer->current_oid->OidLen);
+        if (snmp_send(hostStatePointer->sess, req))
             active_hosts++;
         else
         {
@@ -273,10 +273,10 @@ void asynchronous(void)
 
     /* cleanup */
 
-    for (hs = allHosts, i = 0; i < num_rows; hs++, i++)
+    for (hostStatePointer = allHosts, i = 0; i < num_rows; hostStatePointer++, i++)
     {
-        if (hs->sess)
-            snmp_close(hs->sess);
+        if (hostStatePointer->sess)
+            snmp_close(hostStatePointer->sess);
     }
 }
 
