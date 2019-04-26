@@ -26,6 +26,7 @@
 
 /* ---------- Global Variables ---------- */
 int active_hosts, num_rows;
+int reps = 9, non_reps = 0;
 int requestRetries = 2, requestTimeout = 5000000;
 MYSQL_RES *result;
 
@@ -199,7 +200,9 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
             host->current_oid++; /* send next GET (if any) */
             if (host->current_oid->Name)
             {
-                request = snmp_pdu_create(SNMP_MSG_GETNEXT);
+                request = snmp_pdu_create(SNMP_MSG_GETBULK);
+                request->non_repeaters = non_reps;
+                request->max_repetitions = reps;
                 snmp_add_null_var(request, host->current_oid->Oid, host->current_oid->OidLen);
                 if (snmp_send(host->sess, request))
                     return 1;
@@ -250,7 +253,10 @@ void asynchronous(void)
             continue;
         }
         hostStatePointer->current_oid = oids;
-        request = snmp_pdu_create(SNMP_MSG_GETNEXT); /* send the first GET */
+        request = snmp_pdu_create(SNMP_MSG_GETBULK); /* send the first GET */
+        request->non_repeaters = non_reps;
+        request->max_repetitions = reps;
+
         snmp_add_null_var(request, hostStatePointer->current_oid->Oid, hostStatePointer->current_oid->OidLen);
         if (snmp_send(hostStatePointer->sess, request))
             active_hosts++;
