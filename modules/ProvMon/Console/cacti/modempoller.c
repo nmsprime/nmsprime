@@ -81,7 +81,7 @@ void initialize(void)
     init_snmp("asynchapp");
 
     /* parse the oids */
-    while (currentOid->run != FINISH)
+    while (currentOid->run < FINISH)
     {
         currentOid->OidLen = MAX_OID_LEN;
         if (!snmp_parse_oid(currentOid->Name, currentOid->Oid, &currentOid->OidLen))
@@ -198,13 +198,40 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
     {
         if (print_result(STAT_SUCCESS, host->sess, responseData))
         {
-            host->currentOid++;
-            if (host->currentOid->Name)
+            if (host->currentOid->run == DOWNSTREAM)
             {
                 request = snmp_pdu_create(SNMP_MSG_GETBULK);
                 request->non_repeaters = 0;
                 request->max_repetitions = reps;
-                snmp_add_null_var(request, host->currentOid->Oid, host->currentOid->OidLen);
+
+                while (host->currentOid->run == DOWNSTREAM)
+                {
+                    snmp_add_null_var(request, host->currentOid->Oid, host->currentOid->OidLen);
+                    host->currentOid++;
+                }
+
+                if (snmp_send(host->sess, request))
+                {
+                    return 1;
+                }
+                else
+                {
+                    snmp_perror("snmp_send");
+                    snmp_free_pdu(request);
+                }
+            }
+            else if (host->currentOid->run == UPSTREAM)
+            {
+                request = snmp_pdu_create(SNMP_MSG_GETBULK);
+                request->non_repeaters = 0;
+                request->max_repetitions = reps;
+
+                while (host->currentOid->run == UPSTREAM)
+                {
+                    snmp_add_null_var(request, host->currentOid->Oid, host->currentOid->OidLen);
+                    host->currentOid++;
+                }
+
                 if (snmp_send(host->sess, request))
                 {
                     return 1;
@@ -267,7 +294,7 @@ void asynchronous(void)
             snmp_perror("snmp_open");
             continue;
         }
-        hostStatePointer->currentOid = currentOid - 1;
+        hostStatePointer->currentOid = currentOid;
 
         if (snmp_send(hostStatePointer->sess, request))
             active_hosts++;
