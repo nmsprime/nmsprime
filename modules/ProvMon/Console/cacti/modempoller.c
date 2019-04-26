@@ -20,30 +20,36 @@ int requestRetries = 2, requestTimeout = 5000000;
 MYSQL_RES *result;
 
 /* ---------- Global Structures ---------- */
+typedef enum pass
+{
+    NON_REP,
+    DOWNSTREAM,
+    UPSTREAM,
+    FINISH
+} pass_t;
 /* a list of variables to query for */
 struct oid_s
 {
+    pass_t run;
     const char *Name;
     oid Oid[MAX_OID_LEN];
-    oid root[MAX_OID_LEN];
     size_t OidLen;
-    size_t rootlen;
 } oids[] = {
-    {"1.3.6.1.2.1.1.1"},                  // SysDescr
-    {".1.3.6.1.2.1.10.127.1.2.2.1.3"},    // # US Power (2.0)
-    {".1.3.6.1.2.1.10.127.1.2.2.1.12"},   // # T3 Timeout
-    {".1.3.6.1.2.1.10.127.1.2.2.1.13"},   // # T4 Timeout
-    {".1.3.6.1.2.1.10.127.1.2.2.1.17"},   // # PreEq
-    {"1.3.6.1.2.1.10.127.1.1.1.1.6"},     // # Power
-    {"1.3.6.1.4.1.4491.2.1.20.1.24.1.1"}, // # SNR (3.0)
-    {"1.3.6.1.2.1.10.127.1.1.4.1.3"},     // # Corrected
-    {"1.3.6.1.2.1.10.127.1.1.4.1.4"},     // # Uncorrectable
-    {"1.3.6.1.2.1.10.127.1.1.4.1.5"},     // # SNR (2.0)
-    {"1.3.6.1.2.1.10.127.1.1.4.1.6"},     // # Microreflections
-    {"1.3.6.1.2.1.10.127.1.1.2.1.3"},     // # Bandwidth
-    {"1.3.6.1.4.1.4491.2.1.20.1.2.1.1"},  // # Power (3.0)
-    {"1.3.6.1.4.1.4491.2.1.20.1.2.1.9"},  // # Ranging Status
-    {NULL}};
+    {NON_REP, "1.3.6.1.2.1.1.1"},                     // SysDescr
+    {NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.3"},        // # US Power (2.0)
+    {NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.12"},       // # T3 Timeout
+    {NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.13"},       // # T4 Timeout
+    {NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.17"},       // # PreEq
+    {DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.1.1.6"},     // # Power
+    {DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.3"},     // # Corrected
+    {DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.4"},     // # Uncorrectable
+    {DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.5"},     // # SNR (2.0)
+    {DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.6"},     // # Microreflections
+    {DOWNSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.24.1.1"}, // # SNR (3.0)
+    {UPSTREAM, "1.3.6.1.2.1.10.127.1.1.2.1.3"},       // # Bandwidth
+    {UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.1"},    // # Power (3.0)
+    {UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.9"},    // # Ranging Status
+    {FINISH}};
 
 /* poll all hosts in parallel */
 typedef struct session
@@ -64,21 +70,16 @@ void initialize(void)
     init_snmp("asynchapp");
 
     /* parse the oids */
-    while (currentOid->Name)
+    while (currentOid->run != FINISH)
     {
-        currentOid->OidLen = sizeof(currentOid->Oid) / sizeof(currentOid->Oid[0]);
-        if (!read_objid(currentOid->Name, currentOid->Oid, &currentOid->OidLen))
+        currentOid->OidLen = MAX_OID_LEN;
+        if (!snmp_parse_oid(currentOid->Name, currentOid->Oid, &currentOid->OidLen))
         {
             snmp_perror("read_objid");
+            printf("Could not Parse OID: %s\n", currentOid->Name);
             exit(1);
         }
 
-        currentOid->rootlen = MAX_OID_LEN;
-        if (snmp_parse_oid(currentOid->Name, currentOid->root, &currentOid->rootlen) == NULL)
-        {
-            snmp_perror(currentOid->Name);
-            exit(1);
-        }
         currentOid++;
     }
 }
@@ -244,9 +245,10 @@ void asynchronous(void)
         request->non_repeaters = non_reps;
         request->max_repetitions = 0;
 
-        for (i = 0; (i < non_reps); i++, currentOid++)
+        while (currentOid->run == NON_REP)
         {
             snmp_add_null_var(request, currentOid->Oid, currentOid->OidLen);
+            currentOid++;
         }
 
         if (!(hostStatePointer->sess = snmp_open(&newSnmpSocket)))
