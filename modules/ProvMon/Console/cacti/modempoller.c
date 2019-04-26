@@ -35,7 +35,9 @@ struct oid
 {
     const char *Name;
     oid Oid[MAX_OID_LEN];
+    oid root[MAX_OID_LEN];
     size_t OidLen;
+    size_t rootlen;
 } oids[] = {
     {"1.3.6.1.2.1.1.1"},                  // SysDescr
     {".1.3.6.1.2.1.10.127.1.2.2.1.3"},    // # US Power (2.0)
@@ -78,6 +80,13 @@ void initialize(void)
         if (!read_objid(op->Name, op->Oid, &op->OidLen))
         {
             snmp_perror("read_objid");
+            exit(1);
+        }
+
+        op->rootlen = MAX_OID_LEN;
+        if (snmp_parse_oid(op->Name, op->root, &op->rootlen) == NULL)
+        {
+            snmp_perror(op->Name);
             exit(1);
         }
         op++;
