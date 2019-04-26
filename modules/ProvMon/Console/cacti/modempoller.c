@@ -124,7 +124,7 @@ void connectToMySql(void)
 /*
  * simple printing of returned data
  */
-int print_result(int status, struct snmp_session *sp, struct snmp_pdu *pdu)
+int print_result(int status, struct snmp_session *sp, struct snmp_pdu *responseData)
 {
     char buf[1024];
     struct variable_list *vp;
@@ -140,8 +140,8 @@ int print_result(int status, struct snmp_session *sp, struct snmp_pdu *pdu)
     switch (status)
     {
     case STAT_SUCCESS:
-        vp = pdu->variables;
-        if (pdu->errstat == SNMP_ERR_NOERROR)
+        vp = responseData->variables;
+        if (responseData->errstat == SNMP_ERR_NOERROR)
         {
             while (vp)
             {
@@ -152,14 +152,14 @@ int print_result(int status, struct snmp_session *sp, struct snmp_pdu *pdu)
         }
         else
         {
-            for (ix = 1; vp && ix != pdu->errindex; vp = vp->next_variable, ix++)
+            for (ix = 1; vp && ix != responseData->errindex; vp = vp->next_variable, ix++)
                 ;
             if (vp)
                 snprint_objid(buf, sizeof(buf), vp->name, vp->name_length);
             else
                 strcpy(buf, "(none)");
             fprintf(stdout, "%s: %s: %s\n",
-                    sp->peername, buf, snmp_errstring(pdu->errstat));
+                    sp->peername, buf, snmp_errstring(responseData->errstat));
         }
         return 1;
     case STAT_TIMEOUT:
@@ -178,14 +178,14 @@ int print_result(int status, struct snmp_session *sp, struct snmp_pdu *pdu)
  * response handler
  */
 int asynch_response(int operation, struct snmp_session *sp, int reqid,
-                    struct snmp_pdu *pdu, void *magic)
+                    struct snmp_pdu *responseData, void *magic)
 {
     struct session *host = (struct session *)magic;
     struct snmp_pdu *request;
 
     if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE)
     {
-        if (print_result(STAT_SUCCESS, host->sess, pdu))
+        if (print_result(STAT_SUCCESS, host->sess, responseData))
         {
             host->current_oid++; /* send next GET (if any) */
             if (host->current_oid->Name)
@@ -203,7 +203,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
         }
     }
     else
-        print_result(STAT_TIMEOUT, host->sess, pdu);
+        print_result(STAT_TIMEOUT, host->sess, responseData);
 
     /* something went wrong (or end of variables)
    * this host not active any more
