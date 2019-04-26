@@ -181,7 +181,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                     struct snmp_pdu *pdu, void *magic)
 {
     struct session *host = (struct session *)magic;
-    struct snmp_pdu *req;
+    struct snmp_pdu *request;
 
     if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE)
     {
@@ -190,14 +190,14 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
             host->current_oid++; /* send next GET (if any) */
             if (host->current_oid->Name)
             {
-                req = snmp_pdu_create(SNMP_MSG_GETNEXT);
-                snmp_add_null_var(req, host->current_oid->Oid, host->current_oid->OidLen);
-                if (snmp_send(host->sess, req))
+                request = snmp_pdu_create(SNMP_MSG_GETNEXT);
+                snmp_add_null_var(request, host->current_oid->Oid, host->current_oid->OidLen);
+                if (snmp_send(host->sess, request))
                     return 1;
                 else
                 {
                     snmp_perror("snmp_send");
-                    snmp_free_pdu(req);
+                    snmp_free_pdu(request);
                 }
             }
         }
@@ -224,7 +224,7 @@ void asynchronous(void)
 
     for (hostStatePointer = allHosts; (currentHost = mysql_fetch_row(result)); hostStatePointer++)
     {
-        struct snmp_pdu *req;
+        struct snmp_pdu *request;
         struct snmp_session sess;
         snmp_sess_init(&sess); /* initialize session */
         sess.version = SNMP_VERSION_2c;
@@ -241,14 +241,14 @@ void asynchronous(void)
             continue;
         }
         hostStatePointer->current_oid = oids;
-        req = snmp_pdu_create(SNMP_MSG_GETNEXT); /* send the first GET */
-        snmp_add_null_var(req, hostStatePointer->current_oid->Oid, hostStatePointer->current_oid->OidLen);
-        if (snmp_send(hostStatePointer->sess, req))
+        request = snmp_pdu_create(SNMP_MSG_GETNEXT); /* send the first GET */
+        snmp_add_null_var(request, hostStatePointer->current_oid->Oid, hostStatePointer->current_oid->OidLen);
+        if (snmp_send(hostStatePointer->sess, request))
             active_hosts++;
         else
         {
             snmp_perror("snmp_send");
-            snmp_free_pdu(req);
+            snmp_free_pdu(request);
         }
     }
 
