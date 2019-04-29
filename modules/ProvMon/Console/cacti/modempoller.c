@@ -184,6 +184,15 @@ int print_result(int status, struct snmp_session *sp, struct snmp_pdu *responseD
 }
 
 /*****************************************************************************/
+netsnmp_variable_list *getLastVarBiniding(netsnmp_variable_list *varlist)
+{
+    while (varlist)
+    {
+        if (!varlist->next_variable)
+            return varlist;
+        varlist = varlist->next_variable;
+    }
+}
 
 /*
  * response handler
