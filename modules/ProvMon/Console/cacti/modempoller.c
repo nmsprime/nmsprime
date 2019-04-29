@@ -261,7 +261,32 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                 }
             case UPSTREAM:
                 if (host->currentOid->run == FINISH)
+                {
+                    root = memcmp((host->currentOid - 1)->Oid, varlist->name, ((host->currentOid - 1)->OidLen) * sizeof(oid));
+
+                    if (root == 0)
+                    {
+                        host->currentOid = host->currentOid - us_count;
+
+                        while (host->currentOid->run == UPSTREAM)
+                        {
+                            host->currentOid->Oid[host->currentOid->OidLen] = varlist->name[varlist->name_length - 1];
+                            snmp_add_null_var(request, host->currentOid->Oid, host->currentOid->OidLen + 1);
+                            host->currentOid++;
+                        }
+
+                        if (snmp_send(host->sess, request))
+                        {
+                            return 1;
+                        }
+                        else
+                        {
+                            snmp_perror("snmp_send");
+                            snmp_free_pdu(request);
+                        }
+                    }
                     break;
+                }
 
                 while (host->currentOid->run == UPSTREAM)
                 {
