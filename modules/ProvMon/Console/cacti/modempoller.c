@@ -207,8 +207,17 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
     {
         if (print_result(STAT_SUCCESS, host->sess, responseData))
         {
-            if (host->currentOid->run == DOWNSTREAM)
+            netsnmp_variable_list *varlist = responseData->variables;
+            int root, upstream = 0;
+
+            varlist = getLastVarBiniding(varlist);
+            host->currentOid--;
+
+            switch (host->currentOid->run)
             {
+            case NON_REP:
+                host->currentOid++;
+
                 request = snmp_pdu_create(SNMP_MSG_GETBULK);
                 request->non_repeaters = 0;
                 request->max_repetitions = reps;
@@ -228,8 +237,48 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                     snmp_perror("snmp_send");
                     snmp_free_pdu(request);
                 }
+                break;
+            case DOWNSTREAM:
+                root = memcmp(host->currentOid->Oid, varlist->name, (host->currentOid->OidLen) * sizeof(oid));
+
+                if (root == 0)
+                {
+                    host->currentOid = host->currentOid - 5;
+                    request = snmp_pdu_create(SNMP_MSG_GETBULK);
+                    request->non_repeaters = 0;
+                    request->max_repetitions = reps;
+
+                    while (host->currentOid->run == DOWNSTREAM)
+                    {
+                        host->currentOid->Oid[host->currentOid->OidLen] = varlist->name[varlist->name_length - 1];
+                        snmp_add_null_var(request, host->currentOid->Oid, host->currentOid->OidLen + 1);
+                        host->currentOid++;
+                    }
+
+                    if (snmp_send(host->sess, request))
+                    {
+                        return 1;
+                    }
+                    else
+                    {
+                        snmp_perror("snmp_send");
+                        snmp_free_pdu(request);
+                    }
+                }
+                else
+                {
+                    host->currentOid++;
+                    upstream = 1;
+                    break;
+                }
+            default:
+                break;
             }
-            else if (host->currentOid->run == UPSTREAM)
+
+            if (upstream == 0)
+                host->currentOid++;
+
+            if (host->currentOid->run == UPSTREAM)
             {
                 request = snmp_pdu_create(SNMP_MSG_GETBULK);
                 request->non_repeaters = 0;
