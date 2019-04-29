@@ -1,5 +1,6 @@
 <?php $bclasses = [
   'created' => 'fa-plus-square-o',
+  'deleted' => 'fa-minus-square-o',
   'updated' => 'fa-pencil-square-o',
   'updated N:M' => 'fa-pencil-square-o'
 ];
