@@ -15,6 +15,7 @@
 
 /* ---------- Global Variables ---------- */
 int active_hosts, num_rows;
+int ds_count = 0, us_count = 0;
 int reps = 9, non_reps = 5;
 int requestRetries = 2, requestTimeout = 5000000;
 MYSQL_RES *result;
@@ -80,6 +81,15 @@ void initialize(void)
             exit(1);
         }
 
+        if (currentOid->run == DOWNSTREAM)
+        {
+            ds_count++;
+        }
+
+        if (currentOid->run == UPSTREAM)
+        {
+            us_count++;
+        }
         currentOid++;
     }
 }
@@ -229,7 +239,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
 
                 if (root == 0)
                 {
-                    host->currentOid = host->currentOid - 5;
+                    host->currentOid = host->currentOid - ds_count;
 
                     while (host->currentOid->run == DOWNSTREAM)
                     {
