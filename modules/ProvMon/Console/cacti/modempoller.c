@@ -204,13 +204,28 @@ netsnmp_variable_list *getLastVarBiniding(netsnmp_variable_list *varlist)
     }
 }
 
+/*****************************************************************************/
+int sendRequest(session_t *host, struct snmp_pdu *request)
+{
+    if (snmp_send(host->sess, request))
+    {
+        return 1;
+    }
+    else
+    {
+        snmp_perror("snmp_send");
+        snmp_free_pdu(request);
+    }
+}
+/*****************************************************************************/
+
 /*
  * response handler
  */
 int asynch_response(int operation, struct snmp_session *sp, int reqid,
                     struct snmp_pdu *responseData, void *magic)
 {
-    struct session *host = (struct session *)magic;
+    session_t *host = (session_t *)magic;
 
     if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE)
     {
@@ -235,15 +250,9 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                     host->currentOid++;
                 }
 
-                if (snmp_send(host->sess, request))
-                {
+                if (sendRequest(host, request))
                     return 1;
-                }
-                else
-                {
-                    snmp_perror("snmp_send");
-                    snmp_free_pdu(request);
-                }
+
                 break;
             case DOWNSTREAM:
                 root = memcmp((host->currentOid - 1)->Oid, varlist->name, ((host->currentOid - 1)->OidLen) * sizeof(oid));
@@ -259,15 +268,8 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                         host->currentOid++;
                     }
 
-                    if (snmp_send(host->sess, request))
-                    {
+                    if (sendRequest(host, request))
                         return 1;
-                    }
-                    else
-                    {
-                        snmp_perror("snmp_send");
-                        snmp_free_pdu(request);
-                    }
                     break;
                 }
             case UPSTREAM:
@@ -286,15 +288,8 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                             host->currentOid++;
                         }
 
-                        if (snmp_send(host->sess, request))
-                        {
+                        if (sendRequest(host, request))
                             return 1;
-                        }
-                        else
-                        {
-                            snmp_perror("snmp_send");
-                            snmp_free_pdu(request);
-                        }
                     }
                     break;
                 }
@@ -305,15 +300,9 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                     host->currentOid++;
                 }
 
-                if (snmp_send(host->sess, request))
-                {
+                if (sendRequest(host, request))
                     return 1;
-                }
-                else
-                {
-                    snmp_perror("snmp_send");
-                    snmp_free_pdu(request);
-                }
+                break;
             }
         }
     }
@@ -331,7 +320,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
 void asynchronous(void)
 {
     int i;
-    struct session *hostStatePointer;
+    session_t *hostStatePointer;
     MYSQL_ROW currentHost;
     session_t allHosts[num_rows];
 
