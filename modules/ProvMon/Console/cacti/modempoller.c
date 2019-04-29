@@ -205,7 +205,7 @@ netsnmp_variable_list *getLastVarBiniding(netsnmp_variable_list *varlist)
 }
 
 /*****************************************************************************/
-int sendRequest(session_t *host, struct snmp_pdu *request)
+int sendNextBulkRequest(session_t *host, struct snmp_pdu *request)
 {
     if (snmp_send(host->sess, request))
     {
@@ -250,9 +250,8 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                     host->currentOid++;
                 }
 
-                if (sendRequest(host, request))
+                if (sendNextBulkRequest(host, request))
                     return 1;
-
                 break;
             case DOWNSTREAM:
                 root = memcmp((host->currentOid - 1)->Oid, varlist->name, ((host->currentOid - 1)->OidLen) * sizeof(oid));
@@ -268,7 +267,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                         host->currentOid++;
                     }
 
-                    if (sendRequest(host, request))
+                    if (sendNextBulkRequest(host, request))
                         return 1;
                     break;
                 }
@@ -288,7 +287,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                             host->currentOid++;
                         }
 
-                        if (sendRequest(host, request))
+                        if (sendNextBulkRequest(host, request))
                             return 1;
                     }
                     break;
@@ -300,7 +299,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                     host->currentOid++;
                 }
 
-                if (sendRequest(host, request))
+                if (sendNextBulkRequest(host, request))
                     return 1;
                 break;
             }
