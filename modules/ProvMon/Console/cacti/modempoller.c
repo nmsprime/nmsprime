@@ -202,14 +202,14 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
             varlist = getLastVarBiniding(varlist);
             host->currentOid--;
 
+            request = snmp_pdu_create(SNMP_MSG_GETBULK);
+            request->non_repeaters = 0;
+            request->max_repetitions = reps;
+
             switch (host->currentOid->run)
             {
             case NON_REP:
                 host->currentOid++;
-
-                request = snmp_pdu_create(SNMP_MSG_GETBULK);
-                request->non_repeaters = 0;
-                request->max_repetitions = reps;
 
                 while (host->currentOid->run == DOWNSTREAM)
                 {
@@ -233,9 +233,6 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                 if (root == 0)
                 {
                     host->currentOid = host->currentOid - 5;
-                    request = snmp_pdu_create(SNMP_MSG_GETBULK);
-                    request->non_repeaters = 0;
-                    request->max_repetitions = reps;
 
                     while (host->currentOid->run == DOWNSTREAM)
                     {
@@ -269,10 +266,6 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
 
             if (host->currentOid->run == UPSTREAM)
             {
-                request = snmp_pdu_create(SNMP_MSG_GETBULK);
-                request->non_repeaters = 0;
-                request->max_repetitions = reps;
-
                 while (host->currentOid->run == UPSTREAM)
                 {
                     snmp_add_null_var(request, host->currentOid->Oid, host->currentOid->OidLen);
