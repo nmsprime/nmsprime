@@ -201,27 +201,24 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                     struct snmp_pdu *responseData, void *magic)
 {
     struct session *host = (struct session *)magic;
-    struct snmp_pdu *request;
 
     if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE)
     {
         if (print_result(STAT_SUCCESS, host->sess, responseData))
         {
-            netsnmp_variable_list *varlist = responseData->variables;
-            int root, upstream = 0;
-
-            varlist = getLastVarBiniding(varlist);
-            host->currentOid--;
+            int root = -1, upstream = 0;
+            struct snmp_pdu *request;
 
             request = snmp_pdu_create(SNMP_MSG_GETBULK);
             request->non_repeaters = 0;
             request->max_repetitions = reps;
 
-            switch (host->currentOid->run)
+            netsnmp_variable_list *varlist = responseData->variables;
+            varlist = getLastVarBiniding(varlist);
+
+            switch ((host->currentOid - 1)->run)
             {
             case NON_REP:
-                host->currentOid++;
-
                 while (host->currentOid->run == DOWNSTREAM)
                 {
                     snmp_add_null_var(request, host->currentOid->Oid, host->currentOid->OidLen);
@@ -239,7 +236,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                 }
                 break;
             case DOWNSTREAM:
-                root = memcmp(host->currentOid->Oid, varlist->name, (host->currentOid->OidLen) * sizeof(oid));
+                root = memcmp((host->currentOid - 1)->Oid, varlist->name, ((host->currentOid - 1)->OidLen) * sizeof(oid));
 
                 if (root == 0)
                 {
@@ -261,22 +258,12 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                         snmp_perror("snmp_send");
                         snmp_free_pdu(request);
                     }
-                }
-                else
-                {
-                    host->currentOid++;
-                    upstream = 1;
                     break;
                 }
-            default:
-                break;
-            }
+            case UPSTREAM:
+                if (host->currentOid->run == FINISH)
+                    break;
 
-            if (upstream == 0)
-                host->currentOid++;
-
-            if (host->currentOid->run == UPSTREAM)
-            {
                 while (host->currentOid->run == UPSTREAM)
                 {
                     snmp_add_null_var(request, host->currentOid->Oid, host->currentOid->OidLen);
