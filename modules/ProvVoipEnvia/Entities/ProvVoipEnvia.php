@@ -44,7 +44,7 @@ class ProvVoipEnvia extends \BaseModel
 
         // this has to be a float value to allow stable version compares ⇒ make some basic tests
         if (! is_numeric($v)) {
-            throw new \InvalidArgumentException('PROVVOIPENVIA__REST_API_VERSION in .env has to be a float value (e.g.: 1.4)');
+            throw new \InvalidArgumentException(trans('provvoipenvia::errors.apiversion_not_float'));
         }
 
         $this->api_version = $this->_version_string_to_array($this->api_version_string);
@@ -1058,9 +1058,9 @@ class ProvVoipEnvia extends \BaseModel
         // invalid params: this will cause a crash
         else {
             if (is_null($model)) {
-                throw new \UnexpectedValueException('No model given');
+                throw new \UnexpectedValueException(trans('provvoipenvia::errors.no_model_given'));
             } else {
-                throw new \UnexpectedValueException('Value '.$level.' not allowed for param $level');
+                throw new \UnexpectedValueException(trans('provvoipenvia::errors.value_not_allowed_for_param', [$level]));
             }
         }
     }
@@ -1542,7 +1542,7 @@ class ProvVoipEnvia extends \BaseModel
     {
         $order_id = \Input::get('order_id', null);
         if (! is_numeric($order_id)) {
-            throw new XmlCreationError('order_id has to be numeric');
+            throw new XmlCreationError(trans('provvoipenvia::errors.has_to_be_numeric', ['value' => 'order_id']));
         }
 
         $inner_xml = $this->xml->addChild('order_identifier');
@@ -1572,7 +1572,7 @@ class ProvVoipEnvia extends \BaseModel
         // if given: localareacode has to be numeric
         // TODO: error handling
         if (! is_numeric($localareacode)) {
-            throw new XmlCreationError(trans('provvoipenvia::errors.hastobenumeric', ['value' => 'localareacode']));
+            throw new XmlCreationError(trans('provvoipenvia::errors.has_to_be_numeric', ['value' => 'localareacode']));
         }
 
         // localareacode is valid: add filter
@@ -1585,7 +1585,7 @@ class ProvVoipEnvia extends \BaseModel
         // if given: baseno has to be numeric
         // TODO: error handling
         if (! is_numeric($baseno)) {
-            throw new XmlCreationError(trans('provvoipenvia::errors.hastobenumeric', ['value' => 'baseno']));
+            throw new XmlCreationError(trans('provvoipenvia::errors.has_to_be_numeric', ['value' => 'baseno']));
         }
 
         // baseno is valid
@@ -1621,13 +1621,13 @@ class ProvVoipEnvia extends \BaseModel
         if ($this->job == 'customer_get_reference') {
             $customerno = $this->contract->customer_number();
             if (! $customerno) {
-                throw new XmlCreationError(trans('provvoipenvia::errors.customernumbernotexisting'));
+                throw new XmlCreationError(trans('provvoipenvia::errors.customernumber_not_existing'));
             }
             $inner_xml->addChild('customerno', $customerno);
         } elseif ($this->job == 'customer_get_reference_by_legacy_number') {
             $customerno_legacy = $this->contract->customer_number_legacy();
             if ((! boolval($customerno_legacy)) || ($customerno_legacy == 'n/a')) {
-                throw new XmlCreationError(trans('provvoipenvia::errors.legacycustomernumbernotexisting'));
+                throw new XmlCreationError(trans('provvoipenvia::errors.legacy_customernumber_not_existing'));
             }
             $inner_xml->addChild('customerno', $customerno_legacy);
         } else {
@@ -1840,7 +1840,6 @@ class ProvVoipEnvia extends \BaseModel
                 $orderdate = $mgmt->activation_date;
                 if (! is_null($last_mgmt) && ($last_mgmt->activation_date != $orderdate)) {
                     $msg = trans('provvoipenvia::messages.differentactivationdates', [$orderdate, $mgmt->activation_date]);
-                    $msg = "Given numbers have different activation dates ($orderdate, $mgmt->activation_date)";
                     $value_missing = true;
                     break;
                 }
@@ -1848,7 +1847,7 @@ class ProvVoipEnvia extends \BaseModel
                 // check if all numbers have identical porting information
                 $porting = $mgmt->porting_in;
                 if (! is_null($last_mgmt) && ($last_mgmt->porting_in != $porting)) {
-                    $msg = 'Either all given numbers have to be ported or none – mixing is not allowed';
+                    $msg = trans('provvoipenvia::messages.allportedornone');
                     $value_missing = true;
                     break;
                 }
@@ -1858,7 +1857,7 @@ class ProvVoipEnvia extends \BaseModel
                     // if number has to be ported: check if incoming EKP codes are identical
                     $ekp_in = $mgmt->ekp_in;
                     if (! is_null($last_mgmt) && ($last_mgmt->ekp_in != $ekp_in)) {
-                        $msg = 'All numbers to be created have to have the same incoming EKP code';
+                        $msg = trans('provvoipenvia::messages.allnumberssameekp');
                         $value_missing = true;
                         break;
                     }
@@ -1868,7 +1867,7 @@ class ProvVoipEnvia extends \BaseModel
                         foreach ($subscriber_data_keys as $key) {
                             if (trim($last_mgmt->{$key}) != trim($mgmt->{$key})) {
                                 $value_missing = true;
-                                $msg = "Differences in subscriber data ($last_mgmt->{$key} != $mgmt->{$key})";
+                                $msg = trans('provvoipenvia::messages.differentsubscriberdata', [$last_mgmt->{$key}, $mgmt->{$key}]);
                                 break; // the inner foreach
                             }
                         }
@@ -1958,7 +1957,7 @@ class ProvVoipEnvia extends \BaseModel
         $phonenumbers_to_change = PhoneNumber::where('contract_external_id', '=', $external_contract_reference)->get();
 
         if ($phonenumbers_to_change->count() == 0) {
-            throw new XmlCreationError("No phonenumbers found for envia TEL contract $external_contract_reference");
+            throw new XmlCreationError(trans('provvoipenvia::errors.no_numbers_for_envia_contract', [$external_contract_reference]));
         }
         if ($phonenumbers_to_change->count() > 2) {
             throw new XmlCreationError('envia TEL allows use of this method only for contracts with max. 2 phonenumbers ('.$phonenumbers_to_change->count()." numbers found for envia TEL contract $external_contract_reference).");
@@ -2141,34 +2140,18 @@ class ProvVoipEnvia extends \BaseModel
 
         $carrier_in = CarrierCode::find($phonenumbermanagement->carrier_in)->carrier_code;
 
-        // carrier code not needed in version 1.10 and above
-        if ($this->api_version_less_than('1.10')) {
-
-            // on porting: check if valid CarrierIn chosen
-            if (boolval($phonenumbermanagement->porting_in)) {
-                if (! CarrierCode::is_valid($carrier_in)) {
-                    throw new XmlCreationError('ERROR: '.$carrier_code.' is not a valid carrier_code');
-                }
-                $inner_xml->addChild('carriercode', $carrier_in);
-            }
-        }
-
         // if no porting (new number): CarrierIn has to be D057 (envia TEL) (API 1.4 and higher)
         if (! boolval($phonenumbermanagement->porting_in)) {
-            if ($this->api_version_greater_or_equal('1.4')) {
-                if ($carrier_in != 'D057') {
-                    throw new XmlCreationError('ERROR: If no incoming porting: Carriercode has to be D057 (envia TEL)');
-                }
-                $inner_xml->addChild('carriercode', $carrier_in);
+            if ($carrier_in != 'D057') {
+                throw new XmlCreationError(trans('provvoipenvia::errors.carrier_no_porting_in'));
             }
+            $inner_xml->addChild('carriercode', $carrier_in);
         }
 
         // in API 1.4 and higher we also need the EKP code for incoming porting
-        if ($this->api_version_greater_or_equal('1.4')) {
-            if (boolval($phonenumbermanagement->porting_in)) {
-                $ekp_in = EkpCode::find($phonenumbermanagement->ekp_in)->ekp_code;
-                $inner_xml->addChild('ekp_code', $ekp_in);
-            }
+        if (boolval($phonenumbermanagement->porting_in)) {
+            $ekp_in = EkpCode::find($phonenumbermanagement->ekp_in)->ekp_code;
+            $inner_xml->addChild('ekp_code', $ekp_in);
         }
 
         $this->_add_sip_data($inner_xml->addChild('method'), $phonenumber);
@@ -2207,7 +2190,7 @@ class ProvVoipEnvia extends \BaseModel
         // special handling of trc_class needed (comes from external table)
         $trc_class = TRCClass::find($this->phonenumbermanagement->trcclass);
         if (is_null($trc_class)) {
-            throw new XmlCreationError('TRCclass not set.<br>Set TRCclass and save the PhonenumberManagement.');
+            throw new XmlCreationError(trans('provvoipenvia::errors.no_trc_set'));
         }
         $trc_id = $trc_class->trc_id;
         $inner_xml->addChild('trc_class', $trc_id);
@@ -2266,7 +2249,7 @@ class ProvVoipEnvia extends \BaseModel
         ];
 
         if (! boolval($this->phonenumbermanagement->deactivation_date)) {
-            throw new XmlCreationError('ERROR: PhonenumberManagement::deactivation_date needs to be set');
+            throw new XmlCreationError(trans('provvoipenvia::errors.deac_date_not_set'));
         }
 
         $this->_add_fields($inner_xml, $fields, $this->phonenumbermanagement);
@@ -2277,7 +2260,7 @@ class ProvVoipEnvia extends \BaseModel
             if (CarrierCode::is_valid($carrier_out)) {
                 $inner_xml->addChild('carriercode', $carrier_out);
             } else {
-                throw new XmlCreationError('ERROR: '.$carrier_code.' is not a valid carrier_code');
+                throw new XmlCreationError(trans('provvoipenvia::errors.carrier_invalid', [$carrier_out]));
             }
         } else {
             $inner_xml->addChild('carriercode');
