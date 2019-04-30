@@ -218,7 +218,18 @@ int sendNextBulkRequest(session_t *hostSession, struct snmp_pdu *request)
     }
 }
 /*****************************************************************************/
+void addPackagePayload(struct snmp_pdu *request, session_t *hostSession, netsnmp_variable_list *varlist, pass_t run, int updateOids)
+{
+    while (hostSession->currentOid->run == run)
+    {
+        if (updateOids)
+            hostSession->currentOid->Oid[hostSession->currentOid->OidLen] = varlist->name[varlist->name_length - 1];
 
+        snmp_add_null_var(request, hostSession->currentOid->Oid, hostSession->currentOid->OidLen + updateOids);
+
+        hostSession->currentOid++;
+    }
+}
 /*
  * response handler
  */
@@ -244,11 +255,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
             switch ((hostSession->currentOid - 1)->run)
             {
             case NON_REP:
-                while (hostSession->currentOid->run == DOWNSTREAM)
-                {
-                    snmp_add_null_var(request, hostSession->currentOid->Oid, hostSession->currentOid->OidLen);
-                    hostSession->currentOid++;
-                }
+                addPackagePayload(request, hostSession, varlist, DOWNSTREAM, 0);
 
                 if (sendNextBulkRequest(hostSession, request))
                     return 1;
@@ -260,12 +267,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                 {
                     hostSession->currentOid = hostSession->currentOid - ds_count;
 
-                    while (hostSession->currentOid->run == DOWNSTREAM)
-                    {
-                        hostSession->currentOid->Oid[hostSession->currentOid->OidLen] = varlist->name[varlist->name_length - 1];
-                        snmp_add_null_var(request, hostSession->currentOid->Oid, hostSession->currentOid->OidLen + 1);
-                        hostSession->currentOid++;
-                    }
+                    addPackagePayload(request, hostSession, varlist, DOWNSTREAM, 1);
 
                     if (sendNextBulkRequest(hostSession, request))
                         return 1;
@@ -280,12 +282,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                     {
                         hostSession->currentOid = hostSession->currentOid - us_count;
 
-                        while (hostSession->currentOid->run == UPSTREAM)
-                        {
-                            hostSession->currentOid->Oid[hostSession->currentOid->OidLen] = varlist->name[varlist->name_length - 1];
-                            snmp_add_null_var(request, hostSession->currentOid->Oid, hostSession->currentOid->OidLen + 1);
-                            hostSession->currentOid++;
-                        }
+                        addPackagePayload(request, hostSession, varlist, UPSTREAM, 1);
 
                         if (sendNextBulkRequest(hostSession, request))
                             return 1;
@@ -293,11 +290,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                     break;
                 }
 
-                while (hostSession->currentOid->run == UPSTREAM)
-                {
-                    snmp_add_null_var(request, hostSession->currentOid->Oid, hostSession->currentOid->OidLen);
-                    hostSession->currentOid++;
-                }
+                addPackagePayload(request, hostSession, varlist, UPSTREAM, 0);
 
                 if (sendNextBulkRequest(hostSession, request))
                     return 1;
