@@ -3,7 +3,6 @@
 #include <mysql.h>
 #include <string.h>
 #include <stdlib.h>
-#include <my_global.h>
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/net-snmp-includes.h>
 
@@ -11,8 +10,6 @@
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
-/* ---------- Defines ---------- */
-
 /* ---------- Global Variables ---------- */
 int active_hosts, num_rows;
 int ds_count = 0, us_count = 0;
@@ -74,7 +71,7 @@ void initialize(void)
     while (currentOid->run < FINISH)
     {
         currentOid->OidLen = MAX_OID_LEN;
-        if (!snmp_parse_oid(currentOid->Name, currentOid->Oid, &currentOid->OidLen))
+        if (!read_objid(currentOid->Name, currentOid->Oid, &currentOid->OidLen))
         {
             snmp_perror("read_objid");
             printf("Could not Parse OID: %s\n", currentOid->Name);
