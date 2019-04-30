@@ -308,12 +308,24 @@ void asynchronous(void)
     session_t *hostSession;
     session_t allHosts[num_rows]; //one hostSession structure per Host in DB
 
+    struct snmp_pdu *request;
+    struct oid_s *currentOid = oids;
+
+    request = snmp_pdu_create(SNMP_MSG_GETBULK); /* send the first GET */
+    request->non_repeaters = non_reps;
+    request->max_repetitions = 0;
+
+    while (currentOid->run == NON_REP)
+    {
+        snmp_add_null_var(request, currentOid->Oid, currentOid->OidLen);
+        currentOid++;
+    }
+
     /* startup all hosts */
     for (hostSession = allHosts; (currentHost = mysql_fetch_row(result)); hostSession++)
     {
-        struct snmp_pdu *request;
-        struct oid_s *currentOid = oids;
         struct snmp_session newSnmpSocket;
+        struct snmp_pdu *newRequest;
 
         snmp_sess_init(&newSnmpSocket); /* initialize session */
         newSnmpSocket.version = SNMP_VERSION_2c;
@@ -325,16 +337,6 @@ void asynchronous(void)
         newSnmpSocket.callback = asynch_response; /* default callback */
         newSnmpSocket.callback_magic = hostSession;
 
-        request = snmp_pdu_create(SNMP_MSG_GETBULK); /* send the first GET */
-        request->non_repeaters = non_reps;
-        request->max_repetitions = 0;
-
-        while (currentOid->run == NON_REP)
-        {
-            snmp_add_null_var(request, currentOid->Oid, currentOid->OidLen);
-            currentOid++;
-        }
-
         if (!(hostSession->snmpSocket = snmp_open(&newSnmpSocket)))
         {
             snmp_perror("snmp_open");
@@ -342,14 +344,16 @@ void asynchronous(void)
         }
         hostSession->currentOid = currentOid;
 
-        if (snmp_send(hostSession->snmpSocket, request))
+        if (snmp_send(hostSession->snmpSocket, newRequest = snmp_clone_pdu(request)))
             active_hosts++;
         else
         {
             snmp_perror("snmp_send");
-            snmp_free_pdu(request);
+            snmp_free_pdu(newRequest);
         }
     }
+
+    snmp_free_pdu(request);
 
     /* async event loop - loops while any active hosts */
     while (active_hosts)
