@@ -66,6 +66,13 @@ void initialize(void)
 
     /* initialize library */
     init_snmp("asynchapp");
+    netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
+                       NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
+                       NETSNMP_OID_OUTPUT_NUMERIC);
+
+    netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_QUICK_PRINT, 1);
+
+    netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_HEX_OUTPUT_LENGTH, 0);
 
     /* parse the oids */
     while (currentOid->run < FINISH)
