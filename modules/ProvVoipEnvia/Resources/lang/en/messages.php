@@ -3,14 +3,28 @@
 return [
 
     '' => '',
-	'activationdatenotsetfornumber' => 'No activation date set for number :0',
-	'addfuturevoipitem' => 'maybe you have to create a VoIP item with future start date?',
+    'activationdatenotsetfornumber' => 'No activation date set for number :0',
+    'addfuturevoipitem' => 'maybe you have to create a VoIP item with future start date?',
     'allnumberssameekp' => 'All numbers to be created have to have the same incoming EKP code.',
     'allportedornone' => 'Either all given numbers have to be ported or none – mixing is not allowed.',
-	'anotsetinb' => ':0 not set in :1',
+    'anotsetinb' => ':0 not set in :1',
+    'available_keys' => 'Available keys',
 
-	'differentactivationdates' => 'Given numbers have different activation dates (:0, :1)',
+    'change_installation_address_sucessful' => 'Installation address change successful (order ID: :0)',
+    'change_method_sucessful' => 'Method change successful (order ID: :0)',
+    'change_tariff_sucessful' => 'Tariff change successful (order ID: :0)',
+    'change_variation_sucessful' => 'Variation change successful (order ID: :0)',
+    'contract_create_different_customer_ids' => 'Error in processing contract_create response (order ID: :0): Existing customer_external_id (:1) different from received one (:2)',
+    'Creating' => 'Creating',
+
+    'Deleting' => 'Deleting',
+    'description' => 'Description',
+    'differentactivationdates' => 'Given numbers have different activation dates (:0, :1)',
     'differentsubscriberdata' => 'Differences in subscriber data (:0 != :1)',
+
+    'mgcp_not_implemented' => 'MGCP is not implemented.',
+    'misc_get_keys_unused' => 'Attention: ATM the following data is not used to update database/files!',
+    'misc_get_keys_warning' => 'Attention: Data for this keys should be downloaded max. once per day.',
 
     'new_number' => 'New number',
     'no_management' => 'No PhonenumberManagement',
@@ -33,6 +47,8 @@ return [
     'order_envia_tel_contract' => 'envia TEL contract',
     'order_envia_tel_contract_id' => 'contract reference',
     'order_fix' => 'fixed',
+    'order_get_status_error' => 'Error (HTTP status is :0)',
+    'order_get_status_success' => 'Success (HTTP status is :0)',
     'order_has_been_updated' => 'Order has been updated!',
     'order_has_internet' => 'Internet',
     'order_has_telephony' => 'Telephony',
@@ -73,8 +89,26 @@ return [
     'order_valid_from' => 'Start date',
     'order_valid_to' => 'End date',
 
-	'phonenumberhasnomanagement' => "Chosen phonenumber :0 has no management.",
-	'phonenumberneededtocreatecontract' => 'Can only create contract with at least one phonenumber, but none given',
-	'phonenumbernotbelongstomodem' => 'Phonenumber :0 does not belong to modem',
+    'phonenumber_contract_ref_new' => 'envia TEL contract reference not set at phonenumber :0 – set to :1',
+    'phonenumber_contract_ref_changed' => 'Stored envia TEL contract reference in :0 (:1) does not match returned value :2. Overwriting.',
+    'phonenumber_contract_ref_is' => 'envia TEL contract reference for phonenumber :0 is :1',
+    'phonenumber_n/a' => 'Phonenumber :0 does not exist in our database!',
+    'phonenumbermanagement_n/a_create_new' => 'No phonenumbermanagement found for phonenumber :0. Creating new one – you have to set some values manually!',
+    'phonenumbermanagement_n/a_inactive_number' => 'No phonenumbermanagement found for phonenumber :0. Will not create one because number is inactive!',
+    'phonenumbermanagement_n/a_trc' => 'No phonenumbermanagement found for phonenumber :0. Cannot set TRC class.',
+    'phonenumber_has_no_management' => 'Chosen phonenumber :0 has no management.',
+    'phonenumber_needed_to_create_contract' => 'Can only create contract with at least one phonenumber, but none given',
+    'phonenumber_not_belongs_to_modem' => 'Phonenumber :0 does not belong to modem',
+    'ping_error' => 'Something went wrong.',
+    'ping_success' => 'All works fine.',
+
+    'sip_changed' => 'Changed SIP data for phonenumber :0.',
+
+    'trc_changed' => 'Changed TRC class for phonenumber :0.',
+
+    'Updated' => 'Updated :a',
+    'Updating' => 'Updating',
+
+    'voice_data' => 'Voice data for modem :0',
 
 ];

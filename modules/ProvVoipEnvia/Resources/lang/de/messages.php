@@ -2,14 +2,28 @@
 
 return [
 
-	'activationdatenotsetfornumber' => 'Kein Aktivierungsdatum für Rufnummer :0 gesetzt',
-	'addfuturevoipitem' => 'wahrscheinlich müssen Sie ein VoIP-Produkt mit einem Startdatum in der Zukunft anlegen.',
+    'activationdatenotsetfornumber' => 'Kein Aktivierungsdatum für Rufnummer :0 gesetzt',
+    'addfuturevoipitem' => 'wahrscheinlich müssen Sie ein VoIP-Produkt mit einem Startdatum in der Zukunft anlegen.',
     'allnumberssameekp' => 'Alle Rufnummern müssen den gleichen eingehenden EKP-Code haben.',
     'allportedornone' => 'Entweder alle oder keine Rufnummer müssen zu portieren sein – eine Mischung ist nicht zulässig.',
-	'anotsetinb' => ':0 nicht gesetzt in in :1',
+    'anotsetinb' => ':0 nicht gesetzt in in :1',
+    'available_keys' => 'Verfügbare Schlüsselwerte',
 
-	'differentactivationdates' => 'Unterschiedliche Startdaten für die übergebenen Rufnummern (:0, :1)',
+    'change_installation_address_sucessful' => 'Installationsadresse erfolgreich geändert (Auftrags-ID :0)',
+    'change_method_sucessful' => 'Sprachprotokoll erfolgreich geändert (Auftrags-ID :0)',
+    'change_tariff_sucessful' => 'Verkaufstarif erfolgreich geändert (Auftrags-ID :0)',
+    'change_variation_sucessful' => 'Einkaufstarif erfolgreich geändert (Auftrags-ID :0)',
+    'contract_create_different_customer_ids' => 'Fehler beim Verarbeiten (envia-TEL-Auftrags-ID: :0): Die im System vorhandene envia-TEL-Kunden-ID (:1) unterscheidet sich von der im Auftrag hinterlegten (:2)',
+    'Creating' => 'Erzeuge',
+
+    'Deleting' => 'Lösche',
+    'description' => 'Beschreibung',
+    'differentactivationdates' => 'Unterschiedliche Startdaten für die übergebenen Rufnummern (:0, :1)',
     'differentsubscriberdata' => 'Differences in subscriber data (:0 != :1)',
+
+    'mgcp_not_implemented' => 'MGCP wird nicht unterstützt.',
+    'misc_get_keys_unused' => 'Achtung: Diese Daten werden derzeit nicht zur Aktualisierung unserer Datenbank genutzt.',
+    'misc_get_keys_warning' => 'Achtung: Die Daten für diese Schlüsselwerte sollen nicht öfter als einmal täglich heruntergeladen werden.',
 
     'new_number' => 'Neue Rufnummer',
     'no_management' => 'Kein PhonenumberManagement',
@@ -32,6 +46,8 @@ return [
     'order_envia_tel_contract' => 'envia-TEL-Vertrag',
     'order_envia_tel_contract_id' => 'Vertragsreferenz',
     'order_fix' => 'fest',
+    'order_get_status_error' => 'Fehler (HTTP-Status ist :0)',
+    'order_get_status_success' => 'Erfolg (HTTP-Status ist :0)',
     'order_has_been_updated' => 'Auftrag wurde aktualisiert!',
     'order_has_internet' => 'Internet',
     'order_has_telephony' => 'Telefonie',
@@ -72,8 +88,29 @@ return [
     'order_valid_from' => 'Startdatum',
     'order_valid_to' => 'Endatum',
 
-	'phonenumberhasnomanagement' => "Der Rufnummer :0 ist kein PhonenumberManagement zugeordnet.",
-	'phonenumberneededtocreatecontract' => 'Zum Anlegen eines Anschlusses wird mindestens eine Rufnummer benötigt – es wurde aber keine übergeben.',
-	'phonenumbernotbelongstomodem' => 'Rufnummer :0 gehört nicht zum Modem',
+    'phonenumber_contract_ref_new' => 'Keine envia-TEL-Vertragsreferenz an Rufnummer :0 – speichere :1',
+    'phonenumber_contract_ref_changed' => 'Die an der Rufnummer :0 hinterlegte envia-TEL-Vertragsreferenz (:1) unterscheidet sich von der eben gelieferten (:2). Ändere Eintrag.',
+    'phonenumber_contract_ref_is' => 'Die envia-TEL-Vertragsreferenz für die Rufnummer :0 lautet :1',
+    'phonenumber_n/a' => 'Die Rufnummer :0 existiert nicht in unserer Datenbank!',
+    'phonenumbermanagement_n/a_create_new' => 'Kein PhonenumberManagement für Rufnummer :0. Neues PhonenumberManagement wird angelegt – Sie müssen einige Werte händisch setzen!',
+    'phonenumbermanagement_n/a_inactive_number' => 'Kein PhonenumberManagement für Rufnummer :0. Rufnummer ist inaktiv, darum wird kein PhonenumberManagement angelegt!',
+    'phonenumbermanagement_n/a_trc' => 'Kein PhonenumberManagement für Rufnummer :0. Sperrklasse kann nicht gesetzt werden.',
+    'phonenumber_has_no_management' => 'Der Rufnummer :0 ist kein PhonenumberManagement zugeordnet.',
+    'phonenumber_needed_to_create_contract' => 'Zum Anlegen eines Anschlusses wird mindestens eine Rufnummer benötigt – es wurde aber keine übergeben.',
+    'phonenumber_not_belongs_to_modem' => 'Rufnummer :0 gehört nicht zum Modem',
+    'ping_error' => 'Something went wrong.',
+    'ping_success' => 'All works fine.',
+
+    'removed_sip_username_from_phonenumber' => 'SIP-Nutzername an Rufnummer :0 gelöscht (wird von envia TEL vergeben)',
+    'removed_sip_domain_from_phonenumber' => 'SIP-Domain an Rufnummer :0 gelöscht (wird von envia TEL vergeben)',
+
+    'sip_changed' => 'SIP-Daten für Rufnummer :0 aktualisiert.',
+
+    'trc_changed' => 'Sperrklasse für Rufnummer :0 aktualisiert.',
+
+    'Updated' => ':a aktualisiert',
+    'Updating' => 'Aktualsiere',
+
+    'voice_data' => 'SIP/MGCP-Benutzerdaten für Modem-ID :0',
 
 ];

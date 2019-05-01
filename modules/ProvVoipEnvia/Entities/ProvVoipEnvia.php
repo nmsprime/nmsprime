@@ -26,7 +26,6 @@ class ProvVoipEnvia extends \BaseModel
      */
     public function __construct($attributes = [])
     {
-
         // if not available in .env: set to -1 to not break e.g. “php artisan” command ⇒ that has to be caught later on
         $v = getenv('PROVVOIPENVIA__REST_API_VERSION');
         if ($v === false) {
@@ -1779,7 +1778,7 @@ class ProvVoipEnvia extends \BaseModel
         // check if at least one phonenumber is given
         $phonenumbers_to_create = \Input::get('phonenumbers_to_create', []);
         if (! $phonenumbers_to_create) {
-            $msg = trans('provvoipenvia::messages.phonenumberneededtocreatecontract');
+            $msg = trans('provvoipenvia::messages.phonenumber_needed_to_create_contract');
             $value_missing = true;
         } else {
             $numbers_on_modem = $this->get_numbers_related_to_modem_for_contract_create();
@@ -1815,7 +1814,7 @@ class ProvVoipEnvia extends \BaseModel
 
                 // check if number belongs to current modem
                 if (! array_key_exists($nr_id, $numbers_on_modem_rearranged)) {
-                    $msg = trans('provvoipenvia::messages.phonenumbernotbelongstomodem', [$nr_id]);
+                    $msg = trans('provvoipenvia::messages.phonenumber_not_belongs_to_modem', [$nr_id]);
                     $value_missing = true;
                     break;
                 }
@@ -1824,7 +1823,7 @@ class ProvVoipEnvia extends \BaseModel
 
                 // check if cur number has management
                 if (is_null($mgmt)) {
-                    $msg = trans('provvoipenvia::messages.phonenumberhasnomanagement', [$nr_id]);
+                    $msg = trans('provvoipenvia::messages.phonenumber_has_no_management', [$nr_id]);
                     $value_missing = true;
                     break;
                 }
@@ -2347,12 +2346,12 @@ class ProvVoipEnvia extends \BaseModel
 
             // no reference found
             if (! $external_contract_references) {
-                throw new XmlCreationError('No EnviaContract ID (contract_external_id) found. Cannot proceed.');
+                throw new XmlCreationError(trans('provvoipenvia::errors.enviacontract_id_missing'));
             }
 
             // TODO: implement logic to relocate more than one contract attached to the current modem!!
             if (count($external_contract_references) > 1) {
-                throw new XmlCreationError('There is more than one EnviaContract used on this modem ('.(implode(', ', $external_contract_references)).'. Processing this is not yet implemented – please use the envia TEL Web API and inform Patrick.');
+                throw new XmlCreationError(trans('provvoipenvia::errors.multiple_envia_contracts_at_modem',  [implode(', ', $external_contract_references)]));
             } else {
                 $external_contract_reference = $external_contract_references[0];
             }
@@ -2362,7 +2361,7 @@ class ProvVoipEnvia extends \BaseModel
         }
 
         if (! $external_contract_reference) {
-            throw new XmlCreationError('No EnviaContract ID (contract_external_id) found. Cannot proceed.');
+            throw new XmlCreationError(trans('provvoipenvia::errors.enviacontract_id_missing'));
         }
 
         $inner_xml->addChild('contractreference', $external_contract_reference);
@@ -2378,7 +2377,7 @@ class ProvVoipEnvia extends \BaseModel
         $inner_xml = $this->xml->addChild('contract_relocation_data');
 
         if (is_null($this->modem->installation_address_change_date)) {
-            throw new XmlCreationError('ERROR: Date of installation address change has to be set.');
+            throw new XmlCreationError(trans('provvoipenvia::errors.relocate_date_missing'));
         }
 
         $inner_xml->addChild('orderdate', $this->modem->installation_address_change_date);
@@ -2404,10 +2403,10 @@ class ProvVoipEnvia extends \BaseModel
         $enviaorderdocument = EnviaOrderDocument::findOrFail($enviaorderdocument_id);
 
         if ($enviaorderdocument->enviaorder->orderid != $enviaorder_id) {
-            throw new XmlCreationError('Given order_id ('.$enviaorder_id.') not correct for given enviaorderdocument');
+            throw new XmlCreationError(trans('provvoipenvia::errors.orderid_orderdocument_mismatch', [$enviaorder_id]));
         }
         if (boolval($enviaorderdocument->upload_order_id)) {
-            throw new XmlCreationError('Given document has aleady been uploaded');
+            throw new XmlCreationError(trans('provvoipenvia::errors.document_already_uploaded'));
         }
 
         $filename = $enviaorderdocument->filename;
@@ -2522,7 +2521,7 @@ class ProvVoipEnvia extends \BaseModel
                 }
                 $payload = implode($concatenator, $tmp);
             } else {
-                throw new \UnexpectedValueException('$db_field needs to be string or array, '.gettype($db_field).' given');
+                throw new \UnexpectedValueException(trans('provvoipenvia::errors.needs_to_be_string_or_array', ['$db_field', gettype($db_field)]));
             }
             $add_func($xml, $xml_field, $payload);
         }
@@ -2550,9 +2549,9 @@ class ProvVoipEnvia extends \BaseModel
 
         // special header for order_get_status 404 response
         if (($job == 'order_get_status') && ($data['status'] == 404)) {
-            $out = '<h4>Error (HTTP status is '.$data['status'].')</h4>';
+            $out = '<h4>'.trans('provvoipenvia::messages.order_get_status_error', [$data['status']]).'</h4>';
         } else {
-            $out = '<h4>Success (HTTP status is '.$data['status'].')</h4>';
+            $out = '<h4>'.trans('provvoipenvia::messages.order_get_status_success', [$data['status']]).'</h4>';
         }
 
         $raw_xml = $data['xml'];
@@ -2575,9 +2574,9 @@ class ProvVoipEnvia extends \BaseModel
     protected function _process_misc_ping_response($xml, $data, $out)
     {
         if ($xml->pong == 'pong') {
-            $out .= '<h5>All works fine</h5>';
+            $out .= '<h5>'.trans('provvoipenvia::messages.ping_success').'</h5>';
         } else {
-            $out .= "Something went wrong'";
+            $out .= '<h5>'.trans('provvoipenvia::messages.ping_error').'</h5>';
         }
 
         return $out;
@@ -2627,8 +2626,8 @@ class ProvVoipEnvia extends \BaseModel
         $keyname = \Input::get('keyname', 'index');
 
         if ($keyname == 'index') {
-            $out .= '<h5>Available keys</h5>';
-            $out .= '<h5 style="color: red">Attention: Data for this keys should be downloaded max. once per day. This will later be done by a cron job</h5>';
+            $out .= '<h5>'.trans('provvoipenvia::messages.available_keys').'</h5>';
+            $out .= '<h5 style="color: red">'.trans('provvoipenvia::messages.misc_get_keys_warning').'</h5>';
         } else {
             // process the data according to the key
             // TODO: implement the missing methods
@@ -2639,13 +2638,13 @@ class ProvVoipEnvia extends \BaseModel
             } elseif ($keyname == 'trc_class') {
                 $out = $this->_process_misc_get_keys_response_trc_class($xml, $data, $out);
             } else {
-                $out .= '<h4 style="color: red">Attention: ATM the following data is not used to update database/files!</h4>';
+                $out .= '<h4 style="color: red">'.trans('provvoipenvia::messages.misc_get_keys_unused').'</h4>';
             }
             $out .= '<h5>Data send for key '.$keyname.'</h5>';
         }
 
         $out .= '<table class="table table-striped table-hover">';
-        $out .= '<thead><tr><th>ID</th><th>Description</th></tr></thead>';
+        $out .= '<thead><tr><th>ID</th><th>'.trans('provvoipenvia::messages.description').'</th></tr></thead>';
         $out .= '<tbody>';
         foreach ($xml->keys->key as $key) {
             $out .= '<tr>';
@@ -2958,7 +2957,7 @@ class ProvVoipEnvia extends \BaseModel
             &&
             ($this->contract->customer_external_id != $xml->customerreference)
         ) {
-            $msg = 'Error in processing contract_create response (order ID: '.$xml->orderid.'): Existing customer_external_id ('.$this->contract->customer_external_id.') different from received one ('.$xml->customerreference.')';
+            $msg = trans('provvoipenvia::messages.contract_create_different_customer_ids', [$xml->orderid, $this->contract->customer_external_id, $xml->customerreference]);
             $out .= "<h5>$msg</h5>";
             \Log::error($msg);
         } else {
@@ -3039,14 +3038,11 @@ class ProvVoipEnvia extends \BaseModel
      *
      * @author Patrick Reichel
      *
-     * @todo: this method will be used to update phonenumber related data (as sip username and password)
-     * @todo: this will be used to update TRCClass – needs testing (not possible ATM because there are no active phonenumbers)
      */
     protected function _process_contract_get_voice_data_response($xml, $data, $out)
     {
-        $out .= '<h5>Voice data for modem '.$this->modem->id.'</h5>';
+        $out .= '<h5>'.trans('provvoipenvia::messages.voice_data', [$this->modem->id]).'</h5>';
 
-        $out .= 'Contained callnumber informations:<br>';
         $out .= '<pre>';
         $out .= $this->prettify_xml($data['xml']);
         $out .= '</pre>';
@@ -3064,7 +3060,7 @@ class ProvVoipEnvia extends \BaseModel
 
                 // if there is data for a number not existing in our database: inform the user and continue with the next number
                 if (is_null($phonenumber)) {
-                    $_ = 'Phonenumber '.$entry->localareacode.'/'.$entry->baseno.' does not exist – create and try again!';
+                    $_ = trans('provvoipenvia::messages.phonenumber_n/a', [$entry->localareacode.'/'.$entry->baseno]);
                     $out .= "<b style='color: red'>$_</b><br>";
                     Log::error($_);
                     continue;
@@ -3075,7 +3071,7 @@ class ProvVoipEnvia extends \BaseModel
                 // update TRCClass
                 // remember: trcclass.id != trclass.trc_id (first is local key, second is envia TEL Id!)
                 if (! $phonenumbermanagement) {
-                    $_ = "No phonenumbermanagement found for phonenumber $phonenumber->id. Cannot set TRC class";
+                    $_ = trans('provvoipenvia::messages.phonenumbermanagement_n/a_trc', [$phonenumber->id]);
                     $out .= "<b>$_</b><br>";
                     Log::warning($_);
                 } else {
@@ -3083,7 +3079,7 @@ class ProvVoipEnvia extends \BaseModel
                     if ($phonenumbermanagement['trcclass'] != $trcclass->id) {
                         $phonenumbermanagement['trcclass'] = $trcclass->id;
                         $phonenumbermanagement->save();
-                        $msg = "Changed TRC class for phonenumber $phonenumber->id.";
+                        $msg = trans('provvoipenvia::messages.trc_changed', [$phonenumber->id]);
                         $out .= "$msg<br>";
                         Log::info($msg);
                     }
@@ -3113,7 +3109,7 @@ class ProvVoipEnvia extends \BaseModel
                     }
                     if ($changed) {
                         $phonenumber->save();
-                        $msg = "Changed SIP data for phonenumber $phonenumber->id";
+                        $msg = trans('provvoipenvia::messages.sip_changed', [$phonenumber->id]);
                         $out .= "$msg<br>";
                         Log::info($msg);
                     }
@@ -3122,7 +3118,7 @@ class ProvVoipEnvia extends \BaseModel
                 elseif (boolval($method->mgcp_data)) {
                     $protocol = 'MGCP';
                     // TODO: process data for packet cable
-                    $msg = 'MGCP is not implemented';
+                    $msg = trans('provvoipenvia::messages.mgcp_not_implemented');
                     $out .= "<b style='color: red'>$msg</b><br>";
                     Log::error($msg);
                     continue;
@@ -3185,12 +3181,12 @@ class ProvVoipEnvia extends \BaseModel
         if ($phonenumber->username) {
             $phonenumber->username = null;
             $changed = true;
-            $out .= '<br>Removed SIP username from phonenumber '.$phonenumber->id.' (will be generated by envia TEL)';
+            $out .= '<br>'.trans('provvoipenvia::messages.removed_sip_username_from_phonenumber', [$phonenumber->id]);
         }
         if ($phonenumber->sipdomain) {
             $phonenumber->sipdomain = null;
             $changed = true;
-            $out .= '<br>Removed SIP sipdomain from phonenumber '.$phonenumber->id.' (will be generated by envia TEL)';
+            $out .= '<br>'.trans('provvoipenvia::messages.removed_sip_domain_from_phonenumber', [$phonenumber->id]);
         }
 
         if ($changed) {
@@ -3216,7 +3212,7 @@ class ProvVoipEnvia extends \BaseModel
 
         // if there is no phonenumber something went wrong
         if (is_null($phonenumber)) {
-            $msg = 'Phonenumber does not exist';
+            $msg = trans('provvoipenvia::messages.phonenumber_n/a', ['']);
             \Log::error($msg);
             $msg = "ERROR: $msg";
 
@@ -3228,18 +3224,18 @@ class ProvVoipEnvia extends \BaseModel
             // store the given envia TEL contract reference
             $phonenumber->contract_external_id = $contractreference;
             $changed = true;
-            $msg = 'envia TEL contract reference not set at phonenumber '.$phonenumber->id.' – set to '.$contractreference;
+            $msg = trans('provvoipenvia::messages.phonenumber_contract_ref_new', [$phonenumber->id, $contractreference]);
             \Log::info($msg);
         } elseif ($phonenumber->contract_external_id != $contractreference) {
             if ($overwrite) {
                 // update envia TEL contract reference in phonenumber
                 $phonenumber->contract_external_id = $contractreference;
                 $changed = true;
-                $msg = 'Stored envia TEL contract reference in '.$phonenumber->id.' ('.$phonenumber->contract_external_id.') does not match returned value '.$contractreference.'. Overwriting.';
+                $msg = trans('provvoipenvia::messages.phonenumber_contract_ref_changed', [$phonenumber->id, $phonenumber->contract_external_id, $contractreference]);
                 \Log::warning($msg);
             }
         } else {
-            $msg = 'envia TEL contract reference for phonenumber '.$phonenumber->id.' is '.$contractreference;
+            $msg = trans('provvoipenvia::messages.phonenumber_contract_ref_is', [$phonenumber->id, $contractreference]);
             \Log::debug($msg);
             if (! $verbose) {
                 $msg = '';
@@ -3282,12 +3278,12 @@ class ProvVoipEnvia extends \BaseModel
 
             if (! $enviacontract->exists) {
                 $enviacontract->start_date = '1900-01-01';
-                $_ = "Creating EnviaContract $enviacontract->id";
+                $_ = trans('provvoipenvia::messages.Creating')." EnviaContract $enviacontract->id";
                 $msg .= "<br> $_";
                 Log::info($_);
                 $enviacontract->save();
             } elseif ($enviacontract->attributes != $enviacontract->original) {
-                $_ = "Updating EnviaContract $enviacontract->id";
+                $_ = trans('provvoipenvia::messages.Updating')." EnviaContract $enviacontract->id";
                 $msg .= "<br> $_";
                 Log::info($_);
                 $enviacontract->save();
@@ -3301,7 +3297,7 @@ class ProvVoipEnvia extends \BaseModel
                 // if number is active: create PhonenumberManagement
                 if ($phonenumber->active) {
                     $phonenumbermanagement = new PhonenumberManagement();
-                    $_ = 'No PhonenumberManagement for number '.$phonenumber->id.' found. Creating new one – you have to set some values manually!';
+                    $_ = trans('provvoipenvia::messages.phonenumbermanagement_n/a_create_new', [$phonenumber->id]);
                     $msg .= '<br> ⇒ '.$_;
                     \Log::warning($_);
 
@@ -3327,14 +3323,14 @@ class ProvVoipEnvia extends \BaseModel
 
                     $phonenumbermanagement->save();
                 } else {
-                    $_ .= 'No PhonenumberManagement for number '.$phonenumber->id.' found. Will not create one because number is inactive!';
+                    $_ .= trans('provvoipenvia::messages.phonenumbermanagement_n/a_inactive_number', [$phonenumber->id]);
                     $msg .= '<br> ⇒ '.$_;
                     \Log::warning($_);
                 }
             } elseif ($phonenumbermanagement->enviacontract_id != $enviacontract->id) {
                 $phonenumbermanagement->enviacontract_id = $enviacontract->id;
                 $phonenumbermanagement_changed = true;
-                $msg .= "<br>Updated PhonenumberManagement $phonenumbermanagement->id";
+                $msg .= '<br>'.trans('provvoipenvia::messages.Updated', ['PhonenumberManagement '.$phonenumbermanagement->id]);
                 $phonenumbermanagement->save();
             }
         }
@@ -3365,7 +3361,7 @@ class ProvVoipEnvia extends \BaseModel
         $enviaOrder = EnviaOrder::create($order_data);
 
         // view data
-        $out .= '<h5>Method	change successful (order ID: '.$xml->orderid.')</h5>';
+        $out .= '<h5>'.trans('provvoipenvia::messages.change_method_sucessful', [$xml->orderid]).'</h5>';
 
         return $out;
     }
@@ -3391,7 +3387,7 @@ class ProvVoipEnvia extends \BaseModel
         $enviaOrder = EnviaOrder::create($order_data);
 
         // view data
-        $out .= '<h5>Tariff change successful (order ID: '.$xml->orderid.')</h5>';
+        $out .= '<h5>'.trans('provvoipenvia::messages.change_tariff_sucessful', [$xml->orderid]).'</h5>';
 
         return $out;
     }
@@ -3418,7 +3414,7 @@ class ProvVoipEnvia extends \BaseModel
         $enviaOrder = EnviaOrder::create($order_data);
 
         // view data
-        $out .= '<h5>Variation change successful (order ID: '.$xml->orderid.')</h5>';
+        $out .= '<h5>'.trans('provvoipenvia::messages.change_variation_sucessful', [$xml->orderid]).'</h5>';
 
         return $out;
     }
@@ -3445,7 +3441,7 @@ class ProvVoipEnvia extends \BaseModel
         $enviaOrder = EnviaOrder::create($order_data);
 
         // view data
-        $out .= '<h5>Installation address change successful (order ID: '.$xml->orderid.')</h5>';
+        $out .= '<h5>'.trans('provvoipenvia::messages.change_installation_address_sucessful', [$xml->orderid]).'</h5>';
 
         return $out;
     }
