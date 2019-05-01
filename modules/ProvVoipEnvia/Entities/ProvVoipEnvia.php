@@ -2318,7 +2318,7 @@ class ProvVoipEnvia extends \BaseModel
                     // else we use the phonenumber
                     (in_array($this->job, ['contract_get_voice_data', 'contract_change_method']))
                     &&
-                    (! $this->phonenumber->exists)
+                    ((! isset($this->phonenumber)) || (! $this->phonenumber->exists))
                 )
         ) {
             // this are the cases where more than one external contract can exist and we have to decide which to use (or to use all)
