@@ -110,7 +110,7 @@ class SettlementRunController extends \BaseController
             $commandName = json_decode($failed_job->payload)->data->commandName;
             if (\Str::contains($commandName, '\\SettlementRun')) {
                 \Artisan::call('queue:forget', ['id' => $failed_job->id]);
-                $logs = self::get_logs($sr->updated_at->subSeconds(1)->__get('timestamp'), Logger::ERROR);
+                $logs = self::get_logs(strtotime('-1 second', strtotime($sr->executed_at)), Logger::ERROR);
                 break;
             }
         }
@@ -118,7 +118,7 @@ class SettlementRunController extends \BaseController
         // get execution logs if job has finished successfully - (show error logs otherwise - show nothing during execution)
         // NOTE: when SettlementRun gets verified the logs will disappear because timestamp is updated
         // $logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
-        $logs = $logs ?: self::get_logs($sr->updated_at->__get('timestamp'));
+        $logs = $logs ?: self::get_logs(strtotime($sr->executed_at));
 
         return parent::edit($id)->with(compact('rerun_button', 'logs', 'status_msg'));
     }

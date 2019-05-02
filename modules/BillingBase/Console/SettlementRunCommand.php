@@ -77,6 +77,9 @@ class SettlementRunCommand extends Command implements ShouldQueue
             exit(0);
         }
 
+        // Set execution timestamp to always show log entries on SettlementRun edit page
+        SettlementRun::where('id', $this->sr->id)->update(['executed_at' => \Carbon\Carbon::now()]);
+
         Log::debug('billing', ' ##############################');
         Log::debug('billing', ' ## Start Accounting Command ##');
         Log::debug('billing', ' ##############################');
