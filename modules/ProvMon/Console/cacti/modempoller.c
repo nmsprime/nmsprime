@@ -17,54 +17,54 @@
  * Christian Schramm (@cschra) and Ole Ernst (@olebowle), 2019
  *
  *****************************************************************************/
-/********************************* INCLUDES **********************************/
-#include <stdio.h>
-#include <mysql.h>
-#include <string.h>
-#include <stdlib.h>
-#include <net-snmp/net-snmp-config.h>
-#include <net-snmp/net-snmp-includes.h>
 
 /********************************** DEFINES **********************************/
+#define _GNU_SOURCE
 #define MAX_REPETITIONS 9
 #define RETRIES 5
 #define TIMEOUT 5000000
+
+/********************************* INCLUDES **********************************/
+#include <mysql.h>
+#include <net-snmp/net-snmp-config.h>
+#include <net-snmp/net-snmp-includes.h>
+#include <net-snmp/library/large_fd_set.h>
 
 /****************************** GLOBAL VARIABLES *****************************/
 int activeHosts, hostCount, nonRepeaters, downstreamOids, upstreamOids;
 MYSQL_RES *result;
 
 /****************************** GLOBAL STRUCTURES ****************************/
-// to keep track which segment is sent
+/* to keep track which segment is sent */
 typedef enum pass { NON_REP, DOWNSTREAM, UPSTREAM, FINISH } pass_t;
 
-// a list of variables to query for
+/* a list of variables to query for */
 struct oid_s {
     pass_t segment;
     const char *Name;
     oid Oid[MAX_OID_LEN];
     size_t OidLen;
-} oids[] = { { NON_REP, "1.3.6.1.2.1.1.1" }, // SysDescr
-             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.3" }, // # US Power (2.0)
-             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.12" }, // # T3 Timeout
-             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.13" }, // # T4 Timeout
-             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.17" }, // # PreEq
-             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.1.1.6" }, // # Power
-             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.3" }, // # Corrected
-             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.4" }, // # Uncorrectable
-             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.5" }, // # SNR (2.0)
-             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.6" }, // # Microreflections
-             { DOWNSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.24.1.1" }, // # SNR (3.0)
-             { UPSTREAM, "1.3.6.1.2.1.10.127.1.1.2.1.3" }, // # Bandwidth
-             { UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.1" }, // # Power (3.0)
-             { UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.9" }, // # Ranging Status
+} oids[] = { { NON_REP, "1.3.6.1.2.1.1.1" }, /* SysDescr */
+             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.3" }, /* US Power (2.0) */
+             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.12" }, /* T3 Timeout */
+             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.13" }, /* T4 Timeout */
+             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.17" }, /* PreEq */
+             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.1.1.6" }, /* Power */
+             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.3" }, /* Corrected */
+             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.4" }, /* Uncorrectable */
+             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.5" }, /* SNR (2.0) */
+             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.6" }, /* Microreflections */
+             { DOWNSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.24.1.1" }, /* SNR (3.0) */
+             { UPSTREAM, "1.3.6.1.2.1.10.127.1.1.2.1.3" }, /* Bandwidth */
+             { UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.1" }, /* Power (3.0) */
+             { UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.9" }, /* Ranging Status */
              { FINISH } };
 
-// context structure to keep track of the current request
+/* context structure to keep track of the current request */
 typedef struct hostContext {
-    struct snmp_session *session; // which host is currently processed
-    struct oid_s *currentOid; // which OID is or was processed
-    FILE *outputFile; // to which file should the response be written to
+    struct snmp_session *session; /* which host is currently processed */
+    struct oid_s *currentOid; /* which OID is or was processed */
+    FILE *outputFile; /* to which file should the response be written to */
 } hostContext_t;
 
 /********************************* FUNCTIONS *********************************/
@@ -89,7 +89,7 @@ void connectToMySql()
         exit(1);
     }
 
-    if (mysql_real_connect(con, host, user, pass, db, 0, NULL, 0) == NULL) {
+    if (!mysql_real_connect(con, host, user, pass, db, 0, NULL, 0)) {
         fprintf(stderr, "%s\n", mysql_error(con));
         mysql_close(con);
         exit(1);
@@ -185,12 +185,13 @@ int processResult(int status, hostContext_t *hostContext, struct snmp_pdu *respo
             }
         } else {
             for (ix = 1; currentVariable && ix != responseData->errindex;
-                 currentVariable = currentVariable->next_variable, ix++)
-                ;
+                 currentVariable = currentVariable->next_variable, ix++);
+
             if (currentVariable)
                 snprint_objid(buf, sizeof(buf), currentVariable->name, currentVariable->name_length);
             else
                 strcpy(buf, "(none)");
+
             fprintf(hostContext->outputFile, "ERROR: %s: %s: %s\n", hostContext->session->peername, buf,
                     snmp_errstring(responseData->errstat));
         }
@@ -222,6 +223,8 @@ netsnmp_variable_list *getLastVarBiniding(netsnmp_variable_list *varlist)
             return varlist;
         varlist = varlist->next_variable;
     }
+
+    return NULL;
 }
 
 /*****************************************************************************/
@@ -232,7 +235,7 @@ netsnmp_variable_list *getLastVarBiniding(netsnmp_variable_list *varlist)
  * hostContext_t *hostContext - pointer to the current hostcontext structure
  * struct snmp_pdu *request - request pdu
  *
- * returns void
+ * returns int
  */
 int sendNextBulkRequest(hostContext_t *hostContext, struct snmp_pdu *request)
 {
@@ -242,6 +245,8 @@ int sendNextBulkRequest(hostContext_t *hostContext, struct snmp_pdu *request)
         snmp_perror("snmp_send");
         snmp_free_pdu(request);
     }
+
+    return 0;
 }
 
 /*****************************************************************************/
@@ -290,15 +295,15 @@ int async_response(int operation, struct snmp_session *sp, int reqid, struct snm
 
     if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE) {
         if (processResult(STAT_SUCCESS, hostContext, responseData)) {
-            int root = -1, upstream = 0;
+            int root = -1;
             struct snmp_pdu *request;
+            netsnmp_variable_list *varlist;
 
             request = snmp_pdu_create(SNMP_MSG_GETBULK);
             request->non_repeaters = 0;
             request->max_repetitions = MAX_REPETITIONS;
 
-            netsnmp_variable_list *varlist = responseData->variables;
-            varlist = getLastVarBiniding(varlist);
+            varlist = getLastVarBiniding(responseData->variables);
 
             switch ((hostContext->currentOid - 1)->segment) {
             case NON_REP:
@@ -341,13 +346,14 @@ int async_response(int operation, struct snmp_session *sp, int reqid, struct snm
                 if (sendNextBulkRequest(hostContext, request))
                     return 1;
                 break;
+            case FINISH:
+                break;
             }
         }
     } else
         processResult(STAT_TIMEOUT, hostContext, responseData);
 
-    // something went wrong (or end of variables)
-    // this session not active any more
+    /* something went wrong (or end of variables), this session not active any more */
     activeHosts--;
     return 1;
 }
@@ -365,7 +371,7 @@ void asynchronous()
     int i;
     MYSQL_ROW currentHost;
     hostContext_t *hostContext;
-    hostContext_t allHosts[hostCount]; //one hostContext structure per Host in DB
+    hostContext_t allHosts[hostCount]; /* one hostContext structure per Host in DB */
 
     struct snmp_pdu *request;
     struct oid_s *currentOid = oids;
@@ -389,8 +395,8 @@ void asynchronous()
         session.retries = RETRIES;
         session.timeout = TIMEOUT;
         session.peername = strdup(currentHost[0]);
-        session.community = strdup(currentHost[1]);
-        session.community_len = strlen(session.community);
+        session.community = (u_char*)strdup(currentHost[1]);
+        session.community_len = strlen((const char*)session.community);
         session.callback = async_response;
         session.callback_magic = hostContext;
 
