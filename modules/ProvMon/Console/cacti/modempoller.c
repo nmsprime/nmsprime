@@ -1,3 +1,11 @@
+/*
+ * NET-SNMP modempoller
+ *
+ * Originated from the NET-SNMP async demo
+ * Hat tip to Niels Baggesen (Niels.Baggesen@uni-c.dk)
+ *
+ */
+
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/net-snmp-includes.h>
 
