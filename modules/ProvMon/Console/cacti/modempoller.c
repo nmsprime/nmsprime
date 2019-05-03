@@ -61,6 +61,7 @@ typedef struct hostSession
 {
     struct snmp_session *snmpSocket; /* SNMP session data */
     struct oid_s *currentOid;        /* How far in our poll are we */
+    FILE *outputFile;
 } session_t;
 
 /* ---------- Functions ---------- */
@@ -141,23 +142,15 @@ void connectToMySql(void)
 }
 
 /*****************************************************************************/
-
 /*
  * simple printing of returned data
  */
-int print_result(int status, struct snmp_session *sp, struct snmp_pdu *responseData)
+int processResult(int status, session_t *sp, struct snmp_pdu *responseData)
 {
     char buf[1024];
     struct variable_list *vp;
     int ix;
-    struct timeval now;
-    struct timezone tz;
-    struct tm *tm;
 
-    gettimeofday(&now, &tz);
-    tm = localtime(&now.tv_sec);
-    fprintf(stdout, "%.2d|%.2d|%.2d.%.6d: ", tm->tm_hour, tm->tm_min, tm->tm_sec,
-            now.tv_usec);
     switch (status)
     {
     case STAT_SUCCESS:
@@ -167,7 +160,7 @@ int print_result(int status, struct snmp_session *sp, struct snmp_pdu *responseD
             while (vp)
             {
                 snprint_variable(buf, sizeof(buf), vp->name, vp->name_length, vp);
-                fprintf(stdout, "%s: %s\n", sp->peername, buf);
+                fprintf(sp->outputFile, "%s\n", buf);
                 vp = vp->next_variable;
             }
         }
@@ -179,15 +172,15 @@ int print_result(int status, struct snmp_session *sp, struct snmp_pdu *responseD
                 snprint_objid(buf, sizeof(buf), vp->name, vp->name_length);
             else
                 strcpy(buf, "(none)");
-            fprintf(stdout, "%s: %s: %s\n",
-                    sp->peername, buf, snmp_errstring(responseData->errstat));
+            fprintf(sp->outputFile, "ERROR: %s: %s: %s\n",
+                    sp->snmpSocket->peername, buf, snmp_errstring(responseData->errstat));
         }
         return 1;
     case STAT_TIMEOUT:
-        fprintf(stdout, "%s: Timeout\n", sp->peername);
+        fprintf(stdout, "%s: Timeout\n", sp->snmpSocket->peername);
         return 0;
     case STAT_ERROR:
-        snmp_perror(sp->peername);
+        snmp_perror(sp->snmpSocket->peername);
         return 0;
     }
     return 0;
@@ -230,6 +223,7 @@ void addPackagePayload(struct snmp_pdu *request, session_t *hostSession, netsnmp
         hostSession->currentOid++;
     }
 }
+/*****************************************************************************/
 /*
  * response handler
  */
@@ -240,7 +234,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
 
     if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE)
     {
-        if (print_result(STAT_SUCCESS, hostSession->snmpSocket, responseData))
+        if (processResult(STAT_SUCCESS, hostSession, responseData))
         {
             int root = -1, upstream = 0;
             struct snmp_pdu *request;
@@ -299,7 +293,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
         }
     }
     else
-        print_result(STAT_TIMEOUT, hostSession->snmpSocket, responseData);
+        processResult(STAT_TIMEOUT, hostSession, responseData);
 
     // something went wrong (or end of variables)
     // this session not active any more
@@ -350,6 +344,7 @@ void asynchronous(void)
             continue;
         }
         hostSession->currentOid = currentOid;
+        hostSession->outputFile = fopen(newSnmpSocket.peername, "w");
 
         if (snmp_send(hostSession->snmpSocket, newRequest = snmp_clone_pdu(request)))
             active_hosts++;
@@ -401,7 +396,13 @@ void asynchronous(void)
 }
 
 /*****************************************************************************/
+void cleanup()
+{
+    mysql_free_result(result);
+    fcloseall();
+}
 
+/*****************************************************************************/
 int main(int argc, char **argv)
 {
     initialize();
@@ -410,7 +411,7 @@ int main(int argc, char **argv)
 
     asynchronous();
 
-    mysql_free_result(result);
+    cleanup();
 
     return 0;
 }
