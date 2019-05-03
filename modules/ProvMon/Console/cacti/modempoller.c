@@ -58,6 +58,40 @@ typedef struct hostSession
 } session_t;
 
 /* ---------- Functions ---------- */
+void connectToMySql(void)
+{
+    MYSQL *con = mysql_init(NULL);
+    char host[16] = "localhost";
+    char user[16] = "cactiuser";
+    char pass[16] = "secret";
+    char db[16] = "cacti";
+
+    if (con == NULL)
+    {
+        fprintf(stderr, "%s\n", mysql_error(con));
+        exit(1);
+    }
+
+    if (mysql_real_connect(con, host, user, pass, db, 0, NULL, 0) == NULL)
+    {
+        fprintf(stderr, "%s\n", mysql_error(con));
+        mysql_close(con);
+        exit(1);
+    }
+
+    if (mysql_query(con, "SELECT hostname, snmp_community FROM host WHERE hostname LIKE 'cm-107213%' ORDER BY hostname"))
+    {
+        fprintf(stderr, "%s\n", mysql_error(con));
+    }
+
+    result = mysql_store_result(con);
+
+    num_rows = mysql_num_rows(result);
+
+    mysql_close(con);
+}
+
+/*****************************************************************************/
 void initialize(void)
 {
     struct oid_s *currentOid = oids;
@@ -97,41 +131,9 @@ void initialize(void)
         }
         currentOid++;
     }
-}
 
-/*****************************************************************************/
-
-void connectToMySql(void)
-{
-    MYSQL *con = mysql_init(NULL);
-    char host[16] = "localhost";
-    char user[16] = "cactiuser";
-    char pass[16] = "secret";
-    char db[16] = "cacti";
-
-    if (con == NULL)
-    {
-        fprintf(stderr, "%s\n", mysql_error(con));
-        exit(1);
-    }
-
-    if (mysql_real_connect(con, host, user, pass, db, 0, NULL, 0) == NULL)
-    {
-        fprintf(stderr, "%s\n", mysql_error(con));
-        mysql_close(con);
-        exit(1);
-    }
-
-    if (mysql_query(con, "SELECT hostname, snmp_community FROM host WHERE hostname LIKE 'cm-%' ORDER BY hostname"))
-    {
-        fprintf(stderr, "%s\n", mysql_error(con));
-    }
-
-    result = mysql_store_result(con);
-
-    num_rows = mysql_num_rows(result);
-
-    mysql_close(con);
+    /* connect to database */
+    connectToMySql();
 }
 
 /*****************************************************************************/
@@ -399,8 +401,6 @@ void cleanup()
 int main(int argc, char **argv)
 {
     initialize();
-
-    connectToMySql();
 
     asynchronous();
 
