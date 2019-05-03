@@ -1,11 +1,23 @@
-/*
+/**************************************************************************/ /*
  * NET-SNMP modempoller
  *
  * Originated from the NET-SNMP async demo
  * Hat tip to Niels Baggesen (Niels.Baggesen@uni-c.dk)
  *
- */
-/* ---------- Incluides ---------- */
+ * This program retrieves a set of modems from the cacti database and queries
+ * all modems for the given OIDs. The Each vendor implements the SNMP protocol
+ * differently, so the program needs to check if all tables are correct and if
+ * not, request another "batch".
+ *
+ * The requested OIDs are devided into three segments: non-repeaters for system
+ * information, downstream and upstream. For each host a seperate session will
+ * be created. All requests are handled asynchronously and on response the next
+ * segment or the next batch of the current segment is requested.
+ *
+ * Christian Schramm (@cschra) and Ole Ernst (@olebowle), 2019
+ *
+ *****************************************************************************/
+/********************************* INCLUDES **********************************/
 #include <stdio.h>
 #include <mysql.h>
 #include <string.h>
@@ -26,7 +38,7 @@ MYSQL_RES *result;
 
 /* ---------- Global Structures ---------- */
 typedef enum pass { NON_REP, DOWNSTREAM, UPSTREAM, FINISH } pass_t;
-/* a list of variables to query for */
+
 struct oid_s {
     pass_t run;
     const char *Name;
@@ -48,7 +60,6 @@ struct oid_s {
              { UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.9" }, // # Ranging Status
              { FINISH } };
 
-/* poll all hosts in parallel */
 typedef struct hostSession {
     struct snmp_session *snmpSocket; /* SNMP session data */
     struct oid_s *currentOid; /* How far in our poll are we */
