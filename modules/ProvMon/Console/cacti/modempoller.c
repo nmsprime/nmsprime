@@ -44,21 +44,23 @@ struct oid_s {
     const char *Name;
     oid Oid[MAX_OID_LEN];
     size_t OidLen;
-} oids[] = { { NON_REP, "1.3.6.1.2.1.1.1" }, /* SysDescr */
-             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.3" }, /* US Power (2.0) */
-             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.12" }, /* T3 Timeout */
-             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.13" }, /* T4 Timeout */
-             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.17" }, /* PreEq */
-             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.1.1.6" }, /* Power */
-             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.3" }, /* Corrected */
-             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.4" }, /* Uncorrectable */
-             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.5" }, /* SNR (2.0) */
-             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.6" }, /* Microreflections */
-             { DOWNSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.24.1.1" }, /* SNR (3.0) */
-             { UPSTREAM, "1.3.6.1.2.1.10.127.1.1.2.1.3" }, /* Bandwidth */
-             { UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.1" }, /* Power (3.0) */
-             { UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.9" }, /* Ranging Status */
-             { FINISH } };
+} oids[] = {
+    { NON_REP, "1.3.6.1.2.1.1.1" }, /* SysDescr */
+    { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.3" }, /* US Power (2.0) */
+    { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.12" }, /* T3 Timeout */
+    { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.13" }, /* T4 Timeout */
+    { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.17" }, /* PreEq */
+    { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.1.1.6" }, /* Power */
+    { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.3" }, /* Corrected */
+    { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.4" }, /* Uncorrectable */
+    { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.5" }, /* SNR (2.0) */
+    { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.6" }, /* Microreflections */
+    { DOWNSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.24.1.1" }, /* SNR (3.0) */
+    { UPSTREAM, "1.3.6.1.2.1.10.127.1.1.2.1.3" }, /* Bandwidth */
+    { UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.1" }, /* Power (3.0) */
+    { UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.9" }, /* Ranging Status */
+    { FINISH }
+};
 
 /* context structure to keep track of the current request */
 typedef struct hostContext {
@@ -95,9 +97,8 @@ void connectToMySql()
         exit(1);
     }
 
-    if (mysql_query(con, "SELECT hostname, snmp_community FROM host WHERE hostname LIKE 'cm-%' ORDER BY hostname")) {
+    if (mysql_query(con, "SELECT hostname, snmp_community FROM host WHERE hostname LIKE 'cm-%' ORDER BY hostname"))
         fprintf(stderr, "%s\n", mysql_error(con));
-    }
 
     result = mysql_store_result(con);
 
@@ -126,9 +127,7 @@ void initialize()
     /* initialize library */
     init_snmp("asynchapp");
     netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_OID_OUTPUT_FORMAT, NETSNMP_OID_OUTPUT_NUMERIC);
-
     netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_QUICK_PRINT, 1);
-
     netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_HEX_OUTPUT_LENGTH, 0);
 
     /* parse the oids */
@@ -140,17 +139,15 @@ void initialize()
             exit(1);
         }
 
-        if (currentOid->segment == NON_REP) {
+        if (currentOid->segment == NON_REP)
             nonRepeaters++;
-        }
 
-        if (currentOid->segment == DOWNSTREAM) {
+        if (currentOid->segment == DOWNSTREAM)
             downstreamOids++;
-        }
 
-        if (currentOid->segment == UPSTREAM) {
+        if (currentOid->segment == UPSTREAM)
             upstreamOids++;
-        }
+
         currentOid++;
     }
 
@@ -203,6 +200,7 @@ int processResult(int status, hostContext_t *hostContext, struct snmp_pdu *respo
         snmp_perror(hostContext->session->peername);
         return 0;
     }
+
     return 0;
 }
 
@@ -350,11 +348,13 @@ int async_response(int operation, struct snmp_session *sp, int reqid, struct snm
                 break;
             }
         }
-    } else
+    } else {
         processResult(STAT_TIMEOUT, hostContext, responseData);
+    }
 
     /* something went wrong (or end of variables), this session not active any more */
     activeHosts--;
+
     return 1;
 }
 
@@ -407,9 +407,9 @@ void asynchronous()
         hostContext->currentOid = currentOid;
         hostContext->outputFile = fopen(session.peername, "w");
 
-        if (snmp_send(hostContext->session, newRequest = snmp_clone_pdu(request)))
+        if (snmp_send(hostContext->session, newRequest = snmp_clone_pdu(request))) {
             activeHosts++;
-        else {
+        } else {
             snmp_perror("snmp_send");
             snmp_free_pdu(newRequest);
         }
@@ -439,10 +439,9 @@ void asynchronous()
     /* cleanup */
     snmp_free_pdu(request);
 
-    for (hostContext = allHosts, i = 0; i < hostCount; hostContext++, i++) {
+    for (hostContext = allHosts, i = 0; i < hostCount; hostContext++, i++)
         if (hostContext->session)
             snmp_close(hostContext->session);
-    }
 }
 
 /*****************************************************************************/
