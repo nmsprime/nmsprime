@@ -357,8 +357,6 @@ void asynchronous(void)
         }
     }
 
-    snmp_free_pdu(request);
-
     /* async event loop - loops while any active hosts */
     while (active_hosts)
     {
@@ -390,6 +388,8 @@ void asynchronous(void)
     }
 
     /* cleanup */
+    snmp_free_pdu(request);
+
     for (hostSession = allHosts, i = 0; i < num_rows; hostSession++, i++)
     {
         if (hostSession->snmpSocket)
