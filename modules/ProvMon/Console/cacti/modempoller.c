@@ -31,10 +31,10 @@
 #define TIMEOUT 5000000
 
 /****************************** GLOBAL VARIABLES *****************************/
-int activeHosts, host_count, nonRepeaters, downstreamOids, upstreamOids;
+int activeHosts, hostCount, nonRepeaters, downstreamOids, upstreamOids;
 MYSQL_RES *result;
 
-/* ---------- Global Structures ---------- */
+/****************************** GLOBAL STRUCTURES ****************************/
 // to keep track which segment is sent
 typedef enum pass { NON_REP, DOWNSTREAM, UPSTREAM, FINISH } pass_t;
 
@@ -61,30 +61,30 @@ struct oid_s {
              { FINISH } };
 
 // context structure to keep track of the current request
-typedef struct hostSession {
-    struct snmp_session *snmpSocket; // which host is currently processed
+typedef struct hostContext {
+    struct snmp_session *session; // which host is currently processed
     struct oid_s *currentOid; // which OID is or was processed
     FILE *outputFile; // to which file should the response be written to
-} session_t;
+} hostContext_t;
 
 /********************************* FUNCTIONS *********************************/
 /*
  * Connect to the cacti MySQL Database using the mysql-c high level API.
  *
  * The result of the query is stored in the global MYSQL_RES *result Variable
- * and the amount of hosts is stored in the global int host_count Variable
+ * and the amount of hosts is stored in the global int hostCount Variable
  *
  * returns void
  */
 void connectToMySql()
 {
     MYSQL *con = mysql_init(NULL);
-    char host[16] = "localhost";
-    char user[16] = "cactiuser";
-    char pass[16] = "secret";
-    char db[16] = "cacti";
+    char host[] = "localhost";
+    char user[] = "cactiuser";
+    char pass[] = "secret";
+    char db[] = "cacti";
 
-    if (con == NULL) {
+    if (!con) {
         fprintf(stderr, "%s\n", mysql_error(con));
         exit(1);
     }
@@ -101,7 +101,7 @@ void connectToMySql()
 
     result = mysql_store_result(con);
 
-    host_count = mysql_num_rows(result);
+    hostCount = mysql_num_rows(result);
 
     mysql_close(con);
 }
@@ -120,12 +120,8 @@ void connectToMySql()
  */
 void initialize()
 {
-    activeHosts = 0;
-    host_count = 0;
-    nonRepeaters = 0;
-    upstreamOids = 0;
-    downstreamOids = 0;
     struct oid_s *currentOid = oids;
+    activeHosts = hostCount = nonRepeaters = upstreamOids = downstreamOids = 0;
 
     /* initialize library */
     init_snmp("asynchapp");
@@ -167,42 +163,43 @@ void initialize()
  * Print the response into a File inside the current working directory.
  *
  * int status - state of the Response
- * session_t *hostSession - pointer to the current hostcontext structure
+ * hostContext_t *hostContext - pointer to the current hostcontext structure
  * struct snmp_pdu *responseData
  *
  * returns int
  */
-int processResult(int status, session_t *sp, struct snmp_pdu *responseData)
+int processResult(int status, hostContext_t *hostContext, struct snmp_pdu *responseData)
 {
     char buf[1024];
-    struct variable_list *vp;
+    struct variable_list *currentVariable;
     int ix;
 
     switch (status) {
     case STAT_SUCCESS:
-        vp = responseData->variables;
+        currentVariable = responseData->variables;
         if (responseData->errstat == SNMP_ERR_NOERROR) {
-            while (vp) {
-                snprint_variable(buf, sizeof(buf), vp->name, vp->name_length, vp);
-                fprintf(sp->outputFile, "%s\n", buf);
-                vp = vp->next_variable;
+            while (currentVariable) {
+                snprint_variable(buf, sizeof(buf), currentVariable->name, currentVariable->name_length, currentVariable);
+                fprintf(hostContext->outputFile, "%s\n", buf);
+                currentVariable = currentVariable->next_variable;
             }
         } else {
-            for (ix = 1; vp && ix != responseData->errindex; vp = vp->next_variable, ix++)
+            for (ix = 1; currentVariable && ix != responseData->errindex;
+                 currentVariable = currentVariable->next_variable, ix++)
                 ;
-            if (vp)
-                snprint_objid(buf, sizeof(buf), vp->name, vp->name_length);
+            if (currentVariable)
+                snprint_objid(buf, sizeof(buf), currentVariable->name, currentVariable->name_length);
             else
                 strcpy(buf, "(none)");
-            fprintf(sp->outputFile, "ERROR: %s: %s: %s\n", sp->snmpSocket->peername, buf,
+            fprintf(hostContext->outputFile, "ERROR: %s: %s: %s\n", hostContext->session->peername, buf,
                     snmp_errstring(responseData->errstat));
         }
         return 1;
     case STAT_TIMEOUT:
-        fprintf(stdout, "%s: Timeout\n", sp->snmpSocket->peername);
+        fprintf(stdout, "%s: Timeout\n", hostContext->session->peername);
         return 0;
     case STAT_ERROR:
-        snmp_perror(sp->snmpSocket->peername);
+        snmp_perror(hostContext->session->peername);
         return 0;
     }
     return 0;
@@ -232,14 +229,14 @@ netsnmp_variable_list *getLastVarBiniding(netsnmp_variable_list *varlist)
  * Utility function as this is called multiple times over the course of the
  * program. This sends a "new" Bulk request.
  *
- * session_t *hostSession - pointer to the current hostcontext structure
+ * hostContext_t *hostContext - pointer to the current hostcontext structure
  * struct snmp_pdu *request - request pdu
  *
  * returns void
  */
-int sendNextBulkRequest(session_t *hostSession, struct snmp_pdu *request)
+int sendNextBulkRequest(hostContext_t *hostContext, struct snmp_pdu *request)
 {
-    if (snmp_send(hostSession->snmpSocket, request)) {
+    if (snmp_send(hostContext->session, request)) {
         return 1;
     } else {
         snmp_perror("snmp_send");
@@ -253,22 +250,22 @@ int sendNextBulkRequest(session_t *hostSession, struct snmp_pdu *request)
  * program. This compiles the Request Package Payload.
  *
  * struct snmp_pdu *request - request pdu
- * session_t *hostSession - pointer to the current hostcontext structure
+ * hostContext_t *hostContext - pointer to the current hostcontext structure
  * netsnmp_variable_list *varlist - empty variable list to fill
  * pass_t segment - determines which OIDs to add as request payload
  *
  * returns void
  */
-void addPackagePayload(struct snmp_pdu *request, session_t *hostSession, netsnmp_variable_list *varlist, pass_t segment,
+void addPackagePayload(struct snmp_pdu *request, hostContext_t *hostContext, netsnmp_variable_list *varlist, pass_t segment,
                        int updateOids)
 {
-    while (hostSession->currentOid->segment == segment) {
+    while (hostContext->currentOid->segment == segment) {
         if (updateOids)
-            hostSession->currentOid->Oid[hostSession->currentOid->OidLen] = varlist->name[varlist->name_length - 1];
+            hostContext->currentOid->Oid[hostContext->currentOid->OidLen] = varlist->name[varlist->name_length - 1];
 
-        snmp_add_null_var(request, hostSession->currentOid->Oid, hostSession->currentOid->OidLen + updateOids);
+        snmp_add_null_var(request, hostContext->currentOid->Oid, hostContext->currentOid->OidLen + updateOids);
 
-        hostSession->currentOid++;
+        hostContext->currentOid++;
     }
 }
 
@@ -287,12 +284,12 @@ void addPackagePayload(struct snmp_pdu *request, session_t *hostSession, netsnmp
  *
  * returns int
  */
-int asynch_response(int operation, struct snmp_session *sp, int reqid, struct snmp_pdu *responseData, void *magic)
+int async_response(int operation, struct snmp_session *sp, int reqid, struct snmp_pdu *responseData, void *magic)
 {
-    session_t *hostSession = (session_t *)magic;
+    hostContext_t *hostContext = (hostContext_t *)magic;
 
     if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE) {
-        if (processResult(STAT_SUCCESS, hostSession, responseData)) {
+        if (processResult(STAT_SUCCESS, hostContext, responseData)) {
             int root = -1, upstream = 0;
             struct snmp_pdu *request;
 
@@ -303,51 +300,51 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid, struct sn
             netsnmp_variable_list *varlist = responseData->variables;
             varlist = getLastVarBiniding(varlist);
 
-            switch ((hostSession->currentOid - 1)->segment) {
+            switch ((hostContext->currentOid - 1)->segment) {
             case NON_REP:
-                addPackagePayload(request, hostSession, varlist, DOWNSTREAM, 0);
+                addPackagePayload(request, hostContext, varlist, DOWNSTREAM, 0);
 
-                if (sendNextBulkRequest(hostSession, request))
+                if (sendNextBulkRequest(hostContext, request))
                     return 1;
                 break;
             case DOWNSTREAM:
-                root = memcmp((hostSession->currentOid - 1)->Oid, varlist->name,
-                              ((hostSession->currentOid - 1)->OidLen) * sizeof(oid));
+                root = memcmp((hostContext->currentOid - 1)->Oid, varlist->name,
+                              ((hostContext->currentOid - 1)->OidLen) * sizeof(oid));
 
                 if (root == 0) {
-                    hostSession->currentOid = hostSession->currentOid - downstreamOids;
+                    hostContext->currentOid = hostContext->currentOid - downstreamOids;
 
-                    addPackagePayload(request, hostSession, varlist, DOWNSTREAM, 1);
+                    addPackagePayload(request, hostContext, varlist, DOWNSTREAM, 1);
 
-                    if (sendNextBulkRequest(hostSession, request))
+                    if (sendNextBulkRequest(hostContext, request))
                         return 1;
                     break;
                 }
             case UPSTREAM:
-                if (hostSession->currentOid->segment == FINISH) {
-                    root = memcmp((hostSession->currentOid - 1)->Oid, varlist->name,
-                                  ((hostSession->currentOid - 1)->OidLen) * sizeof(oid));
+                if (hostContext->currentOid->segment == FINISH) {
+                    root = memcmp((hostContext->currentOid - 1)->Oid, varlist->name,
+                                  ((hostContext->currentOid - 1)->OidLen) * sizeof(oid));
 
                     if (root == 0) {
-                        hostSession->currentOid = hostSession->currentOid - upstreamOids;
+                        hostContext->currentOid = hostContext->currentOid - upstreamOids;
 
-                        addPackagePayload(request, hostSession, varlist, UPSTREAM, 1);
+                        addPackagePayload(request, hostContext, varlist, UPSTREAM, 1);
 
-                        if (sendNextBulkRequest(hostSession, request))
+                        if (sendNextBulkRequest(hostContext, request))
                             return 1;
                     }
                     break;
                 }
 
-                addPackagePayload(request, hostSession, varlist, UPSTREAM, 0);
+                addPackagePayload(request, hostContext, varlist, UPSTREAM, 0);
 
-                if (sendNextBulkRequest(hostSession, request))
+                if (sendNextBulkRequest(hostContext, request))
                     return 1;
                 break;
             }
         }
     } else
-        processResult(STAT_TIMEOUT, hostSession, responseData);
+        processResult(STAT_TIMEOUT, hostContext, responseData);
 
     // something went wrong (or end of variables)
     // this session not active any more
@@ -358,7 +355,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid, struct sn
 /*****************************************************************************/
 /*
  * Initiates the asynchronous SNMP transfer, starting with the non-repeaters.
- * The asynch_response function gets called each time a packet is received.
+ * The async_response function gets called each time a packet is received.
  * while loop handles asynch behavior.
  *
  * returns void
@@ -367,13 +364,13 @@ void asynchronous()
 {
     int i;
     MYSQL_ROW currentHost;
-    session_t *hostSession;
-    session_t allHosts[host_count]; //one hostSession structure per Host in DB
+    hostContext_t *hostContext;
+    hostContext_t allHosts[hostCount]; //one hostContext structure per Host in DB
 
     struct snmp_pdu *request;
     struct oid_s *currentOid = oids;
 
-    request = snmp_pdu_create(SNMP_MSG_GETBULK); /* send the first GET */
+    request = snmp_pdu_create(SNMP_MSG_GETBULK);
     request->non_repeaters = nonRepeaters;
     request->max_repetitions = 0;
 
@@ -383,28 +380,28 @@ void asynchronous()
     }
 
     /* startup all hosts */
-    for (hostSession = allHosts; (currentHost = mysql_fetch_row(result)); hostSession++) {
-        struct snmp_session newSnmpSocket;
+    for (hostContext = allHosts; (currentHost = mysql_fetch_row(result)); hostContext++) {
+        struct snmp_session session;
         struct snmp_pdu *newRequest;
 
-        snmp_sess_init(&newSnmpSocket); /* initialize session */
-        newSnmpSocket.version = SNMP_VERSION_2c;
-        newSnmpSocket.retries = RETRIES;
-        newSnmpSocket.timeout = TIMEOUT;
-        newSnmpSocket.peername = strdup(currentHost[0]);
-        newSnmpSocket.community = strdup(currentHost[1]);
-        newSnmpSocket.community_len = strlen(newSnmpSocket.community);
-        newSnmpSocket.callback = asynch_response; /* default callback */
-        newSnmpSocket.callback_magic = hostSession;
+        snmp_sess_init(&session);
+        session.version = SNMP_VERSION_2c;
+        session.retries = RETRIES;
+        session.timeout = TIMEOUT;
+        session.peername = strdup(currentHost[0]);
+        session.community = strdup(currentHost[1]);
+        session.community_len = strlen(session.community);
+        session.callback = async_response;
+        session.callback_magic = hostContext;
 
-        if (!(hostSession->snmpSocket = snmp_open(&newSnmpSocket))) {
+        if (!(hostContext->session = snmp_open(&session))) {
             snmp_perror("snmp_open");
             continue;
         }
-        hostSession->currentOid = currentOid;
-        hostSession->outputFile = fopen(newSnmpSocket.peername, "w");
+        hostContext->currentOid = currentOid;
+        hostContext->outputFile = fopen(session.peername, "w");
 
-        if (snmp_send(hostSession->snmpSocket, newRequest = snmp_clone_pdu(request)))
+        if (snmp_send(hostContext->session, newRequest = snmp_clone_pdu(request)))
             activeHosts++;
         else {
             snmp_perror("snmp_send");
@@ -417,15 +414,9 @@ void asynchronous()
         int fds = 0, block = 1;
         struct timeval timeout;
         netsnmp_large_fd_set fdset;
-        //fd_set fdset; // not used due to large amount of Hosts
 
-        //FD_ZERO(&fdset);
-        //NETSNMP_LARGE_FD_ZERO(&fdset);
-
-        //snmp_select_info(&fds, &fdset, &timeout, &block);
         snmp_sess_select_info2(NULL, &fds, &fdset, &timeout, &block);
 
-        //fds = select(fds, &fdset, NULL, NULL, block ? NULL : &timeout);
         fds = netsnmp_large_fd_set_select(fds, &fdset, NULL, NULL, block ? NULL : &timeout);
 
         if (fds < 0) {
@@ -434,7 +425,6 @@ void asynchronous()
         }
 
         if (fds)
-            // snmp_read(&fdset);
             snmp_read2(&fdset);
         else
             snmp_timeout();
@@ -443,9 +433,9 @@ void asynchronous()
     /* cleanup */
     snmp_free_pdu(request);
 
-    for (hostSession = allHosts, i = 0; i < host_count; hostSession++, i++) {
-        if (hostSession->snmpSocket)
-            snmp_close(hostSession->snmpSocket);
+    for (hostContext = allHosts, i = 0; i < hostCount; hostContext++, i++) {
+        if (hostContext->session)
+            snmp_close(hostContext->session);
     }
 }
 
