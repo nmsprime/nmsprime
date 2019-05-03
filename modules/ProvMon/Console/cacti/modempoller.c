@@ -35,8 +35,10 @@ int activeHosts, host_count, nonRepeaters, downstreamOids, upstreamOids;
 MYSQL_RES *result;
 
 /* ---------- Global Structures ---------- */
+// to keep track which segment is sent
 typedef enum pass { NON_REP, DOWNSTREAM, UPSTREAM, FINISH } pass_t;
 
+// a list of variables to query for
 struct oid_s {
     pass_t segment;
     const char *Name;
@@ -58,14 +60,23 @@ struct oid_s {
              { UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.9" }, // # Ranging Status
              { FINISH } };
 
+// context structure to keep track of the current request
 typedef struct hostSession {
-    struct snmp_session *snmpSocket; /* SNMP session data */
-    struct oid_s *currentOid; /* How far in our poll are we */
-    FILE *outputFile;
+    struct snmp_session *snmpSocket; // which host is currently processed
+    struct oid_s *currentOid; // which OID is or was processed
+    FILE *outputFile; // to which file should the response be written to
 } session_t;
 
-/* ---------- Functions ---------- */
-void connectToMySql(void)
+/********************************* FUNCTIONS *********************************/
+/*
+ * Connect to the cacti MySQL Database using the mysql-c high level API.
+ *
+ * The result of the query is stored in the global MYSQL_RES *result Variable
+ * and the amount of hosts is stored in the global int host_count Variable
+ *
+ * returns void
+ */
+void connectToMySql()
 {
     MYSQL *con = mysql_init(NULL);
     char host[16] = "localhost";
@@ -96,7 +107,18 @@ void connectToMySql(void)
 }
 
 /*****************************************************************************/
-void initialize(void)
+/*
+ * This function sets the prerequisorities for the polling algorithm.
+ * It does several things:
+ * - Opens a Socket if on a windows machine
+ * - Initializes the NET-SNMP library
+ * - Sets Configuration for NET-SNMP
+ * - Decodes OIDs and fills OID structure
+ * - Counts the number of OIDs for each segment
+ *
+ * returns void
+ */
+void initialize()
 {
     activeHosts = 0;
     host_count = 0;
@@ -142,7 +164,13 @@ void initialize(void)
 
 /*****************************************************************************/
 /*
- * simple printing of returned data
+ * Print the response into a File inside the current working directory.
+ *
+ * int status - state of the Response
+ * session_t *hostSession - pointer to the current hostcontext structure
+ * struct snmp_pdu *responseData
+ *
+ * returns int
  */
 int processResult(int status, session_t *sp, struct snmp_pdu *responseData)
 {
@@ -181,6 +209,15 @@ int processResult(int status, session_t *sp, struct snmp_pdu *responseData)
 }
 
 /*****************************************************************************/
+/*
+ * Due to the list character of netsnmp_variable_list it is not possible to
+ * access the last element directly. This loops through all variables and
+ * returns the pointer to the last element
+ *
+ * netsnmp_variable_list varlist
+ *
+ * returns netsnmp_variable_list *
+ */
 netsnmp_variable_list *getLastVarBiniding(netsnmp_variable_list *varlist)
 {
     while (varlist) {
@@ -191,6 +228,15 @@ netsnmp_variable_list *getLastVarBiniding(netsnmp_variable_list *varlist)
 }
 
 /*****************************************************************************/
+/*
+ * Utility function as this is called multiple times over the course of the
+ * program. This sends a "new" Bulk request.
+ *
+ * session_t *hostSession - pointer to the current hostcontext structure
+ * struct snmp_pdu *request - request pdu
+ *
+ * returns void
+ */
 int sendNextBulkRequest(session_t *hostSession, struct snmp_pdu *request)
 {
     if (snmp_send(hostSession->snmpSocket, request)) {
@@ -200,7 +246,19 @@ int sendNextBulkRequest(session_t *hostSession, struct snmp_pdu *request)
         snmp_free_pdu(request);
     }
 }
+
 /*****************************************************************************/
+/*
+ * Utility function as this is called multiple times over the course of the
+ * program. This compiles the Request Package Payload.
+ *
+ * struct snmp_pdu *request - request pdu
+ * session_t *hostSession - pointer to the current hostcontext structure
+ * netsnmp_variable_list *varlist - empty variable list to fill
+ * pass_t segment - determines which OIDs to add as request payload
+ *
+ * returns void
+ */
 void addPackagePayload(struct snmp_pdu *request, session_t *hostSession, netsnmp_variable_list *varlist, pass_t segment,
                        int updateOids)
 {
@@ -213,9 +271,21 @@ void addPackagePayload(struct snmp_pdu *request, session_t *hostSession, netsnmp
         hostSession->currentOid++;
     }
 }
+
 /*****************************************************************************/
 /*
- * response handler
+ * State machine that gets called asynchronously each time a new SNMP packet
+ * arrives. It checks whether the full table was retrieved and emits a new
+ * SNMP request of either the next batch of the current segment or the next
+ * segment.
+ *
+ * int operation - state of the received mesasa
+ * struct snmp_session *sp - not used as we get session from context data
+ * int reqid - request id - also unused
+ * struct snmp_pdu *responseData - response packet with data from modem
+ * void *magic - magic pointer for context data
+ *
+ * returns int
  */
 int asynch_response(int operation, struct snmp_session *sp, int reqid, struct snmp_pdu *responseData, void *magic)
 {
@@ -284,9 +354,16 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid, struct sn
     activeHosts--;
     return 1;
 }
-/*****************************************************************************/
 
-void asynchronous(void)
+/*****************************************************************************/
+/*
+ * Initiates the asynchronous SNMP transfer, starting with the non-repeaters.
+ * The asynch_response function gets called each time a packet is received.
+ * while loop handles asynch behavior.
+ *
+ * returns void
+ */
+void asynchronous()
 {
     int i;
     MYSQL_ROW currentHost;
@@ -373,6 +450,11 @@ void asynchronous(void)
 }
 
 /*****************************************************************************/
+/*
+ * close all file descriptors and free the MySQL result
+ *
+ * returns void
+ */
 void cleanup()
 {
     mysql_free_result(result);
@@ -380,6 +462,11 @@ void cleanup()
 }
 
 /*****************************************************************************/
+/*
+ * main function
+ *
+ * returns int
+ */
 int main(int argc, char **argv)
 {
     initialize();
