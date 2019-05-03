@@ -25,42 +25,33 @@ int requestRetries = 5, requestTimeout = 5000000;
 MYSQL_RES *result;
 
 /* ---------- Global Structures ---------- */
-typedef enum pass
-{
-    NON_REP,
-    DOWNSTREAM,
-    UPSTREAM,
-    FINISH
-} pass_t;
+typedef enum pass { NON_REP, DOWNSTREAM, UPSTREAM, FINISH } pass_t;
 /* a list of variables to query for */
-struct oid_s
-{
+struct oid_s {
     pass_t run;
     const char *Name;
     oid Oid[MAX_OID_LEN];
     size_t OidLen;
-} oids[] = {
-    {NON_REP, "1.3.6.1.2.1.1.1"},                     // SysDescr
-    {NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.3"},        // # US Power (2.0)
-    {NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.12"},       // # T3 Timeout
-    {NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.13"},       // # T4 Timeout
-    {NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.17"},       // # PreEq
-    {DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.1.1.6"},     // # Power
-    {DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.3"},     // # Corrected
-    {DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.4"},     // # Uncorrectable
-    {DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.5"},     // # SNR (2.0)
-    {DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.6"},     // # Microreflections
-    {DOWNSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.24.1.1"}, // # SNR (3.0)
-    {UPSTREAM, "1.3.6.1.2.1.10.127.1.1.2.1.3"},       // # Bandwidth
-    {UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.1"},    // # Power (3.0)
-    {UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.9"},    // # Ranging Status
-    {FINISH}};
+} oids[] = { { NON_REP, "1.3.6.1.2.1.1.1" }, // SysDescr
+             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.3" }, // # US Power (2.0)
+             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.12" }, // # T3 Timeout
+             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.13" }, // # T4 Timeout
+             { NON_REP, "1.3.6.1.2.1.10.127.1.2.2.1.17" }, // # PreEq
+             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.1.1.6" }, // # Power
+             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.3" }, // # Corrected
+             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.4" }, // # Uncorrectable
+             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.5" }, // # SNR (2.0)
+             { DOWNSTREAM, "1.3.6.1.2.1.10.127.1.1.4.1.6" }, // # Microreflections
+             { DOWNSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.24.1.1" }, // # SNR (3.0)
+             { UPSTREAM, "1.3.6.1.2.1.10.127.1.1.2.1.3" }, // # Bandwidth
+             { UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.1" }, // # Power (3.0)
+             { UPSTREAM, "1.3.6.1.4.1.4491.2.1.20.1.2.1.9" }, // # Ranging Status
+             { FINISH } };
 
 /* poll all hosts in parallel */
-typedef struct hostSession
-{
+typedef struct hostSession {
     struct snmp_session *snmpSocket; /* SNMP session data */
-    struct oid_s *currentOid;        /* How far in our poll are we */
+    struct oid_s *currentOid; /* How far in our poll are we */
     FILE *outputFile;
 } session_t;
 
@@ -73,21 +64,18 @@ void connectToMySql(void)
     char pass[16] = "secret";
     char db[16] = "cacti";
 
-    if (con == NULL)
-    {
+    if (con == NULL) {
         fprintf(stderr, "%s\n", mysql_error(con));
         exit(1);
     }
 
-    if (mysql_real_connect(con, host, user, pass, db, 0, NULL, 0) == NULL)
-    {
+    if (mysql_real_connect(con, host, user, pass, db, 0, NULL, 0) == NULL) {
         fprintf(stderr, "%s\n", mysql_error(con));
         mysql_close(con);
         exit(1);
     }
 
-    if (mysql_query(con, "SELECT hostname, snmp_community FROM host WHERE hostname LIKE 'cm-%' ORDER BY hostname"))
-    {
+    if (mysql_query(con, "SELECT hostname, snmp_community FROM host WHERE hostname LIKE 'cm-%' ORDER BY hostname")) {
         fprintf(stderr, "%s\n", mysql_error(con));
     }
 
@@ -108,32 +96,26 @@ void initialize(void)
 
     /* initialize library */
     init_snmp("asynchapp");
-    netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
-                       NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
-                       NETSNMP_OID_OUTPUT_NUMERIC);
+    netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_OID_OUTPUT_FORMAT, NETSNMP_OID_OUTPUT_NUMERIC);
 
     netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_QUICK_PRINT, 1);
 
     netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_HEX_OUTPUT_LENGTH, 0);
 
     /* parse the oids */
-    while (currentOid->run < FINISH)
-    {
+    while (currentOid->run < FINISH) {
         currentOid->OidLen = MAX_OID_LEN;
-        if (!read_objid(currentOid->Name, currentOid->Oid, &currentOid->OidLen))
-        {
+        if (!read_objid(currentOid->Name, currentOid->Oid, &currentOid->OidLen)) {
             snmp_perror("read_objid");
             printf("Could not Parse OID: %s\n", currentOid->Name);
             exit(1);
         }
 
-        if (currentOid->run == DOWNSTREAM)
-        {
+        if (currentOid->run == DOWNSTREAM) {
             ds_count++;
         }
 
-        if (currentOid->run == UPSTREAM)
-        {
+        if (currentOid->run == UPSTREAM) {
             us_count++;
         }
         currentOid++;
@@ -153,29 +135,24 @@ int processResult(int status, session_t *sp, struct snmp_pdu *responseData)
     struct variable_list *vp;
     int ix;
 
-    switch (status)
-    {
+    switch (status) {
     case STAT_SUCCESS:
         vp = responseData->variables;
-        if (responseData->errstat == SNMP_ERR_NOERROR)
-        {
-            while (vp)
-            {
+        if (responseData->errstat == SNMP_ERR_NOERROR) {
+            while (vp) {
                 snprint_variable(buf, sizeof(buf), vp->name, vp->name_length, vp);
                 fprintf(sp->outputFile, "%s\n", buf);
                 vp = vp->next_variable;
             }
-        }
-        else
-        {
+        } else {
             for (ix = 1; vp && ix != responseData->errindex; vp = vp->next_variable, ix++)
                 ;
             if (vp)
                 snprint_objid(buf, sizeof(buf), vp->name, vp->name_length);
             else
                 strcpy(buf, "(none)");
-            fprintf(sp->outputFile, "ERROR: %s: %s: %s\n",
-                    sp->snmpSocket->peername, buf, snmp_errstring(responseData->errstat));
+            fprintf(sp->outputFile, "ERROR: %s: %s: %s\n", sp->snmpSocket->peername, buf,
+                    snmp_errstring(responseData->errstat));
         }
         return 1;
     case STAT_TIMEOUT:
@@ -191,8 +168,7 @@ int processResult(int status, session_t *sp, struct snmp_pdu *responseData)
 /*****************************************************************************/
 netsnmp_variable_list *getLastVarBiniding(netsnmp_variable_list *varlist)
 {
-    while (varlist)
-    {
+    while (varlist) {
         if (!varlist->next_variable)
             return varlist;
         varlist = varlist->next_variable;
@@ -202,21 +178,18 @@ netsnmp_variable_list *getLastVarBiniding(netsnmp_variable_list *varlist)
 /*****************************************************************************/
 int sendNextBulkRequest(session_t *hostSession, struct snmp_pdu *request)
 {
-    if (snmp_send(hostSession->snmpSocket, request))
-    {
+    if (snmp_send(hostSession->snmpSocket, request)) {
         return 1;
-    }
-    else
-    {
+    } else {
         snmp_perror("snmp_send");
         snmp_free_pdu(request);
     }
 }
 /*****************************************************************************/
-void addPackagePayload(struct snmp_pdu *request, session_t *hostSession, netsnmp_variable_list *varlist, pass_t run, int updateOids)
+void addPackagePayload(struct snmp_pdu *request, session_t *hostSession, netsnmp_variable_list *varlist, pass_t run,
+                       int updateOids)
 {
-    while (hostSession->currentOid->run == run)
-    {
+    while (hostSession->currentOid->run == run) {
         if (updateOids)
             hostSession->currentOid->Oid[hostSession->currentOid->OidLen] = varlist->name[varlist->name_length - 1];
 
@@ -229,15 +202,12 @@ void addPackagePayload(struct snmp_pdu *request, session_t *hostSession, netsnmp
 /*
  * response handler
  */
-int asynch_response(int operation, struct snmp_session *sp, int reqid,
-                    struct snmp_pdu *responseData, void *magic)
+int asynch_response(int operation, struct snmp_session *sp, int reqid, struct snmp_pdu *responseData, void *magic)
 {
     session_t *hostSession = (session_t *)magic;
 
-    if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE)
-    {
-        if (processResult(STAT_SUCCESS, hostSession, responseData))
-        {
+    if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE) {
+        if (processResult(STAT_SUCCESS, hostSession, responseData)) {
             int root = -1, upstream = 0;
             struct snmp_pdu *request;
 
@@ -248,8 +218,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
             netsnmp_variable_list *varlist = responseData->variables;
             varlist = getLastVarBiniding(varlist);
 
-            switch ((hostSession->currentOid - 1)->run)
-            {
+            switch ((hostSession->currentOid - 1)->run) {
             case NON_REP:
                 addPackagePayload(request, hostSession, varlist, DOWNSTREAM, 0);
 
@@ -257,10 +226,10 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                     return 1;
                 break;
             case DOWNSTREAM:
-                root = memcmp((hostSession->currentOid - 1)->Oid, varlist->name, ((hostSession->currentOid - 1)->OidLen) * sizeof(oid));
+                root = memcmp((hostSession->currentOid - 1)->Oid, varlist->name,
+                              ((hostSession->currentOid - 1)->OidLen) * sizeof(oid));
 
-                if (root == 0)
-                {
+                if (root == 0) {
                     hostSession->currentOid = hostSession->currentOid - ds_count;
 
                     addPackagePayload(request, hostSession, varlist, DOWNSTREAM, 1);
@@ -270,12 +239,11 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                     break;
                 }
             case UPSTREAM:
-                if (hostSession->currentOid->run == FINISH)
-                {
-                    root = memcmp((hostSession->currentOid - 1)->Oid, varlist->name, ((hostSession->currentOid - 1)->OidLen) * sizeof(oid));
+                if (hostSession->currentOid->run == FINISH) {
+                    root = memcmp((hostSession->currentOid - 1)->Oid, varlist->name,
+                                  ((hostSession->currentOid - 1)->OidLen) * sizeof(oid));
 
-                    if (root == 0)
-                    {
+                    if (root == 0) {
                         hostSession->currentOid = hostSession->currentOid - us_count;
 
                         addPackagePayload(request, hostSession, varlist, UPSTREAM, 1);
@@ -293,8 +261,7 @@ int asynch_response(int operation, struct snmp_session *sp, int reqid,
                 break;
             }
         }
-    }
-    else
+    } else
         processResult(STAT_TIMEOUT, hostSession, responseData);
 
     // something went wrong (or end of variables)
@@ -318,15 +285,13 @@ void asynchronous(void)
     request->non_repeaters = non_reps;
     request->max_repetitions = 0;
 
-    while (currentOid->run == NON_REP)
-    {
+    while (currentOid->run == NON_REP) {
         snmp_add_null_var(request, currentOid->Oid, currentOid->OidLen);
         currentOid++;
     }
 
     /* startup all hosts */
-    for (hostSession = allHosts; (currentHost = mysql_fetch_row(result)); hostSession++)
-    {
+    for (hostSession = allHosts; (currentHost = mysql_fetch_row(result)); hostSession++) {
         struct snmp_session newSnmpSocket;
         struct snmp_pdu *newRequest;
 
@@ -340,8 +305,7 @@ void asynchronous(void)
         newSnmpSocket.callback = asynch_response; /* default callback */
         newSnmpSocket.callback_magic = hostSession;
 
-        if (!(hostSession->snmpSocket = snmp_open(&newSnmpSocket)))
-        {
+        if (!(hostSession->snmpSocket = snmp_open(&newSnmpSocket))) {
             snmp_perror("snmp_open");
             continue;
         }
@@ -350,16 +314,14 @@ void asynchronous(void)
 
         if (snmp_send(hostSession->snmpSocket, newRequest = snmp_clone_pdu(request)))
             active_hosts++;
-        else
-        {
+        else {
             snmp_perror("snmp_send");
             snmp_free_pdu(newRequest);
         }
     }
 
     /* async event loop - loops while any active hosts */
-    while (active_hosts)
-    {
+    while (active_hosts) {
         int fds = 0, block = 1;
         struct timeval timeout;
         netsnmp_large_fd_set fdset;
@@ -374,8 +336,7 @@ void asynchronous(void)
         //fds = select(fds, &fdset, NULL, NULL, block ? NULL : &timeout);
         fds = netsnmp_large_fd_set_select(fds, &fdset, NULL, NULL, block ? NULL : &timeout);
 
-        if (fds < 0)
-        {
+        if (fds < 0) {
             perror("select failed");
             exit(1);
         }
@@ -390,8 +351,7 @@ void asynchronous(void)
     /* cleanup */
     snmp_free_pdu(request);
 
-    for (hostSession = allHosts, i = 0; i < num_rows; hostSession++, i++)
-    {
+    for (hostSession = allHosts, i = 0; i < num_rows; hostSession++, i++) {
         if (hostSession->snmpSocket)
             snmp_close(hostSession->snmpSocket);
     }
