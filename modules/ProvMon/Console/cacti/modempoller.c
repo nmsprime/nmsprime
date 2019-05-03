@@ -14,7 +14,7 @@
 int active_hosts, num_rows;
 int ds_count = 0, us_count = 0;
 int reps = 9, non_reps = 5;
-int requestRetries = 2, requestTimeout = 5000000;
+int requestRetries = 5, requestTimeout = 5000000;
 MYSQL_RES *result;
 
 /* ---------- Global Structures ---------- */
