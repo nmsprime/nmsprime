@@ -16,7 +16,7 @@ class DashboardController extends BaseController
     {
         $title = 'Dashboard';
 
-        $logs = GuiLog::where([['username', '!=', 'cronjob'], ['model', '!=', 'User']])->orderBy('updated_at', 'desc')->limit(20)->get();
+        $logs = GuiLog::where([['username', '!=', 'cronjob'], ['model', '!=', 'User']])->orderBy('updated_at', 'desc')->limit(50)->get();
 
         return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'logs')));
     }

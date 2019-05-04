@@ -30,10 +30,15 @@
                     <span class="pull-right text-muted">{{$log->updated_at->diffForHumans()}}</span>
                 </div>
                 <div class="timeline-content">
-                    <p class="lead">
+                    <h4>
                         <i class="fa {{$bclasses[$log->method]}}"></i>
                         {{$log->username}} {{$log->method}} <a href="admin/{{$log->model}}/{{$log->model_id}}">{{$log->model}}</a>
-                    </p>
+                    </h4>
+                    @foreach(explode(',', $log->text) as $change)
+                        <p class="ml-lg-5">
+                            {!! $change !!}
+                        </p>
+                    @endforeach
                 </div>
             </div>
             <!-- end timeline-body -->
