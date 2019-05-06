@@ -147,7 +147,7 @@ class Item extends \BaseModel
     {
         if ($this->product) {
             $price = floatval($this->credit_amount) ?: $this->product->price;
-            $price = ' | '.round($price, 4).'€';
+            $price = ' | '.round($price, 4).\Modules\BillingBase\Providers\Currency::get();
 
             return $price;
         }
