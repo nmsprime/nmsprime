@@ -3278,12 +3278,12 @@ class ProvVoipEnvia extends \BaseModel
 
             if (! $enviacontract->exists) {
                 $enviacontract->start_date = '1900-01-01';
-                $_ = trans('provvoipenvia::messages.Creating')." EnviaContract $enviacontract->id";
+                $_ = trans('provvoipenvia::messages.creating')." EnviaContract $enviacontract->id";
                 $msg .= "<br> $_";
                 Log::info($_);
                 $enviacontract->save();
             } elseif ($enviacontract->attributes != $enviacontract->original) {
-                $_ = trans('provvoipenvia::messages.Updating')." EnviaContract $enviacontract->id";
+                $_ = trans('provvoipenvia::messages.updating')." EnviaContract $enviacontract->id";
                 $msg .= "<br> $_";
                 Log::info($_);
                 $enviacontract->save();
@@ -3330,7 +3330,7 @@ class ProvVoipEnvia extends \BaseModel
             } elseif ($phonenumbermanagement->enviacontract_id != $enviacontract->id) {
                 $phonenumbermanagement->enviacontract_id = $enviacontract->id;
                 $phonenumbermanagement_changed = true;
-                $msg .= '<br>'.trans('provvoipenvia::messages.Updated', ['PhonenumberManagement '.$phonenumbermanagement->id]);
+                $msg .= '<br>'.trans('provvoipenvia::messages.updated', ['PhonenumberManagement '.$phonenumbermanagement->id]);
                 $phonenumbermanagement->save();
             }
         }
@@ -3475,13 +3475,13 @@ class ProvVoipEnvia extends \BaseModel
             $envia_contract->end_date = boolval($contract_end) ? $contract_end : null;
             $envia_contract->variation_id = $variation_id;
             if (! $envia_contract->exists) {
-                $msg = "Creating envia TEL contract $contract_reference";
+                $msg = trans('provvoipenvia::messages.creating_envia_contract', [$envia_contract]);
                 Log::info($msg);
             } elseif ($envia_contract->attributes != $envia_contract->original) {
-                $msg = "Updating envia TEL contract $contract_reference";
+                $msg = trans('provvoipenvia::messages.updating_envia_contract', [$envia_contract]);
                 Log::info($msg);
             } else {
-                $msg = "envia TEL contract $contract_reference is up to date";
+                $msg = trans('provvoipenvia::messages.envia_contract_uptodate', [$envia_contract]);
                 Log::debug($msg);
             }
 
@@ -3513,18 +3513,18 @@ class ProvVoipEnvia extends \BaseModel
         $update_envia_contract = false;
 
         if (! boolval($this->contract->customer_external_id)) {
-            $msg = 'Setting external customer id for contract '.$this->contract->id.' to '.$xml->customerreference;
+            $msg = trans('provvoipenvia::messages.setting_external_cust_id', [$athis->contract->id, $xml->customerreference]);
             $out .= "<b>$msg</b>";
             Log::info($msg);
             $this->contract->customer_external_id = $xml->customerreference;
             $this->contract->save();
             $update_envia_contract = true;
         } elseif ($this->contract->customer_external_id == $xml->customerreference) {
-            $out .= '<b>envia TEL customer ID is '.$xml->customerreference.'</b>';
+            $out .= '<b>'.trans('provvoipenvia::messages.envia_cust_id_is', [$xml->customerreference]).'</b>';
             $update_envia_contract = true;
         } else {
             // this can happen with customers that switched from another reseller to us – force overwriting with correct reference
-            $msg = 'Changing envia TEL customer reference from '.$this->contract->customer_external_id.' to '.$xml->customerreference;
+            $msg = trans('provvoipenvia::messages.changing_envia_cust_id', [$this->contract->customer_external_id, $$xml->customerreference]);
             Log::warning($msg);
             $out .= "<b>WARNING: $msg</b>";
             $this->contract->customer_external_id = $xml->customerreference;
@@ -3540,7 +3540,7 @@ class ProvVoipEnvia extends \BaseModel
                 if ($enviacontract->envia_customer_reference != $this->contract->customer_external_id) {
                     $enviacontract->envia_customer_reference = $this->contract->customer_external_id;
                     $enviacontract->save();
-                    $msg = "Updating envia_customer_reference in enviacontract $enviacontract->id to $enviacontract->envia_customer_reference";
+                    $msg = trans('provvoipenvia::messages.updating_envia_cust_in_envia_contract', [$enviacontract->id, $enviacontract->envia_customer_reference]);
                     Log::info($msg);
                     $out .= "<br><b>$msg</b>";
                 }
@@ -3570,7 +3570,7 @@ class ProvVoipEnvia extends \BaseModel
         $enviaOrder = EnviaOrder::create($order_data);
 
         // view data
-        $out .= '<h5>Customer updated (order ID: '.$xml->orderid.')</h5>';
+        $out .= '<h5>'.trans('provvoipenvia::messages.cust_updated_by_order', [$xml->orderid]).'</h5>';
 
         return $out;
     }
@@ -3625,7 +3625,7 @@ class ProvVoipEnvia extends \BaseModel
 
         // show and log invalid CSV lines
         if ($errors) {
-            $out .= '<h5>There are invalid lines in returned CSV:</h5>';
+            $out .= '<h5>'.trans('provvoipenvia::messages.invalid_lines_in_csv').'</h5>';
             foreach ($errors as $e) {
                 $out .= $e.'<br><br>';
                 \Log::error('Invalid CSV line processing misc_get_orders_csv_response: '.$e);
@@ -3714,7 +3714,7 @@ class ProvVoipEnvia extends \BaseModel
         if ($result['localareacode'] && $result['baseno']) {
             // assume that order is related to a phonenumber
 
-            $msg = '<br>Order seems to be phonenumber related';
+            $msg = '<br>'.trans('provvoipenvia::messages.order_related_to_phonenumber');
             \Log::debug($msg);
             $out .= $msg;
 
@@ -3723,7 +3723,7 @@ class ProvVoipEnvia extends \BaseModel
         } elseif ($result['contractreference']) {
             // order seems to be related to a contract
 
-            $msg = '<br>Order seems to be contract related';
+            $msg = '<br>'.trans('provvoipenvia::messages.order_related_to_contract');
             \Log::debug($msg);
             $out .= $msg;
 
@@ -3732,7 +3732,7 @@ class ProvVoipEnvia extends \BaseModel
         } elseif ($result['customerreference']) {
             // order seems to be related to a contract
 
-            $msg = '<br>Order seems to be customer related';
+            $msg = '<br>'.trans('provvoipenvia::messages.order_related_to_customer');
             \Log::debug($msg);
             $out .= $msg;
 
@@ -3741,7 +3741,7 @@ class ProvVoipEnvia extends \BaseModel
         } else {
             // no relation
 
-            $msg = '<br>Order seems to be standalone – no relation found';
+            $msg = '<br>'.trans('provvoipenvia::messages.order_related_to_nothing');
             \Log::debug($msg);
             $out .= $msg;
 
