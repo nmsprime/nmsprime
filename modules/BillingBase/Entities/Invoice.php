@@ -275,6 +275,7 @@ class Invoice extends \BaseModel
         $this->data['contract_zip'] = $contract->zip;
         $this->data['contract_city'] = escape_latex_special_chars($contract->city);
         $this->data['contract_district'] = escape_latex_special_chars($contract->district);
+
         $this->data['contract_address'] = '';
         if ($contract->company) {
             $this->data['contract_address'] .= escape_latex_special_chars($contract->company).'\\\\';
