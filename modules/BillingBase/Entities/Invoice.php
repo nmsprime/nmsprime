@@ -156,7 +156,9 @@ class Invoice extends \BaseModel
         'contract_firstname' 	=> '',
         'contract_lastname' 	=> '',
         'contract_company' 		=> '',
+        'contract_district'		=> '',
         'contract_street' 		=> '',
+        'contract_housenumber'	=> '',
         'contract_zip' 			=> '',
         'contract_city' 		=> '',
         'contract_address' 		=> '', 			// concatenated address for begin of letter
@@ -265,10 +267,20 @@ class Invoice extends \BaseModel
         $this->data['contract_firstname'] = escape_latex_special_chars($contract->firstname);
         $this->data['contract_lastname'] = escape_latex_special_chars($contract->lastname);
         $this->data['contract_company'] = escape_latex_special_chars($contract->company);
-        $this->data['contract_street'] = escape_latex_special_chars($contract->street.' '.$contract->house_number);
+        $this->data['contract_street'] = escape_latex_special_chars($contract->street);
+        $this->data['contract_housenumber'] = $contract->house_number;
         $this->data['contract_zip'] = $contract->zip;
         $this->data['contract_city'] = escape_latex_special_chars($contract->city);
-        $this->data['contract_address'] = ($contract->company ? $this->data['contract_company'].'\\\\' : '').($contract->academic_degree ? escape_latex_special_chars($contract->academic_degree).' ' : '').$this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\'.$this->data['contract_street']."\\\\$contract->zip ".$this->data['contract_city'];
+        $this->data['contract_district'] = escape_latex_special_chars($contract->district);
+        $this->data['contract_address'] = ($contract->company ? escape_latex_special_chars($contract->company).'\\\\' : '').
+            ($contract->academic_degree ? "$contract->academic_degree " : '').
+            (($this->data['contract_firstname'] || $this->data['contract_lastname']) ? ($this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\') : '');
+        $this->data['contract_address'] .= $this->data['contract_district'] ? $this->data['contract_district'].'\\\\' : '';
+        $this->data['contract_address'] .= $this->data['contract_street'].' '.$this->data['contract_housenumber']."\\\\$contract->zip ".$this->data['contract_city'];
+        $this->data['contract_address'] = trim($this->data['contract_address']);
+        if (! $this->data['contract_address']) {
+            dd($this->data);
+        }
         $this->data['start_of_term'] = self::langDateFormat($contract->contract_start);
         $this->data['invoice_nr'] = $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
         $this->data['date_invoice'] = date('d.m.Y', strtotime('last day of last month'));
