@@ -370,7 +370,8 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
             return Contract::orderBy('number')->with('items.product', 'costcenter')
                 ->where('create_invoice', '!=', 0)
-                ->where(whereLaterOrEqualThanDate('contract_end', date('Y-m-d', strtotime('last day of nov last year'))))
+                // TODO: make time we have to look back dependent of CDR offset in BillingBase config
+                ->where(whereLaterOrEqualThanDate('contract_end', date('Y-m-d', strtotime('last day of sep last year'))))
                 ->get();
         }
 
