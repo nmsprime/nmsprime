@@ -26,6 +26,7 @@ return [
     'no_model_given' => 'Kein model übergeben.',
     'no_numbers_for_envia_contract' => 'Keine Rufnummern für den envia-TEL-Vertrag :0 gefunden.',
     'no_trc_set' => 'Sperrklasse nicht gesetzt.',
+    'order_not_existing' => 'FEHLER: envia-TEL-Auftrag :0 existiert nicht in unserer Datenbank.',
     'orderid_orderdocument_mismatch' => 'Übergebene envia-TEL-Auftrags-ID (:0) passt nicht zum Dokument.',
     'relocate_date_missing' => 'Datum der Änderung der Installationsadresse muss gesetzt sein.',
     'value_not_allowed_for_param' => 'Wert :0 nicht zulässig für Parameter $level',

@@ -3475,13 +3475,13 @@ class ProvVoipEnvia extends \BaseModel
             $envia_contract->end_date = boolval($contract_end) ? $contract_end : null;
             $envia_contract->variation_id = $variation_id;
             if (! $envia_contract->exists) {
-                $msg = trans('provvoipenvia::messages.creating_envia_contract', [$envia_contract]);
+                $msg = trans('provvoipenvia::messages.creating_envia_contract', [$envia_contract->id]);
                 Log::info($msg);
             } elseif ($envia_contract->attributes != $envia_contract->original) {
-                $msg = trans('provvoipenvia::messages.updating_envia_contract', [$envia_contract]);
+                $msg = trans('provvoipenvia::messages.updating_envia_contract', [$envia_contract->id]);
                 Log::info($msg);
             } else {
-                $msg = trans('provvoipenvia::messages.envia_contract_uptodate', [$envia_contract]);
+                $msg = trans('provvoipenvia::messages.envia_contract_uptodate', [$envia_contract->id]);
                 Log::debug($msg);
             }
 
@@ -3513,7 +3513,7 @@ class ProvVoipEnvia extends \BaseModel
         $update_envia_contract = false;
 
         if (! boolval($this->contract->customer_external_id)) {
-            $msg = trans('provvoipenvia::messages.setting_external_cust_id', [$athis->contract->id, $xml->customerreference]);
+            $msg = trans('provvoipenvia::messages.setting_external_cust_id', [$this->contract->id, $xml->customerreference]);
             $out .= "<b>$msg</b>";
             Log::info($msg);
             $this->contract->customer_external_id = $xml->customerreference;
@@ -3524,7 +3524,7 @@ class ProvVoipEnvia extends \BaseModel
             $update_envia_contract = true;
         } else {
             // this can happen with customers that switched from another reseller to us – force overwriting with correct reference
-            $msg = trans('provvoipenvia::messages.changing_envia_cust_id', [$this->contract->customer_external_id, $$xml->customerreference]);
+            $msg = trans('provvoipenvia::messages.changing_envia_cust_id', [$this->contract->customer_external_id, $xml->customerreference]);
             Log::warning($msg);
             $out .= "<b>WARNING: $msg</b>";
             $this->contract->customer_external_id = $xml->customerreference;
@@ -3769,14 +3769,14 @@ class ProvVoipEnvia extends \BaseModel
         // the number we look for should exist once and only once!
         $phonenumber_count = $phonenumbers->count();
         if ($phonenumber_count == 0) {
-            $msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' does not exist. Skipping order '.$order_id;
+            $msg = trans('provvoipenvia::messages.phonenumber_in_csv_not_existing', [$result['localareacode'], $result['baseno'], $order_id]);
             \Log::warning($msg);
             $out .= '<br><span style="color: red">'.$msg.'</span>';
 
             return $out;
         }
         if ($phonenumber_count > 1) {
-            $msg = 'Error processing get_orders_csv_response: Phonenumber '.$result['localareacode'].'/'.$result['baseno'].' exists '.$phonenumber_count.' times. Clean your database! Skipping order '.$order_id;
+            $msg = trans('provvoipenvia::messages.phonenumber_in_csv_many_existing', [$result['localareacode'], $result['baseno'], $phonenumber_count, $order_id]);
             \Log::warning($msg);
             $out .= '<br><span style="color: red">'.$msg.'</span>';
 
@@ -3804,7 +3804,7 @@ class ProvVoipEnvia extends \BaseModel
         // check if relation between order and phonenumber exists
         if (! $order->phonenumbers->contains($phonenumber->id)) {
             $order->phonenumbers()->attach($phonenumber->id);
-            $msg = 'Added relation between existing enviaorder '.$order_id.' and phonenumber '.$phonenumber->id;
+            $msg =  trans('provvoipenvia::messages.relation_order_phonenumber_added', [$order_id, $phonenumber->id]);
             Log::info($msg);
             $out .= '<br>'.$msg;
         }
@@ -3838,7 +3838,7 @@ class ProvVoipEnvia extends \BaseModel
                 $modem = $phonenumber->modem;
             } else {
                 if ($modem != $phonenumber->modem) {
-                    $msg = 'Phonenumbers related to envia TEL contract '.$result['contractreference'].' do belong to different modems. Skipping.';
+                    $msg = trans('provvoipenvia::messages.phonenumbers_belong_to_different_modems', [$result['contractreference']]);
                     \Log::error($msg);
                     $out .= '<br><span style="color: red">Error: '.$msg.'</span>';
 
@@ -3848,7 +3848,7 @@ class ProvVoipEnvia extends \BaseModel
         }
 
         if (is_null($modem)) {
-            $msg = 'No modem found for envia TEL contract '.$result['contractreference'].'. Skipping.';
+            $msg = trans('provvoipenvia::messages.no_modem_for_order', [$result['contractreference']]);
             \Log::warning($msg);
             $out .= '<br><span style="color: red">'.$msg.'</span>';
 
@@ -3892,7 +3892,7 @@ class ProvVoipEnvia extends \BaseModel
         $contract = Contract::where('customer_external_id', '=', $result['customerreference'])->first();
 
         if (is_null($contract)) {
-            $msg = 'No contract found for envia TEL customer '.$result['customerreference'].'. Skipping.';
+            $msg = trans('provvoipenvia::messages.no_contract_for_order', [$result['customerreference']]);
             \Log::warning($msg);
             $out .= '<br><span style="color: red">'.$msg.'</span>';
 
@@ -3926,7 +3926,7 @@ class ProvVoipEnvia extends \BaseModel
      */
     protected function _process_misc_get_orders_csv_response__not_related($result)
     {
-        $out = '<br>TODO: check if we have to do something…';
+        $out = '<br>'.trans('provvoipenvia::messages.todo_check');
 
         return $out;
     }
@@ -3957,7 +3957,7 @@ class ProvVoipEnvia extends \BaseModel
                 'contract_id' => $result['contract_id'],
             ];
             $enviacontract = EnviaContract::create($data);
-            $msg = "Created EnviaContract $enviacontract->id";
+            $msg = trans('provvoipenvia::messages.created_envia_contract', [$enviacontract->id]);
             Log::info($msg);
             $out .= '<br>'.$msg;
         }
@@ -3978,7 +3978,7 @@ class ProvVoipEnvia extends \BaseModel
 
         // create order if not existing
         if (is_null($order)) {
-            $msg = 'Order '.$result['orderid'].' not existing – creating';
+            $msg = trans('provvoipenvia::messages.creating_envia_order', [$result['orderid']]);
             $out .= "<br>$msg";
             \Log::info($msg);
 
@@ -4058,7 +4058,7 @@ class ProvVoipEnvia extends \BaseModel
 
         if (! isset($data['contract_id'])) {
             Log::warning('No contract_id given');
-            $out .= '<br> ⇒ Warning: No contract_id given';
+            $out .= '<br> ⇒ '.trans('provvoipenvia::messages.no_contract_id_given');
 
             return $out;
         }
@@ -4075,6 +4075,7 @@ class ProvVoipEnvia extends \BaseModel
             $contract->customer_external_id = $data['customerreference'];
             $contract->save();
             $out .= '<br> ⇒ Contract->customer_external_id set to '.$data['customerreference'];
+            $out .= '<br> ⇒ '.trans('provvoipenvia::messages.updated_cust_ext_id', [$data['customerreference']]);
         } elseif ($contract->customer_external_id != $data['customerreference']) {
             $msg = 'contract->customer_external_id ('.$contract->customer_external_id.') != enviaorder->customerreference ('.$data['customerreference'].')!!';
             \Log::error($msg);
@@ -4095,7 +4096,7 @@ class ProvVoipEnvia extends \BaseModel
 
         if (! isset($data['modem_id'])) {
             Log::warning('No modem_id given');
-            $out .= '<br> ⇒ Warning: No modem_id given';
+            $out .= '<br> ⇒ '.trans('provvoipenvia::messages.no_modem_id_given');
 
             return $out;
         }
@@ -4138,7 +4139,7 @@ class ProvVoipEnvia extends \BaseModel
                 // set the date
                 $modem->contract_ext_creation_date = $date_to_set;
                 $modem_changed = true;
-                $out .= '<br> ⇒ Modem->contract_ext_creation_date set to '.$date_to_set;
+                $out .= '<br> ⇒ Modem->contract_ext_creation_date = '.$date_to_set;
             }
             // if we got an orderdate: we also can update modem if orderdate is less than the currently stored date
             elseif (
@@ -4147,7 +4148,7 @@ class ProvVoipEnvia extends \BaseModel
             ) {
                 $modem->contract_ext_creation_date = $data['orderdate'];
                 $modem_changed = true;
-                $out .= '<br> ⇒ Modem->contract_ext_creation_date set to '.$data['orderdate'];
+                $out .= '<br> ⇒ Modem->contract_ext_creation_date = '.$data['orderdate'];
             }
         }
 
@@ -4175,7 +4176,7 @@ class ProvVoipEnvia extends \BaseModel
 
         if (! isset($data['phonenumber_id'])) {
             Log::warning('No phonenumber_id given');
-            $out .= '<br> ⇒ Warning: No phonenumber_id given';
+            $out .= '<br> ⇒ '.trans('provvoipenvia::messages.no_phonenumber_id_given');
 
             return $out;
         }
@@ -4206,7 +4207,7 @@ class ProvVoipEnvia extends \BaseModel
 
         if (! isset($data['phonenumber_id']) && ! isset($data['phonenumbermanagement_id'])) {
             Log::warning('Neither phonenumber_id nor phonenumbermanagement_id given');
-            $out .= '<br> ⇒ Warning: Neither phonenumber_id nor phonenumbermanagement_id given';
+            $out .= '<br> ⇒ '.trans('provvoipenvia::messages.no_phonenumber_or_managament_id_given');
 
             return $out;
         }
@@ -4250,7 +4251,7 @@ class ProvVoipEnvia extends \BaseModel
                 )
             ) {
                 $phonenumbermanagement = new PhonenumberManagement();
-                $out .= '<br> ⇒ No PhonenumberManagement found. Creating new one – you have to set some values manually!';
+                $out .= '<br> ⇒ '.trans('provvoipenvia::messages.phonenumbermanagement_n/a_create_new', [$phonenumber->id]);
 
                 // set the correlating phonenumber id
                 $phonenumbermanagement->phonenumber_id = $phonenumber->id;
@@ -4277,16 +4278,16 @@ class ProvVoipEnvia extends \BaseModel
             ) {
                 if (is_null($phonenumbermanagement->voipaccount_ext_creation_date)) {
                     $phonenumbermanagement->voipaccount_ext_creation_date = $order->orderdate;
-                    $out .= '<br> ⇒ PhonenumberManagement->voipaccount_ext_creation_date set to '.$order->orderdate;
+                    $out .= '<br> ⇒ PhonenumberManagement->voipaccount_ext_creation_date = '.$order->orderdate;
                     $phonenumbermanagement_changed = true;
                 }
                 if (is_null($phonenumbermanagement->activation_date)) {
                     $phonenumbermanagement->activation_date = $order->orderdate;
-                    $out .= '<br> ⇒ PhonenumberManagement->activation_date set to '.$order->orderdate;
+                    $out .= '<br> ⇒ PhonenumberManagement->activation_date = '.$order->orderdate;
                     $phonenumbermanagement_changed = true;
                 }
                 $phonenumbermanagement->external_activation_date = $order->orderdate;
-                $out .= '<br> ⇒ PhonenumberManagement->external_activation_date set to '.$order->orderdate;
+                $out .= '<br> ⇒ PhonenumberManagement->external_activation_date = '.$order->orderdate;
                 $phonenumbermanagement_changed = true;
             } elseif (
                 (EnviaOrder::order_terminates_voip_account($order))
@@ -4295,16 +4296,16 @@ class ProvVoipEnvia extends \BaseModel
             ) {
                 if (is_null($phonenumbermanagement->voipaccount_ext_termination_date)) {
                     $phonenumbermanagement->voipaccount_ext_termination_date = $order->orderdate;
-                    $out .= '<br> ⇒ PhonenumberManagement->voipaccount_ext_termination_date set to '.$order->orderdate;
+                    $out .= '<br> ⇒ PhonenumberManagement->voipaccount_ext_termination_date = '.$order->orderdate;
                     $phonenumbermanagement_changed = true;
                 }
                 if (is_null($phonenumbermanagement->deactivation_date)) {
                     $phonenumbermanagement->deactivation_date = $order->orderdate;
-                    $out .= '<br> ⇒ PhonenumberManagement->deactivation_date set to '.$order->orderdate;
+                    $out .= '<br> ⇒ PhonenumberManagement->deactivation_date = '.$order->orderdate;
                     $phonenumbermanagement_changed = true;
                 }
                 $phonenumbermanagement->external_deactivation_date = $order->orderdate;
-                $out .= '<br> ⇒ PhonenumberManagement->external_deactivation_date set to '.$order->orderdate;
+                $out .= '<br> ⇒ PhonenumberManagement->external_deactivation_date = '.$order->orderdate;
                 $phonenumbermanagement_changed = true;
             }
         }
@@ -4317,7 +4318,7 @@ class ProvVoipEnvia extends \BaseModel
                 ($phonenumbermanagement->enviacontract_id != $data['enviacontract_id'])
             ) {
                 // don't update enviacontract_id based on orders – contract/relocate causes new envia contract; will be caught in other method
-                $msg = 'PhonenumberManagement ('.$phonenumbermanagement->id.'): different enviacontract_id in order and management. Will not update since this id changes on contract/relocate. Will be handled in own method, can be set to current value using contract/get_reference';
+                $msg = trans('provvoipenvia::messages.enviacontract_different_in_order_and_management', [$phonenumbermanagement->id]);
                 \Log::info($msg);
                 $out .= '<br> ⇒ '.$msg;
             }
@@ -4326,7 +4327,7 @@ class ProvVoipEnvia extends \BaseModel
         // finally: check if management has been changed and save if so
         if ($phonenumbermanagement_changed) {
             $phonenumbermanagement->save();
-            $msg = "Updated PhonenumberManagement $phonenumbermanagement->id";
+            $msg = trans('provvoipenvia::messages.updated_management', [$phonenumbermanagement->id]);
             Log::info($msg);
         }
 
@@ -4363,8 +4364,8 @@ class ProvVoipEnvia extends \BaseModel
             }
         }
 
-        $out .= '<h5>Usage data</h5>';
-        $out .= 'Informational data only – nothing is going to be processed<br><br>';
+        $out .= '<h5>'.trans('provvoipenvia::messages.usage_data').'</h5>';
+        $out .= trans('provvoipenvia::messages.informational_only').'<br><br>';
         $out .= '<table class="table table-striped table-hover">';
         $out .= '<thead><tr>';
         foreach ($csv_headers as $h) {
@@ -4455,7 +4456,7 @@ class ProvVoipEnvia extends \BaseModel
 
         // something went wrong! There is no database entry for the given orderID
         if (is_null($order)) {
-            throw new \Exception('ERROR: There is no order with order_id '.$order_id.' in table enviaorders');
+            throw new \Exception(trans('provvoipenvia::errors.order_not_existing', [$order_id]));
         }
 
         // check status: if 404 then the order doesn't exist at envia ⇒ delete from database
@@ -4471,13 +4472,13 @@ class ProvVoipEnvia extends \BaseModel
                 $order->delete();
             }
 
-            $out .= '<h5>Order '.$order_id.' does not exist:</h5>';
-            $out .= 'Order has been deleted in database';
+            $out .= '<h5>'.trans('provvoipenvia::messages.order_not_existing', [$order_id]).'</h5>';
+            $out .= trans('provvoipenvia::messages.deleted_order');
 
             return $out;
         }
 
-        $out .= '<h5>Status for order '.$order_id.':</h5>';
+        $out .= '<h5>'.trans('provvoipenvia::messages.order_state_cur', [$order_id]).'</h5>';
 
         $out .= '<table>';
 
@@ -4567,7 +4568,7 @@ class ProvVoipEnvia extends \BaseModel
         if ($order_changed) {
             $order->save();
             Log::info('Database table enviaorder updated for order with id '.$order_id);
-            $out .= '<br><b>Table EnviaOrder updated</b>';
+            $out .= '<br><b>'.trans('provvoipenvia::messages.updated_order', [$order_id]).'</b>';
         }
 
         // update related tables if order has changed
@@ -4704,7 +4705,7 @@ class ProvVoipEnvia extends \BaseModel
             if ($phonenumbermanagement_changed) {
                 $phonenumbermanagement->save();
                 Log::info('Database table phonenumbermanagement updated for phonenumbermanagement with id '.$phonenumbermanagement->id);
-                $out .= '<br><b>PhonenumberManagement table updated for id '.$phonenumbermanagement->id.'</b>';
+                $out .= '<br><b>'.trans('provvoipenvia::messages.updated_management', [$phonenumbermanagement->id]).'</b>';
             }
         }
 
@@ -4724,6 +4725,7 @@ class ProvVoipEnvia extends \BaseModel
             $enviacontract = EnviaContract::firstOrCreate(['envia_contract_reference' => $order->contractreference]);
             if ($order->enviacontract_id != $enviacontract->id) {
                 $msg = "Order is related to envia TEL contract $enviacontract->id ($enviacontract->envia_contract_reference) – Updating relation.";
+                $msg = trans('provvoipenvia::messages.order_related_to_enviacontract', [$enviacontract->id, $enviacontract->envia_contract_reference]);
                 Log::info($msg);
                 $out .= "<br>$msg";
                 $order->enviacontract_id = $enviacontract->id;
@@ -4754,7 +4756,7 @@ class ProvVoipEnvia extends \BaseModel
             $contract_changed = true;
         }
         if ($order->customerreference != $contract->customer_external_id) {
-            $msg = 'Error: Customer reference in order ('.$order->customerreference.') and contract ('.$contract->customer_external_id.') are different!';
+            $msg = trans('provvoipenvia::messages.customer_id_different_order_contract', [$order->customerreference, $contract->customer_external_id]);
             $out .= '<h4>'.$msg.'</h4>';
             Log::error($msg);
         }
@@ -4762,7 +4764,7 @@ class ProvVoipEnvia extends \BaseModel
         if ($contract_changed) {
             $contract->save();
             Log::info('Database table contract updated for contract with id '.$contract->id);
-            $out .= '<br><b>Contract table updated</b>';
+            $out .= '<br><b>'.trans('provvoipenvia::messages.updated_contract').'</b>';
         }
 
         // finally check if there is data e.g. in items to update – use the updater from Contract.php
@@ -4804,7 +4806,7 @@ class ProvVoipEnvia extends \BaseModel
             $modem_changed = true;
         }
         if ($order->contractreference != $modem->contract_external_id) {
-            $msg = 'Error: Contract reference in order ('.$order->contractreference.') and modem ('.$modem->contract_external_id.') are different!';
+            $msg = trans('provvoipenvia::messages.enviacontract_id_different_order_modem', [$order->contractreference, $modem->contract_external_id]);
             $out .= '<h4>'.$msg.'</h4>';
             Log::error($msg);
         }
@@ -4812,7 +4814,7 @@ class ProvVoipEnvia extends \BaseModel
         if ($modem_changed) {
             $modem->save();
             Log::info('Database table modem updated for modem with id '.$modem->id);
-            $out .= '<br><b>Modem table updated</b>';
+            $out .= '<br><b>'.trans('provvoipenvia::messages.updated_modem').'</b>';
         }
 
         return $out;
@@ -4830,7 +4832,7 @@ class ProvVoipEnvia extends \BaseModel
         if ($order_to_restore && $order_to_restore->trashed()) {
             $order_to_restore->restore();
             Log::info('Cancel of order '.$order_to_restore->id.' failed. Restored soft deleted original order');
-            $out .= '<br><b>Cancelation failed. Restored order with id '.$order_to_restore->id.' (envia TEL ID '.$order_to_restore->orderid.')</b>';
+            $out .= '<br><b>'.trans('provvoipenvia::messages.order_cancel_failed', [$order_to_restore->id, $order_to_restore->orderid]).'</b>';
         }
 
         return $out;
@@ -4846,7 +4848,7 @@ class ProvVoipEnvia extends \BaseModel
         $cancelled_order = EnviaOrder::withTrashed()->find($order->related_order_id);
         $cancelled_method = $cancelled_order->method;
 
-        $msg = 'Cancelation of order '.$cancelled_order->id.' (envia TEL ID '.$cancelled_order->orderid.', method '.$cancelled_method.') was successful.';
+        $msg = trans('provvoipenvia::messages.order_cancel_success', [$cancelled_order->id, $cancelled_order->orderid]);
         Log::info($msg);
         $out .= '<br><b>'.$msg.'</b>';
 
@@ -4864,7 +4866,7 @@ class ProvVoipEnvia extends \BaseModel
                 $management->external_activation_date = null;
                 $management->save();
 
-                $msg = 'Cleared data in phonenumbermanagement '.$management->id.'.';
+                $msg = trans('provvoipenvia::messages.cleared_management', [$management->id]);
                 Log::info($msg);
                 $ret .= '<br><b>'.$msg.'</b>';
             }
@@ -4886,7 +4888,7 @@ class ProvVoipEnvia extends \BaseModel
             $contract->customer_external_id = null;
             $contract->save();
 
-            $msg = 'Cleared data in modem '.$modem->id.' and contract '.$contract->id.'.';
+            $msg = trans('provvoipenvia::messages.cleared_modem_contract', [$modem->id, $contract->id]);
             Log::info($msg);
             $out .= '<br><b>'.$msg.'</b>';
 
@@ -4907,16 +4909,16 @@ class ProvVoipEnvia extends \BaseModel
                 $management->external_deactivation_date = null;
                 $management->save();
 
-                $msg = 'Cleared data in phonenumbermanagement '.$management->id.'.';
+                $msg = trans('provvoipenvia::messages.cleared_management', [$management->id]);
                 Log::info($msg);
                 $out .= '<br><b>'.$msg.'</b>';
             }
         }
         // fallback: At least warn the user!
         else {
-            $msg = 'Updating the database to reset related database entries for method '.$cancelled_method.' (on cancelled order '.$cancelled_order->id.' not yet implemented. Has to be done manually!!';
+            $msg = trans('provvoipenvia::messages.clearing_database_after_ordercancel_not_implemented', [$cancelled_method, $cancelled_order->id]);
             Log::error($msg);
-            $out .= '<h5>Attention: '.$msg.'</h5>';
+            $out .= '<h5>'.$msg.'</h5>';
         }
 
         return $out;
@@ -5017,6 +5019,7 @@ class ProvVoipEnvia extends \BaseModel
 
         // view data
         $out .= '<h5>VoIP account updated (order ID: '.$xml->orderid.')</h5>';
+        $out .= '<h5>'.trans('provvoipenvia::messages.updated_voip_account', [$xml->orderid]).'</h5>';
 
         return $out;
     }
@@ -5097,7 +5100,7 @@ class ProvVoipEnvia extends \BaseModel
         $enviaorderdocument['upload_order_id'] = $xml->orderid;
         $enviaorderdocument->save();
 
-        $out .= '<h5>File uploaded successfully.</h5>';
+        $out .= '<h5>'.trans('provvoipenvia::messages.uploaded_file').'</h5>';
 
         return $out;
     }
@@ -5111,14 +5114,12 @@ class ProvVoipEnvia extends \BaseModel
     {
         if (is_null($this->phonebookentry->external_creation_date)) {
             $this->phonebookentry->external_creation_date = date('Y-m-d');
-            $method = 'Created';
+            $msg = trans('provvoipenvia::messages.created_phonebookentry', [$this->phonebookentry->id]);
         } else {
             $this->phonebookentry->external_update_date = date('Y-m-d');
-            $method = 'Updated';
+            $msg = trans('provvoipenvia::messages.updated_phonebookentry', [$this->phonebookentry->id]);
         }
         $this->phonebookentry->save();
-
-        $msg = "$method PhonebookEntry ".$this->phonebookentry->id.' at Telekom';
 
         $out .= $msg;
         Log::info($msg);
@@ -5138,7 +5139,7 @@ class ProvVoipEnvia extends \BaseModel
 
         $this->phonebookentry->delete();
 
-        $msg = 'PhonebookEntry '.$this->phonebookentry->id.' deleted';
+        $msg = trans('provvoipenvia::messages.deleted_phonebookentry', [$this->phonebookentry->id]);
 
         $out .= $msg;
         Log::info($msg);
@@ -5180,9 +5181,9 @@ class ProvVoipEnvia extends \BaseModel
 
         if ($changed) {
             if ($this->phonebookentry->wasRecentlyCreated) {
-                $msg = 'Created new PhonebookEntry for phonenumber '.$this->phonenumber->id.' with data delivered by Telekom';
+                $msg = trans('provvoipenvia::messages.created_phonebookentry_local', [$this->phonenumber->id]);
             } else {
-                $msg = 'Updated PhonebookEntry for phonenumber '.$this->phonenumber->id.' with data delivered by Telekom';
+                $msg = trans('provvoipenvia::messages.updated_phonebookentry_local', [$this->phonenumber->id]);
             }
             $this->phonebookentry->save();
             $out .= $msg;

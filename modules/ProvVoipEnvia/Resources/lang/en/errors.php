@@ -26,6 +26,7 @@ return [
     'no_model_given' => 'No model given',
     'no_numbers_for_envia_contract' => 'No phonenumbers found for envia TEL contract :0.',
     'no_trc_set' => 'TRCclass not set.',
+    'order_not_existing' => 'ERROR: There is no order with order_id :0 in table enviaorders',
     'orderid_orderdocument_mismatch' => 'Given order_id (:0) not correct for given enviaorderdocument.',
     'relocate_date_missing' => 'Date of installation address change has to be set.',
     'value_not_allowed_for_param' => 'Value :a not allowed for param $level',
