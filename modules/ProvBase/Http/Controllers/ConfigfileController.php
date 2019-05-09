@@ -156,9 +156,9 @@ class ConfigfileController extends \BaseController
     public function recreateTree($content, $hasName)
     {
         // see if this name already exists
-        $originalConfigfiles=Configfile::all()->pluck('name');
-        while($originalConfigfiles->contains($content['name'])) {
-            $content['name'].='(2)';
+        $originalConfigfiles = Configfile::all()->pluck('name');
+        while ($originalConfigfiles->contains($content['name'])) {
+            $content['name'] .= '(2)';
         }
         $originalConfigfiles->push($content['name']);
 
