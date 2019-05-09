@@ -173,6 +173,7 @@ class Invoice extends \BaseModel
         'invoice_headline'		=> '',
         'rcd' 					=> '',			// Fälligkeitsdatum / Buchungsdatum
         'cdr_month'				=> '', 			// Month of Call Data Records
+        'payment_method'        => '',          // for conditional texts in PDF [directdebit|banktransfer|none]
 
         // Charges
         'item_table_positions'  => '', 			// tex table of all items to be charged for this invoice
@@ -431,15 +432,19 @@ class Invoice extends \BaseModel
             $template = $account->invoice_text_sepa;
             // $text = 'IBAN:\>'.$this->data['contract_mandate_iban'].'\\\\Mandatsreferenz:\>'.$this->data['contract_mandate_ref'].'\\\\Gläubiger-ID:\>'.$this->data['company_creditor_id'];
             $text = 'IBAN: &'.$this->data['contract_mandate_iban'].'\\\\Mandatsreferenz: &'.$this->data['contract_mandate_ref'].'\\\\Gläubiger-ID: &'.$this->data['company_creditor_id'];
+            $this->data['payment_method'] = 'directdebit';
         } elseif ($net < 0 && $this->data['contract_mandate_iban']) {
             $template = $account->invoice_text_sepa_negativ;
             $text = 'IBAN: &'.$this->data['contract_mandate_iban'].'\\\\Mandatsreferenz: &'.$this->data['contract_mandate_ref'];
+            $this->data['payment_method'] = 'none';
         } elseif ($net >= 0 && ! $this->data['contract_mandate_iban']) {
             $template = $account->invoice_text;
             $text = 'IBAN: &'.$this->data['company_account_iban'].'\\\\BIC: &'.$this->data['company_account_bic'].'\\\\Verwendungszweck: &'.$transfer_reason;
+            $this->data['payment_method'] = 'banktransfer';
         } elseif ($net < 0 && ! $this->data['contract_mandate_iban']) {
             $template = $account->invoice_text_negativ;
             $text = '';
+            $this->data['payment_method'] = 'none';
         }
 
         // replace placeholder of invoice text
