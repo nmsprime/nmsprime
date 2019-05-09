@@ -112,7 +112,7 @@ class ConfigfileController extends \BaseController
             return trans('messages.invalidJson');
         }
 
-        $this->recreateTree($json, Input::get()['name'] == '' ? true : false);
+        $this->recreateTree($json, Input::get()['name'] == '' ? true : false, Configfile::all()->pluck('name'));
     }
 
     /**
@@ -153,10 +153,9 @@ class ConfigfileController extends \BaseController
      * @param array $content
      * @param bool $hasName
      */
-    public function recreateTree($content, $hasName)
+    public function recreateTree($content, $hasName, $originalConfigfiles)
     {
         // see if this name already exists
-        $originalConfigfiles = Configfile::all()->pluck('name');
         while ($originalConfigfiles->contains($content['name'])) {
             $content['name'] .= '(2)';
         }
@@ -187,7 +186,7 @@ class ConfigfileController extends \BaseController
         // recursively for all children
         foreach ($children as $group) {
             foreach ($group as $child) {
-                $this->recreateTree($child, false);
+                $this->recreateTree($child, false, $originalConfigfiles);
             }
         }
     }
