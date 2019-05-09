@@ -156,9 +156,11 @@ class ConfigfileController extends \BaseController
     public function recreateTree($content, $hasName)
     {
         // see if this name already exists
-        while (\Modules\Provbase\Entities\Configfile::where('name', '=', $content['name'])->count() > 0) {
-            $content['name'] .= '(2)';
+        $originalConfigfiles=Configfile::all()->pluck('name');
+        while($originalConfigfiles->contains($content['name'])) {
+            $content['name'].='(2)';
         }
+        $originalConfigfiles->push($content['name']);
 
         // if there are no children
         if (! array_key_exists('children', $content)) {
