@@ -6,7 +6,7 @@
     <div class="row">
 
         <!-- rerun button -->
-        @if ($rerun_button)
+        @if ($button['rerun'])
             <div class="col-12 text-center m-b-20">
                 {{ Form::open(array('route' => ['SettlementRun.update', $view_var->id,] ,'method' => 'put')) }}
                     {{ Form::hidden('rerun', true) }}
@@ -29,7 +29,7 @@
         @endif
 
         <!-- button  to create invoices PDF for postal delivery -->
-        @if (Storage::exists('config/billingbase/post-invoice-product-ids') && ! \Session::get('job_id'))
+        @if ($button['postal'] && ! \Session::get('job_id'))
             <div class="col-md-12 text-center m-b-20">
                 <div class="row">
                     <div class="col-md-1"></div>
