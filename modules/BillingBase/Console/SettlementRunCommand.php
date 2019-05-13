@@ -67,11 +67,13 @@ class SettlementRunCommand extends Command implements ShouldQueue
         // Determine SR (SettlementRun) ID as this is necessary to create relation between Invoice & SR
         if (! $this->sr->getAttribute('id')) {
             $this->sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->first();
+            SettlementRun::where('id', $this->sr->id)->update(['updated_at' => date('Y-m-d H:i:s')]);
         }
 
         if (! $this->sr || ! $this->sr->getAttribute('id')) {
             // Note: create will run the observer that calls this command again with this SR
             SettlementRun::create(['year' => $this->dates['Y'], 'month' => $this->dates['lastm']]);
+            echo "\nSettlementRun is called in background via Queue\n";
             exit(0);
         }
 
@@ -274,6 +276,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
         if ($this->output) {
             $bar->finish();
+            echo "\n";
         }
 
         // avoid deleting temporary latex files before last invoice was built (multiple threads are used)
@@ -367,7 +370,8 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
             return Contract::orderBy('number')->with('items.product', 'costcenter')
                 ->where('create_invoice', '!=', 0)
-                ->where(whereLaterOrEqualThanDate('contract_end', date('Y-m-d', strtotime('last day of nov last year'))))
+                // TODO: make time we have to look back dependent of CDR offset in BillingBase config
+                ->where(whereLaterOrEqualThanDate('contract_end', date('Y-m-d', strtotime('last day of sep last year'))))
                 ->get();
         }
 
@@ -542,7 +546,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
      */
     private function _get_cdr_data()
     {
-        $calls = [[]];
+        $calls = $calls_total = [[]];
 
         \Artisan::call('billing:cdr');
 
@@ -554,10 +558,17 @@ class SettlementRunCommand extends Command implements ShouldQueue
                 throw new Exception("Missing call data record file from $provider");
             }
 
-            $calls += $this->{"_parse_$provider".'_csv'}($filepath);
+            $calls = $this->{"_parse_$provider".'_csv'}($filepath);
+
+            // combine arrays - NOTE: Dont simplify by array_merge or + operator here!
+            foreach ($calls as $cnr => $entries) {
+                foreach ($entries as $entry) {
+                    $calls_total[$cnr][] = $entry;
+                }
+            }
         }
 
-        return $calls;
+        return $calls_total;
     }
 
     /**
@@ -588,14 +599,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
         }
 
         // this is needed for backward compatibility to old system
-        $cdr_nr_prefix_replacements = [];
-        if (Storage::exists('config/billingbase/cdr-nr-prefix-replacements')) {
-            $cdr_nr_prefix_replacements = explode(PHP_EOL, Storage::get('config/billingbase/cdr-nr-prefix-replacements'));
-
-            array_filter($cdr_nr_prefix_replacements, function ($value) {
-                return $value !== '';
-            });
-        }
+        $cdr_nr_prefix_replacements = self::getCdrNrPrefixReplacements();
 
         // skip first line of csv (column description)
         unset($csv[0]);
@@ -607,7 +611,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
             $arr = str_getcsv($line, ';');
 
             // replace prefixes of enviatel customer numbers that not exist in NMSPrime
-            $customer_nr = $cdr_nr_prefix_replacements ? str_replace($cdr_nr_prefix_replacements, '', $arr[0]) : $arr[0];
+            $customer_nr = str_replace($cdr_nr_prefix_replacements, '', $arr[0]);
 
             $data = [
                 'calling_nr' => $arr[3],
@@ -638,7 +642,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
             }
         }
 
-        $this->_log_phonenumber_mismatches($mismatches);
+        $this->_log_phonenumber_mismatches($mismatches, 'EnviaTel');
         $this->_log_unassigned_calls($unassigned);
 
         // warning when there are 5 times more customers then calls
@@ -751,7 +755,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
         // skip first line of csv (column description)
         unset($csv[0]);
 
-        $logged = $phonenumbers = $unassigned = [];
+        $logged = $phonenumbers = $unassigned = $mismatches = [];
         $price = $count = 0;
         $customer_nrs = self::_get_customer_nrs();
         $registrar = 'deu3.purtel.com';
@@ -760,33 +764,45 @@ class SettlementRunCommand extends Command implements ShouldQueue
         // get phonenumbers because only username is given in CDR.csv
         $phonenumbers_db = $this->_get_phonenumbers($registrar);
 
+        // Identification and comparison is done via unique username of phonenr and customer number (contract number must be equal to external customer nr)
         foreach ($phonenumbers_db as $p) {
             $phonenumbers[$p->username] = $p->prefix_number.$p->number;
+            $contractnrs[$p->username][] = $p->contractnr;
         }
+
+        // this is needed for backward compatibility to old system
+        $cdr_nr_prefix_replacements = self::getCdrNrPrefixReplacements();
 
         foreach ($csv as $line) {
             $arr = str_getcsv($line, ';');
 
-            $customer_nr = intval(str_replace(['010-'], '', $arr[7]));
+            $customer_nr = str_replace($cdr_nr_prefix_replacements, '', $arr[7]);
             $username = $arr[2];
             $date = explode(' ', $arr[1]);
 
             if (! isset($phonenumbers[$username])) {
-                Log::error('billing', "Phonenr of contract $customer_nr with username $username not found in DB. Calling number will not appear on invoice.");
+                // Log::warning('billing', "Phonenr of contract $customer_nr with username $username not found in DB. Calling number will not appear on invoice.");
                 $phonenumbers[$username] = ' - ';
             }
 
             $data = [
                 'calling_nr' => $phonenumbers[$username],
-                'date' 		=> $date[0],
+                'date'      => $date[0],
                 'starttime' => $date[1],
-                'duration' 	=> gmdate('H:i:s', $arr[4]),
+                'duration'  => gmdate('H:i:s', $arr[4]),
                 'called_nr' => $arr[3],
-                'price' 	=> $arr[10] / 100,
+                'price'     => $arr[10] / 100,
                 ];
 
             if (in_array($customer_nr, $customer_nrs)) {
                 $calls[$customer_nr][] = $data;
+
+                // check and log if phonenumber does not exist or does not belong to contract
+                if (! isset($contractnrs[$username])) {
+                    $mismatches[$customer_nr][$data['calling_nr']] = 'missing';
+                } elseif (! in_array($customer_nr, $contractnrs[$username])) {
+                    $mismatches[$customer_nr][$data['calling_nr']] = 'mismatch';
+                }
             } else {
                 // cumulate price of calls that can not be assigned to any contract
                 if (! isset($unassigned[$arr[7]][$data['calling_nr']])) {
@@ -797,6 +813,9 @@ class SettlementRunCommand extends Command implements ShouldQueue
                 $unassigned[$arr[7]][$data['calling_nr']]['price'] += $data['price'];
             }
         }
+
+        $this->_log_phonenumber_mismatches($mismatches, 'PurTel');
+        $this->_log_unassigned_calls($unassigned);
 
         if ($logged) {
             Log::notice('billing', 'Purtel-CSV: Discard calls from customer numbers '.implode(', ', $logged).' (still km3 customer - from Drebach)');
@@ -810,6 +829,29 @@ class SettlementRunCommand extends Command implements ShouldQueue
         }
 
         return $calls;
+    }
+
+    /**
+     * Get Array of formerly used prefixes of external customer numbers on provider side (EnviaTel, PurTel, ...)
+     * These prefixes have to be removed to establish the connection to the customers in NMSPrime
+     *
+     * @return array    default is an empty array (file does not exist)
+     */
+    private static function getCdrNrPrefixReplacements()
+    {
+        $relFilePath = 'config/billingbase/cdr-nr-prefix-replacements';
+
+        if (! Storage::exists($relFilePath)) {
+            return [];
+        }
+
+        $cdr_nr_prefix_replacements = explode(PHP_EOL, Storage::get($relFilePath));
+
+        array_filter($cdr_nr_prefix_replacements, function ($value) {
+            return $value !== '';
+        });
+
+        return $cdr_nr_prefix_replacements;
     }
 
     private static function _get_customer_nrs()
@@ -870,14 +912,14 @@ class SettlementRunCommand extends Command implements ShouldQueue
      *
      * @param array      [customer_id][phonenr] => true
      */
-    private function _log_phonenumber_mismatches($mismatches)
+    private function _log_phonenumber_mismatches($mismatches, $provider)
     {
         foreach ($mismatches as $contract_nr => $pns) {
             foreach ($pns as $p => $type) {
 
                 // NOTE: type actually can be missing or mismatch
                 Log::warning('billing', trans("messages.phonenumber_$type", [
-                    'provider' => 'EnviaTel',
+                    'provider' => $provider,
                     'contractnr' => $contract_nr,
                     'phonenr' => $p,
                     ]));

@@ -232,7 +232,7 @@ class Invoice extends \BaseModel
                 return date('d/m/Y', $date);
 
             default:
-                return $date;
+                return date('Y-m-d', $date);
         }
     }
 
