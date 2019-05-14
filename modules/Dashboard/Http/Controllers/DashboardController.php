@@ -56,9 +56,11 @@ class DashboardController extends BaseController
             'date'          => true,
             'provvoipenvia' => false,
             'income'        => (Module::collections()->has('BillingBase') &&
-                               Bouncer::can('see income chart')),
+                               Bouncer::can('see income chart')) &&
+                               Auth::User()['login_name'] != 'ole',
             'contracts'     => (Module::collections()->has('ProvBase') &&
-                               Bouncer::can('view', \Modules\ProvBase\Entities\Contract::class)),
+                               Bouncer::can('view', \Modules\ProvBase\Entities\Contract::class)) &&
+                               Auth::User()['login_name'] != 'ole',
             'tickets'       => (Module::collections()->has('Ticketsystem') &&
                                Bouncer::can('view', \Modules\Ticketsystem\Entities\Ticket::class)),
             'hfc'           => (Module::collections()->has('HfcReq') &&
