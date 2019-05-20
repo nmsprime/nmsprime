@@ -5,6 +5,7 @@ namespace Modules\BillingBase\Http\Controllers;
 use ChannelLog;
 use Monolog\Logger;
 use Modules\BillingBase\Entities\Invoice;
+use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Console\cdrCommand;
 use Modules\BillingBase\Entities\SettlementRun;
@@ -81,7 +82,6 @@ class SettlementRunController extends \BaseController
     {
         $logs = $failed_jobs = [];
         $sr = SettlementRun::find($id);
-        $rerun_button = true;
         $status_msg = '';
         $job_queued = \DB::table('jobs')->where('payload', 'like', '%SettlementRunCommand%')->orWhere('payload', 'like', '%ZipCommand%')->get();
         $job_queued = $job_queued->isNotEmpty() ? $job_queued[0] : null;
@@ -98,8 +98,10 @@ class SettlementRunController extends \BaseController
             \Session::remove('job_id');
         }
 
+        $button['postal'] = Product::where('type', 'Postal')->count() ? true : false;
+        $button['rerun'] = true;
         if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified) {
-            $rerun_button = false;
+            $button['rerun'] = false;
         }
 
         // get error logs in case job failed and remove failed job from table
