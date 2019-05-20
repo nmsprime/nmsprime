@@ -89,18 +89,34 @@ class TreeErdController extends HfcBaseController
         // file -> html link area
         $usemap = str_replace('alt', 'onContextMenu="return getEl(this.id)" alt', \Storage::get($this->file.'.map'));
         // add Popover
-        $usemap = str_replace('title=', 'target="_blank" class="erd-popover" data-html="true" data-toggle="popover" data-container="body" data-trigger="hover" data-placement="auto right" data-content=', $usemap);
+        // $usemap = str_replace('title=', 'target="_blank" class="erd-popover" data-html="true" data-toggle="popover" data-container="body" data-trigger="hover" data-placement="auto right" data-content=', $usemap);
 
         // generate Array to manipulate string
         $usemap = explode(PHP_EOL, $usemap);
 
         foreach ($usemap as $element => $html) {
             if (str_contains($html, 'shape="circle"')) {
-                $usemap[$element] = explode('\n', $html);
-                $usemap[$element][0] = str_replace('data-content="', 'title="'.BaseViewController::translate_label('Modem Summary').'" data-content="'.BaseViewController::translate_label('Total Number of Modems').': ', $usemap[$element][0]);
-                $usemap[$element][1] = BaseViewController::translate_label('Number of Online').' Modems / '.BaseViewController::translate_label('Number of Critical').' Modems : '.$usemap[$element][1];
-                $usemap[$element][2] = BaseViewController::translate_label('Avg. Upstream Power: ').$usemap[$element][2];
-                $usemap[$element] = implode('<br>', $usemap[$element]);
+                // $usemap[$element] = explode('\n', $html);
+
+                // Make title of circle more descriptive
+                preg_match('/title="(.*?)"/', $html, $matches);
+
+                if ($matches) {
+                    $numbers = explode('\n', $matches[1]);
+
+                    $title['numModems'] = BaseViewController::translate_label('Total Number of Modems').': '.$numbers[0];
+                    $title['criticalModems'] = BaseViewController::translate_label('Number of Online').' Modems / ';
+                    $title['criticalModems'] .= BaseViewController::translate_label('Number of Critical').' Modems : '.$numbers[1];
+                    $title['power'] = BaseViewController::translate_label('Avg. Upstream Power: ').$numbers[2];
+                    $title = implode('&#013;', $title);
+
+                    $usemap[$element] = preg_replace('/title="(.*?)"/', "title=\"$title\"", $html);
+                }
+
+                // $usemap[$element][0] = str_replace('data-content="', 'title="'.BaseViewController::translate_label('Modem Summary').'" data-content="'.BaseViewController::translate_label('Total Number of Modems').': ', $usemap[$element][0]);
+                // $usemap[$element][1] = BaseViewController::translate_label('Number of Online').' Modems / '.BaseViewController::translate_label('Number of Critical').' Modems : '.$usemap[$element][1];
+                // $usemap[$element][2] = BaseViewController::translate_label('Avg. Upstream Power: ').$usemap[$element][2];
+                // $usemap[$element] = implode('<br>', $usemap[$element]);
             }
         }
 
