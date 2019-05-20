@@ -359,15 +359,10 @@ class DashboardController extends BaseController
 
         // check for insecure MySQL root password
         // This requires to run: mysql_secure_installation
-        if (env('ROOT_DB_PASSWORD') == '') {
-            try {
-                \DB::connection('mysql-root')->getPdo();
-                if (\DB::connection()->getDatabaseName()) {
-                    return ['youtube' => 'https://www.youtube.com/embed/dZWjeL-LmG8',
-                    'text' => '<li>Danger! Run: mysql_secure_installation in bash as root!', ];
-                }
-            } catch (\Exception $e) {
-            }
+        system('mysql -u root -e "select 1;"', $ret_code);
+        if (! $ret_code) {
+            return ['youtube' => 'https://www.youtube.com/embed/dZWjeL-LmG8',
+            'text' => '<li>Danger! Run: mysql_secure_installation in bash as root!', ];
         }
 
         // means: secure – nothing todo
