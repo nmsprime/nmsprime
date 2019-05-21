@@ -541,7 +541,7 @@ class ProvVoipEnvia extends \BaseModel
             if ($this->api_version_greater_or_equal('2.2')) {
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::api.customer_getcontracts'),
-                    'url' => $base.'customer_get_contracts'.$origin.'&amp;contract_id='.$contract_id,
+                    'url' => $base.'customer_get_contracts'.$origin.'&amp;contract_id='.$contract_id.$really,
                     'help' => trans('provvoipenvia::api.customer_getcontracts_help'),
                 ]);
             }
@@ -550,12 +550,12 @@ class ProvVoipEnvia extends \BaseModel
             if ($this->at_least_one_contract_available) {
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::api.customer_getreference'),
-                    'url' => $base.'customer_get_reference'.$origin.'&amp;contract_id='.$contract_id,
+                    'url' => $base.'customer_get_reference'.$origin.'&amp;contract_id='.$contract_id.$really,
                     'help' => trans('provvoipenvia::api.customer_getreference_help'),
                 ]);
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::api.customer_getreferencelegacy'),
-                    'url' => $base.'customer_get_reference_by_legacy_number'.$origin.'&amp;contract_id='.$contract_id,
+                    'url' => $base.'customer_get_reference_by_legacy_number'.$origin.'&amp;contract_id='.$contract_id.$really,
                     'help' => trans('provvoipenvia::api.customer_getreferencelegacy_help'),
                 ]);
                 array_push($ret, [
@@ -581,8 +581,18 @@ class ProvVoipEnvia extends \BaseModel
                 // can get reference if phonenumber exists at envia TEL
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::api.contract_getreference'),
-                    'url' => $base.'contract_get_reference'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
+                    'url' => $base.'contract_get_reference'.$origin.'&amp;phonenumber_id='.$phonenumber_id.$really,
                     'help' => trans('provvoipenvia::api.contract_getreference_help'),
+                ]);
+                array_push($ret, [
+                    'linktext' => trans('provvoipenvia::api.contract_gettariff'),
+                    'url' => $base.'contract_get_tariff'.$origin.'&amp;phonenumber_id='.$phonenumber_id.$really,
+                    'help' => trans('provvoipenvia::api.contract_gettariff_help'),
+                ]);
+                array_push($ret, [
+                    'linktext' => trans('provvoipenvia::api.contract_getvariation'),
+                    'url' => $base.'contract_get_variation'.$origin.'&amp;phonenumber_id='.$phonenumber_id.$really,
+                    'help' => trans('provvoipenvia::api.contract_getvariation_help'),
                 ]);
             }
             // “normal“ jobs
@@ -736,7 +746,7 @@ class ProvVoipEnvia extends \BaseModel
             if ($this->voipaccount_available) {
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::api.phonebookentry_get'),
-                    'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id,
+                    'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id.$really,
                     'help' => trans('provvoipenvia::api.phonebookentry_get_help'),
                 ]);
 
@@ -1376,6 +1386,16 @@ class ProvVoipEnvia extends \BaseModel
         $second_level_nodes['contract_get_reference'] = [
             'reseller_identifier',
             'callnumber_contract_identifier',
+        ];
+
+        $second_level_nodes['contract_get_tariff'] = [
+            'reseller_identifier',
+            'contract_identifier',
+        ];
+
+        $second_level_nodes['contract_get_variation'] = [
+            'reseller_identifier',
+            'contract_identifier',
         ];
 
         $second_level_nodes['contract_get_voice_data'] = [
@@ -2354,6 +2374,20 @@ class ProvVoipEnvia extends \BaseModel
                 throw new XmlCreationError(trans('provvoipenvia::errors.multiple_envia_contracts_at_modem',  [implode(', ', $external_contract_references)]));
             } else {
                 $external_contract_reference = $external_contract_references[0];
+            }
+        } elseif (in_array(
+            $this->job, [
+                'contract_get_tariff',
+                'contract_get_variation',
+                ])
+        ) {
+            if (isset($this->phonenumber)) {
+                $external_contract_reference = $this->phonenumber->contract_external_id;
+            }
+            else {
+                $enviacontract_id = \Input::get('enviacontract_id', null);
+                $enviacontract = EnviaContract::find($enviacontract_id);
+                $external_contract_reference = $enviacontract->envia_contract_reference;
             }
         } else {
             // default: taking external contract reference from phonenumber
@@ -3337,6 +3371,60 @@ class ProvVoipEnvia extends \BaseModel
 
         $out .= "<h5>$msg</h5>";
 
+        return $out;
+    }
+
+    /**
+     * Helper to get envia TEL contracts from INPUT IDs.
+     *
+     * @author Patrick Reichel
+     */
+    protected function _get_envia_contracts_from_input() {
+        $enviacontract_id = \Input::get('enviacontract_id', null);
+        $phonenumber_id = \Input::get('phonenumber_id', null);
+
+        if ($enviacontract_id) {
+            return [EnviaContract::find($enviacontract_id)];
+        } elseif ($phonenumber_id) {
+            $phonenumber = Phonenumber::find($phonenumber_id);
+            return EnviaContract::where('envia_contract_reference', '=', $phonenumber->contract_external_id)->get();
+        }
+        else {
+            return [];
+        }
+    }
+
+    /**
+     * Process data after getting tariff information.
+     *
+     * @author Patrick Reichel
+     */
+    protected function _process_contract_get_tariff_response($xml, $data, $out)
+    {
+        foreach ($this->_get_envia_contracts_from_input() as $enviacontract) {
+            if ($xml->tariff) {
+                $out .= "<h5>Tariff: $xml->tariff</h5>";
+                $enviacontract->tariff_id = (string) $xml->tariff;
+                $enviacontract->save();
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Process data after getting variation information.
+     *
+     * @author Patrick Reichel
+     */
+    protected function _process_contract_get_variation_response($xml, $data, $out)
+    {
+        foreach ($this->_get_envia_contracts_from_input() as $enviacontract) {
+            if ($xml->variation_id) {
+                $out .= "<h5>Variation ID: $xml->variation_id</h5>";
+                $enviacontract->variation_id = (string) $xml->variation_id;
+                $enviacontract->save();
+            }
+        }
         return $out;
     }
 
@@ -5213,7 +5301,7 @@ class ProvVoipEnvia extends \BaseModel
         $ret = $c->request('misc_get_free_numbers');
 
         // get rid of (here senseless) debug information in case of success
-        if (substr_count($ret, '<h4>Success ') > 0) {
+        if (substr_count($ret, trans('provvoipenvia::messages.order_get_status_success', [200])) > 0) {
             $ret = explode('<hr><h4>DEBUG', $ret)[0];
         } else {
             // error: return the html string as is
