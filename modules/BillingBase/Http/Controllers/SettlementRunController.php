@@ -120,7 +120,7 @@ class SettlementRunController extends \BaseController
         // $logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
         $logs = $logs ?: self::get_logs($sr->updated_at->__get('timestamp'));
 
-        return parent::edit($id)->with(compact('rerun_button', 'logs', 'status_msg'));
+        return parent::edit($id)->with(compact('button', 'logs', 'status_msg'));
     }
 
     public static function getStatusMessage($commandName)
