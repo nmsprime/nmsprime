@@ -374,7 +374,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
             return Contract::orderBy('number')->with('items.product', 'costcenter')
                 ->where('create_invoice', '!=', 0)
                 // TODO: make time we have to look back dependent of CDR offset in BillingBase config
-                ->where(whereLaterOrEqualThanDate('contract_end', date('Y-m-d', strtotime('last day of sep last year'))))
+                ->where(whereLaterOrEqual('contract_end', date('Y-m-d', strtotime('last day of sep last year'))))
                 ->get();
         }
 
@@ -385,7 +385,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
             ->leftJoin('product as p', 'i.product_id', '=', 'p.id')
             ->leftJoin('costcenter as ccp', 'p.costcenter_id', '=', 'ccp.id')
             ->where('create_invoice', '=', 0)
-            ->where(whereLaterOrEqualThanDate('contract.contract_end', date('Y-m-d', strtotime('last day of nov last year'))))
+            ->where(whereLaterOrEqual('contract.contract_end', date('Y-m-d', strtotime('last day of nov last year'))))
             ->where('i.valid_from_fixed', 1)
             ->where(function ($query) use ($sepaaccount_id) {
                 $query
@@ -407,7 +407,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
             ->leftJoin('product as p', 'i.product_id', '=', 'p.id')
             ->leftJoin('costcenter as ccp', 'p.costcenter_id', '=', 'ccp.id')
             ->where('create_invoice', '!=', 0)
-            ->where(whereLaterOrEqualThanDate('contract.contract_end', date('Y-m-d', strtotime('last day of nov last year'))))
+            ->where(whereLaterOrEqual('contract.contract_end', date('Y-m-d', strtotime('last day of nov last year'))))
             ->where('i.valid_from_fixed', 1)
             ->where(function ($query) use ($sepaaccount_id) {
                 $query
