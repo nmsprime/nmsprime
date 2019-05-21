@@ -1,16 +1,5 @@
 @extends ('Layout.default')
 
-@section ('income')
-    <h4>{{ \App\Http\Controllers\BaseViewController::translate_view('Net Income', 'Dashboard') }} {{ date('m/Y') }}</h4>
-    <p>
-        @if ($netelements)
-            {{ number_format($netelements['total'], 0, ',', '.') }}
-        @else
-            {{ number_format(0, 0, ',', '.') }}
-        @endif
-    </p>
-@stop
-
 @section ('date')
     <h4>{{ \App\Http\Controllers\BaseViewController::translate_view('Date', 'Dashboard') }}</h4>
     <p>{{ date('d.m.Y') }}</p>

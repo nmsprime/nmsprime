@@ -32,7 +32,7 @@
                 <div class="timeline-content">
                     <h4>
                         <i class="fa {{$bclasses[$log->method]}}"></i>
-                        {{$log->username}} {{ trans("messages.dashboard_log_$log->method") }} <a href="admin/{{$log->model}}/{{$log->model_id}}">{{ trans("messages.$log->model") }}</a>
+                        {{$log->username}} {{ trans("messages.dashboard.log.$log->method") }} <a href="admin/{{$log->model}}/{{$log->model_id}}">{{ \App\Http\Controllers\BaseViewController::translate_view($log->model, 'Header')}}</a>
                     </h4>
                     @foreach(explode(',', $log->text) as $change)
                         <p class="ml-lg-5">
