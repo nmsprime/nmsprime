@@ -340,7 +340,7 @@ class Invoice extends \BaseModel
             return;
         }
 
-        $this->data['contract_mandate_iban'] = $mandate->sepa_iban;
+        $this->data['contract_mandate_iban'] = $mandate->iban;
         $this->data['contract_mandate_ref'] = $mandate->reference;
     }
 

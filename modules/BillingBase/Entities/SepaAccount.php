@@ -281,9 +281,9 @@ class SepaAccount extends \BaseModel
 
         if ($mandate) {
             $data2 = [
-                'Account Holder' => $mandate->sepa_holder,
-                'IBAN'			=> $mandate->sepa_iban,
-                'BIC' 			=> $mandate->sepa_bic,
+                'Account Holder' => $mandate->holder,
+                'IBAN'			=> $mandate->iban,
+                'BIC' 			=> $mandate->bic,
                 'MandateID' 	=> $mandate->reference,
                 'MandateDate'	=> $mandate->signature_date,
             ];
@@ -375,9 +375,9 @@ class SepaAccount extends \BaseModel
         if ($charge < 0) {
             $data = [
                 'amount'                => $charge * (-1),
-                'creditorIban'          => $mandate->sepa_iban,
-                'creditorBic'           => $mandate->sepa_bic,
-                'creditorName'          => $mandate->sepa_holder,
+                'creditorIban'          => $mandate->iban,
+                'creditorBic'           => $mandate->bic,
+                'creditorName'          => $mandate->holder,
                 'endToEndId'            => 'RG '.$this->_get_invoice_nr_formatted(),
                 'remittanceInformation' => substr("$info - $mandate->reference", 0, 140),
             ];
@@ -391,9 +391,9 @@ class SepaAccount extends \BaseModel
         $data = [
             'endToEndId'			=> 'RG '.$this->_get_invoice_nr_formatted(),
             'amount'                => $charge,
-            'debtorIban'            => $mandate->sepa_iban,
-            'debtorBic'             => $mandate->sepa_bic,
-            'debtorName'            => $mandate->sepa_holder,
+            'debtorIban'            => $mandate->iban,
+            'debtorBic'             => $mandate->bic,
+            'debtorName'            => $mandate->holder,
             'debtorMandate'         => $mandate->reference,
             'debtorMandateSignDate' => $mandate->signature_date,
             'remittanceInformation' => $info,
