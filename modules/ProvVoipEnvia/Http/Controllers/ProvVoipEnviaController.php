@@ -568,9 +568,9 @@ class ProvVoipEnviaController extends \BaseController
         \Log::error("ProvVoipEnviaController: Execution of $job is not allowed");
         $ret = [];
         $ret['plain_html'] = '';
-        $ret['plain_html'] .= '<h4>Error</h4>';
-        $ret['plain_html'] .= 'Job '.$job.' is currently not allowed';
-        $ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">Bring me back…</h5>';
+        $ret['plain_html'] .= '<h4>'.trans('provvoipenvia::messages.error').'</h4>';
+        $ret['plain_html'] .= trans('provvoipenvia::messages.job_currently_not_allowed', [$job]);
+        $ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">'.trans('provvoipenvia::messages.back').'</h5>';
 
         return $ret;
     }
@@ -580,9 +580,9 @@ class ProvVoipEnviaController extends \BaseController
         $ret = [];
 
         $ret['plain_html'] = '';
-        $ret['plain_html'] .= '<h4>There was error creating XML to be sent to envia TEL:</h4>';
+        $ret['plain_html'] .= '<h4>'.trans('provvoipenvia::errors.error_creating_xml').':</h4>';
         $ret['plain_html'] .= '<h5>'.$msg.'</h5><br><br>';
-        $ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">Bring me back…</h5>';
+        $ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">'.trans('provvoipenvia::messages.back').'</h5>';
 
         return $ret;
     }
@@ -595,7 +595,7 @@ class ProvVoipEnviaController extends \BaseController
     protected function _ask_for_phonenumbers_to_be_created_with_contract($url, $origin)
     {
         $html = '';
-        $html .= '<h4>Please choose at least one phonenumber to be created with this contract</h4>';
+        $html .= '<h4>'.trans('provvoipenvia::messages.choose_numbers_to_create').'</h4>';
 
         $phonenumbers_on_modem = $this->model->get_numbers_related_to_modem_for_contract_create();
 
@@ -618,11 +618,11 @@ class ProvVoipEnviaController extends \BaseController
             }
         }
 
-        $html .= "<input class='btn btn-primary' style='simple' type='submit' value='Create contract with chosen numbers'/>\n";
+        $html .= "<input class='btn btn-primary' style='simple' type='submit' value='".trans('provvoipenvia::messages.create_contract_with_numbers')."'/>\n";
 
         $html .= '</form>';
 
-        $html .= '<h5><b><a href="'.urldecode($origin).'">Bring me back to '.urldecode($origin).'</h5>';
+        $html .= '<h5><b><a href="'.urldecode($origin).'">'.trans('provvoipenvia::messages.back_to', [urldecode($origin)]).'</h5>';
 
         $ret = ['plain_html' => $html];
 
@@ -643,16 +643,16 @@ class ProvVoipEnviaController extends \BaseController
         $ret = [];
 
         $ret['plain_html'] = '';
-        $ret['plain_html'] .= '<h4>Data to be sent to envia TEL</h4>';
+        $ret['plain_html'] .= '<h4>'.trans('provvoipenvia::messages.send_to_envia_head1').'</h4>';
         $ret['plain_html'] .= 'URL: '.$url.'<br>';
         $ret['plain_html'] .= 'API version: '.$this->model->api_version_string.'<br><br>';
         $ret['plain_html'] .= '<pre>';
         $ret['plain_html'] .= ProvVoipEnvia::prettify_xml($payload, true);
         $ret['plain_html'] .= '</pre>';
 
-        $ret['plain_html'] .= '<h4>You are going to change data at envia TEL! Proceed?</h4>';
+        $ret['plain_html'] .= '<h4>'.trans('provvoipenvia::messages.send_to_envia_head2').'</h4>';
 
-        $ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">NOOO! Please bring me back…</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+        $ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">'.trans('provvoipenvia::messages.send_to_envia_cancel').'</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
 
         // prefix for GET param: ? if the only one, &amp; else
         if (strpos(\Request::getRequestUri(), '?') === false) {
@@ -660,7 +660,7 @@ class ProvVoipEnviaController extends \BaseController
         } else {
             $attach_prefix = '&amp;';
         }
-        $ret['plain_html'] .= '<a href="'.\Request::getRequestUri().$attach_prefix.'really=True" target="_self">Yes, send data now!</a></b></h5>';
+        $ret['plain_html'] .= '<a href="'.\Request::getRequestUri().$attach_prefix.'really=True" target="_self">'.trans('provvoipenvia::messages.send_to_envia_now').'</a></b></h5>';
 
         return $ret;
     }

@@ -19,6 +19,7 @@ return [
     'deac_date_not_set' => 'Deaktivierungsdatum nicht gesetzt in PhonenumberManagement.',
     'document_already_uploaded' => 'Das übergebene Dokument wurde bereits hochgeladen.',
     'enviacontract_id_missing' => 'Keine envia-TEL-Vertrags-ID (contract_external_id) vorhanden.',
+    'error_creating_xml' => 'Beim Erzeugen des XML für den Versand an envia TEL ist ein Fehler aufgetreten',
     'has_to_be_numeric' => ':value muss eine Zahl sein',
     'legacy_customernumber_not_existing' => 'Keine alte Kundennummer eingetragen – mit aktueller Kundennummer neu versuchen.',
     'multiple_envia_contracts_at_modem' => 'Dem Modem sind mehrere envia-TEL-Verträge zugeordnet (:0). Dies kann nicht verarbeitet werden – bitte nutzen Sie das envia-TEL-Resellerportal.',
