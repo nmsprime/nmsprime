@@ -2371,7 +2371,7 @@ class ProvVoipEnvia extends \BaseModel
 
             // TODO: implement logic to relocate more than one contract attached to the current modem!!
             if (count($external_contract_references) > 1) {
-                throw new XmlCreationError(trans('provvoipenvia::errors.multiple_envia_contracts_at_modem',  [implode(', ', $external_contract_references)]));
+                throw new XmlCreationError(trans('provvoipenvia::errors.multiple_envia_contracts_at_modem', [implode(', ', $external_contract_references)]));
             } else {
                 $external_contract_reference = $external_contract_references[0];
             }
@@ -2383,8 +2383,7 @@ class ProvVoipEnvia extends \BaseModel
         ) {
             if (isset($this->phonenumber)) {
                 $external_contract_reference = $this->phonenumber->contract_external_id;
-            }
-            else {
+            } else {
                 $enviacontract_id = \Input::get('enviacontract_id', null);
                 $enviacontract = EnviaContract::find($enviacontract_id);
                 $external_contract_reference = $enviacontract->envia_contract_reference;
@@ -3071,7 +3070,6 @@ class ProvVoipEnvia extends \BaseModel
      * Process voice data for contract
      *
      * @author Patrick Reichel
-     *
      */
     protected function _process_contract_get_voice_data_response($xml, $data, $out)
     {
@@ -3379,7 +3377,8 @@ class ProvVoipEnvia extends \BaseModel
      *
      * @author Patrick Reichel
      */
-    protected function _get_envia_contracts_from_input() {
+    protected function _get_envia_contracts_from_input()
+    {
         $enviacontract_id = \Input::get('enviacontract_id', null);
         $phonenumber_id = \Input::get('phonenumber_id', null);
 
@@ -3387,9 +3386,9 @@ class ProvVoipEnvia extends \BaseModel
             return [EnviaContract::find($enviacontract_id)];
         } elseif ($phonenumber_id) {
             $phonenumber = Phonenumber::find($phonenumber_id);
+
             return EnviaContract::where('envia_contract_reference', '=', $phonenumber->contract_external_id)->get();
-        }
-        else {
+        } else {
             return [];
         }
     }
@@ -3408,6 +3407,7 @@ class ProvVoipEnvia extends \BaseModel
                 $enviacontract->save();
             }
         }
+
         return $out;
     }
 
@@ -3425,6 +3425,7 @@ class ProvVoipEnvia extends \BaseModel
                 $enviacontract->save();
             }
         }
+
         return $out;
     }
 
@@ -3892,7 +3893,7 @@ class ProvVoipEnvia extends \BaseModel
         // check if relation between order and phonenumber exists
         if (! $order->phonenumbers->contains($phonenumber->id)) {
             $order->phonenumbers()->attach($phonenumber->id);
-            $msg =  trans('provvoipenvia::messages.relation_order_phonenumber_added', [$order_id, $phonenumber->id]);
+            $msg = trans('provvoipenvia::messages.relation_order_phonenumber_added', [$order_id, $phonenumber->id]);
             Log::info($msg);
             $out .= '<br>'.$msg;
         }

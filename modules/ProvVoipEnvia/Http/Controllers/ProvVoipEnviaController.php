@@ -42,7 +42,6 @@ class ProvVoipEnviaController extends \BaseController
         }
 
         parent::__construct();
-
     }
 
     /**

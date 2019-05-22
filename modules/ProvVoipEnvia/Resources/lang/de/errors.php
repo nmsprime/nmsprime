@@ -12,7 +12,7 @@
 */
 
 return [
-	'carrier_invalid' => ':0 ist kein gültiger Carrier-Code.',
+    'carrier_invalid' => ':0 ist kein gültiger Carrier-Code.',
     'apiversion_not_float' => 'PROVVOIPENVIA__REST_API_VERSION in .env muß ein Fließkommawert sein (z.B. 1.4).',
     'carrier_no_porting_in' => 'Bei nicht zu portierender Rufnummer muss der Carriercode D057 (envia TEL) verwendet werden.',
     'customernumber_not_existing' => 'Keine Kundennummer eingetragen – mit alter Kundennummer neu versuchen.',

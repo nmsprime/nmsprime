@@ -12,7 +12,7 @@
 */
 
 return [
-	'carrier_invalid' => ':0 is not a valid carrier_code.',
+    'carrier_invalid' => ':0 is not a valid carrier_code.',
     'apiversion_not_float' => 'PROVVOIPENVIA__REST_API_VERSION in .env has to be a float value (e.g.: 1.4)',
     'carrier_no_porting_in' => 'If no incoming porting: Carriercode has to be D057 (envia TEL).',
     'customernumber_not_existing' => 'Customernumber does not exist – try using legacy version.',
