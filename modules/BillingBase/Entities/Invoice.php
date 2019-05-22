@@ -489,7 +489,21 @@ class Invoice extends \BaseModel
         $sum = $count = 0;
         foreach ($cdrs as $entry) {
             $line = date('d.m.Y', strtotime($entry['date'])).' '.$entry['starttime'].' & '.$entry['duration'];
-            $line .= ' & '.$entry['calling_nr'].' & '.$entry['called_nr'];
+            if (is_string($entry['called_nr'])) {
+                $called_number = $entry['called_nr'];
+            } elseif (is_array($entry['called_nr'])) {
+                if ($entry['called_nr'][0] == 'enviaCDR') {
+                    $_ = $entry['called_nr'];
+                    $called_number = iconv('CP1252', 'UTF-8', '\\emph{anderer Anbieter:}\\newline- \textbf{'.$_[1].'}\\newline- '.$_[2].'\\newline- '.$_[3].'\\newline- '.$_[4]);
+                } else {
+                    // throw Exception instead of just logging the problem: logic error in code creating the CDR data
+                    throw new \UnexpectedValueException('Invalid first value in array provided for CDR called number: '.$entry['called_nr'][0]);
+                }
+            } else {
+                // throw Exception instead of just logging the problem: logic error in code creating the CDR data
+                throw new \TypeError('Expected string or array, '.gettype($entry['called_nr']).' given');
+            }
+            $line .= ' & '.$entry['calling_nr'].' & '.$called_number;
             // $line .= ' & '.sprintf("%01.4f", $entry['price']).'\\\\';
             $line .= ' & '.(\App::getLocale() == 'de' ? number_format($entry['price'], 4, ',', '.') : number_format($entry['price'], 4)).'\\\\';
 
