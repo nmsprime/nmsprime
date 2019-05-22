@@ -348,11 +348,11 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            'Order ID',
-            'Ordertype',
-            'Orderdate',
-            'Orderstatus',
-            'Method',
+            trans('provvoipenvia::messages.enviacontract_orderid'),
+            trans('provvoipenvia::messages.enviacontract_ordertype'),
+            trans('provvoipenvia::messages.enviacontract_orderdate'),
+            trans('provvoipenvia::messages.enviacontract_orderstatus'),
+            trans('provvoipenvia::messages.enviacontract_method'),
         ];
         array_push($data, $head);
 
