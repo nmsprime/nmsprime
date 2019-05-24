@@ -5,9 +5,9 @@ namespace Modules\HfcCustomer\Http\Controllers;
 use Modules\ProvBase\Entities\Modem;
 use Modules\HfcCustomer\Entities\Mpr;
 use Modules\HfcReq\Entities\NetElement;
+use Modules\ProvBase\Entities\ProvBase;
 use App\Http\Controllers\BaseViewController;
 use Modules\HfcReq\Http\Controllers\NetElementController;
-use Modules\ProvBase\Entities\ProvBase;
 
 /*
  * Show Customers (Modems) on Topography
