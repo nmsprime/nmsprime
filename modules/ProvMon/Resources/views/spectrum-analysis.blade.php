@@ -59,7 +59,7 @@ function makeSpectrum(amplitudes, span) {
 		        		return '';
 		        	},
 		            label: function(t) {
-				         return t.xLabel + 'MHz: ' + t.yLabel + 'dB';
+				         return t.xLabel + 'MHz: ' + t.yLabel + 'dBmV';
 				    }
 		        }
 			}
