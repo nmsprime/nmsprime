@@ -143,7 +143,7 @@ class SettlementRunController extends \BaseController
      * Check State of Job "SettlementRunCommand"
      * Send Reload info when job has finished
      *
-     * @return 	response 	Stream
+     * @return  response    Stream
      */
     public function check_state()
     {
@@ -337,9 +337,9 @@ class SettlementRunController extends \BaseController
      *
      * USE WITH CARE!
      *
-     * @param string	dir 				Accounting Record Files Directory relative to storage/app/
-     * @param object	settlementrun 		SettlementRun the directory should be cleared for
-     * @param object 	sepaacc
+     * @param string    dir                 Accounting Record Files Directory relative to storage/app/
+     * @param object    settlementrun       SettlementRun the directory should be cleared for
+     * @param object    sepaacc
      */
     public static function directory_cleanup($settlementrun = null, $sepaacc = null)
     {
