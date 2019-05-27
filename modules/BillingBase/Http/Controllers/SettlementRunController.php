@@ -116,10 +116,11 @@ class SettlementRunController extends \BaseController
             }
         }
 
-        // get execution logs if job has finished successfully - (show error logs otherwise - show nothing during execution)
-        // NOTE: when SettlementRun gets verified the logs will disappear because timestamp is updated
-        // $logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
-        $logs = $logs ?: self::get_logs(strtotime($sr->executed_at));
+        // get execution logs if job has finished successfully - show error logs otherwise
+        $logs['settlementrun'] = $logs ?: self::get_logs(strtotime($sr->executed_at));
+        if (\Module::collections()->has('Dunning')) {
+            $logs['bankTransfer'] = self::get_logs($sr->uploaded_at ? strtotime($sr->uploaded_at) : 0, Logger::INFO, 'bank-transactions.log');
+        }
 
         return parent::edit($id)->with(compact('button', 'logs', 'status_msg'));
     }
@@ -247,18 +248,21 @@ class SettlementRunController extends \BaseController
     /**
      * Get Logs from Parent Function from billing.log and Format for table view
      *
-     * @param date_time 	Unix Timestamp  	Return only Log entries after this timestamp
-     * @param severity_lvl 	Enum 				Minimum Severity Level to show
-     * @return array 		[timestamp => [color, type, message], ...]
+     * @param ts_from       Unix Timestamp      Return only Log entries after this timestamp
+     * @param severity_lvl  Enum                Minimum Severity Level to show
+     * @return array        [timestamp => [color, type, message], ...]
      */
-    public static function get_logs($date_time, $severity_lvl = Logger::NOTICE)
+    public static function get_logs($ts_from, $severity_lvl = Logger::NOTICE, $logfile = 'billing.log')
     {
-        $logs = parent::get_logs(storage_path('logs/billing.log'), $severity_lvl);
+        // TODO: use appropriate file in history
+        $fpath = storage_path("logs/$logfile");
+        $logs = parent::get_logs($fpath, $severity_lvl);
         $old = $filtered = [];
 
         foreach ($logs as $key => $string) {
             $timestamp = substr($string, 1, 19);
-            $type = substr($string, $x = strpos($string, 'billing.') + 8, $y = strpos($string, ': ') - $x);
+            preg_match('/\[.*\.([A-Z]*):/', $string, $match);
+            $type = $match ? $match[1] : '';
 
             switch ($type) {
                 case 'CRITICAL':
@@ -266,20 +270,21 @@ class SettlementRunController extends \BaseController
                 case 'ERROR': $bsclass = 'danger'; break;
                 case 'WARNING': $bsclass = 'warning'; break;
                 case 'INFO': $bsclass = 'info'; break;
+                case 'NOTICE': $bsclass = 'active'; break;
                 default: $bsclass = ''; break;
             }
 
             $arr = [
-                'color' 	=> $bsclass,
-                'time' 		=> $timestamp,
-                'type' 		=> $type,
-                'message' 	=> substr($string, $x + $y + 2),
+                'color'     => $bsclass,
+                'time'      => $timestamp,
+                'type'      => $type,
+                'message'   => substr($string, strpos($string, ': ') + 2),
                 ];
 
             if ($old == $arr) {
                 continue;
             }
-            if (strtotime($timestamp) < $date_time) {
+            if (strtotime($timestamp) < $ts_from) {
                 break;
             }
 
