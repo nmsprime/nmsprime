@@ -355,14 +355,13 @@ class Item extends \BaseModel
                 }
 
                 $costcenter = $this->get_costcenter();
-                $billing_month = $costcenter->get_billing_month();		// June is default
+                $billing_month = $costcenter->get_billing_month();      // June is default
 
                 // calculate only for billing month
                 if ($billing_month != $dates['lastm']) {
-                    // or tariff started after billing month - then only pay on first settlement run - break otherwise
-                    // or contract ended last month (before billing month)
-                    if (! (((date('m', $start) >= $billing_month) && (date('Y-m', $start) == $dates['lastm_Y'])) ||
-                        (date('Y-m', $contract_end) == $dates['lastm_Y']))) {
+                    // or tariff started after billing month - or contract ended last month (before billing month)
+                    // then pay on next settlement run - break otherwise
+                    if (! (date('Y-m', $start) >= date("Y-$billing_month") || date('Y-m', $contract_end) == $dates['lastm_Y'])) {
                         break;
                     }
                 }
