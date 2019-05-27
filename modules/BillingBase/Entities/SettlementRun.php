@@ -2,13 +2,15 @@
 
 namespace Modules\BillingBase\Entities;
 
+use \Modules\BillingBase\Console\SettlementRunCommand;
+
 class SettlementRun extends \BaseModel
 {
     // The associated SQL table for this Model
     public $table = 'settlementrun';
 
     // don't try to add these Input fields to Database of this model
-    public $guarded = ['rerun', 'sepaaccount', 'fullrun'];
+    public $guarded = ['rerun', 'sepaaccount', 'fullrun', 'banking_file_upload'];
 
     // Add your validation rules here
     public static function rules($id = null)
@@ -159,6 +161,29 @@ class SettlementRun extends \BaseModel
 
         return $arr;
     }
+
+    public function parseBankingFile($mt940)
+    {
+        $parser = new \Kingsquare\Parser\Banking\Mt940();
+        $transactionParser = new \Modules\Dunning\Entities\TransactionParser;
+
+        $statements = $parser->parse($mt940);
+        foreach ($statements as $statement) {
+            foreach ($statement->getTransactions() as $transaction) {
+                $debt = $transactionParser->parse($transaction);
+
+                // only for analysis during development!
+                // $transactions[$transaction->getDebitCredit()][] = ['price' => $transaction->getPrice(), 'description' => explode('?', $transaction->getDescription())];
+
+                if (! $debt) {
+                    continue;
+                }
+
+                $debt->save();
+            }
+        }
+        // d($transactions, $statements, str_replace(':61:', "\r\n---------------\r\n:61:", $mt940));
+    }
 }
 
 class SettlementRunObserver
@@ -178,16 +203,31 @@ class SettlementRunObserver
         }
 
         // NOTE: Make sure that we use Database Queue Driver - See .env!
-        $job_id = \Queue::push(new \Modules\BillingBase\Console\SettlementRunCommand($settlementrun));
         // \Artisan::call('billing:accounting', ['--debug' => 1]);
-        \Session::put('job_id', $job_id);
+        \Session::put('job_id', \Queue::push(new SettlementRunCommand($settlementrun)));
     }
 
     public function updated($settlementrun)
     {
         if (\Input::has('rerun')) {
-            $acc = \Input::get('sepaaccount') ? SepaAccount::find(\Input::get('sepaaccount')) : null;
-            \Session::put('job_id', \Queue::push(new \Modules\BillingBase\Console\SettlementRunCommand($settlementrun, $acc)));
+            // Make sure that settlement run is queued only once
+            $queued = \DB::table('jobs')->where('payload', 'like', '%SettlementRunCommand%')->count();
+            if (! $queued) {
+                $acc = \Input::get('sepaaccount') ? SepaAccount::find(\Input::get('sepaaccount')) : null;
+                \Session::put('job_id', \Queue::push(new SettlementRunCommand($settlementrun, $acc)));
+            }
+        }
+
+        // TODO: implement this as command and queue this?
+        if (\Input::hasFile('banking_file_upload')) {
+            SettlementRun::where('id', $id)->update(['uploaded_at' => date('Y-m-d H:i:s')]);
+
+            $mt940 = \Input::file('banking_file_upload');
+
+            foreach ($mt940s as $mt940) {
+                $settlementrun->parseBankingFile($mt940);
+            }
+
         }
     }
 }

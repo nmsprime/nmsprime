@@ -26,6 +26,7 @@ class SettlementRunController extends \BaseController
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
             ['form_type' => 'checkbox', 'name' => 'verified', 'description' => 'Verified', 'hidden' => 'C', 'help' => trans('helper.settlement_verification')],
             ['form_type' => 'checkbox', 'name' => 'fullrun', 'description' => 'For internal use', 'hidden' => 1],
+            ['form_type' => 'file', 'name' => 'banking_file_upload', 'description' => 'Upload MT940 Banking file (.sta)'],
         ];
     }
 
@@ -98,7 +99,7 @@ class SettlementRunController extends \BaseController
             \Session::remove('job_id');
         }
 
-        $button['postal'] = Product::where('type', 'Postal')->count() ? true : false;
+        $button['postal'] = ! \Session::get('job_id') && ! $job_queued && Product::where('type', 'Postal')->count() ? true : false;
         $button['rerun'] = true;
         if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified) {
             $button['rerun'] = false;
@@ -120,7 +121,7 @@ class SettlementRunController extends \BaseController
         // $logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
         $logs = $logs ?: self::get_logs(strtotime($sr->executed_at));
 
-        return parent::edit($id)->with(compact('rerun_button', 'logs', 'status_msg'));
+        return parent::edit($id)->with(compact('button', 'logs', 'status_msg'));
     }
 
     public static function getStatusMessage($commandName)
