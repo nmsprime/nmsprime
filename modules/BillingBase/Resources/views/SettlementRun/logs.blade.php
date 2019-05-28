@@ -1,8 +1,8 @@
 <div class='row'>
     <div class='col-md-11'>
-        <ul class="nav nav-pills">
+        <ul class="nav nav-pills" id='settlementrunlogs'>
             <li class="nav-items">
-                <a href="#nav-tab-1" data-toggle="tab" class="show active" id='first'>
+                <a href="#nav-tab-1" data-toggle="tab" class="show" id='first'>
                     <span class="d-sm-block d-none">{{ trans('view.SettlementRun') }}</span>
                 </a>
             </li>
