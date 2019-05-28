@@ -800,7 +800,7 @@ class ProvVoipEnviaController extends \BaseController
 
         // set some environmental vars
         $origin = \Input::get('origin', \URL::to('/'));
-        $view_header = 'Request envia TEL';
+        $view_header = trans('provvoipenvia::messages.request_envia');
         $view_path = \NamespaceController::get_view_name().'.request';
 
         // check if there should be an instant redirect – if so do so :-)
@@ -866,7 +866,7 @@ class ProvVoipEnviaController extends \BaseController
                     $origin_name = urldecode($origin);
                     $origin_name = explode($_SERVER['CONTEXT_PREFIX'], $origin_name);
                     $origin_name = array_pop($origin_name);
-                    $origin_link .= '<h5><b><a href="'.urldecode($origin).'" target="_self">Back to '.$origin_name.'</a></b></h5>';
+                    $origin_link .= '<h5><b><a href="'.urldecode($origin).'" target="_self">'.trans('provvoipenvia::messages.back_to', [$origin_name]).'</a></b></h5>';
                     $view_var['plain_html'] .= $origin_link;
                 }
             }
@@ -955,7 +955,7 @@ class ProvVoipEnviaController extends \BaseController
             if (\Config::get('app.debug')) {
                 $view_var['plain_html'] .= '<hr>';
                 $view_var['plain_html'] .= '<h4>DEBUG mode enabled in .env</h4>';
-                $view_var['plain_html'] .= 'return data:<br>';
+                $view_var['plain_html'] .= 'returned data:<br>';
                 $view_var['plain_html'] .= '<pre>';
                 $view_var['plain_html'] .= ProvVoipEnvia::prettify_xml($data['xml']);
                 $view_var['plain_html'] .= '</pre>';
@@ -1064,7 +1064,7 @@ class ProvVoipEnviaController extends \BaseController
         } else {
             $ret = '';
 
-            $ret .= '<h4>The following error(s) occured:</h4>';
+            $ret .= '<h4>'.trans('provvoipenvia::errors.following_errors_occured').'</h4>';
             $ret .= '<table style="background-color: #fcc; color: #000; font-size: 1.05em; font-family: monospace; font-weight: bold">';
             foreach ($errors as $error) {
                 if (boolval($error['status']) || boolval($error['message'])) {

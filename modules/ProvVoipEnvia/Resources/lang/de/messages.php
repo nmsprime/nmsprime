@@ -73,6 +73,7 @@ return [
     'enviacontract_tariff' => 'Endkundentarif',
     'enviacontract_variation' => 'Einkaufstarif',
     'error' => 'Fehler!',
+    'free_numbers' => 'Freie Rufnummern',
     'informational_only' => 'Nur zur Information.',
     'invalid_lines_in_csv' => 'Das gelieferte CSV enthält ungültige Zeilen:',
     'item_change_tariff' => 'ACHTUNG: Die Änderung des Endkundentarifes wird nicht automatisch an envia TEL übermittelt. Nutzen Sie dazu die API („'.trans('provvoipenvia::api.contract_changetariff').'“).',
@@ -175,6 +176,7 @@ return [
     'relation_order_phonenumber_added' => 'Beziehung zwischen vorhandeneM envia-TEL-Auftrag :0 und Rufnummer :1 hinzugefügt.',
     'removed_sip_domain_from_phonenumber' => 'SIP-Domain an Rufnummer :0 gelöscht (wird von envia TEL vergeben)',
     'removed_sip_username_from_phonenumber' => 'SIP-Nutzername an Rufnummer :0 gelöscht (wird von envia TEL vergeben)',
+    'request_envia' => 'Kommunikation mit envia-TEL-API',
     'send_to_envia_cancel' => 'NEIN! Bitte zurück…',
     'send_to_envia_head1' => 'Daten zum Versand an die envia-TEL-API',
     'send_to_envia_head2' => 'Dieser Vorgang kann Daten bei envia TEL ändern! Forfahren?',
@@ -197,5 +199,6 @@ return [
     'updating_envia_cust_in_envia_contract' => 'Ändere die envia-TEL-Kundenreferenz im envia-TEL-Vertrag :0 zu :1',
     'uploaded_file' => 'Datei wurde zu envia TEL übertragen.',
     'usage_data' => 'Verbrauchsdaten',
+    'using_filter' => 'im Bereich',
     'voice_data' => 'SIP/MGCP-Benutzerdaten für Modem-ID :0',
 ];

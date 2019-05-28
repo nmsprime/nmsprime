@@ -2622,11 +2622,11 @@ class ProvVoipEnvia extends \BaseModel
      */
     protected function _process_misc_get_free_numbers_response($xml, $data, $out)
     {
-        $out .= '<h5>Free numbers';
+        $out .= '<h5>'.trans('provvoipenvia::messages.free_numbers');
 
         // localareacode filter set?
         if ($local_filter = \Input::get('localareacode', false)) {
-            $out .= ' using filter '.$local_filter.'/';
+            $out .= ' '.trans('provvoipenvia::messages.using_filter').' '.$local_filter.'/';
 
             // show basenumber filter if set
             $baseno_filter = \Input::get('baseno', '');

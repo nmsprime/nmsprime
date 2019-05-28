@@ -73,6 +73,7 @@ return [
     'enviacontract_tariff' => 'Tariff ID',
     'enviacontract_variation' => 'Variation ID',
     'error' => 'Error!',
+    'free_numbers' => 'Free numbers',
     'informational_only' => 'Informational data only.',
     'invalid_lines_in_csv' => 'There are invalid lines in returned CSV:',
     'item_change_tariff' => 'ATTENTION: You have to “Change purchase tariff” (envia TEL API), too!',
@@ -175,6 +176,7 @@ return [
     'relation_order_phonenumber_added' => 'Added relation between existing enviaorder :0 and phonenumber :1',
     'removed_sip_domain_from_phonenumber' => 'SIP domain at phonenumber :0 deleted (will be set by envia TEL)',
     'removed_sip_username_from_phonenumber' => 'SIP username at phonenumber :0 deleted (will be set by envia TEL)',
+    'request_envia' => 'Request envia TEL API',
     'send_to_envia_cancel' => 'NOOO! Please bring me back…',
     'send_to_envia_head1' => 'Data to be sent to envia TEL',
     'send_to_envia_head2' => 'You are going to change data at envia TEL! Proceed?',
@@ -197,5 +199,6 @@ return [
     'updating_envia_cust_in_envia_contract' => 'Updating envia_customer_reference in enviacontract :0 to :1',
     'uploaded_file' => 'File uploaded successfully.',
     'usage_data' => 'Usage data',
+    'using_filter' => 'using filter',
     'voice_data' => 'Voice data for modem :0',
 ];

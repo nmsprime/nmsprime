@@ -12,14 +12,15 @@
 */
 
 return [
-    'carrier_invalid' => ':0 ist kein gültiger Carrier-Code.',
     'apiversion_not_float' => 'PROVVOIPENVIA__REST_API_VERSION in .env muß ein Fließkommawert sein (z.B. 1.4).',
+    'carrier_invalid' => ':0 ist kein gültiger Carrier-Code.',
     'carrier_no_porting_in' => 'Bei nicht zu portierender Rufnummer muss der Carriercode D057 (envia TEL) verwendet werden.',
     'customernumber_not_existing' => 'Keine Kundennummer eingetragen – mit alter Kundennummer neu versuchen.',
     'deac_date_not_set' => 'Deaktivierungsdatum nicht gesetzt in PhonenumberManagement.',
     'document_already_uploaded' => 'Das übergebene Dokument wurde bereits hochgeladen.',
     'enviacontract_id_missing' => 'Keine envia-TEL-Vertrags-ID (contract_external_id) vorhanden.',
     'error_creating_xml' => 'Beim Erzeugen des XML für den Versand an envia TEL ist ein Fehler aufgetreten',
+    'following_errors_occured' => 'Folgende(r) Fehler ist/sind aufgetreten',
     'has_to_be_numeric' => ':value muss eine Zahl sein',
     'legacy_customernumber_not_existing' => 'Keine alte Kundennummer eingetragen – mit aktueller Kundennummer neu versuchen.',
     'multiple_envia_contracts_at_modem' => 'Dem Modem sind mehrere envia-TEL-Verträge zugeordnet (:0). Dies kann nicht verarbeitet werden – bitte nutzen Sie das envia-TEL-Resellerportal.',
