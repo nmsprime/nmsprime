@@ -27,7 +27,7 @@ class EnviaContractController extends \BaseController
         }
 
         $purchase_value = $model->variation_id;
-        if ($purchase_tariffs) {
+        if ($purchase_value && $purchase_tariffs) {
             $purchase_value .= ' ⇒ ';
             $_ = [];
             foreach ($purchase_tariffs as $purchase_tariff) {
@@ -35,10 +35,10 @@ class EnviaContractController extends \BaseController
             }
             $purchase_value .= implode(', ', $_);
         }
-        $model->variation_id = $purchase_value;
+        $model->variation_id = $purchase_value ?: 'n/a'; // save as we do not save the model here
 
         $sale_value = $model->tariff_id;
-        if ($sale_tariffs) {
+        if ($sale_value && $sale_tariffs) {
             $sale_value .= ' ⇒ ';
             $_ = [];
             foreach ($sale_tariffs as $sale_tariff) {
@@ -46,7 +46,7 @@ class EnviaContractController extends \BaseController
             }
             $sale_value .= implode(', ', $_);
         }
-        $model->tariff_id = $sale_value;
+        $model->tariff_id = $sale_value ?: 'n/a'; // save as we do not save the model here
 
         $ret = [
             ['form_type' => 'text', 'name' => 'envia_customer_reference', 'description' => trans('provvoipenvia::messages.enviacontract_custid'), 'options' => ['readonly']],
