@@ -159,7 +159,7 @@ class CustomerTopoController extends NetElementController
             $polygon[] = [array_shift($poly), array_shift($poly)];
         }
         // add modems which are within the polygon
-        foreach (\DB::table('modem')->select('id','x','y')->where('deleted_at', null)->get() as $modem) {
+        foreach (\DB::table('modem')->select('id', 'x', 'y')->where('deleted_at', null)->get() as $modem) {
             if (Mpr::point_in_polygon([$modem->x, $modem->y], $polygon)) {
                 $ids .= " OR id = $modem->id";
             }
