@@ -148,7 +148,7 @@ class CustomerTopoController extends NetElementController
      */
     public function show_poly($poly)
     {
-        $ids = 'id = 0';
+        $ids = [0];
         $poly = explode(';', $poly);
         // every point must have two coordinates
         if (count($poly) % 2) {
@@ -161,11 +161,11 @@ class CustomerTopoController extends NetElementController
         // add modems which are within the polygon
         foreach (\DB::table('modem')->select('id', 'x', 'y')->where('deleted_at', null)->get() as $modem) {
             if (Mpr::point_in_polygon([$modem->x, $modem->y], $polygon)) {
-                $ids .= " OR id = $modem->id";
+                array_push($ids, $modem->id);
             }
         }
 
-        $modems = $this->filterModel(Modem::whereRaw('('.$ids.')'));
+        $modems = $this->filterModel(Modem::whereIn('id', $ids));
 
         return $this->show_topo($modems['selectedModel'], null, $modems['allModels']);
     }
@@ -177,7 +177,7 @@ class CustomerTopoController extends NetElementController
      */
     public function show_prox()
     {
-        $modems = $this->filterModel(Modem::whereRaw(Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))));
+        $modems = $this->filterModel(Modem::whereIn('id', Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))));
 
         return $this->show_topo($modems['selectedModel'], \Input::get('row'), $modems['allModels']);
     }
