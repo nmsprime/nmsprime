@@ -37,6 +37,14 @@
 					<input type="radio" name="options" value="modify" id="modifyToggle" onchange="toggleControl(this);" autocomplete="off" />
 					{{ trans("view.modify") }}
 				</label>
+				@if (isset($models))
+				    <select onchange="redirect();" id="show-value">
+						@foreach($models as $model)
+							<option {{ array_key_exists('model', $_GET) && $model == $_GET['model'] ? 'selected' : ''}}>{{ $model }}</option>
+						@endforeach
+							<option {{! array_key_exists('model', $_GET) ? 'selected' : ''}}>{{ trans('messages.all') }}</option>
+				    </select>
+				@endif
 			</div>
 		</div>
 		<ul class="nav nav-pills align-self-end ml-auto mr-5">
@@ -54,4 +62,30 @@
 	<div class="container-fluid m-t-20 m-b-20">
 		<div class="col-md-12 d-flex" id="map" style="height:75vh"></div>
 	</div>
+@stop
+
+@section('javascript')
+<script type="text/javascript">
+
+function redirect()
+{
+	var element = document.getElementById('show-value');
+	var text = element.options[element.selectedIndex].text;
+	var url = window.location.href;
+	var concat = '?';
+
+	if (text == "{{ trans('messages.all') }}") {
+		window.location.href = url.search(/model=/) == -1 ? url : url.replace(/\??&?model=\w+[^?&]+/, '');
+
+		return;
+	}
+
+	if (url.search(/[?]/) != -1) {
+		var concat = '&';
+	}
+
+	window.location.href = url.search(/model=/) == -1 ? url + concat + 'model=' + text : url.replace(/model=\w+[^?&]+/, 'model=' + text);
+}
+
+</script>
 @stop
