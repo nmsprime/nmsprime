@@ -3,7 +3,8 @@
 namespace Modules\Ticketsystem\Entities;
 
 return [
-  'name' => 'Ticket',
+    'name' => 'Ticket',
+    'link' => 'Ticket.dashboard',
     'MenuItems' => [
     'Tickets' => [
       'link' => 'Ticket.index',

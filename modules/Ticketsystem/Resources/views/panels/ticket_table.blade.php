@@ -18,7 +18,7 @@
 		</tr>
 	</thead>
 	<tbody>
-	@foreach ($data['tickets']['table'] as $ticket)
+	@foreach ($tickets['table'] as $ticket)
 		<tr class = "{{$bsclass[$ticket->priority]}} clickableRow">
 			<td class="ClickableTd">{{HTML::linkRoute('Ticket.edit', $ticket->name, $ticket->id)}}</td>
 			<td class="ClickableTd">{{$ticket->priority}}</td>

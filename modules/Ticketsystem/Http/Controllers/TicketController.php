@@ -2,7 +2,9 @@
 
 namespace Modules\Ticketsystem\Http\Controllers;
 
+use View;
 use App\User;
+use Illuminate\Support\Facades\Auth;
 use Modules\Ticketsystem\Entities\Ticket;
 use Modules\Ticketsystem\Entities\TicketType;
 
@@ -16,6 +18,15 @@ class TicketController extends \BaseController
             'field' => 'tickettypes_ids',
         ],
     ];
+
+    public function dashboard()
+    {
+        $title = 'Tickets Dashboard';
+        $tickets['table'] = Auth::user()->tickets()->where('state', '=', 'New')->get();
+        $tickets['total'] = count($tickets['table']);
+
+        return View::make('ticketsystem::dashboard', $this->compact_prep_view(compact('title', 'tickets')));
+    }
 
     public function view_form_fields($model = null)
     {
