@@ -44,7 +44,7 @@ class BillingBaseServiceProvider extends ServiceProvider
     {
         $this->commands($this->commands);
 
-        $this->app->bind('companydata', 'Modules\BillingBase\Providers\CompanyDataProvider');
+        $this->app->alias(Modules\BillingBase\Providers\CompanyDataProvider::class, 'companydata');
     }
 
     /**
