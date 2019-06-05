@@ -312,7 +312,7 @@ class EnviaOrderController extends \BaseController
     {
         if (Bouncer::cannot('delete', EnviaOrder::class) &&
             Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia')) {
-            throw new AuthException('Access to model '.$modelToCheck.' not allowed for user '.Auth::user()->login_name.'.');
+            throw new AuthException('Access to model EnviaOrder not allowed for user '.Auth::user()->login_name.'.');
         }
         // get all orders to be canceled
         $orders = [];
@@ -337,7 +337,6 @@ class EnviaOrderController extends \BaseController
         $params = [
             'job' => 'order_cancel',
             'order_id' => $order->orderid,
-            /* 'origin' => urlencode(\Request::getUri()), */
             'origin' => urlencode(\URL::previous()),
         ];
 

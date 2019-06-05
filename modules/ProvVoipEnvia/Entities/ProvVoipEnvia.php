@@ -495,7 +495,7 @@ class ProvVoipEnvia extends \BaseModel
 
         // keep original URL ⇒ so we can offer a link to the calling URL (even if there are some redirects in between)
         // we add this as first GET param to each job – this also relieves us from checking if we have to use ? or & in all following params ;-)
-        $origin = '?origin='.urlencode(\Request::getUri());
+        $origin = '?origin='.urlencode(\Request::fullUrl());
 
         // add this to all actions that can be performed without extra confirmation
         // can be used for jobs that do not change anything at envia TEL
