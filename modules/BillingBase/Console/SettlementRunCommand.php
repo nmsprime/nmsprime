@@ -4,7 +4,7 @@ namespace Modules\BillingBase\Console;
 
 use DB;
 use Storage;
-use ChannelLog as Log;
+use ChannelLog;
 use Illuminate\Bus\Queueable;
 use Illuminate\Console\Command;
 use Illuminate\Queue\SerializesModels;
@@ -63,8 +63,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
      */
     public function handle()
     {
-        // $start = microtime(true);
-        $this->dates = self::create_dates_array();
+        ChannelLog::debug('billing', ' ########  Start Accounting Command  ########');
 
         // Determine SR (SettlementRun) ID as this is necessary to create relation between Invoice & SR
         if (! $this->sr->getAttribute('id')) {
@@ -117,7 +116,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
         $cdrs = $this->_get_cdr_data();
         // $cdrs = [[]];
         if (! $cdrs) {
-            Log::warning('billing', 'No Call Data Records available for this Run!');
+            ChannelLog::warning('billing', 'No Call Data Records available for this Run!');
         }
 
         // TODO: use load_salesman_from_contracts() in future ?
@@ -145,12 +144,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
             // Skip invalid contracts
             if (! $c->check_validity('yearly') && ! (isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
-                Log::debug('billing', "Contract $c->number [$c->id] is invalid for current year");
-                continue;
-            }
-
-            if (! $c->costcenter) {
-                Log::error('billing', trans('messages.accCmd_error_noCC', ['contract_nr' => $c->number, 'contract_id' => $c->id]));
+                ChannelLog::debug('billing', "Contract $c->number [$c->id] is invalid for current year");
                 continue;
             }
 
@@ -160,13 +154,13 @@ class SettlementRunCommand extends Command implements ShouldQueue
             foreach ($c->items as $item) {
                 // skip items that are related to a deleted product
                 if (! isset($item->product)) {
-                    Log::error('billing', "Product of $item->accounting_text was deleted", [$c->id]);
+                    ChannelLog::error('billing', "Product of $item->accounting_text was deleted", [$c->id]);
                     continue;
                 }
 
                 // skip if price is 0 (or item dates are invalid)
-                if (! ($ret = $item->calculate_price_and_span($this->dates))) {
-                    Log::debug('billing', 'Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
+                if (! ($ret = $item->calculate_price_and_span())) {
+                    ChannelLog::debug('billing', 'Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
                     continue;
                 }
 
@@ -270,7 +264,8 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
                 // skip sepa part if contract has no valid mandate
                 if (! $mandate) {
-                    Log::debug('billing', "Contract $c->number [$c->id] has no valid sepa mandate for SepaAccount $acc->name [$acc->id]");
+                    ChannelLog::debug('billing', "Contract $c->number [$c->id] has no valid sepa mandate for SepaAccount $acc->name [$acc->id]");
+
                     continue;
                 }
 
@@ -559,7 +554,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
         foreach ($filepaths as $provider => $filepath) {
             if (! is_file($filepath)) {
-                Log::error('billing', "Missing call data record file from $provider");
+                ChannelLog::error('billing', "Missing call data record file from $provider");
                 throw new Exception("Missing call data record file from $provider");
             }
 
@@ -583,13 +578,13 @@ class SettlementRunCommand extends Command implements ShouldQueue
      */
     protected function _parse_envia_csv($filepath)
     {
-        Log::debug('billing', 'Parse envia TEL Call Data Records CSV');
+        ChannelLog::debug('billing', 'Parse envia TEL Call Data Records CSV');
 
         $csv = file($filepath);
         $calls = [[]];
 
         if (! $csv) {
-            Log::error('billing', 'Empty envia call data record file');
+            ChannelLog::error('billing', 'Empty envia call data record file');
 
             return $calls;
         }
@@ -652,7 +647,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
         // warning when there are 5 times more customers then calls
         if ($csv && (count($customer_nrs) > 10 * count($csv))) {
-            Log::warning('billing', 'Very little data in enviatel call data record file ('.count($csv).' records). Possibly missing data!');
+            ChannelLog::warning('billing', 'Very little data in enviatel call data record file ('.count($csv).' records). Possibly missing data!');
         }
 
         return $calls;
@@ -669,7 +664,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
         $calls = [[]];
 
         if (! $csv) {
-            Log::warning('billing', 'Empty hlkomm call data record file');
+            ChannelLog::warning('billing', 'Empty hlkomm call data record file');
 
             return [[]];
         }
@@ -746,13 +741,13 @@ class SettlementRunCommand extends Command implements ShouldQueue
      */
     protected function _parse_purtel_csv($filepath)
     {
-        Log::debug('billing', 'Parse PurTel Call Data Records CSV');
+        ChannelLog::debug('billing', 'Parse PurTel Call Data Records CSV');
 
         $csv = file($filepath);
         $calls = [[]];
 
         if (! $csv) {
-            Log::warning('billing', 'Empty envia call data record file');
+            ChannelLog::warning('billing', 'Empty envia call data record file');
 
             return $calls;
         }
@@ -786,7 +781,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
             $date = explode(' ', $arr[1]);
 
             if (! isset($phonenumbers[$username])) {
-                // Log::warning('billing', "Phonenr of contract $customer_nr with username $username not found in DB. Calling number will not appear on invoice.");
+                // ChannelLog::warning('billing', "Phonenr of contract $customer_nr with username $username not found in DB. Calling number will not appear on invoice.");
                 $phonenumbers[$username] = ' - ';
             }
 
@@ -823,14 +818,14 @@ class SettlementRunCommand extends Command implements ShouldQueue
         $this->_log_unassigned_calls($unassigned);
 
         if ($logged) {
-            Log::notice('billing', 'Purtel-CSV: Discard calls from customer numbers '.implode(', ', $logged).' (still km3 customer - from Drebach)');
+            ChannelLog::notice('billing', 'Purtel-CSV: Discard calls from customer numbers '.implode(', ', $logged).' (still km3 customer - from Drebach)');
         }
 
         $this->_log_unassigned_calls($unassigned);
 
         // warning when there are approx 5 times more customers then calls
         if ($calls && (count($phonenumbers_db) > 5 * count($calls))) {
-            Log::warning('billing', 'Very little data in purtel call data record file ('.count($csv).' records). Possibly missing data!');
+            ChannelLog::warning('billing', 'Very little data in purtel call data record file ('.count($csv).' records). Possibly missing data!');
         }
 
         return $calls;
@@ -923,7 +918,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
             foreach ($pns as $p => $type) {
 
                 // NOTE: type actually can be missing or mismatch
-                Log::warning('billing', trans("messages.phonenumber_$type", [
+                ChannelLog::warning('billing', trans("messages.phonenumber_$type", [
                     'provider' => $provider,
                     'contractnr' => $contract_nr,
                     'phonenr' => $p,
