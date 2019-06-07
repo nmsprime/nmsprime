@@ -65,54 +65,17 @@ class SettlementRunCommand extends Command implements ShouldQueue
     {
         ChannelLog::debug('billing', ' ########  Start Accounting Command  ########');
 
-        // Determine SR (SettlementRun) ID as this is necessary to create relation between Invoice & SR
-        if (! $this->sr->getAttribute('id')) {
-            $this->sr = SettlementRun::where('year', '=', $this->dates['Y'])->where('month', '=', (int) $this->dates['lastm'])->orderBy('id', 'desc')->first();
-            SettlementRun::where('id', $this->sr->id)->update(['updated_at' => date('Y-m-d H:i:s')]);
-        }
-
-        if (! $this->sr || ! $this->sr->getAttribute('id')) {
-            // Note: create will run the observer that calls this command again with this SR
-            SettlementRun::create(['year' => $this->dates['Y'], 'month' => $this->dates['lastm']]);
-            echo "\nSettlementRun is called in background via Queue\n";
-            exit(0);
-        }
+        $this->createAndSetSettlementRun();
 
         // Set execution timestamp to always show log entries on SettlementRun edit page
         SettlementRun::where('id', $this->sr->id)->update(['executed_at' => \Carbon\Carbon::now()]);
 
-        Log::debug('billing', ' ##############################');
-        Log::debug('billing', ' ## Start Accounting Command ##');
-        Log::debug('billing', ' ##############################');
-
-        // Get Collection of SepaAccounts
-        if ($this->output) {
-            $this->sepaacc = $this->argument('sepaaccount_id') ? SepaAccount::findOrFail($this->argument('sepaaccount_id')) : null;
-        }
-
-        $sepaaccs = $this->sepaacc ? new Collection([0 => $this->sepaacc]) : SepaAccount::all();
-
-        if (! $sepaaccs) {
-            Log::error('billing', 'There are no Sepa Accounts to create Billing Files for - Stopping here!');
-            throw new Exception('There are no Sepa Accounts to create Billing Files for');
-        }
-
-        // TODO: set full run flag here as well?
-
-        if ($sepaaccs->count() == 1) {
-            $a = $sepaaccs->first();
-            Log::info('billing', "Execute settlementrun for SepaAccount $a->name (ID: $a->id)");
-        } else {
-            Log::info('billing', 'Execute settlementrun for all SepaAccounts');
-        }
+        $sepaaccs = $this->getSepaAccounts();
 
         // init must be before _get_cdr_data()
         $this->_init($sepaaccs);
 
-        // Get all Data from Database
-        $this->user_output('Load Data...', 0);
-
-        // get call data records as ordered structure (array)
+        $this->user_output('Parse call data record file(s)...', 0);
         $cdrs = $this->_get_cdr_data();
         // $cdrs = [[]];
         if (! $cdrs) {
@@ -120,8 +83,9 @@ class SettlementRunCommand extends Command implements ShouldQueue
         }
 
         // TODO: use load_salesman_from_contracts() in future ?
+        $this->user_output('Load Data...', 0);
         $salesmen = Salesman::all();
-        $contracts = self::load_contracts($this->sepaacc ? $this->sepaacc->id : 0);
+        $contracts = self::loadContracts($this->sepaacc ? $this->sepaacc->id : 0);
 
         // show progress bar if not called silently via queues (would throw exception otherwise)
         $num = count($contracts);
@@ -169,7 +133,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
                 $acc = $sepaaccs->find($costcenter->sepaaccount_id);
 
                 // If SR runs for specific SA skip item if it does not belong to that SA (SepaAccount)
-                if (! $acc) { // || ($this->sepaacc && ($this->sepaacc->id != $acc->id)))
+                if (! $acc) {
                     continue;
                 }
 
@@ -191,54 +155,13 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
                 // add item to accounting records of account, invoice and salesman
                 $acc->add_accounting_record($item);
-                $acc->add_invoice_item($item, $this->conf, $this->sr->id);
+                $acc->add_invoice_item($item, $this->sr->id);
                 if ($c->salesman_id) {
                     $salesmen->find($c->salesman_id)->add_item($c, $item, $acc->id);
                 }
             } // end of item loop
 
-            /**
-             * Add Call Data Records
-             * Note: dont add CDRs if this command is not destined to the corresponding SepaAcc
-             */
-            $acc = $sepaaccs->find($c->costcenter->sepaaccount_id);
-            if ($acc) {
-                $charge = $calls = $id = 0;
-
-                if (isset($cdrs[$c->id])) {
-                    $id = $c->id;
-                } elseif (isset($cdrs[$c->number])) {
-                    $id = $c->number;
-                }
-
-                if ($id) {
-                    // calculate charge and count
-                    foreach ($cdrs[$id] as $entry) {
-                        $charge += $entry['price'];
-                        $calls++;
-                    }
-
-                    // increase charge for booking record
-                    // Keep this order in case we need to increment the invoice nr if only cdrs are charged for this contract
-                    if (! isset($c->charge[$acc->id])) {
-                        // this case should only happen when contract/voip tarif ended and deferred CDRs are calculated
-                        Log::notice('billing', trans('messages.accCmd_notice_CDR', ['contract_nr' => $c->number, 'contract_id' => $c->id]));
-                        $c->charge[$acc->id] = ['net' => 0, 'tax' => 0];
-                        $acc->invoice_nr += 1;
-                    }
-
-                    $c->charge[$acc->id]['net'] += $charge;
-                    $c->charge[$acc->id]['tax'] += $charge * $this->conf->tax / 100;
-
-                    // accounting record
-                    $rec = new AccountingRecord;
-                    $rec->add_cdr($c, $acc, $charge, $calls);
-                    $acc->add_cdr_accounting_record($c, $charge, $calls);
-
-                    // invoice
-                    $acc->add_invoice_cdr($c, $cdrs[$id], $this->conf, $this->sr->id);
-                }
-            }
+            $this->addCdrs($sepaaccs, $c, $cdrs);
 
             /*
              * Add contract specific data for accounting files
@@ -292,6 +215,60 @@ class SettlementRunCommand extends Command implements ShouldQueue
         } else {
             self::push_state(100, 'Finished');
         }
+    }
+
+    /**
+     * Create new SettlementRun model or get it from database when command is executed from command line
+     */
+    private function createAndSetSettlementRun()
+    {
+        // SettlementRun is already set by constructor
+        if ($this->sr->id) {
+            return;
+        }
+
+        // Command is executed from commandline
+        $dates = SettlementRunData::getDate();
+
+        // Get SettlementRun as this is necessary to create relation for Invoice
+        $sr = SettlementRun::where('year', '=', $dates['Y'])->where('month', '=', (int) $dates['lastm'])->orderBy('id', 'desc')->first();
+
+        if (! $sr || ! $sr->getAttribute('id')) {
+            $sr = new SettlementRun;
+            // Disable observer to not queue this command again - Note: Disable via observer_enable=false doesn't work
+            $sr->flushEventListeners();
+            $sr = $sr->create(['year' => $dates['Y'], 'month' => SettlementRunData::getDate('lastm')]);
+            // Enable observer again
+            $sr->observe(new \Modules\BillingBase\Entities\SettlementRunObserver);
+        }
+
+        $this->sr = $sr;
+    }
+
+    private function getSepaAccounts()
+    {
+        // Get Collection of SepaAccounts
+        if ($this->output) {
+            $this->sepaacc = $this->argument('sepaaccount_id') ? SepaAccount::findOrFail($this->argument('sepaaccount_id')) : null;
+        }
+
+        $sepaaccs = $this->sepaacc ? new Collection([0 => $this->sepaacc]) : SepaAccount::all();
+
+        if (! $sepaaccs) {
+            ChannelLog::error('billing', 'There are no Sepa Accounts to create Billing Files for - Stopping here!');
+            throw new Exception('There are no Sepa Accounts to create Billing Files for');
+        }
+
+        // TODO: set full run flag here as well?
+
+        if ($sepaaccs->count() == 1) {
+            $a = $sepaaccs->first();
+            ChannelLog::info('billing', "Execute settlementrun for SepaAccount $a->name (ID: $a->id)");
+        } else {
+            ChannelLog::info('billing', 'Execute settlementrun for all SepaAccounts');
+        }
+
+        return $sepaaccs;
     }
 
     /**
@@ -357,53 +334,29 @@ class SettlementRunCommand extends Command implements ShouldQueue
      * 	that can have resulting charges for that account
      *
      * @param int
-     *
-     * @TODO: Dont load contracts that are outdated
      */
-    public static function load_contracts($sepaaccount_id)
+    public static function loadContracts($sepaaccount_id)
     {
-        // All contracts - with eager loading
-        if (! $sepaaccount_id) {
-            // Log all contracts where invoice creation is deactivated
-            $deactivated = Contract::where('create_invoice', '=', 0)->orderBy('number')->get(['number'])->pluck('number')->all();
-            Log::info('billing', trans('messages.accCmd_invoice_creation_deactivated', ['contractnrs' => implode(',', $deactivated)]));
+        if ($sepaaccount_id) {
+            $query = self::getSepaAccSpecificContractsBaseQuery($sepaaccount_id);
+            self::logSepaAccSpecificDiscardedContracts($query);
 
-            return Contract::orderBy('number')->with('items.product', 'costcenter')
-                ->where('create_invoice', '!=', 0)
-                // TODO: make time we have to look back dependent of CDR offset in BillingBase config
-                ->where(whereLaterOrEqual('contract_end', date('Y-m-d', strtotime('last day of sep last year'))))
-                ->get();
+            return self::getSepaAccSpecificContracts($query);
         }
 
-        // Log all contracts where invoice creation is deactivated
-        $deactivated = Contract::leftJoin('item as i', 'contract.id', '=', 'i.contract_id')
-            ->leftJoin('costcenter as ccc', 'contract.costcenter_id', '=', 'ccc.id')
-            ->leftJoin('costcenter as cci', 'i.costcenter_id', '=', 'cci.id')
-            ->leftJoin('product as p', 'i.product_id', '=', 'p.id')
-            ->leftJoin('costcenter as ccp', 'p.costcenter_id', '=', 'ccp.id')
-            ->where('create_invoice', '=', 0)
-            ->where(whereLaterOrEqual('contract.contract_end', date('Y-m-d', strtotime('last day of nov last year'))))
-            ->where('i.valid_from_fixed', 1)
-            ->where(function ($query) use ($sepaaccount_id) {
-                $query
-                ->where('ccc.sepaaccount_id', '=', $sepaaccount_id)
-                ->orWhere('ccp.sepaaccount_id', '=', $sepaaccount_id)
-                ->orWhere('cci.sepaaccount_id', '=', $sepaaccount_id);
-            })
-            ->select('contract.number')
-            ->with('items.product', 'costcenter')
-            ->distinct()
-            ->orderBy('number')
-            ->get()->pluck('number')->all();
+        self::logAllDiscardedContracts();
 
-        Log::info('billing', trans('messages.accCmd_invoice_creation_deactivated', ['contractnrs' => implode(',', $deactivated)]));
+        return self::getAllContracts();
 
+    }
+
+    private static function getSepaAccSpecificContractsQuery($sepaaccount_id)
+    {
         return Contract::leftJoin('item as i', 'contract.id', '=', 'i.contract_id')
             ->leftJoin('costcenter as ccc', 'contract.costcenter_id', '=', 'ccc.id')
             ->leftJoin('costcenter as cci', 'i.costcenter_id', '=', 'cci.id')
             ->leftJoin('product as p', 'i.product_id', '=', 'p.id')
             ->leftJoin('costcenter as ccp', 'p.costcenter_id', '=', 'ccp.id')
-            ->where('create_invoice', '!=', 0)
             ->where(whereLaterOrEqual('contract.contract_end', date('Y-m-d', strtotime('last day of nov last year'))))
             ->where('i.valid_from_fixed', 1)
             ->where(function ($query) use ($sepaaccount_id) {
@@ -412,39 +365,124 @@ class SettlementRunCommand extends Command implements ShouldQueue
                 ->orWhere('ccp.sepaaccount_id', '=', $sepaaccount_id)
                 ->orWhere('cci.sepaaccount_id', '=', $sepaaccount_id);
             })
-            ->select('contract.*')
-            ->with('items.product', 'costcenter')
-            ->distinct()
             ->orderBy('number')
-            ->get();
+            ->distinct();
+    }
 
-        // Contracts that are related to specific SepaAccount
-        // All contracts with costcenter belonging to the specific SA (SEPA-Account)
-        $filter1 = Contract::join('costcenter as cc', 'contract.costcenter_id', '=', 'cc.id')
-            ->where('cc.sepaaccount_id', '=', $sepaaccount_id)
-            ->select('contract.*');
+    private static function logSepaAccSpecificDiscardedContracts($query)
+    {
+        // Log all contracts where invoice creation is deactivated
+        $deactivated = $query
+            ->where('create_invoice', '=', 0)
+            ->select('contract.number')
+            ->pluck('number')->all();
 
-        // All contracts with items with costcenter belonging to the specific SA
-        $filter2 = Contract::join('item as i', 'contract.id', '=', 'i.contract_id')
-            ->join('costcenter as cc', 'i.costcenter_id', '=', 'cc.id')
-            ->where('cc.sepaaccount_id', '=', $sepaaccount_id)
-            ->select('contract.*');
+        if ($deactivated) {
+            ChannelLog::info('billing', trans('messages.accCmd_invoice_creation_deactivated', ['contractnrs' => implode(',', $deactivated)]));
+        }
 
-        // All contracts with items of products with costcenter belonging to the specific SA
-        $filter3 = Contract::join('item as i', 'contract.id', '=', 'i.contract_id')
-            ->join('product as p', 'i.product_id', '=', 'p.id')
-            ->join('costcenter as cc', 'p.costcenter_id', '=', 'cc.id')
-            ->where('cc.sepaaccount_id', '=', $sepaaccount_id)
-            ->select('contract.*');
+        $errors = $query
+            ->where('contract.costcenter_id', 0)
+            ->select('contract.number')
+            ->pluck('number')->all();
 
-        // Not working: some contracts with create_invoice = 0 are included!
-        return $filter1->union($filter2)->union($filter3)
+        if ($errors) {
+            ChannelLog::error('billing', trans('messages.accCmd_error_noCC', ['numbers' => implode(',', $errors)]));
+        }
+    }
+
+    private static function getSepaAccSpecificContracts($query)
+    {
+        return $query
             ->where('create_invoice', '!=', 0)
             ->select('contract.*')
             ->with('items.product', 'costcenter')
-            ->distinct()
-            ->orderBy('number')
             ->get();
+    }
+
+    private static function logAllDiscardedContracts()
+    {
+        // Log all discarded contracts of any reason
+        $query = Contract::where('create_invoice', '=', 0)->orderBy('number');
+
+        // where invoice creation is deactivated
+        $deactivated = $query->pluck('number')->all();
+        if ($deactivated) {
+            ChannelLog::info('billing', trans('messages.accCmd_invoice_creation_deactivated', ['contractnrs' => implode(',', $deactivated)]));
+        }
+
+        $errors = $query->where('costcenter_id', 0)->pluck('number')->all();
+        if ($errors) {
+            ChannelLog::error('billing', trans('messages.accCmd_error_noCC', ['numbers' => implode(',', $errors)]));
+        }
+    }
+
+    /**
+     * Get all relevant contracts for the SettlementRun - with eager loading
+     *
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    private static function getAllContracts()
+    {
+        return Contract::orderBy('number')
+            ->with('items.product', 'costcenter')
+            ->where('create_invoice', '!=', 0)
+            ->where('costcenter_id', '!=', 0)
+            ->whereBetween('number', [10010, 10030])
+            // ->where('contact', 3)
+            // TODO: make time we have to look back dependent of CDR offset in BillingBase config
+            ->where(whereLaterOrEqual('contract_end', date('Y-m-d', strtotime('last day of sep last year'))))
+            ->get();
+    }
+
+    /**
+     * Add Call Data Records
+     */
+    private function addCdrs($sepaaccs, $c, $cdrs)
+    {
+        // Dont add CDRs if this command is not destined to the corresponding SepaAcc
+        $acc = $sepaaccs->find($c->costcenter->sepaaccount_id);
+        if (! $acc) {
+            return;
+        }
+
+        $id = 0;
+        if (isset($cdrs[$c->id])) {
+            $id = $c->id;
+        } elseif (isset($cdrs[$c->number])) {
+            $id = $c->number;
+        }
+
+        if (! $id) {
+            return;
+        }
+
+        // calculate charge and count
+        $charge = $calls = 0;
+        foreach ($cdrs[$id] as $entry) {
+            $charge += $entry['price'];
+            $calls++;
+        }
+
+        // increase charge for booking record
+        // Keep this order in case we need to increment the invoice nr if only cdrs are charged for this contract
+        if (! isset($c->charge[$acc->id])) {
+            // this case should only happen when contract/voip tarif ended and deferred CDRs are calculated
+            ChannelLog::notice('billing', trans('messages.accCmd_notice_CDR', ['contract_nr' => $c->number, 'contract_id' => $c->id]));
+            $c->charge[$acc->id] = ['net' => 0, 'tax' => 0];
+            $acc->invoice_nr += 1;
+        }
+
+        $c->charge[$acc->id]['net'] += $charge;
+        $c->charge[$acc->id]['tax'] += $charge * SettlementRunData::getConf('tax') / 100;
+
+        // accounting record
+        $rec = new AccountingRecord;
+        $rec->add_cdr($c, $acc, $charge, $calls);
+        $acc->add_cdr_accounting_record($c, $charge, $calls);
+
+        // invoice
+        $acc->add_invoice_cdr($c, $cdrs[$id], $this->sr->id);
     }
 
     /**
