@@ -14,6 +14,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Salesman;
+use Modules\BillingBase\Providers\Currency;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use App\Http\Controllers\BaseViewController;
 use Illuminate\Database\Eloquent\Collection;
@@ -730,7 +731,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
         foreach ($unassigned as $pn => $arr) {
             $price = \App::getLocale() == 'de' ? number_format($arr['price'], 2, ',', '.') : number_format($arr['price'], 2, '.', ',');
-            Log::error('billing', trans('messages.cdr_missing_phonenr', ['phonenr' => $pn, 'count' => $arr['count'], 'price' => $price, 'currency' => $this->conf->currency]));
+            ChannelLog::error('billing', trans('messages.cdr_missing_phonenr', ['phonenr' => $pn, 'count' => $arr['count'], 'price' => $price, 'currency' => Currency::get()]));
         }
 
         return $calls;

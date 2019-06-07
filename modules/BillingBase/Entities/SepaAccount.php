@@ -257,7 +257,7 @@ class SepaAccount extends \BaseModel
             'Net' 			=> $german ? number_format($net, 2, ',', '.') : number_format($net, 2, '.', ','),
             'Tax' 			=> $german ? number_format($tax, 2, ',', '.') : number_format($tax, 2, '.', ','),
             'Gross' 		=> $german ? number_format($net + $tax, 2, ',', '.') : number_format($net + $tax, 2, '.', ','),
-            'Currency' 		=> $conf->currency ? $conf->currency : 'EUR',
+            'Currency' 		=> Currency::get(),
             'Firstname' 	=> $contract->firstname,
             'Lastname' 		=> $contract->lastname,
             'Street' 		=> $contract->street,
