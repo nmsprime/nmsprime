@@ -4,8 +4,8 @@ namespace Modules\BillingBase\Entities;
 
 use Storage;
 use ChannelLog;
-use \Modules\BillingBase\Providers\Currency;
-use \Modules\BillingBase\Providers\SettlementRunData;
+use Modules\BillingBase\Providers\Currency;
+use Modules\BillingBase\Providers\SettlementRunData;
 
 /**
  * Contains Functions to collect Data for Invoice & create the corresponding PDFs

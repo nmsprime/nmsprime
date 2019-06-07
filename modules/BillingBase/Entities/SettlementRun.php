@@ -2,7 +2,7 @@
 
 namespace Modules\BillingBase\Entities;
 
-use \Modules\BillingBase\Console\SettlementRunCommand;
+use Modules\BillingBase\Console\SettlementRunCommand;
 
 class SettlementRun extends \BaseModel
 {
@@ -227,7 +227,6 @@ class SettlementRunObserver
             foreach ($mt940s as $mt940) {
                 $settlementrun->parseBankingFile($mt940);
             }
-
         }
     }
 }

@@ -14,8 +14,8 @@ use Illuminate\Queue\InteractsWithQueue;
 use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\Salesman;
-use Modules\BillingBase\Providers\Currency;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Modules\BillingBase\Providers\Currency;
 use App\Http\Controllers\BaseViewController;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\BillingBase\Entities\BillingBase;
@@ -198,7 +198,6 @@ class SettlementRunCommand extends Command implements ShouldQueue
                 $mandate->setRelation('contract', $c);
                 $acc->add_sepa_transfer($mandate, $value['tot'], $rcd);
             }
-
         } // end of loop over contracts
 
         if ($this->output) {
@@ -348,7 +347,6 @@ class SettlementRunCommand extends Command implements ShouldQueue
         self::logAllDiscardedContracts();
 
         return self::getAllContracts();
-
     }
 
     private static function getSepaAccSpecificContractsQuery($sepaaccount_id)
