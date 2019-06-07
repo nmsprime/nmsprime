@@ -23,6 +23,7 @@ use Modules\BillingBase\Entities\SettlementRun;
 use Symfony\Component\Console\Input\InputOption;
 use Modules\BillingBase\Entities\AccountingRecord;
 use Symfony\Component\Console\Input\InputArgument;
+use Modules\BillingBase\Providers\SettlementRunData;
 use Modules\BillingBase\Http\Controllers\SettlementRunController;
 
 class SettlementRunCommand extends Command implements ShouldQueue
@@ -185,7 +186,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
 
                 // increase charge for account by price, calculate tax
                 $c->charge[$acc->id]['net'] += $item->charge;
-                $c->charge[$acc->id]['tax'] += $item->product->tax ? $item->charge * $this->conf->tax / 100 : 0;
+                $c->charge[$acc->id]['tax'] += $item->product->tax ? $item->charge * SettlementRunData::getConf('tax') / 100 : 0;
 
                 $item->charge = round($item->charge, 2);
 
@@ -328,10 +329,10 @@ class SettlementRunCommand extends Command implements ShouldQueue
      */
     private function _init($sepaaccs)
     {
-        $this->conf = BillingBase::first();
+        $conf = SettlementRunData::getConf();
 
         // set language for this run
-        \App::setLocale($this->conf->userlang);
+        \App::setLocale($conf->userlang);
 
         // create directory structure and remove old invoices
         if (is_dir(self::get_absolute_accounting_dir_path())) {
@@ -347,7 +348,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
         }
 
         // Reset yearly payed items payed_month column
-        if ($this->dates['lastm'] == '01') {
+        if (SettlementRunData::getDate('lastm') == '01') {
             // Senseless where statement is necessary because update can not be called directly
             Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
         }
@@ -762,7 +763,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
         $price = $count = 0;
         $customer_nrs = self::_get_customer_nrs();
         $registrar = 'deu3.purtel.com';
-        $cdr_first_day_of_month = date('Y-m-01', strtotime('first day of -'.(1 + $this->conf->cdr_offset).' month'));
+        $cdr_first_day_of_month = date('Y-m-01', strtotime('first day of -'.(1 + SettlementRunData::getConf('cdr_offset')).' month'));
 
         // get phonenumbers because only username is given in CDR.csv
         $phonenumbers_db = $this->_get_phonenumbers($registrar);
@@ -878,7 +879,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
      */
     private function _get_phonenumbers($registrar, $withEmptyRegistrar = true)
     {
-        $cdr_first_day_of_month = date('Y-m-01', strtotime('first day of -'.(1 + $this->conf->cdr_offset).' month'));
+        $cdr_first_day_of_month = date('Y-m-01', strtotime('first day of -'.(1 + SettlementRunData::getConf('cdr_offset')).' month'));
 
         if ($withEmptyRegistrar) {
             $whereCondition = function ($query) use ($registrar) {

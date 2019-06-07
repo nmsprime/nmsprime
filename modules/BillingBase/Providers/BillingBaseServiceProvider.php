@@ -44,7 +44,7 @@ class BillingBaseServiceProvider extends ServiceProvider
     {
         $this->commands($this->commands);
 
-        $this->app->alias(Modules\BillingBase\Providers\CompanyDataProvider::class, 'companydata');
+        $this->app->alias(Modules\BillingBase\Providers\SettlementRunProvider::class, 'settlementrun');
         $this->app->alias(Modules\BillingBase\Providers\CurrencyProvider::class, 'currency');
     }
 
@@ -107,8 +107,7 @@ class BillingBaseServiceProvider extends ServiceProvider
     public function provides()
     {
         return [
-            CompanyData::class,
-            CompanyDataProvider::class,
+            SettlementRunProvider::class,
             Currency::class,
         ];
     }

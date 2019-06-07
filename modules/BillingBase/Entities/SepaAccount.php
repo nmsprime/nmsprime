@@ -7,6 +7,7 @@ use Storage;
 use ChannelLog;
 use Modules\ProvBase\Entities\Contract;
 use App\Http\Controllers\BaseViewController;
+use Modules\BillingBase\Providers\SettlementRunData;
 use Modules\BillingBase\Console\SettlementRunCommand;
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
 
@@ -315,26 +316,26 @@ class SepaAccount extends \BaseModel
             ];
     }
 
-    public function add_invoice_item($item, $conf, $settlementrun_id)
+    public function add_invoice_item($item, $settlementrun_id)
     {
         if (! isset($this->invoices[$item->contract->id])) {
             $this->invoices[$item->contract->id] = new Invoice;
             $this->invoices[$item->contract->id]->settlementrun_id = $settlementrun_id;
-            $this->invoices[$item->contract->id]->add_contract_data($item->contract, $conf, $this->_get_invoice_nr_formatted());
+            $this->invoices[$item->contract->id]->add_contract_data($item->contract, $this->_get_invoice_nr_formatted());
         }
 
         $this->invoices[$item->contract->id]->add_item($item);
     }
 
-    public function add_invoice_cdr($contract, $cdrs, $conf, $settlementrun_id)
+    public function add_invoice_cdr($contract, $cdrs, $settlementrun_id)
     {
         if (! isset($this->invoices[$contract->id])) {
             $this->invoices[$contract->id] = new Invoice;
             $this->invoices[$contract->id]->settlementrun_id = $settlementrun_id;
-            $this->invoices[$contract->id]->add_contract_data($contract, $conf, $this->_get_invoice_nr_formatted());
+            $this->invoices[$contract->id]->add_contract_data($contract, $this->_get_invoice_nr_formatted());
         }
 
-        $this->invoices[$contract->id]->add_cdr_data($cdrs, $conf);
+        $this->invoices[$contract->id]->add_cdr_data($cdrs);
     }
 
     /**

@@ -4,6 +4,8 @@ namespace Modules\BillingBase\Entities;
 
 use Storage;
 use ChannelLog;
+use \Modules\BillingBase\Providers\Currency;
+use \Modules\BillingBase\Providers\SettlementRunData;
 
 /**
  * Contains Functions to collect Data for Invoice & create the corresponding PDFs
@@ -237,7 +239,7 @@ class Invoice extends \BaseModel
         }
     }
 
-    public function add_contract_data($contract, $config, $invoice_nr)
+    public function add_contract_data($contract, $invoice_nr)
     {
         $this->data['contract_id'] = $contract->id;
         $this->contract_id = $contract->id;
@@ -255,10 +257,7 @@ class Invoice extends \BaseModel
         $this->data['invoice_nr'] = $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
         $this->data['date_invoice'] = date('d.m.Y', strtotime('last day of last month'));
         $this->filename_invoice = $this->filename_invoice ?: self::_get_invoice_filename_date_part().'_'.str_replace('/', '_', $invoice_nr);
-
-        // Note: Add other currencies here
-        $this->currency = strtolower($config->currency) == 'eur' ? '€' : $config->currency;
-        $this->tax = $config->tax;
+        $this->tax = SettlementRunData::getConf('tax');
 
         $this->setCancelationDates($contract);
     }
@@ -356,7 +355,7 @@ class Invoice extends \BaseModel
      */
     public function set_company_data($account)
     {
-        $this->data = array_merge($this->data, \Modules\BillingBase\Providers\CompanyData::get($account->id));
+        $this->data = array_merge($this->data, SettlementRunData::getCompanyData($account->id));
 
         $this->template_invoice_fname = $account->template_invoice;
         $this->template_cdr_fname = $account->template_cdr;
@@ -429,15 +428,21 @@ class Invoice extends \BaseModel
         $this->data['invoice_text'] = '\begin{tabular} {@{}ll} \multicolumn{2}{@{}L{\textwidth}} {'.$template.'}\\\\'.$text.' \end{tabular}';
     }
 
+    public function setRcd($rcd)
+    {
+        $this->data['rcd'] = $rcd;
+    }
+
     /**
      * @param 	cdrs 	Array		Call Data Record array designated for this Invoice formatted by parse_cdr_data in SettlementRunCommand
      * @param   conf   	model 		BillingBase
      */
-    public function add_cdr_data($cdrs, $conf)
+    public function add_cdr_data($cdrs)
     {
         $this->has_cdr = 1;
+        $offset = SettlementRunData::getConf('cdr_offset');
         // $this->time_cdr = $time_cdr = strtotime($cdrs[0][1]);
-        $this->time_cdr = $time_cdr = $conf->cdr_offset ? strtotime('-'.($conf->cdr_offset + 1).' month') : strtotime('first day of last month');
+        $this->time_cdr = $time_cdr = $offset ? strtotime('-'.($offset + 1).' month') : strtotime('first day of last month');
         $this->data['cdr_month'] = date('m/Y', $time_cdr);
 
         // TODO: customer can request to show his tel nrs cut by the 3 last nrs (TKG §99 (1))
