@@ -172,14 +172,17 @@ class SettlementRunCommand extends Command implements ShouldQueue
             foreach ($c->charge as $acc_id => $value) {
                 $value['net'] = round($value['net'], 2);
                 $value['tax'] = round($value['tax'], 2);
+                $value['tot'] = $value['net'] + $value['tax'];
 
                 $acc = $sepaaccs->find($acc_id);
 
                 $mandate_specific = $c->get_valid_mandate('now', $acc->id);
                 $mandate = $mandate_specific ?: $mandate_global;
 
-                $acc->add_booking_record($c, $mandate, $value, $this->conf);
-                $acc->set_invoice_data($c, $mandate, $value);
+                $rcd = $this->rcd($c);
+
+                $acc->add_booking_record($c, $mandate, $value, $rcd);
+                $acc->set_invoice_data($c, $mandate, $value, $rcd);
 
                 // create invoice pdf already - this task is the most timeconsuming and therefore threaded!
                 $acc->invoices[$c->id]->make_invoice();
@@ -193,8 +196,9 @@ class SettlementRunCommand extends Command implements ShouldQueue
                 }
 
                 $mandate->setRelation('contract', $c);
-                $acc->add_sepa_transfer($mandate, $value['net'] + $value['tax']);
+                $acc->add_sepa_transfer($mandate, $value['tot'], $rcd);
             }
+
         } // end of loop over contracts
 
         if ($this->output) {
@@ -315,10 +319,7 @@ class SettlementRunCommand extends Command implements ShouldQueue
             mkdir(self::get_absolute_accounting_dir_path(), 0700, true);
         }
 
-        // SepaAccount
-        foreach ($sepaaccs as $acc) {
-            $acc->settlementrun_init($this->conf->rcd ? date('Y-m-'.$this->conf->rcd) : date('Y-m-d', strtotime('+1 day')));
-        }
+        // TODO: Reset mandate state on rerun if changed
 
         // Reset yearly payed items payed_month column
         if (SettlementRunData::getDate('lastm') == '01') {
@@ -976,46 +977,51 @@ class SettlementRunCommand extends Command implements ShouldQueue
             foreach ($pns as $p => $arr) {
                 $price = \App::getLocale() == 'de' ? number_format($arr['price'], 2, ',', '.') : number_format($arr['price'], 2, '.', ',');
 
-                Log::warning('billing', trans('messages.cdr_discarded_calls', [
+                ChannelLog::warning('billing', trans('messages.cdr_discarded_calls', [
                     'contractnr' => $customer_nr,
                     'count' => $arr['count'],
                     'phonenr' => $p,
                     'price' => $price,
-                    'currency' => $this->conf->currency,
+                    'currency' => Currency::get(),
                     ]));
             }
         }
     }
 
-    /**
-     * Instantiates an Array of all necessary date formats needed during execution of this Command
-     *
-     * Also needed in Item::calculate_price_and_span and in DashboardController!!
-     *
-     * TODO: Maybe implement this as service Provider or just dont use it
-     */
-    public static function create_dates_array()
+    private function add_debt($contract, $amount, $invoice)
     {
-        return [
+        if (! \Module::collections()->has('Dunning')) {
+            return;
+        }
 
-            'today' 		=> date('Y-m-d'),
-            'm' 			=> date('m'),
-            'Y' 			=> date('Y', strtotime('first day of last month')),
+        \Modules\Dunning\Entities\Debt::create([
+            'contract_id' => $contract->id,
+            'invoice_id' => $invoice->id,
+            'date' => date('Y-m-d', strtotime('last day of last month')),
+            'amount' => $amount,
+            ]);
+    }
 
-            'this_m'	 	=> date('Y-m'),
-            'thism_01'		=> date('Y-m-01'),
-            'thism_bill'	=> date('m/Y'),
+    /**
+     * Get requested collection date / date of value for contract
+     * This is the date when the bank performs the booking of the customers debit
+     *
+     * @return string   date
+     */
+    private function rcd($contract)
+    {
+        $rcdDefault = SettlementRunData::getConf('rcd');
+        $rcd = date('Y-m-');
 
-            'lastm'			=> date('m', strtotime('first day of last month')),			// written this way because of known bug ("-1 month" or "last month" is erroneous)
-            'lastm_01' 		=> date('Y-m-01', strtotime('first day of last month')),
-            'lastm_bill'	=> date('m/Y', strtotime('first day of last month')),
-            'lastm_Y'		=> date('Y-m', strtotime('first day of last month')),		// strtotime(first day of last month) is integer with actual timestamp!
+        if ($contract->value_date) {
+            $rcd .= $contract->value_date;
+        } elseif ($rcdDefault) {
+            $rcd .= $rcdDefault;
+        } else {
+            $rcd = date('Y-m-d', strtotime('+1 day'));
+        }
 
-            'nextm_01' 		=> date('Y-m-01', strtotime('+1 month')),
-
-            'null' 			=> '0000-00-00',
-            'm_in_sec' 		=> 60 * 60 * 24 * 30,						// month in seconds
-        ];
+        return $rcd;
     }
 
     /**

@@ -237,10 +237,10 @@ class SepaAccount extends \BaseModel
     /**
      * Adds a booking record for this account with the charge of a contract to the corresponding book_recs-Array (sepa/no_sepa)
      *
-     * @param object 	$contract, $mandate, $conf
+     * @param object 	$contract, $mandate
      * @param float 	$charge
      */
-    public function add_booking_record($contract, $mandate, $charge, $conf)
+    public function add_booking_record($contract, $mandate, $charge, $rcd)
     {
         $german = \App::getLocale() == 'de';
 
@@ -251,7 +251,7 @@ class SepaAccount extends \BaseModel
             'Contractnr'	=> $contract->number,
             'Invoicenr' 	=> $this->_get_invoice_nr_formatted(),
             'Date' 			=> $german ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
-            'RCD' 			=> $this->rcd,
+            'RCD' 			=> $rcd,
             'Cost Center' 	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
             'Description' 	=> '',
             'Net' 			=> $german ? number_format($net, 2, ',', '.') : number_format($net, 2, '.', ','),
@@ -341,12 +341,13 @@ class SepaAccount extends \BaseModel
     /**
      * Set Invoice Data (Mandate, Company, Amount to charge) for invoice (of contract) that belongs to this SepaAccount
      */
-    public function set_invoice_data($contract, $mandate, $value)
+    public function set_invoice_data($contract, $mandate, $value, $rcd)
     {
         // Attention! the chronical order of these functions has to be kept until now because of dependencies for extracting the invoice text
         $this->invoices[$contract->id]->set_mandate($mandate);
         $this->invoices[$contract->id]->set_company_data($this);
         $this->invoices[$contract->id]->set_summary($value['net'], $value['tax'], $this);
+        $this->invoices[$contract->id]->setRcd($rcd);
     }
 
     /**
@@ -356,7 +357,7 @@ class SepaAccount extends \BaseModel
      * @param float 	$charge 	Must already be rounded to 2 decimals! (as it actually is we dont do it again here)
      * @param array 	$dates 		last run info is important for transfer type
      */
-    public function add_sepa_transfer($mandate, $charge)
+    public function add_sepa_transfer($mandate, $charge, $rcd)
     {
         if ($charge == 0) {
             return;
@@ -404,7 +405,7 @@ class SepaAccount extends \BaseModel
         $state = $mandate->state;
         $mandate->update_status();
 
-        $this->sepa_xml['debits'][$state][] = $data;
+        $this->sepa_xml['debits'][$state][$rcd][] = $data;
     }
 
     /**
@@ -463,9 +464,9 @@ class SepaAccount extends \BaseModel
      */
     private function _log($name, $pathname)
     {
-        $path = storage_path('app/');
+        $path = storage_path('app');
         // echo "Stored $name in $path"."$pathname\n";
-        ChannelLog::debug('billing', "Successfully stored $name in $path"."$pathname \n");
+        ChannelLog::debug('billing', "New file $path/$pathname");
     }
 
     private function get_sepa_xml_msg_id()
@@ -479,7 +480,7 @@ class SepaAccount extends \BaseModel
     }
 
     /**
-     * Create SEPA XML File for direct debits
+     * Create SEPA XML File(s) for direct debits
      */
     private function make_debit_file()
     {
@@ -488,66 +489,50 @@ class SepaAccount extends \BaseModel
         }
 
         $msg_id = $this->get_sepa_xml_msg_id();
-        $conf = BillingBase::first();
+        $splitTransferTypes = SettlementRunData::getConf('split');
 
-        if ($conf->split) {
-            foreach ($this->sepa_xml['debits'] as $type => $records) {
-                // Set the initial information for direct debits
+        // Set the initial information for direct debits
+        $directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id, $this->name, 'pain.008.003.02');
+
+        foreach ($this->sepa_xml['debits'] as $type => $rcds) {
+            if ($splitTransferTypes) {
                 $directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id.$type, $this->name, 'pain.008.003.02');
+            }
 
+            foreach ($rcds as $rcd => $records) {
                 // create a payment
-                $directDebit->addPaymentInfo($msg_id.$type, [
+                $directDebit->addPaymentInfo($msg_id.$type.$rcd, [
                     'id'                    => $msg_id,
                     'creditorName'          => $this->name,
                     'creditorAccountIBAN'   => $this->iban,
                     'creditorAgentBIC'      => $this->bic,
                     'seqType'               => $type,
                     'creditorId'            => $this->creditorid,
-                    'dueDate'				=> $this->rcd,
+                    'dueDate'               => $rcd,
                 ]);
 
                 // Add Transactions to the named payment
                 foreach ($records as $r) {
-                    $directDebit->addTransfer($msg_id.$type, $r);
+                    $directDebit->addTransfer($msg_id.$type.$rcd, $r);
                 }
+            }
 
-                // Retrieve the resulting XML
-                $file = self::get_relative_accounting_dir_path()."/DD_$type.xml";
+            // Retrieve the resulting XML
+            $file = self::get_relative_accounting_dir_path();
+            $file .= '/'.BaseViewController::translate_label('DD');
+            $file .= $splitTransferTypes ? "_$type" : '';
+            $file .= '.xml';
+
+            if ($splitTransferTypes) {
                 Storage::put($file, $directDebit->asXML());
-
-                $this->_log("sepa direct debit $type xml", $file);
-            }
-
-            return;
-        }
-
-        // Set the initial information for direct debits
-        $directDebit = TransferFileFacadeFactory::createDirectDebit($msg_id, $this->name, 'pain.008.003.02');
-
-        foreach ($this->sepa_xml['debits'] as $type => $records) {
-            // create a payment
-            $directDebit->addPaymentInfo($msg_id.$type, [
-                'id'                    => $msg_id,
-                'creditorName'          => $this->name,
-                'creditorAccountIBAN'   => $this->iban,
-                'creditorAgentBIC'      => $this->bic,
-                'seqType'               => $type,
-                'creditorId'            => $this->creditorid,
-                'dueDate'				=> $this->rcd, // requested collection date (Fälligkeits-/Ausführungsdatum) - from global config
-            ]);
-
-            // Add Transactions to the named payment
-            foreach ($records as $r) {
-                $directDebit->addTransfer($msg_id.$type, $r);
+                ChannelLog::debug('billing', "New file $file");
             }
         }
 
-        // Retrieve the resulting XML
-        $file = self::get_relative_accounting_dir_path();
-        $file .= '/'.BaseViewController::translate_label('DD').'.xml';
-        Storage::put($file, $directDebit->asXML());
-
-        $this->_log("sepa direct debit $type xml", $file);
+        if (! Storage::exists($file)) {
+            Storage::put($file, $directDebit->asXML());
+            ChannelLog::debug('billing', "New file $file");
+        }
     }
 
     /**

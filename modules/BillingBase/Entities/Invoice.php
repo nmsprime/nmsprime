@@ -162,7 +162,7 @@ class Invoice extends \BaseModel
         'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate as table with sepa mandate info
         'invoice_msg' 			=> '', 			// invoice text without sepa mandate information
         'invoice_headline'		=> '',
-        'rcd' 					=> '',			// Fälligkeitsdatum
+        'rcd' 					=> '',			// Fälligkeitsdatum / Buchungsdatum
         'cdr_month'				=> '', 			// Month of Call Data Records
 
         // Charges
@@ -251,8 +251,6 @@ class Invoice extends \BaseModel
         $this->data['contract_city'] = escape_latex_special_chars($contract->city);
         $this->data['contract_address'] = ($contract->company ? $this->data['contract_company'].'\\\\' : '').($contract->academic_degree ? escape_latex_special_chars($contract->academic_degree).' ' : '').$this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\'.$this->data['contract_street']."\\\\$contract->zip ".$this->data['contract_city'];
         $this->data['start_of_term'] = self::langDateFormat($contract->contract_start);
-
-        $this->data['rcd'] = $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
         $this->data['invoice_nr'] = $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
         $this->data['date_invoice'] = date('d.m.Y', strtotime('last day of last month'));
         $this->filename_invoice = $this->filename_invoice ?: self::_get_invoice_filename_date_part().'_'.str_replace('/', '_', $invoice_nr);
