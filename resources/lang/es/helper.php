@@ -138,7 +138,7 @@ return [
     'modem_update_frequency'		=> 'Este campo se actualiza una vez al día.',
     'enable_agc'					=> 'Activar el control automático de ganancia para upstream.',
     'agc_offset'					=> 'Control de ganancia automática en dB (por defecto: 0.0)',
-    'configfile_count'              => 'The number in brackets indicates how often the respective configurationfile is already used.',
+    'configfile_count'              => 'El número en paréntesis indica que tan seguido está siendo usado el archivo de configuración respectivo.',
     'has_telephony'                 => 'Activate if customer shall have telephony but has no internet. This flag can actually not be used to disable telephony on contracts with internet. Please delete the MTA or disable the phonenumber for that. Info: The setting influences the modems configfile parameters NetworkAcess and MaxCPE - see modems analyses page tab \'Configfile\'',
 
  /*
