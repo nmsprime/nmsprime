@@ -101,11 +101,11 @@ return [
     'cdr_offset' 			=> 'CDR diferencia de tiempo de Factura en Meses',
     'close' 				=> 'Cerrar',
     'contract' => [
-        'concede_credit' => 'There are yearly charged items that were already charged (by full price). Please check if the customer shall get a credit!',
-        'early_cancel' => 'Do you really want to cancel this contract before tariffs end of term :date is reached?',
+        'concede_credit' => 'Hay artículos cobrados anualmente que ya se han cobrado (a precio completo). ¡Por favor, compruebe si el cliente debería recibir un crédito!',
+        'early_cancel' => '¿Realmente desea cancelar este contrato antes de que se alcancen los aranceles finales del término :date?',
         ],
     'iteM' => [
-        'concede_credit' => 'This item was already charged (by full price). Please check if the customer shall get a credit!',
+        'concede_credit' => 'Este artículo ya fue cobrado (a precio completo). ¡Por favor, compruebe si el cliente debería recibir un crédito!',
     ],
     'contract_nr_mismatch'  => 'No se pudo encontrar el siguiente número de contrato porque la consulta de la base de datos falló. Esto se debe a que los siguientes contratos tienen un número de contrato que no pertenece a su centro de costo seleccionado: :nrs. Cambie el centro de costos o permita que el sistema asigne un nuevo número de contrato para estos contratos.',
     'contract_numberrange_failure' => 'No se encuentra disponible el numero de contrato para el centro de costos seleccionado!',
@@ -158,8 +158,8 @@ return [
     'snmp' => [
         'errors_walk' => 'Querying the following OIDs failed: :oids.',
         'errors_set' => 'Los siguientes parámetros no se pudieron establecer: :oids.',
-        'missing_cmts' => 'The cluster misses a superior CMTS as parent device.',
-        'undefined' => 'For this netelementtype is no controlling defined.',
+        'missing_cmts' => 'Al grupo le falta un CMTS superior como dispositivo padre.',
+        'undefined' => 'Para este tipo de elemento de red no hay un controlador definido.',
         'unreachable' => 'El dispositivo no es accesible vía el SNMP.',
     ],
     'State'						=> 'Estado',
@@ -220,7 +220,7 @@ return [
     'missing_product' 		=> 'Falta Producto!',
     'modem_eventlog_error'	=> 'Modem eventlog no encontrado',
     'modem_force_restart_button_title' => 'Solo reinicia el modem. No guarda algun dato cambiado!',
-    'modem_reset_button_title' => 'Only resets the modem. Doesn\'t save any changed data!',
+    'modem_reset_button_title' => 'Solo reinicia el módem. ¡No guarda ninguna información cambiada!',
     'CDR retention period' 		=> 'Período de retención de CDR',
     'Day of Requested Collection Date'	=> 'Fecha de facturación',
     'Tax in %'					=> 'Impuestos en %',
@@ -250,7 +250,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Upstream rate coefficient' => 'Coeficiente de velocidad de subida',
     'Additional modem reset button' => 'Botón adicional de reinicio de módem',
     'modemAnalysis' => [
-        'cfOutdated' => 'The modem doesn\'t run with the actual configfile. The last download was before the built time of the configfile.',
+        'cfOutdated' => 'El módem no se ejecuta con el archivo configfile actual. La última descarga fue antes de la hora de compilación del archivo configfile.',
         'cpeMacMissmatch' => 'The state of internet access and telephony could not be determined as minimum 1 CPE MAC address differs from the MACs of the assigned MTAs.',
         'fullAccess' => 'Internet access and telephony is allowed. (according to configfile)',
         'missingLD' => 'Info: The last configfile download was too long ago to determine if the modem has incured the actual configurations.',
