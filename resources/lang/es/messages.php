@@ -248,7 +248,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Start ID Endpoints'		=> 'ID de Inicio para terminales "Endpoints"',
     'Downstream rate coefficient' => 'Coeficiente de velocidad de descarga',
     'Upstream rate coefficient' => 'Coeficiente de velocidad de subida',
-    'Additional modem reset button' => 'Additional modem reset button',
+    'Additional modem reset button' => 'Botón adicional de reinicio de módem',
     'modemAnalysis' => [
         'cfOutdated' => 'The modem doesn\'t run with the actual configfile. The last download was before the built time of the configfile.',
         'cpeMacMissmatch' => 'The state of internet access and telephony could not be determined as minimum 1 CPE MAC address differs from the MACs of the assigned MTAs.',
