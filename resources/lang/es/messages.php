@@ -251,9 +251,9 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Additional modem reset button' => 'Botón adicional de reinicio de módem',
     'modemAnalysis' => [
         'cfOutdated' => 'El módem no se ejecuta con el archivo configfile actual. La última descarga fue antes de la hora de compilación del archivo configfile.',
-        'cpeMacMissmatch' => 'The state of internet access and telephony could not be determined as minimum 1 CPE MAC address differs from the MACs of the assigned MTAs.',
-        'fullAccess' => 'Internet access and telephony is allowed. (according to configfile)',
-        'missingLD' => 'Info: The last configfile download was too long ago to determine if the modem has incured the actual configurations.',
+        'cpeMacMissmatch' => 'El estado del acceso a Internet y la telefonía no se pudo determinar, como mínimo 1 dirección CPE MAC difiere de los MACs de los MTAs asignados.',
+        'fullAccess' => 'El acceso a Internet y la telefonía está permitido. (según el configfile)',
+        'missingLD' => 'Info: La última descarga del archivo configfile fue hace mucho tiempo como para determinar si el módem ha incurrido en las configuraciones actuales.',
         'noNetworkAccess' => 'Internet access and telephony is blocked. (according to configfile)',
         'onlyVoip' => 'Internet access is blocked. Only telephony is allowed. (according to configfile)',
     ],
