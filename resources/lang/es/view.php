@@ -35,7 +35,7 @@ return [
     //Main Menu
         'Menu_MainMenu' 			=> 'Menú Principal',
         'Menu_Config Page'			=> 'Configuración global',
-        'Menu_BillingBase'			=> 'Billing Base',
+        'Menu_BillingBase'			=> 'Base de facturación',
         'Menu_Logging'				=> 'Registro',
         'Menu_Product List'			=> 'Lista de productos',
         'Menu_SEPA Accounts'		=> 'Cuenta de SEPA',
@@ -48,7 +48,7 @@ return [
         'Menu_DeviceTypes'			=> 'Tipos de dispositivos',
         'Menu_Contracts'			=> 'Contratos',
         'Menu_HfcBase'			    => 'HFC',
-        'Menu_ProvBase'			    => 'Provisioning',
+        'Menu_ProvBase'			    => 'Aprovisionamiento',
         'Menu_Modems'				=> 'Módems',
         'Menu_Endpoints'			=> 'Extremos',
         'Menu_Number Range'			=> 'Intervalo de números',
@@ -159,7 +159,7 @@ return [
         //Modems
         'Header_Modems'				=> 'Modem|Modems', //workaround
         'Header_Invoice' 			=> 'Facturas',
-        'Header_OldInvoices'        => 'Old Invoices',
+        'Header_OldInvoices'        => 'Facturas antiguas',
         'Header_EditModems'			=> 'Editar modem',
         'Header_Modem'				=> 'Modem|Modems',
         'Header_SEPA Mandate' 		=> 'Mandatos-SEPA',
@@ -229,7 +229,7 @@ return [
 //BUTTON
         'Sign me in'				=> 'Iniciar sesion',
         'Button_Create'             => 'Crear',
-        'Button_Create'				=> 'Export',
+        'Button_Create'				=> 'Exportar',
         'Button_Delete'				=> 'Borrar elementos marcados',
         'Button_Force Restart'		=> 'Forzar reinicio',
         'Button_Save'				=> 'Guardar',
@@ -243,8 +243,8 @@ return [
         'Button_delete'				=> 'Acceso directo para la capacidad de crear todas las páginas de este módulo.',
         'Button_downloadCSV'        => 'Descargar CSV',
         'Button_Create Product Entry'	=> 'Crear producto',
-        'Button_Create Product'	=> 'Create Product',
-        'Button_Create SettlementRun'	=> 'Create Settlement Run',
+        'Button_Create Product'	=> 'Crear producto',
+        'Button_Create SettlementRun'	=> 'Crear proceso de liquidación',
         //CostCenter
         'Button_Create Cost Center' 	=> 'Crear centro costos', //Workaround decide which one to use
         'Button_Create CostCenter' 		=> 'Crear centro costos',
