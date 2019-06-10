@@ -35,9 +35,9 @@ return [
     'item.valid_to' => 'Artículo válido para',
     'item.valid_to_fixed' => 'Artículo válido a fijo',
     'product' => [
-        'proportional' => 'Proportionate',
-        'type' => 'Type',
-        'name' => 'Product Name',
+        'proportional' => 'Proporcionado',
+        'type' => 'Tipo',
+        'name' => 'Nombre del producto',
         'price' => 'Precio',
     ],
     // Salesman
