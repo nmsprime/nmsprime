@@ -25,7 +25,7 @@ return [
 
     // GlobalConfig
     'ISO_3166_ALPHA-2'				=> 'ISO 3166 ALPHA-2 (dos caracteres, p.e. “US”). Usado en formularios de direccion para especificar el pais.',
-    'PasswordReset'           => 'Esta propiedad define el intervalo de tiempo en días en los que los usuarios del panel de administración deben cambiar sus contraseñas. Si desea deshabilitar el mensaje de restablecimiento de contraseña, establezca el valor en 0.',
+    'PasswordReset'           => 'Esta propiedad define el intervalo de tiempo en días en los que los usuarios del panel de administración deben cambiar sus contraseñas. Si desea inhabilitar el mensaje de restablecimiento de contraseña, establezca el valor en 0.',
 
  /*
   *	MODULE: BillingBase
@@ -65,8 +65,8 @@ return [
         'maturity'              => 'Período de tarifa/duración/duración de ejecución después de la duración mínima. Se añadirá automáticamente cuando la tarifa no se canceló antes del período de notificación. Por defecto 1 mes. Por ejemplo, 14D (14 días), 3M (tres meses), 1Y (un año)',
         'Name'                  => 'Para créditos es posible asignar un Tipo añadiendo el nombre del tipo al Nombre del Crédito. Ejem.: "Dispositivo de crédito"',
         'pod'                   => 'Por ejemplo 14D (14 días), 3M (tres meses), 1Y (un año)',
-        'proportional'          => 'Activate this checkbox when items that begin during the current settlement run shall be charged proportionately. E.g. if an monthly paid item starts in the middle of the month the customer would be charged only half of the full price in this settlement run.',
-        'Type'                  => 'All fields besides Billing Cycle have to be cleared before a type change! Otherwise products can not be saved in most cases',
+        'proportional'          => 'Activa esta casilla cuando los elementos que empiecen durante la ejecución actual de la liquidación se cargarán proporcionalmente. Por ejemplo, si un artículo de pago mensual comienza a mediados del mes, el cliente se cobrará sólo la mitad del precio completo en esta operación de liquidación.',
+        'Type'                  => '¡Todos los campos además del ciclo de facturación deben ser limpiados antes de un cambio de tipo! De lo contrario, en la mayoría de los casos los productos no pueden ser guardados',
         ],
     'Product_Number_of_Cycles' 		=> 'Ten cuidado!: para todos los productos pagados repetidos, el precio aplica para cada deuda, para productos pagados de una, el Precio es dividido por el numero de ciclos',
 
@@ -127,9 +127,9 @@ return [
   *	MODULE: ProvBase
   */
     'rate_coefficient'				=> 'La Maxima Tarifa Sostenida sera multiplicada por este valor para otorgar al usuario mas (> 1.0) rendimiento que el suscrito.',
-    'additional_modem_reset'		=> 'Check if an additional button should be displayed, which resets the modem via SNMP without querying the CMTS.',
+    'additional_modem_reset'		=> 'Comprueba si debe mostrarse un botón adicional, que reinicie el módem a través de SNMP sin consultar el CMTS.',
     //ModemController
-    'Modem_InternetAccess'			=> 'Internet Access for CPEs. (MTAs are not considered and will always go online when all other configurations are correct). Take care: With Billing-Module this checkbox will be overwritten by daily check if tariff changes.',
+    'Modem_InternetAccess'			=> 'Acceso a Internet para los CPEs (los MTAs no se consideran y siempre se conectarán cuando todas las demás configuraciones sean correctas). Tenga cuidado: Con el Módulo de facturación esta casilla se sobrescribirá por chequeo diario si cambia la tarifa.',
     'Modem_InstallationAddressChangeDate'	=> 'En caso de (fisico) reubicacion del modem: Agregar fecha de inicio para la nueva direccion ahi. Si es solo lectura, hay una orden de cambio de direccion pendiente en Envia.',
     'Modem_GeocodeOrigin'			=> 'De donde vienen los datos geocode? Si se establece a "n/a", la direccion no podra ser geocoded para cualquier API. Sera establecido a su nombre en cambios manuales de geodata.',
     'contract_number' 				=> 'Atencion - Contrasena del Cliente es cambiado automaticamente cuando se cambia este campo!',
@@ -139,7 +139,7 @@ return [
     'enable_agc'					=> 'Activar el control automático de ganancia para upstream.',
     'agc_offset'					=> 'Control de ganancia automática en dB (por defecto: 0.0)',
     'configfile_count'              => 'El número en paréntesis indica que tan seguido está siendo usado el archivo de configuración respectivo.',
-    'has_telephony'                 => 'Activate if customer shall have telephony but has no internet. This flag can actually not be used to disable telephony on contracts with internet. Please delete the MTA or disable the phonenumber for that. Info: The setting influences the modems configfile parameters NetworkAcess and MaxCPE - see modems analyses page tab \'Configfile\'',
+    'has_telephony'                 => 'Activar si el cliente tendrá telefonía pero no tiene internet. Esta bandera no puede ser utilizada para desactivar la telefonía en contratos con Internet. Por favor, elimine el MTA o desactive el número de teléfono para eso. Información: El ajuste influye en los parámetros de configuración NetworkAcess y MaxCPE de los módems - ver la pestaña de análisis de modems \'Configfile\'',
 
  /*
   *	MODULE: ProvVoip
