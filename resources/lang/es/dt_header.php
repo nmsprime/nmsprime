@@ -38,7 +38,7 @@ return [
         'proportional' => 'Proportionate',
         'type' => 'Type',
         'name' => 'Product Name',
-        'price' => 'Price',
+        'price' => 'Precio',
     ],
     // Salesman
     'salesman.id' => 'ID',
