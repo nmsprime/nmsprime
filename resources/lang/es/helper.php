@@ -83,25 +83,25 @@ return [
     'tex_template' 					=> 'Plantilla TeX',
 
     // SettlementrunController
-    'settlement_verification' 		=> 'Si es activada, no es posible de repetir el Acuerdo. Las Facturas del Cliente son solo visibles cuando esta casilla esta marcada.',
+    'settlement_verification' 		=> 'Las facturas del cliente son solo visibles cuando esta casilla esta activada. La casilla solo puede activarse si la ultima ejecución fue realizada para todas las cuentas SEPA (para no perder ningún cambio). Info: Si se activa no es posible repetir la ejecución de la liquidación.',
 
  /*
   * MODULE: Dashboard
   */
     'next'							=> 'Siguiente paso: ',
-    'set_isp_name'					=> 'Nombre de proveedor de servicio de red',
+    'set_isp_name'					=> 'Configure el nombre del proveedor de servicio de red',
     'create_cmts'					=> 'Crear el primer CMTS',
-    'create_cm_pool'				=> 'Crear primer IP Pool para Cable Modem',
-    'create_cpepriv_pool'			=> 'Crear primer pool privado CPE IP',
-    'create_qos'					=> 'Crear primer perfil QoS',
-    'create_product'				=> 'Crear primer producto de facturación',
-    'create_configfile'				=> 'Crear primer archivo de configuración',
-    'create_sepa_account'			=> 'Crear cuenta SEPA',
-    'create_cost_center'			=> 'Crear primer centro de costo',
-    'create_contract'				=> 'Crear contrato',
+    'create_cm_pool'				=> 'Crear la primera pool de IP para los cable modem',
+    'create_cpepriv_pool'			=> 'Crear la primera pool privada de IP para CPE',
+    'create_qos'					=> 'Crear el primer perfil QoS',
+    'create_product'				=> 'Crear el primer producto de facturación',
+    'create_configfile'				=> 'Crear el primer archivo de configuración',
+    'create_sepa_account'			=> 'Crear la primera cuenta SEPA',
+    'create_cost_center'			=> 'Crear el primer centro de costo',
+    'create_contract'				=> 'Crear el primer contrato',
     'create_nominatim'				=> 'Establecer una dirección de correo electrónico (OSM_NOMINATIM_EMAIL) en /etc/nmsprime/env/global.env para habilitar geocodificación para módem',
     'create_nameserver'				=> 'Establezca su servidor de nombres a 127.0.0.1 en /etc/resolv.conf y asegúrese de que no será sobreescrito a través de DHCP (vea DNS y PEERDNS en /etc/sysconfig/network-scripts/ifcfg-*)',
-    'create_modem'					=> 'Crear primer módem',
+    'create_modem'					=> 'Crear el primer módem',
 
  /*
   *	MODULE: HfcReq
@@ -137,7 +137,7 @@ return [
     'fixed_ip_warning'				=> 'Usar una IP fija es altamente no recomendado, ya que pierde la habilidad de mover modems y sus CPEs libremente entre CMTSes. Envez de dar una IP fija al cliente, deberan ser provistos del hostname, el cual no cambiara.',
     'modem_update_frequency'		=> 'Este campo se actualiza una vez al día.',
     'enable_agc'					=> 'Activar el control automático de ganancia para upstream.',
-    'agc_offset'					=> 'Control de ganancia automática en dB (por defecto: 0.0)',
+    'agc_offset'					=> 'Compensación del control automático de ganancia para el upstream en dB. (por defecto: 0.0)',
     'configfile_count'              => 'El número en paréntesis indica que tan seguido está siendo usado el archivo de configuración respectivo.',
     'has_telephony'                 => 'Activar si el cliente tendrá telefonía pero no tiene internet. Esta bandera no puede ser utilizada para desactivar la telefonía en contratos con Internet. Por favor, elimine el MTA o desactive el número de teléfono para eso. Información: El ajuste influye en los parámetros de configuración NetworkAcess y MaxCPE de los módems - ver la pestaña de análisis de modems \'Configfile\'',
 
