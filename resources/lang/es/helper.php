@@ -60,8 +60,8 @@ return [
 
     //ProductController
     'product' => [
-        'bundle'                => 'On bundled tarifs the minimum runtime of the contract is determined only be the internet tariff. Otherwise the last starting valid tariff (Voip or Internet) dictates this date.',
-        'maturity_min'          => 'Tariff minimum period/runtime/term. E.g. 14D (14 days), 3M (three months), 1Y (one year)',
+        'bundle'                => 'En tárifas agrupadas el tiempo mínimo de funcionamiento del contrato es determinado únicamente por la tárifa de internet. De otra forma la última tárifa inicial valida (Voip o Internet) dictamina esta fecha.',
+        'maturity_min'          => 'Período mínimo de tarifa/tiempo de ejecución/término. Ejem. 14D (14 días), 3M (3 meses), 1Y (1 Año)',
         'maturity'              => 'Tariff period/runtime/term extension after the minimum runtime. Will be automatically added when tariff was not canceled before period of notice. Default 1 month. E.g. 14D (14 days), 3M (three months), 1Y (one year)',
         'Name'                  => 'For Credits it is possible to assign a Type by adding the type name to the Name of the Credit - e.g.: \'Credit Device\'',
         'pod'                   => 'E.g. 14D (14 days), 3M (three months), 1Y (one year)',
