@@ -259,9 +259,9 @@ return [
         //Numberrange
         'Button_Create NumberRange'		=> 'Crear rango numerico',
     //HFC
-        'Button_Create NetElementType' => 'Create NetElement Type',
-        'Button_Create NetElement'     => 'Create NetElement',
-        'Button_Create MibFile'     => 'Create Mib-File',
+        'Button_Create NetElementType' => 'Crear tipo de elemento de red',
+        'Button_Create NetElement'     => 'Crear elemento de red',
+        'Button_Create MibFile'     => 'Crear archivo Mib',
 
     //SNMP Modul
         //Device
@@ -288,35 +288,35 @@ return [
     //Provisioning
         //Contract
         'Button_Create Contract'		=> 'Crear contrato',
-        'Button_Create Domain'		=> 'Create Domain',
+        'Button_Create Domain'		=> 'Crear dominio',
         'Button_Create SepaMandate'		=> 'Crear mandado SEPA',
         // //Modems
         'Button_Create Modem'			=> 'Crear modem',
         // //Endpoints
         'Button_Create Endpoints'		=> 'Crear punto final',
-        'Button_Create Endpoint'		=> 'Create Endpoint',
+        'Button_Create Endpoint'		=> 'Crear punto final',
         //MTA
-        'Button_Create Mta'				=> 'Create MTA',
+        'Button_Create Mta'				=> 'Crear MTA',
         // //Phonenumber
         'Button_Create Phone tariffs'	=> 'Crear tarifa telefonica',
-        'Button_Create PhoneTariff' 	=> 'Create Phonetariff',
+        'Button_Create PhoneTariff' 	=> 'Crear tarifa telefónica',
         // //Configfiles
-        'Button_Create Configfile'		=> 'Create Configfile',
+        'Button_Create Configfile'		=> 'Crear archivo de configuración',
         // //QoS
         'Button_create_post_invoices_pdf'  => 'Crear Facturas Postales PDF',
         'Button_Create Settlement Run'  => 'Crear proceso de liquidacion',
         'Button_Rerun Accounting Command' => 'Vuelva a ejecutar comando de contabilidad',
         'Button_Create QoS'				=> 'Crear regla QoS',
-        'Button_Create Qos'				=> 'Create QoS-Rule',
+        'Button_Create Qos'				=> 'Crear regla QoS',
         // //CMTS
         'Button_Create CMTS'			=> 'Crear CMTS',
-        'Button_Create Cmts'			=> 'Create CMTS',
+        'Button_Create Cmts'			=> 'Crear CMTS',
         // //IpPool
         'Button_Create IpPool'			=> 'Crear IP-Pool', //workaround
         'Button_Create IP-Pools'		=> 'Crear IP-Pools',
     //Tickets
-        'Button_Create TicketType'     => 'Create Ticket Type',
-        'Button_Create Ticket'         => 'Create Ticket ',
+        'Button_Create TicketType'     => 'Crear tipo de ticket',
+        'Button_Create Ticket'         => 'Crear Ticket ',
 
 // DASHBOARD
     'Dashboard_Contracts'			=> 'CONTRATOS ACTIVOS',
