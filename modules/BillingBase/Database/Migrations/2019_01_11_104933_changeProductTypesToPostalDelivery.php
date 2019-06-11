@@ -1,6 +1,5 @@
 <?php
 
-
 class ChangeProductTypesToPostalDelivery extends BaseMigration
 {
     /**

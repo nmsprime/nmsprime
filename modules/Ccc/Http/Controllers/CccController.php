@@ -2,8 +2,6 @@
 
 namespace Modules\Ccc\Http\Controllers;
 
-use Modules\Ccc\Entities\Ccc;
-use Modules\ProvBase\Entities\Contract;
 use App\Http\Controllers\BaseViewController;
 
 class CccController extends \BaseController
