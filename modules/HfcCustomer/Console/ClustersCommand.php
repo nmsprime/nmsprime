@@ -39,7 +39,7 @@ class ClustersCommand extends Command
      *
      * @return mixed
      */
-    public function fire()
+    public function handle()
     {
         $ret = 'OK';
         $perf = '';

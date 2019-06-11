@@ -36,7 +36,7 @@ class cdrCommand extends Command
      * TODO: Just execute the get() functions of the new {Provider}CdrController classes from the Note of function
      *      SettlementRunCommand::_get_cdr_data()
      */
-    public function fire()
+    public function handle()
     {
         \ChannelLog::debug('billing', 'Get Call Data Records');
 
