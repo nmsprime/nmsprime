@@ -46,7 +46,7 @@ class MpsCommand extends Command implements ShouldQueue
     public function handle()
     {
         // Refresh all MPS rules
-        \Modules\HfcCustomer\Entities\Mpr::refresh();
+        \Modules\HfcCustomer\Entities\Mpr::ruleMatching();
     }
 
     /**
