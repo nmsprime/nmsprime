@@ -44,8 +44,8 @@ class BillingBaseServiceProvider extends ServiceProvider
     {
         $this->commands($this->commands);
 
-        $this->app->alias(Modules\BillingBase\Providers\SettlementRunProvider::class, 'settlementrun');
-        $this->app->alias(Modules\BillingBase\Providers\CurrencyProvider::class, 'currency');
+        $this->app->alias(\Modules\BillingBase\Providers\SettlementRunProvider::class, 'settlementrun');
+        $this->app->alias(\Modules\BillingBase\Providers\CurrencyProvider::class, 'currency');
     }
 
     /**
