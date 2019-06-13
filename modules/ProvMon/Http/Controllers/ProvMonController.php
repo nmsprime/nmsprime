@@ -1356,15 +1356,15 @@ class ProvMonController extends \BaseController
         $roCommunity = $provbase->ro_community;
         $rwCommunity = $provbase->rw_community;
 
-        // enable docsIf3CmSpectrumAnalysisCtrlCmd
-        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.1.0', 'i', 1);
-
         // set frequency span from 150 to 862 MHz
         snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', 154000000);
         snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', 866000000);
 
         // every 8 MHz
         snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', 8000000);
+
+        // enable docsIf3CmSpectrumAnalysisCtrlCmd after setting values
+        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.1.0', 'i', 1);
 
         // after enabling docsIf3CmSpectrumAnalysisCtrlCmd it may take a few seconds to start the snmpwalḱ (error: End of MIB)
         $time = 1;
@@ -1389,7 +1389,7 @@ class ProvMonController extends \BaseController
         // returned values: level in 10th dB and frequency in Hz
         // Example: SNMPv2-SMI::enterprises.4491.2.1.20.1.35.1.3.985500000 = INTEGER: -361
         foreach ($expressions as $oid => $level) {
-            preg_match('/[0-9]{9}/', $oid, $frequency);
+            preg_match('/[0-9]{7,}/', $oid, $frequency);
             $data['span'][] = $frequency[0] / 1000000;
             $data['amplitudes'][] = intval($level) / 10;
         }
