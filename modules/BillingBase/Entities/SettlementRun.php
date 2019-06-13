@@ -220,7 +220,7 @@ class SettlementRunObserver
 
         // TODO: implement this as command and queue this?
         if (\Input::hasFile('banking_file_upload')) {
-            SettlementRun::where('id', $id)->update(['uploaded_at' => date('Y-m-d H:i:s')]);
+            SettlementRun::where('id', $settlementrun->id)->update(['uploaded_at' => date('Y-m-d H:i:s')]);
 
             $mt940 = \Input::file('banking_file_upload');
 
