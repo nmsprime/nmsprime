@@ -1287,7 +1287,7 @@ class ProvMonController extends \BaseController
     public function loggingTab($array, $model)
     {
         $baseController = new BaseController;
-        array_push($array, $baseController->get_form_tabs($model)[0]);
+        array_push($array, $baseController->editTabs($model)[0]);
 
         return $array;
     }
