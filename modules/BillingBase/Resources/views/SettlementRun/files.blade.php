@@ -14,7 +14,7 @@
                         @if (isset($relation['view']['vars']['sepaaccs']))
                             <label for="description" style="margin-top: 10px;" class="col-md-3,5 control-label">{{ trans('messages.sr_repeat') }}</label>
                             <div class="col-md-4">
-                                {{ Form::select('sepaaccount', $relation['view']['vars']['sepaaccs'], 0, ['style' => 'simple']) }}
+                                {{ Form::select('sepaaccount', $relation['view']['vars']['sepaaccs'], 0, [], ['style' => 'simple']) }}
                             </div>
                         @else
                             @DivOpen(4)
