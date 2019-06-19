@@ -34,7 +34,7 @@ class ProvMonController extends \BaseController
      * Creates tabs to analysis pages.
      *
      * @author Roy Schneider
-     * @param int
+     * @param int   modem id
      * @return array
      */
     public function analysisPages($id)
@@ -1227,11 +1227,12 @@ class ProvMonController extends \BaseController
      */
     public static function checkNetelementtype($model)
     {
-        $provmon = new self;
         if (! isset($model->netelementtype)) {
             return [];
         }
+
         $type = $model->netelementtype->get_base_type();
+        $provmon = new self;
 
         $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $model->id]];
 
@@ -1275,27 +1276,6 @@ class ProvMonController extends \BaseController
 
         return substr($return[0], 3);
     }
-
-    /**
-     * Add Logging tab in edit page.
-     * from BaseController
-     *
-     * @author Roy Schneider
-     * @param array, Modules\HfcReq\Entities\NetElement
-     * @return array
-     */
-    public function loggingTab($array, $model)
-    {
-        $baseController = new BaseController;
-        array_push($array, $baseController->editTabs($model)[0]);
-
-        return $array;
-    }
-
-    /*
-     * Functions for Feature single Windows Stuff
-     * This stuff is at the time not in production
-     */
 
     /**
      * Monitoring

@@ -52,9 +52,10 @@ class Salesman extends \BaseModel
     // View Relation.
     public function view_has_many()
     {
-        return [
-            'Contract' => $this->contracts,
-            ];
+        $ret['Edit']['Contract']['class'] = 'Contract';
+        $ret['Edit']['Contract']['relation'] = $this->contracts;
+
+        return $ret;
     }
 
     /**
