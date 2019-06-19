@@ -34,7 +34,7 @@ class EnviaContract extends \BaseModel
         $bsclass = $this->get_bsclass();
 
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.envia_contract_reference', $this->table.'.state', $this->table.'.start_date', $this->table.'.end_date', 'contract.number', 'modem.id'],
+                'index_header' => [$this->table.'.envia_contract_reference', $this->table.'.state', $this->table.'.start_date', $this->table.'.end_date', 'enviacontract.contract.number', 'enviacontract.modem.id'],
                 'eager_loading' => ['contract', 'modem'],
                 'bsclass' => $bsclass,
                 'edit' => ['envia_contract_reference' => 'get_envia_contract_reference', 'state' => 'get_state', 'start_date' => 'get_start_date', 'end_date' => 'get_end_date', 'contract.number' => 'get_contract_nr', 'modem.id' => 'get_modem_id'],

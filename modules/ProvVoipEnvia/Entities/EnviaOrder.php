@@ -613,7 +613,7 @@ class EnviaOrder extends \BaseModel
         }
 
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.ordertype', $this->table.'.orderstatus', 'escalation_level', 'contract.number', 'modem.id', 'phonenumber.number', 'enviacontract.envia_contract_reference',  $this->table.'.created_at', $this->table.'.updated_at', $this->table.'.orderdate', 'enviaorder_current'],
+                'index_header' => [$this->table.'.ordertype', $this->table.'.orderstatus', 'escalation_level', 'enviaorder.contract.number', 'enviaorder.modem.id', 'enviaorder.phonenumber.number', 'enviacontract.envia_contract_reference',  $this->table.'.created_at', $this->table.'.updated_at', $this->table.'.orderdate', 'enviaorder_current'],
                 'bsclass' => $bsclass,
                 'disable_sortsearch' => ['phonenumber.number'],
                 'eager_loading' => ['modem', 'contract', 'enviacontract', 'phonenumbers'],
