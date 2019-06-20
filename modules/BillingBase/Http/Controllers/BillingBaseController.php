@@ -150,8 +150,13 @@ class BillingBaseController extends \BaseController
         $sla = \App\Sla::first();
         $support = 'https://support.nmsprime.com';
 
+        $modemcount = 0;
+        if (\Module::collections()->has('ProvBase')) {
+            $modemcount = \Modules\ProvBase\Entities\Modem::count();
+        }
+
         $files = [
-            'news.json' => "$support/news.php?ns=".urlencode($sla->get_sla_size()).'&sla='.urlencode($sla->name),
+            'news.json' => "$support/news.php?ns=".urlencode($sla->get_sla_size()).'&sla='.urlencode($sla->name).'&mc='.$modemcount,
             'documentation.json' => "$support/documentation.json",
         ];
 
