@@ -2,11 +2,9 @@
 
 namespace Modules\ProvVoipEnvia\Http\Controllers;
 
-use Auth;
 use Input;
 use Bouncer;
 use Storage;
-use Illuminate\Support\Facades\View;
 use Illuminate\Auth\AuthenticationException;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
@@ -108,7 +106,7 @@ class EnviaOrderDocumentController extends \BaseController
                 'job' => 'order_create_attachment',
                 'order_id' => $document->enviaorder->orderid,
                 'enviaorderdocument_id' => $id,
-                'origin' => urlencode(\Request::getUri()),
+                'origin' => urlencode(\Request::fullUrl()),
             ];
 
             return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request', $params);

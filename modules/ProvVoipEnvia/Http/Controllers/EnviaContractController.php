@@ -3,8 +3,6 @@
 namespace Modules\ProvVoipEnvia\Http\Controllers;
 
 use Illuminate\Support\Facades\View;
-use Modules\ProvBase\Entities\Modem;
-use Modules\ProvBase\Entities\Contract;
 
 class EnviaContractController extends \BaseController
 {

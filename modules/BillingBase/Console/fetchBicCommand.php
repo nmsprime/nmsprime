@@ -3,11 +3,8 @@
 namespace Modules\BillingBase\Console;
 
 use Storage;
-use Box\Spout\Reader\Type;
 use Illuminate\Console\Command;
-use Box\Spout\Reader\ReaderFactory;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
+use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
 
 class fetchBicCommand extends Command
 {
@@ -48,13 +45,14 @@ class fetchBicCommand extends Command
 
         // extract relevant data and convert to csv
         $file = storage_path().'/app/tmp/data.xlsx';
-        $reader = ReaderFactory::create(Type::XLSX);
+        $reader = ReaderEntityFactory::createXLSXReader();
         $reader->open($file);
         $data = [];
         $n = 1;
 
         foreach ($reader->getSheetIterator() as $sheet) {
-            foreach ($sheet->getRowIterator() as $row) {
+            foreach ($sheet->getRowIterator() as $rowObject) {
+                $row = $rowObject->toArray();
                 if (! $row[0]) {
                     break;
                 }

@@ -22,7 +22,7 @@
 	<tbody>
 		@for($i = 0; $i <= 3; $i++)
 			<tr>
-				@foreach ([$data['contracts']['table']['weekly']['week'], $data['contracts']['table']['weekly']['ratio'], $data['contracts']['table']['weekly']['gain']['internet'], $data['contracts']['table']['weekly']['loss']['internet'], $data['contracts']['table']['weekly']['gain']['voip'], $data['contracts']['table']['weekly']['loss']['voip'], $data['contracts']['table']['weekly']['gain']['tv'], $data['contracts']['table']['weekly']['loss']['tv'], $data['contracts']['table']['weekly']['gain']['other'], $data['contracts']['table']['weekly']['loss']['other']] as $value)
+				@foreach ([$contracts_data['table']['weekly']['week'], $contracts_data['table']['weekly']['ratio'], $contracts_data['table']['weekly']['gain']['internet'], $contracts_data['table']['weekly']['loss']['internet'], $contracts_data['table']['weekly']['gain']['voip'], $contracts_data['table']['weekly']['loss']['voip'], $contracts_data['table']['weekly']['gain']['tv'], $contracts_data['table']['weekly']['loss']['tv'], $contracts_data['table']['weekly']['gain']['other'], $contracts_data['table']['weekly']['loss']['other']] as $value)
 					<td class="text-center">{{$value[$i]}}</td>
 				@endforeach
 			</tr>

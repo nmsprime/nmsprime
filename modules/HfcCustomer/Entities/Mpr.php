@@ -3,7 +3,6 @@
 namespace Modules\HfcCustomer\Entities;
 
 use Modules\ProvBase\Entities\Modem;
-use Illuminate\Database\Eloquent\Model;
 
 /*
  * Modem Positioning Rule Model
@@ -100,7 +99,7 @@ class Mpr extends \BaseModel
      * @param 	object 	single Modem or null for all modems
      * @author: Torsten Schmidt, Nino Ryschawy
      */
-    public static function refresh($modem = null)
+    public static function ruleMatching($modem = null)
     {
         $r = 0;
 

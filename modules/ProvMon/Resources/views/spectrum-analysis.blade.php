@@ -7,15 +7,15 @@
 		<span id='pleaseWait' class="alert-info fade in m-b-15" style="color: #00f"></span>
 		<span id='notValid' class="alert-danger fade in m-b-15" style="color: #f00"></span>
 </center>
-<div>
-    <canvas id="spectrum"></canvas>
-</div>
+<div id="wrapper"></div>
 
 @section('spectrum')
 <script src="{{asset('components/assets-admin/plugins/chart/Chart.min.js')}}"></script>
 <script language="javascript">
 
 function makeSpectrum(amplitudes, span) {
+
+	document.getElementById("wrapper").innerHTML='<canvas id="spectrum"></canvas>';
 
 	var ctx = document.getElementById('spectrum').getContext('2d');
 	var chart = new Chart(ctx, {
@@ -24,7 +24,7 @@ function makeSpectrum(amplitudes, span) {
 			labels: span,
 			datasets: [{
 				data: amplitudes,
-				borderColor: 'rgb(0, 0, 0)',
+				borderColor: '#000',
 				borderWidth: '2',
 				fill: false,
 				pointRadius:'1',
@@ -42,9 +42,6 @@ function makeSpectrum(amplitudes, span) {
         			    display: true,
         			    labelString: 'f/MHz',
         			},
-        			ticks: {
-						maxTicksLimit: 21,
-        			}
     			}],
 				yAxes: [{
 					scaleLabel: {
@@ -62,7 +59,7 @@ function makeSpectrum(amplitudes, span) {
 		        		return '';
 		        	},
 		            label: function(t) {
-				         return t.xLabel + 'MHz: ' + t.yLabel + 'dB';
+				         return t.xLabel + 'MHz: ' + t.yLabel + 'dBmV';
 				    }
 		        }
 			}
