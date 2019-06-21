@@ -67,9 +67,10 @@ class SepaAccount extends \BaseModel
     // View Relation.
     public function view_has_many()
     {
-        return [
-            'CostCenter' => $this->costcenters,
-            ];
+        $ret['Edit']['CostCenter']['class'] = 'CostCenter';
+        $ret['Edit']['CostCenter']['relation'] = $this->costcenters;
+
+        return $ret;
     }
 
     public function view_belongs_to()
