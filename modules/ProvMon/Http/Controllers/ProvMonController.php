@@ -8,7 +8,6 @@ use Modules\ProvBase\Entities\Cmts;
 use Modules\ProvBase\Entities\Modem;
 use Modules\HfcReq\Entities\NetElement;
 use Modules\ProvBase\Entities\ProvBase;
-use App\Http\Controllers\BaseController;
 use Modules\ProvBase\Entities\Configfile;
 
 /**
