@@ -88,10 +88,10 @@ class SepaMandateController extends \BaseController
         preg_match_all('/(?<={)[^}]*(?=})/', $template, $matches);
 
         foreach ($matches[0] as $key) {
-            if (array_key_exists($key, $mandate->contract['attributes'])) {
-                $template = str_replace('{'.$key.'}', $mandate->contract['attributes'][$key], $template);
-            } elseif (array_key_exists($key, $mandate['attributes'])) {
-                $template = str_replace('{'.$key.'}', $mandate['attributes'][$key], $template);
+            if (array_key_exists($key, $mandate->contract->getAttributes())) {
+                $template = str_replace('{'.$key.'}', $mandate->contract->getAttribute($key), $template);
+            } elseif (array_key_exists($key, $mandate->getAttributes())) {
+                $template = str_replace('{'.$key.'}', $mandate->getAttribute($key), $template);
             }
         }
 

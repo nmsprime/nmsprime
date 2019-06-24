@@ -99,7 +99,7 @@ class Company extends \BaseModel
         $ignore = ['created_at', 'updated_at', 'deleted_at', 'id'];
         $data = [];
 
-        foreach ($this->attributes as $key => $value) {
+        foreach ($this->getAttributes() as $key => $value) {
             if (in_array($key, $ignore)) {
                 continue;
             }

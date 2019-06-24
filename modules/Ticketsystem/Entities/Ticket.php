@@ -266,13 +266,12 @@ class Ticket extends \BaseModel
     public function importantChanges()
     {
         $changes = Request::all();
-        $original = $this['original'];
 
-        if ($changes['description'] == $original['description']
-             && $changes['state'] == $original['state']
-              && $changes['priority'] == $original['priority']
-               && $changes['duedate'] == $original['duedate']
-                && $changes['name'] == $original['name']) {
+        if ($changes['description'] == $this->getOriginal('description')
+            && $changes['state'] == $this->getOriginal('state')
+            && $changes['priority'] == $this->getOriginal('priority')
+            && $changes['duedate'] == $this->getOriginal('duedate')
+            && $changes['name'] == $this->getOriginal('name')) {
             return false;
         }
 

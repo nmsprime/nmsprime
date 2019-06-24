@@ -3313,7 +3313,7 @@ class ProvVoipEnvia extends \BaseModel
                 $msg .= "<br> $_";
                 Log::info($_);
                 $enviacontract->save();
-            } elseif ($enviacontract->attributes != $enviacontract->original) {
+            } elseif ($enviacontract->isDirty()) {
                 $_ = trans('provvoipenvia::messages.updating')." EnviaContract $enviacontract->id";
                 $msg .= "<br> $_";
                 Log::info($_);
@@ -3565,7 +3565,7 @@ class ProvVoipEnvia extends \BaseModel
             if (! $envia_contract->exists) {
                 $msg = trans('provvoipenvia::messages.creatingEnviaContract', [$envia_contract->id]);
                 Log::info($msg);
-            } elseif ($envia_contract->attributes != $envia_contract->original) {
+            } elseif ($envia_contract->isDirty()) {
                 $msg = trans('provvoipenvia::messages.updatingEnviaContract', [$envia_contract->id]);
                 Log::info($msg);
             } else {
