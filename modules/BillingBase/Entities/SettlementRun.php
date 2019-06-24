@@ -911,7 +911,7 @@ class SettlementRunObserver
 
     public function updated($settlementrun)
     {
-        if (Request::has('rerun')) {
+        if (Request::filled('rerun')) {
             // Make sure that settlement run is queued only once
             $queued = DB::table('jobs')->where('payload', 'like', '%SettlementRunJob%')->count();
             if (! $queued) {

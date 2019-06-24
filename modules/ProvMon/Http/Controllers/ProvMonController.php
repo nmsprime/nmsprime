@@ -353,7 +353,7 @@ class ProvMonController extends \BaseController
      */
     public function flood_ping($hostname)
     {
-        if (! \Request::has('flood_ping')) {
+        if (! \Request::filled('flood_ping')) {
             return;
         }
 

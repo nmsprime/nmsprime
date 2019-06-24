@@ -50,7 +50,7 @@
 		<ul class="nav nav-pills align-self-end ml-auto mr-5">
 			<?php
 				$par = array_merge(Route::getCurrentRoute()->parameters(), \Request::all());
-				$cur_row = \Request::has('row') ? \Request::get('row') : 'us_pwr';
+				$cur_row = Request::input('row', 'us_pwr');
 				foreach (['us_pwr' => 'US Power', 'us_snr' => 'US SNR', 'ds_pwr' => 'DS Power', 'ds_snr' => 'DS SNR', 'ds_us' => 'DS/US Power'] as $key => $val) {
 					$par['row'] = $key;
 					$class = ($cur_row === $key) ? 'active' : '';

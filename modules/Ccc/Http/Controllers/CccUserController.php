@@ -360,7 +360,7 @@ class CccUserController extends \BaseController
 
     public function psw_update()
     {
-        if (\Module::collections()->has('Mail') && \Request::has('email_id')) {
+        if (\Module::collections()->has('Mail') && \Request::filled('email_id')) {
             $email = Email::findorFail(\Request::get('email_id'));
             // customer requested email object, which does not belong to him
             // (by manually changing the email_id in the url)
@@ -369,7 +369,7 @@ class CccUserController extends \BaseController
             }
         }
 
-        if (\Request::has('password')) {
+        if (\Request::filled('password')) {
             // update psw
             $customer = Auth::guard('ccc')->user();
             $rules = ['password' => 'required|confirmed|min:6'];

@@ -58,7 +58,7 @@ class MprController extends \BaseController
             return $mpr_id;
         }
 
-        if (\Request::has('value')) {
+        if (\Request::filled('value')) {
             $pos = explode(';', \Request::get('value'));
 
             // only add if we have 4 geopos for a valid rectangle

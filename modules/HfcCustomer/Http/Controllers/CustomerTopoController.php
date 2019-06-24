@@ -334,7 +334,7 @@ class CustomerTopoController extends NetElementController
         foreach ($modems->orderBy('city')->orderBy('street')->orderBy('house_number')->get() as $modem) {
             // load per modem diagrams
             $dia_ids = [$provmon->monitoring_get_graph_template_id('DOCSIS Overview')];
-            if (! Request::has('row')) {
+            if (! Request::filled('row')) {
                 $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS US PWR');
             } elseif (in_array(Request::get('row'), $types)) {
                 $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS '.strtoupper(str_replace('_', ' ', Request::get('row'))));
@@ -352,7 +352,7 @@ class CustomerTopoController extends NetElementController
                 // Description Line per Modem
                 $descr = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' '.$modem->house_number.' - '.$modem->mac;
                 $dia['descr'] = \HTML::linkRoute('Modem.edit', $descr, $modem->id);
-                $dia['row'] = Request::has('row') ? Request::get('row') : 'us_pwr';
+                $dia['row'] = Request::input('row', 'us_pwr');
 
                 // Add diagrams to monitoring array (goes directly to view)
                 $monitoring[$modem->id] = $dia;
