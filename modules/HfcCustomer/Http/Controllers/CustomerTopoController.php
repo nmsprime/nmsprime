@@ -2,6 +2,7 @@
 
 namespace Modules\HfcCustomer\Http\Controllers;
 
+use Request;
 use Modules\ProvBase\Entities\Modem;
 use Modules\HfcCustomer\Entities\Mpr;
 use Modules\HfcReq\Entities\NetElement;
@@ -122,7 +123,7 @@ class CustomerTopoController extends NetElementController
 
         $modems = $this->filterModel(Modem::whereRaw($s));
 
-        return $this->show_topo($modems['selectedModel'], \Input::get('row'), $modems['allModels']);
+        return $this->show_topo($modems['selectedModel'], Request::get('row'), $modems['allModels']);
     }
 
     /*
@@ -145,7 +146,7 @@ class CustomerTopoController extends NetElementController
 
         $modemQuery = $this->filterModel($query);
 
-        return $this->show_topo($modemQuery['selectedModel'], \Input::get('row'), $modemQuery['allModels']);
+        return $this->show_topo($modemQuery['selectedModel'], Request::get('row'), $modemQuery['allModels']);
     }
 
     /**
@@ -185,9 +186,9 @@ class CustomerTopoController extends NetElementController
      */
     public function show_prox()
     {
-        $modems = $this->filterModel(Modem::whereIn('id', Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))));
+        $modems = $this->filterModel(Modem::whereIn('id', Modem::find(Request::get('id'))->proximity_search(Request::get('radius'))));
 
-        return $this->show_topo($modems['selectedModel'], \Input::get('row'), $modems['allModels']);
+        return $this->show_topo($modems['selectedModel'], Request::get('row'), $modems['allModels']);
     }
 
     /**
@@ -267,7 +268,7 @@ class CustomerTopoController extends NetElementController
      */
     public function filterModel($modems)
     {
-        $model = \Input::get('model');
+        $model = Request::get('model');
 
         if ($model == '') {
             return ['selectedModel' => $modems, 'allModels' => null];
@@ -333,11 +334,11 @@ class CustomerTopoController extends NetElementController
         foreach ($modems->orderBy('city')->orderBy('street')->orderBy('house_number')->get() as $modem) {
             // load per modem diagrams
             $dia_ids = [$provmon->monitoring_get_graph_template_id('DOCSIS Overview')];
-            if (! \Input::has('row')) {
+            if (! Request::has('row')) {
                 $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS US PWR');
-            } elseif (in_array(\Input::get('row'), $types)) {
-                $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS '.strtoupper(str_replace('_', ' ', \Input::get('row'))));
-            } elseif (\Input::get('row') == 'all') {
+            } elseif (in_array(Request::get('row'), $types)) {
+                $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS '.strtoupper(str_replace('_', ' ', Request::get('row'))));
+            } elseif (Request::get('row') == 'all') {
                 $dia_ids = [];
                 foreach ($types as $type) {
                     $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS '.strtoupper(str_replace('_', ' ', $type)));
@@ -351,7 +352,7 @@ class CustomerTopoController extends NetElementController
                 // Description Line per Modem
                 $descr = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' '.$modem->house_number.' - '.$modem->mac;
                 $dia['descr'] = \HTML::linkRoute('Modem.edit', $descr, $modem->id);
-                $dia['row'] = \Input::has('row') ? \Input::get('row') : 'us_pwr';
+                $dia['row'] = Request::has('row') ? Request::get('row') : 'us_pwr';
 
                 // Add diagrams to monitoring array (goes directly to view)
                 $monitoring[$modem->id] = $dia;
@@ -409,8 +410,8 @@ class CustomerTopoController extends NetElementController
         }
 
         return [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $modem->netelement_id],
-                ['name' => 'Topography', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => \Input::get('row')]],
-                ['name' => 'Diagramms', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => \Input::get('row')]], ];
+                ['name' => 'Topography', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => Request::get('row')]],
+                ['name' => 'Diagramms', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => Request::get('row')]], ];
     }
 
     /**

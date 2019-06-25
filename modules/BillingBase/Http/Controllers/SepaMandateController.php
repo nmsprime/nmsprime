@@ -21,7 +21,7 @@ class SepaMandateController extends \BaseController
         }
 
         if (! $model->exists) {
-            $contract = \Modules\ProvBase\Entities\Contract::find(\Input::get('contract_id'));
+            $contract = \Modules\ProvBase\Entities\Contract::find(\Request::get('contract_id'));
             $model->contract = $contract;
 
             $model->reference = self::build_mandate_ref($model);

@@ -764,7 +764,7 @@ class EnviaOrder extends \BaseModel
         ];
 
         // check if we have to filter the list of orders
-        $filter = \Input::get('show_filter', 'all');
+        $filter = \Request::get('show_filter', 'all');
         if (! in_array($filter, $available_filters)) {
             $filter = 'all';
         }

@@ -3,6 +3,7 @@
 namespace Modules\BillingBase\Entities;
 
 use DB;
+use Request;
 use Storage;
 use ChannelLog;
 use Modules\ProvBase\Entities\Contract;
@@ -17,7 +18,7 @@ class SettlementRun extends \BaseModel
     // The associated SQL table for this Model
     public $table = 'settlementrun';
 
-    // don't try to add these Input fields to Database of this model
+    // don't try to add theseRequest fields to Database of this model
     public $guarded = ['rerun', 'sepaaccount', 'fullrun', 'banking_file_upload'];
 
     // Add your validation rules here
@@ -910,20 +911,20 @@ class SettlementRunObserver
 
     public function updated($settlementrun)
     {
-        if (\Input::has('rerun')) {
+        if (Request::has('rerun')) {
             // Make sure that settlement run is queued only once
             $queued = DB::table('jobs')->where('payload', 'like', '%SettlementRunJob%')->count();
             if (! $queued) {
-                $acc = \Input::get('sepaaccount') ? SepaAccount::find(\Input::get('sepaaccount')) : null;
+                $acc = Request::get('sepaaccount') ? SepaAccount::find(Request::get('sepaaccount')) : null;
                 \Session::put('job_id', \Queue::push(new SettlementRunJob($settlementrun, $acc)));
             }
         }
 
         // TODO: implement this as command and queue this?
-        if (\Input::hasFile('banking_file_upload')) {
+        if (Request::hasFile('banking_file_upload')) {
             SettlementRun::where('id', $settlementrun->id)->update(['uploaded_at' => date('Y-m-d H:i:s')]);
 
-            $mt940 = \Input::file('banking_file_upload');
+            $mt940 = Request::file('banking_file_upload');
 
             $settlementrun->parseBankingFile($mt940);
         }

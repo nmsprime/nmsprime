@@ -2,6 +2,7 @@
 
 namespace Modules\Ticketsystem\Entities;
 
+use Request;
 use App\User;
 
 class Ticket extends \BaseModel
@@ -264,7 +265,7 @@ class Ticket extends \BaseModel
      */
     public function importantChanges()
     {
-        $changes = \Input::all();
+        $changes = Request::all();
         $original = $this['original'];
 
         if ($changes['description'] == $original['description']
@@ -320,8 +321,7 @@ class TicketObserver
         $ticket->duedate = $ticket->duedate ?: null;
 
         // get assigned users and previously assigned users
-        $input = \Input::all()['users_ids'];
-
+        $input = Request::get('users_ids');
         $ticket->mailAssignedUsers($input);
     }
 
@@ -331,7 +331,7 @@ class TicketObserver
 
         // get assigned users and previously assigned users
         $ticketUsers = $ticket->users;
-        $input = \Input::all()['users_ids'];
+        $input = Request::get('users_ids');
 
         // create array with user ids
         $users = $ticketUsers->pluck('id', 'id')->toArray() ?? [];
