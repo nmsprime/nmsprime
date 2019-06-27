@@ -145,7 +145,7 @@ class ZipCommand extends Command implements ShouldQueue
             return;
         }
 
-        SettlementRunCommand::push_state(0, 'Get data...');
+        SettlementRun::push_state(0, 'Get data...');
 
         $month = $this->settlementrun->year.'-'.str_pad($this->settlementrun->month, 2, '0', STR_PAD_LEFT);
         $start = date('Y-m-d', strtotime('first day of next month', strtotime($month)));
@@ -170,7 +170,7 @@ class ZipCommand extends Command implements ShouldQueue
 
         $num = count($invoices);
 
-        SettlementRunCommand::push_state(0, 'Concatenate postal invoices...');
+        SettlementRun::push_state(0, 'Concatenate postal invoices...');
         echo "Concatenate $num postal invoices...";
         ChannelLog::debug('billing', "Concatenate $num postal invoices for SettlementRun ".$this->settlementrun->txt);
 
@@ -188,14 +188,14 @@ class ZipCommand extends Command implements ShouldQueue
             $files = array_keys($files);
         }
 
-        SettlementRunCommand::push_state(50, 'Concatenate postal invoices...');
+        SettlementRun::push_state(50, 'Concatenate postal invoices...');
 
         // Concat Invoices/temporary files to final target file
         $targetFilepath = $this->settlementrun->directory.'/'.trans('messages.postalInvoices').'.pdf';
 
         concat_pdfs($files, $targetFilepath, false);
         echo "\nNew file: $targetFilepath\n";
-        SettlementRunCommand::push_state(100, 'Concatenate postal invoices...');
+        SettlementRun::push_state(100, 'Concatenate postal invoices...');
 
         // delete temp files
         if (count($files) >= $this->split) {
@@ -269,7 +269,7 @@ class ZipCommand extends Command implements ShouldQueue
             $this->bar = $this->output->createProgressBar(100);
             $this->bar->start();
         }
-        SettlementRunCommand::push_state(0, 'Concatenate invoices');
+        SettlementRun::push_state(0, 'Concatenate invoices');
 
         foreach ($sepaAccs as $i => $sepaAcc) {
             $invoices = $invoices ?: $this->getRelevantInvoices($sepaAcc);
@@ -320,7 +320,7 @@ class ZipCommand extends Command implements ShouldQueue
                 $num['percentage'] = $num['sum'] / $num['total'] * 100;
             }
 
-            SettlementRunCommand::push_state($num['percentage'], 'Concatenate invoices');
+            SettlementRun::push_state($num['percentage'], 'Concatenate invoices');
             if ($this->output) {
                 $this->bar->setProgress($num['percentage']);
             }
@@ -328,7 +328,7 @@ class ZipCommand extends Command implements ShouldQueue
 
         $this->_wait_for_background_processes($final_files, $num, true);
 
-        SettlementRunCommand::push_state(100, 'Concatenate invoices');
+        SettlementRun::push_state(100, 'Concatenate invoices');
         if ($this->output) {
             $this->bar->finish();
         }
@@ -416,7 +416,7 @@ class ZipCommand extends Command implements ShouldQueue
                     $num['sum'] += count($files) ? $this->split : $num['current'] % $this->split;
                     $num['percentage'] = $num['sum'] / $num['total'] * 100;
 
-                    SettlementRunCommand::push_state($num['percentage'], 'Concatenate invoices');
+                    SettlementRun::push_state($num['percentage'], 'Concatenate invoices');
                     if ($this->output) {
                         $this->bar->setProgress($num['percentage']);
                     }

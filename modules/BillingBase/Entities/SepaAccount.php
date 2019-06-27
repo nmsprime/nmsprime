@@ -6,9 +6,9 @@ use IBAN;
 use Storage;
 use ChannelLog;
 use Modules\ProvBase\Entities\Contract;
+use Modules\BillingBase\Providers\Currency;
 use App\Http\Controllers\BaseViewController;
 use Modules\BillingBase\Providers\SettlementRunData;
-use Modules\BillingBase\Console\SettlementRunCommand;
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
 
 /**
@@ -163,11 +163,12 @@ class SepaAccount extends \BaseModel
      *
      * @param int 	Requested Collection Date (day of month)
      */
-    public function settlementrun_init($rcd)
+    public function settlementrun_init()
     {
         $this->invoice_nr_prefix = date('Y', strtotime('first day of last month')).'/';
 
-        $this->rcd = $rcd;
+        $rcd = SettlementRunData::getConf('rcd');
+        $this->rcd = $rcd ? date('Y-m-'.$rcd) : date('Y-m-d', strtotime('+1 day'));
 
         $this->_set_invoice_nr_counters();
     }
@@ -477,7 +478,7 @@ class SepaAccount extends \BaseModel
 
     public function get_relative_accounting_dir_path()
     {
-        return SettlementRunCommand::get_relative_accounting_dir_path().'/'.sanitize_filename($this->name);
+        return SettlementRun::get_relative_accounting_dir_path().'/'.sanitize_filename($this->name);
     }
 
     /**

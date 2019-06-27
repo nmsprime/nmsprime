@@ -2,7 +2,21 @@
 
 namespace Modules\BillingBase\Entities;
 
-use Modules\BillingBase\Console\SettlementRunCommand;
+use DB;
+use Storage;
+use ChannelLog;
+use Modules\BillingBase\Entities\Item;
+use Modules\ProvBase\Entities\Contract;
+use Modules\BillingBase\Entities\Invoice;
+use Modules\BillingBase\Entities\Salesman;
+use Modules\BillingBase\Providers\Currency;
+use App\Http\Controllers\BaseViewController;
+use Modules\BillingBase\Entities\SepaAccount;
+use Modules\BillingBase\Jobs\SettlementRunJob;
+use Symfony\Component\Console\Helper\ProgressBar;
+use Modules\BillingBase\Entities\AccountingRecord;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Modules\BillingBase\Providers\SettlementRunData;
 
 class SettlementRun extends \BaseModel
 {
@@ -184,6 +198,628 @@ class SettlementRun extends \BaseModel
         }
         // d($transactions, $statements, str_replace(':61:', "\r\n---------------\r\n:61:", $mt940));
     }
+
+    /**
+     * Execute the SettlementRun
+     *
+     * Creates invoices, SEPA xmls, booking & accounting record files
+     *
+     * @param obj   SepaAccount the run shall be executed for - null for all accounts
+     */
+    public function execute($sepaacc = null, $output = null)
+    {
+        ChannelLog::debug('billing', '########  Start SettlementRun  ########');
+        $this->output = $output;
+
+        // Set execution timestamp to always show log entries on SettlementRun edit page
+        SettlementRun::where('id', $this->id)->update(['executed_at' => \Carbon\Carbon::now()]);
+
+        $accs = $this->getSepaAccounts($sepaacc);
+
+        $acc_tmp = $accs->first();
+        ChannelLog::debug('billing', "Execute settlementrun for SepaAccount $acc_tmp->name (ID: $acc_tmp->id)");
+
+        $this->init($accs);
+
+        $this->user_output('Parse call data record file(s)...', 0);
+        $cdrs = SettlementRunData::getCdrs();
+        // $cdrs = [[]];
+
+        // TODO: use load_salesman_from_contracts() in future ?
+        $this->user_output('Load Data...', 0);
+        $salesmen = Salesman::all();
+        $contracts = self::getContracts($sepaacc ?: null);
+
+        // show progress bar if not called silently via queues (would throw exception otherwise)
+        $num = count($contracts);
+        if ($this->output) {
+            echo "Create Invoices:\n";
+            // $bar = new ProgressBar($this->output, $num);
+            $bar = $this->output->createProgressBar($num);
+            $bar->start();
+        }
+
+        /*
+         * Loop over all Contracts
+         */
+        foreach ($contracts as $i => $c) {
+            if ($this->output) {
+                $bar->advance();
+            } elseif (! ($i % 10)) {
+                self::push_state((int) $i / $num * 100, 'Create Invoices');
+                // echo ($i/$num [$c->id][".(memory_get_usage()/1000000)."]\r";
+            }
+
+            // Skip invalid contracts
+            if (! $c->check_validity('yearly') && ! (isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
+                ChannelLog::debug('billing', "Contract $c->number [$c->id] is invalid for current year");
+                continue;
+            }
+
+            /*
+             * Collect item specific data for all billing files
+             */
+            foreach ($c->items as $item) {
+                // skip items that are related to a deleted product
+                if (! isset($item->product)) {
+                    ChannelLog::error('billing', "Product of $item->accounting_text was deleted", [$c->id]);
+                    continue;
+                }
+
+                // skip if price is 0 (or item dates are invalid)
+                if (! ($ret = $item->calculate_price_and_span())) {
+                    ChannelLog::debug('billing', 'Item '.$item->product->name.' isn\'t charged this month', [$c->id]);
+                    continue;
+                }
+
+                // get account via costcenter
+                $costcenter = $item->get_costcenter();
+                $acc = $accs->find($costcenter->sepaaccount_id);
+
+                // If SR runs for specific SA skip item if it does not belong to that SA (SepaAccount)
+                if (! $acc) {
+                    continue;
+                }
+
+                // increase invoice nr of sepa account
+                if (! isset($c->charge[$acc->id])) {
+                    $c->charge[$acc->id] = ['net' => 0, 'tax' => 0];
+                    $acc->invoice_nr += 1;
+                }
+
+                // increase charge for account by price, calculate tax
+                $c->charge[$acc->id]['net'] += $item->charge;
+                $c->charge[$acc->id]['tax'] += $item->product->tax ? $item->charge * SettlementRunData::getConf('tax') / 100 : 0;
+
+                $item->charge = round($item->charge, 2);
+
+                // save to accounting table (as backup for future) - NOTE: invoice nr counters are set initially from that table
+                $rec = new AccountingRecord;
+                $rec->store_item($item, $acc);
+
+                // add item to accounting records of account, invoice and salesman
+                $acc->add_accounting_record($item);
+                $acc->add_invoice_item($item, $this->id);
+                if ($c->salesman_id) {
+                    $salesmen->find($c->salesman_id)->add_item($c, $item, $acc->id);
+                }
+            } // end of item loop
+
+            $this->addCdrs($accs, $c, $cdrs);
+
+            /*
+             * Add contract specific data for accounting files
+             */
+            // get actual globally valid sepa mandate (valid for all CostCenters/SepaAccounts)
+            $mandate_global = $c->get_valid_mandate();
+
+            foreach ($c->charge as $acc_id => $value) {
+                $value['net'] = round($value['net'], 2);
+                $value['tax'] = round($value['tax'], 2);
+                $value['tot'] = $value['net'] + $value['tax'];
+
+                $acc = $accs->find($acc_id);
+
+                $mandate_specific = $c->get_valid_mandate('now', $acc->id);
+                $mandate = $mandate_specific ?: $mandate_global;
+
+                $rcd = $this->rcd($c);
+
+                $acc->add_booking_record($c, $mandate, $value, $rcd);
+                $acc->set_invoice_data($c, $mandate, $value, $rcd);
+
+                // create invoice pdf already - this task is the most timeconsuming and therefore threaded!
+                $acc->invoices[$c->id]->make_invoice();
+
+                // Add debt (overdue/outstanding payment)
+                $this->add_debt($c, $value['tot'], $acc->invoices[$c->id]);
+
+                unset($acc->invoices[$c->id]);
+
+                // skip sepa part if contract has no valid mandate
+                if (! $mandate) {
+                    ChannelLog::debug('billing', "Contract $c->number [$c->id] has no valid sepa mandate for SepaAccount $acc->name [$acc->id]");
+
+                    continue;
+                }
+
+                $mandate->setRelation('contract', $c);
+                $acc->add_sepa_transfer($mandate, $value['tot'], $rcd);
+            }
+        } // end of loop over contracts
+
+        if ($this->output) {
+            $bar->finish();
+            echo "\n";
+        }
+
+        // avoid deleting temporary latex files before last invoice was built (multiple threads are used)
+        // and wait for all invoice pdfs to be created for concatenation in zipCommand@_make_billing_files()
+        usleep(500000);
+
+        // while removing it's tested if all PDFs were created successfully
+        Invoice::remove_templatex_files($this->sepaacc ?: null);
+        $this->_make_billing_files($accs, $salesmen);
+
+        if ($this->output) {
+            Storage::delete('tmp/accCmdStatus');
+        } else {
+            self::push_state(100, 'Finished');
+        }
+    }
+
+    /**
+     * (1) Set Language for Billing
+     * (2) Clear/Create (Prepare) Directories
+     * (3) Remove already created Invoices
+     */
+    private function init($sepaaccs)
+    {
+        \App::setLocale(SettlementRunData::getConf('userlang'));
+
+        // create directory structure and remove old invoices
+        if (is_dir(self::get_absolute_accounting_dir_path())) {
+            $this->user_output('Clean up directory...', 0);
+            $this->directory_cleanup($sepaaccs->count() == 1 ? $sepaaccs->first() : null);
+        } else {
+            mkdir(self::get_absolute_accounting_dir_path(), 0700, true);
+        }
+
+        foreach ($sepaaccs as $sepaacc) {
+            $sepaacc->settlementrun_init();
+        }
+
+        // TODO: Reset mandate state on rerun if changed
+
+        // Reset yearly payed items payed_month column
+        if (SettlementRunData::getDate('lastm') == '01') {
+            // Senseless where statement is necessary because update can not be called directly
+            Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
+        }
+    }
+
+    /**
+     * This function removes all "old" files and DB Entries created by the previous called accounting Command
+     * This is necessary because otherwise e.g. after deleting contracts the invoice would be kept and is still
+     * available in customer control center
+     * Used in: SettlementRunObserver@deleted, SettlementRun::execute()
+     *
+     * USE WITH CARE!
+     *
+     * @param string    dir                 Accounting Record Files Directory relative to storage/app/
+     * @param object    sepaacc
+     */
+    public function directory_cleanup($sepaacc = null)
+    {
+        $dir = $this->relativeDirectory;
+        $start = $this->created_at->toDateString();
+        $end = $this->created_at->addMonth()->toDateString();
+        // $start = date('Y-m-01 00:00:00', strtotime($settlementrun->created_at));
+        // $end = date('Y-m-01 00:00:00', strtotime('+1 month', strtotime($settlementrun->created_at)));
+
+        // remove all entries of this month permanently (if already created)
+        $query = AccountingRecord::whereBetween('created_at', [$start, $end]);
+        if ($sepaacc) {
+            $query = $query->where('sepaaccount_id', '=', $sepaacc->id);
+        }
+
+        $ret = $query->forceDelete();
+        if ($ret) {
+            ChannelLog::debug('billing', 'SettlementRun was already executed this month - accounting table will be recreated now! (for this month)');
+        }
+
+        // Delete all invoices
+        $logmsg = 'Remove all already created Invoices and Accounting Files for this month';
+        ChannelLog::debug('billing', $logmsg);
+        echo "$logmsg\n";
+
+        $this->delete_current_invoices($sepaacc);
+
+        $cdr_filepaths = CdrGetter::get_cdr_pathnames();
+        $salesman_csv_path = Salesman::get_storage_rel_filename();
+
+        // everything in accounting directory
+        if (! $sepaacc) {
+            foreach (glob(storage_path("app/$dir/*")) as $f) {
+                // keep cdr
+                if (in_array($f, $cdr_filepaths)) {
+                    continue;
+                }
+
+                if (is_file($f)) {
+                    unlink($f);
+                }
+            }
+
+            foreach (Storage::directories($dir) as $d) {
+                Storage::deleteDirectory($d);
+            }
+        }
+        // SepaAccount specific stuff
+        else {
+            // delete ZIP
+            Storage::delete("$dir/".date('Y-m', strtotime('first day of last month')).'.zip');
+
+            // delete concatenated Invoice pdf
+            Storage::delete("$dir/".\App\Http\Controllers\BaseViewController::translate_label('Invoices').'.pdf');
+
+            Salesman::remove_account_specific_entries_from_csv($sepaacc->id);
+
+            // delete account specific dir
+            $dir = $sepaacc->get_relative_accounting_dir_path();
+            foreach (Storage::files($dir) as $f) {
+                Storage::delete($f);
+            }
+
+            Storage::deleteDirectory($dir);
+        }
+    }
+
+    /**
+     * @param  int if > 0 the pathname of the timestamps month is returned
+     * @return string  Absolute path of accounting directory for actual settlement run (when no argument is specified)
+     */
+    public static function get_absolute_accounting_dir_path($timestamp = 0)
+    {
+        return storage_path('app/'.self::get_relative_accounting_dir_path($timestamp));
+    }
+
+    /**
+     * @param  int if > 0 the pathname of the timestamps month is returned
+     * @return string  Relative path of accounting dir to storage dir for actual settlement run
+     */
+    public static function get_relative_accounting_dir_path($timestamp = 0)
+    {
+        $time = $timestamp ?: strtotime('first day of last month');
+
+        return 'data/billingbase/accounting/'.date('Y-m', $time);
+    }
+
+    /**
+     * Get SepaAccounts for SettlementRun
+     */
+    private function getSepaAccounts($account)
+    {
+        if (! $account) {
+            $accs = SepaAccount::all();
+
+            if (! $accs) {
+                ChannelLog::error('billing', 'There are no Sepa Accounts to create Billing Files for - Stopping here!');
+                throw new Exception('There are no Sepa Accounts to create Billing Files for');
+            }
+
+            if ($accs->count() > 1) {
+                ChannelLog::debug('billing', 'Execute settlementrun for all SepaAccounts');
+            }
+        } else {
+            $accs = new Collection([0 => $account]);
+        }
+
+        return $accs;
+    }
+
+    /**
+     * Deletes currently created invoices (created in actual month)
+     * Used to delete invoices created by previous settlement run (SR) in current month - executed in SettlementRun::execute()
+     * is used to remove files before settlement run is repeatedly created (SettlementRun::execute() executed again)
+     * NOTE: Use Carefully!!
+     *
+     * @param obj   Delete only invoices related to specific SepaAccount, 0 - delete all invoices of current SR
+     */
+    public function delete_current_invoices($sepaaccount)
+    {
+        $query = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
+        if ($sepaaccount) {
+            $query = $query->where('sepaaccount_id', '=', $sepaaccount->id);
+        }
+
+        $invoices = $query->get();
+
+        // Delete PDFs
+        foreach ($invoices as $invoice) {
+            $filepath = $invoice->get_invoice_dir_path().$invoice->filename;
+            if (is_file($filepath)) {
+                unlink($filepath);
+            }
+
+            if (\Module::collections()->has('Dunning')) {
+                $invoice->debts()->forceDelete();
+            }
+        }
+
+        // Delete DB Entries - Note: keep this order
+        $query->forceDelete();
+    }
+
+
+    /**
+     * Get all Contracts an invoice shall be created for
+     *
+     * NOTE: If SettlementRun is executed for a specific SepaAccount this function will only return the contracts
+     *  that can have resulting charges for that account
+     *
+     * @param int
+     */
+    public static function getContracts($sepaaccount)
+    {
+        if ($sepaaccount) {
+            $query = self::getSepaAccSpecificContractsBaseQuery($sepaaccount);
+            self::logSepaAccSpecificDiscardedContracts($query);
+
+            return self::getSepaAccSpecificContracts($query);
+        }
+
+        self::logAllDiscardedContracts();
+
+        return self::getAllContracts();
+    }
+
+    private static function getSepaAccSpecificContractsQuery($sepaaccount)
+    {
+        return Contract::leftJoin('item as i', 'contract.id', '=', 'i.contract_id')
+            ->leftJoin('costcenter as ccc', 'contract.costcenter_id', '=', 'ccc.id')
+            ->leftJoin('costcenter as cci', 'i.costcenter_id', '=', 'cci.id')
+            ->leftJoin('product as p', 'i.product_id', '=', 'p.id')
+            ->leftJoin('costcenter as ccp', 'p.costcenter_id', '=', 'ccp.id')
+            ->where(whereLaterOrEqual('contract.contract_end', date('Y-m-d', strtotime('last day of nov last year'))))
+            ->where('i.valid_from_fixed', 1)
+            ->where(function ($query) use ($sepaaccount) {
+                $query
+                ->where('ccc.sepaaccount_id', '=', $sepaaccount->id)
+                ->orWhere('ccp.sepaaccount_id', '=', $sepaaccount->id)
+                ->orWhere('cci.sepaaccount_id', '=', $sepaaccount->id);
+            })
+            ->orderBy('number')
+            ->distinct();
+    }
+
+    private static function logSepaAccSpecificDiscardedContracts($query)
+    {
+        // Log all contracts where invoice creation is deactivated
+        $deactivated = $query
+            ->where('create_invoice', '=', 0)
+            ->select('contract.number')
+            ->pluck('number')->all();
+
+        if ($deactivated) {
+            ChannelLog::info('billing', trans('messages.accCmd_invoice_creation_deactivated', ['contractnrs' => implode(',', $deactivated)]));
+        }
+
+        $errors = $query
+            ->where('contract.costcenter_id', 0)
+            ->select('contract.number')
+            ->pluck('number')->all();
+
+        if ($errors) {
+            ChannelLog::error('billing', trans('messages.accCmd_error_noCC', ['numbers' => implode(',', $errors)]));
+        }
+    }
+
+    private static function getSepaAccSpecificContracts($query)
+    {
+        return $query
+            ->where('create_invoice', '!=', 0)
+            ->select('contract.*')
+            ->with('items.product', 'costcenter')
+            ->get();
+    }
+
+    private static function logAllDiscardedContracts()
+    {
+        // Log all discarded contracts of any reason
+        $query = Contract::where('create_invoice', '=', 0)->orderBy('number');
+
+        // where invoice creation is deactivated
+        $deactivated = $query->pluck('number')->all();
+        if ($deactivated) {
+            ChannelLog::info('billing', trans('messages.accCmd_invoice_creation_deactivated', ['contractnrs' => implode(',', $deactivated)]));
+        }
+
+        $errors = $query->where('costcenter_id', 0)->pluck('number')->all();
+        if ($errors) {
+            ChannelLog::error('billing', trans('messages.accCmd_error_noCC', ['numbers' => implode(',', $errors)]));
+        }
+    }
+
+    /**
+     * Get all relevant contracts for the SettlementRun - with eager loading
+     *
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    private static function getAllContracts()
+    {
+        return Contract::orderBy('number')
+            ->with('items.product', 'costcenter')
+            ->where('create_invoice', '!=', 0)
+            ->where('costcenter_id', '!=', 0)
+            ->whereBetween('number', [10010, 10090])
+            // ->where('contact', 3)
+            // TODO: make time we have to look back dependent of CDR offset in BillingBase config
+            ->where(whereLaterOrEqual('contract_end', date('Y-m-d', strtotime('last day of sep last year'))))
+            ->get();
+    }
+
+    /**
+     * Add Call Data Records
+     */
+    private function addCdrs($sepaaccs, $c, $cdrs)
+    {
+        // Dont add CDRs if this command is not destined to the corresponding SepaAcc
+        $acc = $sepaaccs->find($c->costcenter->sepaaccount_id);
+        if (! $acc) {
+            return;
+        }
+
+        $id = 0;
+        if (isset($cdrs[$c->id])) {
+            $id = $c->id;
+        } elseif (isset($cdrs[$c->number])) {
+            $id = $c->number;
+        }
+
+        if (! $id) {
+            return;
+        }
+
+        // calculate charge and count
+        $charge = $calls = 0;
+        foreach ($cdrs[$id] as $entry) {
+            $charge += $entry['price'];
+            $calls++;
+        }
+
+        // increase charge for booking record
+        // Keep this order in case we need to increment the invoice nr if only cdrs are charged for this contract
+        if (! isset($c->charge[$acc->id])) {
+            // this case should only happen when contract/voip tarif ended and deferred CDRs are calculated
+            ChannelLog::notice('billing', trans('messages.accCmd_notice_CDR', ['contract_nr' => $c->number, 'contract_id' => $c->id]));
+            $c->charge[$acc->id] = ['net' => 0, 'tax' => 0];
+            $acc->invoice_nr += 1;
+        }
+
+        $c->charge[$acc->id]['net'] += $charge;
+        $c->charge[$acc->id]['tax'] += $charge * SettlementRunData::getConf('tax') / 100;
+
+        // accounting record
+        $rec = new AccountingRecord;
+        $rec->add_cdr($c, $acc, $charge, $calls);
+        $acc->add_cdr_accounting_record($c, $charge, $calls);
+
+        // invoice
+        $acc->add_invoice_cdr($c, $cdrs[$id], $this->id);
+    }
+
+    /**
+     * Load only necessary salesmen from contract list
+     *
+     * @param Collection
+     */
+    public static function load_salesman_from_contracts($contracts)
+    {
+        $salesmen_ids = $contracts->filter(function ($contract) {
+            if ($contract->salesman_id) {
+                return $contract;
+            }
+        })
+            ->pluck('salesman_id')->unique()->all();
+
+        $salesmen = Salesman::whereIn('id', $salesmen_ids)->get();
+
+        return $salesmen;
+    }
+
+    /*
+     * Stores all billing files besides invoices in the directory defined as property of this class
+     */
+    private function _make_billing_files($sepaaccs, $salesmen)
+    {
+        foreach ($sepaaccs as $acc) {
+            $acc->make_billing_files();
+        }
+
+        if (isset($salesmen[0])) {
+            $salesmen[0]->prepare_output_file();
+            foreach ($salesmen as $sm) {
+                $sm->print_commission();
+            }
+
+            // delete file if there are no entries
+            if (Storage::size(Salesman::get_storage_rel_filename()) < 160) {
+                Storage::delete(Salesman::get_storage_rel_filename());
+            }
+        }
+
+        // create zip file
+        \Artisan::call('billing:zip', ['sepaacc_id' => $this->sepaacc ? $this->sepaacc->id : 0]);
+    }
+
+    /**
+     * Write Status to temporary file as buffer for settlement run status bar in GUI
+     *
+     * @param int
+     * @param string    Note: is automatically translated to the appropriate language if string exists in lang/./messages.php
+     */
+    public static function push_state($value, $message)
+    {
+        $arr = [
+            'message' => BaseViewController::translate_label($message),
+            'value'   => round($value),
+            ];
+
+        Storage::put('tmp/accCmdStatus', json_encode($arr));
+    }
+
+    /**
+     * Push message and state either to commandline or to state file for GUI
+     *
+     * @param string    msg
+     * @param float     state
+     */
+    public function user_output($msg, $state)
+    {
+        if ($this->output) {
+            echo "$msg\n";
+        } else {
+            self::push_state($state, $msg);
+        }
+    }
+
+    private function add_debt($contract, $amount, $invoice)
+    {
+        if (! \Module::collections()->has('Dunning')) {
+            return;
+        }
+
+        \Modules\Dunning\Entities\Debt::create([
+            'contract_id' => $contract->id,
+            'invoice_id' => $invoice->id,
+            'date' => date('Y-m-d', strtotime('last day of last month')),
+            'amount' => $amount,
+            ]);
+    }
+
+    /**
+     * Get requested collection date / date of value for contract
+     * This is the date when the bank performs the booking of the customers debit
+     *
+     * @return string   date
+     */
+    private function rcd($contract)
+    {
+        $rcdDefault = SettlementRunData::getConf('rcd');
+        $rcd = date('Y-m-');
+
+        if ($contract->value_date) {
+            $rcd .= $contract->value_date;
+        } elseif ($rcdDefault) {
+            $rcd .= $rcdDefault;
+        } else {
+            $rcd = date('Y-m-d', strtotime('+1 day'));
+        }
+
+        return $rcd;
+    }
+
 }
 
 class SettlementRunObserver
@@ -204,17 +840,17 @@ class SettlementRunObserver
 
         // NOTE: Make sure that we use Database Queue Driver - See .env!
         // \Artisan::call('billing:accounting', ['--debug' => 1]);
-        \Session::put('job_id', \Queue::push(new SettlementRunCommand($settlementrun)));
+        \Session::put('job_id', \Queue::push(new SettlementRunJob($settlementrun)));
     }
 
     public function updated($settlementrun)
     {
         if (\Input::has('rerun')) {
             // Make sure that settlement run is queued only once
-            $queued = \DB::table('jobs')->where('payload', 'like', '%SettlementRunCommand%')->count();
+            $queued = DB::table('jobs')->where('payload', 'like', '%SettlementRunJob%')->count();
             if (! $queued) {
                 $acc = \Input::get('sepaaccount') ? SepaAccount::find(\Input::get('sepaaccount')) : null;
-                \Session::put('job_id', \Queue::push(new SettlementRunCommand($settlementrun, $acc)));
+                \Session::put('job_id', \Queue::push(new SettlementRunJob($settlementrun, $acc)));
             }
         }
 
@@ -223,6 +859,10 @@ class SettlementRunObserver
             SettlementRun::where('id', $settlementrun->id)->update(['uploaded_at' => date('Y-m-d H:i:s')]);
 
             $mt940 = \Input::file('banking_file_upload');
+
+            $mt940s[] = Storage::get('tmp/Erznet-sta.sta');
+            $mt940s[] = Storage::get('tmp/Erznet-sta-2019-04-24.sta');
+            $mt940s[] = Storage::get('tmp/Erznet-sta-2019-04-25.sta');
 
             foreach ($mt940s as $mt940) {
                 $settlementrun->parseBankingFile($mt940);

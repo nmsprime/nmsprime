@@ -84,7 +84,7 @@ class SettlementRunController extends \BaseController
         $logs = $failed_jobs = [];
         $sr = SettlementRun::find($id);
         $status_msg = '';
-        $job_queued = \DB::table('jobs')->where('payload', 'like', '%SettlementRunCommand%')->orWhere('payload', 'like', '%ZipCommand%')->get();
+        $job_queued = \DB::table('jobs')->where('payload', 'like', '%SettlementRun%')->orWhere('payload', 'like', '%ZipCommand%')->get();
         $job_queued = $job_queued->isNotEmpty() ? $job_queued[0] : null;
 
         if ($job_queued) {
@@ -131,7 +131,7 @@ class SettlementRunController extends \BaseController
             case 'Modules\BillingBase\Console\ZipCommand':
                 return trans('messages.zipCmdProcessing');
 
-            case 'Modules\BillingBase\Console\SettlementRunCommand':
+            case 'Modules\BillingBase\Jobs\SettlementRunJob':
                 return trans('messages.accCmd_processing');
 
             default:
@@ -180,7 +180,7 @@ class SettlementRunController extends \BaseController
             }
 
             if (! isset($commandName)) {
-                $commandName = 'Modules\BillingBase\Console\SettlementRunCommand';
+                $commandName = 'Modules\BillingBase\Jobs\SettlementRunJob';
             }
 
             \Log::debug("Job $commandName \[".\Session::get('job_id').'] stopped');
@@ -327,84 +327,6 @@ class SettlementRunController extends \BaseController
         $files = $obj->accounting_files();
 
         return response()->download($files[$sepaacc][$key]->getRealPath());
-    }
-
-    /**
-     * This function removes all "old" files and DB Entries created by the previous called accounting Command
-     * This is necessary because otherwise e.g. after deleting contracts the invoice would be kept and is still
-     * available in customer control center
-     * Used in: SettlementRunObserver@deleted, SettlementRunCommand
-     *
-     * USE WITH CARE!
-     *
-     * @param string    dir                 Accounting Record Files Directory relative to storage/app/
-     * @param object    settlementrun       SettlementRun the directory should be cleared for
-     * @param object    sepaacc
-     */
-    public static function directory_cleanup($settlementrun = null, $sepaacc = null)
-    {
-        $dir = SettlementRunCommand::get_relative_accounting_dir_path();
-        $start = $settlementrun ? date('Y-m-01 00:00:00', strtotime($settlementrun->created_at)) : date('Y-m-01');
-        $end = $settlementrun ? date('Y-m-01 00:00:00', strtotime('+1 month', strtotime($settlementrun->created_at))) : date('Y-m-01', strtotime('+1 month'));
-
-        // remove all entries of this month permanently (if already created)
-        $query = AccountingRecord::whereBetween('created_at', [$start, $end]);
-        if ($sepaacc) {
-            $query = $query->where('sepaaccount_id', '=', $sepaacc->id);
-        }
-
-        $ret = $query->forceDelete();
-        if ($ret) {
-            ChannelLog::debug('billing', 'Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
-        }
-
-        // Delete all invoices
-        $logmsg = 'Remove all already created Invoices and Accounting Files for this month';
-        ChannelLog::debug('billing', $logmsg);
-        echo "$logmsg\n";
-
-        if (! $settlementrun) {
-            Invoice::delete_current_invoices($sepaacc ? $sepaacc->id : 0);
-        }
-
-        $cdr_filepaths = cdrCommand::get_cdr_pathnames();
-        $salesman_csv_path = Salesman::get_storage_rel_filename();
-
-        // everything in accounting directory
-        if (! $sepaacc) {
-            foreach (glob(storage_path("app/$dir/*")) as $f) {
-                // keep cdr
-                if (in_array($f, $cdr_filepaths)) {
-                    continue;
-                }
-
-                if (is_file($f)) {
-                    unlink($f);
-                }
-            }
-
-            foreach (\Storage::directories($dir) as $d) {
-                \Storage::deleteDirectory($d);
-            }
-        }
-        // SepaAccount specific stuff
-        else {
-            // delete ZIP
-            \Storage::delete("$dir/".date('Y-m', strtotime('first day of last month')).'.zip');
-
-            // delete concatenated Invoice pdf
-            \Storage::delete("$dir/".\App\Http\Controllers\BaseViewController::translate_label('Invoices').'.pdf');
-
-            Salesman::remove_account_specific_entries_from_csv($sepaacc->id);
-
-            // delete account specific dir
-            $dir = $sepaacc->get_relative_accounting_dir_path();
-            foreach (\Storage::files($dir) as $f) {
-                \Storage::delete($f);
-            }
-
-            \Storage::deleteDirectory($dir);
-        }
     }
 
     public function destroy($id)

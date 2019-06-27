@@ -611,35 +611,6 @@ class Invoice extends \BaseModel
     }
 
     /**
-     * Deletes currently created invoices (created in actual month)
-     * Used to delete invoices created by previous settlement run (SR) in current month - executed in SettlementRunCommand
-     * is used to remove files before settlement run is repeatedly created (SettlementRunCommand executed again)
-     * NOTE: Use Carefully!!
-     *
-     * @param int 	Delete only invoices related to specific SepaAccount, 0 - delete all invoices of current SR
-     */
-    public static function delete_current_invoices($sepaaccount_id = 0)
-    {
-        $query = self::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
-        if ($sepaaccount_id) {
-            $query = $query->where('sepaaccount_id', '=', $sepaaccount_id);
-        }
-
-        $invoices = $query->get();
-
-        // Delete PDFs
-        foreach ($invoices as $invoice) {
-            $filepath = $invoice->get_invoice_dir_path().$invoice->filename;
-            if (is_file($filepath)) {
-                unlink($filepath);
-            }
-        }
-
-        // Delete DB Entries - Note: keep this order
-        $query->forceDelete();
-    }
-
-    /**
      * Remove all old Invoice & CDR DB-Entries & Files as it's prescribed by law
      * Germany: CDRs 6 Months (§97 TKG) - Invoices ?? -
      *

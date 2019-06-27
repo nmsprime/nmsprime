@@ -3,6 +3,7 @@
 namespace Modules\BillingBase\Providers;
 
 use ChannelLog;
+use Modules\BillingBase\Entities\CdrGetter;
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\SepaAccount;
 
@@ -33,12 +34,23 @@ class SettlementRunProvider
      */
     protected $dates;
 
+    /**
+     * Call Data Records of providers
+     *
+     * @var array
+     */
+    protected $cdrs;
+
     public function __construct()
     {
         $this->setCompanyData();
         $this->setBillingConf();
         $this->setDates();
     }
+
+    ////////////////////////////////////////////////
+    /////////////////// SETTERS ////////////////////
+    ////////////////////////////////////////////////
 
     private function setBillingConf()
     {
@@ -109,6 +121,19 @@ class SettlementRunProvider
         ];
     }
 
+    private function setCdrs()
+    {
+        $class = new CdrGetter;
+
+        $class::get();
+        $this->cdrs = $class->parse();
+    }
+
+    ////////////////////////////////////////////////
+    /////////////////// GETTERS ////////////////////
+    ////////////////////////////////////////////////
+
+
     public function getCompanyData($id)
     {
         return $this->accounts[$id];
@@ -135,5 +160,18 @@ class SettlementRunProvider
         }
 
         return $this->dates[$key];
+    }
+
+    public function getCdrs($number = 0)
+    {
+        if (! $this->cdrs) {
+            $this->setCdrs();
+        }
+
+        if (! $number) {
+            return $this->cdrs;
+        }
+
+        return $this->cdrs[$number] ?? [];
     }
 }
