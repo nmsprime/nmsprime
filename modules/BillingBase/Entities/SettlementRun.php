@@ -11,6 +11,7 @@ use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Entities\Salesman;
 use Modules\BillingBase\Providers\Currency;
 use App\Http\Controllers\BaseViewController;
+use Illuminate\Database\Eloquent\Collection;
 use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Jobs\SettlementRunJob;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -199,6 +200,17 @@ class SettlementRun extends \BaseModel
         // d($transactions, $statements, str_replace(':61:', "\r\n---------------\r\n:61:", $mt940));
     }
 
+    //////////////////////////////////////////////////////
+    ////////////// SettlementRun execution ///////////////
+    //////////////////////////////////////////////////////
+
+    /**
+     * Execute SettlementRun for specific SepaAccount
+     *
+     * @var bool
+     */
+    public $specific = false;
+
     /**
      * Execute the SettlementRun
      *
@@ -216,10 +228,7 @@ class SettlementRun extends \BaseModel
 
         $accs = $this->getSepaAccounts($sepaacc);
 
-        $acc_tmp = $accs->first();
-        ChannelLog::debug('billing', "Execute settlementrun for SepaAccount $acc_tmp->name (ID: $acc_tmp->id)");
-
-        $this->init($accs);
+        $this->init($sepaacc);
 
         $this->user_output('Parse call data record file(s)...', 0);
         $cdrs = SettlementRunData::getCdrs();
@@ -358,7 +367,7 @@ class SettlementRun extends \BaseModel
         usleep(500000);
 
         // while removing it's tested if all PDFs were created successfully
-        Invoice::remove_templatex_files($this->sepaacc ?: null);
+        Invoice::remove_templatex_files($sepaacc);
         $this->_make_billing_files($accs, $salesmen);
 
         if ($this->output) {
@@ -373,29 +382,25 @@ class SettlementRun extends \BaseModel
      * (2) Clear/Create (Prepare) Directories
      * (3) Remove already created Invoices
      */
-    private function init($sepaaccs)
+    private function init($sepaacc)
     {
         \App::setLocale(SettlementRunData::getConf('userlang'));
 
-        // create directory structure and remove old invoices
+        if ($sepaacc) {
+            $this->specific = true;
+        }
+
+        // Create directory structure and remove old invoices
         if (is_dir(self::get_absolute_accounting_dir_path())) {
-            $this->user_output('Clean up directory...', 0);
-            $this->directory_cleanup($sepaaccs->count() == 1 ? $sepaaccs->first() : null);
+            $this->user_output('clean', 0);
+            $this->directory_cleanup($sepaacc);
         } else {
             mkdir(self::get_absolute_accounting_dir_path(), 0700, true);
         }
 
-        foreach ($sepaaccs as $sepaacc) {
-            $sepaacc->settlementrun_init();
-        }
-
         // TODO: Reset mandate state on rerun if changed
 
-        // Reset yearly payed items payed_month column
-        if (SettlementRunData::getDate('lastm') == '01') {
-            // Senseless where statement is necessary because update can not be called directly
-            Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
-        }
+        $this->resetItemPayedMonth($sepaacc);
     }
 
     /**
@@ -414,8 +419,6 @@ class SettlementRun extends \BaseModel
         $dir = $this->relativeDirectory;
         $start = $this->created_at->toDateString();
         $end = $this->created_at->addMonth()->toDateString();
-        // $start = date('Y-m-01 00:00:00', strtotime($settlementrun->created_at));
-        // $end = date('Y-m-01 00:00:00', strtotime('+1 month', strtotime($settlementrun->created_at)));
 
         // remove all entries of this month permanently (if already created)
         $query = AccountingRecord::whereBetween('created_at', [$start, $end]);
@@ -475,6 +478,25 @@ class SettlementRun extends \BaseModel
         }
     }
 
+    private function resetItemPayedMonth($sepaacc)
+    {
+        // TODO: Remove when cronjob is tested
+        if (SettlementRunData::getDate('lastm') == '01') {
+            // Senseless where statement is necessary because update can not be called directly
+            Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
+        }
+
+        // Update SepaAccount specific items in case item was charged in first run, but sth changed during
+        // time to second run and item must be charged later
+        if ($sepaacc) {
+            $query = self::getSepaAccSpecificContractsBaseQuery($sepaacc);
+
+            $query->where('p.billing_cycle', 'Yearly')->toBase()->update(['i.payed_month' => '0']);
+        } else {
+            Item::where('payed_month', SettlementRunData::getDate('lastm'))->update(['payed_month' => '0']);
+        }
+    }
+
     /**
      * @param  int if > 0 the pathname of the timestamps month is returned
      * @return string  Absolute path of accounting directory for actual settlement run (when no argument is specified)
@@ -496,11 +518,17 @@ class SettlementRun extends \BaseModel
     }
 
     /**
-     * Get SepaAccounts for SettlementRun
+     * Get initialized SepaAccounts for SettlementRun
+     *
+     * @return Illuminate\Database\Eloquent\Collection
      */
-    private function getSepaAccounts($account)
+    private function getSepaAccounts($account = null)
     {
-        if (! $account) {
+        if ($account) {
+            $accs = new Collection([0 => $account]);
+
+            ChannelLog::debug('billing', "Execute settlementrun for SepaAccount $account->name (ID: $account->id)");
+        } else {
             $accs = SepaAccount::all();
 
             if (! $accs) {
@@ -508,11 +536,11 @@ class SettlementRun extends \BaseModel
                 throw new Exception('There are no Sepa Accounts to create Billing Files for');
             }
 
-            if ($accs->count() > 1) {
-                ChannelLog::debug('billing', 'Execute settlementrun for all SepaAccounts');
-            }
-        } else {
-            $accs = new Collection([0 => $account]);
+            ChannelLog::debug('billing', 'Execute settlementrun for all SepaAccounts');
+        }
+
+        foreach ($accs as $acc) {
+            $acc->settlementrun_init();
         }
 
         return $accs;
@@ -563,8 +591,9 @@ class SettlementRun extends \BaseModel
     public static function getContracts($sepaaccount)
     {
         if ($sepaaccount) {
-            $query = self::getSepaAccSpecificContractsBaseQuery($sepaaccount);
-            self::logSepaAccSpecificDiscardedContracts($query);
+            $query = self::getSepaAccSpecificContractsQuery($sepaaccount);
+
+            self::logSepaAccSpecificDiscardedContracts(clone $query);
 
             return self::getSepaAccSpecificContracts($query);
         }
@@ -575,6 +604,13 @@ class SettlementRun extends \BaseModel
     }
 
     private static function getSepaAccSpecificContractsQuery($sepaaccount)
+    {
+        $query = self::getSepaAccSpecificContractsBaseQuery($sepaaccount);
+
+        return $query->orderBy('number')->distinct();
+    }
+
+    private static function getSepaAccSpecificContractsBaseQuery($sepaaccount)
     {
         return Contract::leftJoin('item as i', 'contract.id', '=', 'i.contract_id')
             ->leftJoin('costcenter as ccc', 'contract.costcenter_id', '=', 'ccc.id')
@@ -588,9 +624,7 @@ class SettlementRun extends \BaseModel
                 ->where('ccc.sepaaccount_id', '=', $sepaaccount->id)
                 ->orWhere('ccp.sepaaccount_id', '=', $sepaaccount->id)
                 ->orWhere('cci.sepaaccount_id', '=', $sepaaccount->id);
-            })
-            ->orderBy('number')
-            ->distinct();
+            });
     }
 
     private static function logSepaAccSpecificDiscardedContracts($query)
@@ -652,8 +686,12 @@ class SettlementRun extends \BaseModel
             ->with('items.product', 'costcenter')
             ->where('create_invoice', '!=', 0)
             ->where('costcenter_id', '!=', 0)
-            ->whereBetween('number', [10010, 10090])
-            // ->where('contact', 3)
+            // ->where(function ($query) {
+            //     $query
+            //     ->whereBetween('number', [10010, 10090])
+            //     ->orWhereIn('id', [502832])
+            //     ->orWhereIn('number', [10106]);
+            // })
             // TODO: make time we have to look back dependent of CDR offset in BillingBase config
             ->where(whereLaterOrEqual('contract_end', date('Y-m-d', strtotime('last day of sep last year'))))
             ->get();
@@ -750,7 +788,8 @@ class SettlementRun extends \BaseModel
         }
 
         // create zip file
-        \Artisan::call('billing:zip', ['sepaacc_id' => $this->sepaacc ? $this->sepaacc->id : 0]);
+        $zipper = new SettlementRunZipper($this, $this->output);
+        $zipper->fire($this->specific ? $sepaaccs->first() : null);
     }
 
     /**
