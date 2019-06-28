@@ -20,7 +20,7 @@ class BillingBaseServiceProvider extends ServiceProvider
         'Modules\BillingBase\Console\SettlementRunCommand',
         'Modules\BillingBase\Console\fetchBicCommand',
         'Modules\BillingBase\Console\cdrCommand',
-        'Modules\BillingBase\Console\ZipCommand',
+        'Modules\BillingBase\Console\ZipSettlementRun',
     ];
 
     /**

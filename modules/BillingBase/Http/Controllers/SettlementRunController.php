@@ -128,7 +128,7 @@ class SettlementRunController extends \BaseController
     public static function getStatusMessage($commandName)
     {
         switch ($commandName) {
-            case 'Modules\BillingBase\Console\ZipCommand':
+            case 'Modules\BillingBase\Jobs\ZipSettlementRun':
                 return trans('messages.zipCmdProcessing');
 
             case 'Modules\BillingBase\Jobs\SettlementRunJob':
@@ -239,7 +239,7 @@ class SettlementRunController extends \BaseController
     {
         $settlementrun = SettlementRun::find($id);
 
-        $id = \Queue::push(new \Modules\BillingBase\Console\ZipCommand($settlementrun, true));
+        $id = \Queue::push(new \Modules\BillingBase\Jobs\ZipSettlementRun($settlementrun, null, true));
         \Session::put('job_id', $id);
 
         return \Redirect::route('SettlementRun.edit', $settlementrun->id);

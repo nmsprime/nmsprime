@@ -230,12 +230,12 @@ class SettlementRun extends \BaseModel
 
         $this->init($sepaacc);
 
-        $this->user_output('Parse call data record file(s)...', 0);
+        $this->user_output('parseCdr', 0);
         $cdrs = SettlementRunData::getCdrs();
         // $cdrs = [[]];
 
         // TODO: use load_salesman_from_contracts() in future ?
-        $this->user_output('Load Data...', 0);
+        $this->user_output('loadData', 0);
         $salesmen = Salesman::all();
         $contracts = self::getContracts($sepaacc ?: null);
 
@@ -255,7 +255,7 @@ class SettlementRun extends \BaseModel
             if ($this->output) {
                 $bar->advance();
             } elseif (! ($i % 10)) {
-                self::push_state((int) $i / $num * 100, 'Create Invoices');
+                self::push_state((int) $i / $num * 100, trans('billingbase::messages.settlementrun.state.createInvoices'));
                 // echo ($i/$num [$c->id][".(memory_get_usage()/1000000)."]\r";
             }
 
@@ -373,7 +373,7 @@ class SettlementRun extends \BaseModel
         if ($this->output) {
             Storage::delete('tmp/accCmdStatus');
         } else {
-            self::push_state(100, 'Finished');
+            self::push_state(100, trans('billingbase::messages.settlementrun.state.finish'));
         }
     }
 
@@ -795,13 +795,13 @@ class SettlementRun extends \BaseModel
     /**
      * Write Status to temporary file as buffer for settlement run status bar in GUI
      *
-     * @param int
-     * @param string    Note: is automatically translated to the appropriate language if string exists in lang/./messages.php
+     * @param int       Value of progress bar
+     * @param string    message string
      */
-    public static function push_state($value, $message)
+    public static function push_state($value, $msg)
     {
         $arr = [
-            'message' => BaseViewController::translate_label($message),
+            'message' => $msg,
             'value'   => round($value),
             ];
 
@@ -811,11 +811,13 @@ class SettlementRun extends \BaseModel
     /**
      * Push message and state either to commandline or to state file for GUI
      *
-     * @param string    msg
+     * @param string    Key in billingbase::messages language file (modules/BillingBase/Resources/lang/{de,en,...}/messages.php)
      * @param float     state
      */
-    public function user_output($msg, $state)
+    public function user_output($key, $state)
     {
+        $msg = trans("billingbase::messages.settlementrun.state.$key");
+
         if ($this->output) {
             echo "$msg\n";
         } else {
