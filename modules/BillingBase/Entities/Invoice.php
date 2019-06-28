@@ -645,12 +645,12 @@ class Invoice extends \BaseModel
         // Delete all CDR CSVs older than $period months
         \App::setLocale($conf->userlang);
 
-        $path = storage_path('app/data/billingbase/accounting/').$target_time_o->format('Y-m').'/';
-        $target_time_o->subMonthNoOverflow($offset);
-        $fn = \App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'_'.$target_time_o->format('Y_m').'.csv';
+        $cdrFiles = CdrGetter::get_cdr_pathnames($target_time_o->subMonthNoOverflow()->__get('timestamp'));
 
-        if (is_file($path.$fn)) {
-            unlink($path.$fn);
+        foreach ($cdrFiles as $f) {
+            if (is_file($f)) {
+                unlink($f);
+            }
         }
     }
 }
