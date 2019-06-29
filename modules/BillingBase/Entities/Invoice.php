@@ -100,7 +100,7 @@ class Invoice extends \BaseModel
     /**
      * @var string - invoice directory path relativ to Storage app path and temporary filename variables
      */
-    public $rel_storage_invoice_dir = 'data/billingbase/invoice/';
+    public static $rel_storage_invoice_dir = 'data/billingbase/invoice/';
 
     // temporary variables for settlement run without .pdf extension
     private $filename_invoice = '';
@@ -196,7 +196,19 @@ class Invoice extends \BaseModel
 
     public function get_invoice_dir_path()
     {
-        return storage_path('app/'.$this->rel_storage_invoice_dir.$this->contract_id.'/');
+        return storage_path('app/'.self::$rel_storage_invoice_dir.$this->contract_id.'/');
+    }
+
+    /**
+     * Get absolute filepath for invoice from json object
+     *  Has better performance when invoice object must not be instantiated
+     *
+     * @param  json obj
+     * @return string
+     */
+    public static function getFilePathFromData(&$invoice)
+    {
+        return storage_path('app/'.self::$rel_storage_invoice_dir.$invoice->contract_id.'/'.$invoice->filename);
     }
 
     /**
@@ -555,10 +567,10 @@ class Invoice extends \BaseModel
         // Replace placeholder by value
         $template = $this->_replace_placeholder($template);
 
-        // ChannelLog::debug('billing', 'Store '. $this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"});
+        // ChannelLog::debug('billing', 'Store '. self::$rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"});
 
         // Create tex file(s)
-        Storage::put($this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"}, $template);
+        Storage::put(self::$rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"}, $template);
     }
 
     private function _replace_placeholder($template)
@@ -585,7 +597,7 @@ class Invoice extends \BaseModel
         foreach ($file_paths as $key => $file) {
             if (is_file($file)) {
                 pdflatex($dir_path, $file, true);
-                ChannelLog::debug('billing', "Created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
+                ChannelLog::debug('billing', "New $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
             }
         }
     }
@@ -598,14 +610,16 @@ class Invoice extends \BaseModel
      */
     public static function remove_templatex_files($sepaacc = null)
     {
-        $invoices = self::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
+        $invoices = \DB::table('invoice')->whereBetween('created_at', [date('Y-m-01'), date('Y-m-01', strtotime('next month'))]);
+        // $invoices = self::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
         if ($sepaacc) {
             $invoices = $invoices->where('sepaaccount_id', '=', $sepaacc->id);
         }
-        $invoices = $invoices->get();
 
+        $invoices = $invoices->get();
         foreach ($invoices as $invoice) {
-            $fn = $invoice->get_invoice_dir_path().$invoice->filename;
+            // $fn = $invoice->get_invoice_dir_path().$invoice->filename;
+            $fn = Invoice::getFilePathFromData($invoice);
 
             if (is_file($fn)) {
                 $fn = str_replace('.pdf', '', $fn);
