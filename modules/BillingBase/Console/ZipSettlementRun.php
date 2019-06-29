@@ -3,11 +3,7 @@
 namespace Modules\BillingBase\Console;
 
 use Storage;
-use ChannelLog;
 use Illuminate\Console\Command;
-use Modules\BillingBase\Entities\Invoice;
-use Modules\BillingBase\Entities\Product;
-use App\Http\Controllers\BaseViewController;
 use Modules\BillingBase\Entities\BillingBase;
 use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Entities\SettlementRun;

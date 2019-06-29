@@ -619,7 +619,7 @@ class Invoice extends \BaseModel
         $invoices = $invoices->get();
         foreach ($invoices as $invoice) {
             // $fn = $invoice->get_invoice_dir_path().$invoice->filename;
-            $fn = Invoice::getFilePathFromData($invoice);
+            $fn = self::getFilePathFromData($invoice);
 
             if (is_file($fn)) {
                 $fn = str_replace('.pdf', '', $fn);

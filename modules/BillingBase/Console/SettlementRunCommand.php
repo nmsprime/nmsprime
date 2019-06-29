@@ -2,7 +2,6 @@
 
 namespace Modules\BillingBase\Console;
 
-use ChannelLog;
 use Illuminate\Console\Command;
 use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Entities\SettlementRun;

@@ -2,12 +2,9 @@
 
 namespace Modules\BillingBase\Entities;
 
-use Storage;
 use ChannelLog;
 use App\Http\Controllers\BaseViewController;
 use Illuminate\Database\Eloquent\Collection;
-// use Modules\BillingBase\Providers\Currency;
-use Modules\BillingBase\Providers\SettlementRunData;
 
 class SettlementRunZipper
 {
@@ -75,7 +72,7 @@ class SettlementRunZipper
             return;
         }
 
-        SettlementRun::push_state(0, trans("billingbase::messages.settlementrun.state.getData"));
+        SettlementRun::push_state(0, trans('billingbase::messages.settlementrun.state.getData'));
 
         $month = $this->settlementrun->year.'-'.str_pad($this->settlementrun->month, 2, '0', STR_PAD_LEFT);
         $start = date('Y-m-d', strtotime('first day of next month', strtotime($month)));
@@ -108,7 +105,7 @@ class SettlementRunZipper
             return;
         }
 
-        SettlementRun::push_state(0, trans("billingbase::messages.settlementrun.state.concatPostalInvoices"));
+        SettlementRun::push_state(0, trans('billingbase::messages.settlementrun.state.concatPostalInvoices'));
         echo "Concatenate $num postal invoices...";
         ChannelLog::debug('billing', "Concatenate $num postal invoices for SettlementRun ".$this->settlementrun->txt);
 
@@ -126,14 +123,14 @@ class SettlementRunZipper
             $files = array_keys($files);
         }
 
-        SettlementRun::push_state(50, trans("billingbase::messages.settlementrun.state.concatPostalInvoices"));
+        SettlementRun::push_state(50, trans('billingbase::messages.settlementrun.state.concatPostalInvoices'));
 
         // Concat Invoices/temporary files to final target file
         $targetFilepath = $this->settlementrun->directory.'/'.trans('messages.postalInvoices').'.pdf';
 
         concat_pdfs($files, $targetFilepath, false);
         echo "\nNew file: $targetFilepath\n";
-        SettlementRun::push_state(100, trans("billingbase::messages.settlementrun.state.concatPostalInvoices"));
+        SettlementRun::push_state(100, trans('billingbase::messages.settlementrun.state.concatPostalInvoices'));
 
         // delete temp files
         if (count($files) >= $this->split) {
@@ -164,7 +161,7 @@ class SettlementRunZipper
             $this->bar = $this->output->createProgressBar(100);
             $this->bar->start();
         }
-        SettlementRun::push_state(0, trans("billingbase::messages.settlementrun.state.concatInvoices"));
+        SettlementRun::push_state(0, trans('billingbase::messages.settlementrun.state.concatInvoices'));
 
         foreach ($sepaAccs as $i => $sepaAcc) {
             $invoices = $invoices ?: $this->getRelevantInvoices($sepaAcc);
@@ -219,7 +216,7 @@ class SettlementRunZipper
                 $num['percentage'] = $num['sum'] / $num['total'] * 100;
             }
 
-            SettlementRun::push_state($num['percentage'], trans("billingbase::messages.settlementrun.state.concatInvoices"));
+            SettlementRun::push_state($num['percentage'], trans('billingbase::messages.settlementrun.state.concatInvoices'));
             if ($this->output) {
                 $this->bar->setProgress($num['percentage']);
             }
@@ -227,7 +224,7 @@ class SettlementRunZipper
 
         $this->_wait_for_background_processes($final_files, $num, true);
 
-        SettlementRun::push_state(100, trans("billingbase::messages.settlementrun.state.concatInvoices"));
+        SettlementRun::push_state(100, trans('billingbase::messages.settlementrun.state.concatInvoices'));
         if ($this->output) {
             $this->bar->finish();
         }
@@ -289,7 +286,7 @@ class SettlementRunZipper
 
         ChannelLog::debug('billing', "ZIP Files to $filename");
         echo "\nZIP accounting files and directories...\n";
-        SettlementRun::push_state(100, trans("billingbase::messages.settlementrun.state.zip"));
+        SettlementRun::push_state(100, trans('billingbase::messages.settlementrun.state.zip'));
 
         // suppress output of zip command
         ob_start();
@@ -361,7 +358,7 @@ class SettlementRunZipper
                     $num['sum'] += count($files) ? $this->split : $num['current'] % $this->split;
                     $num['percentage'] = $num['sum'] / $num['total'] * 100;
 
-                    SettlementRun::push_state($num['percentage'], trans("billingbase::messages.settlementrun.state.concatInvoices"));
+                    SettlementRun::push_state($num['percentage'], trans('billingbase::messages.settlementrun.state.concatInvoices'));
                     if ($this->output) {
                         $this->bar->setProgress($num['percentage']);
                     }

@@ -133,7 +133,6 @@ class SettlementRunProvider
     /////////////////// GETTERS ////////////////////
     ////////////////////////////////////////////////
 
-
     public function getCompanyData($id)
     {
         return $this->accounts[$id];

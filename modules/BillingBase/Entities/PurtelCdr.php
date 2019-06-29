@@ -11,7 +11,7 @@ class PurtelCdr extends CdrGetter
      * Load Call Data Records from PURTel Interface and save to accounting directory of appropriate date
      *
      * @param int       timestamp
-     * @return int 		0|1 success|error
+     * @return int      0|1 success|error
      */
     public static function get($time = 0)
     {
@@ -59,7 +59,7 @@ class PurtelCdr extends CdrGetter
      *
      * NOTE: Username to phonenumber combination must never change!
      *
-     * @return array 	[contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
+     * @return array    [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
      */
     public function parse()
     {
@@ -163,5 +163,5 @@ class PurtelCdr extends CdrGetter
         }
 
         return $calls;
-	}
+    }
 }

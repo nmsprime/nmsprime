@@ -3,9 +3,7 @@
 namespace Modules\BillingBase\Console;
 
 use File;
-use Chumper\Zipper\Zipper;
 use Illuminate\Console\Command;
-use App\Http\Controllers\BaseViewController;
 use Modules\BillingBase\Entities\Cdr;
 use Modules\BillingBase\Entities\BillingBase;
 use Symfony\Component\Console\Input\InputOption;
@@ -78,7 +76,7 @@ class cdrCommand extends Command
     {
         return [
             ['date', null, InputOption::VALUE_OPTIONAL, "e.g.: '2018-02-01' or '2018-02'", null],
-            ['sr', null, InputOption::VALUE_OPTIONAL, "SettlementRun-ID", null],
+            ['sr', null, InputOption::VALUE_OPTIONAL, 'SettlementRun-ID', null],
         ];
     }
 }

@@ -5,18 +5,11 @@ namespace Modules\BillingBase\Entities;
 use DB;
 use Storage;
 use ChannelLog;
-use Modules\BillingBase\Entities\Item;
 use Modules\ProvBase\Entities\Contract;
-use Modules\BillingBase\Entities\Invoice;
-use Modules\BillingBase\Entities\Salesman;
-use Modules\BillingBase\Providers\Currency;
 use App\Http\Controllers\BaseViewController;
 use Illuminate\Database\Eloquent\Collection;
-use Modules\BillingBase\Entities\SepaAccount;
 use Modules\BillingBase\Jobs\SettlementRunJob;
 use Symfony\Component\Console\Helper\ProgressBar;
-use Modules\BillingBase\Entities\AccountingRecord;
-use Symfony\Component\Console\Output\ConsoleOutput;
 use Modules\BillingBase\Providers\SettlementRunData;
 
 class SettlementRun extends \BaseModel
@@ -170,7 +163,7 @@ class SettlementRun extends \BaseModel
 
         //order files
         foreach ($files as $file) {
-            $sepaacc = $file->getRelativePath() ?: \App\Http\Controllers\BaseViewController::translate_label('General');
+            $sepaacc = $file->getRelativePath() ?: BaseViewController::translate_label('General');
             $arr[$sepaacc][] = $file;
         }
 
@@ -224,7 +217,7 @@ class SettlementRun extends \BaseModel
         $this->output = $output;
 
         // Set execution timestamp to always show log entries on SettlementRun edit page
-        SettlementRun::where('id', $this->id)->update(['executed_at' => \Carbon\Carbon::now()]);
+        self::where('id', $this->id)->update(['executed_at' => \Carbon\Carbon::now()]);
 
         $accs = $this->getSepaAccounts($sepaacc);
 
@@ -462,7 +455,7 @@ class SettlementRun extends \BaseModel
             Storage::delete("$dir/".date('Y-m', strtotime('first day of last month')).'.zip');
 
             // delete concatenated Invoice pdf
-            Storage::delete("$dir/".\App\Http\Controllers\BaseViewController::translate_label('Invoices').'.pdf');
+            Storage::delete("$dir/".BaseViewController::translate_label('Invoices').'.pdf');
 
             Salesman::remove_account_specific_entries_from_csv($sepaacc->id);
 
@@ -576,7 +569,6 @@ class SettlementRun extends \BaseModel
         // Delete DB Entries - Note: keep this order
         $query->forceDelete();
     }
-
 
     /**
      * Get all Contracts an invoice shall be created for
@@ -859,7 +851,6 @@ class SettlementRun extends \BaseModel
 
         return $rcd;
     }
-
 }
 
 class SettlementRunObserver
