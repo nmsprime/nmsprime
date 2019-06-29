@@ -343,17 +343,15 @@ class SettlementRun extends \BaseModel
                 // Add debt (overdue/outstanding payment)
                 $this->add_debt($c, $value['tot'], $acc->invoices[$c->id]);
 
-                unset($acc->invoices[$c->id]);
-
-                // skip sepa part if contract has no valid mandate
-                if (! $mandate) {
+                if ($mandate) {
+                    $mandate->setRelation('contract', $c);
+                    $acc->add_sepa_transfer($mandate, $value['tot'], $rcd);
+                    $this->add_debt($c, (-1) * $value['tot'], $acc->invoices[$c->id], $rcd);
+                } else {
                     ChannelLog::debug('billing', "Contract $c->number [$c->id] has no valid sepa mandate for SepaAccount $acc->name [$acc->id]");
-
-                    continue;
                 }
 
-                $mandate->setRelation('contract', $c);
-                $acc->add_sepa_transfer($mandate, $value['tot'], $rcd);
+                unset($acc->invoices[$c->id]);
             }
         } // end of loop over contracts
 
@@ -825,7 +823,7 @@ class SettlementRun extends \BaseModel
         }
     }
 
-    private function add_debt($contract, $amount, $invoice)
+    private function add_debt($contract, $amount, $invoice, $rcd = '')
     {
         if (! \Module::collections()->has('Dunning')) {
             return;
@@ -834,7 +832,8 @@ class SettlementRun extends \BaseModel
         \Modules\Dunning\Entities\Debt::create([
             'contract_id' => $contract->id,
             'invoice_id' => $invoice->id,
-            'date' => date('Y-m-d', strtotime('last day of last month')),
+            // TODO: Make date configurable? (Global conf: number for specific day, or d for actual day or rcd for rcd)
+            'date' => $rcd ?: date('Y-m-d', strtotime('last day of last month')),
             'amount' => $amount,
             ]);
     }

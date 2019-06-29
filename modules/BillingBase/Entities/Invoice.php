@@ -72,6 +72,13 @@ class Invoice extends \BaseModel
         return $this->belongsTo('Modules\BillingBase\Entities\SettlementRun');
     }
 
+    public function debts()
+    {
+        if (\Module::collections()->has('Dunning')) {
+            return $this->hasMany('Modules\Dunning\Entities\Debt');
+        }
+    }
+
     /**
      * Init Observer
      */
@@ -520,7 +527,9 @@ class Invoice extends \BaseModel
             'charge' 		=> $type ? $this->data['table_sum_charge_net'] : $this->data['cdr_charge'],
         ];
 
-        self::create($data);
+        $ret = self::create($data);
+
+        $this->id = $ret->id;
     }
 
     /**
