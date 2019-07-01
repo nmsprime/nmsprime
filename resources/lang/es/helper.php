@@ -134,6 +134,7 @@ return [
     ],
     'rate_coefficient'				=> 'La Maxima Tarifa Sostenida sera multiplicada por este valor para otorgar al usuario mas (> 1.0) rendimiento que el suscrito.',
     'additional_modem_reset'		=> 'Compruebe si debe mostrarse un botón adicional, que reinicie el módem a través de SNMP sin consultar el CMTS.',
+    'openning_new_tab_for_modem' => 'Check the box to open the modem edit page in new tab in topography view.',
     //ModemController
     'Modem_InternetAccess'			=> 'Acceso a Internet para los CPEs (los MTAs no se consideran y siempre se conectarán cuando todas las demás configuraciones sean correctas). Tenga cuidado: Con el Módulo de facturación esta casilla se sobrescribirá por chequeo diario si cambia la tarifa.',
     'Modem_InstallationAddressChangeDate'	=> 'En caso de (fisico) reubicacion del modem: Agregar fecha de inicio para la nueva direccion ahi. Si es solo lectura, hay una orden de cambio de direccion pendiente en Envia.',
