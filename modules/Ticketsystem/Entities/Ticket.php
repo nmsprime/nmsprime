@@ -279,20 +279,15 @@ class Ticket extends \BaseModel
     }
 
     /**
-     * Return collection of users.
+     * Find all valid Users of a Ticket
      *
      * @author Roy Schneider
      * @param array $ticketUsers
-     * @return collection $users
+     * @return Illuminate\Database\Eloquent\Collection
      */
     public function getTicketUsers($ticketUsers)
     {
-        foreach ($ticketUsers as $id) {
-            $users[] = \DB::table('users')->where('id', $id)->first();
-            $users = collect($users);
-        }
-
-        return $users ?? collect($ticketUsers);
+        return User::find($ticketUsers);
     }
 
     /**
