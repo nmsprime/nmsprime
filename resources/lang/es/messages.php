@@ -593,6 +593,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'setManually'               => ':file de :name debe ser configurado manualmente.',
     'invalidJson'               => '¡El archivo seleccionado no tiene el formato correcto o no es un JSON!',
     'proximity'                 => 'Busqueda por proximidad',
+    'all'                       => 'All',
     'dashboard'                 => [
         'log' =>[
             'created'       => 'creado',
