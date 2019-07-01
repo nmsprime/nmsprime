@@ -4,6 +4,8 @@ namespace Modules\BillingBase\Entities;
 
 use Storage;
 use ChannelLog;
+use Modules\BillingBase\Providers\Currency;
+use Modules\BillingBase\Providers\SettlementRunData;
 
 /**
  * Contains Functions to collect Data for Invoice & create the corresponding PDFs
@@ -17,7 +19,6 @@ class Invoice extends \BaseModel
     public $table = 'invoice';
     public $observer_enabled = false;
 
-    private $currency;
     private $tax;
 
     protected $sepaaccount_id;
@@ -71,6 +72,13 @@ class Invoice extends \BaseModel
         return $this->belongsTo('Modules\BillingBase\Entities\SettlementRun');
     }
 
+    public function debts()
+    {
+        if (\Module::collections()->has('Dunning')) {
+            return $this->hasMany('Modules\Dunning\Entities\Debt');
+        }
+    }
+
     /**
      * Init Observer
      */
@@ -92,7 +100,7 @@ class Invoice extends \BaseModel
     /**
      * @var string - invoice directory path relativ to Storage app path and temporary filename variables
      */
-    public $rel_storage_invoice_dir = 'data/billingbase/invoice/';
+    public static $rel_storage_invoice_dir = 'data/billingbase/invoice/';
 
     // temporary variables for settlement run without .pdf extension
     private $filename_invoice = '';
@@ -161,7 +169,7 @@ class Invoice extends \BaseModel
         'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate as table with sepa mandate info
         'invoice_msg' 			=> '', 			// invoice text without sepa mandate information
         'invoice_headline'		=> '',
-        'rcd' 					=> '',			// Fälligkeitsdatum
+        'rcd' 					=> '',			// Fälligkeitsdatum / Buchungsdatum
         'cdr_month'				=> '', 			// Month of Call Data Records
 
         // Charges
@@ -188,7 +196,19 @@ class Invoice extends \BaseModel
 
     public function get_invoice_dir_path()
     {
-        return storage_path('app/'.$this->rel_storage_invoice_dir.$this->contract_id.'/');
+        return storage_path('app/'.self::$rel_storage_invoice_dir.$this->contract_id.'/');
+    }
+
+    /**
+     * Get absolute filepath for invoice from json object
+     *  Has better performance when invoice object must not be instantiated
+     *
+     * @param  json obj
+     * @return string
+     */
+    public static function getFilePathFromData(&$invoice)
+    {
+        return storage_path('app/'.self::$rel_storage_invoice_dir.$invoice->contract_id.'/'.$invoice->filename);
     }
 
     /**
@@ -237,7 +257,7 @@ class Invoice extends \BaseModel
         }
     }
 
-    public function add_contract_data($contract, $config, $invoice_nr)
+    public function add_contract_data($contract, $invoice_nr)
     {
         $this->data['contract_id'] = $contract->id;
         $this->contract_id = $contract->id;
@@ -250,15 +270,10 @@ class Invoice extends \BaseModel
         $this->data['contract_city'] = escape_latex_special_chars($contract->city);
         $this->data['contract_address'] = ($contract->company ? $this->data['contract_company'].'\\\\' : '').($contract->academic_degree ? escape_latex_special_chars($contract->academic_degree).' ' : '').$this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\'.$this->data['contract_street']."\\\\$contract->zip ".$this->data['contract_city'];
         $this->data['start_of_term'] = self::langDateFormat($contract->contract_start);
-
-        $this->data['rcd'] = $config->rcd ? date($config->rcd.'.m.Y') : date('d.m.Y', strtotime('+5 days'));
         $this->data['invoice_nr'] = $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
         $this->data['date_invoice'] = date('d.m.Y', strtotime('last day of last month'));
         $this->filename_invoice = $this->filename_invoice ?: self::_get_invoice_filename_date_part().'_'.str_replace('/', '_', $invoice_nr);
-
-        // Note: Add other currencies here
-        $this->currency = strtolower($config->currency) == 'eur' ? '€' : $config->currency;
-        $this->tax = $config->tax;
+        $this->tax = SettlementRunData::getConf('tax');
 
         $this->setCancelationDates($contract);
     }
@@ -331,7 +346,7 @@ class Invoice extends \BaseModel
         $price = \App::getLocale() == 'de' ? number_format($price, 2, ',', '.') : number_format($price, 2);
         $sum = \App::getLocale() == 'de' ? number_format($item->charge, 2, ',', '.') : number_format($item->charge, 2);
 
-        $this->data['item_table_positions'] .= $item->count.' & '.escape_latex_special_chars($item->invoice_description).' & '.$price.$this->currency.' & '.$sum.$this->currency.'\\\\';
+        $this->data['item_table_positions'] .= $item->count.' & '.escape_latex_special_chars($item->invoice_description).' & '.$price.Currency::get().' & '.$sum.Currency::get().'\\\\';
     }
 
     public function set_mandate($mandate)
@@ -340,7 +355,7 @@ class Invoice extends \BaseModel
             return;
         }
 
-        $this->data['contract_mandate_iban'] = $mandate->sepa_iban;
+        $this->data['contract_mandate_iban'] = $mandate->iban;
         $this->data['contract_mandate_ref'] = $mandate->reference;
     }
 
@@ -356,7 +371,7 @@ class Invoice extends \BaseModel
      */
     public function set_company_data($account)
     {
-        $this->data = array_merge($this->data, \Modules\BillingBase\Providers\CompanyData::get($account->id));
+        $this->data = array_merge($this->data, SettlementRunData::getCompanyData($account->id));
 
         $this->template_invoice_fname = $account->template_invoice;
         $this->template_cdr_fname = $account->template_cdr;
@@ -383,9 +398,9 @@ class Invoice extends \BaseModel
         $this->data['table_sum_tax_formatted'] = \App::getLocale() == 'de' ? number_format($tax, 2, ',', '.') : number_format($tax, 2);
         $this->data['table_sum_charge_total_formatted'] = \App::getLocale() == 'de' ? number_format($total, 2, ',', '.') : number_format($total, 2);
 
-        $this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.$this->data['table_sum_charge_net_formatted'].$this->currency.'\\\\';
-        $this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$this->data['table_sum_tax_formatted'].$this->currency.'\\\\';
-        $this->data['table_summary'] .= '~ & \textbf{Rechnungsbetrag:} & ~ & \textbf{'.$this->data['table_sum_charge_total_formatted'].$this->currency.'}\\\\';
+        $this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.$this->data['table_sum_charge_net_formatted'].Currency::get().'\\\\';
+        $this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$this->data['table_sum_tax_formatted'].Currency::get().'\\\\';
+        $this->data['table_summary'] .= '~ & \textbf{Rechnungsbetrag:} & ~ & \textbf{'.$this->data['table_sum_charge_total_formatted'].Currency::get().'}\\\\';
 
         // make transfer reason (Verwendungszweck)
         if ($transfer_reason = $account->company->transfer_reason) {
@@ -429,15 +444,21 @@ class Invoice extends \BaseModel
         $this->data['invoice_text'] = '\begin{tabular} {@{}ll} \multicolumn{2}{@{}L{\textwidth}} {'.$template.'}\\\\'.$text.' \end{tabular}';
     }
 
+    public function setRcd($rcd)
+    {
+        $this->data['rcd'] = $rcd;
+    }
+
     /**
      * @param 	cdrs 	Array		Call Data Record array designated for this Invoice formatted by parse_cdr_data in SettlementRunCommand
      * @param   conf   	model 		BillingBase
      */
-    public function add_cdr_data($cdrs, $conf)
+    public function add_cdr_data($cdrs)
     {
         $this->has_cdr = 1;
+        $offset = SettlementRunData::getConf('cdr_offset');
         // $this->time_cdr = $time_cdr = strtotime($cdrs[0][1]);
-        $this->time_cdr = $time_cdr = $conf->cdr_offset ? strtotime('-'.($conf->cdr_offset + 1).' month') : strtotime('first day of last month');
+        $this->time_cdr = $time_cdr = $offset ? strtotime('-'.($offset + 1).' month') : strtotime('first day of last month');
         $this->data['cdr_month'] = date('m/Y', $time_cdr);
 
         // TODO: customer can request to show his tel nrs cut by the 3 last nrs (TKG §99 (1))
@@ -460,7 +481,7 @@ class Invoice extends \BaseModel
         $sum = \App::getLocale() == 'de' ? number_format($sum, 2, ',', '.') : number_format($sum, 2);
         $this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'.$sum.'}\\\\';
         $plural = $count > 1 ? 'en' : '';
-        $this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural.' & '.$sum.$this->currency.' & '.$sum.$this->currency.'\\\\';
+        $this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural.' & '.$sum.Currency::get().' & '.$sum.Currency::get().'\\\\';
 
         $this->filename_cdr = date('Y_m', $time_cdr).'_cdr';
     }
@@ -518,7 +539,9 @@ class Invoice extends \BaseModel
             'charge' 		=> $type ? $this->data['table_sum_charge_net'] : $this->data['cdr_charge'],
         ];
 
-        self::create($data);
+        $ret = self::create($data);
+
+        $this->id = $ret->id;
     }
 
     /**
@@ -544,10 +567,10 @@ class Invoice extends \BaseModel
         // Replace placeholder by value
         $template = $this->_replace_placeholder($template);
 
-        // ChannelLog::debug('billing', 'Store '. $this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"});
+        // ChannelLog::debug('billing', 'Store '. self::$rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"});
 
         // Create tex file(s)
-        Storage::put($this->rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"}, $template);
+        Storage::put(self::$rel_storage_invoice_dir.$this->data['contract_id'].'/'.$this->{"filename_$type"}, $template);
     }
 
     private function _replace_placeholder($template)
@@ -574,7 +597,7 @@ class Invoice extends \BaseModel
         foreach ($file_paths as $key => $file) {
             if (is_file($file)) {
                 pdflatex($dir_path, $file, true);
-                ChannelLog::debug('billing', "Created $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
+                ChannelLog::debug('billing', "New $key for Contract ".$this->data['contract_nr'], [$this->data['contract_id'], $file.'.pdf']);
             }
         }
     }
@@ -587,14 +610,16 @@ class Invoice extends \BaseModel
      */
     public static function remove_templatex_files($sepaacc = null)
     {
-        $invoices = self::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
+        $invoices = \DB::table('invoice')->whereBetween('created_at', [date('Y-m-01'), date('Y-m-01', strtotime('next month'))]);
+        // $invoices = self::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
         if ($sepaacc) {
             $invoices = $invoices->where('sepaaccount_id', '=', $sepaacc->id);
         }
-        $invoices = $invoices->get();
 
+        $invoices = $invoices->get();
         foreach ($invoices as $invoice) {
-            $fn = $invoice->get_invoice_dir_path().$invoice->filename;
+            // $fn = $invoice->get_invoice_dir_path().$invoice->filename;
+            $fn = self::getFilePathFromData($invoice);
 
             if (is_file($fn)) {
                 $fn = str_replace('.pdf', '', $fn);
@@ -606,35 +631,6 @@ class Invoice extends \BaseModel
                 ChannelLog::error('billing', 'pdflatex: Error creating Invoice PDF '.$fn);
             }
         }
-    }
-
-    /**
-     * Deletes currently created invoices (created in actual month)
-     * Used to delete invoices created by previous settlement run (SR) in current month - executed in SettlementRunCommand
-     * is used to remove files before settlement run is repeatedly created (SettlementRunCommand executed again)
-     * NOTE: Use Carefully!!
-     *
-     * @param int 	Delete only invoices related to specific SepaAccount, 0 - delete all invoices of current SR
-     */
-    public static function delete_current_invoices($sepaaccount_id = 0)
-    {
-        $query = self::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
-        if ($sepaaccount_id) {
-            $query = $query->where('sepaaccount_id', '=', $sepaaccount_id);
-        }
-
-        $invoices = $query->get();
-
-        // Delete PDFs
-        foreach ($invoices as $invoice) {
-            $filepath = $invoice->get_invoice_dir_path().$invoice->filename;
-            if (is_file($filepath)) {
-                unlink($filepath);
-            }
-        }
-
-        // Delete DB Entries - Note: keep this order
-        $query->forceDelete();
     }
 
     /**
@@ -672,12 +668,12 @@ class Invoice extends \BaseModel
         // Delete all CDR CSVs older than $period months
         \App::setLocale($conf->userlang);
 
-        $path = storage_path('app/data/billingbase/accounting/').$target_time_o->format('Y-m').'/';
-        $target_time_o->subMonthNoOverflow($offset);
-        $fn = \App\Http\Controllers\BaseViewController::translate_label('Call Data Record').'_'.$target_time_o->format('Y_m').'.csv';
+        $cdrFiles = CdrGetter::get_cdr_pathnames($target_time_o->subMonthNoOverflow()->__get('timestamp'));
 
-        if (is_file($path.$fn)) {
-            unlink($path.$fn);
+        foreach ($cdrFiles as $f) {
+            if (is_file($f)) {
+                unlink($f);
+            }
         }
     }
 }
