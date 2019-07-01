@@ -136,6 +136,12 @@ class EnviaCdr extends CdrGetter
                 'price'     => str_replace(',', '.', $arr[10]),
                 ];
 
+            // extend $data for other providers
+            // attention: envia sends latin-1 – we have to convert to UTF-8…
+            if ($arr[11] != '016-envia TEL') {
+                $data['called_nr'] = ['enviaCDR', $arr[11], $arr[7], $arr[8], $arr[9]];
+            }
+
             if (in_array($customer_nr, $customer_nrs)) {
                 $calls[$customer_nr][] = $data;
 
