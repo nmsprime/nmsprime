@@ -39,6 +39,7 @@ class EnviaContract extends \BaseModel
                 'bsclass' => $bsclass,
                 'edit' => ['envia_contract_reference' => 'get_envia_contract_reference', 'state' => 'get_state', 'start_date' => 'get_start_date', 'end_date' => 'get_end_date', 'contract.number' => 'get_contract_nr', 'modem.id' => 'get_modem_id'],
                 'header' => $envia_contract_reference,
+                'raw_columns' => ['contract.number', 'modem.id'],
         ];
     }
 
