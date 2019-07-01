@@ -27,19 +27,22 @@ return [
     'ISO_3166_ALPHA-2'				=> 'ISO 3166 ALPHA-2 (dos caracteres, p.e. “US”). Usado en formularios de direccion para especificar el pais.',
     'PasswordReset'           => 'Esta propiedad define el intervalo de tiempo en días en los que los usuarios del panel de administración deben cambiar sus contraseñas. Si desea inhabilitar el mensaje de restablecimiento de contraseña, establezca el valor en 0.',
 
- /*
-  *	MODULE: BillingBase
-  */
+    /*
+     *	MODULE: BillingBase
+     */
     //BillingBaseController
-    'BillingBase_cdr_offset' 		=> "ADVERTENCIA: incrementar esto mientras se tiene datos de Acuerdos ocasiona sobrescribir CDRs la siguiente ejecucion - Este seguro de guardar/renombrar el historial!\n\nEjemplo: Asignar a 1 si los Registros de Datos de Llamada de Junio, pertenecen a las Facturas de Julio, 0 si este es del mismo mes, 2 si RDLs de Enero pertenecen a las Facturas de Marzo.",
-    'BillingBase_cdr_retention' 	=> 'Meses que Registros de Datos de Llamada Months that Call Data Records may/have to be kept save',
-    'BillingBase_extra_charge' 		=> 'Beneficio adicional al precio de compra. Solo cuando no es calculado mediante el proveedor!',
-    'BillingBase_fluid_dates' 		=> 'Marque esta casilla si quiere aniadir tarifas con fechas de inicio y/o plazo dudosas. Si se marcaron dos nuevos casilleros (Valido desde, Valido hasta) aparecera en la pagina editar/crear Articulo. Revise sus mensajes de ayuda para explicaciones adicionales!',
-    'BillingBase_InvoiceNrStart' 	=> 'Contador de Cifras de Factura empieza cada nuevo anio con esta cifra',
-    'BillingBase_ItemTermination'	=> 'Permitir a los Clientes solo cancelar productos reservados el ultimo dia del mes',
-    'BillingBase_MandateRef'		=> "Un Formulario puede ser construido con columnas SQL de las tablas contrato/mandato - posibles campos: \n",
-    'BillingBase_showAGs' 			=> 'Adiciona una lista seleccionada con personas contactadas a la pagina de contrato. La lista tiene que ser almacenada en un directorio Alamacenamiento apropiado - revise el codigo fuente!',
-    'BillingBase_SplitSEPA'			=> 'Las transferencias de Sepa se dividen en diferentes archivos XML dependiendo de su tipo de transferencia',
+    'BillingBase' => [
+        'cdr_offset'        => "TAKE CARE: incrementing this when having data from settlement runs leads to overwritten CDRs during next run - make sure to save/rename the history!\n\nExample: Set to 1 if Call Data Records from June belong to Invoices of July, Zero if it's the same month, 2 if CDRs of January belong to Invoices of March.",
+        'cdr_retention'     => 'Months that Call Data Records may/have to be kept save',
+        'extra_charge'      => 'Additional mark-on to purchase price. Only when not calculated through provider!',
+        'fluid_dates'       => 'Check this box if you want to add tariffs with uncertain start and/or end date. If checked two new checkboxes (Valid from fixed, Valid to fixed) will appear on Item\'s edit/create page. Check out their help messages for further explanation!',
+        'InvoiceNrStart'    => 'Invoice Number Counter starts every new year with this number',
+        'ItemTermination'   => 'Allow Customers only to terminate booked products on last day of month',
+        'MandateRef'        => "A Template can be built with sql columns of contract or mandate table - possible fields: \n",
+        'rcd'               => 'Is also the date of value. Can also be set specifically for a contract on contract page',
+        'showAGs'           => 'Adds a select list with contact persons to the contract page. The list has to be stored in appropriate Storage directory - check source code!',
+        'SplitSEPA'         => 'Sepa Transfers are split to different XML-Files dependent of their transfer type',
+        ],
 
     //CompanyController
     'Company_Management'			=> 'Lista de nombres separada por comas',
@@ -126,6 +129,9 @@ return [
  /*
   *	MODULE: ProvBase
   */
+    'contract' => [
+        'valueDate' => 'Day of month for specific date of value. Overrides the requested collection date from global config for this contract in the SEPA XML.',
+    ],
     'rate_coefficient'				=> 'La Maxima Tarifa Sostenida sera multiplicada por este valor para otorgar al usuario mas (> 1.0) rendimiento que el suscrito.',
     'additional_modem_reset'		=> 'Compruebe si debe mostrarse un botón adicional, que reinicie el módem a través de SNMP sin consultar el CMTS.',
     //ModemController
