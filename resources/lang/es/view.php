@@ -33,6 +33,8 @@ return [
                 'jQuery_ImportCsv'              => 'importar CSV',
 //MENU
     //Main Menu
+        'Menu_Debt'                 => 'Debts',
+        'Menu_Dunning'              => 'Dunning',
         'Menu_MainMenu' 			=> 'Menú Principal',
         'Menu_Config Page'			=> 'Configuración global',
         'Menu_BillingBase'			=> 'Base de facturación',
@@ -219,6 +221,9 @@ return [
         'Header_EnviaOrders'		=> 'envia TEL orden|envia TEL ordenes',
         'Header_EnviaContracts'		=> 'envia TEL contrato|envia TEL contratos',
 
+        'Header_Debt'               => 'Debt history',
+        'Header_DebtResult'         => 'Outstanding payments total',
+
     //Header Relation
         // 'Assigned'  				=> 'Zugewiesene',
     //Header Controler index
@@ -371,4 +376,14 @@ return [
 // Error
     'error_specify_id'          => 'Por favor especifique el nombre de host en lugar de la dirección ip.',
     'error_ticket_settings'     => 'Por favor introduzca el nombre y dirección correo de auto respuesta en la página de configuración global.',
+
+    'bankTransfer' => 'Bank transfers',
+    'Credit' => 'Credit',
+    'Debit' => 'Debit',
+    'Discard' => 'Discard',
+    'Level' => 'Level',
+    'Message' => 'Message',
+    'SettlementRun' => 'SettlementRun',
+    'Time' => 'Time',
+    'Type' => 'Type',
 ];
