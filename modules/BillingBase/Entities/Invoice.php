@@ -156,7 +156,10 @@ class Invoice extends \BaseModel
         'contract_firstname' 	=> '',
         'contract_lastname' 	=> '',
         'contract_company' 		=> '',
+        'contract_department'	=> '',
+        'contract_district'		=> '',
         'contract_street' 		=> '',
+        'contract_housenumber'	=> '',
         'contract_zip' 			=> '',
         'contract_city' 		=> '',
         'contract_address' 		=> '', 			// concatenated address for begin of letter
@@ -171,6 +174,7 @@ class Invoice extends \BaseModel
         'invoice_headline'		=> '',
         'rcd' 					=> '',			// Fälligkeitsdatum / Buchungsdatum
         'cdr_month'				=> '', 			// Month of Call Data Records
+        'payment_method'        => '',          // for conditional texts in PDF [directdebit|banktransfer|none]
 
         // Charges
         'item_table_positions'  => '', 			// tex table of all items to be charged for this invoice
@@ -265,10 +269,24 @@ class Invoice extends \BaseModel
         $this->data['contract_firstname'] = escape_latex_special_chars($contract->firstname);
         $this->data['contract_lastname'] = escape_latex_special_chars($contract->lastname);
         $this->data['contract_company'] = escape_latex_special_chars($contract->company);
-        $this->data['contract_street'] = escape_latex_special_chars($contract->street.' '.$contract->house_number);
+        $this->data['contract_department'] = escape_latex_special_chars($contract->department);
+        $this->data['contract_street'] = escape_latex_special_chars($contract->street);
+        $this->data['contract_housenumber'] = $contract->house_number;
         $this->data['contract_zip'] = $contract->zip;
         $this->data['contract_city'] = escape_latex_special_chars($contract->city);
-        $this->data['contract_address'] = ($contract->company ? $this->data['contract_company'].'\\\\' : '').($contract->academic_degree ? escape_latex_special_chars($contract->academic_degree).' ' : '').$this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\'.$this->data['contract_street']."\\\\$contract->zip ".$this->data['contract_city'];
+        $this->data['contract_district'] = escape_latex_special_chars($contract->district);
+        $this->data['contract_address'] = '';
+        if ($contract->company) {
+            $this->data['contract_address'] .= escape_latex_special_chars($contract->company).'\\\\';
+            if ($contract->department) {
+                $this->data['contract_address'] .= escape_latex_special_chars($contract->department).'\\\\';
+            }
+        }
+        $this->data['contract_address'] .= ($contract->academic_degree ? "$contract->academic_degree " : '').
+            (($this->data['contract_firstname'] || $this->data['contract_lastname']) ? ($this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\') : '');
+        $this->data['contract_address'] .= $this->data['contract_district'] ? $this->data['contract_district'].'\\\\' : '';
+        $this->data['contract_address'] .= $this->data['contract_street'].' '.$this->data['contract_housenumber']."\\\\$contract->zip ".$this->data['contract_city'];
+        $this->data['contract_address'] = trim($this->data['contract_address']);
         $this->data['start_of_term'] = self::langDateFormat($contract->contract_start);
         $this->data['invoice_nr'] = $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
         $this->data['date_invoice'] = date('d.m.Y', strtotime('last day of last month'));
@@ -419,15 +437,19 @@ class Invoice extends \BaseModel
             $template = $account->invoice_text_sepa;
             // $text = 'IBAN:\>'.$this->data['contract_mandate_iban'].'\\\\Mandatsreferenz:\>'.$this->data['contract_mandate_ref'].'\\\\Gläubiger-ID:\>'.$this->data['company_creditor_id'];
             $text = 'IBAN: &'.$this->data['contract_mandate_iban'].'\\\\Mandatsreferenz: &'.$this->data['contract_mandate_ref'].'\\\\Gläubiger-ID: &'.$this->data['company_creditor_id'];
+            $this->data['payment_method'] = 'directdebit';
         } elseif ($net < 0 && $this->data['contract_mandate_iban']) {
             $template = $account->invoice_text_sepa_negativ;
             $text = 'IBAN: &'.$this->data['contract_mandate_iban'].'\\\\Mandatsreferenz: &'.$this->data['contract_mandate_ref'];
+            $this->data['payment_method'] = 'none';
         } elseif ($net >= 0 && ! $this->data['contract_mandate_iban']) {
             $template = $account->invoice_text;
             $text = 'IBAN: &'.$this->data['company_account_iban'].'\\\\BIC: &'.$this->data['company_account_bic'].'\\\\Verwendungszweck: &'.$transfer_reason;
+            $this->data['payment_method'] = 'banktransfer';
         } elseif ($net < 0 && ! $this->data['contract_mandate_iban']) {
             $template = $account->invoice_text_negativ;
             $text = '';
+            $this->data['payment_method'] = 'none';
         }
 
         // replace placeholder of invoice text
@@ -467,7 +489,21 @@ class Invoice extends \BaseModel
         $sum = $count = 0;
         foreach ($cdrs as $entry) {
             $line = date('d.m.Y', strtotime($entry['date'])).' '.$entry['starttime'].' & '.$entry['duration'];
-            $line .= ' & '.$entry['calling_nr'].' & '.$entry['called_nr'];
+            if (is_string($entry['called_nr'])) {
+                $called_number = $entry['called_nr'];
+            } elseif (is_array($entry['called_nr'])) {
+                if ($entry['called_nr'][0] == 'enviaCDR') {
+                    $_ = $entry['called_nr'];
+                    $called_number = iconv('CP1252', 'UTF-8', '\\emph{anderer Anbieter:}\\newline- \textbf{'.$_[1].'}\\newline- '.$_[2].'\\newline- '.$_[3].'\\newline- '.$_[4]);
+                } else {
+                    // throw Exception instead of just logging the problem: logic error in code creating the CDR data
+                    throw new \UnexpectedValueException('Invalid first value in array provided for CDR called number: '.$entry['called_nr'][0]);
+                }
+            } else {
+                // throw Exception instead of just logging the problem: logic error in code creating the CDR data
+                throw new \TypeError('Expected string or array, '.gettype($entry['called_nr']).' given');
+            }
+            $line .= ' & '.$entry['calling_nr'].' & '.$called_number;
             // $line .= ' & '.sprintf("%01.4f", $entry['price']).'\\\\';
             $line .= ' & '.(\App::getLocale() == 'de' ? number_format($entry['price'], 4, ',', '.') : number_format($entry['price'], 4)).'\\\\';
 

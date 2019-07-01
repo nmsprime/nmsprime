@@ -524,7 +524,7 @@ class SettlementRun extends \BaseModel
 
             if (! $accs) {
                 ChannelLog::error('billing', 'There are no Sepa Accounts to create Billing Files for - Stopping here!');
-                throw new Exception('There are no Sepa Accounts to create Billing Files for');
+                throw new \Exception('There are no Sepa Accounts to create Billing Files for');
             }
 
             ChannelLog::debug('billing', 'Execute settlementrun for all SepaAccounts');
