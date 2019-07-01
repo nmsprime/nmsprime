@@ -63,7 +63,10 @@ class Company extends \BaseModel
 
     public function view_has_many()
     {
-        return ['SepaAccount' => $this->accounts];
+        $ret['Edit']['SepaAccount']['class'] = 'SepaAccount';
+        $ret['Edit']['SepaAccount']['relation'] = $this->accounts;
+
+        return $ret;
     }
 
     /**

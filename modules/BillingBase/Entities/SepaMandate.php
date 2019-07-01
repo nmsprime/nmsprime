@@ -14,12 +14,12 @@ class SepaMandate extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'reference' 		=> 'required',
-            'sepa_iban' 		=> 'required|iban',
-            'sepa_bic' 			=> 'bic|regex:/^[A-Z]{6}[A-Z2-9][A-NP-Z0-9]([A-Z0-9]{3}){0,3}$/',			// see SepaMandateController@prep_rules, Sparkasse/S-Firm regex from error message of sepa-xml upload
-            'signature_date' 	=> 'date|required',
-            'sepa_valid_from' 	=> 'date|required',
-            'sepa_valid_to'		=> 'dateornull',
+            'reference' 	=> 'required',
+            'iban'          => 'required|iban',
+            'bic' 			=> 'bic|regex:/^[A-Z]{6}[A-Z2-9][A-NP-Z0-9]([A-Z0-9]{3}){0,3}$/',			// see SepaMandateController@prep_rules, Sparkasse/S-Firm regex from error message of sepa-xml upload
+            'signature_date' => 'date|required',
+            'valid_from' 	=> 'date|required',
+            'valid_to'		=> 'dateornull',
         ];
     }
 
@@ -43,13 +43,13 @@ class SepaMandate extends \BaseModel
     public function view_index_label()
     {
         $bsclass = $this->get_bsclass();
-        $valid_to = $this->sepa_valid_to ? ' - '.$this->sepa_valid_to : '';
+        $valid_to = $this->valid_to ? ' - '.$this->valid_to : '';
 
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.sepa_holder', $this->table.'.sepa_valid_from', $this->table.'.sepa_valid_to', $this->table.'.reference'],
+                'index_header' => [$this->table.'.holder', $this->table.'.valid_from', $this->table.'.valid_to', $this->table.'.reference'],
                 'bsclass' => $bsclass,
                 'order_by' => ['0' => 'asc'],
-                'header' =>  "$this->reference - $this->sepa_iban - $this->sepa_valid_from $valid_to",
+                'header' =>  "$this->reference - $this->iban - $this->valid_from $valid_to",
             ];
     }
 
@@ -131,25 +131,25 @@ class SepaMandate extends \BaseModel
     }
 
     /**
-     * Returns start time of item - Note: sepa_valid_from field has higher priority than created_at
+     * Returns start time of item - Note: valid_from field has higher priority than created_at
      *
      * @return int 		time in seconds after 1970
      */
     public function get_start_time()
     {
-        $date = $this->sepa_valid_from && $this->sepa_valid_from != '0000-00-00' ? $this->sepa_valid_from : $this->created_at->toDateString();
+        $date = $this->valid_from && $this->valid_from != '0000-00-00' ? $this->valid_from : $this->created_at->toDateString();
 
         return strtotime($date);
     }
 
     /**
-     * Returns start time of item - Note: sepa_valid_from field has higher priority than created_at
+     * Returns start time of item - Note: valid_from field has higher priority than created_at
      *
      * @return int 		time in seconds after 1970
      */
     public function get_end_time()
     {
-        return $this->sepa_valid_to && $this->sepa_valid_to != '0000-00-00' ? strtotime($this->sepa_valid_to) : null;
+        return $this->valid_to && $this->valid_to != '0000-00-00' ? strtotime($this->valid_to) : null;
     }
 }
 

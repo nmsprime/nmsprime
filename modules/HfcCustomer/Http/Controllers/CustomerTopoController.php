@@ -5,6 +5,7 @@ namespace Modules\HfcCustomer\Http\Controllers;
 use Modules\ProvBase\Entities\Modem;
 use Modules\HfcCustomer\Entities\Mpr;
 use Modules\HfcReq\Entities\NetElement;
+use Modules\ProvBase\Entities\ProvBase;
 use App\Http\Controllers\BaseViewController;
 use Modules\HfcReq\Http\Controllers\NetElementController;
 
@@ -455,6 +456,9 @@ class CustomerTopoController extends NetElementController
                 $descr .= "<b>$zip, $city, $str, $nr</b><br>";
             }
 
+            if (ProvBase::first()->modem_edit_page_new_tab) {
+                $this->html_target = '_blank';
+            }
             // add descr line
             $descr .= '<a target="'.$this->html_target."\" href='".\BaseRoute::get_base_url()."/Modem/$mid'>$mac</a>, $contractid, $lastname, $states[$cur_clr] ($row_val)<br>";
             $num += 1;

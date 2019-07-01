@@ -29,7 +29,7 @@
         @endif
 
         <!-- button  to create invoices PDF for postal delivery -->
-        @if ($button['postal'] && ! \Session::get('job_id'))
+        @if ($button['postal'])
             <div class="col-md-12 text-center m-b-20">
                 <div class="row">
                     <div class="col-md-1"></div>
