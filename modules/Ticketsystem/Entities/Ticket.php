@@ -303,13 +303,13 @@ class Ticket extends \BaseModel
      */
     public function validGlobalSettings()
     {
-        $all = \App\GlobalConfig::first();
+        $config = \App\GlobalConfig::first();
 
-        if (! isset($all->noReplyName) || ! isset($all->noReplyMail)) {
+        if (empty($config->noReplyName) || empty($config->noReplyMail)) {
             abort('422', trans('view.error_ticket_settings'));
         }
 
-        return ['noReplyName' => $all->noReplyName, 'noReplyMail' => $all->noReplyMail];
+        return ['noReplyName' => $config->noReplyName, 'noReplyMail' => $config->noReplyMail];
     }
 }
 
