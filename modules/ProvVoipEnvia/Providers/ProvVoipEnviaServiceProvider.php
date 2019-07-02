@@ -90,7 +90,12 @@ class ProvVoipEnviaServiceProvider extends ServiceProvider
      */
     public function registerTranslations()
     {
-        $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'provvoipenvia');
+        $langPath = base_path('resources/lang/modules/provvoipenvia');
+        if (is_dir($langPath)) {
+            $this->loadTranslationsFrom($langPath, 'provvoipenvia');
+        } else {
+            $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'provvoipenvia');
+        }
     }
 
     /**
