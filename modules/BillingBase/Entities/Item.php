@@ -147,7 +147,7 @@ class Item extends \BaseModel
     {
         if ($this->product) {
             $price = floatval($this->credit_amount) ?: $this->product->price;
-            $price = ' | '.round($price, 4).'€';
+            $price = ' | '.round($price, 4).\Modules\BillingBase\Providers\Currency::get();
 
             return $price;
         }
@@ -284,10 +284,11 @@ class Item extends \BaseModel
      * @return 	null if no costs incurred, true otherwise - NOTE: Amount to Charge is currently stored in Item Models temp variable ($charge)
      * @author 	Nino Ryschawy
      */
-    public function calculate_price_and_span($dates, $return_array = false, $update = true)
+    public function calculate_price_and_span($return_array = false, $update = true)
     {
         $ratio = 0;
         $text = '';			// dates of invoice text
+        $dates = \Modules\BillingBase\Providers\SettlementRunData::getDate();
 
         $billing_cycle = strtolower($this->get_billing_cycle());
 

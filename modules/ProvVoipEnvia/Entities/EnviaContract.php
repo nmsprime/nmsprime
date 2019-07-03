@@ -46,6 +46,7 @@ class EnviaContract extends \BaseModel
                     'contract.id' => $this->get_contract_filtercolumn_query(),
                     'modem.id' => $this->get_modem_filtercolumn_query(),
                 ],
+                'raw_columns' => ['contract.id', 'modem.id'],
         ];
     }
 
