@@ -690,12 +690,12 @@ class ItemObserver
             $purchase_tariff = $item->contract->purchase_tariff;
             $next_purchase_tariff = $item->contract->next_purchase_tariff;
             if ($purchase_tariff && $next_purchase_tariff && ($purchase_tariff != $next_purchase_tariff)) {
-                \Session::push('tmp_warning_above_form', trans('provvoipenvia::messages.item_change_variation'));
+                \Session::push('tmp_warning_above_form', trans('provvoipenvia::messages.itemChangeVariation'));
             }
             $voip_id = $item->contract->voip_id;
             $next_voip_id = $item->contract->next_voip_id;
             if ($voip_id && $next_voip_id && ($voip_id != $next_voip_id)) {
-                \Session::push('tmp_warning_above_form', trans('provvoipenvia::messages.item_change_tariff'));
+                \Session::push('tmp_warning_above_form', trans('provvoipenvia::messages.itemChangeTariff'));
             }
         }
 

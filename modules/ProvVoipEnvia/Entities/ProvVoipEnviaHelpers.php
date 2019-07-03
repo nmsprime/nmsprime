@@ -72,12 +72,12 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            trans('provvoipenvia::messages.order_number'),
-            trans('provvoipenvia::messages.order_address'),
-            trans('provvoipenvia::messages.order_contract_start'),
-            trans('provvoipenvia::messages.order_contract_end'),
-            trans('provvoipenvia::messages.order_has_internet'),
-            trans('provvoipenvia::messages.order_has_telephony'),
+            trans('provvoipenvia::view.enviaOrder.number'),
+            trans('provvoipenvia::view.enviaOrder.address'),
+            trans('provvoipenvia::view.enviaOrder.contractStart'),
+            trans('provvoipenvia::view.enviaOrder.contractEnd'),
+            trans('provvoipenvia::view.enviaOrder.hasInternet'),
+            trans('provvoipenvia::view.enviaOrder.hasTelephony'),
         ];
         array_push($data, $head);
 
@@ -121,12 +121,12 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            trans('provvoipenvia::messages.order_product'),
-            trans('provvoipenvia::messages.order_type'),
-            trans('provvoipenvia::messages.order_valid_from'),
-            trans('provvoipenvia::messages.order_fix'),
-            trans('provvoipenvia::messages.order_valid_to'),
-            trans('provvoipenvia::messages.order_fix'),
+            trans('provvoipenvia::view.enviaOrder.product'),
+            trans('provvoipenvia::view.enviaOrder.type'),
+            trans('provvoipenvia::view.enviaOrder.validFrom'),
+            trans('provvoipenvia::view.enviaOrder.fix'),
+            trans('provvoipenvia::view.enviaOrder.validTo'),
+            trans('provvoipenvia::view.enviaOrder.fix'),
         ];
         array_push($data, $head);
 
@@ -174,12 +174,12 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            trans('provvoipenvia::messages.order_mac_address'),
-            trans('provvoipenvia::messages.order_hostname'),
-            trans('provvoipenvia::messages.order_installation_address'),
-            trans('provvoipenvia::messages.order_configfile'),
-            trans('provvoipenvia::messages.order_qos'),
-            trans('provvoipenvia::messages.order_has_internet'),
+            trans('provvoipenvia::view.enviaOrder.macAddress'),
+            trans('provvoipenvia::view.enviaOrder.hostname'),
+            trans('provvoipenvia::view.enviaOrder.installationAddress'),
+            trans('provvoipenvia::view.enviaOrder.configfile'),
+            trans('provvoipenvia::view.enviaOrder.qos'),
+            trans('provvoipenvia::view.enviaOrder.hasInternet'),
         ];
         array_push($data, $head);
 
@@ -232,12 +232,12 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            trans('provvoipenvia::messages.order_phonenumber'),
-            trans('provvoipenvia::messages.order_activation_date'),
-            trans('provvoipenvia::messages.order_activation_date_envia'),
-            trans('provvoipenvia::messages.order_deactivation_date'),
-            trans('provvoipenvia::messages.order_deactivation_date_envia'),
-            trans('provvoipenvia::messages.order_active'),
+            trans('provvoipenvia::view.enviaOrder.phonenumber'),
+            trans('provvoipenvia::view.enviaOrder.activationDate'),
+            trans('provvoipenvia::view.enviaOrder.activationDateEnvia'),
+            trans('provvoipenvia::view.enviaOrder.deactivationDate'),
+            trans('provvoipenvia::view.enviaOrder.deactivationDateEnvia'),
+            trans('provvoipenvia::view.enviaOrder.active'),
         ];
         array_push($data, $head);
 
@@ -318,10 +318,10 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            trans('provvoipenvia::messages.order_envia_tel_contract_id'),
-            trans('provvoipenvia::messages.order_state'),
-            trans('provvoipenvia::messages.order_contract_start'),
-            trans('provvoipenvia::messages.order_contract_end'),
+            trans('provvoipenvia::view.enviaOrder.enviaTelContractId'),
+            trans('provvoipenvia::view.enviaOrder.state'),
+            trans('provvoipenvia::view.enviaOrder.contractStart'),
+            trans('provvoipenvia::view.enviaOrder.contractEnd'),
         ];
         array_push($data, $head);
 
@@ -348,11 +348,11 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            trans('provvoipenvia::messages.enviacontract_orderid'),
-            trans('provvoipenvia::messages.enviacontract_ordertype'),
-            trans('provvoipenvia::messages.enviacontract_orderdate'),
-            trans('provvoipenvia::messages.enviacontract_orderstatus'),
-            trans('provvoipenvia::messages.enviacontract_method'),
+            trans('provvoipenvia::view.enviaContract.orderId'),
+            trans('provvoipenvia::view.enviaContract.ordertype'),
+            trans('provvoipenvia::view.enviaContract.orderdate'),
+            trans('provvoipenvia::view.enviaContract.orderstatus'),
+            trans('provvoipenvia::view.enviaContract.method'),
         ];
         array_push($data, $head);
 

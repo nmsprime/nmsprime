@@ -81,39 +81,39 @@ class EnviaOrderController extends \BaseController
             }
             $init_values['phonenumber_id'] = $phonenumber_ids;
 
-            $order_id = ['form_type' => 'text', 'name' => 'orderid', 'description' => trans('provvoipenvia::messages.order_id'), 'options' => ['readonly']];
+            $order_id = ['form_type' => 'text', 'name' => 'orderid', 'description' => trans('provvoipenvia::view.enviaOrder.id'), 'options' => ['readonly']];
         }
 
         // label has to be the same like column in sql table
         $ret_tmp = [
             $order_id,
-            ['form_type' => 'text', 'name' => 'created_at', 'description' => trans('provvoipenvia::messages.order_created_at'), 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'updated_at', 'description' => trans('provvoipenvia::messages.order_last_status_update'), 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'last_user_interaction', 'description' => trans('provvoipenvia::messages.order_last_user_interaction'), 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'method', 'description' => trans('provvoipenvia::messages.order_method'), 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'ordertype_id', 'description' => trans('provvoipenvia::messages.order_ordertype_id'), 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'ordertype', 'description' => trans('provvoipenvia::messages.order_ordertype'), 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'orderstatus_id', 'description' => trans('provvoipenvia::messages.order_orderstatus_id'), 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'orderstatus', 'description' => trans('provvoipenvia::messages.order_orderstatus'), 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'orderdate', 'description' => trans('provvoipenvia::messages.order_orderdate'), 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'ordercomment', 'description' => trans('provvoipenvia::messages.order_ordercomment'), 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'customerreference', 'description' => trans('provvoipenvia::messages.order_customer_reference'), 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'contractreference', 'description' => trans('provvoipenvia::messages.order_contract_reference'), 'options' => ['readonly'], 'hidden' => 'C', 'space' => '1'],
-            ['form_type' => 'text', 'name' => 'contract_id', 'description' => trans('provvoipenvia::messages.order_contract_id'), 'options' => ['readonly'], 'hidden' => 1],
-            ['form_type' => 'text', 'name' => 'modem_id', 'description' => trans('provvoipenvia::messages.order_modem_id'), 'options' => ['readonly'], 'hidden' => 1],
-            ['form_type' => 'text', 'name' => 'phonenumber_id', 'description' => trans('provvoipenvia::messages.order_phonenumber_id'), 'options' => ['readonly'], 'hidden' => 1],
+            ['form_type' => 'text', 'name' => 'created_at', 'description' => trans('provvoipenvia::view.enviaOrder.createdAt'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'updated_at', 'description' => trans('provvoipenvia::view.enviaOrder.lastStatusUpdate'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'last_user_interaction', 'description' => trans('provvoipenvia::view.enviaOrder.lastUserInteraction'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'method', 'description' => trans('provvoipenvia::view.enviaOrder.method'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'ordertype_id', 'description' => trans('provvoipenvia::view.enviaOrder.ordertypeId'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'ordertype', 'description' => trans('provvoipenvia::view.enviaOrder.ordertype'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'orderstatus_id', 'description' => trans('provvoipenvia::view.enviaOrder.orderstatusId'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'orderstatus', 'description' => trans('provvoipenvia::view.enviaOrder.orderstatus'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'orderdate', 'description' => trans('provvoipenvia::view.enviaOrder.orderdate'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'ordercomment', 'description' => trans('provvoipenvia::view.enviaOrder.ordercomment'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'customerreference', 'description' => trans('provvoipenvia::view.enviaOrder.customerReference'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'contractreference', 'description' => trans('provvoipenvia::view.enviaOrder.contractReference'), 'options' => ['readonly'], 'hidden' => 'C', 'space' => '1'],
+            ['form_type' => 'text', 'name' => 'contract_id', 'description' => trans('provvoipenvia::view.enviaOrder.contractId'), 'options' => ['readonly'], 'hidden' => 1],
+            ['form_type' => 'text', 'name' => 'modem_id', 'description' => trans('provvoipenvia::view.enviaOrder.modemId'), 'options' => ['readonly'], 'hidden' => 1],
+            ['form_type' => 'text', 'name' => 'phonenumber_id', 'description' => trans('provvoipenvia::view.enviaOrder.phonenumberId'), 'options' => ['readonly'], 'hidden' => 1],
         ];
 
         // add information to related order (e.g. for “Stornierung”) if exists
         if (boolval($related_id)) {
             // this fields are for information only => they have to be removed in observer on updating
             // attention: related order can also be deleted!
-            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_id_show', 'description' => trans('provvoipenvia::messages.order_related_order_id'), 'options' => ['readonly'], 'hidden' => 'C']);
-            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_type', 'description' => trans('provvoipenvia::messages.order_related_order_type'), 'options' => ['readonly'], 'hidden' => 'C']);
-            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_created_at', 'description' => trans('provvoipenvia::messages.order_related_order_created'), 'options' => ['readonly'], 'hidden' => 'C']);
-            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_updated_at', 'description' => trans('provvoipenvia::messages.order_related_order_last_updated'), 'options' => ['readonly'], 'hidden' => 'C']);
+            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_id_show', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderId'), 'options' => ['readonly'], 'hidden' => 'C']);
+            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_type', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderType'), 'options' => ['readonly'], 'hidden' => 'C']);
+            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_created_at', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderCreated'), 'options' => ['readonly'], 'hidden' => 'C']);
+            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_updated_at', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderLastUpdated'), 'options' => ['readonly'], 'hidden' => 'C']);
             if (array_key_exists('related_order_deleted_at', $init_values)) {
-                array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_deleted_at', 'description' => trans('provvoipenvia::messages.order_related_order_deleted'), 'options' => ['readonly'], 'hidden' => 'C']);
+                array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_deleted_at', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderDeleted'), 'options' => ['readonly'], 'hidden' => 'C']);
             }
         }
 

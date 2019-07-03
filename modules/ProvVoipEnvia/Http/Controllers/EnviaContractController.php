@@ -49,20 +49,20 @@ class EnviaContractController extends \BaseController
         $model->tariff_id = $sale_value ?: 'n/a'; // save as we do not save the model here
 
         $ret = [
-            ['form_type' => 'text', 'name' => 'envia_customer_reference', 'description' => trans('provvoipenvia::messages.enviacontract_custid'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'envia_contract_reference', 'description' => trans('provvoipenvia::messages.enviacontract_contid'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'state', 'description' => trans('provvoipenvia::messages.enviacontract_state'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'start_date', 'description' => trans('provvoipenvia::messages.enviacontract_startdate'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'end_date', 'description' => trans('provvoipenvia::messages.enviacontract_enddate'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'prev_id', 'description' => trans('provvoipenvia::messages.enviacontract_prevcontract'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'next_id', 'description' => trans('provvoipenvia::messages.enviacontract_nextcontract'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'lock_level', 'description' => trans('provvoipenvia::messages.enviacontract_locklevel'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'method', 'description' => trans('provvoipenvia::messages.enviacontract_proto'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'sla_id', 'description' => trans('provvoipenvia::messages.enviacontract_sla'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'tariff_id', 'description' => trans('provvoipenvia::messages.enviacontract_tariff'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'variation_id', 'description' => trans('provvoipenvia::messages.enviacontract_variation'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'contract_id', 'description' => trans('provvoipenvia::messages.enviacontract_contractid'), 'options' => ['readonly']],
-            ['form_type' => 'text', 'name' => 'modem_id', 'description' => trans('provvoipenvia::messages.enviacontract_modemid'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'envia_customer_reference', 'description' => trans('provvoipenvia::view.enviaContract.custId'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'envia_contract_reference', 'description' => trans('provvoipenvia::view.enviaContract.contId'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'state', 'description' => trans('provvoipenvia::view.enviaContract.state'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'start_date', 'description' => trans('provvoipenvia::view.enviaContract.startDate'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'end_date', 'description' => trans('provvoipenvia::view.enviaContract.endDate'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'prev_id', 'description' => trans('provvoipenvia::view.enviaContract.prevContract'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'next_id', 'description' => trans('provvoipenvia::view.enviaContract.nextContract'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'lock_level', 'description' => trans('provvoipenvia::view.enviaContract.lockLevel'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'method', 'description' => trans('provvoipenvia::view.enviaContract.proto'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'sla_id', 'description' => trans('provvoipenvia::view.enviaContract.sla'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'tariff_id', 'description' => trans('provvoipenvia::view.enviaContract.tariff'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'variation_id', 'description' => trans('provvoipenvia::view.enviaContract.variation'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'contract_id', 'description' => trans('provvoipenvia::view.enviaContract.contractId'), 'options' => ['readonly']],
+            ['form_type' => 'text', 'name' => 'modem_id', 'description' => trans('provvoipenvia::view.enviaContract.modemId'), 'options' => ['readonly']],
         ];
 
         return $ret;

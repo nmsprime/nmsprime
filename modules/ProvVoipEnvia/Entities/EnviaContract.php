@@ -211,12 +211,12 @@ class EnviaContract extends \BaseModel
 
         if ($this->contract_id) {
             $contract = Contract::withTrashed()->find($this->contract_id);
-            $relations['hints'][trans('provvoipenvia::messages.enviacontract_contract')] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
+            $relations['hints'][trans('provvoipenvia::view.enviaContract.contract')] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
         }
 
         if ($this->modem_id) {
             $modem = Modem::withTrashed()->find($this->modem_id);
-            $relations['hints'][trans('provvoipenvia::messages.enviacontract_modem')] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
+            $relations['hints'][trans('provvoipenvia::view.enviaContract.modem')] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
         }
 
         $mgmts = $this->phonenumbermanagements;
@@ -226,11 +226,11 @@ class EnviaContract extends \BaseModel
                 array_push($phonenumbers, $mgmt->phonenumber);
             }
             $this->phonenumbers = collect($phonenumbers);
-            $relations['hints'][trans('provvoipenvia::messages.enviacontract_phonenumbers')] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $this->phonenumbers);
+            $relations['hints'][trans('provvoipenvia::view.enviaContract.phonenumbers')] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $this->phonenumbers);
         }
 
         if ($this->enviaorders) {
-            $relations['hints'][trans('provvoipenvia::messages.enviacontract_orders')] = ProvVoipEnviaHelpers::get_user_action_information_enviaorders($this->enviaorders->sortBy('orderdate'));
+            $relations['hints'][trans('provvoipenvia::view.enviaContract.orders')] = ProvVoipEnviaHelpers::get_user_action_information_enviaorders($this->enviaorders->sortBy('orderdate'));
         }
 
         return $relations;
