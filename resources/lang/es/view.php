@@ -62,8 +62,8 @@ return [
         'Menu_MTAs' 				=> 'MTAs',
         'Menu_Phonenumbers'			=> 'Numeros telefonicos',
         'Menu_PhoneTariffs'			=> 'Tarifas telefefonicas',
-        'Menu_Envia orders'			=> 'envia TEL ordenes',
-        'Menu_Envia contracts'		=> 'envia TEL contratos',
+        'Menu_envia TEL orders'		=> 'envia TEL orders',
+        'Menu_envia TEL contracts'	=> 'envia TEL contracts',
         'Menu_Net Elements'         => 'Elementos de Red',
         'Menu_Net Element Types'    => 'Tipos de Elementos de Red',
         'Menu_TicketTypes'          => 'Tipo de Ticket',
@@ -218,8 +218,8 @@ return [
         'Header_Phone tariffs'		=> 'Tarifa telefonica|Tarifas telefonicas',
         'Header_EditPhone tariffs'	=> 'Editar tarifas telefonicas',
     //ProvVoipEnvia
-        'Header_EnviaOrders'		=> 'envia TEL orden|envia TEL ordenes',
-        'Header_EnviaContracts'		=> 'envia TEL contrato|envia TEL contratos',
+        'Header_envia TEL orders'	=> 'envia TEL order|envia TEL orders',
+        'Header_envia TEL contracts' => 'envia TEL contract|envia TEL contracts',
 
         'Header_Debt'               => 'Debt history',
         'Header_DebtResult'         => 'Outstanding payments total',
