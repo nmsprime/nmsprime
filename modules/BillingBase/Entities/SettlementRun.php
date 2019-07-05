@@ -173,7 +173,7 @@ class SettlementRun extends \BaseModel
     public function parseBankingFile($mt940)
     {
         $parser = new \Kingsquare\Parser\Banking\Mt940();
-        $transactionParser = new \Modules\Dunning\Entities\TransactionParser;
+        $transactionParser = new \Modules\Dunning\Entities\TransactionParser($mt940);
 
         $statements = $parser->parse($mt940);
         foreach ($statements as $statement) {
