@@ -1,6 +1,5 @@
 <?php
 
-
 class CreateCdrTable extends BaseMigration
 {
     // Name of the table

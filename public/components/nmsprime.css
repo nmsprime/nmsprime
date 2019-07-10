@@ -429,7 +429,6 @@ table .index_check {
     {
         -webkit-box-flex: 0;
         -ms-flex: 0 0 100%;
-        flex: 0 0 100%;
         max-width: 100%;
         margin: 0;
     }
@@ -533,4 +532,26 @@ table .index_check {
 }
 .sidebar .has-sub.expand > .sub-menu {
     display: block;
+}
+
+#page-container.page-sidebar-minified .nav li i.fa+span{
+  display: none;
+}
+#page-container.page-sidebar-minified .nav ul.sub-menu li i.fa+span{
+  display: inline;
+}
+
+span.centerblock {
+    display: block;
+    text-align: center;
+}
+
+.tab-overflow .nav.nav-pills > li, .tab-overflow.nav.nav-pills > li {
+    display: inline-block !important;
+}
+
+ul.nav.nav-pills li {
+    max-height: 50px !important;
+    overflow: hidden !important;
+    overflow-y: auto !important;
 }

@@ -11,12 +11,12 @@
 	}
 
 	if ($filter == 'all') {
-		echo '<h5><b>List of all envia TEL orders</b></h5>';
-		echo '<a href="?show_filter=action_needed" target="_self"> »show only envia TEL orders needing user interaction</a><br>';
+		echo '<h5><b>'.trans('provvoipenvia::view.enviaOrder.listAll').'</b></h5>';
+		echo '<a href="?show_filter=action_needed" target="_self"> »'.trans('provvoipenvia::view.enviaOrder.showInteractionNeeding').'</a><br>';
 	}
 	elseif ($filter == 'action_needed') {
-		echo '<h5><b>List of envia TEL orders needing user interaction</b></h5>';
-		echo '<a href="?show_filter=all" target="_self"> »show all envia TEL orders</a><br>';
+		echo '<h5><b>'.trans('provvoipenvia::view.enviaOrder.listInteractionNeeding').'</b></h5>';
+		echo '<a href="?show_filter=all" target="_self"> »'.trans('provvoipenvia::view.enviaOrder.showAll').'</a><br>';
 	}
 ?>
 

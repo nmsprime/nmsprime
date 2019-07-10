@@ -4,7 +4,6 @@ namespace Modules\Dashboard\Http\Controllers;
 
 use View;
 use App\GuiLog;
-use Modules\ProvBase\Entities\Contract;
 use App\Http\Controllers\BaseController;
 
 class DashboardController extends BaseController

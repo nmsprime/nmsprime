@@ -20,7 +20,7 @@ class BillingBaseServiceProvider extends ServiceProvider
         'Modules\BillingBase\Console\SettlementRunCommand',
         'Modules\BillingBase\Console\fetchBicCommand',
         'Modules\BillingBase\Console\cdrCommand',
-        'Modules\BillingBase\Console\ZipCommand',
+        'Modules\BillingBase\Console\ZipSettlementRun',
     ];
 
     /**
@@ -44,7 +44,8 @@ class BillingBaseServiceProvider extends ServiceProvider
     {
         $this->commands($this->commands);
 
-        $this->app->bind('companydata', 'Modules\BillingBase\Providers\CompanyDataProvider');
+        $this->app->alias(\Modules\BillingBase\Providers\SettlementRunProvider::class, 'settlementrun');
+        $this->app->alias(\Modules\BillingBase\Providers\CurrencyProvider::class, 'currency');
     }
 
     /**
@@ -106,8 +107,8 @@ class BillingBaseServiceProvider extends ServiceProvider
     public function provides()
     {
         return [
-            CompanyData::class,
-            CompanyDataProvider::class,
+            SettlementRunProvider::class,
+            Currency::class,
         ];
     }
 }
