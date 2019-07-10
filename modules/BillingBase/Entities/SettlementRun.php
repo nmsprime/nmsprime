@@ -175,7 +175,15 @@ class SettlementRun extends \BaseModel
         $parser = new \Kingsquare\Parser\Banking\Mt940();
         $transactionParser = new \Modules\Dunning\Entities\TransactionParser($mt940);
 
-        $statements = $parser->parse($mt940);
+        // Handle wrong file format
+        try {
+            $statements = $parser->parse($mt940);
+        } catch (\Exception $e) {
+            \Session::push('tmp_error_above_form', trans('dunning::messages.parseMt940Failed', ['msg' => $e->getMessage()]));
+            \Log::error($e->getMessage().'.In: '.$e->getFile());
+
+            return;
+        }
 
         $contracts = $contractsSpecial = [];
 
