@@ -176,6 +176,9 @@ class SettlementRun extends \BaseModel
         $transactionParser = new \Modules\Dunning\Entities\TransactionParser($mt940);
 
         $statements = $parser->parse($mt940);
+
+        $contracts = $contractsSpecial = [];
+
         foreach ($statements as $statement) {
             foreach ($statement->getTransactions() as $transaction) {
                 $debt = $transactionParser->parse($transaction);
@@ -188,8 +191,26 @@ class SettlementRun extends \BaseModel
                 }
 
                 $debt->save();
+
+                if ($debt->addedBySpecialMatch) {
+                    $contractsSpecial[] = $debt->contract_id;
+                } else {
+                    $contracts[] = $debt->contract_id;
+                }
             }
         }
+
+        // Summary log messages
+        if ($contracts) {
+            $numbers = Contract::whereIn('id', $contracts)->pluck('number')->all();
+            ChannelLog::info('dunning', trans('dunning::messages.addedDebts', ['count' => count($numbers), 'numbers' => implode(', ', $numbers)]));
+        }
+
+        if ($contractsSpecial) {
+            $numbers = Contract::whereIn('id', $contractsSpecial)->pluck('number')->all();
+            ChannelLog::notice('dunning', trans('dunning::messages.transaction.credit.noInvoice.special', ['numbers' => implode(', ', $numbers)]));
+        }
+
         // d($transactions, $statements, str_replace(':61:', "\r\n---------------\r\n:61:", $mt940));
     }
 
