@@ -170,6 +170,11 @@ class SettlementRun extends \BaseModel
         return $arr;
     }
 
+    /**
+     * Parse an uploaded SWIFT-/Mt940.sta bank transaction file and assign Debts from it to appropriate contracts
+     *
+     * @param string
+     */
     public function parseBankingFile($mt940)
     {
         $parser = new \Kingsquare\Parser\Banking\Mt940();
@@ -192,7 +197,7 @@ class SettlementRun extends \BaseModel
                 $debt = $transactionParser->parse($transaction);
 
                 // only for analysis during development!
-                // $transactions[$transaction->getDebitCredit()][] = ['price' => $transaction->getPrice(), 'description' => explode('?', $transaction->getDescription())];
+                // $transactions[$transaction->getDebitCredit()][] = ['price' => $transaction->getPrice(), 'code' => $transaction->getTransactionCode(), 'description' => explode('?', $transaction->getDescription())];
 
                 if (! $debt) {
                     continue;
@@ -920,13 +925,7 @@ class SettlementRunObserver
 
             $mt940 = \Input::file('banking_file_upload');
 
-            $mt940s[] = Storage::get('tmp/Erznet-sta.sta');
-            $mt940s[] = Storage::get('tmp/Erznet-sta-2019-04-24.sta');
-            $mt940s[] = Storage::get('tmp/Erznet-sta-2019-04-25.sta');
-
-            foreach ($mt940s as $mt940) {
-                $settlementrun->parseBankingFile($mt940);
-            }
+            $settlementrun->parseBankingFile($mt940);
         }
     }
 }
