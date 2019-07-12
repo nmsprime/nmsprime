@@ -194,7 +194,7 @@ class SettlementRun extends \BaseModel
 
         foreach ($statements as $statement) {
             foreach ($statement->getTransactions() as $transaction) {
-                $debt = $transactionParser->parse($transaction);
+                $debt = $transactionParser->parse();
 
                 // only for analysis during development!
                 // $transactions[$transaction->getDebitCredit()][] = ['price' => $transaction->getPrice(), 'code' => $transaction->getTransactionCode(), 'description' => explode('?', $transaction->getDescription())];
