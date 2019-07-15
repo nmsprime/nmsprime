@@ -2,9 +2,9 @@
 
 namespace Modules\Dashboard\Http\Controllers;
 
-use Illuminate\Support\Facades\Auth;
 use View;
 use App\GuiLog;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\BaseController;
 
 class DashboardController extends BaseController
