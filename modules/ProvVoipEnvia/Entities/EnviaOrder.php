@@ -9,6 +9,9 @@ use Modules\ProvVoip\Entities\Phonenumber;
 // Model not found? execute composer dump-autoload in nmsprime root dir
 class EnviaOrder extends \BaseModel
 {
+    // get DataTables functions
+    use DtFunctionsTrait;
+
     // The associated SQL table for this Model
     public $table = 'enviaorder';
 
@@ -613,13 +616,18 @@ class EnviaOrder extends \BaseModel
         }
 
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.ordertype', $this->table.'.orderstatus', 'escalation_level', 'contract.number', 'modem.id', 'phonenumber.number', 'enviacontract.envia_contract_reference',  $this->table.'.created_at', $this->table.'.updated_at', $this->table.'.orderdate', 'enviaorder_current'],
+                'index_header' => [$this->table.'.ordertype', $this->table.'.orderstatus', 'escalation_level', 'contract.id', 'modem.id', 'phonenumber.number', 'enviacontract.envia_contract_reference',  $this->table.'.created_at', $this->table.'.updated_at', $this->table.'.orderdate', 'enviaorder_current'],
                 'bsclass' => $bsclass,
-                'disable_sortsearch' => ['phonenumber.number'],
-                'eager_loading' => ['modem', 'contract', 'enviacontract', 'phonenumbers'],
-                'edit' => ['ordertype' => 'get_ordertype', 'orderstatus'  => 'get_orderstatus', 'modem.id' => 'get_modem_id', 'contract.number' => 'get_contract_nr', 'enviacontract.envia_contract_reference' => 'get_enviacontract_ref', 'enviaorder_current' => 'get_user_interaction_necessary', 'phonenumber.number' => 'get_phonenumbers', 'escalation_level' => 'get_escalation_level'],
+                'disable_sortsearch' => ['phonenumber.number' => 'false', 'enviaorder_current' => 'false'],
+                'eager_loading' => ['contract', 'modem', 'enviacontract', 'phonenumbers'],
+                'edit' => ['ordertype' => 'get_ordertype', 'orderstatus'  => 'get_orderstatus', 'modem.id' => 'get_modem_data', 'contract.id' => 'get_contract_data', 'enviacontract.envia_contract_reference' => 'get_enviacontract_ref', 'enviaorder_current' => 'get_user_interaction_necessary', 'phonenumber.number' => 'get_phonenumbers', 'escalation_level' => 'get_escalation_level'],
                 'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
                 'where_clauses' => $where_clauses,
+                'filter' => [
+                    'contract.id' => $this->get_contract_filtercolumn_query(),
+                    'modem.id' => $this->get_modem_filtercolumn_query(),
+                ],
+                'raw_columns' => ['contract.id', 'modem.id', 'phonenumber.number', 'enviacontract.envia_contract_reference', 'enviaorder_current'],
         ];
     }
 
@@ -663,38 +671,6 @@ class EnviaOrder extends \BaseModel
         $orderstatus = str_replace('Portierungserklärung', 'Portierungs&shy;erklärung', $orderstatus);
 
         return $orderstatus;
-    }
-
-    public function get_modem_id()
-    {
-        if (! $this->modem_id) {
-            $modem_id = '–';
-        } else {
-            $modem = Modem::withTrashed()->where('id', $this->modem_id)->first();
-            if (! is_null($modem->deleted_at)) {
-                $modem_id = '<s>'.$this->modem_id.'</s>';
-            } else {
-                $modem_id = '<a href="'.\URL::route('Modem.edit', [$this->modem_id]).'" target="_blank">'.$this->modem_id.'</a>';
-            }
-        }
-
-        return $modem_id;
-    }
-
-    public function get_contract_nr()
-    {
-        if (! $this->contract_id) {
-            $contract_nr = '–';
-        } else {
-            $contract = Contract::withTrashed()->where('id', $this->contract_id)->first();
-            if (! is_null($contract->deleted_at)) {
-                $contract_nr = '<s>'.$contract->number.'</s>';
-            } else {
-                $contract_nr = '<a href="'.\URL::route('Contract.edit', [$this->contract_id]).'" target="_blank">'.$contract->number.'</a>';
-            }
-        }
-
-        return $contract_nr;
     }
 
     public function get_enviacontract_ref()
@@ -878,17 +854,17 @@ class EnviaOrder extends \BaseModel
 
         if ($this->contract_id) {
             $contract = Contract::withTrashed()->find($this->contract_id);
-            $user_actions['hints']['Contract (= envia TEL  Customer)'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
+            $user_actions['hints'][trans('provvoipenvia::view.enviaOrder.contract')] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
             $items = $contract->items;
         }
 
         if ($items) {
-            $user_actions['hints']['Items (Internet and VoIP only)'] = ProvVoipEnviaHelpers::get_user_action_information_items($items);
+            $user_actions['hints'][trans('provvoipenvia::view.enviaOrder.items')] = ProvVoipEnviaHelpers::get_user_action_information_items($items);
         }
 
         if ($this->modem_id) {
             $modem = Modem::withTrashed()->find($this->modem_id);
-            $user_actions['hints']['Modem (can hold multiple envia TEL contracts)'] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
+            $user_actions['hints'][trans('provvoipenvia::view.enviaOrder.modem')] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
         }
 
         if ($modem) {
@@ -905,23 +881,23 @@ class EnviaOrder extends \BaseModel
         }
 
         if ($phonenumbers) {
-            $user_actions['hints']['Phonenumbers (= envia TEL VoipAccounts)'] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $phonenumbers);
+            $user_actions['hints'][trans('provvoipenvia::view.enviaOrder.phonenumbers')] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $phonenumbers);
         }
 
         // show headline and link to solve if order has changed since the last user interaction
         if ($this->user_interaction_necessary()) {
 
             // show that user interaction is necessary
-            $user_actions['head'] = '<h5 class="text-danger">envia TEL Order has been updated</h5>';
-            $user_actions['head'] .= 'Please check if user interaction is necessary.<br><br>';
+            $user_actions['head'] = '<h5 class="text-danger">'.trans('provvoipenvia::messages.orderHasBeenUpdated').'</h5>';
+            $user_actions['head'] .= trans('provvoipenvia::messages.orderCheckInteraction').'<br><br>';
 
             // finally add link to mark open order as solved
-            $user_actions['links']['Mark as solved'] = \URL::route('EnviaOrder.marksolved', ['EnviaOrder' => $this->id]);
+            $user_actions['links'][trans('provvoipenvia::view.enviaOrder.markAsSolved')] = \URL::route('EnviaOrder.marksolved', ['EnviaOrder' => $this->id]);
         }
 
         $enviacontract = $this->enviacontract;
         if ($enviacontract) {
-            $user_actions['hints']['envia TEL contract'] = ProvVoipEnviaHelpers::get_user_action_information_enviacontract($enviacontract);
+            $user_actions['hints'][trans('provvoipenvia::view.enviaOrder.enviaTelContract')] = ProvVoipEnviaHelpers::get_user_action_information_enviacontract($enviacontract);
         }
 
         return $user_actions;

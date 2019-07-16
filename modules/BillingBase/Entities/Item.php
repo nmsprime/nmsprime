@@ -147,7 +147,7 @@ class Item extends \BaseModel
     {
         if ($this->product) {
             $price = floatval($this->credit_amount) ?: $this->product->price;
-            $price = ' | '.round($price, 4).'€';
+            $price = ' | '.round($price, 4).\Modules\BillingBase\Providers\Currency::get();
 
             return $price;
         }
@@ -284,10 +284,11 @@ class Item extends \BaseModel
      * @return 	null if no costs incurred, true otherwise - NOTE: Amount to Charge is currently stored in Item Models temp variable ($charge)
      * @author 	Nino Ryschawy
      */
-    public function calculate_price_and_span($dates, $return_array = false, $update = true)
+    public function calculate_price_and_span($return_array = false, $update = true)
     {
         $ratio = 0;
         $text = '';			// dates of invoice text
+        $dates = \Modules\BillingBase\Providers\SettlementRunData::getDate();
 
         $billing_cycle = strtolower($this->get_billing_cycle());
 
@@ -355,14 +356,13 @@ class Item extends \BaseModel
                 }
 
                 $costcenter = $this->get_costcenter();
-                $billing_month = $costcenter->get_billing_month();		// June is default
+                $billing_month = $costcenter->get_billing_month();      // June is default
 
                 // calculate only for billing month
                 if ($billing_month != $dates['lastm']) {
-                    // or tariff started after billing month - then only pay on first settlement run - break otherwise
-                    // or contract ended last month (before billing month)
-                    if (! (((date('m', $start) >= $billing_month) && (date('Y-m', $start) == $dates['lastm_Y'])) ||
-                        (date('Y-m', $contract_end) == $dates['lastm_Y']))) {
+                    // or tariff started after billing month - or contract ended last month (before billing month)
+                    // then pay on next settlement run - break otherwise
+                    if (! (date('Y-m', $start) >= date("Y-$billing_month") || date('Y-m', $contract_end) == $dates['lastm_Y'])) {
                         break;
                     }
                 }
@@ -690,13 +690,13 @@ class ItemObserver
         if (\Module::collections()->has('ProvVoipEnvia')) {
             $purchase_tariff = $item->contract->purchase_tariff;
             $next_purchase_tariff = $item->contract->next_purchase_tariff;
+            if ($purchase_tariff && $next_purchase_tariff && ($purchase_tariff != $next_purchase_tariff)) {
+                \Session::push('tmp_warning_above_form', trans('provvoipenvia::messages.itemChangeVariation'));
+            }
             $voip_id = $item->contract->voip_id;
             $next_voip_id = $item->contract->next_voip_id;
-            if ($next_purchase_tariff && ($purchase_tariff != $next_purchase_tariff)) {
-                \Session::push('tmp_warning_above_form', 'ATTENTION: You have to “Change purchase tariff” (envia TEL API), too!');
-            }
-            if ($next_voip_id && ($voip_id != $next_voip_id)) {
-                \Session::push('tmp_warning_above_form', 'ATTENTION: You have to “Change tariff” (envia TEL API), too!');
+            if ($voip_id && $next_voip_id && ($voip_id != $next_voip_id)) {
+                \Session::push('tmp_warning_above_form', trans('provvoipenvia::messages.itemChangeTariff'));
             }
         }
 
