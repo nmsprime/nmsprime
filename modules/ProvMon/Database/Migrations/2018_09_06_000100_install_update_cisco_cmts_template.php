@@ -1,6 +1,5 @@
 <?php
 
-
 class InstallUpdateCiscoCmtsTemplate extends BaseMigration
 {
     protected $tablename = '';

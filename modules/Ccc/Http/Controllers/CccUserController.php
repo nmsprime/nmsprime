@@ -10,7 +10,6 @@ use Modules\Ccc\Entities\Ccc;
 use Modules\NmsMail\Entities\Email;
 use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\Invoice;
-use Modules\BillingBase\Entities\SettlementRun;
 
 class CccUserController extends \BaseController
 {

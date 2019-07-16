@@ -97,6 +97,8 @@ class ProvVoipEnviaController extends \BaseController
             'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
             'order_get_status' => $base_url.'order/get_status',
             'contract_get_reference' => $base_url.'contract/get_reference',
+            'contract_get_tariff' => $base_url.'contract/get_tariff',
+            'contract_get_variation' => $base_url.'contract/get_variation',
             'contract_get_voice_data' => $base_url.'contract/get_voice_data',
             'customer_get_contracts' => $base_url.'customer/get_contracts',
             'customer_get_reference' => $base_url.'customer/get_reference',
@@ -125,6 +127,9 @@ class ProvVoipEnviaController extends \BaseController
             \Log::error('ERROR: Client IP '.$client_ip.' not allowed in method cron (Request URI was '.$request_uri.').');
             exit(1);
         }
+
+        // prepare the model
+        $this->model->set_model_data();
 
         // execute only if job is currently allowed
         if (! $this->_job_allowed($job)) {
@@ -177,6 +182,8 @@ class ProvVoipEnviaController extends \BaseController
             ['api' => 'order', 'link' => 'contract_change_variation?contract_id=500010'],
             ['api' => 'order', 'link' => 'contract_create?contract_id=500000'],
             ['api' => 'order', 'link' => 'contract_get_reference?phonenumber_id=300012'],
+            ['api' => 'order', 'link' => 'contract_get_tariff?phonenumber_id=300012'],
+            ['api' => 'order', 'link' => 'contract_get_variation?phonenumber_id=300012'],
             ['api' => 'order', 'link' => 'contract_get_voice_data?contract_id=500000'],
             ['api' => 'order', 'link' => 'contract_terminate?contract_id=500000'],
             ['api' => 'order', 'link' => 'customer_update?contract_id=500000'],
@@ -384,6 +391,8 @@ class ProvVoipEnviaController extends \BaseController
         $unrestricted_jobs = [
             'availability_check',
             'contract_get_reference',
+            'contract_get_tariff',
+            'contract_get_variation',
             'contract_get_voice_data',
             'customer_get_contracts',
             'customer_get_reference',
@@ -559,9 +568,9 @@ class ProvVoipEnviaController extends \BaseController
         \Log::error("ProvVoipEnviaController: Execution of $job is not allowed");
         $ret = [];
         $ret['plain_html'] = '';
-        $ret['plain_html'] .= '<h4>Error</h4>';
-        $ret['plain_html'] .= 'Job '.$job.' is currently not allowed';
-        $ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">Bring me back…</h5>';
+        $ret['plain_html'] .= '<h4>'.trans('messages.error').'</h4>';
+        $ret['plain_html'] .= trans('provvoipenvia::messages.jobCurrentlyNotAllowed', [$job]);
+        $ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">'.trans('provvoipenvia::messages.back').'</h5>';
 
         return $ret;
     }
@@ -571,9 +580,9 @@ class ProvVoipEnviaController extends \BaseController
         $ret = [];
 
         $ret['plain_html'] = '';
-        $ret['plain_html'] .= '<h4>There was error creating XML to be sent to envia TEL:</h4>';
+        $ret['plain_html'] .= '<h4>'.trans('provvoipenvia::messages.errorCreatingXml').':</h4>';
         $ret['plain_html'] .= '<h5>'.$msg.'</h5><br><br>';
-        $ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">Bring me back…</h5>';
+        $ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">'.trans('provvoipenvia::messages.back').'</h5>';
 
         return $ret;
     }
@@ -586,7 +595,7 @@ class ProvVoipEnviaController extends \BaseController
     protected function _ask_for_phonenumbers_to_be_created_with_contract($url, $origin)
     {
         $html = '';
-        $html .= '<h4>Please choose at least one phonenumber to be created with this contract</h4>';
+        $html .= '<h4>'.trans('provvoipenvia::messages.chooseNumbersToCreate').'</h4>';
 
         $phonenumbers_on_modem = $this->model->get_numbers_related_to_modem_for_contract_create();
 
@@ -609,11 +618,11 @@ class ProvVoipEnviaController extends \BaseController
             }
         }
 
-        $html .= "<input class='btn btn-primary' style='simple' type='submit' value='Create contract with chosen numbers'/>\n";
+        $html .= "<input class='btn btn-primary' style='simple' type='submit' value='".trans('provvoipenvia::messages.createContractWithNumbers')."'/>\n";
 
         $html .= '</form>';
 
-        $html .= '<h5><b><a href="'.urldecode($origin).'">Bring me back to '.urldecode($origin).'</h5>';
+        $html .= '<h5><b><a href="'.urldecode($origin).'">'.trans('provvoipenvia::messages.backTo', [urldecode($origin)]).'</h5>';
 
         $ret = ['plain_html' => $html];
 
@@ -634,16 +643,16 @@ class ProvVoipEnviaController extends \BaseController
         $ret = [];
 
         $ret['plain_html'] = '';
-        $ret['plain_html'] .= '<h4>Data to be sent to envia TEL</h4>';
+        $ret['plain_html'] .= '<h4>'.trans('provvoipenvia::messages.sendToEnviaHead1').'</h4>';
         $ret['plain_html'] .= 'URL: '.$url.'<br>';
         $ret['plain_html'] .= 'API version: '.$this->model->api_version_string.'<br><br>';
         $ret['plain_html'] .= '<pre>';
         $ret['plain_html'] .= ProvVoipEnvia::prettify_xml($payload, true);
         $ret['plain_html'] .= '</pre>';
 
-        $ret['plain_html'] .= '<h4>You are going to change data at envia TEL! Proceed?</h4>';
+        $ret['plain_html'] .= '<h4>'.trans('provvoipenvia::messages.sendToEnviaHead2').'</h4>';
 
-        $ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">NOOO! Please bring me back…</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+        $ret['plain_html'] .= '<h5><b><a href="'.urldecode($origin).'">'.trans('provvoipenvia::messages.sendToEnviaCancel').'</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
 
         // prefix for GET param: ? if the only one, &amp; else
         if (strpos(\Request::getRequestUri(), '?') === false) {
@@ -651,7 +660,7 @@ class ProvVoipEnviaController extends \BaseController
         } else {
             $attach_prefix = '&amp;';
         }
-        $ret['plain_html'] .= '<a href="'.\Request::getRequestUri().$attach_prefix.'really=True" target="_self">Yes, send data now!</a></b></h5>';
+        $ret['plain_html'] .= '<a href="'.\Request::getRequestUri().$attach_prefix.'really=True" target="_self">'.trans('provvoipenvia::messages.sendToEnviaNow').'</a></b></h5>';
 
         return $ret;
     }
@@ -711,6 +720,8 @@ class ProvVoipEnviaController extends \BaseController
             'contract_change_variation' => $this->base_url.'contract/change_variation',
             'contract_create' => $this->base_url.'contract/create',
             'contract_get_reference' => $this->base_url.'contract/get_reference',
+            'contract_get_tariff' => $this->base_url.'contract/get_tariff',
+            'contract_get_variation' => $this->base_url.'contract/get_variation',
             'contract_get_voice_data' => $this->base_url.'contract/get_voice_data',
             'contract_lock' => $this->base_url.'____TODO____',
             'contract_relocate' => $this->base_url.'contract/relocate',
@@ -789,7 +800,7 @@ class ProvVoipEnviaController extends \BaseController
 
         // set some environmental vars
         $origin = \Input::get('origin', \URL::to('/'));
-        $view_header = 'Request envia TEL';
+        $view_header = trans('provvoipenvia::messages.requestEnvia');
         $view_path = \NamespaceController::get_view_name().'.request';
 
         // check if there should be an instant redirect – if so do so :-)
@@ -855,7 +866,7 @@ class ProvVoipEnviaController extends \BaseController
                     $origin_name = urldecode($origin);
                     $origin_name = explode($_SERVER['CONTEXT_PREFIX'], $origin_name);
                     $origin_name = array_pop($origin_name);
-                    $origin_link .= '<h5><b><a href="'.urldecode($origin).'" target="_self">Back to '.$origin_name.'</a></b></h5>';
+                    $origin_link .= '<h5><b><a href="'.urldecode($origin).'" target="_self">'.trans('provvoipenvia::messages.backTo', [$origin_name]).'</a></b></h5>';
                     $view_var['plain_html'] .= $origin_link;
                 }
             }
@@ -944,7 +955,7 @@ class ProvVoipEnviaController extends \BaseController
             if (\Config::get('app.debug')) {
                 $view_var['plain_html'] .= '<hr>';
                 $view_var['plain_html'] .= '<h4>DEBUG mode enabled in .env</h4>';
-                $view_var['plain_html'] .= 'return data:<br>';
+                $view_var['plain_html'] .= 'returned data:<br>';
                 $view_var['plain_html'] .= '<pre>';
                 $view_var['plain_html'] .= ProvVoipEnvia::prettify_xml($data['xml']);
                 $view_var['plain_html'] .= '</pre>';
@@ -1053,7 +1064,7 @@ class ProvVoipEnviaController extends \BaseController
         } else {
             $ret = '';
 
-            $ret .= '<h4>The following error(s) occured:</h4>';
+            $ret .= '<h4>'.trans('provvoipenvia::messages.followingErrorsOccured').'</h4>';
             $ret .= '<table style="background-color: #fcc; color: #000; font-size: 1.05em; font-family: monospace; font-weight: bold">';
             foreach ($errors as $error) {
                 if (boolval($error['status']) || boolval($error['message'])) {

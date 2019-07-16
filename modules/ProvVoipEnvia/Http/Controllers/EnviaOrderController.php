@@ -63,7 +63,7 @@ class EnviaOrderController extends \BaseController
             $related_id = $model->related_order_id;
             if (boolval($related_id)) {
                 $order_related = EnviaOrder::withTrashed()->find($related_id);
-                $init_values['related_order_id_show'] = $order_related->orderid.' <i>(DB ID: '.$order_related->id.')</i>';
+                $init_values['related_order_id_show'] = $order_related->orderid.' (DB ID: '.$order_related->id.')';
                 $init_values['related_order_type'] = $order_related->ordertype;
                 $init_values['related_order_created_at'] = $order_related->created_at;
                 $init_values['related_order_updated_at'] = $order_related->updated_at;
@@ -81,39 +81,39 @@ class EnviaOrderController extends \BaseController
             }
             $init_values['phonenumber_id'] = $phonenumber_ids;
 
-            $order_id = ['form_type' => 'text', 'name' => 'orderid', 'description' => 'Order ID', 'options' => ['readonly']];
+            $order_id = ['form_type' => 'text', 'name' => 'orderid', 'description' => trans('provvoipenvia::view.enviaOrder.id'), 'options' => ['readonly']];
         }
 
         // label has to be the same like column in sql table
         $ret_tmp = [
             $order_id,
-            ['form_type' => 'text', 'name' => 'created_at', 'description' => 'Created at', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'updated_at', 'description' => 'Last status update', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'last_user_interaction', 'description' => 'Last user interaction', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'method', 'description' => 'Method', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'ordertype_id', 'description' => 'Ordertype ID', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'ordertype', 'description' => 'Ordertype', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'orderstatus_id', 'description' => 'Orderstatus ID', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'orderstatus', 'description' => 'Orderstatus', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'orderdate', 'description' => 'Orderdate', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'ordercomment', 'description' => 'Ordercomment', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'customerreference', 'description' => 'envia TEL customer reference', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'contractreference', 'description' => 'envia TEL contract reference', 'options' => ['readonly'], 'hidden' => 'C', 'space' => '1'],
-            ['form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract ID', 'options' => ['readonly'], 'hidden' => 1],
-            ['form_type' => 'text', 'name' => 'modem_id', 'description' => 'Modem ID', 'options' => ['readonly'], 'hidden' => 1],
-            ['form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber ID', 'options' => ['readonly'], 'hidden' => 1],
+            ['form_type' => 'text', 'name' => 'created_at', 'description' => trans('provvoipenvia::view.enviaOrder.createdAt'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'updated_at', 'description' => trans('provvoipenvia::view.enviaOrder.lastStatusUpdate'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'last_user_interaction', 'description' => trans('provvoipenvia::view.enviaOrder.lastUserInteraction'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'method', 'description' => trans('provvoipenvia::view.enviaOrder.method'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'ordertype_id', 'description' => trans('provvoipenvia::view.enviaOrder.ordertypeId'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'ordertype', 'description' => trans('provvoipenvia::view.enviaOrder.ordertype'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'orderstatus_id', 'description' => trans('provvoipenvia::view.enviaOrder.orderstatusId'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'orderstatus', 'description' => trans('provvoipenvia::view.enviaOrder.orderstatus'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'orderdate', 'description' => trans('provvoipenvia::view.enviaOrder.orderdate'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'ordercomment', 'description' => trans('provvoipenvia::view.enviaOrder.ordercomment'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'customerreference', 'description' => trans('provvoipenvia::view.enviaOrder.customerReference'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'contractreference', 'description' => trans('provvoipenvia::view.enviaOrder.contractReference'), 'options' => ['readonly'], 'hidden' => 'C', 'space' => '1'],
+            ['form_type' => 'text', 'name' => 'contract_id', 'description' => trans('provvoipenvia::view.enviaOrder.contractId'), 'options' => ['readonly'], 'hidden' => 1],
+            ['form_type' => 'text', 'name' => 'modem_id', 'description' => trans('provvoipenvia::view.enviaOrder.modemId'), 'options' => ['readonly'], 'hidden' => 1],
+            ['form_type' => 'text', 'name' => 'phonenumber_id', 'description' => trans('provvoipenvia::view.enviaOrder.phonenumberId'), 'options' => ['readonly'], 'hidden' => 1],
         ];
 
         // add information to related order (e.g. for “Stornierung”) if exists
         if (boolval($related_id)) {
             // this fields are for information only => they have to be removed in observer on updating
             // attention: related order can also be deleted!
-            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_id_show', 'description' => 'Related order ID', 'options' => ['readonly'], 'hidden' => 'C']);
-            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_type', 'description' => 'Related order type', 'options' => ['readonly'], 'hidden' => 'C']);
-            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_created_at', 'description' => 'Related order created', 'options' => ['readonly'], 'hidden' => 'C']);
-            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_updated_at', 'description' => 'Related order last updated', 'options' => ['readonly'], 'hidden' => 'C']);
+            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_id_show', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderId'), 'options' => ['readonly'], 'hidden' => 'C']);
+            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_type', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderType'), 'options' => ['readonly'], 'hidden' => 'C']);
+            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_created_at', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderCreated'), 'options' => ['readonly'], 'hidden' => 'C']);
+            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_updated_at', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderLastUpdated'), 'options' => ['readonly'], 'hidden' => 'C']);
             if (array_key_exists('related_order_deleted_at', $init_values)) {
-                array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_deleted_at', 'description' => 'Related order deleted', 'options' => ['readonly'], 'hidden' => 'C']);
+                array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_deleted_at', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderDeleted'), 'options' => ['readonly'], 'hidden' => 'C']);
             }
         }
 
@@ -312,7 +312,7 @@ class EnviaOrderController extends \BaseController
     {
         if (Bouncer::cannot('delete', EnviaOrder::class) &&
             Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia')) {
-            throw new AuthException('Access to model '.$modelToCheck.' not allowed for user '.Auth::user()->login_name.'.');
+            throw new AuthException('Access to model EnviaOrder not allowed for user '.Auth::user()->login_name.'.');
         }
         // get all orders to be canceled
         $orders = [];
@@ -337,7 +337,6 @@ class EnviaOrderController extends \BaseController
         $params = [
             'job' => 'order_cancel',
             'order_id' => $order->orderid,
-            /* 'origin' => urlencode(\Request::getUri()), */
             'origin' => urlencode(\URL::previous()),
         ];
 

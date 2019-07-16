@@ -2,13 +2,10 @@
 
 namespace Modules\BillingBase\Http\Controllers;
 
-use ChannelLog;
 use Monolog\Logger;
 use Modules\BillingBase\Entities\Invoice;
-use Modules\BillingBase\Entities\Salesman;
-use Modules\BillingBase\Console\cdrCommand;
+use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\SettlementRun;
-use Modules\BillingBase\Entities\AccountingRecord;
 use Modules\BillingBase\Console\SettlementRunCommand;
 
 class SettlementRunController extends \BaseController
@@ -25,6 +22,7 @@ class SettlementRunController extends \BaseController
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
             ['form_type' => 'checkbox', 'name' => 'verified', 'description' => 'Verified', 'hidden' => 'C', 'help' => trans('helper.settlement_verification')],
             ['form_type' => 'checkbox', 'name' => 'fullrun', 'description' => 'For internal use', 'hidden' => 1],
+            ['form_type' => 'file', 'name' => 'banking_file_upload', 'description' => 'Upload MT940 Banking file (.sta)'],
         ];
     }
 
@@ -81,9 +79,8 @@ class SettlementRunController extends \BaseController
     {
         $logs = $failed_jobs = [];
         $sr = SettlementRun::find($id);
-        $rerun_button = true;
         $status_msg = '';
-        $job_queued = \DB::table('jobs')->where('payload', 'like', '%SettlementRunCommand%')->orWhere('payload', 'like', '%ZipCommand%')->get();
+        $job_queued = \DB::table('jobs')->where('payload', 'like', '%SettlementRun%')->orWhere('payload', 'like', '%ZipCommand%')->get();
         $job_queued = $job_queued->isNotEmpty() ? $job_queued[0] : null;
 
         if ($job_queued) {
@@ -98,8 +95,10 @@ class SettlementRunController extends \BaseController
             \Session::remove('job_id');
         }
 
+        $button['postal'] = ! \Session::get('job_id') && ! $job_queued && Product::where('type', 'Postal')->count() ? true : false;
+        $button['rerun'] = true;
         if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified) {
-            $rerun_button = false;
+            $button['rerun'] = false;
         }
 
         // get error logs in case job failed and remove failed job from table
@@ -108,26 +107,27 @@ class SettlementRunController extends \BaseController
             $commandName = json_decode($failed_job->payload)->data->commandName;
             if (\Str::contains($commandName, '\\SettlementRun')) {
                 \Artisan::call('queue:forget', ['id' => $failed_job->id]);
-                $logs = self::get_logs($sr->updated_at->subSeconds(1)->__get('timestamp'), Logger::ERROR);
+                $logs = self::get_logs(strtotime('-1 second', strtotime($sr->executed_at)), Logger::ERROR);
                 break;
             }
         }
 
-        // get execution logs if job has finished successfully - (show error logs otherwise - show nothing during execution)
-        // NOTE: when SettlementRun gets verified the logs will disappear because timestamp is updated
-        // $logs = !$logs && !\Session::get('job_id') ? self::get_logs($sr->updated_at->__get('timestamp')) : $logs;
-        $logs = $logs ?: self::get_logs($sr->updated_at->__get('timestamp'));
+        // get execution logs if job has finished successfully - show error logs otherwise
+        $logs['settlementrun'] = $logs ?: self::get_logs(strtotime($sr->executed_at));
+        if (\Module::collections()->has('Dunning')) {
+            $logs['bankTransfer'] = self::get_logs($sr->uploaded_at ? strtotime($sr->uploaded_at) : 0, Logger::INFO, 'bank-transactions.log');
+        }
 
-        return parent::edit($id)->with(compact('rerun_button', 'logs', 'status_msg'));
+        return parent::edit($id)->with(compact('button', 'logs', 'status_msg'));
     }
 
     public static function getStatusMessage($commandName)
     {
         switch ($commandName) {
-            case 'Modules\BillingBase\Console\ZipCommand':
+            case 'Modules\BillingBase\Jobs\ZipSettlementRun':
                 return trans('messages.zipCmdProcessing');
 
-            case 'Modules\BillingBase\Console\SettlementRunCommand':
+            case 'Modules\BillingBase\Jobs\SettlementRunJob':
                 return trans('messages.accCmd_processing');
 
             default:
@@ -139,7 +139,7 @@ class SettlementRunController extends \BaseController
      * Check State of Job "SettlementRunCommand"
      * Send Reload info when job has finished
      *
-     * @return 	response 	Stream
+     * @return  response    Stream
      */
     public function check_state()
     {
@@ -176,7 +176,7 @@ class SettlementRunController extends \BaseController
             }
 
             if (! isset($commandName)) {
-                $commandName = 'Modules\BillingBase\Console\SettlementRunCommand';
+                $commandName = 'Modules\BillingBase\Jobs\SettlementRunJob';
             }
 
             \Log::debug("Job $commandName \[".\Session::get('job_id').'] stopped');
@@ -235,7 +235,7 @@ class SettlementRunController extends \BaseController
     {
         $settlementrun = SettlementRun::find($id);
 
-        $id = \Queue::push(new \Modules\BillingBase\Console\ZipCommand($settlementrun, true));
+        $id = \Queue::push(new \Modules\BillingBase\Jobs\ZipSettlementRun($settlementrun, null, true));
         \Session::put('job_id', $id);
 
         return \Redirect::route('SettlementRun.edit', $settlementrun->id);
@@ -244,18 +244,21 @@ class SettlementRunController extends \BaseController
     /**
      * Get Logs from Parent Function from billing.log and Format for table view
      *
-     * @param date_time 	Unix Timestamp  	Return only Log entries after this timestamp
-     * @param severity_lvl 	Enum 				Minimum Severity Level to show
-     * @return array 		[timestamp => [color, type, message], ...]
+     * @param ts_from       Unix Timestamp      Return only Log entries after this timestamp
+     * @param severity_lvl  Enum                Minimum Severity Level to show
+     * @return array        [timestamp => [color, type, message], ...]
      */
-    public static function get_logs($date_time, $severity_lvl = Logger::NOTICE)
+    public static function get_logs($ts_from, $severity_lvl = Logger::NOTICE, $logfile = 'billing.log')
     {
-        $logs = parent::get_logs(storage_path('logs/billing.log'), $severity_lvl);
+        // TODO: use appropriate file in history
+        $fpath = storage_path("logs/$logfile");
+        $logs = parent::get_logs($fpath, $severity_lvl);
         $old = $filtered = [];
 
         foreach ($logs as $key => $string) {
             $timestamp = substr($string, 1, 19);
-            $type = substr($string, $x = strpos($string, 'billing.') + 8, $y = strpos($string, ': ') - $x);
+            preg_match('/\[.*\.([A-Z]*):/', $string, $match);
+            $type = $match ? $match[1] : '';
 
             switch ($type) {
                 case 'CRITICAL':
@@ -263,20 +266,21 @@ class SettlementRunController extends \BaseController
                 case 'ERROR': $bsclass = 'danger'; break;
                 case 'WARNING': $bsclass = 'warning'; break;
                 case 'INFO': $bsclass = 'info'; break;
+                case 'NOTICE': $bsclass = 'active'; break;
                 default: $bsclass = ''; break;
             }
 
             $arr = [
-                'color' 	=> $bsclass,
-                'time' 		=> $timestamp,
-                'type' 		=> $type,
-                'message' 	=> substr($string, $x + $y + 2),
+                'color'     => $bsclass,
+                'time'      => $timestamp,
+                'type'      => $type,
+                'message'   => substr($string, strpos($string, ': ') + 2),
                 ];
 
             if ($old == $arr) {
                 continue;
             }
-            if (strtotime($timestamp) < $date_time) {
+            if (strtotime($timestamp) < $ts_from) {
                 break;
             }
 
@@ -319,84 +323,6 @@ class SettlementRunController extends \BaseController
         $files = $obj->accounting_files();
 
         return response()->download($files[$sepaacc][$key]->getRealPath());
-    }
-
-    /**
-     * This function removes all "old" files and DB Entries created by the previous called accounting Command
-     * This is necessary because otherwise e.g. after deleting contracts the invoice would be kept and is still
-     * available in customer control center
-     * Used in: SettlementRunObserver@deleted, SettlementRunCommand
-     *
-     * USE WITH CARE!
-     *
-     * @param string	dir 				Accounting Record Files Directory relative to storage/app/
-     * @param object	settlementrun 		SettlementRun the directory should be cleared for
-     * @param object 	sepaacc
-     */
-    public static function directory_cleanup($settlementrun = null, $sepaacc = null)
-    {
-        $dir = SettlementRunCommand::get_relative_accounting_dir_path();
-        $start = $settlementrun ? date('Y-m-01 00:00:00', strtotime($settlementrun->created_at)) : date('Y-m-01');
-        $end = $settlementrun ? date('Y-m-01 00:00:00', strtotime('+1 month', strtotime($settlementrun->created_at))) : date('Y-m-01', strtotime('+1 month'));
-
-        // remove all entries of this month permanently (if already created)
-        $query = AccountingRecord::whereBetween('created_at', [$start, $end]);
-        if ($sepaacc) {
-            $query = $query->where('sepaaccount_id', '=', $sepaacc->id);
-        }
-
-        $ret = $query->forceDelete();
-        if ($ret) {
-            ChannelLog::debug('billing', 'Accounting Command was already executed this month - accounting table will be recreated now! (for this month)');
-        }
-
-        // Delete all invoices
-        $logmsg = 'Remove all already created Invoices and Accounting Files for this month';
-        ChannelLog::debug('billing', $logmsg);
-        echo "$logmsg\n";
-
-        if (! $settlementrun) {
-            Invoice::delete_current_invoices($sepaacc ? $sepaacc->id : 0);
-        }
-
-        $cdr_filepaths = cdrCommand::get_cdr_pathnames();
-        $salesman_csv_path = Salesman::get_storage_rel_filename();
-
-        // everything in accounting directory
-        if (! $sepaacc) {
-            foreach (glob(storage_path("app/$dir/*")) as $f) {
-                // keep cdr
-                if (in_array($f, $cdr_filepaths)) {
-                    continue;
-                }
-
-                if (is_file($f)) {
-                    unlink($f);
-                }
-            }
-
-            foreach (\Storage::directories($dir) as $d) {
-                \Storage::deleteDirectory($d);
-            }
-        }
-        // SepaAccount specific stuff
-        else {
-            // delete ZIP
-            \Storage::delete("$dir/".date('Y-m', strtotime('first day of last month')).'.zip');
-
-            // delete concatenated Invoice pdf
-            \Storage::delete("$dir/".\App\Http\Controllers\BaseViewController::translate_label('Invoices').'.pdf');
-
-            Salesman::remove_account_specific_entries_from_csv($sepaacc->id);
-
-            // delete account specific dir
-            $dir = $sepaacc->get_relative_accounting_dir_path();
-            foreach (\Storage::files($dir) as $f) {
-                \Storage::delete($f);
-            }
-
-            \Storage::deleteDirectory($dir);
-        }
     }
 
     public function destroy($id)
