@@ -253,9 +253,9 @@ class SettlementRun extends \BaseModel
         // Set execution timestamp to always show log entries on SettlementRun edit page
         self::where('id', $this->id)->update(['executed_at' => \Carbon\Carbon::now()]);
 
-        $accs = $this->getSepaAccounts($sepaacc);
-
         $this->init($sepaacc);
+
+        $accs = $this->getSepaAccounts($sepaacc);
 
         $this->user_output('parseCdr', 0);
         $cdrs = SettlementRunData::getCdrs();
