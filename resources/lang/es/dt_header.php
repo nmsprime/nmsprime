@@ -80,6 +80,7 @@ return [
     'settlementrun.year' => 'Año',
     'settlementrun.month' => 'Mes',
     'settlementrun.created_at' => 'Creado el',
+    'settlementrun.executed_at' => 'Executed at',
     'verified' => 'Verificado?',
     // MPR
     'mpr.name' => 'Nombre',
