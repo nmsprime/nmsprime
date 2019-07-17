@@ -68,8 +68,7 @@ class SettlementRun extends \BaseModel
                 'header' 		=>  $this->year.' - '.$this->month.' - '.$time,
                 'bsclass' 		=> $bsclass,
                 'order_by' 		=> ['0' => 'desc'],
-                'edit' 			=> ['verified' => 'run_verified',
-                                    'executed_at' => 'executed_at_toDateString', ],
+                'edit' 			=> ['verified' => 'run_verified'],
                 ];
     }
 
@@ -90,11 +89,6 @@ class SettlementRun extends \BaseModel
         }
 
         return $this->index_delete_disabled;
-    }
-
-    public function executed_at_toDateString()
-    {
-        return $this->executed_at->toDateString();
     }
 
     public function view_has_many()
