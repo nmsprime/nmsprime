@@ -136,9 +136,16 @@ class CustomerTopoController extends NetElementController
     */
     public function show_rect($x1, $x2, $y1, $y2)
     {
-        $modems = $this->filterModel(Modem::whereRaw("(($x1 < x) AND (x < $x2) AND ($y1 < y) AND (y < $y2))"));
+        $query = \DB::table('modem')
+            // ->join('contract', 'contract.id', '=', 'modem.contract_id')
+            // ->select(['modem.*', 'contract.lastname'])
+            ->whereNull('deleted_at')
+            ->where('x', '>', $x1)->where('x', '<', $x2)
+            ->where('y', '>', $y1)->where('y', '<', $y2);
 
-        return $this->show_topo($modems['selectedModel'], \Input::get('row'), $modems['allModels']);
+        $modemQuery = $this->filterModel($query);
+
+        return $this->show_topo($modemQuery['selectedModel'], \Input::get('row'), $modemQuery['allModels']);
     }
 
     /**
@@ -409,16 +416,14 @@ class CustomerTopoController extends NetElementController
     /**
      * Generate KML File with Customer Modems Inside
      *
-     * @param modems the Modem models to display, like Modem::where()
-     * @returns the path of the generated *.kml file to be included via asset ()
+     * @param  obj      Illuminate\Database\Eloquent\Builder with the query for the modem models to display, like Modem::where()
+     * @return string   the path of the generated *.kml file to be included via asset ()
      *
      * @author: Torsten Schmidt
      */
     public function kml_generate($modems, $row)
     {
-        $x = 0;
-        $y = 0;
-        $num = 0;
+        $x = $y = $num = 0;
         $clrs = [];
         $str = $descr = $city = $zip = $nr = '';
         $states = [-1 => 'offline', 0 => 'okay', 1 => 'impaired', 2 => 'critical'];
@@ -461,10 +466,6 @@ class CustomerTopoController extends NetElementController
                 $num = 0;
             }
 
-            // modem
-            $mid = $modem->id;
-            $mac = $modem->mac;
-
             if ($row == 'ds_us') {
                 // DS_ref (50) + US_ref (0) - DS_modem - US_modem
                 $row_val = 50 - $modem->ds_pwr - $modem->us_pwr;
@@ -479,13 +480,6 @@ class CustomerTopoController extends NetElementController
             }
             $clrs[] = $cur_clr;
 
-            //
-            // Contract
-            //
-            $contract = $modem->contract;
-            $contractid = $contract->id;
-            $lastname = $contract->lastname;
-
             // Headline: Address from DB
             if ($str != $modem->street || $city != $modem->city || $zip != $modem->zip || $nr != $modem->house_number) {
                 $str = $modem->street;
@@ -498,8 +492,9 @@ class CustomerTopoController extends NetElementController
             if (ProvBase::first()->modem_edit_page_new_tab) {
                 $this->html_target = '_blank';
             }
+
             // add descr line
-            $descr .= '<a target="'.$this->html_target."\" href='".\BaseRoute::get_base_url()."/Modem/$mid'>$mac</a>, $contractid, $lastname, $states[$cur_clr] ($row_val)<br>";
+            $descr .= '<a target="'.$this->html_target."\" href='".\BaseRoute::get_base_url()."/Modem/$modem->id'>$modem->mac</a>, $modem->contract_id, $modem->lastname, $states[$cur_clr] ($row_val)<br>";
             $num += 1;
         }
 
