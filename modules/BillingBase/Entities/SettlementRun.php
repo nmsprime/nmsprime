@@ -170,26 +170,60 @@ class SettlementRun extends \BaseModel
         return $arr;
     }
 
+    /**
+     * Parse an uploaded SWIFT-/Mt940.sta bank transaction file and assign Debts from it to appropriate contracts
+     *
+     * @param string
+     */
     public function parseBankingFile($mt940)
     {
         $parser = new \Kingsquare\Parser\Banking\Mt940();
-        $transactionParser = new \Modules\Dunning\Entities\TransactionParser;
+        $transactionParser = new \Modules\Dunning\Entities\TransactionParser($mt940);
 
-        $statements = $parser->parse($mt940);
+        // Handle wrong file format
+        try {
+            $statements = $parser->parse($mt940);
+        } catch (\Exception $e) {
+            \Session::push('tmp_error_above_form', trans('dunning::messages.parseMt940Failed', ['msg' => $e->getMessage()]));
+            \Log::error($e->getMessage().'.In: '.$e->getFile());
+
+            return;
+        }
+
+        $contracts = $contractsSpecial = [];
+
         foreach ($statements as $statement) {
             foreach ($statement->getTransactions() as $transaction) {
                 $debt = $transactionParser->parse($transaction);
 
                 // only for analysis during development!
-                // $transactions[$transaction->getDebitCredit()][] = ['price' => $transaction->getPrice(), 'description' => explode('?', $transaction->getDescription())];
+                // $transactions[$transaction->getDebitCredit()][] = ['price' => $transaction->getPrice(), 'code' => $transaction->getTransactionCode(), 'description' => explode('?', $transaction->getDescription())];
 
                 if (! $debt) {
                     continue;
                 }
 
                 $debt->save();
+
+                if ($debt->addedBySpecialMatch) {
+                    $contractsSpecial[] = $debt->contract_id;
+                } else {
+                    $contracts[] = $debt->contract_id;
+                }
             }
         }
+
+        // Summary log messages
+        if ($contracts) {
+            $numbers = Contract::whereIn('id', $contracts)->pluck('number')->all();
+            ChannelLog::info('dunning', trans('dunning::messages.addedDebts', ['count' => count($numbers), 'numbers' => implode(', ', $numbers)]));
+        }
+
+        if ($contractsSpecial) {
+            $numbers = Contract::whereIn('id', $contractsSpecial)->pluck('number')->all();
+            ChannelLog::notice('dunning', trans('dunning::messages.transaction.credit.noInvoice.special', ['numbers' => implode(', ', $numbers)]));
+        }
+
         // d($transactions, $statements, str_replace(':61:', "\r\n---------------\r\n:61:", $mt940));
     }
 
@@ -891,13 +925,7 @@ class SettlementRunObserver
 
             $mt940 = \Input::file('banking_file_upload');
 
-            $mt940s[] = Storage::get('tmp/Erznet-sta.sta');
-            $mt940s[] = Storage::get('tmp/Erznet-sta-2019-04-24.sta');
-            $mt940s[] = Storage::get('tmp/Erznet-sta-2019-04-25.sta');
-
-            foreach ($mt940s as $mt940) {
-                $settlementrun->parseBankingFile($mt940);
-            }
+            $settlementrun->parseBankingFile($mt940);
         }
     }
 }

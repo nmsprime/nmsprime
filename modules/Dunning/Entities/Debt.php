@@ -2,10 +2,14 @@
 
 namespace Modules\Dunning\Entities;
 
+use Modules\ProvBase\Entities\Contract;
+
 class Debt extends \BaseModel
 {
     // The associated SQL table for this Model
     public $table = 'debt';
+
+    public $addedBySpecialMatch;
 
     // Add your validation rules here
     public static function rules($id = null)
@@ -94,7 +98,7 @@ class Debt extends \BaseModel
      */
     public function contract()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Contract');
+        return $this->belongsTo(Contract::class);
     }
 }
 
