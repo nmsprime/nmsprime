@@ -58,18 +58,17 @@ class SettlementRun extends \BaseModel
     public function view_index_label()
     {
         $bsclass = $this->get_bsclass();
-        $day = (isset($this->created_at)) ? $this->created_at : '';
+        $time = $this->executed_at ?? '';
 
         return ['table' 		=> $this->table,
                 'index_header' 	=> [$this->table.'.year',
                                     $this->table.'.month',
-                                    $this->table.'.created_at',
+                                    $this->table.'.executed_at',
                                     'verified', ],
-                'header' 		=>  $this->year.' - '.$this->month.' - '.$day,
+                'header' 		=>  $this->year.' - '.$this->month.' - '.$time,
                 'bsclass' 		=> $bsclass,
                 'order_by' 		=> ['0' => 'desc'],
-                'edit' 			=> ['verified' => 'run_verified',
-                                    'created_at' => 'created_at_toDateString', ],
+                'edit' 			=> ['verified' => 'run_verified'],
                 ];
     }
 
@@ -90,11 +89,6 @@ class SettlementRun extends \BaseModel
         }
 
         return $this->index_delete_disabled;
-    }
-
-    public function created_at_toDateString()
-    {
-        return $this->created_at->toDateString();
     }
 
     public function view_has_many()
