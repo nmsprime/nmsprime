@@ -145,7 +145,7 @@ class ProvVoipEnviaController extends \BaseController
             // check what job has to be done – there can be some special cases…
             if ($job == 'misc_get_orders_csv_process_single_order') {
                 // special handling – we do not get data from envia but use the data given by GET param
-                $order_data = unserialize(urldecode(\Input::get('serialized_order', '')));
+                $order_data = unserialize(urldecode(\Request::get('serialized_order', '')));
                 if (! is_array($order_data)) {
                     $msg = 'Malformed data given. Cancelling cronjob';
                     \Log::error($msg);
@@ -612,7 +612,7 @@ class ProvVoipEnviaController extends \BaseController
         }
 
         // add the original GET params as hidden inputs
-        foreach (\Input::get() as $name => $value) {
+        foreach (\Request::get() as $name => $value) {
             if ($name != 'phonenumbers_to_create') {
                 $html .= "<input type='hidden' name='$name' value='$value' />\n";
             }
@@ -769,7 +769,7 @@ class ProvVoipEnviaController extends \BaseController
 
         // check if a non standard return type is wanted
         // usable: view (default), html
-        $return_type = \Input::get('return_type', 'view');
+        $return_type = \Request::get('return_type', 'view');
         $allowed_return_types = ['view', 'html'];
         if (! in_array($return_type, $allowed_return_types)) {
             throw new \InvalidArgumentException('Allowed return_type has to be in ['.implode(', ', $allowed_return_types).'] but “'.$return_type.'” given.');
@@ -799,12 +799,12 @@ class ProvVoipEnviaController extends \BaseController
         }
 
         // set some environmental vars
-        $origin = \Input::get('origin', \URL::to('/'));
+        $origin = \Request::get('origin', \URL::to('/'));
         $view_header = trans('provvoipenvia::messages.requestEnvia');
         $view_path = \NamespaceController::get_view_name().'.request';
 
         // check if there should be an instant redirect – if so do so :-)
-        if (\Input::get('instant_redirect', false)) {
+        if (\Request::get('instant_redirect', false)) {
             // we have to add the GET param manually as Redirect::to()->with('recentlty_updated', true) is not running
             // this param is used to break out of the endless redirect loop :-)
             return \Redirect::to(urldecode($origin).'?recently_updated=1');
@@ -827,7 +827,7 @@ class ProvVoipEnviaController extends \BaseController
         elseif (
             ($job == 'contract_create')
             &&
-            (! \Input::get('phonenumbers_to_create', []))
+            (! \Request::get('phonenumbers_to_create', []))
         ) {
             $view_var = $this->_ask_for_phonenumbers_to_be_created_with_contract($url, $origin);
         }
@@ -839,7 +839,7 @@ class ProvVoipEnviaController extends \BaseController
             try {
                 // check if data is going to be sent – don't store XML created to be shown for confirmation request
                 // if the XML to create is for sending against envia TEL there should be a …&really=True within the GET params
-                $store_xml = \Input::get('really', false);
+                $store_xml = \Request::get('really', false);
                 $payload = $this->model->get_xml($job, $store_xml);
                 $xml_creation_failed = false;
             } catch (XmlCreationError $ex) {
@@ -854,7 +854,7 @@ class ProvVoipEnviaController extends \BaseController
             } else {
                 // on jobs changing data at envia TEL: Ask if job shall be performed
                 // therefore show the generated XML
-                if (! \Input::get('really', false)) {
+                if (! \Request::get('really', false)) {
                     $view_var = $this->_show_confirmation_request($payload, $url, $origin);
                 } else {
 

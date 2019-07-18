@@ -353,13 +353,13 @@ class ProvMonController extends \BaseController
      */
     public function flood_ping($hostname)
     {
-        if (! \Input::has('flood_ping')) {
+        if (! \Request::filled('flood_ping')) {
             return;
         }
 
         $hostname = escapeshellarg($hostname);
 
-        switch (\Input::get('flood_ping')) {
+        switch (\Request::get('flood_ping')) {
             case '1':
                 exec("sudo ping -c500 -f $hostname 2>&1", $fp, $ret);
                 break;
@@ -1095,8 +1095,8 @@ class ProvMonController extends \BaseController
         /*
          * Time Span Calculation
          */
-        $from = \Input::get('from');
-        $to = \Input::get('to');
+        $from = \Request::get('from');
+        $to = \Request::get('to');
 
         if (! $from) {
             $from = '-3d';

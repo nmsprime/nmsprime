@@ -360,8 +360,8 @@ class CccUserController extends \BaseController
 
     public function psw_update()
     {
-        if (\Module::collections()->has('Mail') && \Input::has('email_id')) {
-            $email = Email::findorFail(\Input::get('email_id'));
+        if (\Module::collections()->has('Mail') && \Request::filled('email_id')) {
+            $email = Email::findorFail(\Request::get('email_id'));
             // customer requested email object, which does not belong to him
             // (by manually changing the email_id in the url)
             if ($email->contract != Auth::guard('ccc')->user()->contract) {
@@ -369,12 +369,11 @@ class CccUserController extends \BaseController
             }
         }
 
-        // dd(\Input::get(), \Input::get('password'));
-        if (\Input::has('password')) {
+        if (\Request::filled('password')) {
             // update psw
             $customer = Auth::guard('ccc')->user();
             $rules = ['password' => 'required|confirmed|min:6'];
-            $data = \Input::get();
+            $data = \Request::get();
 
             $validator = \Validator::make($data, $rules);
 
@@ -383,9 +382,9 @@ class CccUserController extends \BaseController
             }
 
             if (isset($email)) {
-                $email->psw_update(\Input::get('password'));
+                $email->psw_update(\Request::get('password'));
             } else {
-                $customer->password = \Hash::make(\Input::get('password'));
+                $customer->password = \Hash::make(\Request::get('password'));
                 $customer->save();
             }
 

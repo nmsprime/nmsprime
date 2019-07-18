@@ -56,7 +56,7 @@ class cactiCommand extends Command
      * @return true
      * @author: Torsten Schmidt
      */
-    public function fire()
+    public function handle()
     {
         $matches = [];
         $path = '/usr/share/cacti/cli';

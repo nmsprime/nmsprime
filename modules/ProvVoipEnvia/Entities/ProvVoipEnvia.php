@@ -955,13 +955,13 @@ class ProvVoipEnvia extends \BaseModel
         if ($level == '') {
 
             // entry point to database is contract
-            $contract_id = \Input::get('contract_id', null);
+            $contract_id = \Request::get('contract_id', null);
             if (! is_null($contract_id)) {
                 $this->contract = Contract::findOrFail($contract_id);
             }
 
             // entry point to database is modem
-            $modem_id = \Input::get('modem_id', null);
+            $modem_id = \Request::get('modem_id', null);
             if (! is_null($modem_id)) {
                 $this->modem = Modem::findOrFail($modem_id);
             }
@@ -972,7 +972,7 @@ class ProvVoipEnvia extends \BaseModel
             }
 
             // entry point to database is phonenumber
-            $phonenumber_id = \Input::get('phonenumber_id', null);
+            $phonenumber_id = \Request::get('phonenumber_id', null);
             if (! is_null($phonenumber_id)) {
                 $this->phonenumber = Phonenumber::findOrFail($phonenumber_id);
             }
@@ -991,7 +991,7 @@ class ProvVoipEnvia extends \BaseModel
             }
 
             // entry point is phonenumbermanagement
-            $phonenumbermanagement_id = \Input::get('phonenumbermanagement_id', null);
+            $phonenumbermanagement_id = \Request::get('phonenumbermanagement_id', null);
             if (! is_null($phonenumbermanagement_id)) {
                 $this->phonenumbermanagement = PhonenumberManagement::findOrFail($phonenumbermanagement_id);
             }
@@ -1005,7 +1005,7 @@ class ProvVoipEnvia extends \BaseModel
             }
 
             // entry point is phonebookentry
-            $phonebookentry_id = \Input::get('phonebookentry_id', null);
+            $phonebookentry_id = \Request::get('phonebookentry_id', null);
             if (! is_null($phonebookentry_id)) {
                 $this->phonebookentry = PhonebookEntry::findOrFail($phonebookentry_id);
             }
@@ -1558,7 +1558,7 @@ class ProvVoipEnvia extends \BaseModel
      */
     protected function _add_order_identifier()
     {
-        $order_id = \Input::get('order_id', null);
+        $order_id = \Request::get('order_id', null);
         if (! is_numeric($order_id)) {
             throw new XmlCreationError(trans('provvoipenvia::messages.hasToBeNumeric', ['value' => 'order_id']));
         }
@@ -1575,8 +1575,8 @@ class ProvVoipEnvia extends \BaseModel
      */
     protected function _add_filter_data()
     {
-        $localareacode = \Input::get('localareacode', null);
-        $baseno = \Input::get('baseno', null);
+        $localareacode = \Request::get('localareacode', null);
+        $baseno = \Request::get('baseno', null);
 
         $inner_xml = $this->xml->addChild('filter_data');
 
@@ -1620,7 +1620,7 @@ class ProvVoipEnvia extends \BaseModel
     {
 
         // the keyname for the data to catch; default is showing all available methods.
-        $keyname = \Input::get('keyname', 'index');
+        $keyname = \Request::get('keyname', 'index');
 
         $inner_xml = $this->xml->addChild('key_data');
 
@@ -1795,7 +1795,7 @@ class ProvVoipEnvia extends \BaseModel
         }
 
         // check if at least one phonenumber is given
-        $phonenumbers_to_create = \Input::get('phonenumbers_to_create', []);
+        $phonenumbers_to_create = \Request::get('phonenumbers_to_create', []);
         if (! $phonenumbers_to_create) {
             $msg = trans('provvoipenvia::messages.phonenumberNeededToCreateContract');
             $value_missing = true;
@@ -2295,7 +2295,7 @@ class ProvVoipEnvia extends \BaseModel
      */
     protected function _add_blacklist_data()
     {
-        $direction = strtolower(\Input::get('envia_blacklist_get_direction'));
+        $direction = strtolower(\Request::get('envia_blacklist_get_direction'));
         $valid_directions = ['in', 'out'];
 
         if (! in_array($direction, $valid_directions)) {
@@ -2429,8 +2429,8 @@ class ProvVoipEnvia extends \BaseModel
      */
     protected function _add_attachment_data()
     {
-        $enviaorderdocument_id = \Input::get('enviaorderdocument_id');
-        $enviaorder_id = \Input::get('order_id');
+        $enviaorderdocument_id = \Request::get('enviaorderdocument_id');
+        $enviaorder_id = \Request::get('order_id');
 
         $enviaorderdocument = EnviaOrderDocument::findOrFail($enviaorderdocument_id);
 
@@ -2624,11 +2624,11 @@ class ProvVoipEnvia extends \BaseModel
         $out .= '<h5>'.trans('provvoipenvia::messages.freeNumbers');
 
         // localareacode filter set?
-        if ($local_filter = \Input::get('localareacode', false)) {
+        if ($local_filter = \Request::get('localareacode', false)) {
             $out .= ' '.trans('provvoipenvia::messages.usingFilter').' '.$local_filter.'/';
 
             // show basenumber filter if set
-            $baseno_filter = \Input::get('baseno', '');
+            $baseno_filter = \Request::get('baseno', '');
             $out .= $baseno_filter.'*';
         }
 
@@ -2655,7 +2655,7 @@ class ProvVoipEnvia extends \BaseModel
      */
     protected function _process_misc_get_keys_response($xml, $data, $out)
     {
-        $keyname = \Input::get('keyname', 'index');
+        $keyname = \Request::get('keyname', 'index');
 
         if ($keyname == 'index') {
             $out .= '<h5>'.trans('provvoipenvia::messages.availableKeys').'</h5>';
@@ -3030,7 +3030,7 @@ class ProvVoipEnvia extends \BaseModel
         $enviaOrder = EnviaOrder::create($order_data);
 
         // check if there are also phonenumbers created
-        $created_phonenumbers = \Input::get('phonenumbers_to_create', []);
+        $created_phonenumbers = \Request::get('phonenumbers_to_create', []);
 
         // create some implicite data:
         //   - relation between envia TEL order and phonenumber
@@ -3287,7 +3287,7 @@ class ProvVoipEnvia extends \BaseModel
      */
     protected function _process_contract_get_reference_response($xml, $data, $out)
     {
-        $phonenumber_id = \Input::get('phonenumber_id', null);
+        $phonenumber_id = \Request::get('phonenumber_id', null);
 
         if (is_null($phonenumber_id)) {
             $phonenumber = null;
@@ -3313,7 +3313,7 @@ class ProvVoipEnvia extends \BaseModel
                 $msg .= "<br> $_";
                 Log::info($_);
                 $enviacontract->save();
-            } elseif ($enviacontract->attributes != $enviacontract->original) {
+            } elseif ($enviacontract->isDirty()) {
                 $_ = trans('provvoipenvia::messages.updating')." EnviaContract $enviacontract->id";
                 $msg .= "<br> $_";
                 Log::info($_);
@@ -3565,7 +3565,7 @@ class ProvVoipEnvia extends \BaseModel
             if (! $envia_contract->exists) {
                 $msg = trans('provvoipenvia::messages.creatingEnviaContract', [$envia_contract->id]);
                 Log::info($msg);
-            } elseif ($envia_contract->attributes != $envia_contract->original) {
+            } elseif ($envia_contract->isDirty()) {
                 $msg = trans('provvoipenvia::messages.updatingEnviaContract', [$envia_contract->id]);
                 Log::info($msg);
             } else {
@@ -4539,7 +4539,7 @@ class ProvVoipEnvia extends \BaseModel
      */
     protected function _process_order_get_status_response($xml, $data, $out)
     {
-        $order_id = \Input::get('order_id');
+        $order_id = \Request::get('order_id');
         $order = EnviaOrder::withTrashed()->where('orderid', '=', $order_id)->first();
 
         // something went wrong! There is no database entry for the given orderID
@@ -5119,7 +5119,7 @@ class ProvVoipEnvia extends \BaseModel
      */
     protected function _process_order_cancel_response($xml, $data, $out)
     {
-        $canceled_enviaorder_id = \Input::get('order_id');
+        $canceled_enviaorder_id = \Request::get('order_id');
 
         // get canceled order
         $canceled_enviaorder = EnviaOrder::where('orderid', '=', $canceled_enviaorder_id)->firstOrFail();
@@ -5155,7 +5155,7 @@ class ProvVoipEnvia extends \BaseModel
      */
     protected function _process_order_create_attachment_response($xml, $data, $out)
     {
-        $enviaorder_id = \Input::get('order_id');
+        $enviaorder_id = \Request::get('order_id');
         $related_enviaorder = EnviaOrder::where('orderid', '=', $enviaorder_id)->firstOrFail();
         $related_order_id = $related_enviaorder->id;
 
@@ -5184,7 +5184,7 @@ class ProvVoipEnvia extends \BaseModel
         EnviaOrder::where('orderid', '=', $xml->orderid)->delete();
 
         // update enviaordertables => store id of order id of upload
-        $enviaorderdocument = EnviaOrderDocument::findOrFail(\Input::get('enviaorderdocument_id', null));
+        $enviaorderdocument = EnviaOrderDocument::findOrFail(\Request::get('enviaorderdocument_id', null));
         $enviaorderdocument['upload_order_id'] = $xml->orderid;
         $enviaorderdocument->save();
 
@@ -5292,9 +5292,9 @@ class ProvVoipEnvia extends \BaseModel
     {
 
         // manipulate \Input to perform action against envia TEL without confirmation
-        \Input::merge(['really' => 'true']);
+        \Request::merge(['really' => 'true']);
         // manipulate \Input to return flat html instead of a view
-        \Input::merge(['return_type' => 'html']);
+        \Request::merge(['return_type' => 'html']);
 
         // get a controller instance and execute the request
         $c = new ProvVoipEnviaController();

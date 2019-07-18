@@ -2,9 +2,8 @@
 
 namespace Modules\ProvVoipEnvia\Http\Controllers;
 
-use Input;
 use Bouncer;
-use Illuminate\Support\Facades\View;
+use Request;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvVoip\Entities\Phonenumber;
@@ -33,11 +32,11 @@ class EnviaOrderController extends \BaseController
 
             // order can be related to phonenumber and/or modem and/or contract
             // get the contract (has to be given; watch create()
-            $contract_id = Input::get('contract_id', null);
+            $contract_id = Request::get('contract_id', null);
             $init_values['contract_id'] = $contract_id;
 
             // try to get modem (can be given)
-            $modem_id = Input::get('modem_id', null);
+            $modem_id = Request::get('modem_id', null);
             if (boolval($modem_id)) {
                 $init_values['modem_id'] = $modem_id;
                 if (! $modem = Modem::find($modem_id)) {
@@ -47,7 +46,7 @@ class EnviaOrderController extends \BaseController
             }
 
             // try to get phonenumber (can be given)
-            $phonenumber_id = Input::get('phonenumber_id', null);
+            $phonenumber_id = Request::get('phonenumber_id', null);
             if (boolval($phonenumber_id)) {
                 $init_values['phonenumber_id'] = $phonenumber_id;
                 if (! $phonenumber = Phonenumber::find($phonenumber_id)) {
@@ -136,10 +135,10 @@ class EnviaOrderController extends \BaseController
 
     public function create()
     {
-        $phonenumbermanagement_id = Input::get('phonenumbermanagement_id', null);
-        $phonenumber_id = Input::get('phonenumber_id', null);
-        $modem_id = Input::get('modem_id', null);
-        $contract_id = Input::get('contract_id', null);
+        $phonenumbermanagement_id = Request::get('phonenumbermanagement_id', null);
+        $phonenumber_id = Request::get('phonenumber_id', null);
+        $modem_id = Request::get('modem_id', null);
+        $contract_id = Request::get('contract_id', null);
 
         // if contract_id is given: all is fine => call parent
         // in this case we take for sure that the caller is is either contract=>create_envia_order or a redirected phonenumbermanagement=>create_envia_order
@@ -158,7 +157,7 @@ class EnviaOrderController extends \BaseController
         $params = $_GET;
 
         // then we add all possibly given input values (this is e.g. the _token to avoid CSRF attacks)
-        foreach (Input::all() as $key => $value) {
+        foreach (Request::all() as $key => $value) {
             if (! array_key_exists($key, $params)) {
                 $params[$key] = $value;
             }
@@ -258,7 +257,7 @@ class EnviaOrderController extends \BaseController
         $parent_return = parent::edit($id);
 
         // if already updated against envia TEL API: show edit form
-        if (Input::get('recently_updated', false)) {
+        if (Request::get('recently_updated', false)) {
             return $parent_return;
         }
 
@@ -292,7 +291,7 @@ class EnviaOrderController extends \BaseController
         }
 
         // else redirect to check newly created order against envia TEL API
-        $order_id = Input::get('orderid');
+        $order_id = Request::get('orderid');
         $params = [
             'job' => 'order_get_status',
             'order_id' => $order_id,
@@ -318,7 +317,7 @@ class EnviaOrderController extends \BaseController
         $orders = [];
         if ($id == 0) {
             // bulk deletion is not supported (yet?)
-            $ids = Input::all()['ids'];
+            $ids = Request::all()['ids'];
             if (count($ids) > 1) {
                 // TODO: make a nicer output
                 echo '<h3>Error: Cannot cancel more than one order per time</h3>';

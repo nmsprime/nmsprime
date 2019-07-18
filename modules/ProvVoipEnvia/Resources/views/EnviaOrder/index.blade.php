@@ -5,7 +5,7 @@
 
 <?php
 
-	$filter = \Input::get('show_filter', 'all');
+	$filter = \Request::get('show_filter', 'all');
 	if ($filter != 'action_needed') {
 		$filter = 'all';
 	}

@@ -11,7 +11,7 @@ class HfcBaseServiceProvider extends ServiceProvider
      *
      * @var bool
      */
-    protected $defer = true;
+    protected $defer = false;
 
     /**
      * The artisan commands provided by this module
@@ -39,8 +39,6 @@ class HfcBaseServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        \View::addNamespace('HfcBase', __DIR__.'/../Resources/views');
-
         $this->commands($this->commands);
     }
 
@@ -66,6 +64,8 @@ class HfcBaseServiceProvider extends ServiceProvider
      */
     public function registerViews()
     {
+        \View::addNamespace('HfcBase', __DIR__.'/../Resources/views');
+
         $viewPath = base_path('resources/views/modules/HfcBase');
 
         $sourcePath = __DIR__.'/../Resources/views';

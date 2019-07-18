@@ -29,7 +29,7 @@ class TicketType extends \BaseModel
      */
     public function tickets()
     {
-        return $this->belongsToMany('\Modules\Ticketsystem\Entities\Ticket', 'tickettype_ticket', 'ticket_id', 'tickettype_id');
+        return $this->belongsToMany(Ticket::class, 'tickettype_ticket', 'ticket_id', 'tickettype_id');
     }
 
     public function children()

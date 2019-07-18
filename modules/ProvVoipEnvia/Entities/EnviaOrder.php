@@ -764,7 +764,7 @@ class EnviaOrder extends \BaseModel
         ];
 
         // check if we have to filter the list of orders
-        $filter = \Input::get('show_filter', 'all');
+        $filter = \Request::get('show_filter', 'all');
         if (! in_array($filter, $available_filters)) {
             $filter = 'all';
         }
@@ -820,7 +820,8 @@ class EnviaOrder extends \BaseModel
 
     public function phonenumbers()
     {
-        return $this->belongsToMany('Modules\ProvVoip\Entities\Phonenumber', 'enviaorder_phonenumber', 'enviaorder_id', 'phonenumber_id')->withTimestamps();
+        return $this->belongsToMany(Phonenumber::class, 'enviaorder_phonenumber',
+                    'phonenumber_id', 'enviaorder_id')->withTimestamps();
     }
 
     public function enviaorderdocument()
