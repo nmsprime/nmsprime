@@ -14,7 +14,7 @@ class UpdateSettlementRunAddUploadTimestamp extends BaseMigration
     public function up()
     {
         Schema::table($this->tablename, function (Blueprint $table) {
-            $table->timestamp('uploaded_at')->nullable()->after('executed_at');
+            $table->timestamp('uploaded_at')->nullable()->after('deleted_at');
         });
     }
 
