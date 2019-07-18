@@ -301,7 +301,7 @@ return [
         'Button_Create Endpoints'		=> 'Create Endpoints',
         'Button_Create Endpoint'		=> 'Create Endpoint',
         //MTA
-        'Button_Create Mta'				=> 'Create MTA',
+        'Button_Create Mta'				=> 'Neues MTA',
         // //Phonenumber
         'Button_Create Phone tariffs'	=> 'Create Phonetariffs',
         'Button_Create PhoneTariff' 	=> 'Create Phonetariff',
