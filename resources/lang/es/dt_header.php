@@ -155,7 +155,7 @@ return [
     'modem.firstname' => 'Nombres',
     'modem.geocode_source' => 'Geolocalización',
     'modem.house_number' => 'Numero de vivienda',
-    'modem.id' => 'Modem',
+    'modem.id' => 'Modem ID',
     'modem.inventar_num' => 'Serial',
     'modem.lastname' => 'Apellidos',
     'modem.mac' => 'Direccion MAC',
@@ -203,11 +203,11 @@ return [
     'enviaorder.orderdate'  => 'Fecha de orden',
     'enviaorder_current'  => 'Acciones necesarias?',
     'enviaorder.contract.number' => 'Contract',
-    'phonenumber.number' => 'Phonenumber',
+    'phonenumber.number' => 'Numero',
     //ENVIA Contract
     'enviacontract.contract.number' => 'Contract',
     'enviacontract.end_date' => 'Fecha de desenlace',
-    'enviacontract.envia_contract_reference' => 'envia TEL contract reference',
+    'enviacontract.envia_contract_reference' => 'envia TEL referencia de contrato',
     'enviacontract.start_date' => 'Fecha de inicio',
     'enviacontract.state' => 'Estado',
     // CDR
