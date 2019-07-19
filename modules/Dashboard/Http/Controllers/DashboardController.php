@@ -15,11 +15,11 @@ class DashboardController extends BaseController
     public function index()
     {
         $title = 'Dashboard';
-
         $logs = GuiLog::where([['username', '!=', 'cronjob'], ['model', '!=', 'User']])->orderBy('updated_at', 'desc')->orderBy('user_id', 'asc')->limit(50)->get();
         $tickets['table'] = Auth::user()->tickets()->where('state', '=', 'New')->get();
         $tickets['total'] = count($tickets['table']);
 
+        // This is the most timeconsuming task
         $netelements = $this->_get_impaired_netelements();
         $services = $this->_get_impaired_services();
 
@@ -96,8 +96,9 @@ class DashboardController extends BaseController
             return $ret;
         }
 
-        foreach (\Modules\HfcReq\Entities\NetElement::where('id', '>', '2')->get() as $element) {
-            $state = $element->get_bsclass();
+        // Icingaobjects need to be eager loaded! - maybe use https://github.com/topclaudy/compoships ?
+        foreach (\Modules\HfcReq\Entities\NetElement::where('id', '>', '2')->with('netelementtype')->get() as $id => $element) {
+            $state = $element->get_bsclass(true);
             if ($state == 'success' || $state == 'info') {
                 continue;
             }
