@@ -3,10 +3,8 @@
 namespace Modules\BillingBase\Http\Controllers;
 
 use Monolog\Logger;
-use Modules\BillingBase\Entities\Invoice;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\SettlementRun;
-use Modules\BillingBase\Console\SettlementRunCommand;
 
 class SettlementRunController extends \BaseController
 {
@@ -33,8 +31,8 @@ class SettlementRunController extends \BaseController
     {
         $time_last_month = strtotime('first day of last month');
 
-        $data['year'] = isset($data['year']) && $data['year'] ? $data['year'] : date('Y', $time_last_month);
-        $data['month'] = (int) (isset($data['month']) && $data['month'] ? $data['month'] : date('m', $time_last_month));
+        $data['year'] = $data['year'] ?? date('Y', $time_last_month);
+        $data['month'] = (int) ($data['month'] ?? date('m', $time_last_month));
 
         return parent::prepare_input($data);
     }
