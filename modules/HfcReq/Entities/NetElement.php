@@ -98,21 +98,27 @@ class NetElement extends \BaseModel
                 'edit' => ['netelementtype.name' => 'get_elementtype_name'], ];
     }
 
-    public function get_bsclass()
+    /**
+     * Get Bootstrap class for colorization
+     *
+     * @param mixed     bool or null
+     *  true if db_exists() was already checked - Used to reduce DB queries and improve bad performance of DashboardController::_get_impaired_netelements()
+     */
+    public function get_bsclass($db_exists = null)
     {
         if (in_array($this->get_elementtype_name(), ['Net', 'Cluster'])) {
             return 'info';
         }
 
-        if (! IcingaObjects::db_exists()) {
+        if ($db_exists === false || (is_null($db_exists) && ! IcingaObjects::db_exists())) {
             return 'warning';
         }
 
-        $tmp = $this->icingaobjects;
-        if ($tmp && $tmp->is_active) {
-            $tmp = $tmp->icingahoststatus;
-            if ($tmp) {
-                return $tmp->last_hard_state ? 'danger' : 'success';
+        $icingaObj = $this->icingaobjects;
+        if ($icingaObj && $icingaObj->is_active) {
+            $icingaObj = $icingaObj->icingahoststatus;
+            if ($icingaObj) {
+                return $icingaObj->last_hard_state ? 'danger' : 'success';
             }
         }
 
@@ -159,9 +165,20 @@ class NetElement extends \BaseModel
         return $this->hasMany('Modules\HfcSnmp\Entities\Indices', 'netelement_id');
     }
 
+    /**
+     * Relationship with two (composite) keys
+     *
+     * As Android and Iphone app developers use wrong columns to display object name, we use the relation
+     * column to describe the object as well
+     *
+     * TODO: Use https://github.com/topclaudy/compoships or use single primary key again
+     */
     public function getIcingaobjectsAttribute()
     {
-        return IcingaObjects::where('name1', "{$this->id}_{$this->name}")->where('icinga_objects.objecttype_id', '1')->where('icinga_objects.is_active', '1')->first();
+        return IcingaObjects::where('name1', "{$this->id}_{$this->name}")
+            ->where('icinga_objects.objecttype_id', '1')
+            ->where('icinga_objects.is_active', '1')
+            ->with('icingahoststatus')->first();
     }
 
     public function parent()
