@@ -25,7 +25,24 @@ return [
 
     // GlobalConfig
     'ISO_3166_ALPHA-2'				=> 'ISO 3166 ALPHA-2 (dos caracteres, p.e. “US”). Usado en formularios de direccion para especificar el pais.',
-    'PasswordReset'           => 'Esta propiedad define el intervalo de tiempo en días en los que los usuarios del panel de administración deben cambiar sus contraseñas. Si desea deshabilitar el mensaje de restablecimiento de contraseña, establezca el valor en 0.',
+    'PasswordReset'           => 'Esta propiedad define el intervalo de tiempo en días en los que los usuarios del panel de administración deben cambiar sus contraseñas. Si desea inhabilitar el mensaje de restablecimiento de contraseña, establezca el valor en 0.',
+
+    /*
+     *	MODULE: BillingBase
+     */
+    //BillingBaseController
+    'BillingBase' => [
+        'cdr_offset'        => "TAKE CARE: incrementing this when having data from settlement runs leads to overwritten CDRs during next run - make sure to save/rename the history!\n\nExample: Set to 1 if Call Data Records from June belong to Invoices of July, Zero if it's the same month, 2 if CDRs of January belong to Invoices of March.",
+        'cdr_retention'     => 'Months that Call Data Records may/have to be kept save',
+        'extra_charge'      => 'Additional mark-on to purchase price. Only when not calculated through provider!',
+        'fluid_dates'       => 'Check this box if you want to add tariffs with uncertain start and/or end date. If checked two new checkboxes (Valid from fixed, Valid to fixed) will appear on Item\'s edit/create page. Check out their help messages for further explanation!',
+        'InvoiceNrStart'    => 'Invoice Number Counter starts every new year with this number',
+        'ItemTermination'   => 'Allow Customers only to terminate booked products on last day of month',
+        'MandateRef'        => "A Template can be built with sql columns of contract or mandate table - possible fields: \n",
+        'rcd'               => 'Is also the date of value. Can also be set specifically for a contract on contract page',
+        'showAGs'           => 'Adds a select list with contact persons to the contract page. The list has to be stored in appropriate Storage directory - check source code!',
+        'SplitSEPA'         => 'Sepa Transfers are split to different XML-Files dependent of their transfer type',
+        ],
 
     //CompanyController
     'Company_Management'			=> 'Lista de nombres separada por comas',
@@ -46,13 +63,13 @@ return [
 
     //ProductController
     'product' => [
-        'bundle'                => 'On bundled tarifs the minimum runtime of the contract is determined only be the internet tariff. Otherwise the last starting valid tariff (Voip or Internet) dictates this date.',
-        'maturity_min'          => 'Tariff minimum period/runtime/term. E.g. 14D (14 days), 3M (three months), 1Y (one year)',
-        'maturity'              => 'Tariff period/runtime/term extension after the minimum runtime. Will be automatically added when tariff was not canceled before period of notice. Default 1 month. E.g. 14D (14 days), 3M (three months), 1Y (one year)',
-        'Name'                  => 'For Credits it is possible to assign a Type by adding the type name to the Name of the Credit - e.g.: \'Credit Device\'',
-        'pod'                   => 'E.g. 14D (14 days), 3M (three months), 1Y (one year)',
-        'proportional'          => 'Activate this checkbox when items that begin during the current settlement run shall be charged proportionately. E.g. if an monthly paid item starts in the middle of the month the customer would be charged only half of the full price in this settlement run.',
-        'Type'                  => 'All fields besides Billing Cycle have to be cleared before a type change! Otherwise products can not be saved in most cases',
+        'bundle'                => 'En tárifas agrupadas el tiempo mínimo de funcionamiento del contrato es determinado únicamente por la tárifa de internet. De otra forma la última tárifa inicial valida (Voip o Internet) dictamina esta fecha.',
+        'maturity_min'          => 'Período mínimo de tarifa/tiempo de ejecución/término. Ejem. 14D (14 días), 3M (3 meses), 1Y (1 Año)',
+        'maturity'              => 'Período de tarifa/duración/duración de ejecución después de la duración mínima. Se añadirá automáticamente cuando la tarifa no se canceló antes del período de notificación. Por defecto 1 mes. Por ejemplo, 14D (14 días), 3M (tres meses), 1Y (un año)',
+        'Name'                  => 'Para créditos es posible asignar un Tipo añadiendo el nombre del tipo al Nombre del Crédito. Ejem.: "Dispositivo de crédito"',
+        'pod'                   => 'Por ejemplo 14D (14 días), 3M (tres meses), 1Y (un año)',
+        'proportional'          => 'Activa esta casilla cuando los elementos que empiecen durante la ejecución actual de la liquidación se cargarán proporcionalmente. Por ejemplo, si un artículo de pago mensual comienza a mediados del mes, el cliente se cobrará sólo la mitad del precio completo en esta operación de liquidación.',
+        'Type'                  => '¡Todos los campos además del ciclo de facturación deben ser limpiados antes de un cambio de tipo! De lo contrario, en la mayoría de los casos los productos no pueden ser guardados',
         ],
     'Product_Number_of_Cycles' 		=> 'Ten cuidado!: para todos los productos pagados repetidos, el precio aplica para cada deuda, para productos pagados de una, el Precio es dividido por el numero de ciclos',
 
@@ -64,25 +81,25 @@ return [
     'sm_recur' 						=> 'Activar si ya han habido transacciones de esta cuenta, antes de la creacion de este mandado. Establece el estado a recurrente. Nota: Esta etiqueta solo es considerada en la primera transaccion!',
 
     // SettlementrunController
-    'settlement_verification' 		=> 'Si es activada, no es posible de repetir el Acuerdo. Las Facturas del Cliente son solo visibles cuando esta casilla esta marcada.',
+    'settlement_verification' 		=> 'Las facturas del cliente son solo visibles cuando esta casilla esta activada. La casilla solo puede activarse si la ultima ejecución fue realizada para todas las cuentas SEPA (para no perder ningún cambio). Info: Si se activa no es posible repetir la ejecución de la liquidación.',
 
  /*
   * MODULE: Dashboard
   */
     'next'							=> 'Siguiente paso: ',
-    'set_isp_name'					=> 'Nombre de proveedor de servicio de red',
+    'set_isp_name'					=> 'Configure el nombre del proveedor de servicio de red',
     'create_cmts'					=> 'Crear el primer CMTS',
-    'create_cm_pool'				=> 'Crear primer IP Pool para Cable Modem',
-    'create_cpepriv_pool'			=> 'Crear primer pool privado CPE IP',
-    'create_qos'					=> 'Crear primer perfil QoS',
-    'create_product'				=> 'Crear primer producto de facturación',
-    'create_configfile'				=> 'Crear primer archivo de configuración',
-    'create_sepa_account'			=> 'Crear cuenta SEPA',
-    'create_cost_center'			=> 'Crear primer centro de costo',
-    'create_contract'				=> 'Crear contrato',
+    'create_cm_pool'				=> 'Crear la primera pool de IP para los cable modem',
+    'create_cpepriv_pool'			=> 'Crear la primera pool privada de IP para CPE',
+    'create_qos'					=> 'Crear el primer perfil QoS',
+    'create_product'				=> 'Crear el primer producto de facturación',
+    'create_configfile'				=> 'Crear el primer archivo de configuración',
+    'create_sepa_account'			=> 'Crear la primera cuenta SEPA',
+    'create_cost_center'			=> 'Crear el primer centro de costo',
+    'create_contract'				=> 'Crear el primer contrato',
     'create_nominatim'				=> 'Establecer una dirección de correo electrónico (OSM_NOMINATIM_EMAIL) en /etc/nmsprime/env/global.env para habilitar geocodificación para módem',
     'create_nameserver'				=> 'Establezca su servidor de nombres a 127.0.0.1 en /etc/resolv.conf y asegúrese de que no será sobreescrito a través de DHCP (vea DNS y PEERDNS en /etc/sysconfig/network-scripts/ifcfg-*)',
-    'create_modem'					=> 'Crear primer módem',
+    'create_modem'					=> 'Crear el primer módem',
 
  /*
   *	MODULE: HfcReq
@@ -107,10 +124,14 @@ return [
  /*
   *	MODULE: ProvBase
   */
+    'contract' => [
+        'valueDate' => 'Day of month for specific date of value. Overrides the requested collection date from global config for this contract in the SEPA XML.',
+    ],
     'rate_coefficient'				=> 'La Maxima Tarifa Sostenida sera multiplicada por este valor para otorgar al usuario mas (> 1.0) rendimiento que el suscrito.',
-    'additional_modem_reset'		=> 'Check if an additional button should be displayed, which resets the modem via SNMP without querying the CMTS.',
+    'additional_modem_reset'		=> 'Compruebe si debe mostrarse un botón adicional, que reinicie el módem a través de SNMP sin consultar el CMTS.',
+    'openning_new_tab_for_modem' => 'Check the box to open the modem edit page in new tab in topography view.',
     //ModemController
-    'Modem_InternetAccess'			=> 'Internet Access for CPEs. (MTAs are not considered and will always go online when all other configurations are correct). Take care: With Billing-Module this checkbox will be overwritten by daily check if tariff changes.',
+    'Modem_InternetAccess'			=> 'Acceso a Internet para los CPEs (los MTAs no se consideran y siempre se conectarán cuando todas las demás configuraciones sean correctas). Tenga cuidado: Con el Módulo de facturación esta casilla se sobrescribirá por chequeo diario si cambia la tarifa.',
     'Modem_InstallationAddressChangeDate'	=> 'En caso de (fisico) reubicacion del modem: Agregar fecha de inicio para la nueva direccion ahi. Si es solo lectura, hay una orden de cambio de direccion pendiente en Envia.',
     'Modem_GeocodeOrigin'			=> 'De donde vienen los datos geocode? Si se establece a "n/a", la direccion no podra ser geocoded para cualquier API. Sera establecido a su nombre en cambios manuales de geodata.',
     'contract_number' 				=> 'Atencion - Contrasena del Cliente es cambiado automaticamente cuando se cambia este campo!',
@@ -118,14 +139,16 @@ return [
     'fixed_ip_warning'				=> 'Usar una IP fija es altamente no recomendado, ya que pierde la habilidad de mover modems y sus CPEs libremente entre CMTSes. Envez de dar una IP fija al cliente, deberan ser provistos del hostname, el cual no cambiara.',
     'modem_update_frequency'		=> 'Este campo se actualiza una vez al día.',
     'enable_agc'					=> 'Activar el control automático de ganancia para upstream.',
-    'agc_offset'					=> 'Control de ganancia automática en dB (por defecto: 0.0)',
-    'configfile_count'              => 'The number in brackets indicates how often the respective configurationfile is already used.',
-    'has_telephony'                 => 'Activate if customer shall have telephony but has no internet. This flag can actually not be used to disable telephony on contracts with internet. Please delete the MTA or disable the phonenumber for that. Info: The setting influences the modems configfile parameters NetworkAcess and MaxCPE - see modems analyses page tab \'Configfile\'',
+    'agc_offset'					=> 'Compensación del control automático de ganancia para el upstream en dB. (por defecto: 0.0)',
+    'configfile_count'              => 'El número en paréntesis indica que tan seguido está siendo usado el archivo de configuración respectivo.',
+    'has_telephony'                 => 'Activar si el cliente tendrá telefonía pero no tiene internet. Esta bandera no puede ser utilizada para desactivar la telefonía en contratos con Internet. Por favor, elimine el MTA o desactive el número de teléfono para eso. Información: El ajuste influye en los parámetros de configuración NetworkAcess y MaxCPE de los módems - ver la pestaña de análisis de modems \'Configfile\'',
 
  /*
   *	MODULE: ProvVoip
   */
     //PhonenumberManagementController
+    'PhonenumberManagement_activation_date' => 'Will be sent to provider as desired date, triggers active state of the phonenumber.',
+    'PhonenumberManagement_deactivation_date' => 'Will be sent to provider as desired date, triggers active state of the phonenumber.',
     'PhonenumberManagement_CarrierIn' => 'En puerto entrante: establecer al Telco anterior.',
     'PhonenumberManagement_CarrierInWithEnvia' => 'En puerto entrante: establecer al Telco anterior. Si hubiese una nueva cifra, se establece a EnviaTEL',
     'PhonenumberManagement_EkpIn' => 'En puerto entrante: establecer al Telco.',
@@ -157,4 +180,5 @@ return [
     'noReplyMail' => 'La dirección de correo electrónico que debe ser mostrada como remitente, al crear/editar tickets. Esta dirección no tiene que existir. Por ejemplo: ejemplo@ejemplo.com',
     'noReplyName' => 'El nombre que debe mostrarse como remitente, al crear/editar tickets. Por ejemplo: NMS Prime',
     'ticket_settings' => 'Siguiente: Establecer nombre y dirección no responder en la página de configuración global.',
+    'carrier_out'      => 'Carrier code of the future contractual partner. If left blank the phonenumber will be deleted.',
  ];
