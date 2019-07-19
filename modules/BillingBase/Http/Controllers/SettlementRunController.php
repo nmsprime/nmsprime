@@ -36,11 +36,6 @@ class SettlementRunController extends \BaseController
         $data['year'] = isset($data['year']) && $data['year'] ? $data['year'] : date('Y', $time_last_month);
         $data['month'] = (int) (isset($data['month']) && $data['month'] ? $data['month'] : date('m', $time_last_month));
 
-        if (! isset($data['description'])) {
-            $data['description'] = '';
-            $data['verified'] = '';
-        }
-
         return parent::prepare_input($data);
     }
 
