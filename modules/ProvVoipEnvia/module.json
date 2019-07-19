@@ -2,13 +2,16 @@
     "name": "ProvVoipEnvia",
     "alias": "provvoipenvia",
     "description": "envia TEL API",
-    "icon": "fa-volume-control-phone",
     "keywords": [],
     "active": 0,
     "order": 22,
     "priority": 0,
-    "providers": [],
+    "icon": "fa-volume-control-phone",
+    "providers": [
+        "Modules\\ProvVoipEnvia\\Providers\\ProvVoipEnviaServiceProvider"
+    ],
     "files": [
         "start.php"
-    ]
+    ],
+    "requires": []
 }

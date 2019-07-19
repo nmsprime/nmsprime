@@ -3,6 +3,7 @@
 namespace Modules\BillingBase\Entities;
 
 use DB;
+use Request;
 use Storage;
 use ChannelLog;
 use Modules\ProvBase\Entities\Contract;
@@ -17,7 +18,7 @@ class SettlementRun extends \BaseModel
     // The associated SQL table for this Model
     public $table = 'settlementrun';
 
-    // don't try to add these Input fields to Database of this model
+    // don't try to add theseRequest fields to Database of this model
     public $guarded = ['rerun', 'sepaaccount', 'fullrun', 'banking_file_upload'];
 
     // Add your validation rules here
@@ -58,18 +59,17 @@ class SettlementRun extends \BaseModel
     public function view_index_label()
     {
         $bsclass = $this->get_bsclass();
-        $day = (isset($this->created_at)) ? $this->created_at : '';
+        $time = $this->executed_at ?? '';
 
         return ['table' 		=> $this->table,
                 'index_header' 	=> [$this->table.'.year',
                                     $this->table.'.month',
-                                    $this->table.'.created_at',
+                                    $this->table.'.executed_at',
                                     'verified', ],
-                'header' 		=>  $this->year.' - '.$this->month.' - '.$day,
+                'header' 		=>  $this->year.' - '.$this->month.' - '.$time,
                 'bsclass' 		=> $bsclass,
                 'order_by' 		=> ['0' => 'desc'],
-                'edit' 			=> ['verified' => 'run_verified',
-                                    'created_at' => 'created_at_toDateString', ],
+                'edit' 			=> ['verified' => 'run_verified'],
                 ];
     }
 
@@ -90,11 +90,6 @@ class SettlementRun extends \BaseModel
         }
 
         return $this->index_delete_disabled;
-    }
-
-    public function created_at_toDateString()
-    {
-        return $this->created_at->toDateString();
     }
 
     public function view_has_many()
@@ -170,26 +165,60 @@ class SettlementRun extends \BaseModel
         return $arr;
     }
 
+    /**
+     * Parse an uploaded SWIFT-/Mt940.sta bank transaction file and assign Debts from it to appropriate contracts
+     *
+     * @param string
+     */
     public function parseBankingFile($mt940)
     {
         $parser = new \Kingsquare\Parser\Banking\Mt940();
-        $transactionParser = new \Modules\Dunning\Entities\TransactionParser;
+        $transactionParser = new \Modules\Dunning\Entities\TransactionParser($mt940);
 
-        $statements = $parser->parse($mt940);
+        // Handle wrong file format
+        try {
+            $statements = $parser->parse($mt940);
+        } catch (\Exception $e) {
+            \Session::push('tmp_error_above_form', trans('dunning::messages.parseMt940Failed', ['msg' => $e->getMessage()]));
+            \Log::error($e->getMessage().'.In: '.$e->getFile());
+
+            return;
+        }
+
+        $contracts = $contractsSpecial = [];
+
         foreach ($statements as $statement) {
             foreach ($statement->getTransactions() as $transaction) {
                 $debt = $transactionParser->parse($transaction);
 
                 // only for analysis during development!
-                // $transactions[$transaction->getDebitCredit()][] = ['price' => $transaction->getPrice(), 'description' => explode('?', $transaction->getDescription())];
+                // $transactions[$transaction->getDebitCredit()][] = ['price' => $transaction->getPrice(), 'code' => $transaction->getTransactionCode(), 'description' => explode('?', $transaction->getDescription())];
 
                 if (! $debt) {
                     continue;
                 }
 
                 $debt->save();
+
+                if ($debt->addedBySpecialMatch) {
+                    $contractsSpecial[] = $debt->contract_id;
+                } else {
+                    $contracts[] = $debt->contract_id;
+                }
             }
         }
+
+        // Summary log messages
+        if ($contracts) {
+            $numbers = Contract::whereIn('id', $contracts)->pluck('number')->all();
+            ChannelLog::info('dunning', trans('dunning::messages.addedDebts', ['count' => count($numbers), 'numbers' => implode(', ', $numbers)]));
+        }
+
+        if ($contractsSpecial) {
+            $numbers = Contract::whereIn('id', $contractsSpecial)->pluck('number')->all();
+            ChannelLog::notice('dunning', trans('dunning::messages.transaction.credit.noInvoice.special', ['numbers' => implode(', ', $numbers)]));
+        }
+
         // d($transactions, $statements, str_replace(':61:', "\r\n---------------\r\n:61:", $mt940));
     }
 
@@ -219,9 +248,9 @@ class SettlementRun extends \BaseModel
         // Set execution timestamp to always show log entries on SettlementRun edit page
         self::where('id', $this->id)->update(['executed_at' => \Carbon\Carbon::now()]);
 
-        $accs = $this->getSepaAccounts($sepaacc);
-
         $this->init($sepaacc);
+
+        $accs = $this->getSepaAccounts($sepaacc);
 
         $this->user_output('parseCdr', 0);
         $cdrs = SettlementRunData::getCdrs();
@@ -876,28 +905,22 @@ class SettlementRunObserver
 
     public function updated($settlementrun)
     {
-        if (\Input::has('rerun')) {
+        if (Request::filled('rerun')) {
             // Make sure that settlement run is queued only once
             $queued = DB::table('jobs')->where('payload', 'like', '%SettlementRunJob%')->count();
             if (! $queued) {
-                $acc = \Input::get('sepaaccount') ? SepaAccount::find(\Input::get('sepaaccount')) : null;
+                $acc = Request::get('sepaaccount') ? SepaAccount::find(Request::get('sepaaccount')) : null;
                 \Session::put('job_id', \Queue::push(new SettlementRunJob($settlementrun, $acc)));
             }
         }
 
         // TODO: implement this as command and queue this?
-        if (\Input::hasFile('banking_file_upload')) {
+        if (Request::hasFile('banking_file_upload')) {
             SettlementRun::where('id', $settlementrun->id)->update(['uploaded_at' => date('Y-m-d H:i:s')]);
 
-            $mt940 = \Input::file('banking_file_upload');
+            $mt940 = Request::file('banking_file_upload');
 
-            $mt940s[] = Storage::get('tmp/Erznet-sta.sta');
-            $mt940s[] = Storage::get('tmp/Erznet-sta-2019-04-24.sta');
-            $mt940s[] = Storage::get('tmp/Erznet-sta-2019-04-25.sta');
-
-            foreach ($mt940s as $mt940) {
-                $settlementrun->parseBankingFile($mt940);
-            }
+            $settlementrun->parseBankingFile($mt940);
         }
     }
 }

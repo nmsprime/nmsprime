@@ -2,6 +2,9 @@
 
 namespace Modules\Ticketsystem\Entities;
 
+use Request;
+use App\User;
+
 class Ticket extends \BaseModel
 {
     public $table = 'ticket';
@@ -55,7 +58,7 @@ class Ticket extends \BaseModel
                 'tickettypes.name' => 'index_types',
                 'user_id' => 'username', ],
             // 'filter' => ['tickettypes.name' => $this->tickettype_names_query()],
-            'disable_sortsearch' => ['tickettypes.name' => 'false', 'assigned_users' => 'false'],
+            'disable_sortsearch' => ['assigned_users' => 'false'],
         ];
     }
 
@@ -154,7 +157,7 @@ class Ticket extends \BaseModel
     // assigned users
     public function users()
     {
-        return $this->belongsToMany('\App\User', 'ticket_user', 'ticket_id', 'user_id');
+        return $this->belongsToMany(User::class, 'ticket_user', 'user_id', 'ticket_id');
     }
 
     public function contract()
@@ -164,7 +167,7 @@ class Ticket extends \BaseModel
 
     public function tickettypes()
     {
-        return $this->belongsToMany('Modules\Ticketsystem\Entities\TicketType', 'tickettype_ticket', 'ticket_id', 'tickettype_id');
+        return $this->belongsToMany(TicketType::class, 'tickettype_ticket', 'tickettype_id', 'ticket_id');
     }
 
     /**
@@ -262,14 +265,13 @@ class Ticket extends \BaseModel
      */
     public function importantChanges()
     {
-        $changes = \Input::all();
-        $original = $this['original'];
+        $changes = Request::all();
 
-        if ($changes['description'] == $original['description']
-             && $changes['state'] == $original['state']
-              && $changes['priority'] == $original['priority']
-               && $changes['duedate'] == $original['duedate']
-                && $changes['name'] == $original['name']) {
+        if ($changes['description'] == $this->getOriginal('description')
+            && $changes['state'] == $this->getOriginal('state')
+            && $changes['priority'] == $this->getOriginal('priority')
+            && $changes['duedate'] == $this->getOriginal('duedate')
+            && $changes['name'] == $this->getOriginal('name')) {
             return false;
         }
 
@@ -277,20 +279,15 @@ class Ticket extends \BaseModel
     }
 
     /**
-     * Return collection of users.
+     * Find all valid Users of a Ticket
      *
      * @author Roy Schneider
      * @param array $ticketUsers
-     * @return collection $users
+     * @return Illuminate\Database\Eloquent\Collection
      */
     public function getTicketUsers($ticketUsers)
     {
-        foreach ($ticketUsers as $id) {
-            $users[] = \DB::table('users')->where('id', $id)->first();
-            $users = collect($users);
-        }
-
-        return $users ?? collect($ticketUsers);
+        return User::find($ticketUsers);
     }
 
     /**
@@ -301,13 +298,13 @@ class Ticket extends \BaseModel
      */
     public function validGlobalSettings()
     {
-        $all = \App\GlobalConfig::first();
+        $config = \App\GlobalConfig::first();
 
-        if (! isset($all->noReplyName) || ! isset($all->noReplyMail)) {
+        if (empty($config->noReplyName) || empty($config->noReplyMail)) {
             abort('422', trans('view.error_ticket_settings'));
         }
 
-        return ['noReplyName' => $all->noReplyName, 'noReplyMail' => $all->noReplyMail];
+        return ['noReplyName' => $config->noReplyName, 'noReplyMail' => $config->noReplyMail];
     }
 }
 
@@ -318,8 +315,7 @@ class TicketObserver
         $ticket->duedate = $ticket->duedate ?: null;
 
         // get assigned users and previously assigned users
-        $input = \Input::all()['users_ids'];
-
+        $input = Request::get('users_ids');
         $ticket->mailAssignedUsers($input);
     }
 
@@ -329,7 +325,7 @@ class TicketObserver
 
         // get assigned users and previously assigned users
         $ticketUsers = $ticket->users;
-        $input = \Input::all()['users_ids'];
+        $input = Request::get('users_ids');
 
         // create array with user ids
         $users = $ticketUsers->pluck('id', 'id')->toArray() ?? [];

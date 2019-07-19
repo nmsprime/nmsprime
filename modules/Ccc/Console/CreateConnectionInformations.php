@@ -38,7 +38,7 @@ class CreateConnectionInformations extends Command
      *
      * @return mixed
      */
-    public function fire()
+    public function handle()
     {
         $contracts = $this->select_contracts();
         $dir_path = storage_path('app/tmp/');

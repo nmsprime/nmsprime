@@ -42,7 +42,7 @@ class MatchRecordsCommand extends Command
      *
      * @author: Ole Ernst
      */
-    public function fire()
+    public function handle()
     {
         // Name of the database accessed through $this->connection
         $database = \Schema::connection($this->connection)->getConnection()->getConfig('database');

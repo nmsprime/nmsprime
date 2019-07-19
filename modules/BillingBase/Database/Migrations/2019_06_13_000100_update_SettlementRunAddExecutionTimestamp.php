@@ -16,6 +16,8 @@ class UpdateSettlementRunAddExecutionTimestamp extends BaseMigration
         Schema::table($this->tablename, function (Blueprint $table) {
             $table->timestamp('executed_at')->nullable()->after('deleted_at');
         });
+
+        DB::statement('UPDATE settlementrun SET executed_at=created_at;');
     }
 
     /**

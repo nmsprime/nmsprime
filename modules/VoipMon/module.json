@@ -2,15 +2,16 @@
     "name": "VoipMon",
     "alias": "voipmon",
     "description": "",
-    "icon": "fa-signal",
     "keywords": [],
     "active": 0,
     "order": 0,
+    "icon": "fa-signal",
     "providers": [
         "Modules\\VoipMon\\Providers\\VoipMonServiceProvider"
     ],
     "aliases": [],
     "files": [
         "start.php"
-    ]
+    ],
+    "requires": []
 }

@@ -103,8 +103,8 @@ class CostCenterObserver
         $changes = $costcenter->getDirty();
 
         // Reset payed_month flag for all items belonging directly or indirectly to costcenter
-        if (isset($changes['billing_month']) && $costcenter['original']['billing_month'] < $costcenter->billing_month) {
-            $m = str_pad($costcenter['original']['billing_month'], 2, '0', STR_PAD_LEFT);
+        if (isset($changes['billing_month']) && $costcenter->getOriginal('billing_month') < $costcenter->billing_month) {
+            $m = str_pad($costcenter->getOriginal('billing_month'), 2, '0', STR_PAD_LEFT);
             $filter = $m == 12 ? date('Y', strtotime('last year')).'-12' : date('Y')."-$m";
 
             // Note: Update doesnt work with Eloquent as automatically added 'updated_at'-column is ambigous
@@ -113,21 +113,21 @@ class CostCenterObserver
                     ->join('product as p', 'item.product_id', '=', 'p.id')
                     ->where(function ($query) use ($costcenter) {
                         $query
-                        ->where('item.costcenter_id', $costcenter['original']['id'])
+                        ->where('item.costcenter_id', $costcenter->getOriginal('id'))
                         ->orWhere(function ($query) use ($costcenter) {
                             $query
-                            ->where('p.costcenter_id', $costcenter['original']['id'])
+                            ->where('p.costcenter_id', $costcenter->getOriginal('id'))
                             ->where('item.costcenter_id', 0);
                         })
                         ->orWhere(function ($query) use ($costcenter) {
                             $query
-                            ->where('c.costcenter_id', $costcenter['original']['id'])
+                            ->where('c.costcenter_id', $costcenter->getOriginal('id'))
                             ->where('p.costcenter_id', 0)
                             ->where('item.costcenter_id', 0);
                         });
                     })
                     ->where('p.billing_cycle', 'Yearly')
-                    ->where('payed_month', $costcenter['original']['billing_month']);
+                    ->where('payed_month', $costcenter->getOriginal('billing_month'));
 
             // Log all updated items
             $items = implode(',', $query->pluck('item.id')->all());

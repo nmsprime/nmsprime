@@ -257,6 +257,11 @@ class SettlementRunController extends \BaseController
 
         foreach ($logs as $key => $string) {
             $timestamp = substr($string, 1, 19);
+
+            if (strtotime($timestamp) < $ts_from) {
+                break;
+            }
+
             preg_match('/\[.*\.([A-Z]*):/', $string, $match);
             $type = $match ? $match[1] : '';
 
@@ -279,9 +284,6 @@ class SettlementRunController extends \BaseController
 
             if ($old == $arr) {
                 continue;
-            }
-            if (strtotime($timestamp) < $ts_from) {
-                break;
             }
 
             $filtered[] = $arr;
@@ -327,7 +329,7 @@ class SettlementRunController extends \BaseController
 
     public function destroy($id)
     {
-        $id = key(\Input::get('ids'));
+        $id = key(\Request::get('ids'));
         $settlementrun = SettlementRun::find($id);
 
         \Session::push('tmp_info_above_index_list', trans('messages.deleteSettlementRun', ['time' => $settlementrun->year.'-'.$settlementrun->month]));

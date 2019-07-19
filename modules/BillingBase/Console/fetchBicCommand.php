@@ -31,7 +31,7 @@ class fetchBicCommand extends Command
      *
      * TODO: create array of URLs (files with BICs) and store each file as CSV
      */
-    public function fire()
+    public function handle()
     {
         $start = time();
 
