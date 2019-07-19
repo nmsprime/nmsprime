@@ -2326,6 +2326,32 @@
 				<t_data_input_field_id></t_data_input_field_id>
 				<data_input_field_id>hash_070101859e730719e0bb5ee77bf018aa846f7c</data_input_field_id>
 			</hash_080101f28696cccaa548d777c0aad521cd3149>
+			<hash_0801024c2914c4736e186212994cd882e436d4>
+				<t_data_source_name></t_data_source_name>
+				<data_source_name>ifHCInOctets</data_source_name>
+				<t_rrd_minimum></t_rrd_minimum>
+				<rrd_minimum>0</rrd_minimum>
+				<t_rrd_maximum></t_rrd_maximum>
+				<rrd_maximum>U</rrd_maximum>
+				<t_data_source_type_id></t_data_source_type_id>
+				<data_source_type_id>2</data_source_type_id>
+				<rrd_heartbeat>600</rrd_heartbeat>
+				<t_data_input_field_id></t_data_input_field_id>
+				<data_input_field_id>hash_070102208df369e6f0fb505c13ae9760dc7339</data_input_field_id>
+			</hash_0801024c2914c4736e186212994cd882e436d4>
+			<hash_080102e5a13158636b9fe610953d421103cfb9>
+				<t_data_source_name></t_data_source_name>
+				<data_source_name>ifHCOutOctets</data_source_name>
+				<t_rrd_minimum></t_rrd_minimum>
+				<rrd_minimum>0</rrd_minimum>
+				<t_rrd_maximum></t_rrd_maximum>
+				<rrd_maximum>U</rrd_maximum>
+				<t_data_source_type_id></t_data_source_type_id>
+				<data_source_type_id>2</data_source_type_id>
+				<rrd_heartbeat>600</rrd_heartbeat>
+				<t_data_input_field_id></t_data_input_field_id>
+				<data_input_field_id>hash_070102c809ebbaf617130efef49a9327abf5a2</data_input_field_id>
+			</hash_080102e5a13158636b9fe610953d421103cfb9>
 		</items>
 		<data>
 			<item_000>
