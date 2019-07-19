@@ -5,7 +5,11 @@ namespace Modules\Dashboard\Http\Controllers;
 use View;
 use App\GuiLog;
 use Illuminate\Support\Facades\Auth;
+use Modules\ProvBase\Entities\Modem;
+use Modules\HfcReq\Entities\NetElement;
 use App\Http\Controllers\BaseController;
+use Modules\HfcBase\Entities\IcingaObjects;
+use Modules\HfcCustomer\Entities\ModemHelper;
 
 class DashboardController extends BaseController
 {
@@ -15,11 +19,13 @@ class DashboardController extends BaseController
     public function index()
     {
         $title = 'Dashboard';
-
-        $logs = GuiLog::where([['username', '!=', 'cronjob'], ['model', '!=', 'User']])->orderBy('updated_at', 'desc')->orderBy('user_id', 'asc')->limit(50)->get();
+        $logs = GuiLog::where([['username', '!=', 'cronjob'], ['model', '!=', 'User']])
+            ->orderBy('updated_at', 'desc')->orderBy('user_id', 'asc')
+            ->limit(50)->get();
         $tickets['table'] = Auth::user()->tickets()->where('state', '=', 'New')->get();
         $tickets['total'] = count($tickets['table']);
 
+        // This is the most timeconsuming task
         $netelements = $this->_get_impaired_netelements();
         $services = $this->_get_impaired_services();
 
@@ -34,11 +40,11 @@ class DashboardController extends BaseController
     {
         $avg_critical_us = 52;
         if (\Module::collections()->has('HfcCustomer')) {
-            $avg_critical_us = \Modules\HfcCustomer\Entities\ModemHelper::$avg_warning_us;
+            $avg_critical_us = ModemHelper::$avg_warning_us;
         }
 
         // Get only modems from valid contracts
-        $query = \Modules\ProvBase\Entities\Modem::join('contract as c', 'c.id', '=', 'modem.contract_id')
+        $query = Modem::join('contract as c', 'c.id', '=', 'modem.contract_id')
             ->where('c.contract_start', '<=', date('Y-m-d'))
             ->where(function ($query) {
                 $query
@@ -75,7 +81,7 @@ class DashboardController extends BaseController
 
         $a->text = 'Modems<br>'.$a->online.' / '.$a->all;
 
-        $a->state = \Modules\HfcCustomer\Entities\ModemHelper::_ms_state($a->online, $a->all, 40);
+        $a->state = ModemHelper::_ms_state($a->online, $a->all, 40);
         switch ($a->state) {
             case 'OK':			$a->fa = 'fa fa-thumbs-up'; $a->style = 'success'; break;
             case 'WARNING':		$a->fa = 'fa fa-meh-o'; $a->style = 'warning'; break;
@@ -92,12 +98,13 @@ class DashboardController extends BaseController
     {
         $ret = [];
 
-        if (! \Modules\HfcBase\Entities\IcingaObjects::db_exists()) {
+        if (! IcingaObjects::db_exists()) {
             return $ret;
         }
 
-        foreach (\Modules\HfcReq\Entities\NetElement::where('id', '>', '2')->get() as $element) {
-            $state = $element->get_bsclass();
+        // Icingaobjects need to be eager loaded! - maybe use https://github.com/topclaudy/compoships ?
+        foreach (NetElement::where('id', '>', '2')->with('netelementtype')->get() as $id => $element) {
+            $state = $element->get_bsclass(true);
             if ($state == 'success' || $state == 'info') {
                 continue;
             }
@@ -129,11 +136,11 @@ class DashboardController extends BaseController
         $ret = [];
         $clr = ['success', 'warning', 'danger', 'info'];
 
-        if (! \Modules\HfcBase\Entities\IcingaObjects::db_exists()) {
+        if (! IcingaObjects::db_exists()) {
             return $ret;
         }
 
-        $objs = \Modules\HfcBase\Entities\IcingaObjects::join('icinga_servicestatus', 'object_id', '=', 'service_object_id')
+        $objs = IcingaObjects::join('icinga_servicestatus', 'object_id', '=', 'service_object_id')
             ->where('is_active', '=', '1')
             ->where('name2', '<>', 'ping4')
             ->where('last_hard_state', '<>', '0')
@@ -142,7 +149,7 @@ class DashboardController extends BaseController
             ->orderBy('last_time_ok', 'desc');
 
         foreach ($objs->get() as $service) {
-            $tmp = \Modules\HfcReq\Entities\NetElement::find($service->name1);
+            $tmp = NetElement::find($service->name1);
 
             $link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/service/show?host='.$service->name1.'&service='.$service->name2, $tmp ? $tmp->name : $service->name1);
             // add additional controlling link if available
