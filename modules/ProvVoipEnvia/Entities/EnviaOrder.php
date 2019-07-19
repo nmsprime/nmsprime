@@ -821,7 +821,7 @@ class EnviaOrder extends \BaseModel
     public function phonenumbers()
     {
         return $this->belongsToMany(Phonenumber::class, 'enviaorder_phonenumber',
-                    'phonenumber_id', 'enviaorder_id')->withTimestamps();
+                    'enviaorder_id', 'phonenumber_id')->withTimestamps();
     }
 
     public function enviaorderdocument()

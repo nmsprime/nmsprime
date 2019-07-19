@@ -58,7 +58,7 @@ class Ticket extends \BaseModel
                 'tickettypes.name' => 'index_types',
                 'user_id' => 'username', ],
             // 'filter' => ['tickettypes.name' => $this->tickettype_names_query()],
-            'disable_sortsearch' => ['assigned_users' => 'false'],
+            'disable_sortsearch' => ['tickettypes.name' => 'false', 'assigned_users' => 'false'],
         ];
     }
 
@@ -157,7 +157,7 @@ class Ticket extends \BaseModel
     // assigned users
     public function users()
     {
-        return $this->belongsToMany(User::class, 'ticket_user', 'user_id', 'ticket_id');
+        return $this->belongsToMany(User::class, 'ticket_user', 'ticket_id', 'user_id');
     }
 
     public function contract()
@@ -167,7 +167,7 @@ class Ticket extends \BaseModel
 
     public function tickettypes()
     {
-        return $this->belongsToMany(TicketType::class, 'tickettype_ticket', 'tickettype_id', 'ticket_id');
+        return $this->belongsToMany(TicketType::class, 'tickettype_ticket', 'ticket_id', 'tickettype_id');
     }
 
     /**
