@@ -2534,6 +2534,24 @@
 				<input_output>out</input_output>
 				<data_name>Corrected</data_name>
 			</hash_070101f87f3782b9f3980aad5477699fa58518>
+			<hash_070102208df369e6f0fb505c13ae9760dc7339>
+				<name>DS: ifHCInOctets</name>
+				<update_rra>on</update_rra>
+				<regexp_match></regexp_match>
+				<allow_nulls></allow_nulls>
+				<type_code></type_code>
+				<input_output>out</input_output>
+				<data_name>ifHCInOctets</data_name>
+			</hash_070102208df369e6f0fb505c13ae9760dc7339>
+			<hash_070102c809ebbaf617130efef49a9327abf5a2>
+				<name>US: ifHCOutOctets</name>
+				<update_rra>on</update_rra>
+				<regexp_match></regexp_match>
+				<allow_nulls></allow_nulls>
+				<type_code></type_code>
+				<input_output>out</input_output>
+				<data_name>ifHCOutOctets</data_name>
+			</hash_070102c809ebbaf617130efef49a9327abf5a2>
 		</fields>
 	</hash_03010152838983f73c663fba34c1f6f3f9d1a4>
 	<hash_200101d62c52891f4f9688729a5bc9fad91b18>
