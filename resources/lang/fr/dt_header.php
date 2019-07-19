@@ -2,8 +2,11 @@
 
 return [
     // Index DataTable Header
+    'amount' => 'Amount',
+    'iban' => 'IBAN',
     'id'            => 'ID',
     'prio'          => 'Priority',
+    'sum' => 'Sum',
     // Auth
     'users.login_name' => 'Login Name',
     'users.first_name' => 'Given Name',
@@ -25,6 +28,10 @@ return [
     // Costcenter
     'costcenter.name' => 'CostCenter',
     'costcenter.number' => 'Number',
+    'debt' => [
+        'date' => 'Date',
+        'total_fee' => 'Fee',
+        ],
     //Invoices
     'invoice.type' => 'Type',
     'invoice.year' => 'Year',
@@ -34,6 +41,7 @@ return [
     'item.valid_from_fixed' => 'Item Valid from fixed',
     'item.valid_to' => 'Item Valid to',
     'item.valid_to_fixed' => 'Item Valid to fixed',
+    'fee' => 'Fee',
     'product' => [
         'proportional' => 'Proportionate',
         'type' => 'Type',
@@ -63,14 +71,16 @@ return [
     'sepaaccount.institute' => 'Institute',
     'sepaaccount.iban' => 'IBAN',
     // SepaMandate
-    'sepamandate.sepa_holder' => 'Account Holder',
-    'sepamandate.sepa_valid_from' => 'Valid from',
-    'sepamandate.sepa_valid_to' => 'Valid to',
+    'sepamandate.holder' => 'Account Holder',
+    'sepamandate.valid_from' => 'Valid from',
+    'sepamandate.valid_to' => 'Valid to',
     'sepamandate.reference' => 'Account reference',
+    'sepamandate.disable' => 'Disabled',
     // SettlementRun
     'settlementrun.year' => 'Year',
     'settlementrun.month' => 'Month',
     'settlementrun.created_at' => 'Created at',
+    'settlementrun.executed_at' => 'Executed at',
     'verified' => 'Verified?',
     // MPR
     'mpr.name' => 'Name',
@@ -111,17 +121,18 @@ return [
     'cmts.company' => 'Manufacturer',
     'cmts.type' => 'Type',
     // Contract
-    'contract.company' => 'Company',
-    'contract.number' => 'Number',
-    'contract.firstname' => 'Firstname',
-    'contract.lastname' => 'Surname',
-    'contract.zip' => 'ZIP',
     'contract.city' => 'City',
-    'contract.street' => 'Street',
-    'contract.house_number' => 'Housenr',
-    'contract.district' => 'District',
-    'contract.contract_start' => 'Contract Start',
+    'contract.company' => 'Company',
     'contract.contract_end' => 'Contract End',
+    'contract.contract_start' => 'Contract Start',
+    'contract.district' => 'District',
+    'contract.firstname' => 'Firstname',
+    'contract.house_number' => 'Housenr',
+    'contract.id' => 'Contract',
+    'contract.lastname' => 'Surname',
+    'contract.number' => 'Number',
+    'contract.street' => 'Street',
+    'contract.zip' => 'ZIP',
     // Domain
     'domain.name' => 'Domain',
     'domain.type' => 'Type',
@@ -139,20 +150,20 @@ return [
     'ippool.router_ip' => 'Router IP',
     'ippool.description' => 'Description',
     // Modem
+    'modem.city' => 'City',
+    'modem.district' => 'District',
+    'modem.firstname' => 'First name',
+    'modem.geocode_source' => 'Geocode origin',
     'modem.house_number' => 'Housenr',
     'modem.id' => 'Modem Number',
+    'modem.inventar_num' => 'Serial Nr',
+    'modem.lastname' => 'Surname',
     'modem.mac' => 'MAC Address',
     'modem.model' => 'Model',
-    'modem.sw_rev' => 'Firmware Version',
     'modem.name' => 'Modem Name',
-    'modem.firstname' => 'First name',
-    'modem.lastname' => 'Surname',
-    'modem.city' => 'City',
     'modem.street' => 'Street',
-    'modem.district' => 'District',
+    'modem.sw_rev' => 'Firmware Version',
     'modem.us_pwr' => 'US level',
-    'modem.geocode_source' => 'Geocode origin',
-    'modem.inventar_num' => 'Serial Nr',
     'contract_valid' => 'Contract valid?',
     // QoS
     'qos.name' => 'QoS Name',
@@ -168,7 +179,6 @@ return [
     'phonebookentry.id' => 'ID',
     // Phonenumber
     'phonenumber.prefix_number' => 'Prefix',
-    'phonenumber.number' => 'Number',
     'phonenr_act' => 'Activation date',
     'phonenr_deact' => 'Deactivation date',
     'phonenr_state' => 'Status',
@@ -192,11 +202,14 @@ return [
     'enviaorder.updated_at'  => 'Updated at',
     'enviaorder.orderdate'  => 'Order date',
     'enviaorder_current'  => 'Action needed?',
+    'enviaorder.contract.number' => 'Contract',
+    'phonenumber.number' => 'Number',
     //ENVIA Contract
-    'enviacontract.envia_contract_reference' => 'envia TEL Contract reference',
-    'enviacontract.state' => 'Status',
-    'enviacontract.start_date' => 'Start Date',
+    'enviacontract.contract.number' => 'Contract',
     'enviacontract.end_date' => 'End Date',
+    'enviacontract.envia_contract_reference' => 'envia TEL Contract reference',
+    'enviacontract.start_date' => 'Start Date',
+    'enviacontract.state' => 'Status',
     // CDR
     'cdr.calldate' => 'Call Date',
     'cdr.caller' => 'Caller',
