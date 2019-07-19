@@ -146,7 +146,7 @@ class ItemController extends \BaseController
         if (\Str::contains(\URL::previous(), '/Item/create')) {
             $p = Product::find($data['product_id']);
 
-            if (in_array($p->type, ['Internet', 'Voip', 'TV'])) {
+            if (isset($p) && in_array($p->type, ['Internet', 'Voip', 'TV'])) {
                 $c = Contract::find($data['contract_id']);
                 $tariff = $p ? $c->get_valid_tariff($p->type) : null;
 

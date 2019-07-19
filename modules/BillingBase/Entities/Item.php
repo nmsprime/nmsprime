@@ -25,7 +25,7 @@ class Item extends \BaseModel
         return [
             'product_id' 	=> 'required|numeric|Min:1',
             'valid_from'	=> 'date',	//|in_future ??
-            'valid_to'		=> 'date',
+            'valid_to'		=> 'nullable|date',
             'credit_amount' => 'nullable|numeric',
         ];
     }
