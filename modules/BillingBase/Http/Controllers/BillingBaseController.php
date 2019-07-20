@@ -19,8 +19,9 @@ class BillingBaseController extends \BaseController
     {
         $title = 'Billing Dashboard';
         $income_data = BillingAnalysis::getIncomeData();
+        $contracts_data = BillingAnalysis::getContractData();
 
-        return View::make('billingbase::index', $this->compact_prep_view(compact('title', 'income_data')));
+        return View::make('billingbase::index', $this->compact_prep_view(compact('title', 'income_data', 'contracts_data')));
     }
 
     public function view_form_fields($model = null)
