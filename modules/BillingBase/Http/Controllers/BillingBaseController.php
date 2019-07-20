@@ -4,7 +4,6 @@ namespace Modules\BillingBase\Http\Controllers;
 
 use View;
 use Schema;
-use Illuminate\Support\Facades\Storage;
 use Modules\ProvBase\Entities\Contract;
 use App\Http\Controllers\BaseViewController;
 use Modules\BillingBase\Entities\BillingBase;
