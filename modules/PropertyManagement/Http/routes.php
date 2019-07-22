@@ -1,6 +1,5 @@
 <?php
 
-Route::group(['middleware' => 'web', 'prefix' => 'propertymanagement', 'namespace' => 'Modules\PropertyManagement\Http\Controllers'], function()
-{
-    Route::get('/', 'PropertyManagementController@index');
+BaseRoute::group([], function () {
+    BaseRoute::resource('Node', 'Modules\PropertyManagement\Http\Controllers\NodeController');
 });
