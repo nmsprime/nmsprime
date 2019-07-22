@@ -1,0 +1,17 @@
+{
+    "name": "PropertyManagement",
+    "alias": "propertymanagement",
+    "description": "Administration for buildings/estates/realties of an ISP",
+    "keywords": [],
+    "active": 1,
+    "icon": "fa-building",
+    "order": 40,
+    "providers": [
+        "Modules\\PropertyManagement\\Providers\\PropertyManagementServiceProvider"
+    ],
+    "aliases": {},
+    "files": [
+        "start.php"
+    ],
+    "requires": []
+}
