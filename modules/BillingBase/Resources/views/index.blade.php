@@ -28,17 +28,22 @@
                 @include('Generic.quickstart')
             </div>
         </div>
-
+    </div>
+    <div class="col-md-12">
         <div class="row">
             <div class="col-md-7">
-                @section ('contract_analytics')
-                    @include('billingbase::panels.contract_analytics')
-                @stop
-                @include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => trans('view.Dashboard_ContractAnalytics'), 'md' => 12, 'height' => 'auto', 'i' => '3'))
-                @section ('income_analytics')
-                    @include('billingbase::panels.income_analytics')
-                @stop
-                @include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => trans('view.Dashboard_IncomeAnalytics'), 'md' => 12, 'height' => 'auto', 'i' => '4'))
+                <div class="row">
+                    @section ('contract_analytics')
+                        @include('billingbase::panels.contract_analytics')
+                    @stop
+                    @include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => trans('view.Dashboard_ContractAnalytics'), 'md' => 12, 'height' => 'auto', 'i' => '4'))
+                </div>
+                <div class="row">
+                    @section ('income_analytics')
+                        @include('billingbase::panels.income_analytics')
+                    @stop
+                    @include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => trans('view.Dashboard_IncomeAnalytics'), 'md' => 12, 'height' => 'auto', 'i' => '3'))
+                </div>
             </div>
             <div class="col-md-5">
                 <div class="row">
@@ -69,6 +74,8 @@
                 </div>
             </div>
         </div>
+    </div>
+    <div class="col-md-12">
         <div class="row">
             @if (isset($news) && $news)
             @section ('news')
