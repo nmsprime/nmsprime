@@ -6,7 +6,7 @@ return [
     'iban' => 'IBAN',
     'id'            => 'ID',
     'prio'          => 'Prioridad',
-    'sum' => 'Sum',
+    'sum' => 'Suma',
     // Auth
     'users.login_name' => 'Nombre de usuario',
     'users.first_name' => 'Nombre',
@@ -29,8 +29,8 @@ return [
     'costcenter.name' => 'Precio',
     'costcenter.number' => 'Importe',
     'debt' => [
-        'date' => 'Date',
-        'total_fee' => 'Fee',
+        'date' => 'Fecha',
+        'total_fee' => 'Tarifa',
         ],
     //Invoices
     'invoice.type' => 'Tipo',
@@ -41,7 +41,7 @@ return [
     'item.valid_from_fixed' => 'Artículo válido de fijo',
     'item.valid_to' => 'Artículo válido para',
     'item.valid_to_fixed' => 'Artículo válido a fijo',
-    'fee' => 'Fee',
+    'fee' => 'Tarifa',
     'product' => [
         'proportional' => 'Proporcionado',
         'type' => 'Tipo',
@@ -71,16 +71,16 @@ return [
     'sepaaccount.institute' => 'Institución',
     'sepaaccount.iban' => 'IBAN',
     // SepaMandate
-    'sepamandate.holder' => 'Account Holder',
-    'sepamandate.valid_from' => 'Valid from',
-    'sepamandate.valid_to' => 'Valid to',
+    'sepamandate.holder' => 'Titular de la cuenta',
+    'sepamandate.valid_from' => 'Válido desde',
+    'sepamandate.valid_to' => 'Válido hasta',
     'sepamandate.reference' => 'Referencia de cuenta',
-    'sepamandate.disable' => 'Disabled',
+    'sepamandate.disable' => 'Desactivado',
     // SettlementRun
     'settlementrun.year' => 'Año',
     'settlementrun.month' => 'Mes',
     'settlementrun.created_at' => 'Creado el',
-    'settlementrun.executed_at' => 'Executed at',
+    'settlementrun.executed_at' => 'Ejecutado en',
     'verified' => 'Verificado?',
     // MPR
     'mpr.name' => 'Nombre',
@@ -128,7 +128,7 @@ return [
     'contract.district' => 'Provincia',
     'contract.firstname' => 'Nombres',
     'contract.house_number' => 'Numero de vivienda',
-    'contract.id' => 'Contract',
+    'contract.id' => 'Contrato',
     'contract.lastname' => 'Apellidos',
     'contract.number' => 'Numero',
     'contract.street' => 'Calle',
@@ -202,10 +202,10 @@ return [
     'enviaorder.updated_at'  => 'Subido el',
     'enviaorder.orderdate'  => 'Fecha de orden',
     'enviaorder_current'  => 'Acciones necesarias?',
-    'enviaorder.contract.number' => 'Contract',
+    'enviaorder.contract.number' => 'Contrato',
     'phonenumber.number' => 'Numero',
     //ENVIA Contract
-    'enviacontract.contract.number' => 'Contract',
+    'enviacontract.contract.number' => 'Contrato',
     'enviacontract.end_date' => 'Fecha de desenlace',
     'enviacontract.envia_contract_reference' => 'envia TEL referencia de contrato',
     'enviacontract.start_date' => 'Fecha de inicio',
