@@ -1,0 +1,1 @@
+*/5 * * * *	root	/bin/bash /usr/libexec/modempoller-nmsprime.sh > /dev/null 2>&1

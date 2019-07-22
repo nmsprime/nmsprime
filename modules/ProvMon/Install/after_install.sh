@@ -32,10 +32,10 @@ cacti_file=`ls /usr/share/doc/cacti-*/cacti.sql`
 mysql -u root cacti < "$cacti_file"
 
 # allow guest user to access graphs without login (also invalidate its password, by setting an imposible bcrypt hash)
-# send SNMP queries concurrenly to modems (depending on no of cpus)
+# disable SNMP agent
 mysql cacti -u cactiuser --password="$mysql_cacti_psw" << EOF
 REPLACE INTO settings VALUES ('guest_user','guest');
-UPDATE poller SET processes = $(nproc) WHERE name = 'Main Poller';
+REPLACE INTO settings VALUES ('enable_snmp_agent','');
 UPDATE user_auth SET password='$(php -r "echo password_hash('$admin_psw', PASSWORD_DEFAULT);")', must_change_password='' WHERE username='admin';
 UPDATE user_auth SET password='invalidated', must_change_password='', enabled='on' WHERE username='guest';
 EOF
@@ -44,7 +44,6 @@ EOF
 ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/ss_docsis.php /usr/share/cacti/scripts/ss_docsis.php
 ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/cisco_cmts.xml /usr/share/cacti/resource/snmp_queries/cisco_cmts.xml
 
-sed -i 's/^#//' /etc/cron.d/cacti
 sed -i 's/Require host localhost$/Require all granted\n\t\tDirectoryIndex index.php/' /etc/httpd/conf.d/cacti.conf
 systemctl reload httpd.service
 
