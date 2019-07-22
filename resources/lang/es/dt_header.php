@@ -2,7 +2,7 @@
 
 return [
     // Index DataTable Header
-    'amount' => 'Amount',
+    'amount' => 'Cantidad',
     'iban' => 'IBAN',
     'id'            => 'ID',
     'prio'          => 'Prioridad',
