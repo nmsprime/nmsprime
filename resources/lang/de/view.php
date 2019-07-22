@@ -35,6 +35,7 @@ return [
     //Main Menu
         'Menu_Debt'                 => 'Offene Posten',
         'Menu_MainMenu' 			=> 'Hauptmenü',
+        'Menu_Node'                 => 'Übertragungspunkte',
         'Menu_Config Page'			=> 'Systemkonfiguration',
         'Menu_Logging'				=> 'Logs',
         'Menu_Product List'			=> 'Produktangebot',
@@ -218,6 +219,7 @@ return [
 
         'Header_Debt'               => 'Historie Offene Posten',
         'Header_DebtResult'         => 'Offene Posten gesamt',
+        'Header_Node'               => 'Übertragungspunkte',
 
     //Header Relation
         // 'Assigned'  				=> 'Zugewiesene',
