@@ -67,6 +67,7 @@ return [
         'Menu_envia TEL contracts'	=> 'envia TEL contracts',
         'Menu_Net Elements'         => 'Net Elements',
         'Menu_Net Element Types'    => 'Net Element Types',
+        'Menu_Realty'               => 'Realties',
         'Menu_TicketTypes'          => 'TicketTypes',
 
     //User Settings
@@ -225,6 +226,7 @@ return [
         'Header_Debt'               => 'Debt history',
         'Header_DebtResult'         => 'Outstanding payments total',
         'Header_Node'               => 'Nodes',
+        'Header_Realty'             => 'Realties',
 
     //Header Relation
         // 'Assigned'  				=> 'Zugewiesene',
