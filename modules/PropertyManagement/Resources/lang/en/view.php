@@ -2,4 +2,5 @@
 
 return [
     'menuName' => 'Property Management',
+    'Node' => 'Node',
 ];
