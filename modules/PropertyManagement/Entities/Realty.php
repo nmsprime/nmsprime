@@ -67,11 +67,39 @@ class Realty extends \BaseModel
             ];
     }
 
+    public function view_has_many()
+    {
+        $ret['Edit']['Apartment']['class'] = 'Apartment';
+        $ret['Edit']['Apartment']['relation'] = $this->apartments;
+
+        if (\Module::collections()->has('ProvBase')) {
+            $ret['Edit']['Contract']['class'] = 'Contract';
+            $ret['Edit']['Contract']['relation'] = $this->contract;
+        }
+
+        return $ret;
+    }
+
+    public function view_belongs_to()
+    {
+        return $this->node;
+    }
+
     /**
      * Relationships:
      */
-    // public function contract()
-    // {
-    //     return $this->belongsTo(Contract::class);
-    // }
+    public function contract()
+    {
+        return $this->HasMany(\Modules\ProvBase\Entities\Contract::class);
+    }
+
+    public function apartments()
+    {
+        return $this->HasMany(Apartment::class);
+    }
+
+    public function node()
+    {
+        return $this->belongsTo(Node::class);
+    }
 }

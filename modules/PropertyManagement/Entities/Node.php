@@ -50,11 +50,19 @@ class Node extends \BaseModel
             ];
     }
 
+    public function view_has_many()
+    {
+        $rel['Edit']['Realty']['class'] = 'Realty';
+        $rel['Edit']['Realty']['relation'] = $this->realties;
+
+        return $rel;
+    }
+
     /**
      * Relationships:
      */
-    // public function contract()
-    // {
-    //     return $this->belongsTo(Contract::class);
-    // }
+    public function realties()
+    {
+        return $this->HasMany(Realty::class);
+    }
 }
