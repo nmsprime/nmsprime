@@ -63,6 +63,11 @@ class UserController extends BaseController
         ];
     }
 
+    public function prepare_input($request)
+    {
+        return parent::prepare_input(array_filter($request));
+    }
+
     public function prepare_input_post_validation($data)
     {
         if (isset($data['password'])) {
