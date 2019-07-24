@@ -45,11 +45,31 @@ class Apartment extends \BaseModel
             ];
     }
 
+    public function view_has_many()
+    {
+        if (\Module::collections()->has('ProvBase')) {
+            $ret['Edit']['Contract']['class'] = 'Contract';
+            $ret['Edit']['Contract']['relation'] = $this->contract;
+        }
+
+        return $ret;
+    }
+
+    public function view_belongs_to()
+    {
+        return $this->realty;
+    }
+
     /**
      * Relationships:
      */
-    // public function contract()
-    // {
-    //     return $this->belongsTo(Contract::class);
-    // }
+    public function contract()
+    {
+        return $this->hasMany(\Modules\ProvBase\Entities\Contract::class);
+    }
+
+    public function realty()
+    {
+        return $this->belongsTo(Realty::class);
+    }
 }
