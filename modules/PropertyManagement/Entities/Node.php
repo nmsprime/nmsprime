@@ -32,7 +32,7 @@ class Node extends \BaseModel
     public static function view_icon()
     {
         return '<i class="fa fa-share-alt-square"></i>';
-        return '<i class="fa fa-caret-square-o-right"></i>';
+        // return '<i class="fa fa-caret-square-o-right"></i>';
     }
 
     // AJAX Index list function

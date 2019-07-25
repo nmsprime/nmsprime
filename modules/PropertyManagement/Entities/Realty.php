@@ -58,7 +58,7 @@ class Realty extends \BaseModel
         return ['table' => $this->table,
                 'index_header' => ["$this->table.name", 'number', 'street', 'house_nr', 'zip', 'city',
                     "$this->table.administration", 'expansion_degree', "$this->table.concession_agreement",
-                    "$this->table.agreement_from", "$this->table.agreement_to", "$this->table.last_restoration", 'group_contract'
+                    "$this->table.agreement_from", "$this->table.agreement_to", "$this->table.last_restoration", 'group_contract',
                     ],
                 'header' => $label,
                 'bsclass' => $bsclass,
