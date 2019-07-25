@@ -639,37 +639,6 @@ class Invoice extends \BaseModel
     }
 
     /**
-     * Removes the temporary latex files after all pdfs were created simultaniously by multiple threads
-     * Test if all Invoices were created successfully
-     *
-     * @throws Exception 	when pdflatex was not able to create PDF from tex document for an invoice
-     */
-    public static function remove_templatex_files($sepaacc = null)
-    {
-        $invoices = \DB::table('invoice')->whereBetween('created_at', [date('Y-m-01'), date('Y-m-01', strtotime('next month'))]);
-        // $invoices = self::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
-        if ($sepaacc) {
-            $invoices = $invoices->where('sepaaccount_id', '=', $sepaacc->id);
-        }
-
-        $invoices = $invoices->get();
-        foreach ($invoices as $invoice) {
-            // $fn = $invoice->get_invoice_dir_path().$invoice->filename;
-            $fn = self::getFilePathFromData($invoice);
-
-            if (is_file($fn)) {
-                $fn = str_replace('.pdf', '', $fn);
-                unlink($fn);
-                unlink($fn.'.aux');
-                unlink($fn.'.log');
-            } else {
-                // possible errors: syntax/filename/...
-                ChannelLog::error('billing', 'pdflatex: Error creating Invoice PDF '.$fn);
-            }
-        }
-    }
-
-    /**
      * Remove all old Invoice & CDR DB-Entries & Files as it's prescribed by law
      * Germany: CDRs 6 Months (§97 TKG) - Invoices ?? -
      *
