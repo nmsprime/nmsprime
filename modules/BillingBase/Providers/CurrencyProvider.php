@@ -18,6 +18,11 @@ class CurrencyProvider
         'GBP' => '£',
     ];
 
+    public static $latexEncoding = [
+        '€' => '\\euro',
+        '$' => '\\$',
+    ];
+
     public function __construct()
     {
         $this->setCurrency();
@@ -33,5 +38,13 @@ class CurrencyProvider
     public function get()
     {
         return $this->currency;
+    }
+
+    /**
+     * Get LaTeX utf8 encoding for global currency - used in invoice templates
+     */
+    public function getLatex()
+    {
+        return self::$latexEncoding[$this->currency] ?? '\\$';
     }
 }
