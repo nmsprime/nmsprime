@@ -39,7 +39,7 @@ class SettlementRunController extends \BaseController
 
     public function prepare_rules($rules, $data)
     {
-        if (! $data['fullrun']) {
+        if (! (isset($data['fullrun']) && $data['fullrun'])) {
             $rules['verified'] = 'In:0';
         }
 
