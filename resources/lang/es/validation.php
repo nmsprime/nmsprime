@@ -32,6 +32,7 @@ return [
     ],
     'boolean'              => 'El campo :attribute debe ser verdadero o falso.',
     'confirmed'            => 'El :attribute de confirmacion no coincide.',
+    'creditor_id'          => ':attribute is not valid.',
     'date'                 => 'El :attribute no es una fecha valida.',
     'dateornull'           => 'Tiene que ser una fecha valida o vacia',
     'date_format'          => 'El :attribute no coincide con el formato :format.',
