@@ -159,7 +159,7 @@ class NumberRange extends \BaseModel
                     ->orderBy('number')->get()->pluck('number')->all();
 
                 if ($contract_nrs) {
-                    session(['alert' => trans('messages.contract_nr_mismatch', ['nrs' => implode(', ', $contract_nrs)])]);
+                    session(['alert.warning' => trans('messages.contract_nr_mismatch', ['nrs' => implode(', ', $contract_nrs)])]);
                 }
 
                 continue;
