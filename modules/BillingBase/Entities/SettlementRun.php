@@ -253,8 +253,8 @@ class SettlementRun extends \BaseModel
         $accs = $this->getSepaAccounts($sepaacc);
 
         $this->user_output('parseCdr', 0);
+        $cdrs = [[]];
         $cdrs = SettlementRunData::getCdrs();
-        // $cdrs = [[]];
 
         // TODO: use load_salesman_from_contracts() in future ?
         $this->user_output('loadData', 0);
@@ -387,7 +387,7 @@ class SettlementRun extends \BaseModel
         usleep(500000);
 
         // while removing it's tested if all PDFs were created successfully
-        Invoice::remove_templatex_files($sepaacc);
+        $this->delete_current_invoices($sepaacc, true);
         $this->_make_billing_files($accs, $salesmen);
 
         if ($this->output) {
@@ -567,36 +567,52 @@ class SettlementRun extends \BaseModel
     }
 
     /**
-     * Deletes currently created invoices (created in actual month)
-     * Used to delete invoices created by previous settlement run (SR) in current month - executed in SettlementRun::execute()
-     * is used to remove files before settlement run is repeatedly created (SettlementRun::execute() executed again)
-     * NOTE: Use Carefully!!
+     * Remove created invoices of current month/settlement run (PDF files and DB entries)
      *
-     * @param obj   Delete only invoices related to specific SepaAccount, 0 - delete all invoices of current SR
+     *  Used to clean up directory and DB on repeated run of SettlementRun::execute()
+     *
+     * @param obj   Delete only invoices related to specific SepaAccount, 0 - delete all invoices of this SR
+     * @param bool  Delete only temporary LaTeX files created during SettlementRun and check if Invoices where created successfully
      */
-    public function delete_current_invoices($sepaaccount)
+    public function delete_current_invoices($sepaaccount, $tempFiles = false)
     {
-        $query = Invoice::whereBetween('created_at', [date('Y-m-01 00:00:00'), date('Y-m-01 00:00:00', strtotime('next month'))]);
+        $query = \DB::table('invoice')->whereBetween('created_at', [date('Y-m-01'), date('Y-m-01', strtotime('next month'))]);
         if ($sepaaccount) {
             $query = $query->where('sepaaccount_id', '=', $sepaaccount->id);
         }
 
         $invoices = $query->get();
 
-        // Delete PDFs
         foreach ($invoices as $invoice) {
-            $filepath = $invoice->get_invoice_dir_path().$invoice->filename;
+            // $filepath = $invoice->get_invoice_dir_path().$invoice->filename;
+            $filepath = Invoice::getFilePathFromData($invoice);
+
             if (is_file($filepath)) {
-                unlink($filepath);
+                if ($tempFiles) {
+                    // Delete LaTex files
+                    $fn = str_replace('.pdf', '', $filepath);
+                    unlink($fn);
+                    unlink($fn.'.aux');
+                    unlink($fn.'.log');
+                } else {
+                    // Delete PDFs
+                    unlink($filepath);
+                }
+            } elseif ($tempFiles) {
+                // Error on failed PDF creation - possible errors: syntax/filename/...
+                ChannelLog::error('billing', 'pdflatex: Error creating Invoice PDF '.$fn);
             }
 
-            if (\Module::collections()->has('Dunning')) {
-                $invoice->debts()->forceDelete();
+            // Delete debts
+            if (! $tempFiles && \Module::collections()->has('Dunning')) {
+                \Modules\Dunning\Entities\Debt::where('invoice_id', $invoice->id)->forceDelete();
             }
         }
 
         // Delete DB Entries - Note: keep this order
-        $query->forceDelete();
+        if (! $tempFiles) {
+            $query->delete();
+        }
     }
 
     /**
