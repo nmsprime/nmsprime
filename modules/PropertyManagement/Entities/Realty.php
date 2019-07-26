@@ -11,6 +11,7 @@ class Realty extends \BaseModel
     public static function rules($id = null)
     {
         return [
+            'node_id' => 'required',
             'name' => 'required',
             'street' => 'required',
             'house_nr' => 'required',

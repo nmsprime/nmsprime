@@ -16,7 +16,8 @@ class CreateRealtyTable extends BaseMigration
         Schema::create($this->tablename, function (Blueprint $table) {
             $this->up_table_generic($table);
 
-            $table->integer('node_id')->nullable();
+            $table->unsignedInteger('node_id');
+            $table->foreign('node_id')->references('id')->on('node');
 
             $table->string('name')->nullable();
             $table->string('number')->nullable();

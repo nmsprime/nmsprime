@@ -16,8 +16,10 @@ class CreateNodeTable extends BaseMigration
         Schema::create($this->tablename, function (Blueprint $table) {
             $this->up_table_generic($table);
 
-            $table->string('name');
+            $table->unsignedInteger('netelement_id')->nullable();
+            $table->foreign('netelement_id')->references('id')->on('netelement');
 
+            $table->string('name');
             $table->string('street');
             $table->string('house_nr');
             $table->string('zip');
@@ -26,7 +28,6 @@ class CreateNodeTable extends BaseMigration
             $table->string('type')->nullable();             // signal type
             $table->boolean('headend');
 
-            $table->integer('netelement_id')->nullable();
             $table->string('description')->nullable();
 
             return parent::up();

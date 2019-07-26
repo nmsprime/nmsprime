@@ -11,7 +11,9 @@ class Apartment extends \BaseModel
     public static function rules($id = null)
     {
         return [
+            'realty_id' => 'required',
             'number' => 'required',
+            'floor' => 'required',
         ];
     }
 

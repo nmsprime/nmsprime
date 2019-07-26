@@ -14,8 +14,11 @@ class UpdateContractAddPropertyManagementRelations extends BaseMigration
     public function up()
     {
         Schema::table($this->tablename, function (Blueprint $table) {
-            $table->integer('realty_id');
-            $table->integer('apartment_id');
+            $table->unsignedInteger('realty_id')->nullable();
+            $table->unsignedInteger('apartment_id')->nullable();
+
+            $table->foreign('realty_id')->references('id')->on('realty');
+            $table->foreign('apartment_id')->references('id')->on('apartment');
         });
     }
 
@@ -27,6 +30,9 @@ class UpdateContractAddPropertyManagementRelations extends BaseMigration
     public function down()
     {
         Schema::table($this->tablename, function (Blueprint $table) {
+            $table->dropForeign('contract_realty_id_foreign');
+            $table->dropForeign('contract_apartment_id_foreign');
+
             $table->dropColumn(['realty_id', 'apartment_id']);
         });
     }

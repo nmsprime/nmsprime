@@ -16,7 +16,8 @@ class CreateApartmentTable extends BaseMigration
         Schema::create($this->tablename, function (Blueprint $table) {
             $this->up_table_generic($table);
 
-            $table->integer('realty_id');
+            $table->unsignedInteger('realty_id');
+            $table->foreign('realty_id')->references('id')->on('realty');
 
             // $table->string('name')->nullable();
             $table->string('number')->nullable();
