@@ -2,6 +2,7 @@ dir="/var/www/nmsprime"
 # unfortunately dhcpd does not support hmacs other than hmac-md5
 # see: https://bugs.centos.org/view.php?id=12107
 pw=$(ddns-confgen -a hmac-md5 -r /dev/urandom | grep secret)
+mysql_radius_psw=$(pwgen 12 1)
 
 # create folders
 install -dm750 /etc/dhcp-nmsprime/cmts_gws
@@ -24,6 +25,7 @@ systemctl enable dhcpd
 systemctl enable named
 systemctl enable nmsprimed
 systemctl enable xinetd
+systemctl enable radiusd
 
 # starting dhcpd won't work now, because not all files have been populated
 systemctl start chronyd
@@ -32,3 +34,21 @@ systemctl start nmsprimed
 systemctl start xinetd
 
 firewall-cmd --reload
+
+mysql -u root -e "CREATE DATABASE radius CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';"
+mysql -u root -e "GRANT ALL ON radius.* TO 'radius'@'localhost' IDENTIFIED BY '$mysql_radius_psw';"
+mysql -u root radius < /etc/raddb/mods-config/sql/main/mysql/schema.sql
+mysql -u root radius -e "INSERT INTO radgroupreply (groupname,attribute,op,value) values ('default','Acct-Interim-Interval',':=','300');"
+
+sed -e 's/^\s*#*\s*driver\s*=.*/\tdriver = "rlm_sql_mysql"/' \
+    -e 's/^\s*#*\s*dialect\s*=.*/\tdialect = "mysql"/' \
+    -e 's/^\s*#*\s*login\s*=.*/\tlogin = "radius"/' \
+    -e "s/^\s*#*\s*password\s*=.*/\tpassword = \"$mysql_radius_psw\"/" \
+    -e 's/^\s*#*\s*read_clients\s*=.*/\tread_clients = yes/' \
+    -i /etc/raddb/mods-available/sql
+ln -s /etc/raddb/mods-available/sql /etc/raddb/mods-enabled/
+chgrp -h radiusd /etc/raddb/mods-enabled/sql
+
+sed -i "s/^RADIUS_DB_PASSWORD=$/RADIUS_DB_PASSWORD=$mysql_radius_psw/" /etc/nmsprime/env/provbase.env
+
+systemctl start radiusd
