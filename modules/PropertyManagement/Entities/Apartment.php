@@ -56,7 +56,14 @@ class Apartment extends \BaseModel
     {
         if (\Module::collections()->has('ProvBase')) {
             $ret['Edit']['Contract']['class'] = 'Contract';
-            $ret['Edit']['Contract']['relation'] = $this->contract;
+
+            if ($this->contract) {
+                $ret['Edit']['Contract']['relation'] = collect([$this->contract]);
+                $ret['Edit']['Contract']['options']['hide_create_button'] = 1;
+            } else {
+                $ret['Edit']['Contract']['relation'] = collect();
+                $ret['Edit']['Contract']['options']['hide_delete_button'] = 1;
+            }
         }
 
         return $ret;
@@ -72,7 +79,7 @@ class Apartment extends \BaseModel
      */
     public function contract()
     {
-        return $this->hasMany(\Modules\ProvBase\Entities\Contract::class);
+        return $this->hasOne(\Modules\ProvBase\Entities\Contract::class);
     }
 
     public function realty()
