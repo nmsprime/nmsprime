@@ -1,0 +1,25 @@
+{
+    "name": "nmsprime-modules/propertymanagement",
+    "description": "",
+    "authors": [
+        {
+            "name": "Roetzer engineering",
+            "email": "info@roetzer-engineering.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\PropertyManagement\\Providers\\PropertyManagementServiceProvider"
+            ],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\PropertyManagement\\": ""
+        }
+    }
+}
