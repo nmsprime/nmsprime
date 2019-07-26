@@ -9,13 +9,6 @@ admin_psw='admin'
 # set cacti psw in env file
 sed -i "s/^CACTI_DB_PASSWORD=$/CACTI_DB_PASSWORD=$mysql_cacti_psw/" "$env"
 
-# avoid excessive DB access, seen in all 0.8.8 versions of cacti
-rpm -qi cacti | grep Version | grep -q '0.8.8' && sed -i 's/usleep(500)/sleep(1)/' /usr/share/cacti/poller.php
-
-# fix bug in 1.0.4
-cd /var/lib/cacti
-md5sum cli/add_graphs.php | grep -q '1416f1ddae7fb14a4acc64008c146524' && wget -qO- https://github.com/Cacti/cacti/commit/2609d5892cb9b8d284fe090538f023664c06c24c.patch | head -n -13 | patch -p1
-
 # create DB accessed by cactiuser
 mysql -u root -e "CREATE DATABASE cacti CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';"
 mysql -u root -e "GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY '$mysql_cacti_psw';";
@@ -32,10 +25,10 @@ cacti_file=`ls /usr/share/doc/cacti-*/cacti.sql`
 mysql -u root cacti < "$cacti_file"
 
 # allow guest user to access graphs without login (also invalidate its password, by setting an imposible bcrypt hash)
-# send SNMP queries concurrenly to modems (depending on no of cpus)
+# disable SNMP agent
 mysql cacti -u cactiuser --password="$mysql_cacti_psw" << EOF
 REPLACE INTO settings VALUES ('guest_user','guest');
-UPDATE poller SET processes = $(nproc) WHERE name = 'Main Poller';
+REPLACE INTO settings VALUES ('enable_snmp_agent','');
 UPDATE user_auth SET password='$(php -r "echo password_hash('$admin_psw', PASSWORD_DEFAULT);")', must_change_password='' WHERE username='admin';
 UPDATE user_auth SET password='invalidated', must_change_password='', enabled='on' WHERE username='guest';
 EOF
@@ -44,7 +37,6 @@ EOF
 ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/ss_docsis.php /usr/share/cacti/scripts/ss_docsis.php
 ln -srf /var/www/nmsprime/modules/ProvMon/Console/cacti/cisco_cmts.xml /usr/share/cacti/resource/snmp_queries/cisco_cmts.xml
 
-sed -i 's/^#//' /etc/cron.d/cacti
 sed -i 's/Require host localhost$/Require all granted\n\t\tDirectoryIndex index.php/' /etc/httpd/conf.d/cacti.conf
 systemctl reload httpd.service
 
