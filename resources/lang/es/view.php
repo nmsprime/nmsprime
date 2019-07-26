@@ -33,10 +33,12 @@ return [
                 'jQuery_ImportCsv'              => 'importar CSV',
 //MENU
     //Main Menu
+        'Menu_Apartment'            => 'Apartments',
         'Menu_BillingBase'          => 'Base de facturación',
         'Menu_Debt'                 => 'Debts',
         'Menu_Dunning'              => 'Dunning',
         'Menu_MainMenu'             => 'Menú Principal',
+        'Menu_Node'                 => 'Nodes',
         'Menu_Config Page'          => 'Configuración global',
         'Menu_Logging'				=> 'Registro',
         'Menu_Product List'			=> 'Lista de productos',
@@ -67,6 +69,7 @@ return [
         'Menu_envia TEL contracts'	=> 'envia TEL contracts',
         'Menu_Net Elements'         => 'Elementos de Red',
         'Menu_Net Element Types'    => 'Tipos de Elementos de Red',
+        'Menu_Realty'               => 'Realties',
         'Menu_TicketTypes'          => 'Tipo de Ticket',
 
     //User Settings
@@ -75,10 +78,11 @@ return [
         'Menu_Logout'               => 'Cerrar sesion',
         'Menu_UserRoleSettings'     => 'Roles (usuarios)',
 
-//HEADER
         'Menu_CDRs'                 => 'EVNs',
         'Menu_Tickets'              => 'Tickets',
         'Menu_Comment'              => 'Comentarios',
+//HEADER
+        'Header_Apartment' => 'Apartments',
     //General
         'Header_GlobalSearch'       => 'Busqueda global',
         'Header_Overview'           => 'Panorama',
@@ -224,6 +228,8 @@ return [
 
         'Header_Debt'               => 'Debt history',
         'Header_DebtResult'         => 'Outstanding payments total',
+        'Header_Node'               => 'Nodes',
+        'Header_Realty'             => 'Realties',
 
     //Header Relation
         // 'Assigned'               => 'Zugewiesene',
