@@ -3,6 +3,7 @@
 namespace Modules\Dashboard\Http\Controllers;
 
 use View;
+use Storage;
 use App\GuiLog;
 use Illuminate\Support\Facades\Auth;
 use Modules\ProvBase\Entities\Modem;
@@ -61,7 +62,7 @@ class DashboardController extends BaseController
             'critical' => $query->where('modem.us_pwr', '>', $avg_critical_us)->count(),
         ];
 
-        \Storage::disk('chart-data')->put('modems.json', json_encode($modems));
+        Storage::disk('chart-data')->put('modems.json', json_encode($modems));
     }
 
     /**
@@ -71,7 +72,7 @@ class DashboardController extends BaseController
      */
     public static function get_modem_statistics()
     {
-        if (\Storage::disk('chart-data')->has('modems.json') === false) {
+        if (Storage::disk('chart-data')->has('modems.json') === false) {
             return false;
         }
 
@@ -79,7 +80,7 @@ class DashboardController extends BaseController
             return false;
         }
 
-        $a = json_decode(\Storage::disk('chart-data')->get('modems.json'));
+        $a = json_decode(Storage::disk('chart-data')->get('modems.json'));
 
         $a->text = 'Modems<br>'.$a->online.' / '.$a->all;
 
