@@ -75,7 +75,7 @@ class Realty extends \BaseModel
 
         if (\Module::collections()->has('ProvBase')) {
             $ret['Edit']['Contract']['class'] = 'Contract';
-            $ret['Edit']['Contract']['relation'] = $this->contract;
+            $ret['Edit']['Contract']['relation'] = $this->contracts;
         }
 
         return $ret;
@@ -89,7 +89,7 @@ class Realty extends \BaseModel
     /**
      * Relationships:
      */
-    public function contract()
+    public function contracts()
     {
         return $this->HasMany(\Modules\ProvBase\Entities\Contract::class);
     }
