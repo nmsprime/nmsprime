@@ -7,6 +7,11 @@ class Apartment extends \BaseModel
     // The associated SQL table for this Model
     public $table = 'apartment';
 
+    protected $casts = [
+        'connected' => 'boolean',
+        'occupied' => 'boolean',
+    ];
+
     // Add your validation rules here
     public static function rules($id = null)
     {

@@ -7,6 +7,10 @@ class Node extends \BaseModel
     // The associated SQL table for this Model
     public $table = 'node';
 
+    protected $casts = [
+        'headend' => 'boolean',
+    ];
+
     // Add your validation rules here
     public static function rules($id = null)
     {
