@@ -26,7 +26,7 @@ class RealtyController extends \BaseController
             ['form_type' => 'checkbox', 'name' => 'concession_agreement', 'description' => trans('dt_header.realty.concession_agreement')],
             ['form_type' => 'text', 'name' => 'agreement_from', 'description' => trans('dt_header.realty.agreement_from'), 'checkbox' => 'show_on_concession_agreement'],
             ['form_type' => 'text', 'name' => 'agreement_to', 'description' => trans('dt_header.realty.agreement_to'), 'checkbox' => 'show_on_concession_agreement'],
-            ['form_type' => 'text', 'name' => 'last_restoration', 'description' => trans('dt_header.realty.last_restoration')],
+            ['form_type' => 'text', 'name' => 'last_restoration_on', 'description' => trans('dt_header.realty.last_restoration_on')],
             ['form_type' => 'text', 'name' => 'administration', 'description' => trans('dt_header.realty.administration'), 'autocomplete' => []],
             ['form_type' => 'text', 'name' => 'expansion_degree', 'description' => trans('dt_header.expansion_degree'), 'space' => 1],
 

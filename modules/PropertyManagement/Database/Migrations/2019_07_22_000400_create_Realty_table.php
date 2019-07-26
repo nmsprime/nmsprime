@@ -33,7 +33,7 @@ class CreateRealtyTable extends BaseMigration
             $table->date('agreement_from')->nullable();
             $table->date('agreement_to')->nullable();
 
-            $table->date('last_restoration')->nullable();
+            $table->date('last_restoration_on')->nullable();
             $table->boolean('group_contract');
 
             $table->string('description')->nullable();
