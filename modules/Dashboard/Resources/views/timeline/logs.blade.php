@@ -1,8 +1,9 @@
 <?php $bclasses = [
     'created' => 'fa-plus-square-o',
     'deleted' => 'fa-minus-square-o',
+    'restored' => 'fa-plus-square-o',
     'updated' => 'fa-pencil-square-o',
-    'updated N:M' => 'fa-pencil-square-o'
+    'updated N:M' => 'fa-pencil-square-o',
 ];
 ?>
 {{--<ul class="timeline">--}}
