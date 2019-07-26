@@ -1,10 +1,10 @@
 {
-    "name": "nwidart/propertymanagement",
+    "name": "nmsprime-modules/propertymanagement",
     "description": "",
     "authors": [
         {
-            "name": "Nicolas Widart",
-            "email": "n.widart@gmail.com"
+            "name": "Roetzer engineering",
+            "email": "info@roetzer-engineering.com"
         }
     ],
     "extra": {
@@ -13,7 +13,7 @@
                 "Modules\\PropertyManagement\\Providers\\PropertyManagementServiceProvider"
             ],
             "aliases": {
-                
+
             }
         }
     },
