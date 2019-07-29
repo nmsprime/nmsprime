@@ -5,7 +5,7 @@ namespace Modules\HfcBase\Http\Controllers;
 use View;
 use Modules\HfcReq\Entities\NetElement;
 use App\Http\Controllers\BaseController;
-use Modules\HfcBase\Entities\IcingaObjects;
+use Modules\HfcBase\Entities\IcingaObject;
 
 class HfcBaseController extends BaseController
 {
@@ -84,17 +84,17 @@ class HfcBaseController extends BaseController
     {
         $ret = [];
 
-        if (! IcingaObjects::db_exists()) {
+        if (! IcingaObject::db_exists()) {
             return $ret;
         }
 
         $elements = NetElement::where('id', '>', '2')
             ->where('netelementtype_id', '>', '2')
-            ->with(['icingaobjects', 'icingaobjects.icingahoststatus'])
+            ->with(['icingaobject', 'icingaobject.icingahoststatus'])
             ->get();
 
         foreach ($elements as $element) {
-            $obj = $element->icingaobjects;
+            $obj = $element->icingaobject;
             if (! isset($obj)) {
                 continue;
             }
@@ -127,11 +127,11 @@ class HfcBaseController extends BaseController
         $ret = [];
         $clr = ['success', 'warning', 'danger', 'info'];
 
-        if (! IcingaObjects::db_exists()) {
+        if (! IcingaObject::db_exists()) {
             return $ret;
         }
 
-        $objs = IcingaObjects::join('icinga_servicestatus', 'object_id', '=', 'service_object_id')
+        $objs = IcingaObject::join('icinga_servicestatus', 'object_id', '=', 'service_object_id')
             ->where('is_active', '=', '1')
             ->where('name2', '<>', 'ping4')
             ->where('last_hard_state', '<>', '0')

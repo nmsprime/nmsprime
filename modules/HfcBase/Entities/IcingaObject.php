@@ -2,7 +2,7 @@
 
 namespace Modules\HfcBase\Entities;
 
-class IcingaObjects extends \BaseModel
+class IcingaObject extends \BaseModel
 {
     // SQL connection
     protected $connection = 'mysql-icinga2';
@@ -12,7 +12,7 @@ class IcingaObjects extends \BaseModel
     public static function db_exists()
     {
         try {
-            $ret = \Schema::connection('mysql-icinga2')->hasTable('icinga_objects');
+            $ret = \Schema::connection('mysql-icinga2')->hasTable($this->table);
         } catch (\PDOException $e) {
             return false;
         }
