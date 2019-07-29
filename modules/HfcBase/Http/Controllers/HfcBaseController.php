@@ -3,7 +3,9 @@
 namespace Modules\HfcBase\Http\Controllers;
 
 use View;
+use Modules\HfcReq\Entities\NetElement;
 use App\Http\Controllers\BaseController;
+use Modules\HfcBase\Entities\IcingaObjects;
 
 class HfcBaseController extends BaseController
 {
@@ -14,8 +16,8 @@ class HfcBaseController extends BaseController
     {
         $title = 'Hfc Dashboard';
 
-        $netelements = $this->_get_impaired_netelements();
-        $services = $this->_get_impaired_services();
+        $netelements = $this->get_impaired_netelements();
+        $services = $this->get_impaired_services();
 
         return View::make('HfcBase::index', $this->compact_prep_view(compact('title', 'netelements', 'services')));
     }
@@ -72,26 +74,38 @@ class HfcBaseController extends BaseController
         });
     }
 
-    private static function _get_impaired_netelements()
+    /**
+     * Return all impaired netelements in a table array
+     *
+     * @author Ole Ernst
+     * @return array
+     */
+    public static function get_impaired_netelements()
     {
         $ret = [];
 
-        if (! \Modules\HfcBase\Entities\IcingaObjects::db_exists()) {
+        if (! IcingaObjects::db_exists()) {
             return $ret;
         }
 
-        foreach (\Modules\HfcReq\Entities\NetElement::where('id', '>', '2')->get() as $element) {
-            $state = $element->get_bsclass();
-            if ($state == 'success' || $state == 'info') {
-                continue;
-            }
-            if (! isset($element->icingaobjects->icingahoststatus) || $element->icingaobjects->icingahoststatus->problem_has_been_acknowledged || ! $element->icingaobjects->is_active) {
+        $elements = NetElement::where('id', '>', '2')
+            ->where('netelementtype_id', '>', '2')
+            ->with(['icingaobjects', 'icingaobjects.icingahoststatus'])
+            ->get();
+
+        foreach ($elements as $element) {
+            $obj = $element->icingaobjects;
+            if (! isset($obj)) {
                 continue;
             }
 
-            $status = $element->icingaobjects->icingahoststatus;
+            $status = $obj->icingahoststatus;
+            if (! isset($status) || $status->problem_has_been_acknowledged || ! $status->last_hard_state) {
+                continue;
+            }
+
             $link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/host/show?host='.$element->id, $element->name);
-            $ret['clr'][] = $state;
+            $ret['clr'][] = 'danger';
             $ret['row'][] = [$link, $status->output, $status->last_time_up];
         }
 
@@ -108,16 +122,16 @@ class HfcBaseController extends BaseController
      * @author Ole Ernst
      * @return array
      */
-    private static function _get_impaired_services()
+    public static function get_impaired_services()
     {
         $ret = [];
         $clr = ['success', 'warning', 'danger', 'info'];
 
-        if (! \Modules\HfcBase\Entities\IcingaObjects::db_exists()) {
+        if (! IcingaObjects::db_exists()) {
             return $ret;
         }
 
-        $objs = \Modules\HfcBase\Entities\IcingaObjects::join('icinga_servicestatus', 'object_id', '=', 'service_object_id')
+        $objs = IcingaObjects::join('icinga_servicestatus', 'object_id', '=', 'service_object_id')
             ->where('is_active', '=', '1')
             ->where('name2', '<>', 'ping4')
             ->where('last_hard_state', '<>', '0')
@@ -126,7 +140,7 @@ class HfcBaseController extends BaseController
             ->orderBy('last_time_ok', 'desc');
 
         foreach ($objs->get() as $service) {
-            $tmp = \Modules\HfcReq\Entities\NetElement::find($service->name1);
+            $tmp = NetElement::find($service->name1);
 
             $link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/service/show?host='.$service->name1.'&service='.$service->name2, $tmp ? $tmp->name : $service->name1);
             // add additional controlling link if available
