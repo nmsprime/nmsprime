@@ -33,12 +33,12 @@ return [
                 'jQuery_ImportCsv'              => 'importar CSV',
 //MENU
     //Main Menu
-        'Menu_Apartment'            => 'Apartments',
+        'Menu_Apartment'            => 'Apartamentos',
         'Menu_BillingBase'          => 'Base de facturación',
-        'Menu_Debt'                 => 'Debts',
+        'Menu_Debt'                 => 'Deudas',
         'Menu_Dunning'              => 'Dunning',
         'Menu_MainMenu'             => 'Menú Principal',
-        'Menu_Node'                 => 'Nodes',
+        'Menu_Node'                 => 'Nodos',
         'Menu_Config Page'          => 'Configuración global',
         'Menu_Logging'				=> 'Registro',
         'Menu_Product List'			=> 'Lista de productos',
@@ -61,15 +61,15 @@ return [
         'Menu_CMTS' 				=> 'CMTS',
         'Menu_Ip-Pools' 			=> 'IP-Pools',
         'Menu_ProvVoip'			    => 'VoIP',
-        'Menu_PropertyManagement'   => 'Property Management',
+        'Menu_PropertyManagement'   => 'Gestión de propiedades',
         'Menu_MTAs' 				=> 'MTAs',
         'Menu_Phonenumbers'			=> 'Numeros telefonicos',
         'Menu_PhoneTariffs'			=> 'Tarifas telefefonicas',
-        'Menu_envia TEL orders'		=> 'envia TEL orders',
-        'Menu_envia TEL contracts'	=> 'envia TEL contracts',
+        'Menu_envia TEL orders'		=> 'ordenes TEL de envia',
+        'Menu_envia TEL contracts'	=> 'contratos TEL de envia',
         'Menu_Net Elements'         => 'Elementos de Red',
         'Menu_Net Element Types'    => 'Tipos de Elementos de Red',
-        'Menu_Realty'               => 'Realties',
+        'Menu_Realty'               => 'Bienes raices',
         'Menu_TicketTypes'          => 'Tipo de Ticket',
 
     //User Settings
@@ -82,7 +82,7 @@ return [
         'Menu_Tickets'              => 'Tickets',
         'Menu_Comment'              => 'Comentarios',
 //HEADER
-        'Header_Apartment' => 'Apartments',
+        'Header_Apartment' => 'Apartamentos',
     //General
         'Header_GlobalSearch'       => 'Busqueda global',
         'Header_Overview'           => 'Panorama',
@@ -223,13 +223,13 @@ return [
         'Header_Phone tariffs'      => 'Tarifa telefonica|Tarifas telefonicas',
         'Header_EditPhone tariffs'  => 'Editar tarifas telefonicas',
     //ProvVoipEnvia
-        'Header_envia TEL orders'	=> 'envia TEL order|envia TEL orders',
-        'Header_envia TEL contracts' => 'envia TEL contract|envia TEL contracts',
+        'Header_envia TEL orders'	=> 'orden TEL de envia|ordenes TEL de envia',
+        'Header_envia TEL contracts' => 'contrato TEL de envia|contratos TEL de envia',
 
-        'Header_Debt'               => 'Debt history',
-        'Header_DebtResult'         => 'Outstanding payments total',
-        'Header_Node'               => 'Nodes',
-        'Header_Realty'             => 'Realties',
+        'Header_Debt'               => 'Historial de deuda',
+        'Header_DebtResult'         => 'Total de pagos pendientes',
+        'Header_Node'               => 'Nodos',
+        'Header_Realty'             => 'Bienes raices',
 
     //Header Relation
         // 'Assigned'               => 'Zugewiesene',
@@ -384,13 +384,13 @@ return [
     'error_specify_id'          => 'Por favor especifique el nombre de host en lugar de la dirección ip.',
     'error_ticket_settings'     => 'Por favor introduzca el nombre y dirección correo de auto respuesta en la página de configuración global.',
 
-    'bankTransfer' => 'Bank transfers',
-    'Credit' => 'Credit',
-    'Debit' => 'Debit',
-    'Discard' => 'Discard',
-    'Level' => 'Level',
-    'Message' => 'Message',
-    'SettlementRun' => 'SettlementRun',
-    'Time' => 'Time',
-    'Type' => 'Type',
+    'bankTransfer' => 'Transferencias bancarias',
+    'Credit' => 'Crédito',
+    'Debit' => 'Débito',
+    'Discard' => 'Descartar',
+    'Level' => 'Nivel',
+    'Message' => 'Mensaje',
+    'SettlementRun' => 'Arreglo',
+    'Time' => 'Hora',
+    'Type' => 'Tipo',
 ];
