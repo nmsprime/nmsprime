@@ -19,7 +19,7 @@ class SepaMandate extends \BaseModel
             'bic' 			=> 'bic|regex:/^[A-Z]{6}[A-Z2-9][A-NP-Z0-9]([A-Z0-9]{3}){0,3}$/',			// see SepaMandateController@prep_rules, Sparkasse/S-Firm regex from error message of sepa-xml upload
             'signature_date' => 'date|required',
             'valid_from' 	=> 'date|required',
-            'valid_to'		=> 'dateornull',
+            'valid_to'		=> 'nullable|date',
         ];
     }
 
