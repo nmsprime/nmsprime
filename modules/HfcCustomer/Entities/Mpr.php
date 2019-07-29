@@ -242,6 +242,6 @@ class MprObserver
     // be called in MprGeoposObserver if MPRs (including their geopos) are created or deleted
     public function updated($modem)
     {
-        \Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
+        \Queue::push(new \Modules\HfcCustomer\Jobs\MpsJob);
     }
 }

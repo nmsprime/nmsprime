@@ -2,18 +2,13 @@
 
 namespace Modules\HfcCustomer\Console;
 
-use Illuminate\Bus\Queueable;
 use Illuminate\Console\Command;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
 
-class MpsCommand extends Command implements ShouldQueue
+// use Symfony\Component\Console\Input\InputOption;
+// use Symfony\Component\Console\Input\InputArgument;
+
+class MpsCommand extends Command
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
-
     /**
      * The console command name.
      *
@@ -39,13 +34,12 @@ class MpsCommand extends Command implements ShouldQueue
     }
 
     /**
-     * Execute the console command.
+     * Execute the console command - Refresh all MPS rules
      *
      * @return mixed
      */
     public function handle()
     {
-        // Refresh all MPS rules
         \Modules\HfcCustomer\Entities\Mpr::ruleMatching();
     }
 
