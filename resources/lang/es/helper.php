@@ -4,7 +4,7 @@ return [
  /*
   * Authentication and Base
   */
-    'translate'					=> 'Usted puede ayudar a traducir primer NMS en',
+    'translate'					=> 'Puedes ayudar a traducir NMS PRIME en',
     'assign_role'					=> 'Asigna uno o más roles a este usuario. Los usuarios sin Rol no pueden usar el NMS porque no tienen Permisos.',
     'assign_users'					=> 'Asigna uno o más usuarios a este rol. Los cambios realizados aquí no son visibles en el GuiLog del usuario.',
     'assign_rank'					=> 'El rango de una función determina la posibilidad de editar otros usuarios. <br \>puede asignar valores de 0 a 100. (mayor es mejor). <br \>si un usuario tiene más de una función, se utiliza el rango más alto. <br \>si se establece la posibilidad de actualizar los usuarios, la fila también se comprueba. Solamente si el rango del editor es mayor, se concede el permiso. Además, al crear o actualizar los usuarios, pueden asignarse sólo funciones con rango igual o inferior.',
@@ -32,16 +32,16 @@ return [
      */
     //BillingBaseController
     'BillingBase' => [
-        'cdr_offset'        => "TAKE CARE: incrementing this when having data from settlement runs leads to overwritten CDRs during next run - make sure to save/rename the history!\n\nExample: Set to 1 if Call Data Records from June belong to Invoices of July, Zero if it's the same month, 2 if CDRs of January belong to Invoices of March.",
-        'cdr_retention'     => 'Months that Call Data Records may/have to be kept save',
-        'extra_charge'      => 'Additional mark-on to purchase price. Only when not calculated through provider!',
-        'fluid_dates'       => 'Check this box if you want to add tariffs with uncertain start and/or end date. If checked two new checkboxes (Valid from fixed, Valid to fixed) will appear on Item\'s edit/create page. Check out their help messages for further explanation!',
-        'InvoiceNrStart'    => 'Invoice Number Counter starts every new year with this number',
-        'ItemTermination'   => 'Allow Customers only to terminate booked products on last day of month',
-        'MandateRef'        => "A Template can be built with sql columns of contract or mandate table - possible fields: \n",
-        'rcd'               => 'Is also the date of value. Can also be set specifically for a contract on contract page',
-        'showAGs'           => 'Adds a select list with contact persons to the contract page. The list has to be stored in appropriate Storage directory - check source code!',
-        'SplitSEPA'         => 'Sepa Transfers are split to different XML-Files dependent of their transfer type',
+        'cdr_offset'        => "ADVERTENCIA: incrementar esto mientras se tiene datos de acuerdos ocasiona sobrescribir CDRs durante la siguiente ejecucion - asegurese de guardar/renombrar el historial!\n\nEjemplo: Asignar a 1 si los registros de datos de llamada de Junio, pertenecen a las facturas de Julio, 0 si este es del mismo mes, 2 si RDLs de Enero pertenecen a las facturas de Marzo.",
+        'cdr_retention'     => 'Meses en que los registros de llamadas pueden/deben guardarse',
+        'extra_charge'      => 'Marca adicional para el precio de compra. ¡Sólo cuando no se calcula a través del proveedor!',
+        'fluid_dates'       => 'Marque esta casilla si desea añadir tarifas con fecha de inicio y/o fecha de finalización incierta. Si se selecciona dos nuevos checkboxes (Válido desde fijo, válido a fijo) aparecerá en la página de edición/creación del artículo. ¡Echa un vistazo a sus mensajes de ayuda para obtener más información!',
+        'InvoiceNrStart'    => 'Contador de número de factura comienza cada año nuevo con este número',
+        'ItemTermination'   => 'Permitir a los Clientes solo cancelar productos reservados el ultimo dia del mes',
+        'MandateRef'        => "Una plantilla puede construirse con columnas sql de la tabla de contrato o mandato - campos posibles: \n",
+        'rcd'               => 'También es la fecha de valor. También se puede establecer específicamente para un contrato en la página del contrato',
+        'showAGs'           => 'Añade una lista de selección con personas de contacto a la página del contrato. La lista debe ser almacenada en el directorio de almacenamiento apropiado - ¡compruebe el código fuente!',
+        'SplitSEPA'         => 'Las transferencias Sepa se dividen en diferentes archivos XML dependiendo de su tipo de transferencia',
         ],
 
     //CompanyController
@@ -125,11 +125,11 @@ return [
   *	MODULE: ProvBase
   */
     'contract' => [
-        'valueDate' => 'Day of month for specific date of value. Overrides the requested collection date from global config for this contract in the SEPA XML.',
+        'valueDate' => 'Día del mes para una fecha específica del valor. Anula la fecha de colección solicitada de la configuración global para este contrato en el SEPA XML.',
     ],
     'rate_coefficient'				=> 'La Maxima Tarifa Sostenida sera multiplicada por este valor para otorgar al usuario mas (> 1.0) rendimiento que el suscrito.',
     'additional_modem_reset'		=> 'Compruebe si debe mostrarse un botón adicional, que reinicie el módem a través de SNMP sin consultar el CMTS.',
-    'openning_new_tab_for_modem' => 'Check the box to open the modem edit page in new tab in topography view.',
+    'openning_new_tab_for_modem' => 'Marque la casilla para abrir la página de edición del módem en la nueva pestaña en vista topografía.',
     //ModemController
     'Modem_InternetAccess'			=> 'Acceso a Internet para los CPEs (los MTAs no se consideran y siempre se conectarán cuando todas las demás configuraciones sean correctas). Tenga cuidado: Con el Módulo de facturación esta casilla se sobrescribirá por chequeo diario si cambia la tarifa.',
     'Modem_InstallationAddressChangeDate'	=> 'En caso de (fisico) reubicacion del modem: Agregar fecha de inicio para la nueva direccion ahi. Si es solo lectura, hay una orden de cambio de direccion pendiente en Envia.',
@@ -147,8 +147,8 @@ return [
   *	MODULE: ProvVoip
   */
     //PhonenumberManagementController
-    'PhonenumberManagement_activation_date' => 'Will be sent to provider as desired date, triggers active state of the phonenumber.',
-    'PhonenumberManagement_deactivation_date' => 'Will be sent to provider as desired date, triggers active state of the phonenumber.',
+    'PhonenumberManagement_activation_date' => 'Se enviará al proveedor como fecha deseada, desencadena el estado activo del número de teléfono.',
+    'PhonenumberManagement_deactivation_date' => 'Se enviará al proveedor como fecha deseada, desencadena el estado activo del número de teléfono.',
     'PhonenumberManagement_CarrierIn' => 'En puerto entrante: establecer al Telco anterior.',
     'PhonenumberManagement_CarrierInWithEnvia' => 'En puerto entrante: establecer al Telco anterior. Si hubiese una nueva cifra, se establece a EnviaTEL',
     'PhonenumberManagement_EkpIn' => 'En puerto entrante: establecer al Telco.',
@@ -180,5 +180,5 @@ return [
     'noReplyMail' => 'La dirección de correo electrónico que debe ser mostrada como remitente, al crear/editar tickets. Esta dirección no tiene que existir. Por ejemplo: ejemplo@ejemplo.com',
     'noReplyName' => 'El nombre que debe mostrarse como remitente, al crear/editar tickets. Por ejemplo: NMS Prime',
     'ticket_settings' => 'Siguiente: Establecer nombre y dirección no responder en la página de configuración global.',
-    'carrier_out'      => 'Carrier code of the future contractual partner. If left blank the phonenumber will be deleted.',
+    'carrier_out'      => 'Código de operador del futuro socio contractual. Si se deja en blanco el número de teléfono se eliminará.',
  ];
