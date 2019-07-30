@@ -12,7 +12,7 @@ class IcingaObject extends \BaseModel
     public static function db_exists()
     {
         try {
-            $ret = \Schema::connection('mysql-icinga2')->hasTable($this->table);
+            $ret = \Schema::connection('mysql-icinga2')->hasTable('icinga_objects');
         } catch (\PDOException $e) {
             return false;
         }
