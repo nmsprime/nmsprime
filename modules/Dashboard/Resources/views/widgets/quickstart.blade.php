@@ -4,7 +4,7 @@
     }
 </style>
 
-<div class="widget widget-stats bg-grey">
+<div class="widget widget-stats bg-grey" style="width: max-content">
     {{-- info/data --}}
     <div class="stats-info text-center">
 
