@@ -17,7 +17,7 @@ return [
     'Amount'                    => 'Cantidad',
     'Assigned'					=> 'Asignado',
     'BIC'						=> 'BIC',
-    'Bank fee'                  => 'Bank fee',
+    'Bank fee'                  => 'Comisión bancaria',
     'Bank Account Holder'		=> 'Nombre de titular de cuenta bancaria',
     'Birthday'					=> 'Fecha nacimiento',
     'Business'                  => 'Negocio',
@@ -117,8 +117,8 @@ return [
     'contract_nr_mismatch'  => 'No se pudo encontrar el siguiente número de contrato porque la consulta de la base de datos falló. Esto se debe a que los siguientes contratos tienen un número de contrato que no pertenece a su centro de costo seleccionado: :nrs. Cambie el centro de costos o permita que el sistema asigne un nuevo número de contrato para estos contratos.',
     'contract' => [
         'numberrange' => [
-            'failure' => 'No free contract number for selected costcenter available!',
-            'missing' => 'The contract number could not be determined as the costcenter does not have a number range assigned.',
+            'failure' => 'No se encuentra disponible el numero de contrato para el centro de costos seleccionado!',
+            'missing' => 'El número de contrato no se pudo determinar porque el centro de gastos no tiene un rango de número asignado.',
         ],
     ],
     'cpe_log_error' 		=> 'No se estuvo registrando en el Servidor - No se encontro registro',
@@ -431,7 +431,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'MandateDate'			=> 'Fecha de orden',
     'Commission in %'		=> 'Comisión en %',
     'Total' => 'Total',
-    'Total fee'				=> 'Total fee',
+    'Total fee'				=> 'Comisión total',
     'Commission Amount'		=> 'Monto de Comisión',
     'Zip Files' 			=> 'Archivo comprimido .zip',
     'primary'				=> 'principal',
