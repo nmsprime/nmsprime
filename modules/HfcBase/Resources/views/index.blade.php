@@ -14,49 +14,45 @@
         {{--Quickstart--}}
 
         <div class="row">
-            <div class="col-md-12">
+            @DivOpen(7)
                 @include('Generic.quickstart')
-            </div>
+            @DivClose()
+            @DivOpen(2)
+            @DivClose()
+            @DivOpen(3)
+            @include ('bootstrap.widget',
+                array (
+                    'content' => 'date',
+                    'widget_icon' => 'calendar',
+                    'widget_bg_color' => 'purple',
+                )
+            )
+            @DivClose()
         </div>
         <div class="row">
+            @DivOpen(3)
+                @include('HfcBase::widgets.hfc')
+            @DivClose()
+
+            @DivOpen(5)
+                @include('HfcBase::widgets.documentation')
+            @DivClose()
+        </div>
+
+        <div class="row">
             @if($services)
-            @section ('impaired_services')
-                @include('HfcBase::panels.impaired_services')
-            @stop
-            @include ('bootstrap.panel', array ('content' => "impaired_services", 'view_header' => 'Impaired Services', 'md' => 7, 'height' => 'auto', 'i' => '2'))
+                @section ('impaired_services')
+                    @include('HfcBase::panels.impaired_services')
+                @stop
+                @include ('bootstrap.panel', array ('content' => "impaired_services", 'view_header' => 'Impaired Services', 'md' => 6, 'height' => 'auto', 'i' => '2'))
             @endif
 
-            <div class="col-md-5">
-                <div class="row">
-                    @DivOpen(6)
-                    @include('HfcBase::widgets.hfc')
-                    @DivClose()
-                    @DivOpen(6)
-                    @include ('bootstrap.widget',
-                        array (
-                            'content' => 'date',
-                            'widget_icon' => 'calendar',
-                            'widget_bg_color' => 'purple',
-                        )
-                    )
-                    @DivClose()
-                </div>
-                <div class="row">
-                    <div class="col-md-12">
-                        @if($netelements)
-                        @section ('impaired_netelements')
-                            @include('HfcBase::panels.impaired_netelements')
-                        @stop
-                        @include ('bootstrap.panel', array ('content' => "impaired_netelements", 'view_header' => 'Impaired Netelements', 'md' => 12, 'height' => 'auto', 'i' => '1'))
-                        @endif
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-12">
-                        @include('HfcBase::widgets.documentation')
-                    </div>
-                </div>
-            </div>
+            @if($netelements)
+                @section ('impaired_netelements')
+                    @include('HfcBase::panels.impaired_netelements')
+                @stop
+                @include ('bootstrap.panel', array ('content' => "impaired_netelements", 'view_header' => 'Impaired Netelements', 'md' => 6, 'height' => 'auto', 'i' => '1'))
+            @endif
         </div>
     </div>
 @stop
