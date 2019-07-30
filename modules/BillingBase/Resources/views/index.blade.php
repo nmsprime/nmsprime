@@ -72,6 +72,14 @@
                         @include('billingbase::widgets.documentation')
                     </div>
                 </div>
+                <div class="row">
+                    @if ($contracts_data['table'])
+                    @section ('weekly_contracts')
+                        @include('provbase::panels.weekly_contracts')
+                    @stop
+                    @include ('bootstrap.panel', array ('content' => "weekly_contracts", 'view_header' => trans('view.Dashboard_WeeklyCustomers'), 'md' => 12, 'height' => 'auto', 'i' => '1'))
+                    @endif
+                </div>
             </div>
         </div>
     </div>
