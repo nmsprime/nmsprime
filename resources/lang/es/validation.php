@@ -101,14 +101,14 @@ return [
     'custom' => [
         'password' => [
             'regex' => 'La contraseña tiene los siguiente criterios que debe seguir:
-                        <li>Minimo 8 caracteres</li>
-                        <li>Mayuscula (A – Z)</li>
-                        <li>Minuscula (a – z)</li>
-                        <li>Digito (0 – 9)</li>\',',
+                        <li>Mínimo 8 caracteres</li>
+                        <li>Mayúscula (A – Z)</li>
+                        <li>Minúscula (a – z)</li>
+                        <li>Dígito (0 – 9)</li>\',',
         ],
     ],
 
-    'docsis'               => ':atributo',
+    'docsis'               => ':attribute',
     'ip'                   => 'No es una direccion IP valida, de la forma: 192.168.0.255',
     'ip_in_range'          => 'La direccion IP no esta dentro del rango especificado anteriormente',
     'ip_larger'            => 'La direccion IP debe tener una cifra mayor debido a lo especificado en campos anteriores',
