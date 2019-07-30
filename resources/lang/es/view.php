@@ -69,7 +69,7 @@ return [
         'Menu_envia TEL contracts'	=> 'contratos TEL de envia',
         'Menu_Net Elements'         => 'Elementos de Red',
         'Menu_Net Element Types'    => 'Tipos de Elementos de Red',
-        'Menu_Realty'               => 'Bienes raices',
+        'Menu_Realty'               => 'Bienes raíces',
         'Menu_TicketTypes'          => 'Tipo de Ticket',
 
     //User Settings
