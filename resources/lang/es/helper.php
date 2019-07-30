@@ -32,12 +32,12 @@ return [
      */
     //BillingBaseController
     'BillingBase' => [
-        'cdr_offset'        => "ADVERTENCIA: incrementar esto mientras se tiene datos de acuerdos ocasiona sobrescribir CDRs durante la siguiente ejecucion - asegurese de guardar/renombrar el historial!\n\nEjemplo: Asignar a 1 si los registros de datos de llamada de Junio, pertenecen a las facturas de Julio, 0 si este es del mismo mes, 2 si RDLs de Enero pertenecen a las facturas de Marzo.",
+        'cdr_offset'        => "ADVERTENCIA: incrementar esto mientras se tiene datos de acuerdos ocasiona sobrescribir CDRs durante la siguiente ejecución - asegúrese de guardar/renombrar el historial!\n\nEjemplo: Asignar a 1 si los registros de datos de llamada de Junio, pertenecen a las facturas de Julio, 0 si este es del mismo mes, 2 si RDLs de Enero pertenecen a las facturas de Marzo.",
         'cdr_retention'     => 'Meses en que los registros de llamadas pueden/deben guardarse',
         'extra_charge'      => 'Marca adicional para el precio de compra. ¡Sólo cuando no se calcula a través del proveedor!',
-        'fluid_dates'       => 'Marque esta casilla si desea añadir tarifas con fecha de inicio y/o fecha de finalización incierta. Si se selecciona dos nuevos checkboxes (Válido desde fijo, válido a fijo) aparecerá en la página de edición/creación del artículo. ¡Echa un vistazo a sus mensajes de ayuda para obtener más información!',
+        'fluid_dates'       => 'Marque esta casilla si desea añadir tarifas con fecha de inicio y/o fecha de finalización incierta. Si se selecciona, dos nuevas casillas de verificación (Válido desde fijo, válido a fijo) aparecerán en la página de edición/creación del artículo. ¡Echa un vistazo a sus mensajes de ayuda para obtener más información!',
         'InvoiceNrStart'    => 'Contador de número de factura comienza cada año nuevo con este número',
-        'ItemTermination'   => 'Permitir a los Clientes solo cancelar productos reservados el ultimo dia del mes',
+        'ItemTermination'   => 'Permitir a los Clientes solo cancelar productos reservados el ultimo día del mes',
         'MandateRef'        => "Una plantilla puede construirse con columnas sql de la tabla de contrato o mandato - campos posibles: \n",
         'rcd'               => 'También es la fecha de valor. También se puede establecer específicamente para un contrato en la página del contrato',
         'showAGs'           => 'Añade una lista de selección con personas de contacto a la página del contrato. La lista debe ser almacenada en el directorio de almacenamiento apropiado - ¡compruebe el código fuente!',
@@ -63,7 +63,7 @@ return [
 
     //ProductController
     'product' => [
-        'bundle'                => 'En tárifas agrupadas el tiempo mínimo de funcionamiento del contrato es determinado únicamente por la tárifa de internet. De otra forma la última tárifa inicial valida (Voip o Internet) dictamina esta fecha.',
+        'bundle'                => 'En tarifas agrupadas el tiempo mínimo de funcionamiento del contrato es determinado únicamente por la tarifa de Internet. De otra forma la última tarifa inicial valida (VoIP o Internet) dictamina esta fecha.',
         'maturity_min'          => 'Período mínimo de tarifa/tiempo de ejecución/término. Ejem. 14D (14 días), 3M (3 meses), 1Y (1 Año)',
         'maturity'              => 'Período de tarifa/duración/duración de ejecución después de la duración mínima. Se añadirá automáticamente cuando la tarifa no se canceló antes del período de notificación. Por defecto 1 mes. Por ejemplo, 14D (14 días), 3M (tres meses), 1Y (un año)',
         'Name'                  => 'Para créditos es posible asignar un Tipo añadiendo el nombre del tipo al Nombre del Crédito. Ejem.: "Dispositivo de crédito"',
@@ -132,7 +132,7 @@ return [
     'openning_new_tab_for_modem' => 'Marque la casilla para abrir la página de edición del módem en la nueva pestaña en vista topografía.',
     //ModemController
     'Modem_InternetAccess'			=> 'Acceso a Internet para los CPEs (los MTAs no se consideran y siempre se conectarán cuando todas las demás configuraciones sean correctas). Tenga cuidado: Con el Módulo de facturación esta casilla se sobrescribirá por chequeo diario si cambia la tarifa.',
-    'Modem_InstallationAddressChangeDate'	=> 'En caso de (fisico) reubicacion del modem: Agregar fecha de inicio para la nueva direccion ahi. Si es solo lectura, hay una orden de cambio de direccion pendiente en Envia.',
+    'Modem_InstallationAddressChangeDate'	=> 'En caso de (físico) reubicación del modem: agregar fecha de inicio para la nueva dirección ahí. Si es solo lectura, hay una orden de cambio de dirección pendiente en envia TEL.',
     'Modem_GeocodeOrigin'			=> 'De donde vienen los datos geocode? Si se establece a "n/a", la direccion no podra ser geocoded para cualquier API. Sera establecido a su nombre en cambios manuales de geodata.',
     'contract_number' 				=> 'Atencion - Contrasena del Cliente es cambiado automaticamente cuando se cambia este campo!',
     'mac_formats'					=> "Formatos permitidos (case-insensitive):\n\n1) AA:BB:CC:DD:EE:FF\n2) AABB.CCDD.EEFF\n3) AABBCCDDEEFF",
@@ -141,7 +141,7 @@ return [
     'enable_agc'					=> 'Activar el control automático de ganancia para upstream.',
     'agc_offset'					=> 'Compensación del control automático de ganancia para el upstream en dB. (por defecto: 0.0)',
     'configfile_count'              => 'El número en paréntesis indica que tan seguido está siendo usado el archivo de configuración respectivo.',
-    'has_telephony'                 => 'Activar si el cliente tendrá telefonía pero no tiene internet. Esta bandera no puede ser utilizada para desactivar la telefonía en contratos con Internet. Por favor, elimine el MTA o desactive el número de teléfono para eso. Información: El ajuste influye en los parámetros de configuración NetworkAcess y MaxCPE de los módems - ver la pestaña de análisis de modems \'Configfile\'',
+    'has_telephony'                 => 'Activar si el cliente tendrá telefonía pero no tiene Internet. Esta bandera no puede ser utilizada para desactivar la telefonía en contratos con Internet. Por favor, elimine el MTA o desactive el número de teléfono para eso. Información: El ajuste influye en los parámetros de configuración NetworkAcess y MaxCPE de los módems - ver la pestaña de análisis de modems \'Configfile\'',
 
  /*
   *	MODULE: ProvVoip
@@ -150,11 +150,11 @@ return [
     'PhonenumberManagement_activation_date' => 'Se enviará al proveedor como fecha deseada, desencadena el estado activo del número de teléfono.',
     'PhonenumberManagement_deactivation_date' => 'Se enviará al proveedor como fecha deseada, desencadena el estado activo del número de teléfono.',
     'PhonenumberManagement_CarrierIn' => 'En puerto entrante: establecer al Telco anterior.',
-    'PhonenumberManagement_CarrierInWithEnvia' => 'En puerto entrante: establecer al Telco anterior. Si hubiese una nueva cifra, se establece a EnviaTEL',
+    'PhonenumberManagement_CarrierInWithEnvia' => 'En puerto entrante: establecer al Telco anterior. Si hubiese una nueva cifra, se establece a envia TEL',
     'PhonenumberManagement_EkpIn' => 'En puerto entrante: establecer al Telco.',
-    'PhonenumberManagement_EkpInWithEnvia' => 'En puerto entrante: establecer al Telco anterior. Si hubiese una nueva cifra, se establece a EnviaTEL',
+    'PhonenumberManagement_EkpInWithEnvia' => 'En puerto entrante: establecer al Telco anterior. Si hubiese una nueva cifra, se establece a envia TEL',
     'PhonenumberManagement_TRC' => 'Solo para su conocimiento. Los cambios reales tienen que ser realizadas en su Telco.',
-    'PhonenumberManagement_TRCWithEnvia' => 'Si se cambia aqui, tambien tiene que ser enviado a Envia (Actualizar su cuenta VoIP).',
+    'PhonenumberManagement_TRCWithEnvia' => 'Si se cambia aquí, también tiene que ser enviado a envia TEL (Actualizar su cuenta VoIP).',
     'PhonenumberManagement_Autogenerated' => 'Esta gestion ha sido creada automaticamente. Por favor, verifique/cambie valores, entonces desmarque esta casilla.',
 /*
   * MODULE VoipMon
