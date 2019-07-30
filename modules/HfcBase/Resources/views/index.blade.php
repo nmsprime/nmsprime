@@ -58,16 +58,5 @@
                 </div>
             </div>
         </div>
-        {{--TODO: implement each module its own news--}}
-        {{--<div class="row">--}}
-            {{--@if (isset($news) && $news)--}}
-            {{--@section ('news')--}}
-                {{--@include('HfcBase::panels.news')--}}
-            {{--@stop--}}
-            {{--@include ('bootstrap.panel', array ('content' => "news", 'view_header' => 'News', 'md' => 12, 'height' => '350px', 'i' => '5'))--}}
-            {{--@endif--}}
-        {{--</div>--}}
-
     </div>
-
 @stop

@@ -6,70 +6,9 @@
     'updated N:M' => 'fa-pencil-square-o',
 ];
 ?>
-{{--<ul class="timeline">--}}
-    {{--@php--}}
-        {{--\Carbon\Carbon::setLocale(\App::getLocale());--}}
-        {{--$last_log_user_id = 0;--}}
-    {{--@endphp--}}
-    {{--@foreach($logs as $log)--}}
-        {{--@if($last_log_user_id != $log->user_id)--}}
-            {{--<li>--}}
-                {{--<!-- begin timeline-time -->--}}
-                {{--<div class="timeline-time">--}}
-                    {{--<span class="date">{{langDateFormat($log->updated_at->timestamp)}}</span>--}}
-                    {{--<span class="time">{{$log->updated_at->format('H:i:s')}}</span>--}}
-                {{--</div>--}}
-                {{--<!-- end timeline-time -->--}}
-                {{--<!-- begin timeline-icon -->--}}
-                {{--<div class="timeline-icon">--}}
-                    {{--<a href="javascript:;">&nbsp;</a>--}}
-                {{--</div>--}}
-                {{--<!-- end timeline-icon -->--}}
-                {{--<!-- begin timeline-body -->--}}
-                {{--<div class="timeline-body">--}}
-                    {{--<div class="timeline-header">--}}
-                        {{--<span class="userimage"><i class="fa fa-user-circle-o fa-lg"></i></span>--}}
-                        {{--<span class="username">{{$log->username}}</span>--}}
-                        {{--<span class="pull-right text-muted">{{$log->updated_at->diffForHumans()}}</span>--}}
-                    {{--</div>--}}
-                    {{--<div class="timeline-content">--}}
-                        {{--<h4>--}}
-                            {{--<i class="fa {{$bclasses[$log->method]}}"></i>{{ trans("messages.dashboard.log.$log->method") }}--}}
-                            {{--<a--}}
-                                    {{--href="admin/{{$log->model}}/{{$log->model_id}}">{{ \App\Http\Controllers\BaseViewController::translate_view($log->model, 'Header')}}</a>--}}
-                        {{--</h4>--}}
-                        {{--@foreach(explode(',', $log->text) as $change)--}}
-                            {{--<p class="ml-lg-5">--}}
-                                {{--{!! $change !!}--}}
-                            {{--</p>--}}
-                        {{--@endforeach--}}
-                        {{--@else--}}
-                            {{--<h4>--}}
-                                {{--<i class="fa {{$bclasses[$log->method]}}"></i>{{ trans("messages.dashboard.log.$log->method") }}--}}
-                                {{--<a--}}
-                                        {{--href="admin/{{$log->model}}/{{$log->model_id}}">{{ \App\Http\Controllers\BaseViewController::translate_view($log->model, 'Header')}}</a>--}}
-                            {{--</h4>--}}
-                            {{--@foreach(explode(',', $log->text) as $change)--}}
-                                {{--<p class="ml-lg-5">--}}
-                                    {{--{!! $change !!}--}}
-                                {{--</p>--}}
-                            {{--@endforeach--}}
-                        {{--@endif--}}
-                        {{--@php--}}
-                            {{--$last_log_user_id = $log->user_id--}}
-                        {{--@endphp--}}
 
-                        {{--@if($last_log_user_id != $log->user_id)--}}
-                    {{--</div>--}}
-                {{--</div>--}}
-            {{--</li>--}}
-        {{--@endif--}}
-    {{--<!-- end timeline-body -->--}}
-    {{--@endforeach--}}
-{{--</ul>--}}
 <div data-scrollbar="true" style="    height: calc(100vh - 160px)">
 <div class="container py-2 px-0">
-
     @php
         \Carbon\Carbon::setLocale(\App::getLocale());
         $last_log_user_id = 0;
@@ -77,23 +16,6 @@
     @foreach($logs as $key => $log)
         @if($last_log_user_id != $log->user_id)
             <div class="row">
-                {{--<div class="col-auto text-center flex-column d-none d-sm-flex">--}}
-                    {{--<div class="row h-50">--}}
-                        {{--@if(!$key)--}}
-                            {{--<div class="col ">&nbsp;</div>--}}
-                        {{--@else--}}
-                            {{--<div class="col border-right">&nbsp;</div>--}}
-                        {{--@endif--}}
-                        {{--<div class="col">&nbsp;</div>--}}
-                    {{--</div>--}}
-                    {{--<h5 class="m-2">--}}
-                        {{--<span class="badge badge-pill bg-success">&nbsp;</span>--}}
-                    {{--</h5>--}}
-                    {{--<div class="row h-50">--}}
-                        {{--<div class="col border-right">&nbsp;</div>--}}
-                        {{--<div class="col">&nbsp;</div>--}}
-                    {{--</div>--}}
-                {{--</div>--}}
                 <div class="col py-2">
                     <div class="card border-success shadow">
                         <div class="card-body p-10">
