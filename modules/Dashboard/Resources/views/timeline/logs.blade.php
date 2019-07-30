@@ -26,7 +26,6 @@
                             <p class="card-text m-b-0">
                                 <i class="fa {{$bclasses[$log->method]}}"></i> {{ trans("messages.dashboard.log.$log->method") }}
                                 <a href="admin/{{$log->model}}/{{$log->model_id}}"> {{ \App\Http\Controllers\BaseViewController::translate_view($log->model, 'Header')}}</a>
-                                <span class="date">{{langDateFormat($log->updated_at->timestamp)}}</span>
                                 <span class="pull-right text-muted">{{$log->updated_at->diffForHumans()}}</span>
                                 @php
                                     $changes = preg_split('@,@', $log->text, NULL, PREG_SPLIT_NO_EMPTY);
@@ -34,7 +33,7 @@
                                 @if(count($changes))
                                     <button class="btn btn-xs btn-outline-secondary" type="button"
                                             data-target="#details_{{$log->id}}"
-                                            data-toggle="collapse">Show Changes {{count($changes)}}
+                                            data-toggle="collapse"> {{ trans_choice('view.showChanges', count($changes), ['num' => count($changes)]) }}
                                     </button>
                             </p>
                                 <div class="collapse p-3 ml-4 border rounded m-b-10" id="details_{{$log->id}}">
@@ -60,7 +59,7 @@
                                     @if(count($changes))
                                         <button class="btn btn-xs btn-outline-secondary" type="button"
                                                 data-target="#details_{{$log->id}}"
-                                                data-toggle="collapse">Show Changes {{count($changes)}}
+                                                data-toggle="collapse">{{ trans_choice('view.showChanges', count($changes), ['num' => count($changes)]) }}
                                         </button>
                                 </p>
                                     <div class="collapse p-3 ml-4 border rounded m-b-10" id="details_{{$log->id}}">
@@ -85,7 +84,7 @@
                 </div>
             </div>
             </div>
-                @endif
-                @endforeach
-            </div>
+        @endif
+    @endforeach
+</div>
 </div>
