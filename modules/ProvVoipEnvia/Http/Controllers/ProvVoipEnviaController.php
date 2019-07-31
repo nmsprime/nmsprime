@@ -612,7 +612,7 @@ class ProvVoipEnviaController extends \BaseController
         }
 
         // add the original GET params as hidden inputs
-        foreach (\Request::get() as $name => $value) {
+        foreach (\Request::all() as $name => $value) {
             if ($name != 'phonenumbers_to_create') {
                 $html .= "<input type='hidden' name='$name' value='$value' />\n";
             }
