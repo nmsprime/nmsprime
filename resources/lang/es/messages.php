@@ -79,6 +79,7 @@ return [
     'First IP'					=> 'Primer IP',
     'Firstname'					=> 'Nombres',
     'Fixed IP'					=> 'IP fija',
+    'Additional rDNS record'	=> 'Additional rDNS record',
     'Floor'                     => 'Piso',
     'Force Restart'				=> 'Forzar reinicio',
     'Geocode origin'			=> 'Origen de geocodificación',
