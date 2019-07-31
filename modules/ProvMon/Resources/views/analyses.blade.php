@@ -1,18 +1,20 @@
 @extends ('provmon::split')
 
 @section('content_dash')
-	<div class="btn pull-right">
-		@include('Generic.documentation', ['documentation' => $modem->help])
+	<div class="d-flex flex-wrap align-items-center justify-content-between" style="min-height: 135px;">
+	<div class="d-flex justify-content-end {{ ($dash && count($dash) == 1) ? 'order-1 order-sm-3' : ''}}" style="flex: 1">
+			@include('Generic.documentation', ['documentation' => $modem->help])
+		</div>
+		@if ($dash)
+		<div class="{{ count($dash) == 1 ? 'col-sm-10 col-xl-11 order-2' : '' }} ">
+			@foreach ($dash as $key => $info)
+				<div class="alert alert-{{$info['bsclass']}} fade show"> {{ $info['text'] }} </div>
+			@endforeach
+		</div>
+		@else
+			<b>TODO</b>
+		@endif
 	</div>
-
-	@if ($dash)
-		@foreach ($dash as $key => $info)
-			<div class="alert alert-{{$info['bsclass']}} fade show col-md-10"> {{ $info['text'] }} </div>
-		@endforeach
-	@else
-		<b>TODO</b>
-	@endif
-
 @stop
 
 @section('spectrum-analysis')
