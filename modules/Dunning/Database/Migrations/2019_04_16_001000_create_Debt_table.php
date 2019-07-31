@@ -28,6 +28,10 @@ class CreateDebtTable extends BaseMigration
             $table->float('total_fee', 10, 4);
             $table->string('description')->nullable();
 
+            $table->foreign('contract_id')->references('id')->on('contract')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreign('invoice_id')->references('id')->on('invoice')->onDelete('set null')->onUpdate('cascade');
+            $table->foreign('sepamandate_id')->references('id')->on('sepamandate')->onDelete('set null')->onUpdate('cascade');
+
             return parent::up();
         });
     }
