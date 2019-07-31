@@ -17,7 +17,7 @@ class CreateRealtyTable extends BaseMigration
             $this->up_table_generic($table);
 
             $table->unsignedInteger('node_id');
-            $table->foreign('node_id')->references('id')->on('node');
+            $table->foreign('node_id')->references('id')->on('node')->onDelete('cascade')->onUpdate('cascade');
 
             $table->string('name')->nullable();
             $table->string('number')->nullable();

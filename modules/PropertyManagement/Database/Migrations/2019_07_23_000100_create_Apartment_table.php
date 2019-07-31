@@ -17,7 +17,7 @@ class CreateApartmentTable extends BaseMigration
             $this->up_table_generic($table);
 
             $table->unsignedInteger('realty_id');
-            $table->foreign('realty_id')->references('id')->on('realty');
+            $table->foreign('realty_id')->references('id')->on('realty')->onDelete('cascade')->onUpdate('cascade');
 
             // $table->string('name')->nullable();
             $table->string('number')->nullable();

@@ -17,7 +17,7 @@ class CreateNodeTable extends BaseMigration
             $this->up_table_generic($table);
 
             $table->unsignedInteger('netelement_id')->nullable();
-            $table->foreign('netelement_id')->references('id')->on('netelement');
+            $table->foreign('netelement_id')->references('id')->on('netelement')->onDelete('set null')->onUpdate('cascade');
 
             $table->string('name');
             $table->string('street');
