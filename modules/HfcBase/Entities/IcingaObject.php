@@ -2,7 +2,7 @@
 
 namespace Modules\HfcBase\Entities;
 
-class IcingaObjects extends \BaseModel
+class IcingaObject extends \BaseModel
 {
     // SQL connection
     protected $connection = 'mysql-icinga2';
