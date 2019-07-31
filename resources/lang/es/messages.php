@@ -95,8 +95,8 @@ return [
     'page_html_header'		    => 'Centro de control de clientes',
     'pdflatex' => [
         'default' => 'Error al ejecutar pdflatex - código de retorno: :var',
-        'missing' => '¡Comando ilegal - pdflatex no instalado!',
-        'syntax'  => 'pdflatex: error de sintaxis en la plantilla tex (¿marcador de posición mal escrito?) :var',
+        'missing' => 'Comando ilegal-pdfLaTeX no instalado!',
+        'syntax'  => 'pdfLaTeX: error de sintaxis en la plantilla Tex (marcador de posición mal escrito?) :var',
     ],
     'MAC Address'				=> 'Dirección MAC',
     'Main Menu'					=> 'Menú Principal',
