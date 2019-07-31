@@ -34,7 +34,7 @@ return [
 //MENU
     //Main Menu
         'Menu_Apartment'            => 'Apartamentos',
-        'Menu_BillingBase'          => 'Billing',
+        'Menu_BillingBase'          => 'Facturación',
         'Menu_Debt'                 => 'Deudas',
         'Menu_Dunning'              => 'Dunning',
         'Menu_MainMenu'             => 'Menú Principal',
@@ -386,16 +386,16 @@ return [
 
     'bankTransfer' => 'Transferencias bancarias',
     'Credit' => 'Crédito',
-    'critical' => 'critical',
+    'critical' => 'crítico',
     'Debit' => 'Débito',
     'Discard' => 'Descartar',
-    'Global notification' => 'Global notification',
-    'info' => 'info',
+    'Global notification' => 'Notificación global',
+    'info' => 'información',
     'Level' => 'Nivel',
     'Message' => 'Mensaje',
-    'showChanges' => 'Show the change|Show :num changes',
+    'showChanges' => 'Mostrar el cambio|Mostrar :num cambios',
     'SettlementRun' => 'Arreglo',
     'Time' => 'Hora',
     'Type' => 'Tipo',
-    'warning' => 'warning',
+    'warning' => 'advertencia',
 ];
