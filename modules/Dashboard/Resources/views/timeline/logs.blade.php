@@ -20,11 +20,13 @@
                     <div class="card border-success shadow">
                         <div class="card-body p-10">
                             <div class="float-right text-success">{{langDateFormat($log->updated_at->timestamp)}}</div>
-                            <h4 class="card-title text-success"><i
-                                        class="fa fa-user-circle-o fa-lg"></i></span> {{$log->username}}</h4>
+                                <h4 class="card-title text-success">
+                                    <i class="fa fa-user-circle-o fa-lg"></i>
+                                    </span> {{$log->username}}
+                                </h4>
                             <div class="px-4">
                             <p class="card-text m-b-0">
-                                <i class="fa {{$bclasses[$log->method]}}"></i> {{ trans("messages.dashboard.log.$log->method") }}
+                                <i class="fa {{$bclasses[$log->method]}}" style="width: 13px"></i> {{ trans("messages.dashboard.log.$log->method") }}
                                 <a href="admin/{{$log->model}}/{{$log->model_id}}"> {{ \App\Http\Controllers\BaseViewController::translate_view($log->model, 'Header')}}</a>
                                 <span class="pull-right text-muted">{{$log->updated_at->diffForHumans()}}</span>
                                 @php
@@ -51,7 +53,7 @@
                             @endphp
                             @else
                                 <p class="card-text m-b-0">
-                                    <i class="fa {{$bclasses[$log->method]}}"></i> {{ trans("messages.dashboard.log.$log->method") }}
+                                    <i class="fa {{$bclasses[$log->method]}}" style="width: 13px"></i> {{ trans("messages.dashboard.log.$log->method") }}
                                     <a href="admin/{{$log->model}}/{{$log->model_id}}"> {{ \App\Http\Controllers\BaseViewController::translate_view($log->model, 'Header')}}</a>
                                     @php
                                         $changes = preg_split('@,@', $log->text, NULL, PREG_SPLIT_NO_EMPTY);
