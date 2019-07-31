@@ -34,7 +34,7 @@ return [
 //MENU
     //Main Menu
         'Menu_Apartment'            => 'Apartamentos',
-        'Menu_BillingBase'          => 'Base de facturación',
+        'Menu_BillingBase'          => 'Billing',
         'Menu_Debt'                 => 'Deudas',
         'Menu_Dunning'              => 'Dunning',
         'Menu_MainMenu'             => 'Menú Principal',
