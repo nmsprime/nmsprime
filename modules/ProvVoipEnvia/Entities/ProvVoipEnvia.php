@@ -3,6 +3,7 @@
 namespace Modules\ProvVoipEnvia\Entities;
 
 use Log;
+use Request;
 use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoip\Entities\EkpCode;
@@ -1684,7 +1685,7 @@ class ProvVoipEnvia extends \BaseModel
 
         $inner_xml = $this->xml->addChild('customer_data');
 
-        $to_update = \Input::get('customer_update', 'default');
+        $to_update = Request::get('customer_update', 'default');
 
         // mapping xml to database
         $fields = [
@@ -2383,7 +2384,7 @@ class ProvVoipEnvia extends \BaseModel
             if (isset($this->phonenumber)) {
                 $external_contract_reference = $this->phonenumber->contract_external_id;
             } else {
-                $enviacontract_id = \Input::get('enviacontract_id', null);
+                $enviacontract_id = Request::get('enviacontract_id', null);
                 $enviacontract = EnviaContract::find($enviacontract_id);
                 $external_contract_reference = $enviacontract->envia_contract_reference;
             }
@@ -3378,8 +3379,8 @@ class ProvVoipEnvia extends \BaseModel
      */
     protected function _get_envia_contracts_from_input()
     {
-        $enviacontract_id = \Input::get('enviacontract_id', null);
-        $phonenumber_id = \Input::get('phonenumber_id', null);
+        $enviacontract_id = Request::get('enviacontract_id', null);
+        $phonenumber_id = Request::get('phonenumber_id', null);
 
         if ($enviacontract_id) {
             return [EnviaContract::find($enviacontract_id)];
