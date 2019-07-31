@@ -187,7 +187,11 @@ class ProvMonController extends \BaseController
      */
     public function modemServicesStatus($modem, $config)
     {
-        $networkAccess = preg_grep('/NetworkAccess \d/', $config);
+        if (! $config || $config['warn']) {
+            return ['bsclass' => 'danger', 'text' => $config['warn'] ?: trans('messages.modemAnalysis.cfError')];
+        }
+
+        $networkAccess = preg_grep('/NetworkAccess \d/', $config['text']);
         preg_match('/NetworkAccess (\d)/', end($networkAccess), $match);
         $networkAccess = $match[1];
 
@@ -196,11 +200,11 @@ class ProvMonController extends \BaseController
             return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.noNetworkAccess')];
         }
 
-        $maxCpe = preg_grep('/MaxCPE \d/', $config);
+        $maxCpe = preg_grep('/MaxCPE \d/', $config['text']);
         preg_match('/MaxCPE (\d)/', end($maxCpe), $match);
         $maxCpe = $match[1];
 
-        $cpeMacs = preg_grep('/CpeMacAddress (.*?);/', $config);
+        $cpeMacs = preg_grep('/CpeMacAddress (.*?);/', $config['text']);
 
         // Internet and voip allowed
         if ($maxCpe > count($cpeMacs)) {
