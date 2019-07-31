@@ -386,11 +386,16 @@ return [
 
     'bankTransfer' => 'Transferencias bancarias',
     'Credit' => 'Crédito',
+    'critical' => 'critical',
     'Debit' => 'Débito',
     'Discard' => 'Descartar',
+    'Global notification' => 'Global notification',
+    'info' => 'info',
     'Level' => 'Nivel',
     'Message' => 'Mensaje',
+    'showChanges' => 'Show the change|Show :num changes',
     'SettlementRun' => 'Arreglo',
     'Time' => 'Hora',
     'Type' => 'Tipo',
+    'warning' => 'warning',
 ];
