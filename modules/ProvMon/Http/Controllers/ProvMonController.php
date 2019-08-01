@@ -114,7 +114,7 @@ class ProvMonController extends \BaseController
         $lease = $this->validate_lease($lease, $type);
 
         // Configfile
-        $configfile = self::_get_configfile("/tftpboot/cm/$modem->hostname");
+        $configfile = $this->_get_configfile("/tftpboot/cm/$modem->hostname");
 
         // Realtime Measure - this takes the most time
         // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
@@ -131,13 +131,13 @@ class ProvMonController extends \BaseController
         // Log dhcp (discover, ...), tftp (configfile or firmware)
         // NOTE: This function takes a long time if syslog file is large - 0.4 to 0.6 sec
         $search = $ip ? "$mac|$modem->hostname[^0-9]|$ip " : "$mac|$modem->hostname[^0-9]";
-        $log = self::_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
+        $log = $this->_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
 
         // Dashboard
-        $dash['modemServicesStatus'] = self::modemServicesStatus($modem, $configfile['text']);
+        $dash['modemServicesStatus'] = $this->modemServicesStatus($modem, $configfile);
         // time of this function should be observed - can take a huge time as well
         if ($online) {
-            $modemConfigfileStatus = self::modemConfigfileStatus($modem);
+            $modemConfigfileStatus = $this->modemConfigfileStatus($modem);
             if ($modemConfigfileStatus) {
                 $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
             }
@@ -160,7 +160,7 @@ class ProvMonController extends \BaseController
      * @param   path    String  Path of the configfile excluding its extension
      * @return  array
      */
-    private static function _get_configfile($path)
+    private function _get_configfile($path)
     {
         if (! is_file("$path.conf") || ! is_file("$path.cfg")) {
             return;
@@ -185,9 +185,16 @@ class ProvMonController extends \BaseController
      * @param array     Lines of Configfile
      * @return array    Color & status text
      */
-    public static function modemServicesStatus($modem, $config)
+    public function modemServicesStatus($modem, $config)
     {
-        $networkAccess = preg_grep('/NetworkAccess \d/', $config);
+        if (! $config || ! isset($config['text']) || isset($config['warn'])) {
+            return ['bsclass' => 'danger',
+                    'text' => $config['warn'] ?: trans('messages.modemAnalysis.cfError'),
+                    'instructions' => "docsis -e /tftpboot/cm/{$modem->hostname}.conf /tftpboot/keyfile /tftpboot/cm/{$modem->hostname}.cfg",
+            ];
+        }
+
+        $networkAccess = preg_grep('/NetworkAccess \d/', $config['text']);
         preg_match('/NetworkAccess (\d)/', end($networkAccess), $match);
         $networkAccess = $match[1];
 
@@ -196,11 +203,11 @@ class ProvMonController extends \BaseController
             return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.noNetworkAccess')];
         }
 
-        $maxCpe = preg_grep('/MaxCPE \d/', $config);
+        $maxCpe = preg_grep('/MaxCPE \d/', $config['text']);
         preg_match('/MaxCPE (\d)/', end($maxCpe), $match);
         $maxCpe = $match[1];
 
-        $cpeMacs = preg_grep('/CpeMacAddress (.*?);/', $config);
+        $cpeMacs = preg_grep('/CpeMacAddress (.*?);/', $config['text']);
 
         // Internet and voip allowed
         if ($maxCpe > count($cpeMacs)) {
@@ -231,7 +238,7 @@ class ProvMonController extends \BaseController
      *
      * @param object Modem
      */
-    public static function modemConfigfileStatus($modem)
+    public function modemConfigfileStatus($modem)
     {
         $path = '/var/log/nmsprime/tftpd-cm.log';
         $ts_cf = filemtime("/tftpboot/cm/$modem->hostname.cfg");
@@ -272,7 +279,7 @@ class ProvMonController extends \BaseController
      * @param 	grep_pipes 	String 		restrict matches
      * @return 	array
      */
-    private static function _get_syslog_entries($search, $grep_pipes)
+    private function _get_syslog_entries($search, $grep_pipes)
     {
         $search = escapeshellarg($search);
         // $grep_pipes = escapeshellarg($grep_pipes);
@@ -404,7 +411,7 @@ class ProvMonController extends \BaseController
         }
 
         /// get MAC of CPE first
-        $str = self::_get_syslog_entries($modem_mac, '| grep CPE | tail -n 1 | tac');
+        $str = $this->_get_syslog_entries($modem_mac, '| grep CPE | tail -n 1 | tac');
         // exec ('grep -i '.$modem_mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
 
         if ($str == []) {
@@ -413,7 +420,7 @@ class ProvMonController extends \BaseController
             $mac = trim($mac);
             $mac_bug = true;
             // exec ('grep -i '.$mac." /var/log/messages | grep CPE | tail -n 1 | tac", $str);
-            $str = self::_get_syslog_entries($mac, '| grep CPE | tail -n 1 | tac');
+            $str = $this->_get_syslog_entries($mac, '| grep CPE | tail -n 1 | tac');
 
             if (! $str && $lease['text']) {
                 // get cpe mac addr from lease - first option tolerates small structural changes in dhcpd.leases and assures that it's a mac address
@@ -434,7 +441,7 @@ class ProvMonController extends \BaseController
         if (isset($cpe_mac[0][0])) {
             // exec ('grep -i '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
             $cpe_mac = $cpe_mac[0][0];
-            $log = self::_get_syslog_entries($cpe_mac, '| tail -n 20 | tac');
+            $log = $this->_get_syslog_entries($cpe_mac, '| tail -n 20 | tac');
         }
 
         // Ping
@@ -503,14 +510,14 @@ class ProvMonController extends \BaseController
         $lease = $this->validate_lease($lease, $type);
 
         // configfile
-        $configfile = self::_get_configfile("/tftpboot/mta/$mta->hostname");
+        $configfile = $this->_get_configfile("/tftpboot/mta/$mta->hostname");
 
         // log
         $ip = gethostbyname($mta->hostname);
         $ip = $mta->hostname == $ip ? null : $ip;
         $mac = strtolower($mta->mac);
         $search = $ip ? "$mac|$mta->hostname|$ip " : "$mac|$mta->hostname";
-        $log = self::_get_syslog_entries($search, '| tail -n 25  | tac');
+        $log = $this->_get_syslog_entries($search, '| tail -n 25  | tac');
         // exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
         end:
