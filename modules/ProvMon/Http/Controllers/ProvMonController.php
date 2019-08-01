@@ -438,7 +438,7 @@ class ProvMonController extends \BaseController
         if (isset($cpe_mac[0][0])) {
             // exec ('grep -i '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
             $cpe_mac = $cpe_mac[0][0];
-            $log = self::_get_syslog_entries($cpe_mac, '| tail -n 20 | tac');
+            $log = $this->_get_syslog_entries($cpe_mac, '| tail -n 20 | tac');
         }
 
         // Ping
@@ -514,7 +514,7 @@ class ProvMonController extends \BaseController
         $ip = $mta->hostname == $ip ? null : $ip;
         $mac = strtolower($mta->mac);
         $search = $ip ? "$mac|$mta->hostname|$ip " : "$mac|$mta->hostname";
-        $log = self::_get_syslog_entries($search, '| tail -n 25  | tac');
+        $log = $this->_get_syslog_entries($search, '| tail -n 25  | tac');
         // exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
         end:
