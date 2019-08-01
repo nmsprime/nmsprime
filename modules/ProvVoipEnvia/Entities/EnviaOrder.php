@@ -797,10 +797,10 @@ class EnviaOrder extends \BaseModel
     public function view_has_many()
     {
         if (\Module::collections()->has('ProvVoipEnvia')) {
-            $ret['envia TEL']['EnviaOrderDocument']['class'] = 'EnviaOrderDocument';
-            $ret['envia TEL']['EnviaOrderDocument']['relation'] = $this->enviaorderdocument;
-            $ret['envia TEL']['EnviaOrderDocument']['method'] = 'show';
-            $ret['envia TEL']['EnviaOrderDocument']['options']['hide_delete_button'] = '1';
+            $ret['Edit']['EnviaOrderDocument']['class'] = 'EnviaOrderDocument';
+            $ret['Edit']['EnviaOrderDocument']['relation'] = $this->enviaorderdocument;
+            $ret['Edit']['EnviaOrderDocument']['method'] = 'show';
+            $ret['Edit']['EnviaOrderDocument']['options']['hide_delete_button'] = '1';
         } else {
             $ret = [];
         }
