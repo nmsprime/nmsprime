@@ -211,20 +211,22 @@ return [
         'Header_MTAs'               => 'MTA|MTAs',
         'Header_EditMTAs'           => 'Editar MTA',
         //Phonenumber
-        'Header_Phonenumber'        => 'Numero telefonico',
-        'Header_EditPhonenumber'    => 'Editar numero telefonico',
-        'Header_Phonenumbers'       => 'Numeros telefonicos',
-        'Header_EditPhonenumbers'   => 'Editar numeros telefonicos',
-        'Header_Tickets'            => 'Ticket|Tickets',
-        'Header_EditTickets'        => 'Editar Ticket',
+        'Header_Phonenumber'		=> 'Numero telefonico',
+        'Header_EditPhonenumber'	=> 'Editar numero telefonico',
+        'Header_Phonenumbers'		=> 'Numeros telefonicos',
+        'Header_EditPhonenumbers'	=> 'Editar numeros telefonicos',
+        'Header_PhonebookEntry'		=> 'Phonebook entry',
+        'Header_Tickets'			=> 'Ticket|Tickets',
+        'Header_EditTickets'		=> 'Editar Ticket',
         //Phone tariff
         'Header_Comment'            => 'Comentarios',
         'Header_EditComment'        => 'Editar comentarios',
         'Header_Phone tariffs'      => 'Tarifa telefonica|Tarifas telefonicas',
         'Header_EditPhone tariffs'  => 'Editar tarifas telefonicas',
     //ProvVoipEnvia
-        'Header_envia TEL orders'	=> 'orden TEL de envia|ordenes TEL de envia',
-        'Header_envia TEL contracts' => 'contrato TEL de envia|contratos TEL de envia',
+        'Header_EnviaAPI'           => 'envia TEL API',
+        'Header_EnviaContract'      => 'envia TEL contract|envia TEL contracts',
+        'Header_EnviaOrder'         => 'envia TEL order|envia TEL orders',
 
         'Header_Debt'               => 'Historial de deuda',
         'Header_DebtResult'         => 'Total de pagos pendientes',
@@ -379,6 +381,9 @@ return [
     'Numberrange_Suffix' => 'Sufijo',
     'Numberrange_Prefix' => 'Prefijo',
     'Numberrange_Type' => 'Tipo',
+
+// VoIP
+    'PhonebookEntry' => 'Phonebook entry',
 
 // Error
     'error_specify_id'          => 'Por favor especifique el nombre de host en lugar de la dirección ip.',
