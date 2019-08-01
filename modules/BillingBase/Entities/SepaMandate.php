@@ -66,6 +66,10 @@ class SepaMandate extends \BaseModel
         }
 
         if ($this->check_validity('now')) {
+            if ($this->disable) {
+                return 'warning';
+            }
+
             return 'success';
         }
 
