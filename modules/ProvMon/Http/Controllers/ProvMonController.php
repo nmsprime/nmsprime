@@ -187,7 +187,7 @@ class ProvMonController extends \BaseController
      */
     public function modemServicesStatus($modem, $config)
     {
-        if (! $config || $config['warn']) {
+        if (! $config || ! isset($config['text']) || isset($config['warn'])) {
             return ['bsclass' => 'danger',
                     'text' => $config['warn'] ?: trans('messages.modemAnalysis.cfError'),
                     'instructions' => "docsis -e /tftpboot/cm/{$modem->hostname}.conf /tftpboot/keyfile /tftpboot/cm/{$modem->hostname}.cfg",
