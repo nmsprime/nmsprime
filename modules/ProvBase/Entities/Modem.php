@@ -671,6 +671,97 @@ class Modem extends \BaseModel
     }
 
     /**
+     * Create TR-069 configfile.
+     * GenieACS API: https://github.com/genieacs/genieacs/wiki/API-Reference
+     *
+     * @author Roy Schneider
+     */
+    public function createTr069Presets()
+    {
+        $configfile = \Modules\ProvBase\Entities\Configfile::select('configfile.text', 'configfile.name')->join('modem', 'modem.configfile_id', 'configfile.id')->where('modem.id', $this->id)->first();
+        $text = $configfile->text;
+
+        if (! $text) {
+            return;
+        }
+
+        $array = explode(';', $text);
+        $data = '';
+
+        foreach ($array as $key => $config) {
+            if ($config == '') {
+                continue;
+            }
+
+            if (max(array_keys($array)) == $key) {
+                $data .= ' { '.$config.' } ';
+                break;
+            }
+
+            $data .= ' { '.$config.' },';
+        }
+
+        $data = preg_replace('/,$/', '', $data);
+
+        foreach (['sn' => $this->serial_num, 'mac' => $this->mac] as $name => $identifier) {
+            $this->callGenieAcsApi(
+                'http://'.ProvBase::first()['provisioning_server'].':7557/presets/'.$name.'_'.$this->id,
+                'PUT',
+                '{ "weight": 0, "precondition": "{\"VirtualParameters.SerialNumber\":\"'.$identifier.'\"}", "events":  { "0 BOOTSTRAP": "0 BOOTSTRAP", "1 BOOT": "1 BOOT" }, "configurations": ['.$data.'] }'
+            );
+        }
+    }
+
+    /**
+     * Call API of GenieACS via PHP Curl.
+     *
+     * @author Roy Schneider
+     * @param string $url
+     * @param string $customRequest
+     * @param string $data
+     * @return mixed $result
+     */
+    public function callGenieAcsApi($url, $customRequest, $data = null)
+    {
+        $ch = curl_init();
+
+        curl_setopt_array($ch, [
+                    CURLOPT_URL => $url,
+                    CURLOPT_RETURNTRANSFER => $customRequest == 'GET' ? true : false,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_CUSTOMREQUEST => $customRequest,
+                    CURLOPT_POSTFIELDS => $data,
+                ]);
+
+        $result = curl_exec($ch);
+        curl_close($ch);
+
+        return $result;
+    }
+
+    /**
+     * Get device from GenieACS via API.
+     *
+     * @author Roy Schneider
+     * @param string $url
+     * @param string $serialNumber
+     * @param string $mac
+     * @return mixed $length
+     */
+    public function getGenieAcsModel($url, $serialNumber, $mac)
+    {
+        $model = file_get_contents("http://$url:7557/devices/?query=%7B%22VirtualParameters.SerialNumber%22%3A%22$serialNumber%22%7D");
+        $length = preg_match('/[a-z]+/', $model);
+
+        if ($length == 0) {
+            $model = file_get_contents("http://$url:7557/devices/?query=%7B%22VirtualParameters.SerialNumber%22%3A%22$mac%22%7D");
+            $length = preg_match('/[a-z]+/', $model);
+        }
+
+        return $length != 0 ? $model : null;
+    }
+
+    /**
      * Get CMTS a CM is registered on
      *
      * @param  string 	ip 		address of cm
@@ -1556,6 +1647,13 @@ class ModemObserver
 {
     public function created($modem)
     {
+        if (Configfile::select(['device'])->where('id', $modem->configfile_id)->first()->device == 'tr069') {
+            $modem->createTr069Presets();
+            $modem->hostname = 'tr-'.$modem->id;
+            $this->save();
+            return;
+        }
+
         Log::debug(__METHOD__.' started for '.$modem->hostname);
 
         $modem->hostname = 'cm-'.$modem->id;
@@ -1590,6 +1688,10 @@ class ModemObserver
 
         // get changed values
         $diff = $modem->getDirty();
+
+        if (Configfile::select(['device'])->where('id', $modem->configfile_id)->first()->device == 'tr069' && multi_array_key_exists(['serial_num', 'mac'], $diff)) {
+            $modem->createTr069Presets();
+        }
 
         // if testing: do not try to geocode or position modems (faked data; slows down the process)
         if (\App::runningUnitTests()) {

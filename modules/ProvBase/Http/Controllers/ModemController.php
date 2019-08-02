@@ -375,11 +375,33 @@ class ModemController extends \BaseController
      */
     public function update($id)
     {
+        $modem = Modem::find($id);
+        $configfile = \Modules\ProvBase\Entities\Configfile::join('modem', 'modem.configfile_id', 'configfile.id')->where('configfile.id', $modem->configfile_id)->first();
+
+        if ($configfile->device == 'tr069' && \Request::filled('_2nd_action')) {
+            $url = ProvBase::first()['provisioning_server'];
+            $data = '{ "name": "reboot" }';
+            $class = new \Modules\ProvBase\Entities\Modem;
+
+            $model = $class->getGenieAcsModel($url, $modem->serial_num, $modem->mac);
+
+            if ($model) {
+                $json = json_decode($model, true);
+                $deviceId = rawurlencode($json[0]['_id']);
+                $success = $modem->callGenieAcsApi("http://$url:7557/devices/$deviceId/tasks?timeout=3000&connection_request", 'POST', $data);
+            }
+
+            if (! $success) {
+                \Session::push('tmp_warning_above_form', trans('messages.modem_restart_error'));
+            }
+
+            return \Redirect::back();
+        }
+
         if (! \Request::filled('_2nd_action') && ! \Request::filled('_3rd_action')) {
             return parent::update($id);
         }
 
-        $modem = Modem::find($id);
         $modem->restart_modem(false, \Request::filled('_3rd_action'));
 
         return \Redirect::back();

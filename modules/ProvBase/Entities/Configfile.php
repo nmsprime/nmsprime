@@ -530,10 +530,27 @@ class ConfigfileObserver
 
     public function updated($configfile)
     {
-        \Queue::push(new \Modules\ProvBase\Jobs\ConfigfileJob(null, $configfile->id));
         // $configfile->build_corresponding_configfiles();
         // with parameter one the children are built
         // $configfile->search_children(1);
+
+        if ($configfile->device != 'tr069') {
+            \Queue::push(new \Modules\ProvBase\Jobs\ConfigfileJob(null, $configfile->id));
+
+            return;
+        }
+
+        $modems = \Modules\ProvBase\Entities\Modem::where('configfile_id', $configfile->id)->get();
+
+        if ($modems->count() == 0) {
+            return \Redirect::back();
+        }
+
+        $url = ProvBase::first()['provisioning_server'];
+
+        foreach ($modems as $key => $modem) {
+            $modem->createTr069Presets();
+        }
     }
 
     public function deleted($configfile)
