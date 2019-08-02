@@ -44,7 +44,7 @@ trait DtFunctionsTrait
             $contract_nr = '–';
         } else {
             $contract = Contract::withTrashed()->where('id', $this->contract_id)->first();
-            $content = $contract->company ?: $contract->lastname.', '.$contract->firstname;
+            $content = $contract->company ?: "$contract->number - $contract->lastname, $contract->firstname";
             if (! is_null($contract->deleted_at)) {
                 $contract_nr = '<s>'.$content.'</s>';
             } else {
