@@ -5,6 +5,7 @@ namespace Modules\ProvBase\Http\Controllers;
 use Bouncer;
 use App\GlobalConfig;
 use Modules\ProvBase\Entities\Modem;
+use Modules\ProvBase\Entities\ProvBase;
 
 class ModemController extends \BaseController
 {
@@ -19,7 +20,7 @@ class ModemController extends \BaseController
 
     public function __construct()
     {
-        if (\Modules\ProvBase\Entities\ProvBase::first()->additional_modem_reset) {
+        if (ProvBase::first()->additional_modem_reset) {
             $this->edit_view_third_button = true;
             $this->third_button_name = 'Reset Modem';
             $this->third_button_title_key = 'modem_reset_button_title';
@@ -67,14 +68,20 @@ class ModemController extends \BaseController
             }
         }
 
+        $cfIds = $this->dynamicDisplayFormFields();
+
         // label has to be the same like column in sql table
         $a = [
             ['form_type' => 'text', 'name' => 'name', 'description' => 'Name'],
-            ['form_type' => 'text', 'name' => 'hostname', 'description' => 'Hostname', 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'select', 'name' => 'configfile_id', 'description' => 'Configfile', 'value' => $model->html_list_with_count($model->configfiles(), 'name', false, '', 'configfile_id', 'modem'),
+            'help' => trans('helper.configfile_count'), 'select' => $cfIds['all']],
+            ['form_type' => 'text', 'name' => 'hostname', 'description' => 'Hostname', 'select' => $cfIds['cm'], 'options' => ['readonly'], 'hidden' => 'C'],
             // TODO: show this dropdown only if necessary (e.g. not if creating a modem from contract context)
-            ['form_type' => 'select', 'name' => 'contract_id', 'description' => 'Contract', 'hidden' => 'E', 'value' => $model->html_list($model->contracts(), 'lastname')],
             ['form_type' => 'text', 'name' => 'mac', 'description' => 'MAC Address', 'options' => ['placeholder' => 'AA:BB:CC:DD:EE:FF'], 'help' => trans('helper.mac_formats')],
-            ['form_type' => 'select', 'name' => 'configfile_id', 'description' => 'Configfile', 'value' => $model->html_list_with_count($model->configfiles(), 'name', false, '', 'configfile_id', 'modem'), 'help' => trans('helper.configfile_count')],
+            ['form_type' => 'text', 'name' => 'serial_num', 'description' => trans('messages.Serial Number'), 'select' => $cfIds['tr069']],
+            ['form_type' => 'text', 'name' => 'username', 'description' => trans('messages.Username'), 'select' => $cfIds['tr069']],
+            ['form_type' => 'text', 'name' => 'password', 'description' => trans('messages.Password'), 'select' => $cfIds['tr069']],
+            ['form_type' => 'select', 'name' => 'contract_id', 'description' => 'Contract', 'hidden' => 'E', 'value' => $model->html_list($model->contracts(), 'lastname')],
             ['form_type' => 'checkbox', 'name' => 'public', 'description' => 'Public CPE', 'value' => '1'],
             ['form_type' => 'checkbox', 'name' => 'internet_access', 'description' => 'Internet Access', 'value' => '1', 'help' => trans('helper.Modem_InternetAccess')],
             ];
@@ -106,20 +113,50 @@ class ModemController extends \BaseController
             ['form_type' => 'text', 'name' => 'installation_address_change_date', 'description' => 'Date of installation address change', 'hidden' => 'C', 'options' => $installation_address_change_date_options, 'help' => trans('helper.Modem_InstallationAddressChangeDate')], // Date of adress change for notification at telephone provider - important for localisation of emergency calls
             ['form_type' => 'text', 'name' => 'birthday', 'description' => 'Birthday', 'space' => '1', 'options' => ['placeholder' => 'YYYY-MM-DD']],
 
-            ['form_type' => 'text', 'name' => 'serial_num', 'description' => 'Serial Number'],
             ['form_type' => 'text', 'name' => 'inventar_num', 'description' => 'Inventar Number'],
 
             ['form_type' => 'text', 'name' => 'x', 'description' => 'Geopos X', 'html' => "<div class=col-md-12 style='background-color:whitesmoke'>
-				<div class='form-group row'><label for=x class='col-md-4 control-label' style='margin-top: 10px;'>$geopos</label>
-				<div class=col-md-3><input class=form-control name=x type=text value='".$model['x']."' id=x style='background-color:whitesmoke'></div>"],
+                                <div class='form-group row'><label for=x class='col-md-4 control-label' style='margin-top: 10px;'>$geopos</label>
+                                <div class=col-md-3><input class=form-control name=x type=text value='".$model['x']."' id=x style='background-color:whitesmoke'></div>"],
             ['form_type' => 'text', 'name' => 'y', 'description' => 'Geopos Y', 'html' => "<div class=col-md-3><input class=form-control name=y type=text value='".$model['y']."' id=y style='background-color:whitesmoke'></div>
-				</div></div>"],
+                    </div></div>"],
 
             ['form_type' => 'text', 'name' => 'geocode_source', 'description' => 'Geocode origin', 'help' => trans('helper.Modem_GeocodeOrigin')],
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
         ];
 
         return array_merge($a, $b, $c);
+    }
+
+    /**
+     * Change form fields based on selected configfile device (cm || tr069)
+     *
+     * @author Roy Schneider
+     * @return array with array of all ids from configfile of device cm or tr069 and string of ids from configfile of device cm/tr069
+     */
+    public function dynamicDisplayFormFields()
+    {
+        $ids = [];
+        $cm = '';
+        $tr069 = '';
+
+        foreach (['cm', 'tr069'] as $device) {
+            foreach (\DB::table('configfile')->where('deleted_at', null)->where('device', $device)->get() as $configfile) {
+                $$device .= ' '.$configfile->id;
+            }
+        }
+
+        foreach (\DB::table('configfile')->select(['id'])->whereIn('device', ['cm', 'tr069'])->where('deleted_at', null)->get() as $key => $cf) {
+            $ids[] = $cf->id;
+        }
+
+        // equal keys and values
+        $ids = array_combine($ids, $ids);
+
+        // select a string != '' so that the class with that name will be hidden in form-js-select.blade.php
+        $tr069 = $tr069 != '' ? $tr069 : 'hide';
+
+        return ['all' => $ids, 'cm' => $cm, 'tr069' => $tr069];
     }
 
     /**
@@ -265,7 +302,7 @@ class ModemController extends \BaseController
             return response()->json(['ret' => 'Object not found']);
         }
 
-        $domain_name = \Modules\ProvBase\Entities\ProvBase::first()->domain_name;
+        $domain_name = ProvBase::first()->domain_name;
         exec("sudo ping -c1 -i0 -w1 {$modem->hostname}.$domain_name", $ping, $offline);
 
         return response()->json(['ret' => 'success', 'online' => ! $offline]);

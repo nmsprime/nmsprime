@@ -25,7 +25,9 @@ class Modem extends \BaseModel
             'birthday' => 'nullable|date',
             'country_code' => 'regex:/^[A-Z]{2}$/',
             'contract_id' => 'required|exists:contract,id,deleted_at,NULL',
-            'configfile_id' => 'required|exists:configfile,id,deleted_at,NULL,device,cm,public,yes',
+            'configfile_id' => 'required|exists:configfile,id,deleted_at,NULL,public,yes',
+            // 'username' => 'required_if:device,tr069',
+            // 'serial_num' => 'required_if:device,tr069',
         ];
     }
 
@@ -117,7 +119,7 @@ class Modem extends \BaseModel
      */
     public function configfiles()
     {
-        return \DB::table('configfile')->select(['id', 'name'])->whereNull('deleted_at')->where('device', '=', 'CM')->where('public', '=', 'yes')->get();
+        return \DB::table('configfile')->select(['id', 'name'])->whereNull('deleted_at')->whereIn('device', ['cm', 'tr069'])->where('public', '=', 'yes')->get();
         // return Configfile::select(['id', 'name'])->where('device', '=', 'CM')->where('public', '=', 'yes')->get();
     }
 
@@ -1637,11 +1639,13 @@ class ModemObserver
         // only restart, make dhcp and configfile and only restart dhcpd via systemdobserver when it's necessary
         $diff = $modem->getDirty();
 
-        if (multi_array_key_exists(['contract_id', 'public', 'internet_access', 'configfile_id', 'qos_id', 'mac'], $diff)) {
-            Modem::create_ignore_cpe_dhcp_file();
-            $modem->make_dhcp_cm();
-            $modem->restart_modem(array_key_exists('mac', $diff));
-            $modem->make_configfile();
+        if (Configfile::select(['device'])->where('id', $modem->configfile_id)->first()->device == 'cm') {
+            if (multi_array_key_exists(['contract_id', 'public', 'internet_access', 'configfile_id', 'qos_id', 'mac'], $diff)) {
+                Modem::create_ignore_cpe_dhcp_file();
+                $modem->make_dhcp_cm();
+                $modem->restart_modem(array_key_exists('mac', $diff));
+                $modem->make_configfile();
+            }
         }
 
         // ATTENTION:

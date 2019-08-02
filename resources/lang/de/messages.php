@@ -649,4 +649,5 @@ return [
     'Carrier out'               => 'Carrier (Folgevertrag)',
     'geopos_x_y'                => 'geografische Länge/Breite',
     'error'                     => 'Fehler',
+    'wrongMacOrSerialNumber'    => 'Bitte korrigieren Sie die MAC und oder die Seriennummer.',
 ];

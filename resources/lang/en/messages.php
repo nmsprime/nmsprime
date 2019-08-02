@@ -649,4 +649,5 @@ return [
     'Carrier out'               => 'Carrier out',
     'geopos_x_y'                => 'Geopos Lon/Lat',
     'error'                     => 'Error',
+    'wrongMacOrSerialNumber'    => 'Please correct MAC/serial number',
 ];
