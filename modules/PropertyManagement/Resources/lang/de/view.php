@@ -2,5 +2,5 @@
 
 return [
     'menuName' => 'Liegenschafts - Verwaltung',
-    'Node' => 'Übertragungspunkt',
+    'Node' => 'Übergabepunkt',
 ];
