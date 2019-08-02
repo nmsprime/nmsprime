@@ -116,6 +116,7 @@ return [
     'netmask'              => 'Die angegebene Netzmaske ist nicht korrekt',
     'not_null'             => 'Dieses Feld muss ausgefüllt sein (nicht 0)',
     'null_if'              => 'Wert muss 0 sein',
+    'tr069'                => 'Das ist kein gültiges TR-069 Format.',
 
     'needed_depending_on_salutation' => ':attribute muss bei der gewählten Anrede ausgefüllt sein.',
 

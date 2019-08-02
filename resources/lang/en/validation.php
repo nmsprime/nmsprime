@@ -116,6 +116,8 @@ return [
     'netmask'              => 'This is not a correct netmask',
     'not_null'             => 'This field has to be set (not 0)',
     'null_if'              => 'Has to be zero',
+    'tr069'                => 'This is no valid TR-069 configfile.',
+
 
     'needed_depending_on_salutation' => 'The :attribute field is required for the chosen salutation.',
 

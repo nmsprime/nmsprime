@@ -420,4 +420,37 @@ class ExtendedValidator
 
         return false;
     }
+
+    /**
+     * Check if string is a valid tr069 configfile.
+     * TODO: improve with createTr069Presets function
+     *
+     * @author Roy Schneider
+     */
+    public function validateTr069($attribute, $value, $parameters)
+    {
+        // display one parameter per line
+        $values = str_replace(";", "\r\n", $value);
+        $values = str_replace(", ", "\r\n", $values);
+        $values = str_replace(": ", "\r\n", $values);
+        $lines = explode("\r\n", $values);
+
+        foreach ($lines as $line) {
+            if ($line == '') {
+                continue;
+            }
+
+            // if there is no space after : or ,
+            if (preg_match('/"(,|:)"/', $line))  {
+                return false;
+            }
+
+            // if the string isn't between ""
+            if (! starts_with($line, '"') || ! ends_with($line, '"')) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
