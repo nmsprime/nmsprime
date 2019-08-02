@@ -259,7 +259,7 @@ class Configfile extends \BaseModel
             case 'generic':
                 break;
 
-            case 'tr069';
+            case 'tr069':
                 break;
 
             // this is for unknown types – atm we do nothing

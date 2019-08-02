@@ -1664,6 +1664,7 @@ class ModemObserver
             $modem->createTr069Presets();
             $modem->hostname = 'tr-'.$modem->id;
             $this->save();
+
             return;
         }
 

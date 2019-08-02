@@ -130,7 +130,6 @@ class ProvMonController extends \BaseController
                     break;
                 }
             }
-
         }
 
         // Realtime Measure - this takes the most time
