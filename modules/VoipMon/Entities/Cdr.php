@@ -75,7 +75,11 @@ class Cdr extends \BaseModel
      */
     public function phonenumber()
     {
-        return $this->belongsTo('Modules\ProvVoip\Entities\Phonenumber', 'phonenumber_id');
+        $this->connection = 'mysql';
+        $relation = $this->belongsTo('Modules\ProvVoip\Entities\Phonenumber', 'phonenumber_id');
+        $this->connection = 'mysql-voipmonitor';
+
+        return $relation;
     }
 
     // Belongs to a phonenumber
