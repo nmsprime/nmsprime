@@ -762,6 +762,19 @@ class Modem extends \BaseModel
     }
 
     /**
+     * Delete GenieACS Presets.
+     *
+     * @author Roy Schneider
+     */
+    public function deleteTr069Preset()
+    {
+        $this->callGenieAcsApi(
+            'http://'.ProvBase::first()['provisioning_server'].':7557/presets/'.$this->id,
+            'DELETE'
+        );
+    }
+
+    /**
      * Get CMTS a CM is registered on
      *
      * @param  string 	ip 		address of cm
@@ -1761,10 +1774,14 @@ class ModemObserver
     {
         Log::debug(__METHOD__.' started for '.$modem->hostname);
 
-        // $modem->make_dhcp_cm_all();
-        Modem::create_ignore_cpe_dhcp_file();
-        $modem->make_dhcp_cm(true);
-        $modem->restart_modem();
-        $modem->delete_configfile();
+        if (Configfile::select(['device'])->where('id', $modem->configfile_id)->first()->device == 'cm') {
+            // $modem->make_dhcp_cm_all();
+            Modem::create_ignore_cpe_dhcp_file();
+            $modem->make_dhcp_cm(true);
+            $modem->restart_modem();
+            $modem->delete_configfile();
+        } else {
+            $modem->deleteTr069Preset();
+        }
     }
 }
