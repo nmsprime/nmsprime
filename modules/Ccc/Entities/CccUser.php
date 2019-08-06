@@ -32,11 +32,7 @@ class CccUser extends \BaseModel implements
 
     public function contract()
     {
-        $this->connection = 'mysql';
-        $relation = $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
-        $this->connection = 'mysql-ccc';
-
-        return $relation;
+        return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
     }
 
     /**
