@@ -205,6 +205,16 @@ class Modem extends \BaseModel
         return $this->belongsTo('Modules\HfcReq\Entities\NetElement', 'netelement_id');
     }
 
+    public function radcheck()
+    {
+        return $this->hasOne('Modules\ProvBase\Entities\RadCheck', 'username', 'username');
+    }
+
+    public function radusergroup()
+    {
+        return $this->hasOne('Modules\ProvBase\Entities\RadUserGroup', 'username', 'username');
+    }
+
     /*
      * Relation Views
      */
@@ -1540,6 +1550,82 @@ class Modem extends \BaseModel
 
         return 0;
     }
+
+    /**
+     * Check if modem throughput is provisioned via PPP(oE)
+     *
+     * @return  true if PPP(oE) is used
+     *          false if PPP(oE) is not used
+     *
+     * @author Ole Ernst
+     */
+    public function isPPP()
+    {
+        return $this->username && $this->password;
+    }
+
+    public function updateRadCheck($delete)
+    {
+        // we check for ! isPPP(), since the user might delete the PPP credentials -> no PPPoE
+        if ($delete || ! $this->isPPP() || ! $this->internet_access) {
+            $check = $this->radcheck;
+            if ($check) {
+                $check->delete();
+            }
+
+            return;
+        }
+
+        // add RadCheck, if it doesn't exist
+        $check = RadCheck::where('username', $this->getOriginal('username'))->first();
+        if (! $check) {
+            $check = new RadCheck;
+            $check->username = $this->username;
+            $check->attribute = 'Cleartext-Password';
+            $check->op = ':=';
+            $check->value = $this->password;
+            $check->save();
+
+            return;
+        }
+
+        // update existing RadCheck, if username or password were changed
+        if (multi_array_key_exists(['username', 'password'], $this->getDirty())) {
+            $check->username = $this->username;
+            $check->value = $this->password;
+            $check->save();
+        }
+    }
+
+    public function updateRadUserGroup($delete)
+    {
+        // we check for ! isPPP(), since the user might delete the PPP credentials -> no PPPoE
+        if ($delete || ! $this->isPPP() || ! $this->internet_access) {
+            $group = $this->radusergroup;
+            if ($group) {
+                $group->delete();
+            }
+
+            return;
+        }
+
+        $group = RadUserGroup::where('username', $this->getOriginal('username'))->first();
+        if (! $group) {
+            $group = new RadUserGroup;
+            $group->username = $this->username;
+            $group->groupname = $this->qos_id;
+            $group->save();
+
+            return;
+        }
+
+        // TODO: qos_id instead of qos?
+        // update existing RadUserGroup, if username or qos were changed
+        if (multi_array_key_exists(['username', 'qos_id'], $this->getDirty())) {
+            // we have to use update here since we don't have a proper unique key
+            RadUserGroup::where('username', $this->getOriginal('username'))->update(['username' => $this->username, 'groupname' => $this->qos_id]);
+        }
+    }
 }
 
 /**
@@ -1560,7 +1646,10 @@ class ModemObserver
         $modem->save();	 // forces to call the updating() and updated() method of the observer !
         Modem::create_ignore_cpe_dhcp_file();
 
-        if (\Module::collections()->has('ProvMon')) {
+        $modem->updateRadCheck(false);
+        $modem->updateRadUserGroup(false);
+
+        if (\Module::collections()->has('ProvMon') && ! $modem->isPPP()) {
             Log::info("Create cacti diagrams for modem: $modem->hostname");
             \Artisan::call('nms:cacti', ['--cmts-id' => 0, '--modem-id' => $modem->id]);
         }
@@ -1644,6 +1733,11 @@ class ModemObserver
             $modem->make_configfile();
         }
 
+        if (! $modem->wasRecentlyCreated) {
+            $modem->updateRadCheck(false);
+            $modem->updateRadUserGroup(false);
+        }
+
         // ATTENTION:
         // If we ever think about moving modems to other contracts we have to delete envia TEL related stuff, too –
         // check contract_ext* and installation_address_change_date
@@ -1660,5 +1754,8 @@ class ModemObserver
         $modem->make_dhcp_cm(true);
         $modem->restart_modem();
         $modem->delete_configfile();
+
+        $modem->updateRadCheck(true);
+        $modem->updateRadUserGroup(true);
     }
 }
