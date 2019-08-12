@@ -230,6 +230,7 @@ class CustomerTopoController extends NetElementController
             $row = 'us_pwr';
         }
 
+        $models = [];
         foreach (isset($allModels) ? $allModels->get() : $modems->get() as $modem) {
             if ($modem->model != '') {
                 $models[] = $modem->model;
