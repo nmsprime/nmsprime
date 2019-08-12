@@ -16,9 +16,9 @@
     @foreach($logs as $key => $log)
         @if($last_log_user_id != $log->user_id)
             <div class="row">
-                <div class="col py-2">
+                <div class="col py-0">
                     <div class="card border-success shadow">
-                        <div class="card-body p-10">
+                        <div class="card-body py-1">
                             <div class="float-right text-success">{{langDateFormat($log->updated_at->timestamp)}}</div>
                                 <h4 class="card-title text-success">
                                     <i class="fa fa-user-circle-o fa-lg"></i>
