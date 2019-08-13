@@ -2,6 +2,7 @@
 
 namespace Modules\HfcCustomer\Http\Controllers;
 
+use DB;
 use Request;
 use Modules\ProvBase\Entities\Modem;
 use Modules\HfcCustomer\Entities\Mpr;
@@ -115,15 +116,12 @@ class CustomerTopoController extends NetElementController
      */
     public function show($field, $search)
     {
-        // prepare search
-        $s = "$field='$search'";
-        if ($field == 'all') {
-            $s = 'id>2';
-        }
+        $query = $this->getModemBaseQuery();
+        $query = $field == 'all' ? $query->where('id', '>', 2) : $query->where($field, $search);
 
-        $modems = $this->filterModel(Modem::whereRaw($s));
+        $modemQuery = $this->filterModel($query);
 
-        return $this->show_topo($modems['selectedModel'], Request::get('row'), $modems['allModels']);
+        return $this->show_topo($modemQuery['selectedModel'], Request::get('row'), $modemQuery['allModels']);
     }
 
     /*
@@ -137,12 +135,9 @@ class CustomerTopoController extends NetElementController
     */
     public function show_rect($x1, $x2, $y1, $y2)
     {
-        $query = \DB::table('modem')
-            // ->join('contract', 'contract.id', '=', 'modem.contract_id')
-            // ->select(['modem.*', 'contract.lastname'])
-            ->whereNull('deleted_at')
-            ->where('x', '>', $x1)->where('x', '<', $x2)
-            ->where('y', '>', $y1)->where('y', '<', $y2);
+        $query = $this->getModemBaseQuery()
+            ->where('modem.x', '>', $x1)->where('modem.x', '<', $x2)
+            ->where('modem.y', '>', $y1)->where('modem.y', '<', $y2);
 
         $modemQuery = $this->filterModel($query);
 
@@ -168,13 +163,14 @@ class CustomerTopoController extends NetElementController
             $polygon[] = [array_shift($poly), array_shift($poly)];
         }
         // add modems which are within the polygon
-        foreach (\DB::table('modem')->select('id', 'x', 'y')->where('deleted_at', null)->get() as $modem) {
+        $query = $this->getModemBaseQuery();
+        foreach ($query->get() as $modem) {
             if (Mpr::point_in_polygon([$modem->x, $modem->y], $polygon)) {
                 array_push($ids, $modem->id);
             }
         }
 
-        $modems = $this->filterModel(Modem::whereIn('id', $ids));
+        $modems = $this->filterModel($query->whereIn('modem.id', $ids));
 
         return $this->show_topo($modems['selectedModel'], null, $modems['allModels']);
     }
@@ -198,16 +194,16 @@ class CustomerTopoController extends NetElementController
      */
     public function show_impaired()
     {
-        $modems = Modem::where('us_pwr', '>', '50');
+        $query = $this->getModemBaseQuery()->where('us_pwr', '>', '50');
 
         // return back if all modems are fine
-        if (! $modems->count()) {
+        if (! $query->count()) {
             return back();
         }
 
-        $modems = $this->filterModel($modems);
+        $modemQuery = $this->filterModel($query);
 
-        return $this->show_topo($modems['selectedModel'], null, $modems['allModels']);
+        return $this->show_topo($modemQuery['selectedModel'], null, $modemQuery['allModels']);
     }
 
     /*
@@ -220,9 +216,12 @@ class CustomerTopoController extends NetElementController
     *
     * @author: Torsten Schmidt
     */
-    public function show_topo($modems, $row = null, $allModels = null)
+    public function show_topo($modemQuery, $row = null, $allModels = null)
     {
-        if (! $modems->count()) {
+        $models = $allModels ?: clone $modemQuery;
+        $models = $models->whereNotNull('model')->groupBy('model')->get(['model'])->pluck('model')->all();
+
+        if (! $models && ! $modemQuery->count()) {
             return \View::make('errors.generic')->with('message', 'No Modem Entry found');
         }
 
@@ -241,41 +240,64 @@ class CustomerTopoController extends NetElementController
         $models = array_unique($models) ?? null;
 
         // Generate SVG file
-        $file = $this->kml_generate($modems, $row);
+        $file = $this->kml_generate($modemQuery, $row);
 
         if (! $file) {
             return \View::make('errors.generic')->with('message', 'Failed to generate SVG file');
         }
 
-        // Prepare and Topography Map
+        // Prepare topography map
         $target = $this->html_target;
         $route_name = 'Tree';
         $view_header = 'Topography - Modems';
         $body_onload = 'init_for_map';
-        $tabs = $this->makeTabs($modems);
-        $kmls = $this->__kml_to_modems($modems);
+        $tabs = $this->makeTabs($modemQuery);
+        $kmls = $this->__kml_to_modems($modemQuery);
         $file = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
-        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'modems', 'tabs', 'kmls', 'models')));
+        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'tabs', 'kmls', 'models')));
+    }
+
+    /**
+     * Get Query for all Modems belonging to a valid contract or being online (us_pwr > 0)
+     *
+     * @return obj Illuminate\Database\Query\Bilder
+     */
+    private function getModemBaseQuery()
+    {
+        return DB::table('modem')
+            ->join('contract', 'contract.id', '=', 'modem.contract_id')
+            ->whereNull('modem.deleted_at')
+            ->whereNull('contract.deleted_at')
+            ->where(function ($query) {
+                $query
+                    ->where(function ($query) {
+                        $query
+                        ->where('contract_start', '>', 'CURRENT_DATE')
+                        ->where(whereLaterOrEqual('contract_end', 'CURRENT_DATE'));
+                    })
+                    ->orWhere('us_pwr', '>', 0);
+            })
+            ->select('modem.*');
     }
 
     /**
      * Filter modems in topography.
-     * Only show the selcted model.
+     * Only show the selected model.
      *
      * @author Roy Schneider
      * @param Illuminate\Database\Eloquent\Builder $modems
      * @return Illuminate\Database\Eloquent\Builder
      */
-    public function filterModel($modems)
+    public function filterModel($modemQuery)
     {
         $model = Request::get('model');
 
         if ($model == '') {
-            return ['selectedModel' => $modems, 'allModels' => null];
+            return ['selectedModel' => $modemQuery, 'allModels' => null];
         }
 
-        return ['allModels' => clone $modems, 'selectedModel' => $modems->where('model', $model)];
+        return ['allModels' => clone $modemQuery, 'selectedModel' => $modemQuery->where('model', $model)];
     }
 
     /*
@@ -309,12 +331,12 @@ class CustomerTopoController extends NetElementController
     *
     * TODO: - add cacti graph template id's to ENV
     *
-    * @param modems the preselected Modem model, like Modem::where()
+    * @param modemQuery: QueryBuilder like Modem::where()
     * @return view with modem diagrams
     *
     * @author: Torsten Schmidt
     */
-    public function show_diagrams($modems)
+    public function show_diagrams($modemQuery)
     {
         // check if ProvMon is installed
         if (! \Module::collections()->has('ProvMon')) {
@@ -322,17 +344,12 @@ class CustomerTopoController extends NetElementController
         }
 
         $monitoring = [];
-
-        // load a new ProvMon object
         $provmon = new \Modules\ProvMon\Http\Controllers\ProvMonController;
-
-        // Log: prepare time measurement
         $before = microtime(true);
-
         $types = ['ds_pwr', 'ds_snr', 'us_snr', 'us_pwr'];
 
         // foreach modem
-        foreach ($modems->orderBy('city')->orderBy('street')->orderBy('house_number')->get() as $modem) {
+        foreach ($modemQuery->orderBy('city')->orderBy('street')->orderBy('house_number')->get() as $modem) {
             // load per modem diagrams
             $dia_ids = [$provmon->monitoring_get_graph_template_id('DOCSIS Overview')];
             if (! Request::filled('row')) {
@@ -361,11 +378,11 @@ class CustomerTopoController extends NetElementController
         }
 
         // prepare/load panel right
-        $tabs = $this->makeTabs($modems);
+        $tabs = $this->makeTabs($modemQuery);
 
         // Log: time measurement
         $after = microtime(true);
-        \Log::info('DIA: load of entire set takes '.($after - $before).' s');
+        \Log::debug('DIA: load of entire set takes '.($after - $before).' s');
 
         // show view
         return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs')));
@@ -386,27 +403,27 @@ class CustomerTopoController extends NetElementController
             $ids = explode('+', $_ids);
         }
 
-        $modems = Modem::whereIn('id', $ids);
+        $modemQuery = $this->getModemBaseQuery()->whereIn('modem.id', $ids);
 
         if ($topo == 'true') {
-            return $this->show_topo($modems);
+            return $this->show_topo($modemQuery);
         } else {
-            return $this->show_diagrams($modems);
+            return $this->show_diagrams($modemQuery);
         }
     }
 
     /*
     * Prepare $tabs vaiable for switching topography/diagrams mode
     *
-    * @param modems: the preselected Modem model, like Modem::where()
+    * @param modemQuery: QueryBuilder, like Modem::where()
     * @return: prepared $tabs variable
     *
     * @author: Torsten Schmidt
     */
-    private function makeTabs($modems)
+    private function makeTabs($modemQuery)
     {
         $ids = '0';
-        foreach ($modems->get() as $modem) {
+        foreach ($modemQuery->get() as $modem) {
             $ids .= '+'.$modem->id;
         }
 
@@ -423,7 +440,7 @@ class CustomerTopoController extends NetElementController
      *
      * @author: Torsten Schmidt
      */
-    public function kml_generate($modems, $row)
+    public function kml_generate($modemQuery, $row)
     {
         $x = $y = $num = 0;
         $clrs = [];
@@ -431,7 +448,7 @@ class CustomerTopoController extends NetElementController
         $states = [-1 => 'offline', 0 => 'okay', 1 => 'impaired', 2 => 'critical'];
         $file = $this->file_pre;
 
-        foreach ($modems->where('contract_id', '>', '0')->orderByRaw('10000000*x+y')->get() as $modem) {
+        foreach ($modemQuery->where('contract_id', '>', '0')->orderByRaw('10000000*modem.x+modem.y')->get() as $modem) {
             //
             // Print Marker AND Reset Vars IF new GPS position
             //
