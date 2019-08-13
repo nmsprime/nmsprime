@@ -23,6 +23,13 @@ class Realty extends \BaseModel
         ];
     }
 
+    public static function boot()
+    {
+        parent::boot();
+
+        self::observe(new RealtyObserver);
+    }
+
     /**
      * View related stuff
      */
@@ -102,5 +109,57 @@ class Realty extends \BaseModel
     public function node()
     {
         return $this->belongsTo(Node::class);
+    }
+}
+
+class RealtyObserver
+{
+    public function updated($realty)
+    {
+        $this->updateRelatedModelsAddress($realty);
+    }
+
+    /**
+     * Update address of all related modems & contracts
+     */
+    private function updateRelatedModelsAddress($realty)
+    {
+        if (! \Module::collections()->has('ProvBase')) {
+            return;
+        }
+
+        $diff = $realty->getDirty();
+
+        if (! multi_array_key_exists(['street', 'house_nr', 'zip', 'city', 'district'], $diff)) {
+            return;
+        }
+
+        // modem -> vertrag -> apartment -> realty
+        // modem -> apartment -> realty
+        // modem -> vertrag -> realty
+        // modem -> realty
+        // contract -> apartment -> realty
+        // contract -> realty
+        // Note: On extending the array by a new class this class must have the function updateAddressFromProperty()
+        foreach (['Contract', 'Modem'] as $class) {
+            $fqdn = "\Modules\ProvBase\Entities\\$class";
+            $table = strtolower($class);
+
+            $models = $fqdn::leftJoin('apartment as a', 'a.id', '=', "$table.apartment_id")
+                ->where("$table.realty_id", $realty->id)
+                ->orWhere('a.realty_id', $realty->id)
+                ->select("$table.*")
+                ->get();
+
+            if ($class == 'Contract') {
+                $modelsAll = $models;
+            } else {
+                $modelsAll = $modelsAll->merge($models);
+            }
+        }
+
+        foreach ($modelsAll as $model) {
+            $model->updateAddressFromProperty();
+        }
     }
 }
