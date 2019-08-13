@@ -20,7 +20,8 @@ class RealtyController extends \BaseController
             ['form_type' => 'text', 'name' => 'street', 'description' => 'Street', 'autocomplete' => []],
             ['form_type' => 'text', 'name' => 'house_nr', 'description' => 'House number'],
             ['form_type' => 'text', 'name' => 'zip', 'description' => 'Zip', 'autocomplete' => []],
-            ['form_type' => 'text', 'name' => 'city', 'description' => 'City', 'autocomplete' => [], 'space' => 1],
+            ['form_type' => 'text', 'name' => 'city', 'description' => 'City', 'autocomplete' => []],
+            ['form_type' => 'text', 'name' => 'district', 'description' => 'District', 'autocomplete' => [], 'space' => 1],
 
             ['form_type' => 'checkbox', 'name' => 'group_contract', 'description' => trans('dt_header.group_contract')],
             ['form_type' => 'checkbox', 'name' => 'concession_agreement', 'description' => trans('dt_header.realty.concession_agreement')],
