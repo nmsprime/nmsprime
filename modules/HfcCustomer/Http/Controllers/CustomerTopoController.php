@@ -447,6 +447,12 @@ class CustomerTopoController extends NetElementController
         $str = $descr = $city = $zip = $nr = '';
         $states = [-1 => 'offline', 0 => 'okay', 1 => 'impaired', 2 => 'critical'];
         $file = $this->file_pre;
+        $newTab = ProvBase::first()->modem_edit_page_new_tab;
+        $baseUrl = \BaseRoute::get_base_url();
+
+        if (! $row) {
+            $row = 'us_pwr';
+        }
 
         foreach ($modemQuery->where('contract_id', '>', '0')->orderByRaw('10000000*modem.x+modem.y')->get() as $modem) {
             //
@@ -508,12 +514,12 @@ class CustomerTopoController extends NetElementController
                 $descr .= "<b>$zip, $city, $str, $nr</b><br>";
             }
 
-            if (ProvBase::first()->modem_edit_page_new_tab) {
+            if ($newTab) {
                 $this->html_target = '_blank';
             }
 
             // add descr line
-            $descr .= '<a target="'.$this->html_target."\" href='".\BaseRoute::get_base_url()."/Modem/$modem->id'>$modem->mac</a>, $modem->contract_id, $modem->lastname, $states[$cur_clr] ($row_val)<br>";
+            $descr .= '<a target="'.$this->html_target."\" href='".$baseUrl."/Modem/$modem->id'>$modem->mac</a>, $modem->contract_id, $modem->lastname, $states[$cur_clr] ($row_val)<br>";
             $num += 1;
         }
 
