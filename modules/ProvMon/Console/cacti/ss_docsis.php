@@ -52,7 +52,8 @@ function ss_docsis($hostname, $snmp_community)
         'SysDescr' =>   '.1.3.6.1.2.1.1.1',
     ];
 
-    $filename = "/run/nmsprime/cacti/$hostname";
+    $path = '/run/nmsprime/cacti';
+    $filename = "$path/$hostname";
     if (! file_exists($filename)) {
         $result = '';
         foreach ($non_reps as $key => $val) {
@@ -154,6 +155,23 @@ function ss_docsis($hostname, $snmp_community)
         $preq['descr'] = isset($res_json['SysDescr']) ? reset($res_json['SysDescr']) : 'n/a';
 
         file_put_contents($json_file, json_encode($preq));
+    }
+
+    if (isset($res['avgUsPow']) && is_numeric($res['avgUsPow']) &&
+        isset($res['avgUsSNR']) && is_numeric($res['avgUsSNR']) &&
+        isset($res['avgDsPow']) && is_numeric($res['avgDsPow']) &&
+        isset($res['avgDsSNR']) && is_numeric($res['avgDsSNR']) &&
+        preg_match('/^cm-(\d+)\./m', $hostname, $match)) {
+        $content = sprintf(
+            "UPDATE modem SET us_pwr = %d, us_snr = %d, ds_pwr = %d, ds_snr = %d WHERE id = %d;\n",
+            round($res['avgUsPow']),
+            round($res['avgUsSNR']),
+            round($res['avgDsPow']),
+            round($res['avgDsSNR']),
+            $match[1]
+        );
+
+        file_put_contents("$path/update.sql", $content, FILE_APPEND | LOCK_EX);
     }
 
     $result = '';
