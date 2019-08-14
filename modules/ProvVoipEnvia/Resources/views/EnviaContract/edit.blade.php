@@ -2,6 +2,12 @@
 @extends('Generic.edit')
 
 @section('content_left')
+    @include ('Generic.logging')
+
+    <?php
+        $blade_type = 'form';
+    ?>
+    @include('Generic.above_infos')
 
 	@DivOpen(12)
 	<table class="table-hover">
