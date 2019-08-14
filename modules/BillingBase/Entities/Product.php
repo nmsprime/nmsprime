@@ -113,7 +113,7 @@ class Product extends \BaseModel
     /**
      * Check if product can be deleted
      *
-     * @author Roy Schneider
+     * @author Roy Schneider, Patrick Reichel
      *
      * @return bool
      */
@@ -121,36 +121,13 @@ class Product extends \BaseModel
     {
         // only delete if there are no items assigned for this product
         if ($this->item()->count() > 0) {
-            Session::push('tmp_error_above_index_list', trans('messages.assigned_items'));
+            $msg = trans('messages.assigned_items');
+            $this->addAboveMessage($msg, 'error');
 
             return false;
         }
 
-        return $this->generateAboveInfo($this->_delete());
-    }
-
-    /**
-     * Generate general above message when deleting a product
-     *
-     * @author Roy Schneider
-     *
-     * @return null
-     *
-     * @param bool     deleted
-     */
-    public function generateAboveInfo($deleted)
-    {
-        // check from where the deletion request has been triggered and set the correct var to show information
-        $prev = explode('?', \URL::previous())[0];
-        $prev = Str::lower($prev);
-
-        $msg = trans('messages.Product_Successfully_Deleted', ['id' => $this->id]);
-
-        if (Str::endsWith($prev, 'edit')) {
-            Session::push('tmp_success_above_relations', $msg);
-        }
-
-        return Session::push('tmp_success_above_index_list', $msg);
+        return parent::delete();
     }
 
     /*
