@@ -82,10 +82,10 @@ class EnviaOrderDocumentController extends \BaseController
 
         try {
             $file = Storage::get($filepath);
-        }
-        catch (\Illuminate\Contracts\Filesystem\FileNotFoundException $ex) {
+        } catch (\Illuminate\Contracts\Filesystem\FileNotFoundException $ex) {
             $msg = trans('provvoipenvia::messages.documentNotFound', ['path' => $filepath]);
             $enviaorderdocument->addAboveMessage($msg, 'error', 'form');
+
             return redirect()->back();
         }
 

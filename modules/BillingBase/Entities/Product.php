@@ -3,8 +3,6 @@
 namespace Modules\BillingBase\Entities;
 
 use DB;
-use Str;
-use Session;
 
 class Product extends \BaseModel
 {
