@@ -64,6 +64,8 @@ return [
     'Directory assistance'      => 'Asistencia al directorio',
     'District'                  => 'Distrito',
     'Dunning'                   => 'Dunning',
+    'Dunning date'              => 'Dunning date',
+    'Dunning indicator'         => 'Dunning indicator',
     'Edit'                      => 'Editar',
     'Edit '                     => 'Editar',
     'Endpoints'                 => 'Punto final:',
@@ -573,6 +575,7 @@ return [
     'configfile_outdated'       => 'El configfile está desactualizado - ¡Error al generar el archivo!',
     'shouldChangePassword'       => 'Por favor, cambie su contraseña!',
     'PasswordExpired'           => 'Su contraseña está desactualizada. Las contraseñas deben ser cambiadas regularmente para mantenerse seguras. ¡Gracias!',
+    'Payment number'            => 'Payment number',
     'newUser'                   => 'Bienvenido a NMS Prime. Por favor, cambia tu Contraseña para asegurar tu cuenta correctamente. ¡Gracias!',
     'Password Reset Interval'   => 'Intervalo de reinicio de contraseña',
     'PasswordClick'             => 'Haz clic en el botón que aparece a continuación para cambiar tu contraseña.',
@@ -649,4 +652,6 @@ return [
     'Carrier out'               => 'Salida de portadora',
     'geopos_x_y'                => 'Geoposición Lon/Lat',
     'error'                     => 'Error',
+    'Voucher date'              => 'Voucher date',
+    'Voucher number'            => 'Voucher number',
 ];
