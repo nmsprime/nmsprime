@@ -84,8 +84,8 @@
           //INITIALIZE SPEEDTEST
           var s=new Speedtest(); //create speedtest object
           s.setParameter("url_dl","customer/speedtest/garbage")
-          s.setParameter("url_ul","customer/speedtest/empty")
-          s.setParameter("url_ping","customer/speedtest/empty")
+          s.setParameter("url_ul","backend/empty.php")
+          s.setParameter("url_ping","backend/empty.php")
           s.setParameter("telemetry_level","basic"); //enable telemetry
 
           var meterBk=/Trident.*rv:(\d+\.\d+)/i.test(navigator.userAgent)?"#EAEAEA":"#80808040";

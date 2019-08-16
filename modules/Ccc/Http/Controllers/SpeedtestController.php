@@ -12,14 +12,6 @@ class SpeedtestController extends Controller
      * Display a listing of the resource.
      * @return Response
      */
-    public function empty()
-    {
-        header("Pragma: no-cache");
-        header("Connection: keep-alive");
-
-        return response(200);
-    }
-
     public function garbage()
     {
         @ini_set('zlib.output_compression', 'Off');
