@@ -48,4 +48,29 @@ Route::group(['middleware' => ['web', 'auth:ccc'], 'prefix' => 'customer'], func
         'as' => 'Customer.Download',
         'uses' => 'Modules\Ccc\Http\Controllers\CccUserController@download',
     ]);
+/*
+    Route::get('speedtest/empty', [
+        'as' => 'Customer.Empty',
+        'uses' => 'Modules\Ccc\Http\Controllers\SpeedtestController@empty',
+    ]);
+
+    Route::get('speedtest/garbage', [
+        'as' => 'Customer.Garbage',
+        'uses' => 'Modules\Ccc\Http\Controllers\SpeedtestController@garbage',
+    ]);
+    */
 });
+
+    Route::get('customer/speedtest/empty', [
+        'as' => 'Customer.Empty',
+        'uses' => 'Modules\Ccc\Http\Controllers\SpeedtestController@empty',
+        'middleware'=>'web',
+    ]);
+
+    Route::get('customer/speedtest/garbage', [
+        'as' => 'Customer.Garbage',
+        'uses' => 'Modules\Ccc\Http\Controllers\SpeedtestController@garbage',
+        'middleware'=>'web',
+    ]);
+
+
