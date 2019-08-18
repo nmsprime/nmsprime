@@ -13,16 +13,16 @@
 
 	{{-- We need to include sections dynamically: always content left and if needed content right - more than 1 time possible --}}
 	<div class="col-md-7 ui-sortable">
-		@include ('bootstrap.panel-no-div', array ('content' => 'content_dash', 'view_header' => 'Dashboard / Forecast', 'md' => 8, 'i' => 1))
-		@include ('bootstrap.panel-no-div', array ('content' => 'content_realtime', 'view_header' => \App\Http\Controllers\BaseViewController::translate_label('Real Time Values'), 'md' => 8, 'i' => 2))
+		@include ('bootstrap.panel', array ('content' => 'content_dash', 'view_header' => 'Dashboard / Forecast', 'i' => 1))
+		@include ('bootstrap.panel', array ('content' => 'content_realtime', 'view_header' => \App\Http\Controllers\BaseViewController::translate_label('Real Time Values'), 'i' => 2))
 	</div>
 	<div class="col-md-5 ui-sortable">
-		@include ('bootstrap.panel-no-div', array ('content' => 'content_ping', 'view_header' => 'Ping Test', 'md' => 4, 'i' => 4))
+		@include ('bootstrap.panel', array ('content' => 'content_ping', 'view_header' => 'Ping Test', 'i' => 4))
 	</div>
 </div>
 <div class="row">
 	<div class="col-md-12 ui-sortable">
-		@include ('bootstrap.panel-no-div', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'md' => 8, 'i' => 3))
+		@include ('bootstrap.panel', array ('content' => 'content_cacti', 'view_header' => 'Monitoring', 'i' => 3))
 	</div>
 </div>
 @stop

@@ -14,7 +14,7 @@
                         @if (isset($relation['view']['vars']['sepaaccs']))
                             <label for="description" style="margin-top: 10px;" class="col-md-3,5 control-label">{{ trans('messages.sr_repeat') }}</label>
                             <div class="col-md-4">
-                                {{ Form::select('sepaaccount', $relation['view']['vars']['sepaaccs'], 0, ['style' => 'simple']) }}
+                                {{ Form::select('sepaaccount', $relation['view']['vars']['sepaaccs'], 0, [], ['style' => 'simple']) }}
                             </div>
                         @else
                             @DivOpen(4)
@@ -29,7 +29,7 @@
         @endif
 
         <!-- button  to create invoices PDF for postal delivery -->
-        @if ($button['postal'] && ! \Session::get('job_id'))
+        @if ($button['postal'])
             <div class="col-md-12 text-center m-b-20">
                 <div class="row">
                     <div class="col-md-1"></div>

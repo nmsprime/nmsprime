@@ -42,7 +42,7 @@ class ModemRefreshCommand extends Command
      *
      * @return mixed
      */
-    public function fire()
+    public function handle()
     {
         // numbers of modems
         $count = \Modules\ProvBase\Entities\Modem::count();

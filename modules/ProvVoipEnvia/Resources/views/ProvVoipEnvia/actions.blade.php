@@ -30,6 +30,7 @@
 				@endif
 
 				</span>
+				<br>
 
 			@endif
 

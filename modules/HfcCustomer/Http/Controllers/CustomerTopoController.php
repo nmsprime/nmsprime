@@ -2,9 +2,11 @@
 
 namespace Modules\HfcCustomer\Http\Controllers;
 
+use Request;
 use Modules\ProvBase\Entities\Modem;
 use Modules\HfcCustomer\Entities\Mpr;
 use Modules\HfcReq\Entities\NetElement;
+use Modules\ProvBase\Entities\ProvBase;
 use App\Http\Controllers\BaseViewController;
 use Modules\HfcReq\Http\Controllers\NetElementController;
 
@@ -119,7 +121,9 @@ class CustomerTopoController extends NetElementController
             $s = 'id>2';
         }
 
-        return $this->show_topo(Modem::whereRaw($s), \Input::get('row'));
+        $modems = $this->filterModel(Modem::whereRaw($s));
+
+        return $this->show_topo($modems['selectedModel'], Request::get('row'), $modems['allModels']);
     }
 
     /*
@@ -133,7 +137,16 @@ class CustomerTopoController extends NetElementController
     */
     public function show_rect($x1, $x2, $y1, $y2)
     {
-        return $this->show_topo(Modem::whereRaw("(($x1 < x) AND (x < $x2) AND ($y1 < y) AND (y < $y2))"), \Input::get('row'));
+        $query = \DB::table('modem')
+            // ->join('contract', 'contract.id', '=', 'modem.contract_id')
+            // ->select(['modem.*', 'contract.lastname'])
+            ->whereNull('deleted_at')
+            ->where('x', '>', $x1)->where('x', '<', $x2)
+            ->where('y', '>', $y1)->where('y', '<', $y2);
+
+        $modemQuery = $this->filterModel($query);
+
+        return $this->show_topo($modemQuery['selectedModel'], Request::get('row'), $modemQuery['allModels']);
     }
 
     /**
@@ -144,7 +157,7 @@ class CustomerTopoController extends NetElementController
      */
     public function show_poly($poly)
     {
-        $ids = 'id = 0';
+        $ids = [0];
         $poly = explode(';', $poly);
         // every point must have two coordinates
         if (count($poly) % 2) {
@@ -155,13 +168,15 @@ class CustomerTopoController extends NetElementController
             $polygon[] = [array_shift($poly), array_shift($poly)];
         }
         // add modems which are within the polygon
-        foreach (Modem::all() as $modem) {
+        foreach (\DB::table('modem')->select('id', 'x', 'y')->where('deleted_at', null)->get() as $modem) {
             if (Mpr::point_in_polygon([$modem->x, $modem->y], $polygon)) {
-                $ids .= " OR id = $modem->id";
+                array_push($ids, $modem->id);
             }
         }
 
-        return $this->show_topo(Modem::whereRaw($ids));
+        $modems = $this->filterModel(Modem::whereIn('id', $ids));
+
+        return $this->show_topo($modems['selectedModel'], null, $modems['allModels']);
     }
 
     /**
@@ -171,7 +186,9 @@ class CustomerTopoController extends NetElementController
      */
     public function show_prox()
     {
-        return $this->show_topo(Modem::whereRaw(Modem::find(\Input::get('id'))->proximity_search(\Input::get('radius'))), \Input::get('row'));
+        $modems = $this->filterModel(Modem::whereIn('id', Modem::find(Request::get('id'))->proximity_search(Request::get('radius'))));
+
+        return $this->show_topo($modems['selectedModel'], Request::get('row'), $modems['allModels']);
     }
 
     /**
@@ -188,7 +205,9 @@ class CustomerTopoController extends NetElementController
             return back();
         }
 
-        return $this->show_topo($modems);
+        $modems = $this->filterModel($modems);
+
+        return $this->show_topo($modems['selectedModel'], null, $modems['allModels']);
     }
 
     /*
@@ -201,14 +220,24 @@ class CustomerTopoController extends NetElementController
     *
     * @author: Torsten Schmidt
     */
-    public function show_topo($modems, $row = null)
+    public function show_topo($modems, $row = null, $allModels = null)
     {
         if (! $modems->count()) {
             return \View::make('errors.generic')->with('message', 'No Modem Entry found');
         }
+
         if (! $row) {
             $row = 'us_pwr';
         }
+
+        foreach (isset($allModels) ? $allModels->get() : $modems->get() as $modem) {
+            if ($modem->model != '') {
+                $models[] = $modem->model;
+            }
+        }
+
+        sort($models);
+        $models = array_unique($models) ?? null;
 
         // Generate SVG file
         $file = $this->kml_generate($modems, $row);
@@ -226,7 +255,26 @@ class CustomerTopoController extends NetElementController
         $kmls = $this->__kml_to_modems($modems);
         $file = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
-        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'modems', 'tabs', 'kmls')));
+        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'modems', 'tabs', 'kmls', 'models')));
+    }
+
+    /**
+     * Filter modems in topography.
+     * Only show the selcted model.
+     *
+     * @author Roy Schneider
+     * @param Illuminate\Database\Eloquent\Builder $modems
+     * @return Illuminate\Database\Eloquent\Builder
+     */
+    public function filterModel($modems)
+    {
+        $model = Request::get('model');
+
+        if ($model == '') {
+            return ['selectedModel' => $modems, 'allModels' => null];
+        }
+
+        return ['allModels' => clone $modems, 'selectedModel' => $modems->where('model', $model)];
     }
 
     /*
@@ -286,11 +334,11 @@ class CustomerTopoController extends NetElementController
         foreach ($modems->orderBy('city')->orderBy('street')->orderBy('house_number')->get() as $modem) {
             // load per modem diagrams
             $dia_ids = [$provmon->monitoring_get_graph_template_id('DOCSIS Overview')];
-            if (! \Input::has('row')) {
+            if (! Request::filled('row')) {
                 $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS US PWR');
-            } elseif (in_array(\Input::get('row'), $types)) {
-                $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS '.strtoupper(str_replace('_', ' ', \Input::get('row'))));
-            } elseif (\Input::get('row') == 'all') {
+            } elseif (in_array(Request::get('row'), $types)) {
+                $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS '.strtoupper(str_replace('_', ' ', Request::get('row'))));
+            } elseif (Request::get('row') == 'all') {
                 $dia_ids = [];
                 foreach ($types as $type) {
                     $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS '.strtoupper(str_replace('_', ' ', $type)));
@@ -304,7 +352,7 @@ class CustomerTopoController extends NetElementController
                 // Description Line per Modem
                 $descr = $modem->lastname.' - '.$modem->zip.', '.$modem->city.', '.$modem->street.' '.$modem->house_number.' - '.$modem->mac;
                 $dia['descr'] = \HTML::linkRoute('Modem.edit', $descr, $modem->id);
-                $dia['row'] = \Input::has('row') ? \Input::get('row') : 'us_pwr';
+                $dia['row'] = Request::input('row', 'us_pwr');
 
                 // Add diagrams to monitoring array (goes directly to view)
                 $monitoring[$modem->id] = $dia;
@@ -362,23 +410,21 @@ class CustomerTopoController extends NetElementController
         }
 
         return [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $modem->netelement_id],
-                ['name' => 'Topography', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => \Input::get('row')]],
-                ['name' => 'Diagramms', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => \Input::get('row')]], ];
+                ['name' => 'Topography', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => Request::get('row')]],
+                ['name' => 'Diagramms', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => Request::get('row')]], ];
     }
 
     /**
      * Generate KML File with Customer Modems Inside
      *
-     * @param modems the Modem models to display, like Modem::where()
-     * @returns the path of the generated *.kml file to be included via asset ()
+     * @param  obj      Illuminate\Database\Eloquent\Builder with the query for the modem models to display, like Modem::where()
+     * @return string   the path of the generated *.kml file to be included via asset ()
      *
      * @author: Torsten Schmidt
      */
     public function kml_generate($modems, $row)
     {
-        $x = 0;
-        $y = 0;
-        $num = 0;
+        $x = $y = $num = 0;
         $clrs = [];
         $str = $descr = $city = $zip = $nr = '';
         $states = [-1 => 'offline', 0 => 'okay', 1 => 'impaired', 2 => 'critical'];
@@ -421,10 +467,6 @@ class CustomerTopoController extends NetElementController
                 $num = 0;
             }
 
-            // modem
-            $mid = $modem->id;
-            $mac = $modem->mac;
-
             if ($row == 'ds_us') {
                 // DS_ref (50) + US_ref (0) - DS_modem - US_modem
                 $row_val = 50 - $modem->ds_pwr - $modem->us_pwr;
@@ -439,13 +481,6 @@ class CustomerTopoController extends NetElementController
             }
             $clrs[] = $cur_clr;
 
-            //
-            // Contract
-            //
-            $contract = $modem->contract;
-            $contractid = $contract->id;
-            $lastname = $contract->lastname;
-
             // Headline: Address from DB
             if ($str != $modem->street || $city != $modem->city || $zip != $modem->zip || $nr != $modem->house_number) {
                 $str = $modem->street;
@@ -455,8 +490,12 @@ class CustomerTopoController extends NetElementController
                 $descr .= "<b>$zip, $city, $str, $nr</b><br>";
             }
 
+            if (ProvBase::first()->modem_edit_page_new_tab) {
+                $this->html_target = '_blank';
+            }
+
             // add descr line
-            $descr .= '<a target="'.$this->html_target."\" href='".\BaseRoute::get_base_url()."/Modem/$mid'>$mac</a>, $contractid, $lastname, $states[$cur_clr] ($row_val)<br>";
+            $descr .= '<a target="'.$this->html_target."\" href='".\BaseRoute::get_base_url()."/Modem/$modem->id'>$modem->mac</a>, $modem->contract_id, $modem->lastname, $states[$cur_clr] ($row_val)<br>";
             $num += 1;
         }
 

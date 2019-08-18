@@ -8,7 +8,6 @@ use Modules\ProvBase\Entities\Cmts;
 use Modules\ProvBase\Entities\Modem;
 use Modules\HfcReq\Entities\NetElement;
 use Modules\ProvBase\Entities\ProvBase;
-use App\Http\Controllers\BaseController;
 use Modules\ProvBase\Entities\Configfile;
 
 /**
@@ -34,7 +33,7 @@ class ProvMonController extends \BaseController
      * Creates tabs to analysis pages.
      *
      * @author Roy Schneider
-     * @param int
+     * @param int   modem id
      * @return array
      */
     public function analysisPages($id)
@@ -115,7 +114,7 @@ class ProvMonController extends \BaseController
         $lease = $this->validate_lease($lease, $type);
 
         // Configfile
-        $configfile = self::_get_configfile("/tftpboot/cm/$modem->hostname");
+        $configfile = $this->_get_configfile("/tftpboot/cm/$modem->hostname");
 
         // Realtime Measure - this takes the most time
         // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
@@ -132,13 +131,13 @@ class ProvMonController extends \BaseController
         // Log dhcp (discover, ...), tftp (configfile or firmware)
         // NOTE: This function takes a long time if syslog file is large - 0.4 to 0.6 sec
         $search = $ip ? "$mac|$modem->hostname[^0-9]|$ip " : "$mac|$modem->hostname[^0-9]";
-        $log = self::_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
+        $log = $this->_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
 
         // Dashboard
-        $dash['modemServicesStatus'] = self::modemServicesStatus($modem, $configfile['text']);
+        $dash['modemServicesStatus'] = $this->modemServicesStatus($modem, $configfile);
         // time of this function should be observed - can take a huge time as well
         if ($online) {
-            $modemConfigfileStatus = self::modemConfigfileStatus($modem);
+            $modemConfigfileStatus = $this->modemConfigfileStatus($modem);
             if ($modemConfigfileStatus) {
                 $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
             }
@@ -161,7 +160,7 @@ class ProvMonController extends \BaseController
      * @param   path    String  Path of the configfile excluding its extension
      * @return  array
      */
-    private static function _get_configfile($path)
+    private function _get_configfile($path)
     {
         if (! is_file("$path.conf") || ! is_file("$path.cfg")) {
             return;
@@ -186,9 +185,16 @@ class ProvMonController extends \BaseController
      * @param array     Lines of Configfile
      * @return array    Color & status text
      */
-    public static function modemServicesStatus($modem, $config)
+    public function modemServicesStatus($modem, $config)
     {
-        $networkAccess = preg_grep('/NetworkAccess \d/', $config);
+        if (! $config || ! isset($config['text']) || isset($config['warn'])) {
+            return ['bsclass' => 'danger',
+                    'text' => $config['warn'] ?: trans('messages.modemAnalysis.cfError'),
+                    'instructions' => "docsis -e /tftpboot/cm/{$modem->hostname}.conf /tftpboot/keyfile /tftpboot/cm/{$modem->hostname}.cfg",
+            ];
+        }
+
+        $networkAccess = preg_grep('/NetworkAccess \d/', $config['text']);
         preg_match('/NetworkAccess (\d)/', end($networkAccess), $match);
         $networkAccess = $match[1];
 
@@ -197,11 +203,11 @@ class ProvMonController extends \BaseController
             return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.noNetworkAccess')];
         }
 
-        $maxCpe = preg_grep('/MaxCPE \d/', $config);
+        $maxCpe = preg_grep('/MaxCPE \d/', $config['text']);
         preg_match('/MaxCPE (\d)/', end($maxCpe), $match);
         $maxCpe = $match[1];
 
-        $cpeMacs = preg_grep('/CpeMacAddress (.*?);/', $config);
+        $cpeMacs = preg_grep('/CpeMacAddress (.*?);/', $config['text']);
 
         // Internet and voip allowed
         if ($maxCpe > count($cpeMacs)) {
@@ -232,7 +238,7 @@ class ProvMonController extends \BaseController
      *
      * @param object Modem
      */
-    public static function modemConfigfileStatus($modem)
+    public function modemConfigfileStatus($modem)
     {
         $path = '/var/log/nmsprime/tftpd-cm.log';
         $ts_cf = filemtime("/tftpboot/cm/$modem->hostname.cfg");
@@ -273,7 +279,7 @@ class ProvMonController extends \BaseController
      * @param 	grep_pipes 	String 		restrict matches
      * @return 	array
      */
-    private static function _get_syslog_entries($search, $grep_pipes)
+    private function _get_syslog_entries($search, $grep_pipes)
     {
         $search = escapeshellarg($search);
         // $grep_pipes = escapeshellarg($grep_pipes);
@@ -354,13 +360,13 @@ class ProvMonController extends \BaseController
      */
     public function flood_ping($hostname)
     {
-        if (! \Input::has('flood_ping')) {
+        if (! \Request::filled('flood_ping')) {
             return;
         }
 
         $hostname = escapeshellarg($hostname);
 
-        switch (\Input::get('flood_ping')) {
+        switch (\Request::get('flood_ping')) {
             case '1':
                 exec("sudo ping -c500 -f $hostname 2>&1", $fp, $ret);
                 break;
@@ -405,7 +411,7 @@ class ProvMonController extends \BaseController
         }
 
         /// get MAC of CPE first
-        $str = self::_get_syslog_entries($modem_mac, '| grep CPE | tail -n 1 | tac');
+        $str = $this->_get_syslog_entries($modem_mac, '| grep CPE | tail -n 1 | tac');
         // exec ('grep -i '.$modem_mac." /var/log/messages | grep CPE | tail -n 1  | tac", $str);
 
         if ($str == []) {
@@ -414,7 +420,7 @@ class ProvMonController extends \BaseController
             $mac = trim($mac);
             $mac_bug = true;
             // exec ('grep -i '.$mac." /var/log/messages | grep CPE | tail -n 1 | tac", $str);
-            $str = self::_get_syslog_entries($mac, '| grep CPE | tail -n 1 | tac');
+            $str = $this->_get_syslog_entries($mac, '| grep CPE | tail -n 1 | tac');
 
             if (! $str && $lease['text']) {
                 // get cpe mac addr from lease - first option tolerates small structural changes in dhcpd.leases and assures that it's a mac address
@@ -435,7 +441,7 @@ class ProvMonController extends \BaseController
         if (isset($cpe_mac[0][0])) {
             // exec ('grep -i '.$cpe_mac[0][0].' /var/log/messages | grep -v "DISCOVER from" | tail -n 20 | tac', $log);
             $cpe_mac = $cpe_mac[0][0];
-            $log = self::_get_syslog_entries($cpe_mac, '| tail -n 20 | tac');
+            $log = $this->_get_syslog_entries($cpe_mac, '| tail -n 20 | tac');
         }
 
         // Ping
@@ -504,14 +510,14 @@ class ProvMonController extends \BaseController
         $lease = $this->validate_lease($lease, $type);
 
         // configfile
-        $configfile = self::_get_configfile("/tftpboot/mta/$mta->hostname");
+        $configfile = $this->_get_configfile("/tftpboot/mta/$mta->hostname");
 
         // log
         $ip = gethostbyname($mta->hostname);
         $ip = $mta->hostname == $ip ? null : $ip;
         $mac = strtolower($mta->mac);
         $search = $ip ? "$mac|$mta->hostname|$ip " : "$mac|$mta->hostname";
-        $log = self::_get_syslog_entries($search, '| tail -n 25  | tac');
+        $log = $this->_get_syslog_entries($search, '| tail -n 25  | tac');
         // exec ('grep -i "'.$mta->mac.'\|'.$mta->hostname.'" /var/log/messages | grep -v "DISCOVER from" | tail -n 20  | tac', $log);
 
         end:
@@ -1096,8 +1102,8 @@ class ProvMonController extends \BaseController
         /*
          * Time Span Calculation
          */
-        $from = \Input::get('from');
-        $to = \Input::get('to');
+        $from = \Request::get('from');
+        $to = \Request::get('to');
 
         if (! $from) {
             $from = '-3d';
@@ -1227,11 +1233,12 @@ class ProvMonController extends \BaseController
      */
     public static function checkNetelementtype($model)
     {
-        $provmon = new self;
         if (! isset($model->netelementtype)) {
             return [];
         }
+
         $type = $model->netelementtype->get_base_type();
+        $provmon = new self;
 
         $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $model->id]];
 
@@ -1275,27 +1282,6 @@ class ProvMonController extends \BaseController
 
         return substr($return[0], 3);
     }
-
-    /**
-     * Add Logging tab in edit page.
-     * from BaseController
-     *
-     * @author Roy Schneider
-     * @param array, Modules\HfcReq\Entities\NetElement
-     * @return array
-     */
-    public function loggingTab($array, $model)
-    {
-        $baseController = new BaseController;
-        array_push($array, $baseController->get_form_tabs($model)[0]);
-
-        return $array;
-    }
-
-    /*
-     * Functions for Feature single Windows Stuff
-     * This stuff is at the time not in production
-     */
 
     /**
      * Monitoring
@@ -1356,15 +1342,15 @@ class ProvMonController extends \BaseController
         $roCommunity = $provbase->ro_community;
         $rwCommunity = $provbase->rw_community;
 
-        // enable docsIf3CmSpectrumAnalysisCtrlCmd
-        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.1.0', 'i', 1);
-
         // set frequency span from 150 to 862 MHz
         snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', 154000000);
         snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', 866000000);
 
         // every 8 MHz
         snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', 8000000);
+
+        // enable docsIf3CmSpectrumAnalysisCtrlCmd after setting values
+        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.1.0', 'i', 1);
 
         // after enabling docsIf3CmSpectrumAnalysisCtrlCmd it may take a few seconds to start the snmpwalḱ (error: End of MIB)
         $time = 1;
@@ -1389,7 +1375,7 @@ class ProvMonController extends \BaseController
         // returned values: level in 10th dB and frequency in Hz
         // Example: SNMPv2-SMI::enterprises.4491.2.1.20.1.35.1.3.985500000 = INTEGER: -361
         foreach ($expressions as $oid => $level) {
-            preg_match('/[0-9]{9}/', $oid, $frequency);
+            preg_match('/[0-9]{7,}/', $oid, $frequency);
             $data['span'][] = $frequency[0] / 1000000;
             $data['amplitudes'][] = intval($level) / 10;
         }

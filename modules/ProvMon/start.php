@@ -12,6 +12,6 @@
 |
 */
 
-App::register('Modules\ProvMon\Providers\ProvMonServiceProvider');
-
-require __DIR__.'/Http/routes.php';
+if (! app()->routesAreCached()) {
+    require __DIR__.'/Http/routes.php';
+}

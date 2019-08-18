@@ -87,7 +87,7 @@ class ProductController extends \BaseController
         $fields = ['maturity', 'maturity_min', 'period_of_notice'];
 
         foreach ($fields as $field) {
-            $data[$field] = $data[$field] ? strtoupper(str_replace(' ', '', $data[$field])) : null;
+            $data[$field] = isset($data[$field]) && $data[$field] ? strtoupper(str_replace(' ', '', $data[$field])) : null;
         }
 
         return $data;

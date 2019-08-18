@@ -1,15 +1,17 @@
 {
     "name": "Dashboard",
     "alias": "dashboard",
-    "description": "",
+    "description": "Dashboard",
     "keywords": [],
     "active": 1,
     "order": 0,
+    "icon": "fa-home",
     "providers": [
         "Modules\\Dashboard\\Providers\\DashboardServiceProvider"
     ],
     "aliases": [],
     "files": [
         "start.php"
-    ]
+    ],
+    "requires": []
 }

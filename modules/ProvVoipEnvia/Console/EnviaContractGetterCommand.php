@@ -51,7 +51,7 @@ class EnviaContractGetterCommand extends Command
     /**
      * Execute the console command
      */
-    public function fire()
+    public function handle()
     {
         Log::info($this->description);
 

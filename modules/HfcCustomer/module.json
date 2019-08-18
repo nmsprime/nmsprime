@@ -2,16 +2,15 @@
     "name": "HfcCustomer",
     "alias": "hfccustomer",
     "description": "HFC",
-    "keywords": [
-
-    ],
+    "keywords": [],
     "active": 1,
     "order": 11,
     "priority": 0,
     "providers": [
-
+        "Modules\\HfcCustomer\\Providers\\HfcCustomerServiceProvider"
     ],
     "files": [
         "start.php"
-    ]
+    ],
+    "requires": []
 }

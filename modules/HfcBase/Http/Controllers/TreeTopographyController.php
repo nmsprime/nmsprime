@@ -174,7 +174,7 @@ class TreeTopographyController extends HfcBaseController
             $file .= "
 
 			<Placemark>
-				<name>$parent -> $name</name>
+				<name>$parent->name</name>
 				<description><![CDATA[]]></description>
 				<styleUrl>$style</styleUrl>
 				<LineString>

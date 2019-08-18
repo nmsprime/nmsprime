@@ -6,8 +6,11 @@
     "active": 1,
     "order": 10,
     "priority": 0,
-    "providers": [],
+    "providers": [
+        "Modules\\HfcBase\\Providers\\HfcBaseServiceProvider"
+    ],
     "files": [
         "start.php"
-    ]
+    ],
+    "requires": []
 }

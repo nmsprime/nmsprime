@@ -42,7 +42,7 @@ class DeleteOldRecordsCommand extends Command
      *
      * @author: Ole Ernst
      */
-    public function fire()
+    public function handle()
     {
         // Delete records older than 14 days
         \DB::connection($this->connection)->table($this->tablename)->where('calldate', '<', \DB::raw('DATE_SUB(NOW(), INTERVAL 14 DAY)'))->delete();

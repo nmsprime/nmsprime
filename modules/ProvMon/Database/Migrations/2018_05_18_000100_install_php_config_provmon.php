@@ -1,6 +1,5 @@
 <?php
 
-
 class InstallPhpConfigProvmon extends BaseMigration
 {
     protected $tablename = '';

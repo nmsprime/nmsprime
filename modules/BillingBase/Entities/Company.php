@@ -63,7 +63,10 @@ class Company extends \BaseModel
 
     public function view_has_many()
     {
-        return ['SepaAccount' => $this->accounts];
+        $ret['Edit']['SepaAccount']['class'] = 'SepaAccount';
+        $ret['Edit']['SepaAccount']['relation'] = $this->accounts;
+
+        return $ret;
     }
 
     /**
@@ -96,7 +99,7 @@ class Company extends \BaseModel
         $ignore = ['created_at', 'updated_at', 'deleted_at', 'id'];
         $data = [];
 
-        foreach ($this->attributes as $key => $value) {
+        foreach ($this->getAttributes() as $key => $value) {
             if (in_array($key, $ignore)) {
                 continue;
             }

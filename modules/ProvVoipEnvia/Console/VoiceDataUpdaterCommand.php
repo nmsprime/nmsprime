@@ -61,7 +61,7 @@ class VoiceDataUpdaterCommand extends Command
      *
      * @return null
      */
-    public function fire()
+    public function handle()
     {
         Log::debug(__METHOD__.' started');
         Log::info($this->description);

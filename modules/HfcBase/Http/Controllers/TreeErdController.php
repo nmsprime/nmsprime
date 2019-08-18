@@ -104,6 +104,7 @@ class TreeErdController extends HfcBaseController
                 if ($matches) {
                     $numbers = explode('\n', $matches[1]);
 
+                    $title = [];
                     $title['numModems'] = BaseViewController::translate_label('Total Number of Modems').': '.$numbers[0];
                     $title['criticalModems'] = BaseViewController::translate_label('Number of Online').' Modems / ';
                     $title['criticalModems'] .= BaseViewController::translate_label('Number of Critical').' Modems : '.$numbers[1];
