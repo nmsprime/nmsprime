@@ -114,7 +114,7 @@ function ss_docsis($hostname, $snmp_community)
     if (array_key_exists($ip, $GLOBALS['snrs'])) {
         $snrs = $GLOBALS['snrs'][$ip];
         foreach ($res['UsFreq'] as $freq) {
-            if (! isset($snrs[strval($freq / 1000000)])) {
+            if (! isset($snrs[strval($freq / 1000000)]) || ! $snrs[strval($freq / 1000000)]) {
                 continue;
             }
             $res['UsSNR'][] = $snrs[strval($freq / 1000000)];
