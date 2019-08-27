@@ -936,7 +936,7 @@ class SettlementRunObserver
         if (Request::hasFile('banking_file_upload')) {
             SettlementRun::where('id', $settlementrun->id)->update(['uploaded_at' => date('Y-m-d H:i:s')]);
 
-            $mt940 = Request::file('banking_file_upload');
+            $mt940 = file_get_contents(Request::file('banking_file_upload')->getPathname());
 
             $settlementrun->parseBankingFile($mt940);
         }
