@@ -189,6 +189,7 @@ class SettlementRun extends \BaseModel
 
         foreach ($statements as $statement) {
             foreach ($statement->getTransactions() as $transaction) {
+                $debt = null;
                 $debt = $transactionParser->parse($transaction);
 
                 // only for analysis during development!
@@ -362,13 +363,13 @@ class SettlementRun extends \BaseModel
                 // create invoice pdf already - this task is the most timeconsuming and therefore threaded!
                 $acc->invoices[$c->id]->make_invoice();
 
-                // Add debt (overdue/outstanding payment)
-                $this->add_debt($c, $value['tot'], $acc->invoices[$c->id], $rcd);
+                // Add debt - permit to search for available debt to clear if no valid mandate exists by setting parent_id to 0
+                $parent_id = $this->add_debt($c, $value['tot'], $acc->invoices[$c->id], $rcd, $mandate ? null : 0);
 
                 if ($mandate) {
                     $mandate->setRelation('contract', $c);
                     $acc->add_sepa_transfer($mandate, $value['tot'], $rcd);
-                    $this->add_debt($c, (-1) * $value['tot'], $acc->invoices[$c->id], $rcd);
+                    $this->add_debt($c, (-1) * $value['tot'], $acc->invoices[$c->id], $rcd, $parent_id);
                 } else {
                     ChannelLog::debug('billing', "Contract $c->number [$c->id] has no valid sepa mandate for SepaAccount $acc->name [$acc->id]");
                 }
@@ -860,13 +861,16 @@ class SettlementRun extends \BaseModel
         }
     }
 
-    private function add_debt($contract, $amount, $invoice, $rcd)
+    /**
+     * Add Debt (Outstanding/Overdue payment) for invoice
+     */
+    private function add_debt($contract, $amount, $invoice, $rcd, $parent_id = null)
     {
-        if (! \Module::collections()->has('Dunning')) {
+        if (! \Module::collections()->has('Dunning') || config('dunning.debtMgmtType') != 'sta') {
             return;
         }
 
-        \Modules\Dunning\Entities\Debt::create([
+        $debt = \Modules\Dunning\Entities\Debt::create([
             'contract_id' => $contract->id,
             'invoice_id' => $invoice->id,
             'voucher_nr' => $invoice->data['invoice_nr'],
@@ -874,7 +878,10 @@ class SettlementRun extends \BaseModel
             'date' => date('Y-m-d', strtotime('last day of last month')),
             'due_date' => $rcd ?: date('Y-m-d', strtotime('last day of last month')),
             'amount' => $amount,
+            'parent_id' => $parent_id,
             ]);
+
+        return $debt->id;
     }
 
     /**
