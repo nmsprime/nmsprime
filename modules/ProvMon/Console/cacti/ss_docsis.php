@@ -15,7 +15,12 @@ if (! isset($called_by_script_server)) {
 }
 
 $snrs = [];
+$old = time() - 10 * 60;
 foreach (glob('/var/www/nmsprime/storage/app/data/provmon/us_snr/*.json') as $file) {
+    // ignore files older than 10 minutes, e.g. from a decommissioned cmts
+    if ($old > filemtime($file)) {
+        continue;
+    }
     $snrs = array_merge($snrs, json_decode(file_get_contents($file), true));
 }
 $GLOBALS['snrs'] = $snrs;
