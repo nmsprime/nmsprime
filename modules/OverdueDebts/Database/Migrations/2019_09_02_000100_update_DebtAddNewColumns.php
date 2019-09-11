@@ -2,7 +2,7 @@
 
 use Illuminate\Database\Schema\Blueprint;
 
-class UpdateDebtAddColumns extends BaseMigration
+class UpdateDebtAddNewColumns extends BaseMigration
 {
     protected $tablename = 'debt';
 
@@ -16,7 +16,12 @@ class UpdateDebtAddColumns extends BaseMigration
         Schema::table($this->tablename, function (Blueprint $table) {
             $table->integer('parent_id')->nullable();
             $table->float('missing_amount', 10, 4)->nullable();
+
+            // Make column nullable
+            $table->boolean('indicator')->nullable()->change();
         });
+
+        DB::table('debt')->where('indicator', 0)->update(['indicator' => null]);
     }
 
     /**

@@ -4,7 +4,7 @@ use Illuminate\Database\Schema\Blueprint;
 
 class CreateDunningTable extends BaseMigration
 {
-    protected $tablename = 'overduedebts';
+    protected $tablename = 'dunning';
 
     /**
      * Run the migrations.
