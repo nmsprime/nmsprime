@@ -82,7 +82,7 @@ class HardwareSupportCommand extends Command
             //TODO: Test snmpwalk response a live system, not tested on a fully integrated system
             try {
                 $cmts_serials = snmpwalk($hostname, $ro_community, '1.3.6.1.2.1.47.1.1.1.1.11'); //TODO: Handle Exception
-
+                var_dump($cmts_serials);
                 $count_found = 0;
                 foreach ($cmts_serials as $cmts_serial) {
                     $cmts_serial_md5 = md5($cmts_serial);
