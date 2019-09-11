@@ -107,7 +107,7 @@ class SettlementRunController extends \BaseController
 
         // get execution logs if job has finished successfully - show error logs otherwise
         $logs['settlementrun'] = $logs ?: self::get_logs(strtotime($sr->executed_at));
-        if (\Module::collections()->has('Dunning')) {
+        if (\Module::collections()->has('OverdueDebts')) {
             $logs['bankTransfer'] = self::get_logs($sr->uploaded_at ? strtotime($sr->uploaded_at) : 0, Logger::INFO, 'bank-transactions.log');
         }
 

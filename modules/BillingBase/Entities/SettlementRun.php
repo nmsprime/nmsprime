@@ -173,13 +173,13 @@ class SettlementRun extends \BaseModel
     public function parseBankingFile($mt940)
     {
         $parser = new \Kingsquare\Parser\Banking\Mt940();
-        $transactionParser = new \Modules\Dunning\Entities\TransactionParser($mt940);
+        $transactionParser = new \Modules\OverdueDebts\Entities\TransactionParser($mt940);
 
         // Handle wrong file format
         try {
             $statements = $parser->parse($mt940);
         } catch (\Exception $e) {
-            \Session::push('tmp_error_above_form', trans('dunning::messages.parseMt940Failed', ['msg' => $e->getMessage()]));
+            \Session::push('tmp_error_above_form', trans('overduedebts::messages.parseMt940Failed', ['msg' => $e->getMessage()]));
             \Log::error($e->getMessage().'.In: '.$e->getFile());
 
             return;
@@ -212,12 +212,12 @@ class SettlementRun extends \BaseModel
         // Summary log messages
         if ($contracts) {
             $numbers = Contract::whereIn('id', $contracts)->pluck('number')->all();
-            ChannelLog::info('dunning', trans('dunning::messages.addedDebts', ['count' => count($numbers), 'numbers' => implode(', ', $numbers)]));
+            ChannelLog::info('overduedebts', trans('overduedebts::messages.addedDebts', ['count' => count($numbers), 'numbers' => implode(', ', $numbers)]));
         }
 
         if ($contractsSpecial) {
             $numbers = Contract::whereIn('id', $contractsSpecial)->pluck('number')->all();
-            ChannelLog::notice('dunning', trans('dunning::messages.transaction.credit.noInvoice.special', ['numbers' => implode(', ', $numbers)]));
+            ChannelLog::notice('overduedebts', trans('overduedebts::messages.transaction.credit.noInvoice.special', ['numbers' => implode(', ', $numbers)]));
         }
 
         // d($transactions, $statements, str_replace(':61:', "\r\n---------------\r\n:61:", $mt940));
@@ -605,8 +605,8 @@ class SettlementRun extends \BaseModel
             }
 
             // Delete debts
-            if (! $tempFiles && \Module::collections()->has('Dunning')) {
-                \Modules\Dunning\Entities\Debt::where('invoice_id', $invoice->id)->forceDelete();
+            if (! $tempFiles && \Module::collections()->has('OverdueDebts')) {
+                \Modules\OverdueDebts\Entities\Debt::where('invoice_id', $invoice->id)->forceDelete();
             }
         }
 
@@ -866,11 +866,11 @@ class SettlementRun extends \BaseModel
      */
     private function add_debt($contract, $amount, $invoice, $rcd, $parent_id = null)
     {
-        if (! \Module::collections()->has('Dunning') || config('dunning.debtMgmtType') != 'sta') {
+        if (! \Module::collections()->has('OverdueDebts') || config('overduedebts.debtMgmtType') != 'sta') {
             return;
         }
 
-        $debt = \Modules\Dunning\Entities\Debt::create([
+        $debt = \Modules\OverdueDebts\Entities\Debt::create([
             'contract_id' => $contract->id,
             'invoice_id' => $invoice->id,
             'voucher_nr' => $invoice->data['invoice_nr'],
