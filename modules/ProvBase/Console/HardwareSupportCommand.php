@@ -76,13 +76,17 @@ class HardwareSupportCommand extends Command
         }
 
         foreach ($cmtses as $cmts) {
-            $hostname = $modem->hostname . '.' . $this->domain_name;
+            $hostname = $cmts->hostname . '.' . $this->domain_name; // snmpwalk(): php_network_getaddresses: getaddrinfo failed: Name or service not known
+
+            $hostname = $cmts->ip;
             $support_state = 'not-supported';
 
             //TODO: Test snmpwalk response a live system, not tested on a fully integrated system
             try {
+                $this->info("IP: ".$hostname);
+
                 $cmts_serials = snmpwalk($hostname, $ro_community, '1.3.6.1.2.1.47.1.1.1.1.11'); //TODO: Handle Exception
-                var_dump($cmts_serials);
+
                 $count_found = 0;
                 foreach ($cmts_serials as $cmts_serial) {
                     $cmts_serial_md5 = md5($cmts_serial);
