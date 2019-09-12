@@ -175,17 +175,33 @@ class DashboardController extends BaseController
             return false;
         }
 
-        // get actual network size based on SLA table
-        $sla = \App\Sla::first();
         $support = 'https://support.nmsprime.com';
 
-        $modemcount = 0;
+        $numCmts = 0;
+        $numModems = 0;
         if (\Module::collections()->has('ProvBase')) {
-            $modemcount = \Modules\ProvBase\Entities\Modem::count();
+            $numCmts = \Modules\ProvBase\Entities\Cmts::count();
+            $numModems = \Modules\ProvBase\Entities\Modem::count();
+        }
+
+        $numNetelements = 0;
+        if (\Module::collections()->has('HfcReq')) {
+            $numNetelements = \Modules\HfcReq\Entities\NetElement::count();
+        }
+
+        $numTvbillings = 0;
+        if (\Module::collections()->has('BillingBase')) {
+            $numTvbillings = \Modules\BillingBase\Entities\Item::join('product', 'item.product_id', 'product.id')
+            ->where('type', 'TV')
+            ->where(function ($query) {
+                $query->where('valid_to', null)
+                    ->orWhere('valid_to', '>=', date('Y-m-d'));
+            })
+            ->count();
         }
 
         $files = [
-            'news.json' => "$support/news.php?ns=".urlencode($sla->get_sla_size()).'&sla='.urlencode($sla->name).'&mc='.$modemcount,
+            'news.json' => "$support/news.php?ns=&sla=".urlencode(\App\SLA::first()->name).'&mc='.$numModems.'&nm='.$numCmts.'&nn='.$numNetelements.'&nt='.$numTvbillings,
             'documentation.json' => "$support/documentation.json",
         ];
 
