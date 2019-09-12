@@ -49,14 +49,14 @@ class HardwareSupportCommand extends Command
         $ro_community = ProvBase::first()->ro_community;
 
         foreach ($modems as $modem) {
-            $hostname = $modem->hostname . '.' . $this->domain_name;
+            $hostname = $modem->hostname.'.'.$this->domain_name;
             $support_state = 'not-supported';
             if ($modem->serial_num !== '') {
                 //TODO: check the response on a live system, not tested on a fully integrated system
                 try {
                     $modem->serial_num = snmpget($hostname, $ro_community, '1.3.6.1.2.1.69.1.1.4.0'); //TODO: Handle Exception
                     $modem_serial_no_md5 = md5($modem->serial_num);
-                    $contents = file_get_contents('https://support.nmsprime.com/hwsn/api.php?q=' . $modem_serial_no_md5);
+                    $contents = file_get_contents('https://support.nmsprime.com/hwsn/api.php?q='.$modem_serial_no_md5);
 
                     if ($contents !== '') {
                         $result = json_decode($contents, true);
@@ -76,21 +76,21 @@ class HardwareSupportCommand extends Command
         }
 
         foreach ($cmtses as $cmts) {
-            $hostname = $cmts->hostname . '.' . $this->domain_name; // snmpwalk(): php_network_getaddresses: getaddrinfo failed: Name or service not known
+            $hostname = $cmts->hostname.'.'.$this->domain_name; // snmpwalk(): php_network_getaddresses: getaddrinfo failed: Name or service not known
 
             $hostname = $cmts->ip;
             $support_state = 'not-supported';
 
             //TODO: Test snmpwalk response a live system, not tested on a fully integrated system
             try {
-                $this->info("IP: ".$hostname);
+                $this->info('IP: '.$hostname);
 
                 $cmts_serials = snmpwalk($hostname, $ro_community, '1.3.6.1.2.1.47.1.1.1.1.11'); //TODO: Handle Exception
 
                 $count_found = 0;
                 foreach ($cmts_serials as $cmts_serial) {
                     $cmts_serial_md5 = md5($cmts_serial);
-                    $contents = file_get_contents('https://support.nmsprime.com/hwsn/api.php?q=' . $cmts_serial_md5);
+                    $contents = file_get_contents('https://support.nmsprime.com/hwsn/api.php?q='.$cmts_serial_md5);
 
                     if ($contents !== '') {
                         $result = json_decode($contents, true);
@@ -103,11 +103,11 @@ class HardwareSupportCommand extends Command
                 if ($count_found) {
                     $percentage = $count_found / count($cmts_serials) * 100;
 
-                    if ($percentage > 95){
+                    if ($percentage > 95) {
                         $support_state = 'full-supported';
-                    }elseif ($percentage > 80 && $percentage <= 95){
+                    } elseif ($percentage > 80 && $percentage <= 95) {
                         $support_state = 'restricted';
-                    }elseif((Carbon::parse($cmts->created_at))->diffInWeeks(Carbon::now()) < 6) {
+                    } elseif ((Carbon::parse($cmts->created_at))->diffInWeeks(Carbon::now()) < 6) {
                         $support_state = 'verifying';
                     }
                 }
