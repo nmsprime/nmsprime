@@ -2,7 +2,6 @@
 
 namespace Modules\Ccc\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 
@@ -19,7 +18,7 @@ class SpeedtestController extends Controller
         @ini_set('output_handler', '');
         // Headers
         header('HTTP/1.1 200 OK');
-        if(isset($_GET["cors"])){
+        if (isset($_GET['cors'])) {
             header('Access-Control-Allow-Origin: *');
             header('Access-Control-Allow-Methods: GET, POST');
         }
@@ -33,13 +32,17 @@ class SpeedtestController extends Controller
         header('Cache-Control: post-check=0, pre-check=0', false);
         header('Pragma: no-cache');
         // Generate data
-        $data=openssl_random_pseudo_bytes(1048576);
+        $data = openssl_random_pseudo_bytes(1048576);
         // Deliver chunks of 1048576 bytes
-        $chunks=isset($_GET['ckSize']) ? intval($_GET['ckSize']) : 4;
-        if(empty($chunks)){$chunks = 4;}
-        if($chunks>1024){$chunks = 1024;}
-        for($i=0;$i<$chunks;$i++){
-             return $data ;
+        $chunks = isset($_GET['ckSize']) ? intval($_GET['ckSize']) : 4;
+        if (empty($chunks)) {
+            $chunks = 4;
+        }
+        if ($chunks > 1024) {
+            $chunks = 1024;
+        }
+        for ($i = 0; $i < $chunks; $i++) {
+            return $data;
         }
     }
 }
