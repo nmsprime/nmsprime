@@ -51,7 +51,7 @@ class HardwareSupportCommand extends Command
         foreach ($modems as $modem) {
             $hostname = $modem->hostname . '.' . $this->domain_name;
             $support_state = 'not-supported';
-            if ($modem->serial_num == '') {
+            if (!isset($modem->serial_num) || $modem->serial_num === '') {
                 try {
                     $modem->serial_num = snmpget($hostname, $ro_community, '1.3.6.1.2.1.69.1.1.4.0');
                 } catch (\Exception $exception) {
