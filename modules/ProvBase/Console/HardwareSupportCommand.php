@@ -79,7 +79,6 @@ class HardwareSupportCommand extends Command
             $support_state = 'not-supported';
 
             try {
-                $this->info('IP: ' . $hostname);
 
                 $cmts_serials = snmpwalk($hostname, $ro_community, '1.3.6.1.2.1.47.1.1.1.1.11');
                 $cmts_serials = array_filter($cmts_serials, 'strlen');
@@ -108,7 +107,7 @@ class HardwareSupportCommand extends Command
                         $support_state = 'verifying';
                     }
                 }
-                $this->info(sprintf('CMTS %s is %s%% supported', $cmts->domain_name, $percentage));
+                $this->info(sprintf('CMTS %s is %s%% supported', $cmts->hostname, $percentage));
                 DB::table('cmts')->where('id', $cmts->id)->update(['support_state' => $support_state, 'updated_at' => (Carbon::now())->toDateTimeString()]);
             } catch (\Exception $exception) {
                 $this->error($exception->getMessage());
