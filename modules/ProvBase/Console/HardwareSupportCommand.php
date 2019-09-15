@@ -64,7 +64,7 @@ class HardwareSupportCommand extends Command
             if ($contents !== '') {
                 $result = json_decode($contents, true);
                 if (isset($result[$modem_serial_no_md5]) && $result[$modem_serial_no_md5] === 'valid') {
-                    $support_state = 'full-support';
+                    $support_state = 'full-supported';
                 } elseif ((Carbon::parse($modem->created_at))->diffInWeeks(Carbon::now()) < 6) {
                     $support_state = 'verifying';
                 }
