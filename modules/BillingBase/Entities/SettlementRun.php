@@ -363,7 +363,7 @@ class SettlementRun extends \BaseModel
                 $acc->invoices[$c->id]->make_invoice();
 
                 // Add debt (overdue/outstanding payment)
-                $this->add_debt($c, $value['tot'], $acc->invoices[$c->id]);
+                $this->add_debt($c, $value['tot'], $acc->invoices[$c->id], $rcd);
 
                 if ($mandate) {
                     $mandate->setRelation('contract', $c);
@@ -860,7 +860,7 @@ class SettlementRun extends \BaseModel
         }
     }
 
-    private function add_debt($contract, $amount, $invoice, $rcd = '')
+    private function add_debt($contract, $amount, $invoice, $rcd)
     {
         if (! \Module::collections()->has('Dunning')) {
             return;
@@ -869,8 +869,10 @@ class SettlementRun extends \BaseModel
         \Modules\Dunning\Entities\Debt::create([
             'contract_id' => $contract->id,
             'invoice_id' => $invoice->id,
+            'voucher_nr' => $invoice->number,
             // TODO: Make date configurable? (Global conf: number for specific day, or d for actual day or rcd for rcd)
-            'date' => $rcd ?: date('Y-m-d', strtotime('last day of last month')),
+            'date' => date('Y-m-d', strtotime('last day of last month')),
+            'due_date' => $rcd ?: date('Y-m-d', strtotime('last day of last month')),
             'amount' => $amount,
             ]);
     }
@@ -934,7 +936,7 @@ class SettlementRunObserver
         if (Request::hasFile('banking_file_upload')) {
             SettlementRun::where('id', $settlementrun->id)->update(['uploaded_at' => date('Y-m-d H:i:s')]);
 
-            $mt940 = Request::file('banking_file_upload');
+            $mt940 = file_get_contents(Request::file('banking_file_upload')->getPathname());
 
             $settlementrun->parseBankingFile($mt940);
         }
