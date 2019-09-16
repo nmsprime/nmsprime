@@ -4,9 +4,9 @@
 @section('content_left')
     @include ('Generic.logging')
 
-    <?php
+    @php
         $blade_type = 'form';
-    ?>
+    @endphp
     @include('Generic.above_infos')
 
 	@DivOpen(12)
@@ -20,7 +20,7 @@
 	</table>
 	@DivClose()
 
-	<?php
+	@php
 
 		if ($additional_data['relations']) {
 
@@ -49,7 +49,7 @@
 
 			echo '</div>';
 		}
-	?>
+    @endphp
 
 
 @stop
