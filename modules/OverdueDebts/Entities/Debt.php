@@ -147,7 +147,7 @@ class Debt extends \BaseModel
 
         // TODO: Config checking actually not necessary as below query would also return [] for csv type as invoice_id (inheritly) is never set
         if (config('overduedebts.debtMgmtType') == 'csv' || ! $this->children->isEmpty()) {
-            $payments = $this->children;
+            return $this->children ?: [];
         }
 
         // Needed for manual bank transactions from customer
@@ -222,8 +222,8 @@ class DebtObserver
             return;
         }
 
+        // Clear parent id when amounts of debt and debtToClear are both positive/negative as this relation has no sense - no guilog entry needed
         if (($debt->amount > 0 && $debtToClear->amount > 0) || ($debt->amount < 0 && $debtToClear->amount < 0)) {
-            // Clear parent id as this relation has no sense - no guilog entry needed
             $this->clearParentId($debt);
 
             return;
