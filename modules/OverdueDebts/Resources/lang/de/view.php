@@ -9,6 +9,10 @@ return [
     'dunningCharge' => 'Mahngebühr',
     'dunningText' => 'Mahntext',
     'importFinAccSw' => 'Import aus Finanzbuchhaltung',
+    'import' => [
+        'amount' => 'Ausstand für automatische Internetsperre bei OP-Import',
+        'debts' => 'Anzahl OPs für automatische Internetsperre bei OP-Import',
+        'indicator' => 'Mahnkennzeichen ab dem beim OP-Import das Internet gesperrt werden soll',
+    ],
     'open' => 'Ausstand',
-    'threshhold' => 'Schwelle für automatische Internetsperre bei OP-Import',
 ];
