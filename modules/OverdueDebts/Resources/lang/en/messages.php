@@ -4,6 +4,10 @@ return [
     'addedDebts' => 'Add debts to the following :count contracts: :numbers',
     'amountExceeded' => 'The cumulated amount of the placed deposits exceeds the amount of the debt.',
     'clearParentId' => 'Cleared relation to debt as it doesnt make sense as both amounts are positive/negative.',
+    'import' => [
+        'contractsBlocked' => 'The internet access of the modems of the following contracts was blocked during import: :numbers',
+        'contractsMissing' => 'Could not find contract(s) with the following contract number(s) of the uploaded file: :numbers.',
+    ],
     'parseMt940Failed' => 'Error on parsing the uploaded file. See logfile. (:msg)',
     'transaction' => [
         'create' => 'Create debt because of',

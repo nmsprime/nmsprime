@@ -4,6 +4,10 @@ return [
     'addedDebts' => 'Füge offene Posten zu folgenden :count Verträgen hinzu: :numbers',
     'amountExceeded' => 'Die Summe der eingezahlten Beträge übersteigt den Betrag des offenen Postens.',
     'clearParentId' => 'Die Beziehung zum eingestellten OP wurde gelöscht, da sie keinen Sinn ergibt, da beide OPs einen positiven/negativen Betrag haben.',
+    'import' => [
+        'contractsBlocked' => 'Der Internetzugriff der Modems folgender Verträge wurde während des OP-Imports geblockt: :numbers.',
+        'contractsMissing' => 'Die folgenden Verträge konnten im System nicht gefunden werden, haben aber offene Posten gemäß der hochgeladenen Datei: :numbers.',
+    ],
     'parseMt940Failed' => 'Fehler beim parsen der hochgeladenen Datei. Siehe Logfile. (:msg)',
     'transaction' => [
         'create' => 'Erstelle offenen Posten aufgrund von',
