@@ -44,7 +44,12 @@ return [
     'costcenter.number' => 'Importe',
     'debt' => [
         'date' => 'Fecha',
+        'due_date' => 'Due date',
+        'indicator' => 'Dunning indicator',
+        'missing_amount' => 'Missing amount',
+        'number' => 'debt number',
         'total_fee' => 'Tarifa',
+        'voucher_nr' => 'Voucher nr',
         ],
     //Invoices
     'invoice.type' => 'Tipo',
