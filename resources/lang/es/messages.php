@@ -174,6 +174,7 @@ return [
         'errors_walk' => 'Falló la consulta de las siguientes OIDs: :oids.',
         'errors_set' => 'Los siguientes parámetros no se pudieron establecer: :oids.',
         'missing_cmts' => 'Al grupo le falta un CMTS superior como dispositivo padre.',
+        'missingIp' => 'The netelement is not reachable as it has no IP or hostname defined.',
         'undefined' => 'Para este tipo de elemento de red no hay un controlador definido.',
         'unreachable' => 'El dispositivo no es accesible vía el SNMP.',
     ],
