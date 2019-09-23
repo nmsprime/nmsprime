@@ -134,12 +134,12 @@ class Debt extends \BaseModel
     // One debt can have multiple payments (debt children) that will clear the debt
     public function children()
     {
-        return $this->hasMany('Modules\OverdueDebts\Entities\Debt', 'parent_id');
+        return $this->hasMany(self::class, 'parent_id');
     }
 
     public function parent()
     {
-        return $this->belongsTo('Modules\OverdueDebts\Entities\Debt');
+        return $this->belongsTo(self::class);
     }
 
     /**
@@ -191,17 +191,21 @@ class DebtObserver
 
     public function updated($debt)
     {
-        if ($debt->debtObserverEnabled) {
-            if ($debt->isDirty('parent_id') && ! $debt->parent_id) {
-                $this->clearCorrespondingDebt($debt, false, true);
-
-                $debt->missing_amount = $debt->amount;
-                $debt->debtObserverEnabled = false;
-                $debt->save();
-            } else {
-                $this->clearCorrespondingDebt($debt);
-            }
+        if (! $debt->debtObserverEnabled) {
+            return;
         }
+
+        if ($debt->isDirty('parent_id') && ! $debt->parent_id) {
+            $this->clearCorrespondingDebt($debt, false, true);
+
+            $debt->missing_amount = $debt->amount;
+            $debt->debtObserverEnabled = false;
+            $debt->save();
+
+            return;
+        }
+
+        $this->clearCorrespondingDebt($debt);
     }
 
     public function deleted($debt)

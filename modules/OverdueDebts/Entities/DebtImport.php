@@ -73,7 +73,7 @@ class DebtImport
 
         $this->conf = \Modules\OverdueDebts\Entities\OverdueDebts::first();
 
-        Debt::where('id', '>', 0)->withTrashed()->forceDelete();
+        Debt::truncate();
 
         // Output
         $importInfo = trans('overduedebts::messages.import.count', ['number' => $num]);
