@@ -35,8 +35,8 @@ return [
     //Main Menu
         'Menu_Apartment'            => 'Apartamentos',
         'Menu_BillingBase'          => 'Facturación',
-        'Menu_Debt'                 => 'Deudas',
-        'Menu_Dunning'              => 'Dunning',
+        'Menu_Debt'                 => 'Debt list',
+        'Menu_Dunning'              => 'OverdueDebts',
         'Menu_MainMenu'             => 'Menú Principal',
         'Menu_Node'                 => 'Nodos',
         'Menu_Config Page'          => 'Configuración global',
@@ -60,6 +60,7 @@ return [
         'Menu_QoS' 					=> 'QoS',
         'Menu_CMTS' 				=> 'CMTS',
         'Menu_Ip-Pools' 			=> 'IP-Pools',
+        'Menu_OverdueDebts'         => 'Overdue debts',
         'Menu_ProvVoip'			    => 'VoIP',
         'Menu_PropertyManagement'   => 'Gestión de propiedades',
         'Menu_MTAs' 				=> 'MTAs',
@@ -389,7 +390,6 @@ return [
     'error_specify_id'          => 'Por favor especifique el nombre de host en lugar de la dirección ip.',
     'error_ticket_settings'     => 'Por favor introduzca el nombre y dirección correo de auto respuesta en la página de configuración global.',
 
-    'bankTransfer' => 'Transferencias bancarias',
     'Credit' => 'Crédito',
     'critical' => 'crítico',
     'Debit' => 'Débito',
