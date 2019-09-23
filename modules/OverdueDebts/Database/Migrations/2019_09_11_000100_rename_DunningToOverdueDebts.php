@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
-
 class RenameDunningToOverdueDebts extends BaseMigration
 {
     protected $tablename = 'dunning';

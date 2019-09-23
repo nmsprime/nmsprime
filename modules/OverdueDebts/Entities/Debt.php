@@ -58,7 +58,7 @@ class Debt extends \BaseModel
         $properties = ['table' => $this->table,
                 'index_header' => ['contract.firstname', 'contract.lastname', 'contract.number',
                     'debt.date', 'debt.voucher_nr', 'debt.number', 'amount', 'debt.missing_amount', 'debt.total_fee',
-                    'debt.due_date', 'debt.indicator',],
+                    'debt.due_date', 'debt.indicator', ],
                 'header' => $this->label(),
                 'bsclass' => $bsclass,
                 'eager_loading' => ['contract'],
@@ -160,7 +160,7 @@ class Debt extends \BaseModel
         if ($this->invoice_id) {
             $comparator = $this->amount > 0 ? '<' : '>';
 
-            $payments = Debt::where('invoice_id', $this->invoice_id)->where('amount', $comparator, 0)->where('id', '!=', $this->id)->get();
+            $payments = self::where('invoice_id', $this->invoice_id)->where('amount', $comparator, 0)->where('id', '!=', $this->id)->get();
         }
 
         return $payments ?: [];

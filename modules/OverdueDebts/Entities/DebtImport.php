@@ -116,6 +116,8 @@ class DebtImport
         }
 
         $this->log();
+
+        unlink($this->path);
     }
 
     /**
@@ -165,7 +167,6 @@ class DebtImport
                 $modem->save();
             }
         }
-
     }
 
     private function log()

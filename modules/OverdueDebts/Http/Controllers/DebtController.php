@@ -3,7 +3,6 @@
 namespace Modules\OverdueDebts\Http\Controllers;
 
 use View;
-use Yajra\Datatables\Datatables;
 use Modules\OverdueDebts\Entities\Debt;
 use App\Http\Controllers\BaseViewController;
 
@@ -53,7 +52,7 @@ class DebtController extends \BaseController
             ['form_type' => 'text', 'name' => 'indicator', 'description' => 'Dunning indicator'],
             ['form_type' => 'text', 'name' => 'dunning_date', 'description' => 'Dunning date', 'space' => 1],
 
-            ['form_type' => 'checkbox', 'name' => 'cleared', 'description' => trans('overduedebts::view.cleared'), 'options' => ['onclick' => "return false;", 'readonly']],
+            ['form_type' => 'checkbox', 'name' => 'cleared', 'description' => trans('overduedebts::view.cleared'), 'options' => ['onclick' => 'return false;', 'readonly']],
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
         ];
 
