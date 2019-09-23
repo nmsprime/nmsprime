@@ -19,7 +19,7 @@ class SettlementRun extends \BaseModel
     public $table = 'settlementrun';
 
     // don't try to add theseRequest fields to Database of this model
-    public $guarded = ['rerun', 'sepaaccount', 'fullrun', 'banking_file_upload'];
+    public $guarded = ['rerun', 'sepaaccount', 'fullrun', 'banking_file_upload', 'voucher_nr'];
 
     // Add your validation rules here
     public static function rules($id = null)
@@ -173,13 +173,13 @@ class SettlementRun extends \BaseModel
     public function parseBankingFile($mt940)
     {
         $parser = new \Kingsquare\Parser\Banking\Mt940();
-        $transactionParser = new \Modules\Dunning\Entities\TransactionParser($mt940);
+        $transactionParser = new \Modules\OverdueDebts\Entities\TransactionParser($mt940);
 
         // Handle wrong file format
         try {
             $statements = $parser->parse($mt940);
         } catch (\Exception $e) {
-            \Session::push('tmp_error_above_form', trans('dunning::messages.parseMt940Failed', ['msg' => $e->getMessage()]));
+            \Session::push('tmp_error_above_form', trans('overduedebts::messages.parseMt940Failed', ['msg' => $e->getMessage()]));
             \Log::error($e->getMessage().'.In: '.$e->getFile());
 
             return;
@@ -189,6 +189,7 @@ class SettlementRun extends \BaseModel
 
         foreach ($statements as $statement) {
             foreach ($statement->getTransactions() as $transaction) {
+                $debt = null;
                 $debt = $transactionParser->parse($transaction);
 
                 // only for analysis during development!
@@ -211,12 +212,12 @@ class SettlementRun extends \BaseModel
         // Summary log messages
         if ($contracts) {
             $numbers = Contract::whereIn('id', $contracts)->pluck('number')->all();
-            ChannelLog::info('dunning', trans('dunning::messages.addedDebts', ['count' => count($numbers), 'numbers' => implode(', ', $numbers)]));
+            ChannelLog::info('overduedebts', trans('overduedebts::messages.addedDebts', ['count' => count($numbers), 'numbers' => implode(', ', $numbers)]));
         }
 
         if ($contractsSpecial) {
             $numbers = Contract::whereIn('id', $contractsSpecial)->pluck('number')->all();
-            ChannelLog::notice('dunning', trans('dunning::messages.transaction.credit.noInvoice.special', ['numbers' => implode(', ', $numbers)]));
+            ChannelLog::notice('overduedebts', trans('overduedebts::messages.transaction.credit.noInvoice.special', ['numbers' => implode(', ', $numbers)]));
         }
 
         // d($transactions, $statements, str_replace(':61:', "\r\n---------------\r\n:61:", $mt940));
@@ -362,13 +363,13 @@ class SettlementRun extends \BaseModel
                 // create invoice pdf already - this task is the most timeconsuming and therefore threaded!
                 $acc->invoices[$c->id]->make_invoice();
 
-                // Add debt (overdue/outstanding payment)
-                $this->add_debt($c, $value['tot'], $acc->invoices[$c->id], $rcd);
+                // Add debt - permit to search for available debt to clear if no valid mandate exists by setting parent_id to 0
+                $parent_id = $this->add_debt($c, $value['tot'], $acc->invoices[$c->id], $rcd, $mandate ? null : 0);
 
                 if ($mandate) {
                     $mandate->setRelation('contract', $c);
                     $acc->add_sepa_transfer($mandate, $value['tot'], $rcd);
-                    $this->add_debt($c, (-1) * $value['tot'], $acc->invoices[$c->id], $rcd);
+                    $this->add_debt($c, (-1) * $value['tot'], $acc->invoices[$c->id], $rcd, $parent_id);
                 } else {
                     ChannelLog::debug('billing', "Contract $c->number [$c->id] has no valid sepa mandate for SepaAccount $acc->name [$acc->id]");
                 }
@@ -604,8 +605,8 @@ class SettlementRun extends \BaseModel
             }
 
             // Delete debts
-            if (! $tempFiles && \Module::collections()->has('Dunning')) {
-                \Modules\Dunning\Entities\Debt::where('invoice_id', $invoice->id)->forceDelete();
+            if (! $tempFiles && \Module::collections()->has('OverdueDebts')) {
+                \Modules\OverdueDebts\Entities\Debt::where('invoice_id', $invoice->id)->forceDelete();
             }
         }
 
@@ -860,13 +861,16 @@ class SettlementRun extends \BaseModel
         }
     }
 
-    private function add_debt($contract, $amount, $invoice, $rcd)
+    /**
+     * Add Debt (Outstanding/Overdue payment) for invoice
+     */
+    private function add_debt($contract, $amount, $invoice, $rcd, $parent_id = null)
     {
-        if (! \Module::collections()->has('Dunning')) {
+        if (! \Module::collections()->has('OverdueDebts') || config('overduedebts.debtMgmtType') != 'sta') {
             return;
         }
 
-        \Modules\Dunning\Entities\Debt::create([
+        $debt = \Modules\OverdueDebts\Entities\Debt::create([
             'contract_id' => $contract->id,
             'invoice_id' => $invoice->id,
             'voucher_nr' => $invoice->data['invoice_nr'],
@@ -874,7 +878,10 @@ class SettlementRun extends \BaseModel
             'date' => date('Y-m-d', strtotime('last day of last month')),
             'due_date' => $rcd ?: date('Y-m-d', strtotime('last day of last month')),
             'amount' => $amount,
+            'parent_id' => $parent_id,
             ]);
+
+        return $debt->id;
     }
 
     /**
@@ -935,6 +942,15 @@ class SettlementRunObserver
         // TODO: implement this as command and queue this?
         if (Request::hasFile('banking_file_upload')) {
             SettlementRun::where('id', $settlementrun->id)->update(['uploaded_at' => date('Y-m-d H:i:s')]);
+
+            if (config('overduedebts.debtMgmtType') == 'csv') {
+                $dir = storage_path('app/tmp');
+                $fn = 'uploadedOverdueDebts.csv';
+                Request::file('banking_file_upload')->move($dir, $fn);
+                \Queue::push(new \Modules\OverdueDebts\Jobs\DebtImportJob("$dir/$fn"));
+
+                return;
+            }
 
             $mt940 = file_get_contents(Request::file('banking_file_upload')->getPathname());
 

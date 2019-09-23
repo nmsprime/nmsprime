@@ -74,8 +74,8 @@ class Invoice extends \BaseModel
 
     public function debts()
     {
-        if (\Module::collections()->has('Dunning')) {
-            return $this->hasMany('Modules\Dunning\Entities\Debt');
+        if (\Module::collections()->has('OverdueDebts')) {
+            return $this->hasMany('Modules\OverdueDebts\Entities\Debt');
         }
     }
 

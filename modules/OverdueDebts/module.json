@@ -1,0 +1,17 @@
+{
+    "name": "OverdueDebts",
+    "alias": "overduedebts",
+    "description": "Overdue debts",
+    "keywords": [],
+    "active": 1,
+    "order": 30,
+    "icon": "fa-envelope",
+    "providers": [
+        "Modules\\OverdueDebts\\Providers\\OverdueDebtsServiceProvider"
+    ],
+    "aliases": {},
+    "files": [
+        "start.php"
+    ],
+    "requires": []
+}
