@@ -1,7 +1,6 @@
 <?php
 
 return [
-    'bankFileUpload' => 'Upload der Mt940.sta Bankdatei',
     'debt' => [
         'headline' => 'Offene Posten Liste',
     ],
@@ -15,4 +14,6 @@ return [
         'indicator' => 'Mahnkennzeichen ab dem beim OP-Import das Internet gesperrt werden soll',
     ],
     'open' => 'Ausstand',
+    'uploadCsv' => 'Upload OP-Liste (.csv) aus Finanzbuchhaltung',
+    'uploadSta' => 'Upload der SWIFT/MT940 (.sta) Bankdatei',
 ];

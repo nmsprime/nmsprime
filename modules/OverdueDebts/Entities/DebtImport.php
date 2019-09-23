@@ -1,23 +1,21 @@
 <?php
 
-namespace Modules\OverdueDebts\Console;
+namespace Modules\OverdueDebts\Entities;
 
 use ChannelLog;
-use Illuminate\Console\Command;
-use Modules\OverdueDebts\Entities\Debt;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
+use Modules\BillingBase\Entities\SettlementRun;
 
-class ImportDebtCommand extends Command
+class DebtImport
 {
     /**
-     * The console command & table name, description
-     *
-     * @var string
+     * @var object Output interface to command line
      */
-    public $name = 'debt:import';
-    protected $description = 'Import overdue debts from csv';
-    protected $signature = 'debt:import {file}';
+    public $output;
+
+    /**
+     * @var string Path to csv file
+     */
+    private $path;
 
     /**
      * @var object Global overdue debts config
@@ -29,6 +27,8 @@ class ImportDebtCommand extends Command
      */
     private $blocked = [];
     private $errors = [];
+
+    private $currentContract;
 
     /**
      * CSV column position definitions
@@ -42,20 +42,31 @@ class ImportDebtCommand extends Command
     const DUN_DATE = 11;
     const INDICATOR = 12;
 
-    /**
-     * Execute the console command
-     *
-     * Create Invoices, Sepa xml file(s), Accounting and Booking record file(s)
-     */
-    public function handle()
+    public function __construct($path, $output = null)
     {
-        $arr = file($this->argument('file'));
+        $this->path = $path;
+        $this->output = $output;
+    }
 
-        unset($arr[0]);
+    /**
+     * Import overdue debts from financial accounting software csv file
+     */
+    public function run()
+    {
+        $arr = file($this->path);
+
+        // Remove headline if exists
+        if (! preg_match('/\d/', $arr[0][0])) {
+            unset($arr[0]);
+        }
 
         $num = count($arr);
         if (! $num) {
-            $this->error("Empty file\n");
+            $msg = 'Empty file';
+            ChannelLog::error('overduedebts', $msg);
+            if ($this->output) {
+                $this->output->error("$msg\n");
+            }
 
             return;
         }
@@ -65,13 +76,21 @@ class ImportDebtCommand extends Command
         Debt::where('id', '>', 0)->withTrashed()->forceDelete();
 
         // Output
-        $bar = $this->output->createProgressBar($num);
-        echo "Import overdue debts\n";
-        \Log::info("Import $num overdue debts");
-        $bar->start();
+        $importInfo = trans('overduedebts::messages.import.count', ['number' => $num]);
+        ChannelLog::info('overduedebts', $importInfo);
+        if ($this->output) {
+            $bar = $this->output->createProgressBar($num);
+            echo "Import overdue debts\n";
+            $bar->start();
+        }
 
-        foreach ($arr as $line) {
-            $bar->advance();
+        foreach ($arr as $i => $line) {
+            if ($this->output) {
+                $bar->advance();
+            } else {
+                SettlementRun::push_state((int) $i / $num * 100, $importInfo);
+            }
+
             $this->block = false;
             $line = str_getcsv($line, ';');
 
@@ -89,8 +108,12 @@ class ImportDebtCommand extends Command
             $this->blockInet($debt);
         }
 
-        $bar->finish();
-        echo "\n";
+        if ($this->output) {
+            $bar->finish();
+            echo "\n";
+        } else {
+            SettlementRun::push_state(100, 'Finished');
+        }
 
         $this->log();
     }
@@ -151,33 +174,18 @@ class ImportDebtCommand extends Command
         if ($this->errors) {
             $msg = trans('overduedebts::messages.import.contractsMissing', ['numbers' => implode(', ', $this->errors)]);
             ChannelLog::warning('overduedebts', $msg);
-            $this->error($msg);
+            if ($this->output) {
+                $this->output->error($msg);
+            }
         }
 
         // Log contracts where internet access was blocked during import
         if ($this->blocked) {
             $msg = trans('overduedebts::messages.import.contractsBlocked', ['numbers' => implode(', ', $this->blocked)]);
             ChannelLog::info('overduedebts', $msg);
-            $this->info($msg);
+            if ($this->output) {
+                $this->output->note($msg);
+            }
         }
-    }
-
-    /**
-     * Get the console command arguments / options
-     *
-     * @return array
-     */
-    protected function getArguments()
-    {
-        return [
-            ['file', InputArgument::REQUIRED, 'Filepath of CSV with data to import'],
-        ];
-    }
-
-    protected function getOptions()
-    {
-        return [
-            // array('debug', null, InputOption::VALUE_OPTIONAL, 'Print Debug Output to Commandline (1 - Yes, 0 - No (Default))', 0),
-        ];
     }
 }

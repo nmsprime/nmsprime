@@ -19,7 +19,7 @@ class SettlementRun extends \BaseModel
     public $table = 'settlementrun';
 
     // don't try to add theseRequest fields to Database of this model
-    public $guarded = ['rerun', 'sepaaccount', 'fullrun', 'banking_file_upload'];
+    public $guarded = ['rerun', 'sepaaccount', 'fullrun', 'banking_file_upload', 'voucher_nr'];
 
     // Add your validation rules here
     public static function rules($id = null)
@@ -942,6 +942,15 @@ class SettlementRunObserver
         // TODO: implement this as command and queue this?
         if (Request::hasFile('banking_file_upload')) {
             SettlementRun::where('id', $settlementrun->id)->update(['uploaded_at' => date('Y-m-d H:i:s')]);
+
+            if (config('overduedebts.debtMgmtType') == 'csv') {
+                $dir = storage_path('app/tmp');
+                $fn = 'uploadedOverdueDebts.csv';
+                Request::file('banking_file_upload')->move($dir, $fn);
+                \Queue::push(new \Modules\OverdueDebts\Jobs\DebtImportJob("$dir/$fn"));
+
+                return;
+            }
 
             $mt940 = file_get_contents(Request::file('banking_file_upload')->getPathname());
 

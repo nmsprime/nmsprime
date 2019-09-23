@@ -18,7 +18,7 @@ class OverdueDebtsServiceProvider extends ServiceProvider
      * The artisan commands provided by this module
      */
     protected $commands = [
-        'Modules\OverdueDebts\Console\ImportDebtCommand',
+        'Modules\OverdueDebts\Console\DebtImportCommand',
     ];
 
     /**

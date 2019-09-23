@@ -1,7 +1,6 @@
 <?php
 
 return [
-    'bankFileUpload' => 'Upload of the Mt940.sta bankfile',
     'debt' => [
         'headline' => 'List of debts',
     ],
@@ -15,4 +14,6 @@ return [
         'indicator' => 'Dunning indicator to block internet on debt import',
     ],
     'open' => 'open',
+    'uploadCsv' => 'Upload debt csv from financial accounting software',
+    'uploadSta' => 'Upload SWIFT/MT940 (.sta) banking file',
 ];
