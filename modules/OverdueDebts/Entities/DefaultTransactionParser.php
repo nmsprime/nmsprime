@@ -120,7 +120,7 @@ class DefaultTransactionParser
         }
 
         $this->debt->amount = $this->amount;
-        $this->debt->bank_fee = $this->bank_fee;
+        $this->debt->bank_fee = round($this->bank_fee, 4);
         $this->debt->description = $this->description;
         $this->addFee();
 

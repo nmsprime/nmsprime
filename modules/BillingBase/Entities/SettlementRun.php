@@ -171,64 +171,6 @@ class SettlementRun extends \BaseModel
         return $arr;
     }
 
-    /**
-     * Parse an uploaded SWIFT-/Mt940.sta bank transaction file and assign Debts from it to appropriate contracts
-     *
-     * @param string
-     */
-    public function parseBankingFile($mt940)
-    {
-        $parser = new \Kingsquare\Parser\Banking\Mt940();
-        $transactionParser = new \Modules\OverdueDebts\Entities\TransactionParser($mt940);
-
-        // Handle wrong file format
-        try {
-            $statements = $parser->parse($mt940);
-        } catch (\Exception $e) {
-            \Session::push('tmp_error_above_form', trans('overduedebts::messages.parseMt940Failed', ['msg' => $e->getMessage()]));
-            \Log::error($e->getMessage().'.In: '.$e->getFile());
-
-            return;
-        }
-
-        $contracts = $contractsSpecial = [];
-
-        foreach ($statements as $statement) {
-            foreach ($statement->getTransactions() as $transaction) {
-                $debt = null;
-                $debt = $transactionParser->parse($transaction);
-
-                // only for analysis during development!
-                // $transactions[$transaction->getDebitCredit()][] = ['price' => $transaction->getPrice(), 'code' => $transaction->getTransactionCode(), 'description' => explode('?', $transaction->getDescription())];
-
-                if (! $debt) {
-                    continue;
-                }
-
-                $debt->save();
-
-                if ($debt->addedBySpecialMatch) {
-                    $contractsSpecial[] = $debt->contract_id;
-                } else {
-                    $contracts[] = $debt->contract_id;
-                }
-            }
-        }
-
-        // Summary log messages
-        if ($contracts) {
-            $numbers = Contract::whereIn('id', $contracts)->pluck('number')->all();
-            ChannelLog::info('overduedebts', trans('overduedebts::messages.addedDebts', ['count' => count($numbers), 'numbers' => implode(', ', $numbers)]));
-        }
-
-        if ($contractsSpecial) {
-            $numbers = Contract::whereIn('id', $contractsSpecial)->pluck('number')->all();
-            ChannelLog::notice('overduedebts', trans('overduedebts::messages.transaction.credit.noInvoice.special', ['numbers' => implode(', ', $numbers)]));
-        }
-
-        // d($transactions, $statements, str_replace(':61:', "\r\n---------------\r\n:61:", $mt940));
-    }
-
     //////////////////////////////////////////////////////
     ////////////// SettlementRun execution ///////////////
     //////////////////////////////////////////////////////
@@ -944,22 +886,19 @@ class SettlementRunObserver
             }
         }
 
-        // TODO: implement this as command and queue this?
         if (Request::hasFile('banking_file_upload')) {
             SettlementRun::where('id', $settlementrun->id)->update(['uploaded_at' => date('Y-m-d H:i:s')]);
 
+            $dir = storage_path('app/tmp');
+            $fn = config('overduedebts.debtMgmtType') == 'csv' ? 'uploadedOverdueDebts.csv' : 'mt940.sta';
+
+            Request::file('banking_file_upload')->move($dir, $fn);
+
             if (config('overduedebts.debtMgmtType') == 'csv') {
-                $dir = storage_path('app/tmp');
-                $fn = 'uploadedOverdueDebts.csv';
-                Request::file('banking_file_upload')->move($dir, $fn);
-                \Queue::push(new \Modules\OverdueDebts\Jobs\DebtImportJob("$dir/$fn"));
-
-                return;
+                \Session::put('srJobId', \Queue::push(new \Modules\OverdueDebts\Jobs\DebtImportJob("$dir/$fn")));
+            } else {
+                \Session::put('srJobId', \Queue::push(new \Modules\OverdueDebts\Jobs\ParseMt940("$dir/$fn", $settlementrun->voucher_nr)));
             }
-
-            $mt940 = file_get_contents(Request::file('banking_file_upload')->getPathname());
-
-            $settlementrun->parseBankingFile($mt940);
         }
     }
 }

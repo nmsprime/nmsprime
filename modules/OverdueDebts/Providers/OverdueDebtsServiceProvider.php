@@ -19,6 +19,7 @@ class OverdueDebtsServiceProvider extends ServiceProvider
      */
     protected $commands = [
         'Modules\OverdueDebts\Console\DebtImportCommand',
+        'Modules\OverdueDebts\Console\ParseMt940',
     ];
 
     /**

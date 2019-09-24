@@ -53,6 +53,8 @@ class DebtImport
      */
     public function run()
     {
+        SettlementRun::orderBy('id', 'desc')->first()->update(['uploaded_at' => date('Y-m-d H:i:s')]);
+
         $arr = file($this->path);
 
         // Remove headline if exists

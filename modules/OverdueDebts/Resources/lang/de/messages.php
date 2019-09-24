@@ -10,7 +10,12 @@ return [
         'contractsMissing' => 'Die folgenden Verträge konnten nicht im System gefunden werden, haben aber offene Posten gemäß der hochgeladenen Datei: :numbers.',
         'count' =>  'Importiere :number Offene Posten.',
     ],
+    'parse' => [
+        'start' => 'Parse Banktransaktionsdatei',
+        'transactions' => 'Füge Offene Posten gemäß der Transaktionen hinzu',
+    ],
     'parseMt940Failed' => 'Fehler beim parsen der hochgeladenen Datei. Siehe Logfile. (:msg)',
+    'staParsingActive' => 'Die Banktransaktionsdatei wird ausgewertet. Bitte warten Sie bis der Prozess beendet wurde.',
     'transaction' => [
         'create' => 'Erstelle offenen Posten aufgrund von',
         'credit' => [

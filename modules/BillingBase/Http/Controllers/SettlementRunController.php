@@ -83,7 +83,7 @@ class SettlementRunController extends \BaseController
 
     private function jobQueued()
     {
-        $jobs = ['SettlementRun', 'ZipSettlementRun', 'ImportDebt'];
+        $jobs = ['SettlementRun', 'ZipSettlementRun', 'DebtImport', 'ParseMt940'];
 
         $jobQueued = \DB::table('jobs')->where('payload', 'like', "%{$jobs[0]}%");
 
@@ -160,8 +160,11 @@ class SettlementRunController extends \BaseController
             case 'Modules\BillingBase\Jobs\SettlementRunJob':
                 return trans('messages.accCmd_processing');
 
-            case 'Modules\OverdueDebts\Jobs\ImportDebtJob':
+            case 'Modules\OverdueDebts\Jobs\DebtImportJob':
                 return trans('overduedebts::messages.csvImportActive');
+
+            case 'Modules\OverdueDebts\Jobs\ParseMt940':
+                return trans('overduedebts::messages.staParsingActive');
 
             default:
                 return '';
