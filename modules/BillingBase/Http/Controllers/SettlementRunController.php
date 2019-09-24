@@ -119,13 +119,13 @@ class SettlementRunController extends \BaseController
             $job = json_decode($job_queued->payload);
             $status_msg = self::getStatusMessage($job->data->commandName);
             // dont let multiple users create a lot of jobs - Session key is checked in blade
-            \Session::put('SrJobId', $job_queued->id);
-        } elseif (\Session::get('SrJobId')) {
+            \Session::put('srJobId', $job_queued->id);
+        } elseif (\Session::get('srJobId')) {
             // delete Session job id if job is done in case someone broke the tcp connection (close tab/window) manually
-            \Session::remove('SrJobId');
+            \Session::remove('srJobId');
         }
 
-        $button['postal'] = ! \Session::get('SrJobId') && ! $job_queued && Product::where('type', 'Postal')->count() ? true : false;
+        $button['postal'] = ! \Session::get('srJobId') && ! $job_queued && Product::where('type', 'Postal')->count() ? true : false;
         $button['rerun'] = true;
         if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified) {
             $button['rerun'] = false;
@@ -183,7 +183,7 @@ class SettlementRunController extends \BaseController
         $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () {
             $job = true;
             while ($job) {
-                $job = \DB::table('jobs')->find(\Session::get('SrJobId'));
+                $job = \DB::table('jobs')->find(\Session::get('srJobId'));
 
                 if (! isset($commandName) && $job) {
                     $commandName = self::getJobCommandName($job);
@@ -212,9 +212,9 @@ class SettlementRunController extends \BaseController
                 $commandName = 'Modules\BillingBase\Jobs\SettlementRunJob';
             }
 
-            \Log::debug("Job $commandName \[".\Session::get('SrJobId').'] stopped');
+            \Log::debug("Job $commandName \[".\Session::get('srJobId').'] stopped');
 
-            \Session::remove('SrJobId');
+            \Session::remove('srJobId');
 
             // wait for job to land in failed jobs table - if it failed - wait max 10 seconds
             $i = 5;
@@ -269,7 +269,7 @@ class SettlementRunController extends \BaseController
         $settlementrun = SettlementRun::find($id);
 
         $id = \Queue::push(new \Modules\BillingBase\Jobs\ZipSettlementRun($settlementrun, null, true));
-        \Session::put('SrJobId', $id);
+        \Session::put('srJobId', $id);
 
         return \Redirect::route('SettlementRun.edit', $settlementrun->id);
     }

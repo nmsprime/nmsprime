@@ -41,7 +41,7 @@
         @endif
 
         <!-- progress bar + message -->
-        @if (\Session::get('SrJobId'))
+        @if (\Session::get('srJobId'))
             {{-- SettlementRunCommand running --}}
             <div class="alert alert-warning fade in m-b-15">{{ $status_msg }}</div>
             <div id="progress-msg" class="col-10"></div>
@@ -69,7 +69,7 @@
 
 @section ('javascript_extra')
 
-    @if (\Session::get('SrJobId'))
+    @if (\Session::get('srJobId'))
         <script type="text/javascript">
 
             $(document).ready(function()

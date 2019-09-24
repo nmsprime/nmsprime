@@ -930,8 +930,7 @@ class SettlementRunObserver
         }
 
         // NOTE: Make sure that we use Database Queue Driver - See .env!
-        // \Artisan::call('billing:accounting', ['--debug' => 1]);
-        \Session::put('job_id', \Queue::push(new SettlementRunJob($settlementrun)));
+        \Session::put('srJobId', \Queue::push(new SettlementRunJob($settlementrun)));
     }
 
     public function updated($settlementrun)
@@ -941,7 +940,7 @@ class SettlementRunObserver
             $queued = DB::table('jobs')->where('payload', 'like', '%SettlementRunJob%')->count();
             if (! $queued) {
                 $acc = Request::get('sepaaccount') ? SepaAccount::find(Request::get('sepaaccount')) : null;
-                \Session::put('job_id', \Queue::push(new SettlementRunJob($settlementrun, $acc)));
+                \Session::put('srJobId', \Queue::push(new SettlementRunJob($settlementrun, $acc)));
             }
         }
 
