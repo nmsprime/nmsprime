@@ -80,10 +80,14 @@ class EnviaOrderDocumentController extends \BaseController
 
         $filepath = $this->document_base_path.'/'.$contract_id.'/'.$filename;
 
-        $file = Storage::get($filepath);
+        try {
+            $file = Storage::get($filepath);
+        } catch (\Illuminate\Contracts\Filesystem\FileNotFoundException $ex) {
+            $msg = trans('provvoipenvia::messages.documentNotFound', ['path' => $filepath]);
+            $enviaorderdocument->addAboveMessage($msg, 'error', 'form');
 
-        /* return (new \Response($file, 200)) */
-        /* 	->header('Content-Type', $enviaorderdocument->mime_type); */
+            return redirect()->back();
+        }
 
         $response = \Response::make($file, 200);
         $response->header('Content-Type', $enviaorderdocument->mime_type);
