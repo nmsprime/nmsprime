@@ -24,9 +24,15 @@ class SettlementRun extends \BaseModel
     // Add your validation rules here
     public static function rules($id = null)
     {
-        return [
-            // see SettlementRunController@prepare_rules
-        ];
+        // see SettlementRunController@prepare_rules
+
+        if (\Module::collections()->has('OverdueDebts') && config('overduedebts.debtMgmtType') == 'csv') {
+            return [
+                'banking_file_upload' => 'mimes:csv,txt',
+            ];
+        }
+
+        return [];
     }
 
     /**
