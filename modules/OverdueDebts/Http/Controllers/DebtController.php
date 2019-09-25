@@ -59,15 +59,6 @@ class DebtController extends \BaseController
         return array_merge($fields1, $fields2);
     }
 
-    public function prepare_input($data)
-    {
-        $data['indicator'] = $data['indicator'] ?? 0;
-        $data['bank_fee'] = $data['bank_fee'] ?? 0;
-        $data['total_fee'] = $data['total_fee'] ?? 0;
-
-        return parent::prepare_input($data);
-    }
-
     /**
      * Separate index page for the resulting outstanding payments of each customer
      *
