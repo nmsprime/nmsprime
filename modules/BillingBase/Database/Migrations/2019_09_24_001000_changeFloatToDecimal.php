@@ -17,10 +17,6 @@ class ChangeFloatToDecimal extends BaseMigration
             $table->decimal('credit_amount', 10, 4)->nullable()->change();
         });
 
-        // Change enums to string because of Laravel DBAL bug: https://stackoverflow.com/questions/29165259/laravel-db-migration-renamecolumn-error-unknown-database-type-enum-requested/32860409#32860409
-        DB::statement('ALTER TABLE product MODIFY COLUMN type varchar(50) NOT NULL');
-        DB::statement('ALTER TABLE product MODIFY COLUMN billing_cycle varchar(50) NOT NULL');
-
         Schema::table('product', function (Blueprint $table) {
             $table->decimal('price', 10, 4)->nullable()->change();
         });
@@ -36,9 +32,6 @@ class ChangeFloatToDecimal extends BaseMigration
         Schema::table('item', function (Blueprint $table) {
             $table->float('credit_amount')->nullable()->change();
         });
-
-        DB::statement("ALTER TABLE product MODIFY COLUMN type ENUM('Internet','TV','Voip','Device','Credit','Other','Postal') NOT NULL");
-        DB::statement("ALTER TABLE product MODIFY COLUMN type ENUM('Once','Monthly',Querterly','Yearly') NOT NULL");
 
         Schema::table('product', function (Blueprint $table) {
             $table->decimal('price', 10, 4)->nullable()->change();
