@@ -13,15 +13,29 @@ class SettlementRunController extends \BaseController
 
     public function view_form_fields($model = null)
     {
-        return [
+        $ret1 = [
             ['form_type' => 'text', 'name' => 'year', 'description' => 'Year', 'hidden' => 'C', 'options' => ['readonly']],
             ['form_type' => 'text', 'name' => 'month', 'description' => 'Month', 'hidden' => 'C', 'options' => ['readonly']],
             // array('form_type' => 'text', 'name' => 'path', 'description' => 'Path'),
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
             ['form_type' => 'checkbox', 'name' => 'verified', 'description' => 'Verified', 'hidden' => 'C', 'help' => trans('helper.settlement_verification')],
             ['form_type' => 'checkbox', 'name' => 'fullrun', 'description' => 'For internal use', 'hidden' => 1],
-            ['form_type' => 'file', 'name' => 'banking_file_upload', 'description' => 'Upload MT940 Banking file (.sta)'],
         ];
+
+        $ret2 = [];
+        if (\Module::collections()->has('OverdueDebts') && ! $this->jobQueued()) {
+            if (config('overduedebts.debtMgmtType') == 'csv') {
+                $descKey = 'overduedebts::view.uploadCsv';
+            } else {
+                $descKey = 'overduedebts::view.uploadSta';
+
+                $ret2[] = ['form_type' => 'text', 'name' => 'voucher_nr', 'description' => 'Voucher number'];
+            }
+
+            $ret2[] = ['form_type' => 'file', 'name' => 'banking_file_upload', 'description' => trans($descKey)];
+        }
+
+        return array_merge($ret1, $ret2);
     }
 
     /**
@@ -43,6 +57,12 @@ class SettlementRunController extends \BaseController
             $rules['verified'] = 'In:0';
         }
 
+        if (\Module::collections()->has('OverdueDebts') && config('overduedebts.debtMgmtType') == 'sta') {
+            if (isset($data['banking_file_upload'])) {
+                $rules['voucher_nr'] = 'required';
+            }
+        }
+
         return parent::prepare_rules($rules, $data);
     }
 
@@ -61,6 +81,25 @@ class SettlementRunController extends \BaseController
         return parent::__construct();
     }
 
+    private function jobQueued()
+    {
+        $jobs = ['SettlementRun', 'ZipSettlementRun', 'ImportDebt'];
+
+        $jobQueued = \DB::table('jobs')->where('payload', 'like', "%{$jobs[0]}%");
+
+        foreach ($jobs as $key => $name) {
+            if ($key == 0) {
+                continue;
+            }
+
+            $jobQueued = $jobQueued->orWhere('payload', 'like', "%{$jobs[$key]}%");
+        }
+
+        $jobQueued = $jobQueued->get();
+
+        return $jobQueued->isNotEmpty() ? $jobQueued[0] : null;
+    }
+
     /**
      * Extends generic edit function from Basecontroller for own view
      * Removes Rerun Button when next month has begun
@@ -73,22 +112,20 @@ class SettlementRunController extends \BaseController
         $logs = $failed_jobs = [];
         $sr = SettlementRun::find($id);
         $status_msg = '';
-        $job_queued = \DB::table('jobs')->where('payload', 'like', '%SettlementRun%')->orWhere('payload', 'like', '%ZipCommand%')->get();
-        $job_queued = $job_queued->isNotEmpty() ? $job_queued[0] : null;
+        $job_queued = $this->jobQueued();
 
         if ($job_queued) {
             // get status message
             $job = json_decode($job_queued->payload);
             $status_msg = self::getStatusMessage($job->data->commandName);
-
             // dont let multiple users create a lot of jobs - Session key is checked in blade
-            \Session::put('job_id', $job_queued->id);
-        } elseif (\Session::get('job_id')) {
+            \Session::put('SrJobId', $job_queued->id);
+        } elseif (\Session::get('SrJobId')) {
             // delete Session job id if job is done in case someone broke the tcp connection (close tab/window) manually
-            \Session::remove('job_id');
+            \Session::remove('SrJobId');
         }
 
-        $button['postal'] = ! \Session::get('job_id') && ! $job_queued && Product::where('type', 'Postal')->count() ? true : false;
+        $button['postal'] = ! \Session::get('SrJobId') && ! $job_queued && Product::where('type', 'Postal')->count() ? true : false;
         $button['rerun'] = true;
         if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified) {
             $button['rerun'] = false;
@@ -107,7 +144,7 @@ class SettlementRunController extends \BaseController
 
         // get execution logs if job has finished successfully - show error logs otherwise
         $logs['settlementrun'] = $logs ?: self::get_logs(strtotime($sr->executed_at));
-        if (\Module::collections()->has('Dunning')) {
+        if (\Module::collections()->has('OverdueDebts')) {
             $logs['bankTransfer'] = self::get_logs($sr->uploaded_at ? strtotime($sr->uploaded_at) : 0, Logger::INFO, 'bank-transactions.log');
         }
 
@@ -122,6 +159,9 @@ class SettlementRunController extends \BaseController
 
             case 'Modules\BillingBase\Jobs\SettlementRunJob':
                 return trans('messages.accCmd_processing');
+
+            case 'Modules\OverdueDebts\Jobs\ImportDebtJob':
+                return trans('overduedebts::messages.csvImportActive');
 
             default:
                 return '';
@@ -143,7 +183,7 @@ class SettlementRunController extends \BaseController
         $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () {
             $job = true;
             while ($job) {
-                $job = \DB::table('jobs')->find(\Session::get('job_id'));
+                $job = \DB::table('jobs')->find(\Session::get('SrJobId'));
 
                 if (! isset($commandName) && $job) {
                     $commandName = self::getJobCommandName($job);
@@ -172,9 +212,9 @@ class SettlementRunController extends \BaseController
                 $commandName = 'Modules\BillingBase\Jobs\SettlementRunJob';
             }
 
-            \Log::debug("Job $commandName \[".\Session::get('job_id').'] stopped');
+            \Log::debug("Job $commandName \[".\Session::get('SrJobId').'] stopped');
 
-            \Session::remove('job_id');
+            \Session::remove('SrJobId');
 
             // wait for job to land in failed jobs table - if it failed - wait max 10 seconds
             $i = 5;
@@ -229,7 +269,7 @@ class SettlementRunController extends \BaseController
         $settlementrun = SettlementRun::find($id);
 
         $id = \Queue::push(new \Modules\BillingBase\Jobs\ZipSettlementRun($settlementrun, null, true));
-        \Session::put('job_id', $id);
+        \Session::put('SrJobId', $id);
 
         return \Redirect::route('SettlementRun.edit', $settlementrun->id);
     }

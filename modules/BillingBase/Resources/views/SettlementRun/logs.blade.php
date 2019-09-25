@@ -6,10 +6,10 @@
                     <span class="d-sm-block d-none">{{ trans('view.SettlementRun') }}</span>
                 </a>
             </li>
-            @if (\Module::collections()->has('Dunning'))
+            @if (\Module::collections()->has('OverdueDebts'))
                 <li class="nav-items">
                     <a href="#nav-tab-2" data-toggle="tab" class="show">
-                        <span class="d-sm-block d-none">{{ trans('view.bankTransfer') }}</span>
+                        <span class="d-sm-block d-none">Upload</span>
                     </a>
                 </li>
             @endif
@@ -27,7 +27,7 @@
         @include('billingbase::SettlementRun.logs-table', ['logs' => $logs['settlementrun']])
     </div>
 
-    @if (\Module::collections()->has('Dunning'))
+    @if (\Module::collections()->has('OverdueDebts'))
         <div class="tab-pane" id="nav-tab-2">
             @include('billingbase::SettlementRun.logs-table', ['logs' => $logs['bankTransfer']])
         </div>

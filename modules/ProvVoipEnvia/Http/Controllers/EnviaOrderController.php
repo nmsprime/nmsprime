@@ -145,7 +145,8 @@ class EnviaOrderController extends \BaseController
         if (! is_null($contract_id)) {
             if (! Contract::find($contract_id)) {
                 $this->edit_view_save_button = false;
-                \Session::push('tmp_info_above_form', "Cannot create EnviaOrder – contract $contract_id does not exist");
+                $msg = trans('provvoipenvia::messages.orderCannotCreateModelMissing', ['model' => 'Contract', 'id' => $contract_id]);
+                \Session::push('tmp_error_above_form', $msg);
             }
 
             return parent::create();
@@ -166,7 +167,8 @@ class EnviaOrderController extends \BaseController
         // if no contract_id has been given: calculate contract_id and (if possible) modem_id and/or phonenumber_id
         if (is_null($modem_id) && is_null($phonenumbermanagement_id)) {
             $this->edit_view_save_button = false;
-            \Session::push('tmp_info_above_form', 'Cannot create EnviaOrder – neither contract_id nor modem_id nor phonenumbermanagement_id given.');
+            $msg = trans('provvoipenvia::messages.orderCannotCreateIdMissing');
+            \Session::push('tmp_error_above_form', $msg);
 
             return parent::create();
         }
@@ -174,7 +176,8 @@ class EnviaOrderController extends \BaseController
         if (! is_null($phonenumbermanagement_id)) {
             if (! $phonenumbermanagement = PhonenumberManagement::find($phonenumbermanagement_id)) {
                 $this->edit_view_save_button = false;
-                \Session::push('tmp_info_above_form', "Cannot create EnviaOrder – PhonenumberManagement $phonenumbermanagement_id does not exist");
+                $msg = trans('provvoipenvia::messages.orderCannotCreateModelMissing', ['model' => 'PhonenumberManagement', 'id' => $phonenumbermanagement_id]);
+                \Session::push('tmp_error_above_form', $msg);
 
                 return parent::create();
             }
@@ -186,7 +189,8 @@ class EnviaOrderController extends \BaseController
         } elseif (! is_null($modem_id)) {
             if (! $modem = Modem::find($modem_id)) {
                 $this->edit_view_save_button = false;
-                \Session::push('tmp_info_above_form', "Cannot create EnviaOrder – Modem $modem_id does not exist");
+                $msg = trans('provvoipenvia::messages.orderCannotCreateModelMissing', ['model' => 'Modem', 'id' => $modem_id]);
+                \Session::push('tmp_error_above_form', $msg);
 
                 return parent::create();
             }

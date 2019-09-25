@@ -1037,17 +1037,8 @@ class EnviaOrder extends \BaseModel
      */
     public function delete()
     {
-
-        // check from where the deletion request has been triggered and set the correct var to show information
-        $prev = explode('?', \URL::previous())[0];
-        $prev = \Str::lower($prev);
-
-        $msg = 'Deletion of envia TEL orders will be done via cron job';
-        if (\Str::endsWith($prev, 'edit')) {
-            \Session::push('tmp_info_above_relations', $msg);
-        } else {
-            \Session::push('tmp_info_above_index_list', $msg);
-        }
+        $msg = trans('provvoipenvia::messages.orderDeletedByCron');
+        $this->addAboveMessage($msg, 'info');
 
         return true;
     }

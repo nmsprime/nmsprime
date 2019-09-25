@@ -74,8 +74,8 @@ class Invoice extends \BaseModel
 
     public function debts()
     {
-        if (\Module::collections()->has('Dunning')) {
-            return $this->hasMany('Modules\Dunning\Entities\Debt');
+        if (\Module::collections()->has('OverdueDebts')) {
+            return $this->hasMany('Modules\OverdueDebts\Entities\Debt');
         }
     }
 
@@ -309,11 +309,10 @@ class Invoice extends \BaseModel
         // Canceled contract or tariff
         // e.g. customers that get tv amplifier refund, but dont have any tariff
         if ($ret['canceled_to'] || ! $ret['tariff']) {
-            ChannelLog::debug('billing', "Contract $contract->number is already canceled", [$this->data['contract_id']]);
-
             // Set cancelation date contracts valid_to
             if ($ret['canceled_to']) {
                 $this->data['canceled_to'] = self::langDateFormat($ret['canceled_to']);
+                ChannelLog::debug('billing', "Contract $contract->number is already canceled");
 
                 return;
             }
@@ -325,7 +324,10 @@ class Invoice extends \BaseModel
                 ->orderBy('item.valid_to', 'desc')
                 ->first();
 
-            $this->data['canceled_to'] = $tariff ? self::langDateFormat($tariff->valid_to) : '';
+            if ($tariff) {
+                $this->data['canceled_to'] = self::langDateFormat($tariff->valid_to);
+                ChannelLog::debug('billing', "Contract $contract->number is already canceled");
+            }
 
             return;
         }
