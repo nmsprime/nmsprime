@@ -86,6 +86,7 @@ class ProvMonController extends \BaseController
         if ($id == 'error') {
             $error = '';
             $message = trans('view.error_specify_id');
+
             return View::make('errors.generic', compact('error', 'message'));
         }
 
@@ -174,7 +175,7 @@ class ProvMonController extends \BaseController
             $ip = null;
 
             if (array_key_exists(0, $genieModel)) {
-                $ip =  $genieModel[0]->VirtualParameters->IP->_value;
+                $ip = $genieModel[0]->VirtualParameters->IP->_value;
             }
         }
 
