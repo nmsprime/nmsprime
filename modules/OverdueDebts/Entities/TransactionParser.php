@@ -39,7 +39,7 @@ class TransactionParser
      *
      * @return object
      */
-    public function parse(\Kingsquare\Banking\Transaction $transaction, $debt)
+    public function parse(\Kingsquare\Banking\Transaction $transaction, Debt $debt)
     {
         if (! $transaction || $transaction->getPrice() == 0) {
             return;

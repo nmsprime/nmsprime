@@ -42,6 +42,7 @@ class ParseMt940 extends Command
     {
         return [
             ['file', InputArgument::REQUIRED, 'Filepath of .sta containing the bank transactions'],
+            ['voucherNr', InputArgument::REQUIRED, 'Voucher number of all debts added during parsing the bank transaction file'],
         ];
     }
 
