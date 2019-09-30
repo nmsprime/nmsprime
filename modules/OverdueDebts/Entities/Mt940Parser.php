@@ -62,8 +62,10 @@ class Mt940Parser
 
         foreach ($statements as $statement) {
             foreach ($statement->getTransactions() as $transaction) {
-                $debt = null;
-                $debt = $transactionParser->parse($transaction);
+                $debt = new Debt;
+                $debt->voucher_nr = $voucherNr;
+
+                $debt = $transactionParser->parse($transaction, $debt);
 
                 if ($this->output) {
                     $bar->advance();
@@ -79,10 +81,6 @@ class Mt940Parser
 
                 if (! $debt) {
                     continue;
-                }
-
-                if ($voucherNr) {
-                    $debt->voucher_nr = $voucherNr;
                 }
 
                 $debt->save();

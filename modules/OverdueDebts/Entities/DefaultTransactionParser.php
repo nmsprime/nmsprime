@@ -68,10 +68,10 @@ class DefaultTransactionParser
      *
      * @return Modules\OverdueDebts\Entities\Debt
      */
-    public function parse(\Kingsquare\Banking\Transaction $transaction)
+    public function parse(\Kingsquare\Banking\Transaction $transaction, $debt)
     {
+        $this->debt = $debt;
         // Initialize Variables
-        $this->debt = new Debt;
         // We try to find a debt to clear when parent_id is 0
         $this->debt->parent_id = 0;
         $this->transaction = $transaction;
@@ -80,19 +80,16 @@ class DefaultTransactionParser
         $this->description = $this->holder = [];
         $this->iban = $this->invoiceNr = $this->logMsg = $this->mref = '';
 
+        $this->debt->date = $this->transaction->getValueTimestamp('Y-m-d H:i:s');
+        $this->debt->missing_amount = $this->debt->amount + $this->debt->total_fee;
+
         $action = $transaction->getDebitCredit() == 'D' ? 'parseDebit' : 'parseCredit';
 
         $this->$action();
 
-        if ($this->debt instanceof Debt) {
-            $this->debt->date = $this->transaction->getValueTimestamp('Y-m-d H:i:s');
-
-            $this->debt->missing_amount = $this->debt->amount + $this->debt->total_fee;
-        }
-
         // TODO: Dont add log entry if debt already exists
 
-        return $this->debt;
+        return $debt = $this->debt;
     }
 
     /**

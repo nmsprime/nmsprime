@@ -897,7 +897,7 @@ class SettlementRunObserver
             if (config('overduedebts.debtMgmtType') == 'csv') {
                 \Session::put('srJobId', \Queue::push(new \Modules\OverdueDebts\Jobs\DebtImportJob("$dir/$fn")));
             } else {
-                \Session::put('srJobId', \Queue::push(new \Modules\OverdueDebts\Jobs\ParseMt940("$dir/$fn", $settlementrun->voucher_nr)));
+                \Session::put('srJobId', \Queue::push(new \Modules\OverdueDebts\Jobs\ParseMt940("$dir/$fn", Request::get('voucher_nr'))));
             }
         }
     }

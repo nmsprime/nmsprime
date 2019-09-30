@@ -39,13 +39,13 @@ class TransactionParser
      *
      * @return object
      */
-    public function parse(\Kingsquare\Banking\Transaction $transaction)
+    public function parse(\Kingsquare\Banking\Transaction $transaction, $debt)
     {
         if (! $transaction || $transaction->getPrice() == 0) {
             return;
         }
 
-        $debt = $this->engine->parse($transaction);
+        $this->engine->parse($transaction, $debt);
 
         if ($this->debtExists($debt, $transaction)) {
             return;
