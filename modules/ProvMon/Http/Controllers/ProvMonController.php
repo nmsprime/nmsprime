@@ -81,76 +81,108 @@ class ProvMonController extends \BaseController
      */
     public function analyses($id)
     {
-        $ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = $data = null;
-        $modem = $this->modem ? $this->modem : Modem::find($id);
-        $view_var = $modem; // for top header
-        $error = '';
-        $message = trans('view.error_specify_id');
-
         // if there is no valid hostname specified, then return error view
         // to get the regular Analyses tab the hostname should be: cm-...
         if ($id == 'error') {
+            $error = '';
+            $message = trans('view.error_specify_id');
             return View::make('errors.generic', compact('error', 'message'));
         }
 
-        $hostname = $modem->hostname.'.'.$this->domain_name;
+        $modem = $this->modem ?? Modem::find($id);
         $mac = strtolower($modem->mac);
+        $hostname = $modem->hostname.'.'.$this->domain_name;
+        $onlineStatus = $this->modemOnlineStatus($modem, $hostname);
+
         $modem->help = 'modem_analysis';
+        $view_var = $modem;
+        $view_header = 'ProvMon-Analyses';
 
-        // takes approx 0.1 sec
-        $ip = gethostbyname($hostname);
-        $ip = ($ip == $hostname) ? null : $ip;
+        // Configfile TR-069
+        if (! $configfile = $this->getConfigfileText("/tftpboot/cm/$modem->hostname")) {
+            foreach (['sn', 'mac'] as $param) {
+                $preset = $modem->callGenieAcsApi('http://'.ProvBase::first()['provisioning_server'].":7557/presets/?query=%7B%22_id%22%3A%22$param".'_'."$id%22%7D", 'GET');
+                $array = preg_split('/(}"?,)/', $preset, -1, PREG_SPLIT_DELIM_CAPTURE);
 
-        // Ping: Only check if device is online
-        // takes approx 0.1 sec
-        exec('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
-        $online = $ret ? false : true;
+                if (preg_match('/[a-z]+/', $preset) != 0) {
+                    $configfile['text'] = $array;
+                    $onlineStatus = $this->modemOnlineStatus($modem, $hostname, $param == 'mac' ? $mac : $modem->serial_num);
 
-        // Flood Ping
-        $flood_ping = $this->flood_ping($hostname);
+                    break;
+                }
+            }
+        }
 
-        // Lease
-        $lease['text'] = $this->search_lease('hardware ethernet '.$mac);
-        $lease = $this->validate_lease($lease, $type);
+        // return $ip and $online
+        foreach ($onlineStatus as $name => $value) {
+            $$name = $value;
+        }
 
-        // Configfile
-        $configfile = $this->_get_configfile("/tftpboot/cm/$modem->hostname");
+        $realtime = $eventlog = null;
 
-        // Realtime Measure - this takes the most time
-        // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
         if ($online) {
-            // preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
+            if ($modemConfigfileStatus = $this->modemConfigfileStatus($modem)) {
+                $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
+            }
+
+            // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
             $realtime['measure'] = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
             $realtime['forecast'] = 'TODO';
+
             // get eventlog table
             if (! array_key_exists('SNMP-Server not reachable', $realtime['measure'])) {
                 $eventlog = $modem->get_eventlog();
             }
         }
 
+        $device = \Modules\ProvBase\Entities\Configfile::where('id', $modem->configfile_id)->first()->device;
+        // time of this function should be observed - can take a huge time as well
+        $dash['modemServicesStatus'] = $this->modemServicesStatus($modem, $configfile, $device);
+
         // Log dhcp (discover, ...), tftp (configfile or firmware)
         // NOTE: This function takes a long time if syslog file is large - 0.4 to 0.6 sec
         $search = $ip ? "$mac|$modem->hostname[^0-9]|$ip " : "$mac|$modem->hostname[^0-9]";
-        $log = $this->_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
 
-        // Dashboard
-        $dash['modemServicesStatus'] = $this->modemServicesStatus($modem, $configfile);
-        // time of this function should be observed - can take a huge time as well
-        if ($online) {
-            $modemConfigfileStatus = $this->modemConfigfileStatus($modem);
-            if ($modemConfigfileStatus) {
-                $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
+        $log = $this->_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
+        $lease['text'] = $this->search_lease('hardware ethernet '.$mac);
+        $lease = $this->validate_lease($lease);
+        $host_id = $this->monitoring_get_host_id($modem);
+        $flood_ping = $this->flood_ping($hostname);
+
+        $tabs = $this->analysisPages($id);
+
+        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
+                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device')));
+    }
+
+    /**
+     * Get ID of Modem and ping it for Analyses page.
+     *
+     * @author  Roy Schneider
+     * @param   modem    Modules\ProvBase\Entities\Modem
+     * @param   hostname    string
+     * @param   virtParam    mixed value
+     * @return  array
+     */
+    public function modemOnlineStatus($modem, $hostname, $virtParam = null)
+    {
+        $ip = gethostbyname($hostname);
+        $ip = ($ip == $hostname) ? null : $ip;
+
+        if ($virtParam) {
+            $genieModel = json_decode($modem->callGenieAcsApi('http://'.ProvBase::first()['provisioning_server'].':7557/devices/?query=%7B%22VirtualParameters.SerialNumber%22%3A%22'.strtoupper($virtParam).'%22%7D&projection=VirtualParameters.IP', 'GET'));
+            $ip = null;
+
+            if (array_key_exists(0, $genieModel)) {
+                $ip =  $genieModel[0]->VirtualParameters->IP->_value;
             }
         }
 
-        $host_id = $this->monitoring_get_host_id($modem);
+        // Ping: Only check if device is online
+        // takes approx 0.1 sec
+        exec('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
 
-        $tabs = $this->analysisPages($id);
-        $view_header = 'ProvMon-Analyses';
-
-        // View
-        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
-                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id')));
+        return ['ip' => $ip, 'online' => $ret ? false : true];
     }
 
     /**
@@ -160,7 +192,7 @@ class ProvMonController extends \BaseController
      * @param   path    String  Path of the configfile excluding its extension
      * @return  array
      */
-    private function _get_configfile($path)
+    private function getConfigfileText($path)
     {
         if (! is_file("$path.conf") || ! is_file("$path.cfg")) {
             return;
@@ -185,11 +217,15 @@ class ProvMonController extends \BaseController
      * @param array     Lines of Configfile
      * @return array    Color & status text
      */
-    public function modemServicesStatus($modem, $config)
+    public function modemServicesStatus($modem, $config, $device = 'cm')
     {
+        if ($device == 'tr069') {
+            return;
+        }
+
         if (! $config || ! isset($config['text']) || isset($config['warn'])) {
             return ['bsclass' => 'danger',
-                    'text' => $config['warn'] ?: trans('messages.modemAnalysis.cfError'),
+                    'text' => $config['warn'] ?? trans('messages.modemAnalysis.cfError'),
                     'instructions' => "docsis -e /tftpboot/cm/{$modem->hostname}.conf /tftpboot/keyfile /tftpboot/cm/{$modem->hostname}.cfg",
             ];
         }
@@ -240,8 +276,13 @@ class ProvMonController extends \BaseController
      */
     public function modemConfigfileStatus($modem)
     {
+        if (\Modules\ProvBase\Entities\Configfile::where('id', $modem->configfile_id)->first()->device == 'tr069') {
+            return;
+        }
+
         $path = '/var/log/nmsprime/tftpd-cm.log';
         $ts_cf = filemtime("/tftpboot/cm/$modem->hostname.cfg");
+
         $ts_dl = exec("zgrep $modem->hostname $path | tail -1 | cut -d' ' -f1");
 
         if (! $ts_dl) {
@@ -510,7 +551,7 @@ class ProvMonController extends \BaseController
         $lease = $this->validate_lease($lease, $type);
 
         // configfile
-        $configfile = $this->_get_configfile("/tftpboot/mta/$mta->hostname");
+        $configfile = $this->getConfigfileText("/tftpboot/mta/$mta->hostname");
 
         // log
         $ip = gethostbyname($mta->hostname);
@@ -565,7 +606,7 @@ class ProvMonController extends \BaseController
     /**
      * Proves if the last found lease is actually valid or has already expired
      */
-    private function validate_lease($lease, $type)
+    private function validate_lease($lease, $type = null)
     {
         if ($lease['text'] && $lease['text'][0]) {
             // calculate endtime
