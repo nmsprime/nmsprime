@@ -217,15 +217,12 @@ class DefaultTransactionParser
             return $this->debt = null;
         }
 
-        $numbers['eref'] = $this->invoiceNr ?? null;
-        $numbers['mref'] = $this->mref ?? null;
+        $this->debt->amount = -1 * $this->transaction->getPrice();
+        $this->debt->description = $this->description;
 
         if ($this->setCreditDebtRelations($numbers) === false) {
             return $this->debt = null;
         }
-
-        $this->debt->amount = -1 * $this->transaction->getPrice();
-        $this->debt->description = $this->description;
 
         ChannelLog::debug('overduedebts', trans('overduedebts::messages.transaction.create')." $this->logMsg");
     }
@@ -240,24 +237,24 @@ class DefaultTransactionParser
      */
     private function setCreditDebtRelations($numbers)
     {
-        $this->invoiceNr = $this->invoiceNr ?: $numbers['eref'];
-        $invoice = Invoice::where('number', $this->invoiceNr)->where('type', 'Invoice')->first();
-
-        if ($invoice) {
-            $this->debt->contract_id = $invoice->contract_id;
-            $this->debt->invoice_id = $invoice->id;
-
-            return true;
-        }
-
         $this->logMsg = trans('view.Discard')." $this->logMsg.";
         $hint = '';
 
         if ($this->invoiceNr) {
+            $invoice = Invoice::where('number', $this->invoiceNr)->where('type', 'Invoice')->first();
+
+            if ($invoice) {
+                $this->debt->contract_id = $invoice->contract_id;
+                $this->debt->invoice_id = $invoice->id;
+                $this->debt->number = $invoice->number;
+
+                return true;
+            }
+
             $this->logMsg .= ' '.trans('overduedebts::messages.transaction.credit.noInvoice.notFound', ['number' => $this->invoiceNr]);
-        } else {
-            $this->logMsg .= ' '.trans('overduedebts::messages.transaction.credit.noInvoice.default');
         }
+
+        $this->logMsg .= ' '.trans('overduedebts::messages.transaction.credit.noInvoice.default');
 
         // Give hints to what contract the transaction could be assigned
         // Or still add debt if it's almost secure that the transaction belongs to the customer and NMSPrime
