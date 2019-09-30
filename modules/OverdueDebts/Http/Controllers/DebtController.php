@@ -102,7 +102,7 @@ class DebtController extends \BaseController
     {
         // Replace Button in log with info that debt was added
         $data = \Request::all();
-        unset($data['_untoken']);
+        unset($data['_token']);
 
         $button = Mt940Parser::addDebtButton($data);
         $replace = Mt940Parser::addedDebtInfo();

@@ -119,10 +119,6 @@ class Mt940Parser
      */
     public static function addDebtButton($data)
     {
-        if (isset($data['_token'])) {
-            unset($data['_token']);
-        }
-
         ksort($data);
 
         $html = '';
