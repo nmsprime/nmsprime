@@ -39,7 +39,7 @@ class Mt940Parser
         try {
             $statements = $parser->parse($mt940);
         } catch (\Exception $e) {
-            ChannelLog::error('overduedebts', trans('overduedebts::messages.parseMt940Failed', ['msg' => $e->getMessage()]) .' In: '.$e->getFile());
+            ChannelLog::error('overduedebts', trans('overduedebts::messages.parseMt940Failed', ['msg' => $e->getMessage()]).' In: '.$e->getFile());
 
             return;
         }
@@ -72,7 +72,7 @@ class Mt940Parser
                 } else {
                     $i++;
                     if (! ($i % 10)) {
-                        SettlementRun::push_state((int) $i/$num * 100, $parseInfo);
+                        SettlementRun::push_state((int) $i / $num * 100, $parseInfo);
                     }
                 }
 
@@ -136,6 +136,6 @@ class Mt940Parser
     {
         // TODO?: Show link to added debt
         // return '<a href='.route('Debt.edit', $debtId).' class="label label-info">'.trans("overduedebts::view.debt.added").'</a>';
-        return '<span class="label label-info">'.trans("overduedebts::view.debt.added").'</span>';
+        return '<span class="label label-info">'.trans('overduedebts::view.debt.added').'</span>';
     }
 }
