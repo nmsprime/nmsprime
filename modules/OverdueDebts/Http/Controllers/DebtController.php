@@ -5,6 +5,7 @@ namespace Modules\OverdueDebts\Http\Controllers;
 use View;
 use Modules\OverdueDebts\Entities\Debt;
 use App\Http\Controllers\BaseViewController;
+use Modules\OverdueDebts\Entities\Mt940Parser;
 
 class DebtController extends \BaseController
 {
@@ -87,5 +88,23 @@ class DebtController extends \BaseController
     public function result_datatables_ajax()
     {
         return parent::index_datatables_ajax();
+    }
+
+    public function quickAdd()
+    {
+        // Replace Button in log with info that debt was added
+        $data = \Request::all();
+        unset($data['_untoken']);
+
+        $button = Mt940Parser::addDebtButton($data);
+        $replace = Mt940Parser::addedDebtInfo();
+        $path = 'logs/bank-transactions.log';
+
+        $content = file_get_contents(storage_path($path));
+        $content = str_replace($button, $replace, $content);
+
+        \File::put(storage_path($path), $content, true);
+
+        return parent::store(false);
     }
 }

@@ -2,6 +2,8 @@
 
 return [
     'debt' => [
+        'add' => 'Füge OP hinzu',
+        'added' => 'OP hinzugefügt',
         'headline' => 'Offene Posten Liste',
     ],
     'cleared' => 'Verrechnet',

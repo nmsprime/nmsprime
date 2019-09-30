@@ -2,6 +2,8 @@
 
 return [
     'debt' => [
+        'add' => 'Add debt',
+        'added' => 'Debt added',
         'headline' => 'List of debts',
     ],
     'cleared' => 'Cleared',

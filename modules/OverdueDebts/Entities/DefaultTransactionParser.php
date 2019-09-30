@@ -258,6 +258,7 @@ class DefaultTransactionParser
 
         // Give hints to what contract the transaction could be assigned
         // Or still add debt if it's almost secure that the transaction belongs to the customer and NMSPrime
+        $hintContractId = 0;
         if ($numbers['contractNr']) {
             $contracts = Contract::where('number', 'like', '%'.$numbers['contractNr'].'%')->get();
 
@@ -274,6 +275,7 @@ class DefaultTransactionParser
                 }
 
                 $hint .= ' '.trans('overduedebts::messages.transaction.credit.noInvoice.contract', ['contract' => $numbers['contractNr']]);
+                $hintContractId = $contracts->first()->id;
             }
         }
 
@@ -296,7 +298,9 @@ class DefaultTransactionParser
         }
 
         if ($hint) {
-            ChannelLog::notice('overduedebts', $this->logMsg.$hint);
+            $addButton = $this->quickAddFormButton($hintContractId ?: ($sepamandate ? $sepamandate->contract_id : 0));
+            $hint = $this->logMsg.$hint;
+            ChannelLog::notice('overduedebts', $hint.$addButton);
         } else {
             ChannelLog::info('overduedebts', $this->logMsg);
         }
@@ -332,6 +336,26 @@ class DefaultTransactionParser
         $this->debt->addedBySpecialMatch = true;
 
         return true;
+    }
+
+    /**
+     * Get html string for button to quickly add debt from settlementrun upload logs
+     *
+     * @return string
+     */
+    private function quickAddFormButton($contract_id)
+    {
+        $data = [
+            // Type cast to string so that data in addDebtButton() is encoded same way as
+            // done during ajax request when debt shall be added - see DebtController@quickAdd
+            'amount' => (string) $this->debt->amount,
+            'contract_id' => (string) $contract_id,
+            'date' => $this->debt->date,
+            'description' => $this->debt->description,
+            'voucher_nr' => $this->debt->voucher_nr,
+        ];
+
+        return Mt940Parser::addDebtButton($data);
     }
 
     /**

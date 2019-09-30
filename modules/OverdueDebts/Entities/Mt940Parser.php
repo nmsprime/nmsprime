@@ -113,4 +113,29 @@ class Mt940Parser
 
         // d($transactions, $statements, str_replace(':61:', "\r\n---------------\r\n:61:", $mt940));
     }
+
+    /**
+     * @param array
+     */
+    public static function addDebtButton($data)
+    {
+        if (isset($data['_token'])) {
+            unset($data['_token']);
+        }
+
+        ksort($data);
+
+        $html = '';
+        $html = '<button class="btn btn-link btn-xs addDebt" type="submit" value=\''.json_encode($data).'\'>'.
+        $html .= trans('overduedebts::view.debt.add').'</button>';
+
+        return $html;
+    }
+
+    public static function addedDebtInfo()
+    {
+        // TODO?: Show link to added debt
+        // return '<a href='.route('Debt.edit', $debtId).' class="label label-info">'.trans("overduedebts::view.debt.added").'</a>';
+        return '<span class="label label-info">'.trans("overduedebts::view.debt.added").'</span>';
+    }
 }

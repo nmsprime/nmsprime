@@ -68,9 +68,9 @@
 @endif
 
 @section ('javascript_extra')
+    <script type="text/javascript">
 
     @if (\Session::get('srJobId'))
-        <script type="text/javascript">
 
             $(document).ready(function()
             {
@@ -95,7 +95,37 @@
 
                 }, 500);
             });
-        </script>
     @endif
 
+    @if (\Module::collections()->has('OverdueDebts') && $logs['bankTransfer'])
+        $('.addDebt').click(function (e) {
+            var data = JSON.parse(e.target.value);
+            var button = $(this);
+
+            $.ajax({
+                url: "{{ route('Debt.quickAdd') }}",
+                type: "post",
+                data: {
+                    _token: "{{\Session::get('_token')}}",
+                    amount: data.amount,
+                    contract_id: data.contract_id,
+                    date: data.date,
+                    voucher_nr: data.voucher_nr,
+                    description: data.description,
+                    // settlementrun_id: {{ $view_var->id }},
+                },
+                success: function (data) {
+                    // TODO: Replace with link to debt?
+                    button.replaceWith('{!! \Modules\OverdueDebts\Entities\Mt940Parser::addedDebtInfo() !!}');
+                },
+            });
+
+            // var span = document.createElement('span');
+            // span.classList.add("label", "label-info");
+            // span.innerHTML = '{{ trans("overduedebts::view.debtAdded") }}';
+            // e.target.replaceWith(span);
+        });
+    @endif
+
+    </script>
 @stop
