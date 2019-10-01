@@ -3,14 +3,16 @@
 namespace Modules\OverdueDebts\Entities;
 
 use ChannelLog;
+use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\SettlementRun;
 
 class DebtImport
 {
     /**
-     * @var object Output interface to command line
+     * @var object Output interface to command line & progress bar
      */
     public $output;
+    private $bar;
 
     /**
      * @var string Path to csv file
@@ -23,12 +25,9 @@ class DebtImport
     private $conf;
 
     /**
-     * @var array Entries for log messages
+     * @var array contract numbers that could not be found
      */
-    private $blocked = [];
-    private $errors = [];
-
-    private $currentContract;
+    private $notFound = [];
 
     /**
      * CSV column position definitions
@@ -54,7 +53,23 @@ class DebtImport
     public function run()
     {
         SettlementRun::orderBy('id', 'desc')->first()->update(['uploaded_at' => date('Y-m-d H:i:s')]);
+        $this->conf = \Modules\OverdueDebts\Entities\OverdueDebts::first();
 
+        $this->addDebts();
+
+        $contracts = $this->getContracts();
+
+        $this->addDunningCharge($contracts);
+        $this->blockInet($contracts);
+
+        $this->log();
+    }
+
+    /**
+     * Create all debts from each line in CSV
+     */
+    private function addDebts()
+    {
         $arr = file($this->path);
 
         // Remove headline if exists
@@ -70,10 +85,8 @@ class DebtImport
                 $this->output->error("$msg\n");
             }
 
-            return;
+            exit(-1);
         }
-
-        $this->conf = \Modules\OverdueDebts\Entities\OverdueDebts::first();
 
         Debt::truncate();
 
@@ -96,77 +109,160 @@ class DebtImport
             $this->block = false;
             $line = str_getcsv($line, ';');
 
-            $this->currentContract = \Modules\ProvBase\Entities\Contract::where('number', $line[self::C_NR])->first();
+            $contract = Contract::where('number', $line[self::C_NR])->first();
 
-            if (! $this->currentContract) {
-                $this->errors[] = $line[self::C_NR];
+            if (! $contract) {
+                $this->notFound[] = $line[self::C_NR];
 
                 continue;
             }
 
-            $debt = $this->addDebt($line);
-
-            //  Check & block internet access
-            $this->blockInet($debt);
+            $debt = $this->addDebt($line, $contract);
         }
 
         if ($this->output) {
             $bar->finish();
             echo "\n";
         } else {
-            SettlementRun::push_state(100, 'Finished');
+            SettlementRun::push_state(100, $importInfo);
+            // SettlementRun::push_state(100, 'Finished');
         }
-
-        $this->log();
-
-        unlink($this->path);
     }
 
     /**
      * @param array line
      */
-    private function addDebt($line)
+    private function addDebt($line, $contract)
     {
-        $fee = $indicator = 0;
-        if ($line[self::INDICATOR] > 0 && $line[self::INDICATOR] < 4) {
+        // TODO: Only consider invoice numbers that match NMSPrime format - but therefore there must be another column in CSV
+        // preg_match('/2\d{3}\/\d+\/\d+/i', $this->description, $matchInvoice);
+
+        $indicator = null;
+        if ($line[self::INDICATOR] > 0 && $line[self::INDICATOR] <= 3) {
+            // Add dunning charge to each debt separately - kept here in case it's needed again in future
+            // $fee = $this->conf->{'dunning_charge'.$indicator};
+
             $indicator = $line[self::INDICATOR];
-            $fee = $this->conf->{'dunning_charge'.$indicator};
-        } elseif ($line[self::INDICATOR] > 4) {
-            $indicator = 4;
+        } elseif ($line[self::INDICATOR] > 3) {
+            $indicator = 3;
         }
 
         $debt = Debt::create([
-            'contract_id' => $this->currentContract->id,
+            'contract_id' => $contract->id,
             'voucher_nr' => $line[self::VOUCHER_NR],
             // TODO
             // 'number' => $line[self::INVOICE_NR],
             'amount' => str_replace(',', '.', $line[self::AMOUNT]),
-            'missing_amount' => str_replace(',', '.', $line[self::MISSING_AMOUNT]) + $fee,
+            'missing_amount' => str_replace(',', '.', $line[self::MISSING_AMOUNT]),
             'date' => date('Y-m-d', strtotime($line[self::DATE])),
             'dunning_date' => $line[self::DUN_DATE] ? date('Y-m-d', strtotime($line[self::DUN_DATE])) : null,
             'description' => $line[self::DESC],
             'indicator' => $indicator,
-            'total_fee' => $fee,
+            // 'total_fee' => $fee,
         ]);
 
         return $debt;
     }
 
-    private function blockInet($debt)
+    /**
+     * Get all contracts having minimum one debt
+     *
+     * @return Collection
+     */
+    private function getContracts()
     {
-        if (// Block if threshhold is exceeded
-            ($this->conf->import_inet_block_amount && ($this->currentContract->getResultingDebt() >= $this->conf->import_inet_block_amount)) ||
-            // Block if more than num OPs
-            ($this->conf->import_inet_block_debts && ($this->currentContract->debts()->count() >= $this->conf->import_inet_block_debts)) ||
-            // Block if dunning indicator is too high
-            ($this->conf->import_inet_block_indicator && ($debt->indicator >= $this->conf->import_inet_block_indicator))
-        ) {
-            foreach ($this->currentContract->modems as $modem) {
-                $modem->internet_access = 0;
+        $msg = trans('overduedebts::messages.import.block');
+        if ($this->output) {
+            echo "$msg\n";
+            $this->bar = $this->output->createProgressBar(100);
+            $this->bar->start();
+        } else {
+            SettlementRun::push_state(0, $msg);
+        }
 
-                $this->blocked[] = $this->currentContract->number;
+        return Contract::join('debt', 'contract.id', '=', 'debt.contract_id')
+            ->select('contract.*')
+            ->groupBy('contract.number')
+            ->with('debts')
+            ->get();
+    }
 
-                $modem->save();
+    private function addDunningCharge($contracts)
+    {
+        if ($this->output) {
+            $this->bar->advance(33);
+        } else {
+            SettlementRun::push_state(33, trans('overduedebts::messages.import.block'));
+        }
+
+        // Add dunning charge only once for a contract with debts to the debt with the highest dunning indicator
+        foreach ($contracts as $c) {
+            $debt = $c->debts->sortByDesc('indicator')->first();
+
+            // Check if there are multiple debts with the same indicator -> take first added then
+            if ($c->debts->where('indicator', $debt->indicator)->count() > 1) {
+                $debt = $c->debts->where('indicator', $debt->indicator)->sortBy('date')->first();
+            }
+
+            $debt->total_fee += $this->conf->{'dunning_charge'.$debt->indicator};
+
+            $debt->save();
+        }
+    }
+
+    /**
+     * Block internet access of customers where one of the thresholds are exceeded
+     *  (e.g. Amount >= 50, Num positive debts >= 2, dunning indicator = 3)
+     */
+    private function blockInet($contracts)
+    {
+        if ($this->output) {
+            $this->bar->advance(33);
+        } else {
+            SettlementRun::push_state(66, trans('overduedebts::messages.import.block'));
+        }
+
+        $blocked = [];
+
+        foreach ($contracts as $c) {
+            $posDebtCount = $c->debts->where('missing_amount', '>', 0)->count();
+
+            $totalAmount = 0;
+            foreach ($c->debts as $debt) {
+                $totalAmount += $debt->missing_amount;
+            }
+
+            $highestIndicator = $c->debts->sortByDesc('indicator')->first()->indicator;
+
+            if (// Amount threshold is exceeded
+                ($this->conf->import_inet_block_amount && ($totalAmount >= $this->conf->import_inet_block_amount)) ||
+                // More than max num of positive debts
+                ($this->conf->import_inet_block_debts && ($posDebtCount >= $this->conf->import_inet_block_debts)) ||
+                // Highest dunning indicator too high
+                ($this->conf->import_inet_block_indicator && ($highestIndicator >= $this->conf->import_inet_block_indicator))
+            ) {
+                foreach ($c->modems as $modem) {
+                    $blocked[] = $c->number;
+
+                    $modem->internet_access = 0;
+                    $modem->save();
+                }
+            }
+        }
+
+        if ($this->output) {
+            $this->bar->finish();
+            echo "\n";
+        } else {
+            SettlementRun::push_state(100, 'Finished');
+        }
+
+        // Log contracts where internet access was blocked during import
+        if ($blocked) {
+            $msg = trans('overduedebts::messages.import.contractsBlocked', ['count' => count($blocked), 'numbers' => implode(', ', $blocked)]);
+            ChannelLog::info('overduedebts', $msg);
+            if ($this->output) {
+                $this->output->note($msg);
             }
         }
     }
@@ -174,20 +270,11 @@ class DebtImport
     private function log()
     {
         // Log contracts that could not be found
-        if ($this->errors) {
-            $msg = trans('overduedebts::messages.import.contractsMissing', ['numbers' => implode(', ', $this->errors)]);
+        if ($this->notFound) {
+            $msg = trans('overduedebts::messages.import.contractsMissing', ['numbers' => implode(', ', $this->notFound)]);
             ChannelLog::warning('overduedebts', $msg);
             if ($this->output) {
                 $this->output->error($msg);
-            }
-        }
-
-        // Log contracts where internet access was blocked during import
-        if ($this->blocked) {
-            $msg = trans('overduedebts::messages.import.contractsBlocked', ['numbers' => implode(', ', $this->blocked)]);
-            ChannelLog::info('overduedebts', $msg);
-            if ($this->output) {
-                $this->output->note($msg);
             }
         }
     }

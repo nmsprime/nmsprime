@@ -6,7 +6,8 @@ return [
     'clearParentId' => 'Die Beziehung zum eingestellten OP wurde gelöscht, da sie keinen Sinn ergibt, da beide OPs einen positiven/negativen Betrag haben.',
     'csvImportActive' => 'Der OP-Import läuft gerade. Bitte warten Sie bis der Prozess beendet wurde.',
     'import' => [
-        'contractsBlocked' => 'Der Internetzugriff der Modems folgender Verträge wurde während des OP-Imports geblockt: :numbers.',
+        'block' => 'Blockiere Internetzugriff und füge Mahngebühren hinzu...',
+        'contractsBlocked' => 'Der Internetzugriff der Modems folgender :count Verträge wurde während des OP-Imports geblockt: :numbers.',
         'contractsMissing' => 'Die folgenden Verträge konnten nicht im System gefunden werden, haben aber offene Posten gemäß der hochgeladenen Datei: :numbers.',
         'count' =>  'Importiere :number Offene Posten.',
     ],
