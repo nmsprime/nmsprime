@@ -165,6 +165,16 @@ class Debt extends \BaseModel
 
         return $payments ?: [];
     }
+
+    /**
+     * Set missing amount from amount and fees
+     */
+    public function setMissingAmount()
+    {
+        $fee = $this->total_fee ?? $this->bank_fee ?? 0;
+
+        $this->missing_amount = $this->amount + $fee;
+    }
 }
 
 class DebtObserver
@@ -174,6 +184,8 @@ class DebtObserver
         if (! $debt->missing_amount) {
             $debt->missing_amount = $debt->amount;
         }
+
+        $debt->setMissingAmount();
 
         if ($debt->parent_id === 0) {
             $existingDebt = Debt::where('contract_id', $debt->contract_id)
@@ -187,6 +199,11 @@ class DebtObserver
     public function created($debt)
     {
         $this->clearCorrespondingDebt($debt);
+    }
+
+    public function updating($debt)
+    {
+        $debt->setMissingAmount();
     }
 
     public function updated($debt)
