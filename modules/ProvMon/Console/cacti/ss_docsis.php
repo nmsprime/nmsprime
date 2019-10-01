@@ -15,7 +15,12 @@ if (! isset($called_by_script_server)) {
 }
 
 $snrs = [];
+$old = time() - 10 * 60;
 foreach (glob('/var/www/nmsprime/storage/app/data/provmon/us_snr/*.json') as $file) {
+    // ignore files older than 10 minutes, e.g. from a decommissioned cmts
+    if ($old > filemtime($file)) {
+        continue;
+    }
     $snrs = array_merge($snrs, json_decode(file_get_contents($file), true));
 }
 $GLOBALS['snrs'] = $snrs;
@@ -52,7 +57,8 @@ function ss_docsis($hostname, $snmp_community)
         'SysDescr' =>   '.1.3.6.1.2.1.1.1',
     ];
 
-    $filename = "/run/nmsprime/cacti/$hostname";
+    $path = '/run/nmsprime/cacti';
+    $filename = "$path/$hostname";
     if (! file_exists($filename)) {
         $result = '';
         foreach ($non_reps as $key => $val) {
@@ -113,7 +119,7 @@ function ss_docsis($hostname, $snmp_community)
     if (array_key_exists($ip, $GLOBALS['snrs'])) {
         $snrs = $GLOBALS['snrs'][$ip];
         foreach ($res['UsFreq'] as $freq) {
-            if (! isset($snrs[strval($freq / 1000000)])) {
+            if (! isset($snrs[strval($freq / 1000000)]) || ! $snrs[strval($freq / 1000000)]) {
                 continue;
             }
             $res['UsSNR'][] = $snrs[strval($freq / 1000000)];
@@ -154,6 +160,23 @@ function ss_docsis($hostname, $snmp_community)
         $preq['descr'] = isset($res_json['SysDescr']) ? reset($res_json['SysDescr']) : 'n/a';
 
         file_put_contents($json_file, json_encode($preq));
+    }
+
+    if (isset($res['avgUsPow']) && is_numeric($res['avgUsPow']) &&
+        isset($res['avgUsSNR']) && is_numeric($res['avgUsSNR']) &&
+        isset($res['avgDsPow']) && is_numeric($res['avgDsPow']) &&
+        isset($res['avgDsSNR']) && is_numeric($res['avgDsSNR']) &&
+        preg_match('/^cm-(\d+)\./m', $hostname, $match)) {
+        $content = sprintf(
+            "UPDATE modem SET us_pwr = %d, us_snr = %d, ds_pwr = %d, ds_snr = %d WHERE id = %d;\n",
+            round($res['avgUsPow']),
+            round($res['avgUsSNR']),
+            round($res['avgDsPow']),
+            round($res['avgDsSNR']),
+            $match[1]
+        );
+
+        file_put_contents("$path/update.sql", $content, FILE_APPEND | LOCK_EX);
     }
 
     $result = '';

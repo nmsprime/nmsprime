@@ -11,10 +11,10 @@ sed -i "s/^CACTI_DB_PASSWORD=$/CACTI_DB_PASSWORD=$mysql_cacti_psw/" "$env"
 
 # create DB accessed by cactiuser
 mysql -u root -e "CREATE DATABASE cacti CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';"
-mysql -u root -e "GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY '$mysql_cacti_psw';";
+mysql -u root -e "GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY '$mysql_cacti_psw';"
 
 # allow cacti to access time_zone_name table
-mysql -u root -e "GRANT SELECT ON mysql.time_zone_name TO 'cactiuser'@'localhost';";
+mysql -u root -e "GRANT SELECT ON mysql.time_zone_name TO 'cactiuser'@'localhost';"
 
 # set psw in cacti db config file
 sed -i "s/^\$database_password =.*/\$database_password = '$mysql_cacti_psw';/" /etc/cacti/db.php
