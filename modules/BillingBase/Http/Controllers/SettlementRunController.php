@@ -2,6 +2,9 @@
 
 namespace Modules\BillingBase\Http\Controllers;
 
+use DB;
+use Log;
+use Session;
 use Monolog\Logger;
 use Modules\BillingBase\Entities\Product;
 use Modules\BillingBase\Entities\SettlementRun;
@@ -83,9 +86,9 @@ class SettlementRunController extends \BaseController
 
     private function jobQueued()
     {
-        $jobs = ['SettlementRun', 'ZipSettlementRun', 'ImportDebt'];
+        $jobs = ['SettlementRun', 'ZipSettlementRun', 'DebtImport', 'ParseMt940'];
 
-        $jobQueued = \DB::table('jobs')->where('payload', 'like', "%{$jobs[0]}%");
+        $jobQueued = DB::table('jobs')->where('payload', 'like', "%{$jobs[0]}%");
 
         foreach ($jobs as $key => $name) {
             if ($key == 0) {
@@ -119,20 +122,20 @@ class SettlementRunController extends \BaseController
             $job = json_decode($job_queued->payload);
             $status_msg = self::getStatusMessage($job->data->commandName);
             // dont let multiple users create a lot of jobs - Session key is checked in blade
-            \Session::put('SrJobId', $job_queued->id);
-        } elseif (\Session::get('SrJobId')) {
+            Session::put('srJobId', $job_queued->id);
+        } elseif (Session::get('srJobId')) {
             // delete Session job id if job is done in case someone broke the tcp connection (close tab/window) manually
-            \Session::remove('SrJobId');
+            Session::remove('srJobId');
         }
 
-        $button['postal'] = ! \Session::get('SrJobId') && ! $job_queued && Product::where('type', 'Postal')->count() ? true : false;
+        $button['postal'] = ! Session::get('srJobId') && ! $job_queued && Product::where('type', 'Postal')->count() ? true : false;
         $button['rerun'] = true;
         if ($job_queued || date('m') != $sr->created_at->__get('month') || $sr->verified) {
             $button['rerun'] = false;
         }
 
         // get error logs in case job failed and remove failed job from table
-        $failed_jobs = \DB::table('failed_jobs')->get();
+        $failed_jobs = DB::table('failed_jobs')->get();
         foreach ($failed_jobs as $failed_job) {
             $commandName = json_decode($failed_job->payload)->data->commandName;
             if (\Str::contains($commandName, '\\SettlementRun')) {
@@ -160,8 +163,11 @@ class SettlementRunController extends \BaseController
             case 'Modules\BillingBase\Jobs\SettlementRunJob':
                 return trans('messages.accCmd_processing');
 
-            case 'Modules\OverdueDebts\Jobs\ImportDebtJob':
+            case 'Modules\OverdueDebts\Jobs\DebtImportJob':
                 return trans('overduedebts::messages.csvImportActive');
+
+            case 'Modules\OverdueDebts\Jobs\ParseMt940':
+                return trans('overduedebts::messages.staParsingActive');
 
             default:
                 return '';
@@ -179,11 +185,11 @@ class SettlementRunController extends \BaseController
         // ob_implicit_flush();
         // ob_end_flush();
 
-        \Log::debug(__CLASS__.'::'.__FUNCTION__);
+        Log::debug(__CLASS__.'::'.__FUNCTION__);
         $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () {
             $job = true;
             while ($job) {
-                $job = \DB::table('jobs')->find(\Session::get('SrJobId'));
+                $job = DB::table('jobs')->find(Session::get('srJobId'));
 
                 if (! isset($commandName) && $job) {
                     $commandName = self::getJobCommandName($job);
@@ -212,9 +218,9 @@ class SettlementRunController extends \BaseController
                 $commandName = 'Modules\BillingBase\Jobs\SettlementRunJob';
             }
 
-            \Log::debug("Job $commandName \[".\Session::get('SrJobId').'] stopped');
+            Log::debug("Job $commandName \[".Session::get('srJobId').'] stopped');
 
-            \Session::remove('SrJobId');
+            Session::remove('srJobId');
 
             // wait for job to land in failed jobs table - if it failed - wait max 10 seconds
             $i = 5;
@@ -222,7 +228,7 @@ class SettlementRunController extends \BaseController
 
             while ($i && $success) {
                 $i--;
-                $failed_jobs = \DB::table('failed_jobs')->get();
+                $failed_jobs = DB::table('failed_jobs')->get();
                 foreach ($failed_jobs as $job) {
                     $commandName = self::getJobCommandName($job);
                     if (\Str::contains($commandName, '\\SettlementRun')) {
@@ -234,9 +240,9 @@ class SettlementRunController extends \BaseController
                 sleep(2);
             }
             reload:
-            $success ? \Log::info("$commandName finished successfully") : \Log::error("$commandName failed!");
+            $success ? Log::info("$commandName finished successfully") : Log::error("$commandName failed!");
 
-            \Log::debug('Reload Settlementrun Edit View');
+            Log::debug('Reload Settlementrun Edit View');
             echo "data: reload\n\n";
             ob_flush();
             flush();
@@ -269,7 +275,7 @@ class SettlementRunController extends \BaseController
         $settlementrun = SettlementRun::find($id);
 
         $id = \Queue::push(new \Modules\BillingBase\Jobs\ZipSettlementRun($settlementrun, null, true));
-        \Session::put('SrJobId', $id);
+        Session::put('srJobId', $id);
 
         return \Redirect::route('SettlementRun.edit', $settlementrun->id);
     }
@@ -365,7 +371,7 @@ class SettlementRunController extends \BaseController
         $id = key(\Request::get('ids'));
         $settlementrun = SettlementRun::find($id);
 
-        \Session::push('tmp_info_above_index_list', trans('messages.deleteSettlementRun', ['time' => $settlementrun->year.'-'.$settlementrun->month]));
+        Session::push('tmp_info_above_index_list', trans('messages.deleteSettlementRun', ['time' => $settlementrun->year.'-'.$settlementrun->month]));
         dispatch(new \Modules\BillingBase\Jobs\DeleteSettlementRun($settlementrun));
 
         return redirect()->back();

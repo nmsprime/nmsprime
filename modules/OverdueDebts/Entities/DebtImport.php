@@ -53,6 +53,8 @@ class DebtImport
      */
     public function run()
     {
+        SettlementRun::orderBy('id', 'desc')->first()->update(['uploaded_at' => date('Y-m-d H:i:s')]);
+
         $arr = file($this->path);
 
         // Remove headline if exists
@@ -153,11 +155,11 @@ class DebtImport
     private function blockInet($debt)
     {
         if (// Block if threshhold is exceeded
-            ($this->currentContract->getResultingDebt() >= $this->conf->import_inet_block_amount) ||
+            ($this->conf->import_inet_block_amount && ($this->currentContract->getResultingDebt() >= $this->conf->import_inet_block_amount)) ||
             // Block if more than num OPs
-            ($this->currentContract->debts()->count() >= $this->conf->import_inet_block_debts) ||
+            ($this->conf->import_inet_block_debts && ($this->currentContract->debts()->count() >= $this->conf->import_inet_block_debts)) ||
             // Block if dunning indicator is too high
-            ($debt->indicator >= $this->conf->import_inet_block_indicator)
+            ($this->conf->import_inet_block_indicator && ($debt->indicator >= $this->conf->import_inet_block_indicator))
         ) {
             foreach ($this->currentContract->modems as $modem) {
                 $modem->internet_access = 0;

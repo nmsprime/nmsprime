@@ -10,7 +10,12 @@ return [
         'contractsMissing' => 'Could not find contract(s) with the following contract number(s) of the uploaded file: :numbers.',
         'count' => 'Import :number overdue debts.',
     ],
+    'parse' => [
+        'start' => 'Parse bank transaction file',
+        'transactions' => 'Add debts from transactions',
+    ],
     'parseMt940Failed' => 'Error on parsing the uploaded file. See logfile. (:msg)',
+    'staParsingActive' => 'The bank transaction file is currently parsed. Please wait until this process has finished.',
     'transaction' => [
         'create' => 'Create debt because of',
         'credit' => [

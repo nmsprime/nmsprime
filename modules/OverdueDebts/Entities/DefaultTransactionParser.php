@@ -68,10 +68,10 @@ class DefaultTransactionParser
      *
      * @return Modules\OverdueDebts\Entities\Debt
      */
-    public function parse(\Kingsquare\Banking\Transaction $transaction)
+    public function parse(\Kingsquare\Banking\Transaction $transaction, $debt)
     {
+        $this->debt = $debt;
         // Initialize Variables
-        $this->debt = new Debt;
         // We try to find a debt to clear when parent_id is 0
         $this->debt->parent_id = 0;
         $this->transaction = $transaction;
@@ -80,19 +80,16 @@ class DefaultTransactionParser
         $this->description = $this->holder = [];
         $this->iban = $this->invoiceNr = $this->logMsg = $this->mref = '';
 
+        $this->debt->date = $this->transaction->getValueTimestamp('Y-m-d H:i:s');
+        $this->debt->missing_amount = $this->debt->amount + $this->debt->total_fee;
+
         $action = $transaction->getDebitCredit() == 'D' ? 'parseDebit' : 'parseCredit';
 
         $this->$action();
 
-        if ($this->debt instanceof Debt) {
-            $this->debt->date = $this->transaction->getValueTimestamp('Y-m-d H:i:s');
-
-            $this->debt->missing_amount = $this->debt->amount + $this->debt->total_fee;
-        }
-
         // TODO: Dont add log entry if debt already exists
 
-        return $this->debt;
+        return $debt = $this->debt;
     }
 
     /**
@@ -120,7 +117,7 @@ class DefaultTransactionParser
         }
 
         $this->debt->amount = $this->amount;
-        $this->debt->bank_fee = $this->bank_fee;
+        $this->debt->bank_fee = round($this->bank_fee, 4);
         $this->debt->description = $this->description;
         $this->addFee();
 
@@ -220,15 +217,12 @@ class DefaultTransactionParser
             return $this->debt = null;
         }
 
-        $numbers['eref'] = $this->invoiceNr ?? null;
-        $numbers['mref'] = $this->mref ?? null;
+        $this->debt->amount = -1 * $this->transaction->getPrice();
+        $this->debt->description = $this->description;
 
         if ($this->setCreditDebtRelations($numbers) === false) {
             return $this->debt = null;
         }
-
-        $this->debt->amount = -1 * $this->transaction->getPrice();
-        $this->debt->description = $this->description;
 
         ChannelLog::debug('overduedebts', trans('overduedebts::messages.transaction.create')." $this->logMsg");
     }
@@ -243,27 +237,28 @@ class DefaultTransactionParser
      */
     private function setCreditDebtRelations($numbers)
     {
-        $this->invoiceNr = $this->invoiceNr ?: $numbers['eref'];
-        $invoice = Invoice::where('number', $this->invoiceNr)->where('type', 'Invoice')->first();
-
-        if ($invoice) {
-            $this->debt->contract_id = $invoice->contract_id;
-            $this->debt->invoice_id = $invoice->id;
-
-            return true;
-        }
-
         $this->logMsg = trans('view.Discard')." $this->logMsg.";
         $hint = '';
 
         if ($this->invoiceNr) {
+            $invoice = Invoice::where('number', $this->invoiceNr)->where('type', 'Invoice')->first();
+
+            if ($invoice) {
+                $this->debt->contract_id = $invoice->contract_id;
+                $this->debt->invoice_id = $invoice->id;
+                $this->debt->number = $invoice->number;
+
+                return true;
+            }
+
             $this->logMsg .= ' '.trans('overduedebts::messages.transaction.credit.noInvoice.notFound', ['number' => $this->invoiceNr]);
-        } else {
-            $this->logMsg .= ' '.trans('overduedebts::messages.transaction.credit.noInvoice.default');
         }
+
+        $this->logMsg .= ' '.trans('overduedebts::messages.transaction.credit.noInvoice.default');
 
         // Give hints to what contract the transaction could be assigned
         // Or still add debt if it's almost secure that the transaction belongs to the customer and NMSPrime
+        $hintContractId = 0;
         if ($numbers['contractNr']) {
             $contracts = Contract::where('number', 'like', '%'.$numbers['contractNr'].'%')->get();
 
@@ -280,6 +275,7 @@ class DefaultTransactionParser
                 }
 
                 $hint .= ' '.trans('overduedebts::messages.transaction.credit.noInvoice.contract', ['contract' => $numbers['contractNr']]);
+                $hintContractId = $contracts->first()->id;
             }
         }
 
@@ -302,7 +298,9 @@ class DefaultTransactionParser
         }
 
         if ($hint) {
-            ChannelLog::notice('overduedebts', $this->logMsg.$hint);
+            $addButton = $this->quickAddFormButton($hintContractId ?: ($sepamandate ? $sepamandate->contract_id : 0));
+            $hint = $this->logMsg.$hint;
+            ChannelLog::notice('overduedebts', $hint.$addButton);
         } else {
             ChannelLog::info('overduedebts', $this->logMsg);
         }
@@ -338,6 +336,26 @@ class DefaultTransactionParser
         $this->debt->addedBySpecialMatch = true;
 
         return true;
+    }
+
+    /**
+     * Get html string for button to quickly add debt from settlementrun upload logs
+     *
+     * @return string
+     */
+    private function quickAddFormButton($contract_id)
+    {
+        $data = [
+            // Type cast to string so that data in addDebtButton() is encoded same way as
+            // done during ajax request when debt shall be added - see DebtController@quickAdd
+            'amount' => (string) $this->debt->amount,
+            'contract_id' => (string) $contract_id,
+            'date' => $this->debt->date,
+            'description' => $this->debt->description,
+            'voucher_nr' => $this->debt->voucher_nr,
+        ];
+
+        return Mt940Parser::addDebtButton($data);
     }
 
     /**

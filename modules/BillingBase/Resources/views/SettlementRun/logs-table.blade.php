@@ -25,7 +25,7 @@
                     <?php unset($row['color']) ?>
 
                     @foreach($row as $cell)
-                        <td>{{ $cell }}</td>
+                        <td>{!! $cell !!}</td>
                     @endforeach
                 </tr>
             @endforeach

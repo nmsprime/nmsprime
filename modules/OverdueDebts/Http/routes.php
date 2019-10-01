@@ -17,4 +17,10 @@ BaseRoute::group([], function () {
         'uses' => 'Modules\OverdueDebts\Http\Controllers\DebtController@result_datatables_ajax',
         'middleware' => ['web', 'can:view,Modules\OverdueDebts\Entities\Debt'],
     ]);
+
+    Route::post('Debt/quickAdd', [
+        'as' => 'Debt.quickAdd',
+        'uses' => 'Modules\OverdueDebts\Http\Controllers\DebtController@quickAdd',
+        'middleware' => ['web', 'can:create,Modules\OverdueDebts\Entities\Debt'],
+    ]);
 });
