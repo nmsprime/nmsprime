@@ -20,5 +20,10 @@ return [
             'icon'  => 'fa-building-o',
             'class' => Realty::class,
         ],
+        'Contact' => [
+            'link'  => 'Contact.index',
+            'icon'  => 'fa-address-card-o',
+            'class' => Contact::class,
+        ],
     ],
 ];
