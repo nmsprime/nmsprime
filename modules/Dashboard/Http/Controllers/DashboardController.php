@@ -201,7 +201,7 @@ class DashboardController extends BaseController
         }
 
         $files = [
-            'news.json' => "$support/news.php?ns=&sla=".urlencode(\App\SLA::first()->name).'&mc='.$numModems.'&nm='.$numCmts.'&nn='.$numNetelements.'&nt='.$numTvbillings,
+            'news.json' => "$support/news.php?ns=&sla=".urlencode(\App\Sla::pluck('name')->first()).'&mc='.$numModems.'&nm='.$numCmts.'&nn='.$numNetelements.'&nt='.$numTvbillings,
             'documentation.json' => "$support/documentation.json",
         ];
 
