@@ -29,6 +29,8 @@ class DebtImport
      */
     private $notFound = [];
 
+    private $parser;
+
     /**
      * CSV column position definitions
      */
@@ -134,9 +136,21 @@ class DebtImport
      */
     private function addDebt($line, $contract)
     {
-        // TODO: Only consider invoice numbers that match NMSPrime format - but therefore there must be another column in CSV
-        // preg_match('/2\d{3}\/\d+\/\d+/i', $this->description, $matchInvoice);
+        if (! $this->parser) {
+            $this->parser = new DefaultTransactionParser;
+        }
 
+        // Exclude specific invoice numbers
+        $arr = $this->parser->searchNumbers($line[self::VOUCHER_NR]);
+
+        if ($arr['exclude']) {
+            return;
+        }
+
+        // $invoiceId = \DB::table('invoice')->where('number', $arr['invoiceNr'])->select('id')->first();
+        // $invoiceId = $invoiceId ? $invoiceId->id : null;
+
+        // Limit dunning indicator to number between 1 and 3
         $indicator = null;
         if ($line[self::INDICATOR] > 0 && $line[self::INDICATOR] <= 3) {
             // Add dunning charge to each debt separately - kept here in case it's needed again in future
