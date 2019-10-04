@@ -80,12 +80,10 @@ class Debt extends \BaseModel
     {
         $bsclass = 'success';
 
-        if ($this->sum() > 0) {
-            $bsclass = 'warning';
-        }
-
         if ($this->cleared) {
-            $bsclass = $this->missing_amount >= 0 ? 'active' : 'success';
+            $bsclass = 'active';
+        } elseif ($this->missing_amount > 0) {
+            $bsclass = 'warning';
         }
 
         return $bsclass;
@@ -93,7 +91,7 @@ class Debt extends \BaseModel
 
     public function label()
     {
-        $label = (string) ($this->sum()).Currency::get()." ($this->date)";
+        $label = (string) ($this->amount).Currency::get()." ($this->date)";
         $label .= ' - '.trans('overduedebts::view.open').': '.$this->missing_amount.Currency::get();
 
         return $label;
