@@ -165,16 +165,6 @@ class Debt extends \BaseModel
 
         return $payments ?: [];
     }
-
-    /**
-     * Set missing amount from amount and fees
-     */
-    public function setMissingAmount()
-    {
-        $fee = $this->total_fee ?? $this->bank_fee ?? 0;
-
-        $this->missing_amount = $this->amount + $fee;
-    }
 }
 
 class DebtObserver
@@ -182,10 +172,11 @@ class DebtObserver
     public function creating($debt)
     {
         if (! $debt->missing_amount) {
-            $debt->missing_amount = $debt->amount;
-        }
+            // Set initial missing amount from amount and fees if not set already
+            $fee = $debt->total_fee ?? $debt->bank_fee ?? 0;
 
-        $debt->setMissingAmount();
+            $debt->missing_amount = $debt->amount + $fee;
+        }
 
         if ($debt->parent_id === 0) {
             $existingDebt = Debt::where('contract_id', $debt->contract_id)
@@ -203,7 +194,21 @@ class DebtObserver
 
     public function updating($debt)
     {
-        $debt->setMissingAmount();
+        $dirty = $debt->getDirty();
+
+        // Adapt missing_amount when amount or fee was changed
+        if (isset($dirty['amount'])) {
+            $debt->missing_amount += $debt->amount - $debt->getOriginal('amount');
+        }
+
+        if (isset($dirty['bank_fee'])) {
+            $debt->total_fee += $debt->bank_fee - $debt->getOriginal('bank_fee');
+            $dirty['total_fee'] = $debt->total_fee;
+        }
+
+        if (isset($dirty['total_fee'])) {
+            $debt->missing_amount += $debt->total_fee - $debt->getOriginal('total_fee');
+        }
     }
 
     public function updated($debt)
