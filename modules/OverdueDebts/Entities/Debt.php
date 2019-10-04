@@ -80,12 +80,10 @@ class Debt extends \BaseModel
     {
         $bsclass = 'success';
 
-        if ($this->sum() > 0) {
-            $bsclass = 'warning';
-        }
-
         if ($this->cleared) {
-            $bsclass = $this->missing_amount >= 0 ? 'active' : 'success';
+            $bsclass = 'active';
+        } elseif ($this->missing_amount > 0) {
+            $bsclass = 'warning';
         }
 
         return $bsclass;
@@ -93,7 +91,7 @@ class Debt extends \BaseModel
 
     public function label()
     {
-        $label = (string) ($this->sum()).Currency::get()." ($this->date)";
+        $label = (string) ($this->amount).Currency::get()." ($this->date)";
         $label .= ' - '.trans('overduedebts::view.open').': '.$this->missing_amount.Currency::get();
 
         return $label;
@@ -172,7 +170,10 @@ class DebtObserver
     public function creating($debt)
     {
         if (! $debt->missing_amount) {
-            $debt->missing_amount = $debt->amount;
+            // Set initial missing amount from amount and fees if not set already
+            $fee = $debt->total_fee ?? $debt->bank_fee ?? 0;
+
+            $debt->missing_amount = $debt->amount + $fee;
         }
 
         if ($debt->parent_id === 0) {
@@ -187,6 +188,25 @@ class DebtObserver
     public function created($debt)
     {
         $this->clearCorrespondingDebt($debt);
+    }
+
+    public function updating($debt)
+    {
+        $dirty = $debt->getDirty();
+
+        // Adapt missing_amount when amount or fee was changed
+        if (isset($dirty['amount'])) {
+            $debt->missing_amount += $debt->amount - $debt->getOriginal('amount');
+        }
+
+        if (isset($dirty['bank_fee'])) {
+            $debt->total_fee += $debt->bank_fee - $debt->getOriginal('bank_fee');
+            $dirty['total_fee'] = $debt->total_fee;
+        }
+
+        if (isset($dirty['total_fee'])) {
+            $debt->missing_amount += $debt->total_fee - $debt->getOriginal('total_fee');
+        }
     }
 
     public function updated($debt)

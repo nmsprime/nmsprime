@@ -34,6 +34,8 @@ class DebtImportJob implements ShouldQueue
         $debtImport = new DebtImport($this->path);
 
         $debtImport->run();
+
+        unlink($this->path);
     }
 
     /**

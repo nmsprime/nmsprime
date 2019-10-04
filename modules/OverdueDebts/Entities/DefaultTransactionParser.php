@@ -106,6 +106,7 @@ class DefaultTransactionParser
         $this->logMsg = trans('overduedebts::messages.transaction.default.debit', [
             'holder' => $this->holder,
             'invoiceNr' => $this->invoiceNr,
+            // TODO: 'number' => $invoice->number if invoiceNr is given
             'mref' => $this->mref,
             'price' => number_format_lang($this->transaction->getPrice()),
             'iban' => $this->iban,
@@ -209,7 +210,7 @@ class DefaultTransactionParser
                 'reason' => $this->description,
             ]);
 
-        $numbers = $this->searchNumbers();
+        $numbers = $this->searchNumbers($this->description);
 
         if ($numbers['exclude']) {
             ChannelLog::info('overduedebts', trans('view.Discard')." $this->logMsg. ".trans('overduedebts::messages.transaction.credit.missInvoice'));
@@ -384,18 +385,18 @@ class DefaultTransactionParser
      *
      * @return array
      */
-    private function searchNumbers()
+    public function searchNumbers($string)
     {
         // Match examples: Rechnungsnummer|Rechnungsnr|RE.-NR.|RG.-NR.|RG 2018/3/48616
         // preg_match('/R(.*?)((n(.*?)r)|G)(.*?)(\d{4}\/\d+\/\d+)/i', $this->reason, $matchInvoice);
         // $invoiceNr = $matchInvoice ? $matchInvoice[6] : '';
 
         // Match invoice numbers in NMSPrime default format: Year/CostCenter-ID/incrementing number - examples 2018/3/48616, 2019/15/201
-        preg_match('/2\d{3}\/\d+\/\d+/i', $this->description, $matchInvoice);
+        preg_match('/2\d{3}\/\d+\/\d+/i', $string, $matchInvoice);
         $this->invoiceNr = $matchInvoice ? $matchInvoice[0] : '';
 
         // Match examples: Kundennummer|Kd-Nr|Kd.nr.|Kd.-Nr.|Kn|Customernr|Cr|Cnr|Knr 13451
-        preg_match('/[CK](.*?)[ndr](.*?)([1-7]\d{4})/i', $this->description, $matchContract);
+        preg_match('/[CK](.*?)[ndr](.*?)([1-7]\d{4})/i', $string, $matchContract);
         $contractNr = $matchContract ? $matchContract[3] : 0;
 
         // Special invoice numbers that ensure that transaction definitely doesn't belong to NMSPrime
@@ -405,7 +406,7 @@ class DefaultTransactionParser
 
         $exclude = '';
         foreach ($this->excludeRegexes as $regex => $group) {
-            preg_match($regex, $this->description, $matchInvoiceSpecial);
+            preg_match($regex, $string, $matchInvoiceSpecial);
 
             if ($matchInvoiceSpecial) {
                 $exclude = $matchInvoiceSpecial[$group];
@@ -416,6 +417,7 @@ class DefaultTransactionParser
 
         return [
             'contractNr' => $contractNr,
+            'invoiceNr' => $this->invoiceNr,
             'exclude' => $exclude,
         ];
     }

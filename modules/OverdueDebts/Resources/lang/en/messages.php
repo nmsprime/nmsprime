@@ -6,7 +6,8 @@ return [
     'clearParentId' => 'Cleared relation to debt as it doesnt make sense as both amounts are positive/negative.',
     'csvImportActive' => 'The import of overdue debts is currently running. Please wait until this process has finished.',
     'import' => [
-        'contractsBlocked' => 'The internet access of the modems of the following contracts was blocked during import: :numbers',
+        'block' => 'Block internet access and add Dunning charges...',
+        'contractsBlocked' => 'The internet access of the modems of the following :count contracts was blocked during import: :numbers',
         'contractsMissing' => 'Could not find contract(s) with the following contract number(s) of the uploaded file: :numbers.',
         'count' => 'Import :number overdue debts.',
     ],
