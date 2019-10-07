@@ -138,7 +138,7 @@ class TreeTopographyController extends HfcBaseController
         //
         // Draw: Parent - Child - Relationship
         //
-        $netelements = $elemQuery->orderBy('pos')->get();
+        $netelements = $elemQuery->orderBy('pos')->with('parent')->get();
 
         if (! $netelements->count()) {
             return;
