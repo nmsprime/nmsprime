@@ -65,13 +65,17 @@ class Realty extends \BaseModel
 
         return ['table' => $this->table,
                 'index_header' => ["$this->table.name", 'number', 'street', 'house_nr', 'zip', 'city',
-                    "$this->table.administration", 'expansion_degree', "$this->table.concession_agreement",
+                    "$this->table.contact_id", "$this->table.contact_local_id",
+                    'expansion_degree', "$this->table.concession_agreement",
                     "$this->table.agreement_from", "$this->table.agreement_to", "$this->table.last_restoration_on", 'group_contract',
                     ],
                 'header' => $label,
                 'bsclass' => $bsclass,
-                // 'eager_loading' => ['contract'],
-                // 'edit' => ['contract.firstname' => 'getContractFirstname'],
+                // 'eager_loading' => ['contact', 'localContact'],
+                'edit' => [
+                    'contact_id' => 'getContactName',
+                    'contact_local_id' => 'getLocalContactName',
+                ],
             ];
     }
 
@@ -93,6 +97,16 @@ class Realty extends \BaseModel
         return $this->node;
     }
 
+    public function getContactName()
+    {
+        return $this->contact_id ? $this->contact->label() : null;
+    }
+
+    public function getLocalContactName()
+    {
+        return $this->contact_local_id ? $this->localContact->label() : null;
+    }
+
     /**
      * Relationships:
      */
@@ -109,6 +123,16 @@ class Realty extends \BaseModel
     public function node()
     {
         return $this->belongsTo(Node::class);
+    }
+
+    public function contact()
+    {
+        return $this->belongsTo(Contact::class);
+    }
+
+    public function localContact()
+    {
+        return $this->belongsTo(Contact::class, 'contact_local_id');
     }
 }
 
