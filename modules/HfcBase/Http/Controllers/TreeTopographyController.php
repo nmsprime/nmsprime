@@ -116,15 +116,15 @@ class TreeTopographyController extends HfcBaseController
         return $ret;
     }
 
-    /*
+    /**
      * Generate the KML File
      *
-     * @param _trees: The Tree Objects to be displayed, without ->get() call
+     * @param obj  Eloquent Query Builder for relevant netelements
      * @return the path of the generated *.kml file, could be included via asset ()
      *
      * @author: Torsten Schmidt
      */
-    public function kml_generate($_trees)
+    public function kml_generate($elemQuery)
     {
         $file = $this->file_pre(asset($this->path_images));
         //
@@ -138,25 +138,25 @@ class TreeTopographyController extends HfcBaseController
         //
         // Draw: Parent - Child - Relationship
         //
-        $trees = $_trees->orderBy('pos')->get();
+        $netelements = $elemQuery->orderBy('pos')->get();
 
-        if (! $trees->count()) {
+        if (! $netelements->count()) {
             return;
         }
 
-        foreach ($trees as $tree) {
-            $parent = $tree->parent;
-            $pos1 = $tree->pos;
+        foreach ($netelements as $netelement) {
+            $parent = $netelement->parent;
+            $pos1 = $netelement->pos;
             $pos2 = $parent ? $parent->pos : null;
-            $name = $tree->id;
-            $type = $tree->type;
-            $tp = $tree->tp;
+            $name = $netelement->id;
+            $type = $netelement->type;
+            $tp = $netelement->tp;
 
             // skip empty pos and lines to elements not in search string
             if ($pos2 == null ||
                 $pos2 == '' ||
                 $pos2 == '0,0' ||
-                ! ArrayHelper::objArraySearch($trees, 'id', $tree->parent->id)) {
+                ! ArrayHelper::objArraySearch($netelements, 'id', $netelement->parent->id)) {
                 continue;
             }
 
@@ -194,13 +194,12 @@ class TreeTopographyController extends HfcBaseController
             $modem_helper = 'Modules\HfcCustomer\Entities\ModemHelper';
 
             $n = 0;
-            foreach ($trees as $tree) {
-                $id = $tree->id;
-                $name = $tree->name;
-                $pos_tree = $tree->pos;
+            foreach ($netelements as $netelement) {
+                $id = $netelement->id;
+                $name = $netelement->name;
+                $pos_tree = $netelement->pos;
 
-                $pos = $modem_helper::ms_avg_pos($tree->id);
-
+                $pos = $modem_helper::ms_avg_pos($netelement->id);
                 if ($pos['x']) {
                     $xavg = $pos['x'];
                     $yavg = $pos['y'];
@@ -254,8 +253,8 @@ class TreeTopographyController extends HfcBaseController
         //
         $p1 = '';
 
-        foreach ($trees as $tree) {
-            $p2 = $tree->pos;
+        foreach ($netelements as $netelement) {
+            $p2 = $netelement->pos;
 
             if ($p1 != $p2) {
                 $rstate = 0;
@@ -269,15 +268,15 @@ class TreeTopographyController extends HfcBaseController
 					<description><![CDATA[';
             }
 
-            $type = $tree->type;
-            $parent = $tree->parent ? $tree->parent->id : null;
-            $state = $tree->get_bsclass();
+            $type = $netelement->type;
+            $parent = $netelement->parent ? $netelement->parent->id : null;
+            $state = $netelement->get_bsclass();
 
-            if ($tree->state == 'warning') {
+            if ($netelement->state == 'warning') {
                 $ystate += 1;
             }
 
-            if ($tree->state == 'danger') {
+            if ($netelement->state == 'danger') {
                 $rstate += 1;
             }
 
