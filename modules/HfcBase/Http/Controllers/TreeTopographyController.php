@@ -173,18 +173,18 @@ class TreeTopographyController extends HfcBaseController
             // Draw Line
             $file .= "
 
-			<Placemark>
-				<name>$parent->name</name>
-				<description><![CDATA[]]></description>
-				<styleUrl>$style</styleUrl>
-				<LineString>
-					<tessellate>1</tessellate>
-					<coordinates>
-						$pos1,0.000000
-						$pos2,0.000000
-					</coordinates>
-				</LineString>
-			</Placemark>";
+            <Placemark>
+                <name>$parent->name</name>
+                <description><![CDATA[]]></description>
+                <styleUrl>$style</styleUrl>
+                <LineString>
+                    <tessellate>1</tessellate>
+                    <coordinates>
+                        $pos1,0.000000
+                        $pos2,0.000000
+                    </coordinates>
+                </LineString>
+            </Placemark>";
         }
 
         //
@@ -209,25 +209,25 @@ class TreeTopographyController extends HfcBaseController
                     // Draw Line - Customer - Amp
                     $file .= "
 
-					<Placemark>
-						<name></name>
-						<description><![CDATA[]]></description>
-						<styleUrl>#BLACKLINE2</styleUrl>
-						<LineString>
-							<tessellate>1</tessellate>
-							<coordinates>
-								$xavg,$yavg,0.000000
-								$pos_tree,0.000000
-							</coordinates>
-						</LineString>
-					</Placemark>";
+                    <Placemark>
+                        <name></name>
+                        <description><![CDATA[]]></description>
+                        <styleUrl>#BLACKLINE2</styleUrl>
+                        <LineString>
+                            <tessellate>1</tessellate>
+                            <coordinates>
+                                $xavg,$yavg,0.000000
+                                $pos_tree,0.000000
+                            </coordinates>
+                        </LineString>
+                    </Placemark>";
 
                     // Draw Customer Marker
                     $file .=
                     '
-					<Placemark>
-						<name></name>
-						<description><![CDATA[';
+                    <Placemark>
+                        <name></name>
+                        <description><![CDATA[';
 
                     $num = $modem_helper::ms_num($id);
                     $numa = $modem_helper::ms_num_all($id);
@@ -239,11 +239,11 @@ class TreeTopographyController extends HfcBaseController
                     $file .= "Amp/Node: $name<br><br>Number All CM: $numa<br>Number Online CM: $num ($pro %)<br>Number Critical CM: $cri<br>US Level Average: $avg<br><br><a href=\"$url\" target=\"".$this->html_target.'" alt="">Show all Customers</a>';
 
                     $file .= "]]></description>
-							<styleUrl>#$icon</styleUrl>
-							<Point>
-								<coordinates>$xavg,$yavg,0.000000</coordinates>
-							</Point>
-						</Placemark>";
+                            <styleUrl>#$icon</styleUrl>
+                            <Point>
+                                <coordinates>$xavg,$yavg,0.000000</coordinates>
+                            </Point>
+                        </Placemark>";
                 }
             }
         }
@@ -263,9 +263,9 @@ class TreeTopographyController extends HfcBaseController
                 $fiber = 0;
 
                 $file .= '
-					<Placemark>
-					<name></name>
-					<description><![CDATA[';
+                    <Placemark>
+                    <name></name>
+                    <description><![CDATA[';
             }
 
             $type = $netelement->type;
@@ -307,11 +307,11 @@ class TreeTopographyController extends HfcBaseController
 
                 $file .= "$p2";
                 $file .= "]]></description>
-				<styleUrl>#$icon</styleUrl>
-				<Point>
-					<coordinates>$p2,0.000000</coordinates>
-				</Point>
-				</Placemark>";
+                <styleUrl>#$icon</styleUrl>
+                <Point>
+                    <coordinates>$p2,0.000000</coordinates>
+                </Point>
+                </Placemark>";
             }
 
             $p1 = $p2;
@@ -328,149 +328,149 @@ class TreeTopographyController extends HfcBaseController
 
     private $file_post = '
 
-			</Document>
-		</kml>';
+            </Document>
+        </kml>';
 
     private function file_pre($p)
     {
         return "
 
-		<kml xmlns=\"http://earth.google.com/kml/2.2\">
-		<Document>
-			<name>mbg - amplifier</name>
+        <kml xmlns=\"http://earth.google.com/kml/2.2\">
+        <Document>
+            <name>mbg - amplifier</name>
 
-			<Style id=\"OK\">
-				<IconStyle>
-					<Icon>
-						<href>$p/green-amp.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"OK\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/green-amp.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"YELLOW\">
-				<IconStyle>
-					<Icon>
-						<href>$p/yellow-amp.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"YELLOW\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/yellow-amp.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"RED\">
-				<IconStyle>
-					<Icon>
-						<href>$p/red-amp.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"RED\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/red-amp.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"OK-FIB\">
-				<IconStyle>
-					<Icon>
-						<href>$p/green-fib.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"OK-FIB\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/green-fib.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"YELLOW-FIB\">
-				<IconStyle>
-					<Icon>
-						<href>$p/yellow-fib.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"YELLOW-FIB\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/yellow-fib.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"RED-FIB\">
-				<IconStyle>
-					<Icon>
-						<href>$p/red-fib.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"RED-FIB\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/red-fib.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"OK-ROUTER\">
-				<IconStyle>
-					<Icon>
-						<href>$p/router.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"OK-ROUTER\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/router.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"RED-ROUTER\">
-				<IconStyle>
-					<Icon>
-						<href>$p/router-red.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"RED-ROUTER\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/router-red.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"YELLOW-ROUTER\">
-				<IconStyle>
-					<Icon>
-						<href>$p/router-yellow.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"YELLOW-ROUTER\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/router-yellow.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id='green-CUS'>
-				<IconStyle>
-					<Icon>
-						<href>$p/green-dot.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id='green-CUS'>
+                <IconStyle>
+                    <Icon>
+                        <href>$p/green-dot.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id='yellow-CUS'>
-				<IconStyle>
-					<Icon>
-						<href>$p/yellow-dot.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id='yellow-CUS'>
+                <IconStyle>
+                    <Icon>
+                        <href>$p/yellow-dot.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id='red-CUS'>
-				<IconStyle>
-					<Icon>
-						<href>$p/red-dot.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id='red-CUS'>
+                <IconStyle>
+                    <Icon>
+                        <href>$p/red-dot.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id='blue-CUS'>
-				<IconStyle>
-					<Icon>
-						<href>$p/blue-dot.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id='blue-CUS'>
+                <IconStyle>
+                    <Icon>
+                        <href>$p/blue-dot.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"BLUELINE\">
-				<LineStyle>
-					<color>FFFF0000</color>
-					<width>2</width>
-				</LineStyle>
-			</Style>
+            <Style id=\"BLUELINE\">
+                <LineStyle>
+                    <color>FFFF0000</color>
+                    <width>2</width>
+                </LineStyle>
+            </Style>
 
-			<Style id=\"REDLINE\">
-				<LineStyle>
-					<color>FF0000FF</color>
-					<width>2</width>
-				</LineStyle>
-			</Style>
+            <Style id=\"REDLINE\">
+                <LineStyle>
+                    <color>FF0000FF</color>
+                    <width>2</width>
+                </LineStyle>
+            </Style>
 
-			<Style id=\"BLACKLINE\">
-				<LineStyle>
-					<color>AA000000</color>
-					<width>2</width>
-				</LineStyle>
-			</Style>
+            <Style id=\"BLACKLINE\">
+                <LineStyle>
+                    <color>AA000000</color>
+                    <width>2</width>
+                </LineStyle>
+            </Style>
 
-			<Style id=\"BLACKLINE2\">
-				<LineStyle>
-					<color>AA000000</color>
-					<width>1</width>
-				</LineStyle>
-			</Style>
+            <Style id=\"BLACKLINE2\">
+                <LineStyle>
+                    <color>AA000000</color>
+                    <width>1</width>
+                </LineStyle>
+            </Style>
 
-			";
+            ";
     }
 }
