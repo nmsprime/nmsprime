@@ -7,6 +7,8 @@ class Realty extends \BaseModel
     // The associated SQL table for this Model
     public $table = 'realty';
 
+    public $guarded = ['apartmentCount'];
+
     // Add your validation rules here
     public static function rules($id = null)
     {
@@ -68,13 +70,26 @@ class Realty extends \BaseModel
                     "$this->table.contact_id", "$this->table.contact_local_id",
                     'expansion_degree', "$this->table.concession_agreement",
                     "$this->table.agreement_from", "$this->table.agreement_to", "$this->table.last_restoration_on", 'group_contract',
+                    "$this->table.apartmentCountConnected", "$this->table.apartmentCount",
                     ],
                 'header' => $label,
                 'bsclass' => $bsclass,
-                // 'eager_loading' => ['contact', 'localContact'],
+                'eager_loading' => ['apartments'],
                 'edit' => [
+                    'apartmentCount' => 'getApartmentCount',
+                    'apartmentCountConnected' => 'getConnectedApartmentCount',
                     'contact_id' => 'getContactName',
                     'contact_local_id' => 'getLocalContactName',
+                ],
+                'disable_sortsearch' => [
+                    "$this->table.apartmentCount" => 'false',
+                    "$this->table.apartmentCountConnected" => 'false',
+                ],
+                'filter' => [
+                    // "$this->table.apartmentCount" => $this->apartmentCountQuery(),
+                    // "$this->table.apartmentCountConnected" => ,
+                    "$this->table.contact_id" => $this->contactFilterQuery(),
+                    "$this->table.contact_local_id" => $this->localContactFilterQuery(),
                 ],
             ];
     }
@@ -105,6 +120,26 @@ class Realty extends \BaseModel
     public function getLocalContactName()
     {
         return $this->contact_local_id ? $this->localContact->label() : null;
+    }
+
+    public function getApartmentCount()
+    {
+        return count($this->apartments);
+    }
+
+    public function getConnectedApartmentCount()
+    {
+        return count($this->apartments->where('connected', 1));
+    }
+
+    public function contactFilterQuery()
+    {
+        return ['query' => 'contact_id in (SELECT id from contact where contact.deleted_at is null and CONCAT(contact.firstname1, \' \', contact.lastname1) like ?)', 'eagers' => ['contact']];
+    }
+
+    public function localContactFilterQuery()
+    {
+        return ['query' => 'contact_local_id in (SELECT id from contact where contact.deleted_at is null and CONCAT(contact.firstname1, \' \', contact.lastname1) like ?)', 'eagers' => ['contact']];
     }
 
     /**

@@ -29,8 +29,8 @@ class RealtyController extends \BaseController
             ['form_type' => 'text', 'name' => 'city', 'description' => 'City', 'autocomplete' => []],
             ['form_type' => 'text', 'name' => 'district', 'description' => 'District', 'autocomplete' => [], 'space' => 1],
 
-            ['form_type' => 'checkbox', 'name' => 'group_contract', 'description' => trans('dt_header.group_contract')],
-            ['form_type' => 'checkbox', 'name' => 'concession_agreement', 'description' => trans('dt_header.realty.concession_agreement')],
+            ['form_type' => 'checkbox', 'name' => 'group_contract', 'description' => trans('propertymanagement::view.group_contract')],
+            ['form_type' => 'checkbox', 'name' => 'concession_agreement', 'description' => trans('propertymanagement::view.realty.concession_agreement')],
             ['form_type' => 'text', 'name' => 'agreement_from', 'description' => trans('dt_header.realty.agreement_from'), 'checkbox' => 'show_on_concession_agreement'],
             ['form_type' => 'text', 'name' => 'agreement_to', 'description' => trans('dt_header.realty.agreement_to'), 'checkbox' => 'show_on_concession_agreement'],
             ['form_type' => 'text', 'name' => 'last_restoration_on', 'description' => trans('dt_header.realty.last_restoration_on')],
@@ -38,9 +38,15 @@ class RealtyController extends \BaseController
 
             ['form_type' => 'select', 'name' => 'contact_id', 'value' => $administrations, 'description' => trans('dt_header.realty.contact_id')],
             ['form_type' => 'select', 'name' => 'contact_local_id', 'value' => $localContacts, 'description' => trans('dt_header.realty.contact_local_id'), 'space' => 1],
-
-            ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
         ];
+
+        if ($model->id) {
+            $model->apartmentCount = $model->apartments()->where('connected', 1)->count().' / '.$model->apartments()->count();
+
+            $fields[] = ['form_type' => 'text', 'name' => 'apartmentCount', 'description' => trans('propertymanagement::view.realty.apartmentCount'), 'options' => ['readonly']];
+        }
+
+        $fields[] = ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'];
 
         return $fields;
     }
