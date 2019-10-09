@@ -14,7 +14,7 @@ class Company extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            // 'name' => 'required|unique:netgw,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
+            // 'name' => 'required|unique:netgws,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
             'name' 		=> 'required',
             'street' 	=> 'required',
             'zip'	 	=> 'required',
