@@ -353,7 +353,7 @@ function energy($pwr)
     //calculating the magnitude
     $pwr = array_chunk($pwr, 2);
     foreach ($pwr as $val) {
-        $temp = 10 * log10(pow($val[0],2) + pow($val[1],2));
+        $temp = 10 * log10(pow($val[0], 2) + pow($val[1], 2));
         if (! (is_finite($temp))) {
             $temp = -100;
         }
