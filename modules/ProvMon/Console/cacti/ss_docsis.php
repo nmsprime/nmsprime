@@ -201,18 +201,6 @@ function ss_docsis($hostname, $snmp_community = null)
     $deviceStats = json_decode(file_exists($deviceFile) ? file_get_contents($deviceFile) : '{"rate":2}', true);
 
     if (! isset($deviceStats['next']) || time() > $deviceStats['next']) {
-        $monPath = "{$basepath}/".date('Ymd');
-        $monFile = "{$monPath}/{$hostname}.csv";
-        $columns = 'Timestamp;PNM;Bandwidth;'
-            .'US SNR min;US SNR avg;US SNR max;US Power min;US Power avg;US Power max;'
-            .'DS SNR min;DS SNR avg;DS SNR max;DS Power min;DS Power avg;DS Power max;'
-            ."MuRef min;MuRef avg;MuRef max;T3Timeout;T4Timeout;Corrected;Uncorrectable\n";
-
-        if (! file_exists($monFile)) {
-            mkdir($monPath);
-            file_put_contents($monFile, $columns, LOCK_EX);
-        }
-
         $deviceStats['next'] = strtotime($rates[2]);
 
         $cactiStatsJson = [];
@@ -238,38 +226,30 @@ function ss_docsis($hostname, $snmp_community = null)
         $hexs = str_split($hexs, 4);
         $hexcall = $hexs;
         $counter = 0;
+
         foreach ($hexs as $hex) {
             $hsplit = str_split($hex, 1);
             $counter++;
             if (is_numeric($hsplit[0]) && $hsplit[0] == 0 && $counter >= 46) {
-                $decimal = _threenibble($hexcall);
+                $decimal = threenibble($hexcall);
                 break;
             } elseif (ctype_alpha($hsplit[0]) || $hsplit[0] != 0 && $counter >= 46) {
-                $decimal = _fournibble($hexcall);
+                $decimal = fournibble($hexcall);
                 break;
             }
         }
-        $pwr = _nePwr($decimal, $maintap);
-        $ene = _energy($pwr, $maintap, $energymain);
-        $fft = _fft($pwr);
-        $tdr = _tdr($ene, $energymain, $freq);
+
+        $pwr = nePwr($decimal, $maintap);
+        $ene = energy($pwr);
+        $fft = fft($pwr);
+        $tdr = tdr($ene, $energymain, $freq);
         $preEquData['power'] = $pwr;
         $preEquData['energy'] = $ene;
         $preEquData['tdr'] = $tdr;
         $preEquData['max'] = $fft[1];
         $preEquData['fft'] = $fft[0];
 
-        $monitorString = date('YmdHi').";{$deviceStats['preEqu']};{$deviceStats['width']};"
-            ."{$cactiStats['minUsSNR']};{$cactiStats['avgUsSNR']};{$cactiStats['maxUsSNR']};"
-            ."{$cactiStats['minUsPow']};{$cactiStats['avgUsPow']};{$cactiStats['maxUsPow']};"
-            ."{$cactiStats['minDsSNR']};{$cactiStats['avgDsSNR']};{$cactiStats['maxDsSNR']};"
-            ."{$cactiStats['minDsPow']};{$cactiStats['avgDsPow']};{$cactiStats['maxDsPow']};"
-            ."{$cactiStats['minMuRef']};{$cactiStats['avgMuRef']};{$cactiStats['maxMuRef']};"
-            ."{$cactiStats['T3Timeout']};{$cactiStats['T4Timeout']};"
-            ."{$cactiStats['Corrected']};{$cactiStats['Uncorrectable']};\n";
-
         file_put_contents($deviceFile, json_encode(array_merge($deviceStats, $preEquData)));
-        file_put_contents($monFile, $monitorString, FILE_APPEND);
     }
 
     if (isset($cactiStats['avgUsPow']) && is_numeric($cactiStats['avgUsPow']) &&
@@ -297,7 +277,7 @@ function ss_docsis($hostname, $snmp_community = null)
     return trim($cactiString);
 }
 
-function _threenibble($hexcall)
+function threenibble($hexcall)
 {
     $ret = [];
     $counter = 0;
@@ -327,7 +307,7 @@ function _threenibble($hexcall)
     return $ret;
 }
 
-function _fournibble($hexcall)
+function fournibble($hexcall)
 {
     $ret = [];
     $counter = 0;
@@ -345,7 +325,7 @@ function _fournibble($hexcall)
     return $ret;
 }
 
-function _nePwr($decimal, $maintap)
+function nePwr($decimal, $maintap)
 {
     $pwr = [];
     $ans = implode('', array_keys($decimal, max($decimal)));
@@ -367,13 +347,13 @@ function _nePwr($decimal, $maintap)
     return $pwr;
 }
 
-function _energy($pwr, $maintap, $energymain)
+function energy($pwr)
 {
     $ene_db = [];
     //calculating the magnitude
     $pwr = array_chunk($pwr, 2);
     foreach ($pwr as $val) {
-        $temp = 10 * log10($val[0] ** 2 + $val[1] ** 2);
+        $temp = 10 * log10(pow($val[0],2) + pow($val[1],2));
         if (! (is_finite($temp))) {
             $temp = -100;
         }
@@ -383,7 +363,7 @@ function _energy($pwr, $maintap, $energymain)
     return $ene_db;
 }
 
-function _tdr($ene, $energymain, $freq)
+function tdr($ene, $energymain, $freq)
 {
     if ($ene[$energymain] == -100) {
         $tdr = 0;
@@ -402,7 +382,7 @@ function _tdr($ene, $energymain, $freq)
     return $tdr;
 }
 
-function _fft($pwr)
+function fft($pwr)
 {
     $rea = [];
     $imag = [];
