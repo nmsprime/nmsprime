@@ -3,8 +3,8 @@
 namespace Modules\provmon\Console;
 
 use Illuminate\Console\Command;
-use Modules\ProvBase\Entities\Cmts;
 use Modules\ProvBase\Entities\Modem;
+use Modules\ProvBase\Entities\NetGw;
 use Modules\ProvBase\Entities\ProvBase;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
@@ -146,8 +146,8 @@ class cactiCommand extends Command
             \Log::info("cacti: create diagrams for Modem: $name");
         }
 
-        $cmtss = $this->option('cmts-id') === false ? Cmts::all() : Cmts::where('id', '=', $this->option('cmts-id'))->get();
-        foreach ($cmtss as $cmts) {
+        $cmtss = $this->option('netgw-id') === false ? NetGw::where('type', 'cmts') : NetGw::where('type', 'cmts')->where('id', '=', $this->option('netgw-id'));
+        foreach ($cmtss->get() as $cmts) {
             // Skip all $cmts's that already have cacti graphs
             if (ProvMonController::monitoring_get_graph_ids($cmts)->isNotEmpty()) {
                 continue;
@@ -215,7 +215,7 @@ class cactiCommand extends Command
     protected function getOptions()
     {
         return [
-            ['cmts-id', null, InputOption::VALUE_OPTIONAL, 'only consider modem identified by its id, otherwise all', false],
+            ['netgw-id', null, InputOption::VALUE_OPTIONAL, 'only consider modem identified by its id, otherwise all', false],
             ['modem-id', null, InputOption::VALUE_OPTIONAL, 'only consider cmts identified by its id, otherwise all', false],
         ];
     }

@@ -1,9 +1,9 @@
-@extends ('provmon::cmts_split')
+@extends ('provmon::netgw_split')
 
 
 @section('content_dash')
 	<div class="btn pull-right">
-		@include('Generic.documentation', ['documentation' => 'cmts_analysis'])
+		@include('Generic.documentation', ['documentation' => 'netgw_analysis'])
 	</div>
 
 
@@ -28,7 +28,7 @@
 @section('content_ping')
 
 	@if ($ping)
-		<font color="green"><b>CMTS is Online</b></font><br>
+		<font color="green"><b>NetGw is Online</b></font><br>
 		@foreach ($ping as $line)
 				<table>
 				<tr>
