@@ -3,6 +3,7 @@
 namespace Modules\BillingBase\Entities;
 
 use DB;
+use Module;
 use Request;
 use Storage;
 use ChannelLog;
@@ -26,7 +27,7 @@ class SettlementRun extends \BaseModel
     {
         // see SettlementRunController@prepare_rules
 
-        if (\Module::collections()->has('OverdueDebts') && config('overduedebts.debtMgmtType') == 'csv') {
+        if (Module::collections()->has('OverdueDebts') && config('overduedebts.debtMgmtType') == 'csv') {
             return [
                 'banking_file_upload' => 'mimes:csv,txt',
             ];
@@ -553,7 +554,7 @@ class SettlementRun extends \BaseModel
             }
 
             // Delete debts
-            if (! $tempFiles && \Module::collections()->has('OverdueDebts')) {
+            if (! $tempFiles && Module::collections()->has('OverdueDebts')) {
                 \Modules\OverdueDebts\Entities\Debt::where('invoice_id', $invoice->id)->forceDelete();
             }
         }
@@ -814,7 +815,7 @@ class SettlementRun extends \BaseModel
      */
     private function add_debt($contract, $amount, $invoice, $rcd, $parent_id = null)
     {
-        if (! \Module::collections()->has('OverdueDebts') || config('overduedebts.debtMgmtType') != 'sta') {
+        if (! Module::collections()->has('OverdueDebts') || config('overduedebts.debtMgmtType') != 'sta') {
             return;
         }
 
