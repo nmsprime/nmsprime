@@ -4,7 +4,7 @@ namespace Modules\BillingBase\Console;
 
 use File;
 use Illuminate\Console\Command;
-use Modules\BillingBase\Entities\Cdr;
+use Modules\BillingBase\Entities\CdrGetter;
 use Modules\BillingBase\Entities\BillingBase;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
@@ -48,7 +48,7 @@ class cdrCommand extends Command
             $arg = $this->option('sr');
         }
 
-        Cdr::get($arg);
+        CdrGetter::get($arg);
 
         system('chown -R apache '.storage_path('app/data/billingbase/'));
         system('chown -R apache '.storage_path('app/tmp/'));
