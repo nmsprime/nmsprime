@@ -100,6 +100,8 @@ class Realty extends \BaseModel
         $ret['Edit']['Apartment']['relation'] = $this->apartments;
 
         if (\Module::collections()->has('ProvBase')) {
+            $ret['Edit']['Modem']['class'] = 'Modem';
+            $ret['Edit']['Modem']['relation'] = $this->modems;
             $ret['Edit']['Contract']['class'] = 'Contract';
             $ret['Edit']['Contract']['relation'] = $this->contracts;
         }
@@ -153,6 +155,11 @@ class Realty extends \BaseModel
     public function apartments()
     {
         return $this->HasMany(Apartment::class);
+    }
+
+    public function modems()
+    {
+        return $this->HasMany(\Modules\ProvBase\Entities\Modem::class);
     }
 
     public function node()

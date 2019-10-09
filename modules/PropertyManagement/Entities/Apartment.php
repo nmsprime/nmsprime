@@ -55,8 +55,10 @@ class Apartment extends \BaseModel
     public function view_has_many()
     {
         if (\Module::collections()->has('ProvBase')) {
-            $ret['Edit']['Contract']['class'] = 'Contract';
+            $ret['Edit']['Modem']['class'] = 'Modem';
+            $ret['Edit']['Modem']['relation'] = $this->modems;
 
+            $ret['Edit']['Contract']['class'] = 'Contract';
             if ($this->contract) {
                 $ret['Edit']['Contract']['relation'] = collect([$this->contract]);
                 $ret['Edit']['Contract']['options']['hide_create_button'] = 1;
@@ -80,6 +82,11 @@ class Apartment extends \BaseModel
     public function contract()
     {
         return $this->hasOne(\Modules\ProvBase\Entities\Contract::class);
+    }
+
+    public function modems()
+    {
+        return $this->HasMany(\Modules\ProvBase\Entities\Modem::class);
     }
 
     public function realty()
