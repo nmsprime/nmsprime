@@ -236,7 +236,7 @@ class SettlementRun extends \BaseModel
             }
 
             // Skip invalid contracts
-            if (! $c->check_validity('yearly') && ! (isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
+            if (! $c->isValid('yearly') && ! (isset($cdrs[$c->id]) || isset($cdrs[$c->number]))) {
                 ChannelLog::debug('billing', "Contract $c->number [$c->id] is invalid for current year");
                 continue;
             }

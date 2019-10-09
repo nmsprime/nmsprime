@@ -109,7 +109,7 @@ class Item extends \BaseModel
             return 'active';
         }
 
-        if ($this->check_validity('now')) {
+        if ($this->isValid('now')) {
             return 'success';
         }
 
@@ -312,7 +312,7 @@ class Item extends \BaseModel
         }
 
         // skip invalid items
-        if (! $this->check_validity($billing_cycle, null, [$start, $end])) {
+        if (! $this->isValid($billing_cycle, null, [$start, $end])) {
             ChannelLog::debug('billing', 'Item '.$this->product->name." ($this->id) is outdated", [$this->contract->id]);
 
             return;
