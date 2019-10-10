@@ -8,6 +8,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>{{ trans('messages.page_html_header') }}</title>
 		@include ('bootstrap.header')
+		@yield('head')
 	</head>
 
 	<body <?php if(isset($body_onload)) echo "onload=$body_onload()";?> >
@@ -23,5 +24,5 @@
 			</div>
 		</div>
 	</body>
-
+	@yield ('javascript')
 </html>
