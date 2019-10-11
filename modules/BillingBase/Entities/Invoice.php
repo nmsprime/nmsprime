@@ -164,6 +164,11 @@ class Invoice extends \BaseModel
         'contract_city' 		=> '',
         'contract_address' 		=> '', 			// concatenated address for begin of letter
 
+        // Only with PropertyManagement module
+        'realty_name'           => '',
+        'realty_number'         => '',
+
+        // SEPA
         'contract_mandate_iban'	=> '', 			// iban of the customer
         'contract_mandate_ref'	=> '', 			// mandate reference of the customer
 
@@ -270,11 +275,14 @@ class Invoice extends \BaseModel
         $this->data['contract_lastname'] = escape_latex_special_chars($contract->lastname);
         $this->data['contract_company'] = escape_latex_special_chars($contract->company);
         $this->data['contract_department'] = escape_latex_special_chars($contract->department);
+
+        // Set address strings
         $this->data['contract_street'] = escape_latex_special_chars($contract->street);
         $this->data['contract_housenumber'] = $contract->house_number;
         $this->data['contract_zip'] = $contract->zip;
         $this->data['contract_city'] = escape_latex_special_chars($contract->city);
         $this->data['contract_district'] = escape_latex_special_chars($contract->district);
+
         $this->data['contract_address'] = '';
         if ($contract->company) {
             $this->data['contract_address'] .= escape_latex_special_chars($contract->company).'\\\\';
@@ -287,6 +295,17 @@ class Invoice extends \BaseModel
         $this->data['contract_address'] .= $this->data['contract_district'] ? $this->data['contract_district'].'\\\\' : '';
         $this->data['contract_address'] .= $this->data['contract_street'].' '.$this->data['contract_housenumber']."\\\\$contract->zip ".$this->data['contract_city'];
         $this->data['contract_address'] = trim($this->data['contract_address']);
+
+        // Add realty name + number
+        if (\Module::collections()->has('PropertyManagement')) {
+            $realty = $contract->getRealty();
+
+            if ($realty) {
+                $this->data['realty_name'] = escape_latex_special_chars($realty->name);
+                $this->data['realty_number'] = escape_latex_special_chars($realty->number);
+            }
+        }
+
         $this->data['start_of_term'] = self::langDateFormat($contract->contract_start);
         $this->data['invoice_nr'] = $invoice_nr ? $invoice_nr : $this->data['invoice_nr'];
         $this->data['date_invoice'] = date('d.m.Y', strtotime('last day of last month'));
