@@ -184,6 +184,13 @@ class SettlementRun extends \BaseModel
     public $specificSepaAcc = null;
 
     /**
+     * Output Interface for console command
+     *
+     * @var obj
+     */
+    public $output;
+
+    /**
      * Execute the SettlementRun
      *
      * Creates invoices, SEPA xmls, booking & accounting record files
@@ -229,10 +236,10 @@ class SettlementRun extends \BaseModel
          */
         foreach ($contracts as $i => $c) {
             if ($this->output) {
+                // echo round($i/$num *100, 1)."% [$c->id][".(memory_get_usage()/1000000)."]\r";
                 $bar->advance();
             } elseif (! ($i % 10)) {
                 self::push_state((int) $i / $num * 100, trans('billingbase::messages.settlementrun.state.createInvoices'));
-                // echo ($i/$num [$c->id][".(memory_get_usage()/1000000)."]\r";
             }
 
             // Skip invalid contracts
@@ -247,7 +254,7 @@ class SettlementRun extends \BaseModel
             foreach ($c->items as $item) {
                 // skip items that are related to a deleted product
                 if (! isset($item->product)) {
-                    ChannelLog::error('billing', "Product of $item->accounting_text was deleted", [$c->id]);
+                    ChannelLog::error('billing', "Product of $item->accounting_text [$item->id] was deleted", [$c->id]);
                     continue;
                 }
 
