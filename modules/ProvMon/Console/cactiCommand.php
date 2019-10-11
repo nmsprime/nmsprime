@@ -215,8 +215,8 @@ class cactiCommand extends Command
     protected function getOptions()
     {
         return [
-            ['netgw-id', null, InputOption::VALUE_OPTIONAL, 'only consider modem identified by its id, otherwise all', false],
-            ['modem-id', null, InputOption::VALUE_OPTIONAL, 'only consider cmts identified by its id, otherwise all', false],
+            ['netgw-id', null, InputOption::VALUE_OPTIONAL, 'only consider netgw identified by its id, otherwise all', false],
+            ['modem-id', null, InputOption::VALUE_OPTIONAL, 'only consider modem identified by its id, otherwise all', false],
         ];
     }
 }

@@ -164,10 +164,10 @@ class DashboardController extends BaseController
 
         $support = 'https://support.nmsprime.com';
 
-        $numCmts = 0;
+        $numNetGw = 0;
         $numModems = 0;
         if (\Module::collections()->has('ProvBase')) {
-            $numCmts = \Modules\ProvBase\Entities\Cmts::count();
+            $numNetGw = \Modules\ProvBase\Entities\NetGw::count();
             $numModems = \Modules\ProvBase\Entities\Modem::count();
         }
 
@@ -188,7 +188,7 @@ class DashboardController extends BaseController
         }
 
         $files = [
-            'news.json' => "$support/news.php?ns=&sla=".urlencode(\App\Sla::pluck('name')->first()).'&mc='.$numModems.'&nm='.$numCmts.'&nn='.$numNetelements.'&nt='.$numTvbillings,
+            'news.json' => "$support/news.php?ns=&sla=".urlencode(\App\Sla::pluck('name')->first()).'&mc='.$numModems.'&nm='.$numNetGw.'&nn='.$numNetelements.'&nt='.$numTvbillings,
             'documentation.json' => "$support/documentation.json",
         ];
 
