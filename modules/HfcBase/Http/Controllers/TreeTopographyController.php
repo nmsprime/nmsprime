@@ -151,6 +151,7 @@ class TreeTopographyController extends HfcBaseController
             $pos1 = $netelement->pos;
             $pos2 = $parent ? $parent->pos : null;
             $name = $netelement->id;
+            // Type is stored in relation, tp doesnt exist
             $type = $netelement->type;
             $tp = $netelement->tp;
 

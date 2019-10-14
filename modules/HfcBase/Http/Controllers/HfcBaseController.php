@@ -57,14 +57,14 @@ class HfcBaseController extends BaseController
     /**
      * KML Upload Array: Generate the KML file array
      *
-     * @param Collection|NetElement $trees
+     * @param Collection of NetElements
      * @return Collection KML files, like ['file', 'descr']
      *
      * @author Torsten Schmidt, Christian Schramm
      */
-    public function kml_file_array($trees)
+    public function kml_file_array($netelement)
     {
-        return $trees->filter(function ($tree) {
+        return $netelement->filter(function ($tree) {
             return $tree->kml_file != '';
         })->map(function ($tree) {
             return [
