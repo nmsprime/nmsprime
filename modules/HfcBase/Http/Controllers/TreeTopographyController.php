@@ -56,8 +56,12 @@ class TreeTopographyController extends HfcBaseController
             $s = 'id>2';
         }
 
+        $netelements = NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' ')
+            ->orderBy('pos')->with('parent')->get();
+
         // Generate KML file
-        $file = $this->kml_generate(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' '));
+        $file = $this->kml_generate($netelements);
+
         if (! $file) {
             return \View::make('errors.generic')->with('message', 'No NetElements with Positions available!');
         }
@@ -75,13 +79,13 @@ class TreeTopographyController extends HfcBaseController
         $mpr = $this->mpr(NetElement::whereRaw($s));
 
         // NetElements: generate kml_file upload array
-        $kmls = $this->kml_file_array(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' ')->get());
+        $kmls = $this->kml_file_array($netelements);
         $file = route('HfcBase.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
         return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'tabs', 'body_onload', 'field', 'search', 'mpr', 'kmls')));
     }
 
-    /*
+    /**
      * MPS: Modem Positioning Rules
      * return multi array with MPS rules and Geopositions, like
      *   [ [mpr.id] => [0 => [0=>x,1=>y], 1 => [0=>x,1=>y], ..], .. ]
@@ -119,12 +123,12 @@ class TreeTopographyController extends HfcBaseController
     /**
      * Generate the KML File
      *
-     * @param obj  Eloquent Query Builder for relevant netelements
+     * @param obj  Collection of relevant netelements
      * @return the path of the generated *.kml file, could be included via asset ()
      *
      * @author: Torsten Schmidt
      */
-    public function kml_generate($elemQuery)
+    public function kml_generate($netelements)
     {
         $file = $this->file_pre(asset($this->path_images));
         //
@@ -138,8 +142,6 @@ class TreeTopographyController extends HfcBaseController
         //
         // Draw: Parent - Child - Relationship
         //
-        $netelements = $elemQuery->orderBy('pos')->with('parent')->get();
-
         if (! $netelements->count()) {
             return;
         }
