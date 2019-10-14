@@ -281,7 +281,7 @@ class CustomerTopoController extends NetElementController
                     })
                     ->orWhere('us_pwr', '>', 0);
             })
-            ->select('modem.*');
+            ->select(['modem.*', 'netelement.cluster']);
     }
 
     /**
