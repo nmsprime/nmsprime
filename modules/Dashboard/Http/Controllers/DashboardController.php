@@ -250,7 +250,7 @@ class DashboardController extends BaseController
             if (\Modules\ProvBase\Entities\IpPool::where('type', $type)->count() == 0) {
                 return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
                     'text' => $text.\HTML::linkRoute('IpPool.create', trans('helper.create_'.strtolower($type).'_pool'),
-                            ['net_gw_id' => \Modules\ProvBase\Entities\NetGw::first()->id, 'type' => $type]), ];
+                            ['netgw_id' => \Modules\ProvBase\Entities\NetGw::first()->id, 'type' => $type]), ];
             }
         }
 
