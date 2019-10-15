@@ -26,12 +26,16 @@ class EnviaCdr extends CdrGetter
         $password = env('PROVVOIPENVIA__RESELLER_PASSWORD');
         $customer = env('PROVVOIPENVIA__RESELLER_CUSTOMER');
 
+        if (! $user || ! $password || ! $customer) {
+            ChannelLog::error('billing', 'Missing EnviaTel authentification data in environment file');
+        }
+
         try {
-            \ChannelLog::debug('billing', "GET: https://$user:$password@portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $timeOfFile));
+            ChannelLog::debug('billing', "GET: https://$user:$password@portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $timeOfFile));
             $context = stream_context_create(['http' => ['header'  => 'Authorization: Basic '.base64_encode("$user:$password")]]);
             $data = file_get_contents("https://portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $timeOfFile), false, $context);
         } catch (\Exception $e) {
-            \ChannelLog::alert('billing', 'CDR-Import: Could not get Call Data Records from envia TEL for month: '.date('m', $timeOfFile), ["portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $timeOfFile)]);
+            ChannelLog::alert('billing', 'CDR-Import: Could not get Call Data Records from envia TEL for month: '.date('m', $timeOfFile), ["portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $timeOfFile)]);
 
             return -1;
         }
@@ -60,13 +64,13 @@ class EnviaCdr extends CdrGetter
             }
         }
 
-        \ChannelLog::debug('billing', "New file $target_filepath");
+        ChannelLog::debug('billing', "New file $target_filepath");
         echo "New file: $target_filepath\n";
 
         // execute phonenumber filter command if it exists (e.g. on mablx10, olblx10)
         $filter = storage_path('app/config/billingbase/filter-cdr.sh');
         if (file_exists($filter)) {
-            \ChannelLog::info('billing', "Filtered phonenumbers in $target_filepath via $filter");
+            ChannelLog::info('billing', "Filtered phonenumbers in $target_filepath via $filter");
             system("$filter $target_filepath");
         }
 
@@ -87,7 +91,7 @@ class EnviaCdr extends CdrGetter
         $filepath = self::get_cdr_pathname('envia');
 
         if (! is_file($filepath)) {
-            \ChannelLog::error('billing', trans('billingbase::messages.cdr.missingEvn', ['provider' => 'EnviaTel']));
+            ChannelLog::error('billing', trans('billingbase::messages.cdr.missingEvn', ['provider' => 'EnviaTel']));
 
             return;
         }

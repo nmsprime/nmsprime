@@ -56,8 +56,12 @@ class TreeTopographyController extends HfcBaseController
             $s = 'id>2';
         }
 
+        $netelements = NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' ')
+            ->orderBy('pos')->with('parent')->get();
+
         // Generate KML file
-        $file = $this->kml_generate(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' '));
+        $file = $this->kml_generate($netelements);
+
         if (! $file) {
             return \View::make('errors.generic')->with('message', 'No NetElements with Positions available!');
         }
@@ -75,13 +79,13 @@ class TreeTopographyController extends HfcBaseController
         $mpr = $this->mpr(NetElement::whereRaw($s));
 
         // NetElements: generate kml_file upload array
-        $kmls = $this->kml_file_array(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' ')->get());
+        $kmls = $this->kml_file_array($netelements);
         $file = route('HfcBase.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
         return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'tabs', 'body_onload', 'field', 'search', 'mpr', 'kmls')));
     }
 
-    /*
+    /**
      * MPS: Modem Positioning Rules
      * return multi array with MPS rules and Geopositions, like
      *   [ [mpr.id] => [0 => [0=>x,1=>y], 1 => [0=>x,1=>y], ..], .. ]
@@ -116,15 +120,15 @@ class TreeTopographyController extends HfcBaseController
         return $ret;
     }
 
-    /*
+    /**
      * Generate the KML File
      *
-     * @param _trees: The Tree Objects to be displayed, without ->get() call
+     * @param obj  Collection of relevant netelements
      * @return the path of the generated *.kml file, could be included via asset ()
      *
      * @author: Torsten Schmidt
      */
-    public function kml_generate($_trees)
+    public function kml_generate($netelements)
     {
         $file = $this->file_pre(asset($this->path_images));
         //
@@ -138,25 +142,24 @@ class TreeTopographyController extends HfcBaseController
         //
         // Draw: Parent - Child - Relationship
         //
-        $trees = $_trees->orderBy('pos')->get();
-
-        if (! $trees->count()) {
+        if (! $netelements->count()) {
             return;
         }
 
-        foreach ($trees as $tree) {
-            $parent = $tree->parent;
-            $pos1 = $tree->pos;
+        foreach ($netelements as $netelement) {
+            $parent = $netelement->parent;
+            $pos1 = $netelement->pos;
             $pos2 = $parent ? $parent->pos : null;
-            $name = $tree->id;
-            $type = $tree->type;
-            $tp = $tree->tp;
+            $name = $netelement->id;
+            // Type is stored in relation, tp doesnt exist
+            $type = $netelement->type;
+            $tp = $netelement->tp;
 
             // skip empty pos and lines to elements not in search string
             if ($pos2 == null ||
                 $pos2 == '' ||
                 $pos2 == '0,0' ||
-                ! ArrayHelper::objArraySearch($trees, 'id', $tree->parent->id)) {
+                ! ArrayHelper::objArraySearch($netelements, 'id', $netelement->parent->id)) {
                 continue;
             }
 
@@ -173,18 +176,18 @@ class TreeTopographyController extends HfcBaseController
             // Draw Line
             $file .= "
 
-			<Placemark>
-				<name>$parent->name</name>
-				<description><![CDATA[]]></description>
-				<styleUrl>$style</styleUrl>
-				<LineString>
-					<tessellate>1</tessellate>
-					<coordinates>
-						$pos1,0.000000
-						$pos2,0.000000
-					</coordinates>
-				</LineString>
-			</Placemark>";
+            <Placemark>
+                <name>$parent->name</name>
+                <description><![CDATA[]]></description>
+                <styleUrl>$style</styleUrl>
+                <LineString>
+                    <tessellate>1</tessellate>
+                    <coordinates>
+                        $pos1,0.000000
+                        $pos2,0.000000
+                    </coordinates>
+                </LineString>
+            </Placemark>";
         }
 
         //
@@ -194,13 +197,12 @@ class TreeTopographyController extends HfcBaseController
             $modem_helper = 'Modules\HfcCustomer\Entities\ModemHelper';
 
             $n = 0;
-            foreach ($trees as $tree) {
-                $id = $tree->id;
-                $name = $tree->name;
-                $pos_tree = $tree->pos;
+            foreach ($netelements as $netelement) {
+                $id = $netelement->id;
+                $name = $netelement->name;
+                $pos_tree = $netelement->pos;
 
-                $pos = $modem_helper::ms_avg_pos($tree->id);
-
+                $pos = $modem_helper::ms_avg_pos($netelement->id);
                 if ($pos['x']) {
                     $xavg = $pos['x'];
                     $yavg = $pos['y'];
@@ -210,25 +212,25 @@ class TreeTopographyController extends HfcBaseController
                     // Draw Line - Customer - Amp
                     $file .= "
 
-					<Placemark>
-						<name></name>
-						<description><![CDATA[]]></description>
-						<styleUrl>#BLACKLINE2</styleUrl>
-						<LineString>
-							<tessellate>1</tessellate>
-							<coordinates>
-								$xavg,$yavg,0.000000
-								$pos_tree,0.000000
-							</coordinates>
-						</LineString>
-					</Placemark>";
+                    <Placemark>
+                        <name></name>
+                        <description><![CDATA[]]></description>
+                        <styleUrl>#BLACKLINE2</styleUrl>
+                        <LineString>
+                            <tessellate>1</tessellate>
+                            <coordinates>
+                                $xavg,$yavg,0.000000
+                                $pos_tree,0.000000
+                            </coordinates>
+                        </LineString>
+                    </Placemark>";
 
                     // Draw Customer Marker
                     $file .=
                     '
-					<Placemark>
-						<name></name>
-						<description><![CDATA[';
+                    <Placemark>
+                        <name></name>
+                        <description><![CDATA[';
 
                     $num = $modem_helper::ms_num($id);
                     $numa = $modem_helper::ms_num_all($id);
@@ -240,11 +242,11 @@ class TreeTopographyController extends HfcBaseController
                     $file .= "Amp/Node: $name<br><br>Number All CM: $numa<br>Number Online CM: $num ($pro %)<br>Number Critical CM: $cri<br>US Level Average: $avg<br><br><a href=\"$url\" target=\"".$this->html_target.'" alt="">Show all Customers</a>';
 
                     $file .= "]]></description>
-							<styleUrl>#$icon</styleUrl>
-							<Point>
-								<coordinates>$xavg,$yavg,0.000000</coordinates>
-							</Point>
-						</Placemark>";
+                            <styleUrl>#$icon</styleUrl>
+                            <Point>
+                                <coordinates>$xavg,$yavg,0.000000</coordinates>
+                            </Point>
+                        </Placemark>";
                 }
             }
         }
@@ -254,8 +256,8 @@ class TreeTopographyController extends HfcBaseController
         //
         $p1 = '';
 
-        foreach ($trees as $tree) {
-            $p2 = $tree->pos;
+        foreach ($netelements as $netelement) {
+            $p2 = $netelement->pos;
 
             if ($p1 != $p2) {
                 $rstate = 0;
@@ -264,20 +266,20 @@ class TreeTopographyController extends HfcBaseController
                 $fiber = 0;
 
                 $file .= '
-					<Placemark>
-					<name></name>
-					<description><![CDATA[';
+                    <Placemark>
+                    <name></name>
+                    <description><![CDATA[';
             }
 
-            $type = $tree->type;
-            $parent = $tree->parent ? $tree->parent->id : null;
-            $state = $tree->get_bsclass();
+            $type = $netelement->type;
+            $parent = $netelement->parent ? $netelement->parent->id : null;
+            $state = $netelement->get_bsclass();
 
-            if ($tree->state == 'warning') {
+            if ($netelement->state == 'warning') {
                 $ystate += 1;
             }
 
-            if ($tree->state == 'danger') {
+            if ($netelement->state == 'danger') {
                 $rstate += 1;
             }
 
@@ -308,11 +310,11 @@ class TreeTopographyController extends HfcBaseController
 
                 $file .= "$p2";
                 $file .= "]]></description>
-				<styleUrl>#$icon</styleUrl>
-				<Point>
-					<coordinates>$p2,0.000000</coordinates>
-				</Point>
-				</Placemark>";
+                <styleUrl>#$icon</styleUrl>
+                <Point>
+                    <coordinates>$p2,0.000000</coordinates>
+                </Point>
+                </Placemark>";
             }
 
             $p1 = $p2;
@@ -329,149 +331,149 @@ class TreeTopographyController extends HfcBaseController
 
     private $file_post = '
 
-			</Document>
-		</kml>';
+            </Document>
+        </kml>';
 
     private function file_pre($p)
     {
         return "
 
-		<kml xmlns=\"http://earth.google.com/kml/2.2\">
-		<Document>
-			<name>mbg - amplifier</name>
+        <kml xmlns=\"http://earth.google.com/kml/2.2\">
+        <Document>
+            <name>mbg - amplifier</name>
 
-			<Style id=\"OK\">
-				<IconStyle>
-					<Icon>
-						<href>$p/green-amp.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"OK\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/green-amp.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"YELLOW\">
-				<IconStyle>
-					<Icon>
-						<href>$p/yellow-amp.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"YELLOW\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/yellow-amp.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"RED\">
-				<IconStyle>
-					<Icon>
-						<href>$p/red-amp.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"RED\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/red-amp.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"OK-FIB\">
-				<IconStyle>
-					<Icon>
-						<href>$p/green-fib.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"OK-FIB\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/green-fib.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"YELLOW-FIB\">
-				<IconStyle>
-					<Icon>
-						<href>$p/yellow-fib.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"YELLOW-FIB\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/yellow-fib.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"RED-FIB\">
-				<IconStyle>
-					<Icon>
-						<href>$p/red-fib.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"RED-FIB\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/red-fib.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"OK-ROUTER\">
-				<IconStyle>
-					<Icon>
-						<href>$p/router.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"OK-ROUTER\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/router.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"RED-ROUTER\">
-				<IconStyle>
-					<Icon>
-						<href>$p/router-red.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"RED-ROUTER\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/router-red.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"YELLOW-ROUTER\">
-				<IconStyle>
-					<Icon>
-						<href>$p/router-yellow.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id=\"YELLOW-ROUTER\">
+                <IconStyle>
+                    <Icon>
+                        <href>$p/router-yellow.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id='green-CUS'>
-				<IconStyle>
-					<Icon>
-						<href>$p/green-dot.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id='green-CUS'>
+                <IconStyle>
+                    <Icon>
+                        <href>$p/green-dot.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id='yellow-CUS'>
-				<IconStyle>
-					<Icon>
-						<href>$p/yellow-dot.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id='yellow-CUS'>
+                <IconStyle>
+                    <Icon>
+                        <href>$p/yellow-dot.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id='red-CUS'>
-				<IconStyle>
-					<Icon>
-						<href>$p/red-dot.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id='red-CUS'>
+                <IconStyle>
+                    <Icon>
+                        <href>$p/red-dot.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id='blue-CUS'>
-				<IconStyle>
-					<Icon>
-						<href>$p/blue-dot.png</href>
-					</Icon>
-				</IconStyle>
-			</Style>
+            <Style id='blue-CUS'>
+                <IconStyle>
+                    <Icon>
+                        <href>$p/blue-dot.png</href>
+                    </Icon>
+                </IconStyle>
+            </Style>
 
-			<Style id=\"BLUELINE\">
-				<LineStyle>
-					<color>FFFF0000</color>
-					<width>2</width>
-				</LineStyle>
-			</Style>
+            <Style id=\"BLUELINE\">
+                <LineStyle>
+                    <color>FFFF0000</color>
+                    <width>2</width>
+                </LineStyle>
+            </Style>
 
-			<Style id=\"REDLINE\">
-				<LineStyle>
-					<color>FF0000FF</color>
-					<width>2</width>
-				</LineStyle>
-			</Style>
+            <Style id=\"REDLINE\">
+                <LineStyle>
+                    <color>FF0000FF</color>
+                    <width>2</width>
+                </LineStyle>
+            </Style>
 
-			<Style id=\"BLACKLINE\">
-				<LineStyle>
-					<color>AA000000</color>
-					<width>2</width>
-				</LineStyle>
-			</Style>
+            <Style id=\"BLACKLINE\">
+                <LineStyle>
+                    <color>AA000000</color>
+                    <width>2</width>
+                </LineStyle>
+            </Style>
 
-			<Style id=\"BLACKLINE2\">
-				<LineStyle>
-					<color>AA000000</color>
-					<width>1</width>
-				</LineStyle>
-			</Style>
+            <Style id=\"BLACKLINE2\">
+                <LineStyle>
+                    <color>AA000000</color>
+                    <width>1</width>
+                </LineStyle>
+            </Style>
 
-			";
+            ";
     }
 }

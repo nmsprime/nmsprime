@@ -221,7 +221,9 @@ class CustomerTopoController extends NetElementController
         $models = $allModels ?: clone $modemQuery;
         $models = $models->whereNotNull('model')->groupBy('model')->get(['model'])->pluck('model')->all();
 
-        if (! $models && ! $modemQuery->count()) {
+        $modems = $modemQuery->where('contract_id', '>', '0')->orderByRaw('10000000*modem.x+modem.y')->get();
+
+        if (! $models && ! $modems->count()) {
             return \View::make('errors.generic')->with('message', 'No Modem Entry found');
         }
 
@@ -230,7 +232,7 @@ class CustomerTopoController extends NetElementController
         }
 
         $models = [];
-        foreach (isset($allModels) ? $allModels->get() : $modemQuery->get() as $modem) {
+        foreach ($allModels ? $allModels->get() : $modems as $modem) {
             if ($modem->model != '') {
                 $models[] = $modem->model;
             }
@@ -240,7 +242,7 @@ class CustomerTopoController extends NetElementController
         $models = array_unique($models) ?? null;
 
         // Generate SVG file
-        $file = $this->kml_generate($modemQuery, $row);
+        $file = $this->kml_generate($modems, $row);
 
         if (! $file) {
             return \View::make('errors.generic')->with('message', 'Failed to generate SVG file');
@@ -251,8 +253,8 @@ class CustomerTopoController extends NetElementController
         $route_name = 'Tree';
         $view_header = 'Topography - Modems';
         $body_onload = 'init_for_map';
-        $tabs = $this->makeTabs($modemQuery);
-        $kmls = $this->__kml_to_modems($modemQuery);
+        $tabs = $this->makeTabs($modems);
+        $kmls = $this->__kml_to_modems($modems);
         $file = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
         return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'tabs', 'kmls', 'models')));
@@ -267,6 +269,7 @@ class CustomerTopoController extends NetElementController
     {
         return DB::table('modem')
             ->join('contract', 'contract.id', '=', 'modem.contract_id')
+            ->join('netelement', 'modem.netelement_id', 'netelement.id')
             ->whereNull('modem.deleted_at')
             ->whereNull('contract.deleted_at')
             ->where(function ($query) {
@@ -278,7 +281,7 @@ class CustomerTopoController extends NetElementController
                     })
                     ->orWhere('us_pwr', '>', 0);
             })
-            ->select('modem.*');
+            ->select(['modem.*', 'netelement.cluster']);
     }
 
     /**
@@ -300,30 +303,27 @@ class CustomerTopoController extends NetElementController
         return ['allModels' => clone $modemQuery, 'selectedModel' => $modemQuery->where('model', $model)];
     }
 
-    /*
+    /**
      * KML Upload Array: Generate the KML file array
      * based on the provided $modems. Show all related
      * kml files which are in relation to a modem cluster.
      *
-     * @param modems: modems list, without ->get() call
+     * @param Collection modems list
      * @return array of KML files, like ['file', 'descr']
      *
-     * @author: Torsten Schmidt
+     * @author: Torsten Schmidt, Nino Ryschawy
      */
     private function __kml_to_modems($modems)
     {
-        $a = [];
+        $clusters = array_unique($modems->pluck('cluster')->all());
 
-        // foreach modem with a distinct netelement_id
-        foreach ($modems->select('netelement_id')->distinct('netelement_id')->get() as $m) { // $m is a modem object
-            // if netelement has a valid cluster, push cluster id to $a[]
-            if (isset($m->nelelement->cluster)) {
-                array_push($a, $m->nelelement->cluster);
-            }
-        }
+        $netelements = NetElement::whereIn('cluster', $clusters)
+            ->whereNotNull('pos')->where('pos', '!=', ' ')
+            ->whereNotNull('kml_file')
+            ->get();
 
-        // parse all NetElement's with a cluster id in $a[]
-        return $this->kml_file_array(NetElement::whereIn('cluster', $a)->whereNotNull('pos')->where('pos', '!=', ' ')->get());
+        // parse all NetElement's with a cluster id in $clusters[]
+        return $this->kml_file_array($netelements);
     }
 
     /*
@@ -412,18 +412,18 @@ class CustomerTopoController extends NetElementController
         }
     }
 
-    /*
-    * Prepare $tabs vaiable for switching topography/diagrams mode
-    *
-    * @param modemQuery: QueryBuilder, like Modem::where()
-    * @return: prepared $tabs variable
-    *
-    * @author: Torsten Schmidt
-    */
-    private function makeTabs($modemQuery)
+    /**
+     * Prepare $tabs vaiable for switching topography/diagrams mode
+     *
+     * @param Collection of Modems
+     * @return: prepared $tabs variable
+     *
+     * @author: Torsten Schmidt
+     */
+    private function makeTabs($modems)
     {
         $ids = '0';
-        foreach ($modemQuery->get() as $modem) {
+        foreach ($modems as $modem) {
             $ids .= '+'.$modem->id;
         }
 
@@ -435,12 +435,12 @@ class CustomerTopoController extends NetElementController
     /**
      * Generate KML File with Customer Modems Inside
      *
-     * @param  obj      Illuminate\Database\Eloquent\Builder with the query for the modem models to display, like Modem::where()
+     * @param  obj      Collection of the modems to display
      * @return string   the path of the generated *.kml file to be included via asset ()
      *
      * @author: Torsten Schmidt
      */
-    public function kml_generate($modemQuery, $row)
+    public function kml_generate($modems, $row)
     {
         $x = $y = $num = 0;
         $clrs = [];
@@ -454,7 +454,7 @@ class CustomerTopoController extends NetElementController
             $row = 'us_pwr';
         }
 
-        foreach ($modemQuery->where('contract_id', '>', '0')->orderByRaw('10000000*modem.x+modem.y')->get() as $modem) {
+        foreach ($modems as $modem) {
             //
             // Print Marker AND Reset Vars IF new GPS position
             //

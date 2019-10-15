@@ -59,7 +59,7 @@ class SepaAccount extends \BaseModel
     public function view_index_label()
     {
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.name', $this->table.'.institute', $this->table.'.iban'],
+                'index_header' => ['id', $this->table.'.name', $this->table.'.institute', $this->table.'.iban', $this->table.'.template_invoice'],
                 'order_by' => ['0' => 'asc'],  // columnindex => direction
                 'header' =>  $this->name, ];
     }
