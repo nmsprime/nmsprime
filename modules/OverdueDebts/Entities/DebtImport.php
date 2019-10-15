@@ -259,6 +259,8 @@ class DebtImport
                     $blocked[] = $c->number;
 
                     $modem->internet_access = 0;
+                    // It's possible to only save when $modem->isDirty() is true
+                    // So we could exclude contracts from blocked array when nothing changes here
                     $modem->save();
                 }
             }
