@@ -13,6 +13,8 @@ class Contact extends \BaseModel
         return [
             'firstname1' => 'required',
             'lastname1' => 'required',
+            'email1' => 'nullable|email',
+            'email2' => 'nullable|email',
         ];
     }
 
