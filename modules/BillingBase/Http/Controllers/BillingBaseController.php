@@ -63,6 +63,7 @@ class BillingBaseController extends \BaseController
             ['form_type' => 'checkbox', 'name' => 'fluid_valid_dates', 'description' => 'Uncertain start/end dates for tariffs', 'help' => trans('billingbase::help.BillingBase.fluid_dates')],
             ['form_type' => 'checkbox', 'name' => 'termination_fix', 'description' => 'Item Termination only end of month', 'help' => trans('billingbase::help.BillingBase.ItemTermination')],
             ['form_type' => 'checkbox', 'name' => 'show_ags', 'description' => trans('messages.show_ags'), 'help' => trans('billingbase::help.BillingBase.showAGs')],
+            ['form_type' => 'checkbox', 'name' => 'adapt_item_start', 'description' => trans('billingbase::view.adaptItemStart'), 'help' => trans('billingbase::help.BillingBase.adaptItemStart')],
         ];
     }
 }

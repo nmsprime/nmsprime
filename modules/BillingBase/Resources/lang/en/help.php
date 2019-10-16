@@ -2,6 +2,7 @@
 
 return [
     'BillingBase' => [
+        'adaptItemStart'    => 'When active the begin of all assigned items of a contract will be set to the contracts start date when this date is changed.',
         'cdr_offset'        => "TAKE CARE: incrementing this when having data from settlement runs leads to overwritten CDRs during next run - make sure to save/rename the history!\n\nExample: Set to 1 if Call Data Records from June belong to Invoices of July, Zero if it's the same month, 2 if CDRs of January belong to Invoices of March.",
         'cdr_retention'     => 'Months that Call Data Records may/have to be kept save',
         'extra_charge'      => 'Additional mark-on to purchase price. Only when not calculated through provider!',
