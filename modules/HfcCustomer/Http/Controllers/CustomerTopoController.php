@@ -348,8 +348,10 @@ class CustomerTopoController extends NetElementController
         $before = microtime(true);
         $types = ['ds_pwr', 'ds_snr', 'us_snr', 'us_pwr'];
 
+        $modems = $modemQuery->orderBy('city')->orderBy('street')->orderBy('house_number')->get();
+
         // foreach modem
-        foreach ($modemQuery->orderBy('city')->orderBy('street')->orderBy('house_number')->get() as $modem) {
+        foreach ($modems as $modem) {
             // load per modem diagrams
             $dia_ids = [$provmon->monitoring_get_graph_template_id('DOCSIS Overview')];
             if (! Request::filled('row')) {
@@ -378,7 +380,7 @@ class CustomerTopoController extends NetElementController
         }
 
         // prepare/load panel right
-        $tabs = $this->makeTabs($modemQuery);
+        $tabs = $this->makeTabs($modems);
 
         // Log: time measurement
         $after = microtime(true);
@@ -399,6 +401,8 @@ class CustomerTopoController extends NetElementController
     */
     public function show_modem_ids($topo, $_ids)
     {
+        $ids = [];
+
         if (! is_array($_ids)) {
             $ids = explode('+', $_ids);
         }
@@ -407,9 +411,9 @@ class CustomerTopoController extends NetElementController
 
         if ($topo == 'true') {
             return $this->show_topo($modemQuery);
-        } else {
-            return $this->show_diagrams($modemQuery);
         }
+
+        return $this->show_diagrams($modemQuery);
     }
 
     /**
