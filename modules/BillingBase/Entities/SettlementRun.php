@@ -186,7 +186,7 @@ class SettlementRun extends \BaseModel
     /**
      * Output Interface for console command
      *
-     * @var obj
+     * @var obj Illuminate\Console\OutputStyle
      */
     public $output;
 
@@ -196,6 +196,7 @@ class SettlementRun extends \BaseModel
      * Creates invoices, SEPA xmls, booking & accounting record files
      *
      * @param obj   SepaAccount the run shall be executed for - null for all accounts
+     * @param obj   Illuminate\Console\OutputStyle - console output
      */
     public function execute($sepaacc = null, $output = null)
     {
