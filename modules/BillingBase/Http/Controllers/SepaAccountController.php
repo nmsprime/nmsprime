@@ -37,18 +37,18 @@ class SepaAccountController extends \BaseController
             ['form_type' => 'text', 'name' => 'institute', 'description' => 'Institute', 'space' => 1],
 
             ['form_type' => 'select', 'name' => 'company_id', 'description' => 'Company', 'value' => $list, 'hidden' => 0],
-            ['form_type' => 'text', 'name' => 'invoice_nr_start', 'description' => 'Invoice Number Start', 'help' => trans('helper.BillingBase_InvoiceNrStart'), 'space' => 1],
+            ['form_type' => 'text', 'name' => 'invoice_nr_start', 'description' => 'Invoice Number Start', 'help' => trans('billingbase::help.BillingBase.invoiceNrStart'), 'space' => 1],
 
-            ['form_type' => 'text', 'name' => 'invoice_headline', 'description' => 'Invoice Headline', 'help' => trans('helper.SepaAccount_InvoiceHeadline')],
-            ['form_type' => 'text', 'name' => 'invoice_text_sepa', 'description' => 'Invoice Text for positive Amount with Sepa Mandate', 'help' => trans('helper.SepaAccount_InvoiceText')],
+            ['form_type' => 'text', 'name' => 'invoice_headline', 'description' => 'Invoice Headline', 'help' => trans('billingbase::help.sepaAccount.invoiceHeadline')],
+            ['form_type' => 'text', 'name' => 'invoice_text_sepa', 'description' => 'Invoice Text for positive Amount with Sepa Mandate', 'help' => trans('billingbase::help.sepaAccount.invoiceText')],
             ['form_type' => 'text', 'name' => 'invoice_text_sepa_negativ', 'description' => 'Invoice Text for negative Amount with Sepa Mandate'],
             ['form_type' => 'text', 'name' => 'invoice_text', 'description' => 'Invoice Text for positive Amount without Sepa Mandate'],
             ['form_type' => 'text', 'name' => 'invoice_text_negativ', 'description' => 'Invoice Text for negative Amount without Sepa Mandate', 'space' => 1],
 
             ['form_type' => 'select', 'name' => 'template_invoice', 'description' => 'Choose invoice template file', 'value' => $templates],
             ['form_type' => 'select', 'name' => 'template_cdr', 'description' => 'Choose Call Data Record template file', 'value' => $templates],
-            ['form_type' => 'file', 'name' => 'template_invoice_upload', 'description' => 'Upload invoice template', 'help' => trans('helper.tex_template')],
-            ['form_type' => 'file', 'name' => 'template_cdr_upload', 'description' => 'Upload CDR template', 'help' => trans('helper.tex_template'), 'space' => 1],
+            ['form_type' => 'file', 'name' => 'template_invoice_upload', 'description' => 'Upload invoice template', 'help' => trans('billingbase::help.texTemplate')],
+            ['form_type' => 'file', 'name' => 'template_cdr_upload', 'description' => 'Upload CDR template', 'help' => trans('billingbase::help.texTemplate'), 'space' => 1],
 
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
         ];
