@@ -35,6 +35,7 @@ return [
     //Main Menu
         'Menu_Apartment'            => 'Apartamentos',
         'Menu_BillingBase'          => 'Facturación',
+        'Menu_Contact'              => 'Contacts',
         'Menu_Debt'                 => 'Debt list',
         'Menu_Dunning'              => 'OverdueDebts',
         'Menu_MainMenu'             => 'Menú Principal',
@@ -229,6 +230,7 @@ return [
         'Header_EnviaContract'      => 'envia TEL contract|envia TEL contracts',
         'Header_EnviaOrder'         => 'envia TEL order|envia TEL orders',
 
+        'Header_Contact'            => 'Contacts',
         'Header_Debt'               => 'Historial de deuda',
         'Header_DebtResult'         => 'Total de pagos pendientes',
         'Header_Node'               => 'Nodos',
