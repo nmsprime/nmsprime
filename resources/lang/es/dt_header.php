@@ -4,6 +4,7 @@ return [
     // Index DataTable Header
     'amount' => 'Cantidad',
     'city' => 'Ciudad',
+    'connection_type' => 'Connection type',
     'expansion_degree' => 'Grado de expansión',
     'floor' => 'Piso',
     'group_contract' => 'Contrato de grupo',
@@ -20,6 +21,9 @@ return [
         'number' => 'Número',
         'connected' => 'Conectado',
         'occupied' => 'Ocupado',
+    ],
+    'contact' => [
+        'administration' => 'Administration',
     ],
     // Auth
     'users.login_name' => 'Nombre de usuario',
@@ -135,6 +139,14 @@ return [
     'email.greylisting' => '¿Activo listas de rechazo transitorio?',
     'email.blacklisting' => 'Lista negra habilitada?',
     'email.forwardto' => 'Reenviar a:',
+    'contact.firstname1' => 'Firstname 1',
+    'lastname1' => 'Lastname 1',
+    'firstname2' => 'Firstname 2',
+    'lastname2' => 'Lastname 2',
+    'tel' => 'Phonenumber',
+    'tel_private' => 'Phonenumber private',
+    'email1' => 'E-Mail 1',
+    'email2' => 'E-Mail 2',
     // CMTS
     'cmts.id' => 'ID',
     'cmts.hostname' => 'Nombre de host',
@@ -145,10 +157,10 @@ return [
     'cmts.support_state' => 'Support State',
     // Contract
     'contract.city' => 'Ciudad',
-    'contract.company' => 'Empresa',
+    'company' => 'Company',
     'contract.contract_end' => 'Fin de Contrato',
     'contract.contract_start' => 'Inicio de Contrato',
-    'contract.district' => 'Provincia',
+    'district' => 'District',
     'contract.firstname' => 'Nombres',
     'contract.house_number' => 'Numero de vivienda',
     'contract.id' => 'Contrato',
@@ -256,11 +268,14 @@ return [
     'numberrange.type' => 'Tipo',
     'numberrange.costcenter.name' => 'Centro de costes',
     'realty' => [
-        'name' => 'Nombre',
-        'administration' => 'Administración',
         'agreement_from' => 'Válido desde',
         'agreement_to' => 'Válido hasta',
+        'apartmentCount' => 'Total apartments',
+        'apartmentCountConnected' => 'Connected apartments',
         'concession_agreement' => 'Acuerdo de concesión',
+        'contact_id' => 'Administration',
+        'contact_local_id' => 'Local contact',
+        'name' => 'Nombre',
         'last_restoration_on' => 'Última restauración',
     ],
     // Ticket
