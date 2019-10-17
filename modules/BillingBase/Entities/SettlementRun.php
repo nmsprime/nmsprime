@@ -179,14 +179,14 @@ class SettlementRun extends \BaseModel
     /**
      * Execute SettlementRun for specific SepaAccount
      *
-     * @var obj SepaAccount
+     * @var SepaAccount
      */
     public $specificSepaAcc = null;
 
     /**
      * Output Interface for console command
      *
-     * @var obj Illuminate\Console\OutputStyle
+     * @var Illuminate\Console\OutputStyle
      */
     public $output;
 
@@ -195,8 +195,8 @@ class SettlementRun extends \BaseModel
      *
      * Creates invoices, SEPA xmls, booking & accounting record files
      *
-     * @param obj   SepaAccount the run shall be executed for - null for all accounts
-     * @param obj   Illuminate\Console\OutputStyle - console output
+     * @param  SepaAccount  $sepaacc  The SEPA account the run shall be executed for - null for all accounts
+     * @param  Illuminate\Console\OutputStyle  $output  console output
      */
     public function execute($sepaacc = null, $output = null)
     {
@@ -530,8 +530,7 @@ class SettlementRun extends \BaseModel
      *
      *  Used to clean up directory and DB on repeated run of SettlementRun::execute()
      *
-     * @param obj   Delete only invoices related to specific SepaAccount, 0 - delete all invoices of this SR
-     * @param bool  Delete only temporary LaTeX files created during SettlementRun and check if Invoices where created successfully
+     * @param  bool  $tempFiles  Delete only temporary LaTeX files created during SettlementRun and check if Invoices where created successfully
      */
     public function delete_current_invoices($tempFiles = false)
     {
@@ -579,8 +578,6 @@ class SettlementRun extends \BaseModel
      *
      * NOTE: If SettlementRun is executed for a specific SepaAccount this function will only return the contracts
      *  that can have resulting charges for that account
-     *
-     * @param int
      */
     public function getContracts()
     {
