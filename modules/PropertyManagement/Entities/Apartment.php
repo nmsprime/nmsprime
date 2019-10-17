@@ -44,7 +44,7 @@ class Apartment extends \BaseModel
         $bsclass = 'success';
 
         return ['table' => $this->table,
-                'index_header' => ["$this->table.number", 'floor', "$this->table.connected", "$this->table.occupied"],
+                'index_header' => ["$this->table.number", 'floor', "$this->table.connected", "$this->table.occupied", 'connection_type'],
                 'header' => "$this->number - $this->floor",
                 'bsclass' => $bsclass,
                 // 'eager_loading' => ['contract'],
