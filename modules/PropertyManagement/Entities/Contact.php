@@ -15,6 +15,8 @@ class Contact extends \BaseModel
             'lastname1' => 'required',
             'email1' => 'nullable|email',
             'email2' => 'nullable|email',
+            'tel' => 'nullable|numeric',
+            'tel_private' => 'nullable|numeric',
         ];
     }
 
