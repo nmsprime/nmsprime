@@ -7,10 +7,10 @@ class Apartment extends \BaseModel
     // The associated SQL table for this Model
     public $table = 'apartment';
 
-    protected $casts = [
-        'connected' => 'boolean',
-        'occupied' => 'boolean',
-    ];
+    // protected $casts = [
+    //     'connected' => 'boolean',
+    //     'occupied' => 'boolean',
+    // ];
 
     // Add your validation rules here
     public static function rules($id = null)
@@ -44,7 +44,7 @@ class Apartment extends \BaseModel
         $bsclass = 'success';
 
         return ['table' => $this->table,
-                'index_header' => ["$this->table.number", 'floor', "$this->table.connected", "$this->table.occupied"],
+                'index_header' => ["$this->table.number", 'floor', "$this->table.connected", "$this->table.occupied", 'connection_type'],
                 'header' => "$this->number - $this->floor",
                 'bsclass' => $bsclass,
                 // 'eager_loading' => ['contract'],
@@ -55,8 +55,10 @@ class Apartment extends \BaseModel
     public function view_has_many()
     {
         if (\Module::collections()->has('ProvBase')) {
-            $ret['Edit']['Contract']['class'] = 'Contract';
+            $ret['Edit']['Modem']['class'] = 'Modem';
+            $ret['Edit']['Modem']['relation'] = $this->modems;
 
+            $ret['Edit']['Contract']['class'] = 'Contract';
             if ($this->contract) {
                 $ret['Edit']['Contract']['relation'] = collect([$this->contract]);
                 $ret['Edit']['Contract']['options']['hide_create_button'] = 1;
@@ -80,6 +82,11 @@ class Apartment extends \BaseModel
     public function contract()
     {
         return $this->hasOne(\Modules\ProvBase\Entities\Contract::class);
+    }
+
+    public function modems()
+    {
+        return $this->HasMany(\Modules\ProvBase\Entities\Modem::class);
     }
 
     public function realty()

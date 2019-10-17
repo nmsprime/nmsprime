@@ -33,12 +33,12 @@ class ItemController extends \BaseController
             $types[$p->id] = $p->type;
         }
 
+        if (! $model->id) {
+            $model->count = 1;
+        }
+
         // don't use array_merge for this because that reassignes the index!
         $ccs = $model->html_list(CostCenter::all(), 'name', true);
-
-        for ($i = 1; $i < 99; $i++) {
-            $cnt[$i] = $i;
-        }
 
         // bool var to show/hide valid_from/to_fixed fields
         $fluid = ! BillingBase::first()->fluid_valid_dates;
@@ -47,7 +47,7 @@ class ItemController extends \BaseController
         $fields = [
             ['form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'hidden' => '1'],
             ['form_type' => 'select', 'name' => 'product_id', 'description' => 'Product', 'value' => $prods, 'select' => $types, 'help' => trans('helper.Item_ProductId')],
-            ['form_type' => 'select', 'name' => 'count', 'description' => 'Count', 'value' => $cnt],
+            ['form_type' => 'text', 'name' => 'count', 'description' => 'Count'],
             ['form_type' => 'text', 'name' => 'valid_from', 'description' => 'Start date', 'options' => ['placeholder' => 'YYYY-MM-DD'], 'help' => trans('helper.Item_ValidFrom')],
             ['form_type' => 'checkbox', 'name' => 'valid_from_fixed', 'description' => 'Active from start date', 'select' => 'Internet Voip', 'help' => trans('helper.Item_ValidFromFixed'), 'hidden' => $fluid, 'checked' => 1, 'value' => 1],
             ['form_type' => 'text', 'name' => 'valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD | 12M'], 'help' => trans('helper.Item_validTo')],

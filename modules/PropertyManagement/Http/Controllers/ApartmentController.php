@@ -13,12 +13,13 @@ class ApartmentController extends \BaseController
 
         // label has to be the same like column in sql table
         $fields = [
-            ['form_type' => 'select', 'name' => 'realty_id', 'description' => 'Realty', 'value' => $realties],
+            ['form_type' => 'select', 'name' => 'realty_id', 'description' => 'Realty', 'value' => $realties, 'space' => 1],
             ['form_type' => 'text', 'name' => 'number', 'description' => 'Number'],
-            ['form_type' => 'text', 'name' => 'floor', 'description' => 'Floor'],
+            ['form_type' => 'text', 'name' => 'floor', 'description' => 'Floor', 'space' => 1],
 
+            ['form_type' => 'text', 'name' => 'connection_type', 'description' => 'Connection type', 'autocomplete' => []],
             ['form_type' => 'checkbox', 'name' => 'connected', 'description' => trans('dt_header.apartment.connected')],
-            ['form_type' => 'checkbox', 'name' => 'occupied', 'description' => trans('dt_header.apartment.occupied')],
+            ['form_type' => 'checkbox', 'name' => 'occupied', 'description' => trans('dt_header.apartment.occupied'), 'space' => 1],
 
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
         ];

@@ -32,7 +32,7 @@ class SepaMandateController extends \BaseController
 
         // label has to be the same like column in sql table
         return [
-            ['form_type' => 'text', 'name' => 'reference', 'description' => 'Reference Number', 'create' => '1'],
+            ['form_type' => 'text', 'name' => 'reference', 'description' => 'Reference Number'],
             ['form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'hidden' => '1'],
             ['form_type' => 'text', 'name' => 'holder', 'description' => 'Bank Account Holder'],
             ['form_type' => 'text', 'name' => 'iban', 'description' => 'IBAN'],

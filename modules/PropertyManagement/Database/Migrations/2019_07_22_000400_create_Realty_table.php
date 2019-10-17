@@ -24,6 +24,7 @@ class CreateRealtyTable extends BaseMigration
 
             $table->string('street');
             $table->string('house_nr');
+            $table->string('district')->nullable();
             $table->string('zip');
             $table->string('city');
 
