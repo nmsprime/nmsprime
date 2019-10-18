@@ -6,7 +6,7 @@
     <div class="panel-heading d-flex flex-row justify-content-between">
       <h4 class="panel-title d-flex">
         <span data-click="panel-collapse" data-original-title="" title="" data-init="true">Speed Test </span>
-        <span data-click="panel-collapse">
+        <span data-click="panel-collapse"></span>
       </h4>
       <div class="panel-heading-btn d-flex flex-row">
         <a href="javascript:;"
@@ -18,9 +18,7 @@
       </div>
     </div>
     <div class="panel-body fader d-flex flex-column" style="overflow-y:auto; height:100%">
-    <body>
-      <div id="testWrapper">
-       <div id="test">
+      <div class="text-center">
         <div class="testGroup">
           <div class="testArea">
             <div class="testName">Download</div>
@@ -57,6 +55,7 @@
 
         </div>
     </div>
+  </div>
 </div>
 
 
