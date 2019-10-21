@@ -51,18 +51,19 @@ class BillingBaseController extends \BaseController
             ['form_type' => 'select', 'name' => 'userlang', 'description' => 'Language for settlement run', 'value' => $languages],
             ['form_type' => 'select', 'name' => 'currency', 'description' => 'Currency', 'value' => BillingBase::getPossibleEnumValues('currency')],
             ['form_type' => 'text', 'name' => 'tax', 'description' => 'Tax in %'],
-            ['form_type' => 'select', 'name' => 'rcd', 'description' => 'Day of Requested Collection Date', 'value' => $days, 'help' => trans('helper.BillingBase.rcd')],
-            ['form_type' => 'text', 'name' => 'mandate_ref_template', 'description' => 'Mandate Reference', 'help' => trans('helper.BillingBase.MandateRef').$cols, 'options' => ['placeholder' => \App\Http\Controllers\BaseViewController::translate_label('e.g.: String - {number}')]],
-            ['form_type' => 'checkbox', 'name' => 'split', 'description' => 'Split Sepa Transfer-Types', 'help' => trans('helper.BillingBase.SplitSEPA'), 'space' => 1],
+            ['form_type' => 'select', 'name' => 'rcd', 'description' => 'Day of Requested Collection Date', 'value' => $days, 'help' => trans('billingbase::help.BillingBase.rcd')],
+            ['form_type' => 'text', 'name' => 'mandate_ref_template', 'description' => 'Mandate Reference', 'help' => trans('billingbase::help.BillingBase.MandateRef').$cols, 'options' => ['placeholder' => \App\Http\Controllers\BaseViewController::translate_label('e.g.: String - {number}')]],
+            ['form_type' => 'checkbox', 'name' => 'split', 'description' => 'Split Sepa Transfer-Types', 'help' => trans('billingbase::help.BillingBase.SplitSEPA'), 'space' => 1],
 
-            ['form_type' => 'text', 'name' => 'cdr_offset', 'description' => trans('messages.cdr_offset'), 'help' => trans('helper.BillingBase.cdr_offset')],
-            ['form_type' => 'text', 'name' => 'cdr_retention_period', 'description' => 'CDR retention period', 'help' => trans('helper.BillingBase.cdr_retention')],
-            ['form_type' => 'text', 'name' => 'voip_extracharge_default', 'description' => trans('messages.voip_extracharge_default'), 'help' => trans('helper.BillingBase.extra_charge')],
+            ['form_type' => 'text', 'name' => 'cdr_offset', 'description' => trans('messages.cdr_offset'), 'help' => trans('billingbase::help.BillingBase.cdr_offset')],
+            ['form_type' => 'text', 'name' => 'cdr_retention_period', 'description' => 'CDR retention period', 'help' => trans('billingbase::help.BillingBase.cdr_retention')],
+            ['form_type' => 'text', 'name' => 'voip_extracharge_default', 'description' => trans('messages.voip_extracharge_default'), 'help' => trans('billingbase::help.BillingBase.extra_charge')],
             ['form_type' => 'text', 'name' => 'voip_extracharge_mobile_national', 'description' => trans('messages.voip_extracharge_mobile_national'), 'space' => 1],
 
-            ['form_type' => 'checkbox', 'name' => 'fluid_valid_dates', 'description' => 'Uncertain start/end dates for tariffs', 'help' => trans('helper.BillingBase.fluid_dates')],
-            ['form_type' => 'checkbox', 'name' => 'termination_fix', 'description' => 'Item Termination only end of month', 'help' => trans('helper.BillingBase.ItemTermination')],
-            ['form_type' => 'checkbox', 'name' => 'show_ags', 'description' => trans('messages.show_ags'), 'help' => trans('helper.BillingBase.showAGs')],
+            ['form_type' => 'checkbox', 'name' => 'fluid_valid_dates', 'description' => 'Uncertain start/end dates for tariffs', 'help' => trans('billingbase::help.BillingBase.fluid_dates')],
+            ['form_type' => 'checkbox', 'name' => 'termination_fix', 'description' => 'Item Termination only end of month', 'help' => trans('billingbase::help.BillingBase.ItemTermination')],
+            ['form_type' => 'checkbox', 'name' => 'show_ags', 'description' => trans('messages.show_ags'), 'help' => trans('billingbase::help.BillingBase.showAGs')],
+            ['form_type' => 'checkbox', 'name' => 'adapt_item_start', 'description' => trans('billingbase::view.adaptItemStart'), 'help' => trans('billingbase::help.BillingBase.adaptItemStart')],
         ];
     }
 }
