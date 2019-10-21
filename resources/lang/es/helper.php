@@ -27,23 +27,6 @@ return [
     'ISO_3166_ALPHA-2'				=> 'ISO 3166 ALPHA-2 (dos caracteres, p.e. “US”). Usado en formularios de direccion para especificar el pais.',
     'PasswordReset'           => 'Esta propiedad define el intervalo de tiempo en días en los que los usuarios del panel de administración deben cambiar sus contraseñas. Si desea inhabilitar el mensaje de restablecimiento de contraseña, establezca el valor en 0.',
 
-    /*
-     *	MODULE: BillingBase
-     */
-    //BillingBaseController
-    'BillingBase' => [
-        'cdr_offset'        => "ADVERTENCIA: incrementar esto mientras se tiene datos de acuerdos ocasiona sobrescribir CDRs durante la siguiente ejecución - asegúrese de guardar/renombrar el historial!\n\nEjemplo: Asignar a 1 si los registros de datos de llamada de Junio, pertenecen a las facturas de Julio, 0 si este es del mismo mes, 2 si RDLs de Enero pertenecen a las facturas de Marzo.",
-        'cdr_retention'     => 'Meses en que los registros de llamadas pueden/deben guardarse',
-        'extra_charge'      => 'Marca adicional para el precio de compra. ¡Sólo cuando no se calcula a través del proveedor!',
-        'fluid_dates'       => 'Marque esta casilla si desea añadir tarifas con fecha de inicio y/o fecha de finalización incierta. Si se selecciona, dos nuevas casillas de verificación (Válido desde fijo, válido a fijo) aparecerán en la página de edición/creación del artículo. ¡Echa un vistazo a sus mensajes de ayuda para obtener más información!',
-        'InvoiceNrStart'    => 'Contador de número de factura comienza cada año nuevo con este número',
-        'ItemTermination'   => 'Permitir a los Clientes solo cancelar productos reservados el ultimo día del mes',
-        'MandateRef'        => "Una plantilla puede construirse con columnas sql de la tabla de contrato o mandato - campos posibles: \n",
-        'rcd'               => 'También es la fecha de valor. También se puede establecer específicamente para un contrato en la página del contrato',
-        'showAGs'           => 'Añade una lista de selección con personas de contacto a la página del contrato. La lista debe ser almacenada en el directorio de almacenamiento apropiado - ¡compruebe el código fuente!',
-        'SplitSEPA'         => 'Las transferencias Sepa se dividen en diferentes archivos XML dependiendo de su tipo de transferencia',
-        ],
-
     //CompanyController
     'Company_Management'			=> 'Lista de nombres separada por comas',
     'Company_Directorate'			=> 'Lista de nombres separada por comas',
