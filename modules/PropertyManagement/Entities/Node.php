@@ -15,7 +15,7 @@ class Node extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'name' => 'required',
+            // 'name' => 'required',
             'street' => 'required',
             'house_nr' => 'required',
             'zip' => 'required',
@@ -45,9 +45,11 @@ class Node extends \BaseModel
     {
         $bsclass = $this->headend ? 'success' : 'info';
 
+        $label = $this->street.' '.$this->house_nr.', '.$this->city.' - '.$this->name;
+
         return ['table' => $this->table,
                 'index_header' => ['node.name', 'street', 'house_nr', 'zip', 'city', "$this->table.type", "$this->table.headend"],
-                'header' => $this->name,
+                'header' => $label,
                 'bsclass' => $bsclass,
                 // 'eager_loading' => ['contract'],
                 // 'edit' => ['contract.firstname' => 'getContractFirstname'],

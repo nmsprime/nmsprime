@@ -2,6 +2,8 @@
 
 namespace Modules\PropertyManagement\Http\Controllers;
 
+use Modules\PropertyManagement\Entities\Contact;
+
 class RealtyController extends \BaseController
 {
     /**
@@ -11,11 +13,15 @@ class RealtyController extends \BaseController
     {
         $nodes = selectList('node', 'name', true);
 
-        $administrations = \DB::table('contact')->whereNull('deleted_at')->where('administration', 1)->get();
-        $localContacts = \DB::table('contact')->whereNull('deleted_at')->where('administration', 0)->get();
+        $contactTypes['administration'] = \DB::table('contact')->whereNull('deleted_at')->where('administration', 1)->get();
+        $contactTypes['local'] = \DB::table('contact')->whereNull('deleted_at')->where('administration', 0)->get();
 
-        $administrations = $model->html_list($administrations, ['firstname1', 'lastname1'], true, ' ');
-        $localContacts = $model->html_list($localContacts, ['firstname1', 'lastname1'], true, ' ');
+        $contactArr = ['administration' => [null => null], 'local' => [null => null]];
+        foreach ($contactTypes as $key => $contacts) {
+            foreach ($contacts as $contact) {
+                $contactArr[$key][$contact->id] = Contact::labelFromData($contact);
+            }
+        }
 
         // label has to be the same like column in sql table
         $fields = [
@@ -36,8 +42,8 @@ class RealtyController extends \BaseController
             ['form_type' => 'text', 'name' => 'last_restoration_on', 'description' => trans('dt_header.realty.last_restoration_on')],
             ['form_type' => 'text', 'name' => 'expansion_degree', 'description' => trans('dt_header.expansion_degree'), 'space' => 1],
 
-            ['form_type' => 'select', 'name' => 'contact_id', 'value' => $administrations, 'description' => trans('dt_header.realty.contact_id')],
-            ['form_type' => 'select', 'name' => 'contact_local_id', 'value' => $localContacts, 'description' => trans('dt_header.realty.contact_local_id'), 'space' => 1],
+            ['form_type' => 'select', 'name' => 'contact_id', 'value' => $contactArr['administration'], 'description' => trans('dt_header.realty.contact_id')],
+            ['form_type' => 'select', 'name' => 'contact_local_id', 'value' => $contactArr['local'], 'description' => trans('dt_header.realty.contact_local_id'), 'space' => 1],
         ];
 
         if ($model->id) {

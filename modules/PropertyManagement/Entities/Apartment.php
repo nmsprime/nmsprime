@@ -84,4 +84,11 @@ class Apartment extends \BaseModel
     {
         return $this->belongsTo(Realty::class);
     }
+
+    public static function labelFromData($apartment)
+    {
+        // Adresse von Liegenschaft + Etage + Nummer
+        // Note realty data must be joined
+        return $apartment->street.' '.$apartment->house_nr.', '.$apartment->city.' - '.$apartment->anum.' ('.$apartment->floor.')';
+    }
 }

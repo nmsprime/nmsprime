@@ -58,7 +58,7 @@ class Contact extends \BaseModel
 
     public function label()
     {
-        return $this->firstname1.' '.$this->lastname1;
+        return self::labelFromData($this);
     }
 
     public function view_has_many()
@@ -75,5 +75,14 @@ class Contact extends \BaseModel
     public function realties()
     {
         return $this->HasMany(Realty::class);
+    }
+
+    public static function labelFromData($contact = null)
+    {
+        $label = $contact->company ? $contact->company.': ' : '';
+        $label .= $contact->firstname1.' '.$contact->lastname1;
+        $label .= $contact->firstname2 ? ', '.$contact->firstname2.' '.$contact->lastname2 : '';
+
+        return $label;
     }
 }

@@ -14,7 +14,6 @@ class Realty extends \BaseModel
     {
         return [
             'node_id' => 'required',
-            'name' => 'required',
             'street' => 'required',
             'house_nr' => 'required',
             'zip' => 'required',
@@ -59,11 +58,7 @@ class Realty extends \BaseModel
             $bsclass = 'info';
         }
 
-        $label = $this->number ?: '';
-        if ($label) {
-            $label .= ' - ';
-        }
-        $label .= $this->name;
+        $label = self::labelFromData($this);
 
         return ['table' => $this->table,
                 'index_header' => ["$this->table.name", 'number', 'street', 'house_nr', 'zip', 'city',
@@ -236,7 +231,20 @@ class Realty extends \BaseModel
         return $contracts->get();
     }
 
+    /**
+     * Concatenate label from std class with realty data as returned from DB::table
+     *
+     * @param obj  $realty  PHP std class returned in collection from DB::table
+     * @return string
+     */
+    public static function labelFromData($realty)
+    {
+        $label = $realty->number ? $realty->number.' - ' : '';
+        $label .= $realty->street.' '.$realty->house_nr.', '.$realty->city;
+        $label .= $realty->name ? ' ('.$realty->name.')' : '';
 
+        return $label;
+    }
 }
 
 class RealtyObserver
