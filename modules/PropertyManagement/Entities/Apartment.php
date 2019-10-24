@@ -57,15 +57,6 @@ class Apartment extends \BaseModel
         if (\Module::collections()->has('ProvBase')) {
             $ret['Edit']['Modem']['class'] = 'Modem';
             $ret['Edit']['Modem']['relation'] = $this->modems;
-
-            $ret['Edit']['Contract']['class'] = 'Contract';
-            if ($this->contract) {
-                $ret['Edit']['Contract']['relation'] = collect([$this->contract]);
-                $ret['Edit']['Contract']['options']['hide_create_button'] = 1;
-            } else {
-                $ret['Edit']['Contract']['relation'] = collect();
-                $ret['Edit']['Contract']['options']['hide_delete_button'] = 1;
-            }
         }
 
         return $ret;
