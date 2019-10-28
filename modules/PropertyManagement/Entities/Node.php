@@ -4,12 +4,21 @@ namespace Modules\PropertyManagement\Entities;
 
 class Node extends \BaseModel
 {
+    use \App\Extensions\Geocoding\Geocoding;
+
     // The associated SQL table for this Model
     public $table = 'node';
 
     protected $casts = [
         'headend' => 'boolean',
     ];
+
+    public static function boot()
+    {
+        parent::boot();
+
+        self::observe(new NodeObserver);
+    }
 
     // Add your validation rules here
     public static function rules($id = null)
@@ -70,5 +79,18 @@ class Node extends \BaseModel
     public function realties()
     {
         return $this->HasMany(Realty::class);
+    }
+}
+
+class NodeObserver
+{
+    public function creating($node)
+    {
+        $node->setGeocodes();
+    }
+
+    public function updating($node)
+    {
+        $node->setGeocodes();
     }
 }

@@ -4,6 +4,8 @@ namespace Modules\PropertyManagement\Entities;
 
 class Realty extends \BaseModel
 {
+    use \App\Extensions\Geocoding\Geocoding;
+
     // The associated SQL table for this Model
     public $table = 'realty';
 
@@ -249,6 +251,16 @@ class Realty extends \BaseModel
 
 class RealtyObserver
 {
+    public function creating($realty)
+    {
+        $realty->setGeocodes();
+    }
+
+    public function updating($realty)
+    {
+        $realty->setGeocodes();
+    }
+
     public function updated($realty)
     {
         $this->updateRelatedModelsAddress($realty);

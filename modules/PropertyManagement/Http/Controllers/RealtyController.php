@@ -2,6 +2,7 @@
 
 namespace Modules\PropertyManagement\Http\Controllers;
 
+use App\Http\Controllers\BaseViewController;
 use Modules\PropertyManagement\Entities\Contact;
 
 class RealtyController extends \BaseController
@@ -33,7 +34,10 @@ class RealtyController extends \BaseController
             ['form_type' => 'text', 'name' => 'house_nr', 'description' => 'House number'],
             ['form_type' => 'text', 'name' => 'zip', 'description' => 'Zip', 'autocomplete' => []],
             ['form_type' => 'text', 'name' => 'city', 'description' => 'City', 'autocomplete' => []],
-            ['form_type' => 'text', 'name' => 'district', 'description' => 'District', 'autocomplete' => [], 'space' => 1],
+            ['form_type' => 'text', 'name' => 'district', 'description' => 'District', 'autocomplete' => []],
+            ['form_type' => 'text', 'name' => 'country_code', 'description' => 'Country code', 'help' => trans('helper.countryCode')],
+            ['form_type' => 'html', 'name' => 'geopos', 'description' => trans('messages.geopos_x_y'), 'html' => BaseViewController::geoPosFields($model)],
+            ['form_type' => 'text', 'name' => 'geocode_source', 'description' => 'Geocode origin', 'help' => trans('helper.Modem_GeocodeOrigin'), 'space' => 1],
 
             ['form_type' => 'checkbox', 'name' => 'group_contract', 'description' => trans('propertymanagement::view.group_contract')],
             ['form_type' => 'checkbox', 'name' => 'concession_agreement', 'description' => trans('propertymanagement::view.realty.concession_agreement')],
