@@ -58,6 +58,8 @@ class Realty extends \BaseModel
             $bsclass = 'warning';
         } elseif ($this->concession_agreement) {
             $bsclass = 'info';
+        } elseif ($this->apartments->isEmpty()) {
+            $bsclass = 'active';
         }
 
         $label = self::labelFromData($this);
