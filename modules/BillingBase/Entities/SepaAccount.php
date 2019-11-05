@@ -366,9 +366,10 @@ class SepaAccount extends \BaseModel
             return;
         }
 
-        $info = $this->invoice_headline.' - ';
-        $info .= $this->invoice_headline == 'Kostenumlage' ? date('Y').' (abzüglich Verstärker)' : trans('messages.month').' '.date('m/Y', strtotime('first day of last month'));
-        $info .= ' - '.$mandate->contract->lastname.', '.$mandate->contract->firstname;
+        $info = $this->invoice_headline.' ';
+        $info .= $this->invoice_headline == 'Kostenumlage' ? date('Y').' (abzüglich Verstärker)' : date('m/Y', strtotime('first day of last month'));
+        $info .= ' - '.$mandate->contract->number.' - ';
+        $info .= $mandate->contract->company ?: $mandate->contract->lastname.', '.$mandate->contract->firstname;
         $info .= ' - '.$this->company->name;
 
         // max length of SFirm
@@ -384,7 +385,7 @@ class SepaAccount extends \BaseModel
                 'creditorBic'           => $mandate->bic,
                 'creditorName'          => $mandate->holder,
                 'endToEndId'            => 'RG '.$this->_get_invoice_nr_formatted(),
-                'remittanceInformation' => substr("$info - $mandate->reference", 0, 140),
+                'remittanceInformation' => $info,
             ];
 
             $this->sepa_xml['credits'][] = $data;
