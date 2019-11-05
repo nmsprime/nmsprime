@@ -102,7 +102,7 @@ class cactiCommand extends Command
                 ->where('name', '=', 'cablemodem')
                 ->select('id')->first()->id;
 
-            exec("php -q $path/add_device.php --description=$name --ip=$hostname --template=$host_template_id --community=$community --avail=snmp --version=2", $out);
+            exec("php -q $path/add_device.php --description=$name --ip=$hostname --template=$host_template_id --community=$community --avail=none --version=2", $out);
             preg_match('/^Success - new device-id: \(([0-9]+)\)$/', end($out), $matches);
             if (count($matches) != 2) {
                 continue;
@@ -178,7 +178,7 @@ class cactiCommand extends Command
             }
 
             $out = [];
-            exec("php -q $path/add_device.php --description=\"$name\" --ip=$hostname --template=$host_template->id --community=\"$community\" --avail=none --version=2", $out);
+            exec("php -q $path/add_device.php --description=\"$name\" --ip=$hostname --template=$host_template->id --community=\"$community\" --avail=snmp --version=2", $out);
             preg_match('/^Success - new device-id: \(([0-9]+)\)$/', end($out), $matches);
             if (count($matches) != 2) {
                 continue;
