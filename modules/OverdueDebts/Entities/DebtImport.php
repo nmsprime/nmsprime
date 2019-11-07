@@ -90,7 +90,7 @@ class DebtImport
             exit(-1);
         }
 
-        Debt::truncate();
+        Debt::withTrashed()->forceDelete();
 
         // Output
         $importInfo = trans('overduedebts::messages.import.count', ['number' => $num]);
