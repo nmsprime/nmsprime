@@ -34,7 +34,7 @@ class ChangeFloatToDecimal extends BaseMigration
         });
 
         Schema::table('product', function (Blueprint $table) {
-            $table->decimal('price', 10, 4)->nullable()->change();
+            $table->float('price', 10, 4)->nullable()->change();
         });
     }
 }
