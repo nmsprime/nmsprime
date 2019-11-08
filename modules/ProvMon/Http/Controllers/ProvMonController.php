@@ -171,11 +171,23 @@ class ProvMonController extends \BaseController
         $ip = ($ip == $hostname) ? null : $ip;
 
         if ($virtParam) {
-            $genieModel = json_decode($modem->callGenieAcsApi('http://'.ProvBase::first()['provisioning_server'].':7557/devices/?query=%7B%22VirtualParameters.SerialNumber%22%3A%22'.strtoupper($virtParam).'%22%7D&projection=VirtualParameters.IP', 'GET'));
             $ip = null;
+            $virtParam = strtoupper($virtParam);
 
-            if (array_key_exists(0, $genieModel)) {
-                $ip = $genieModel[0]->VirtualParameters->IP->_value;
+            foreach (['Device', 'InternetGatewayDevice'] as $dev) {
+                $genieModel = json_decode($modem->callGenieAcsApi("http://localhost:7557/devices/?query={\"VirtualParameters.SerialNumber\":\"$virtParam\"}&projection=$dev.ManagementServer.ConnectionRequestURL", 'GET'));
+
+                if (empty($genieModel) || ! isset($genieModel[0]->{$dev})) {
+                    continue;
+                }
+
+                if (preg_match('/https?:\/\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $genieModel[0]->{$dev}->ManagementServer->ConnectionRequestURL->_value, $match) != 1) {
+                    continue;
+                }
+
+                $ip = $hostname = $match[1];
+
+                break;
             }
         }
 
