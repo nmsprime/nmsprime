@@ -99,6 +99,7 @@ class Realty extends \BaseModel
         $ret['Edit']['Apartment']['relation'] = $this->apartments;
 
         if (\Module::collections()->has('ProvBase')) {
+            // TODO: Hide create button for modems?
             $ret['Edit']['Modem']['class'] = 'Modem';
             $ret['Edit']['Modem']['relation'] = $this->modems;
 
@@ -125,11 +126,12 @@ class Realty extends \BaseModel
 
             // Show all indirectly related contracts as info
             $contracts = $this->getRelatedContracts(false);
+            $key = $this->apartments->isEmpty() ? 'ContractInfoRealty' : 'ContractInfoApartment';
 
-            $ret['Edit']['ContractInfo']['class'] = 'Contract';
-            $ret['Edit']['ContractInfo']['relation'] = $contracts;
-            $ret['Edit']['ContractInfo']['options']['hide_create_button'] = 1;
-            $ret['Edit']['ContractInfo']['options']['hide_delete_button'] = 1;
+            $ret['Edit'][$key]['class'] = 'Contract';
+            $ret['Edit'][$key]['relation'] = $contracts;
+            $ret['Edit'][$key]['options']['hide_create_button'] = 1;
+            $ret['Edit'][$key]['options']['hide_delete_button'] = 1;
         }
 
         return $ret;
