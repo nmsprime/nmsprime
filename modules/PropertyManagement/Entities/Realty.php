@@ -291,6 +291,11 @@ class RealtyObserver
         $models = \Modules\ProvBase\Entities\Modem::leftJoin('apartment as a', 'a.id', '=', 'modem.apartment_id')
             ->whereNull('a.deleted_at')
             ->whereNull('modem.deleted_at')
+            ->where(function ($query) use ($realty) {
+                $query
+                ->where('modem.realty_id', $realty->id)
+                ->orWhere('a.realty_id', $realty->id);
+            })
             ->select('modem.*')
             ->get();
 
