@@ -214,14 +214,18 @@ class Realty extends \BaseModel
         $contracts1 = \Modules\ProvBase\Entities\Contract::join('modem as am', 'am.contract_id', 'contract.id')
             ->join('apartment', 'am.apartment_id', 'apartment.id')
             ->where('apartment.realty_id', $this->id)
+            ->whereNull('apartment.deleted_at')
+            ->whereNull('am.deleted_at')
+            ->whereNull('contract.deleted_at')
             ->select('contract.*');
 
         $contracts2 = \Modules\ProvBase\Entities\Contract::join('modem as rm', 'rm.contract_id', 'contract.id')
             ->where('rm.realty_id', $this->id)
+            ->whereNull('rm.deleted_at')
+            ->whereNull('contract.deleted_at')
             ->select('contract.*');
 
         $contracts = $contracts2->union($contracts1);
-
         if ($withGroupContract) {
             $contracts3 = \Modules\ProvBase\Entities\Contract::where('realty_id', $this->id);
 
@@ -285,8 +289,8 @@ class RealtyObserver
 
         // Models: realty->contract,  realty->modem, realty->apartment->modem
         $models = \Modules\ProvBase\Entities\Modem::leftJoin('apartment as a', 'a.id', '=', 'modem.apartment_id')
-            ->where('modem.realty_id', $realty->id)
-            ->orWhere('a.realty_id', $realty->id)
+            ->whereNull('a.deleted_at')
+            ->whereNull('modem.deleted_at')
             ->select('modem.*')
             ->get();
 
