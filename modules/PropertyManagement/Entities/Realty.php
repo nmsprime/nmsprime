@@ -65,7 +65,7 @@ class Realty extends \BaseModel
         $label = self::labelFromData($this);
 
         return ['table' => $this->table,
-                'index_header' => ["$this->table.name", 'number', 'street', 'house_nr', 'zip', 'city',
+                'index_header' => ['id', "$this->table.name", 'number', 'street', 'house_nr', 'zip', 'city',
                     "$this->table.contact_id", "$this->table.contact_local_id",
                     'expansion_degree', "$this->table.concession_agreement",
                     "$this->table.agreement_from", "$this->table.agreement_to", "$this->table.last_restoration_on", 'group_contract',
