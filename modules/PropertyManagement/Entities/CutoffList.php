@@ -29,7 +29,7 @@ class CutoffList extends \BaseModel
                 'street', 'house_nr', 'zip', 'city', 'district',
                 'number', 'floor', 'type',
                 'connected', 'occupied', 'connection_type',
-                'contract_end'
+                'contract_end',
             ],
             'header' => "$this->number - $this->floor",
         ];
@@ -105,7 +105,7 @@ class CutoffList extends \BaseModel
             ->where('contract.contract_end', '<', date('Y-m-d'))
             ->select(array_merge($selectArr, [
                 'apartment.connected', 'apartment.occupied', 'apartment.connection_type', 'apartment.number',
-                \DB::raw("'{$type['apartment']}' as type"), \DB::raw('CAST(floor as CHAR(10)) as floor'), 'apartment.id as apartmentId'
+                \DB::raw("'{$type['apartment']}' as type"), \DB::raw('CAST(floor as CHAR(10)) as floor'), 'apartment.id as apartmentId',
             ]))
             ->groupBy('contract.id');
 
@@ -117,7 +117,7 @@ class CutoffList extends \BaseModel
             ->where('realty.connected', 1)
             ->select(array_merge($selectArr, [
                 'realty.connected', 'realty.occupied', 'realty.connection_type', 'realty.number as number',
-                \DB::raw("'{$type['realty']}' as type"), \DB::raw('NULL as floor'), 'realty.id as realtyId'
+                \DB::raw("'{$type['realty']}' as type"), \DB::raw('NULL as floor'), 'realty.id as realtyId',
             ]))
             ->groupBy('contract.id');
 

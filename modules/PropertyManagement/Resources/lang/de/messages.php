@@ -9,5 +9,5 @@ return [
     'realty' => [
         'apartmentRelationInfo' => 'Wohnungen können der Liegenschaft nur zugewiesen werden, wenn dies ein Mehrfamilienhaus ist und Modems nicht direkt hinzugefügt wurden. Löschen Sie alle zugewiesenen Modems, wenn Sie der Liegenschaft Wohnungen zuweisen wollen.',
         'modemRelationInfo' => 'Modems können der Liegenschaft nur explizit zugewiesen werden, wenn sie keinen Gruppenvertrag enthält und dies ein Einfamilienhaus ist - also keine Wohnungen angelegt wurden. Löschen Sie alle zugewiesenen Wohnungen, wenn Sie der Liegenschaft direkt Modems zuweisen wollen.',
-    ]
+    ],
 ];
