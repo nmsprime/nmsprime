@@ -16,6 +16,7 @@ class UpdateRealtyAddContactRelation extends BaseMigration
         Schema::table($this->tablename, function (Blueprint $table) {
             $table->unsignedInteger('contact_id')->nullable();
             $table->unsignedInteger('contact_local_id')->nullable();
+            $table->dropColumn('administration');
         });
     }
 
@@ -28,6 +29,7 @@ class UpdateRealtyAddContactRelation extends BaseMigration
     {
         Schema::table($this->tablename, function (Blueprint $table) {
             $table->dropColumn(['contact_id', 'contact_local_id']);
+            $table->string('administration')->nullable();
         });
     }
 }
