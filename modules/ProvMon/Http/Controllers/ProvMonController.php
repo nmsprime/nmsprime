@@ -102,13 +102,12 @@ class ProvMonController extends \BaseController
         // Configfile TR-069
         if (! $configfile = $this->getConfigfileText("/tftpboot/cm/$modem->hostname")) {
             foreach (['sn', 'mac'] as $param) {
-                $preset = $modem->callGenieAcsApi('http://'.ProvBase::first()['provisioning_server'].":7557/presets/?query=%7B%22_id%22%3A%22$param".'_'."$id%22%7D", 'GET');
+                $preset = $modem->callGenieAcsApi("http://localhost:7557/presets/?query={\"_id\":\"{$param}_{$id}\"}", 'GET');
+
                 $array = preg_split('/(}"?,)/', $preset, -1, PREG_SPLIT_DELIM_CAPTURE);
 
                 if (preg_match('/[a-z]+/', $preset) != 0) {
                     $configfile['text'] = $array;
-                    $onlineStatus = $this->modemOnlineStatus($modem, $hostname, $param == 'mac' ? $mac : $modem->serial_num);
-
                     break;
                 }
             }
@@ -162,26 +161,22 @@ class ProvMonController extends \BaseController
      * @author  Roy Schneider
      * @param   modem    Modules\ProvBase\Entities\Modem
      * @param   hostname    string
-     * @param   virtParam    mixed value
      * @return  array
      */
-    public function modemOnlineStatus($modem, $hostname, $virtParam = null)
+    public function modemOnlineStatus($modem, $hostname)
     {
         $ip = gethostbyname($hostname);
         $ip = ($ip == $hostname) ? null : $ip;
 
-        if ($virtParam) {
-            $ip = null;
-            $virtParam = strtoupper($virtParam);
-
+        if ($modem->isTR069()) {
             foreach (['Device', 'InternetGatewayDevice'] as $dev) {
-                $genieModel = json_decode($modem->callGenieAcsApi("http://localhost:7557/devices/?query={\"VirtualParameters.SerialNumber\":\"$virtParam\"}&projection=$dev.ManagementServer.ConnectionRequestURL", 'GET'));
+                $genieModel = $modem->getGenieAcsModel("$dev.ManagementServer.ConnectionRequestURL");
 
-                if (empty($genieModel) || ! isset($genieModel[0]->{$dev})) {
+                if (! $genieModel || ! isset($genieModel->{$dev})) {
                     continue;
                 }
 
-                if (preg_match('/https?:\/\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $genieModel[0]->{$dev}->ManagementServer->ConnectionRequestURL->_value, $match) != 1) {
+                if (preg_match('/https?:\/\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $genieModel->{$dev}->ManagementServer->ConnectionRequestURL->_value, $match) != 1) {
                     continue;
                 }
 
