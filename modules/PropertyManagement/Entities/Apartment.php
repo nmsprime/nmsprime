@@ -44,11 +44,13 @@ class Apartment extends \BaseModel
         $bsclass = 'success';
 
         return ['table' => $this->table,
-                'index_header' => ["$this->table.number", 'floor', "$this->table.connected", "$this->table.occupied", 'connection_type'],
+                'index_header' => ['realty.street', 'realty.house_nr', 'realty.zip', 'realty.city', 'realty.district',
+                    "$this->table.number", 'floor',
+                    "$this->table.connected", "$this->table.occupied", 'connection_type',
+                ],
                 'header' => "$this->number - $this->floor",
                 'bsclass' => $bsclass,
-                // 'eager_loading' => ['contract'],
-                // 'edit' => ['contract.firstname' => 'getContractFirstname'],
+                'eager_loading' => ['realty'],
             ];
     }
 
@@ -57,15 +59,6 @@ class Apartment extends \BaseModel
         if (\Module::collections()->has('ProvBase')) {
             $ret['Edit']['Modem']['class'] = 'Modem';
             $ret['Edit']['Modem']['relation'] = $this->modems;
-
-            $ret['Edit']['Contract']['class'] = 'Contract';
-            if ($this->contract) {
-                $ret['Edit']['Contract']['relation'] = collect([$this->contract]);
-                $ret['Edit']['Contract']['options']['hide_create_button'] = 1;
-            } else {
-                $ret['Edit']['Contract']['relation'] = collect();
-                $ret['Edit']['Contract']['options']['hide_delete_button'] = 1;
-            }
         }
 
         return $ret;
@@ -86,11 +79,18 @@ class Apartment extends \BaseModel
 
     public function modems()
     {
-        return $this->HasMany(\Modules\ProvBase\Entities\Modem::class);
+        return $this->hasMany(\Modules\ProvBase\Entities\Modem::class);
     }
 
     public function realty()
     {
         return $this->belongsTo(Realty::class);
+    }
+
+    public static function labelFromData($apartment)
+    {
+        // Adresse von Liegenschaft + Etage + Nummer
+        // Note realty data must be joined
+        return $apartment->street.' '.$apartment->house_nr.', '.$apartment->city.' - '.$apartment->number.' ('.$apartment->floor.')';
     }
 }

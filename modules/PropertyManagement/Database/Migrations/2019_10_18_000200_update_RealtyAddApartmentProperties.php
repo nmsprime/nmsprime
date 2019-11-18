@@ -2,21 +2,21 @@
 
 use Illuminate\Database\Schema\Blueprint;
 
-class UpdateRealtyAddContactRelation extends BaseMigration
+class UpdateRealtyAddApartmentProperties extends BaseMigration
 {
     protected $tablename = 'realty';
 
     /**
-     * Run the migrations.
+     * Run the migrations. Realty must have the same properties as an Apartment
      *
      * @return void
      */
     public function up()
     {
         Schema::table($this->tablename, function (Blueprint $table) {
-            $table->unsignedInteger('contact_id')->nullable();
-            $table->unsignedInteger('contact_local_id')->nullable();
-            $table->dropColumn('administration');
+            $table->boolean('connected');
+            $table->string('connection_type')->nullable();
+            $table->boolean('occupied');
         });
     }
 
@@ -28,8 +28,7 @@ class UpdateRealtyAddContactRelation extends BaseMigration
     public function down()
     {
         Schema::table($this->tablename, function (Blueprint $table) {
-            $table->dropColumn(['contact_id', 'contact_local_id']);
-            $table->string('administration')->nullable();
+            $table->dropColumn(['connected', 'connection_type', 'occupied']);
         });
     }
 }

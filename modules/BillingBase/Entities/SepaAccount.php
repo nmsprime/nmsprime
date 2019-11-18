@@ -269,17 +269,18 @@ class SepaAccount extends \BaseModel
             'District'      => $contract->district,
             ];
 
-        // Set AG contact if present - cache file exists query for better performance
-        if (! isset($this->setContact)) {
-            $this->setContact = Storage::exists('config/billingbase/ags.php');
-        }
+        // Set Contact
+        if (\Module::collections()->has('PropertyManagement')) {
+            $realty = $contract->getRealty();
+            $contactId = $realty ? ($realty->contact_id ?: $realty->contact_local_id) : 0;
 
-        if ($this->setContact) {
+            $data['Contact'] = $contactId ? SettlementRunData::getContact($contactId) : '';
+        } elseif (Storage::exists('config/billingbase/ags.php')) {
             if (! isset($this->agContacts)) {
                 $this->agContacts = require storage_path('app/config/billingbase/ags.php');
             }
 
-            $data['AG'] = isset($this->agContacts[$contract->contact]) ? $this->agContacts[$contract->contact] : '';
+            $data['AG'] = $this->agContacts[$contract->contact] ?? '';
         }
 
         if ($mandate) {

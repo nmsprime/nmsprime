@@ -21,6 +21,13 @@ class SettlementRunProvider
     protected $accounts;
 
     /**
+     * Call Data Records of providers
+     *
+     * @var array
+     */
+    protected $cdrs;
+
+    /**
      * The BillingBase model containing the global configuration entries for the billing module
      *
      * @var obj
@@ -28,18 +35,18 @@ class SettlementRunProvider
     protected $conf;
 
     /**
+     * Contacts from PropertyManagement module
+     *
+     * @var Illuminate\Database\Eloquent\Collection
+     */
+    protected $contacts;
+
+    /**
      * Often used dates in SettlementRun
      *
      * @var array
      */
     protected $dates;
-
-    /**
-     * Call Data Records of providers
-     *
-     * @var array
-     */
-    protected $cdrs;
 
     public function __construct()
     {
@@ -129,6 +136,15 @@ class SettlementRunProvider
         $this->cdrs = $class->parse();
     }
 
+    public function setContacts()
+    {
+        if (! \Module::collections()->has('PropertyManagement')) {
+            return;
+        }
+
+        $this->contacts = \Modules\PropertyManagement\Entities\Contact::get();
+    }
+
     ////////////////////////////////////////////////
     /////////////////// GETTERS ////////////////////
     ////////////////////////////////////////////////
@@ -172,5 +188,16 @@ class SettlementRunProvider
         }
 
         return $this->cdrs[$number] ?? [];
+    }
+
+    public function getContact($id)
+    {
+        if (! $this->contacts) {
+            $this->setContacts();
+        }
+
+        $contact = $this->contacts->find($id);
+
+        return $contact ? $contact->label() : '';
     }
 }

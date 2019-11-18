@@ -4,6 +4,8 @@ namespace Modules\PropertyManagement\Entities;
 
 class Node extends \BaseModel
 {
+    use \App\Extensions\Geocoding\Geocoding;
+
     // The associated SQL table for this Model
     public $table = 'node';
 
@@ -11,11 +13,18 @@ class Node extends \BaseModel
         'headend' => 'boolean',
     ];
 
+    public static function boot()
+    {
+        parent::boot();
+
+        self::observe(new NodeObserver);
+    }
+
     // Add your validation rules here
     public static function rules($id = null)
     {
         return [
-            'name' => 'required',
+            // 'name' => 'required',
             'street' => 'required',
             'house_nr' => 'required',
             'zip' => 'required',
@@ -45,9 +54,11 @@ class Node extends \BaseModel
     {
         $bsclass = $this->headend ? 'success' : 'info';
 
+        $label = $this->street.' '.$this->house_nr.', '.$this->city.' - '.$this->name;
+
         return ['table' => $this->table,
                 'index_header' => ['node.name', 'street', 'house_nr', 'zip', 'city', "$this->table.type", "$this->table.headend"],
-                'header' => $this->name,
+                'header' => $label,
                 'bsclass' => $bsclass,
                 // 'eager_loading' => ['contract'],
                 // 'edit' => ['contract.firstname' => 'getContractFirstname'],
@@ -67,6 +78,19 @@ class Node extends \BaseModel
      */
     public function realties()
     {
-        return $this->HasMany(Realty::class);
+        return $this->hasMany(Realty::class);
+    }
+}
+
+class NodeObserver
+{
+    public function creating($node)
+    {
+        $node->setGeocodes();
+    }
+
+    public function updating($node)
+    {
+        $node->setGeocodes();
     }
 }

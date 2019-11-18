@@ -9,11 +9,22 @@ class ApartmentController extends \BaseController
      */
     public function view_form_fields($model = null)
     {
-        $realties = selectList('realty', ['number', 'name'], true, ' - ');
+        // $realties = selectList('realty', ['number', 'name'], true, ' - ');
+        $realties = \DB::table('realty')->leftJoin('modem', 'modem.realty_id', 'realty.id')
+            // ->leftJoin('contract', 'contract.realty_id', 'realty.id')
+            // ->whereNull('contract.id')
+            ->whereNull('modem.id')
+            ->select('realty.*')
+            ->get();
+
+        $arr[null] = null;
+        foreach ($realties as $realty) {
+            $arr[$realty->id] = \Modules\PropertyManagement\Entities\Realty::labelFromData($realty);
+        }
 
         // label has to be the same like column in sql table
         $fields = [
-            ['form_type' => 'select', 'name' => 'realty_id', 'description' => 'Realty', 'value' => $realties, 'space' => 1],
+            ['form_type' => 'select', 'name' => 'realty_id', 'description' => 'Realty', 'value' => $arr, 'space' => 1],
             ['form_type' => 'text', 'name' => 'number', 'description' => 'Number'],
             ['form_type' => 'text', 'name' => 'floor', 'description' => 'Floor', 'space' => 1],
 

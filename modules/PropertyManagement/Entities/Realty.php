@@ -4,6 +4,8 @@ namespace Modules\PropertyManagement\Entities;
 
 class Realty extends \BaseModel
 {
+    use \App\Extensions\Geocoding\Geocoding;
+
     // The associated SQL table for this Model
     public $table = 'realty';
 
@@ -14,7 +16,6 @@ class Realty extends \BaseModel
     {
         return [
             'node_id' => 'required',
-            'name' => 'required',
             'street' => 'required',
             'house_nr' => 'required',
             'zip' => 'required',
@@ -57,16 +58,14 @@ class Realty extends \BaseModel
             $bsclass = 'warning';
         } elseif ($this->concession_agreement) {
             $bsclass = 'info';
+        } elseif ($this->apartments->isEmpty()) {
+            $bsclass = 'active';
         }
 
-        $label = $this->number ?: '';
-        if ($label) {
-            $label .= ' - ';
-        }
-        $label .= $this->name;
+        $label = self::labelFromData($this);
 
         return ['table' => $this->table,
-                'index_header' => ["$this->table.name", 'number', 'street', 'house_nr', 'zip', 'city',
+                'index_header' => ['id', "$this->table.name", 'number', 'street', 'house_nr', 'zip', 'city',
                     "$this->table.contact_id", "$this->table.contact_local_id",
                     'expansion_degree', "$this->table.concession_agreement",
                     "$this->table.agreement_from", "$this->table.agreement_to", "$this->table.last_restoration_on", 'group_contract',
@@ -100,10 +99,39 @@ class Realty extends \BaseModel
         $ret['Edit']['Apartment']['relation'] = $this->apartments;
 
         if (\Module::collections()->has('ProvBase')) {
+            // TODO: Hide create button for modems?
             $ret['Edit']['Modem']['class'] = 'Modem';
             $ret['Edit']['Modem']['relation'] = $this->modems;
-            $ret['Edit']['Contract']['class'] = 'Contract';
-            $ret['Edit']['Contract']['relation'] = $this->contracts;
+
+            if ($this->apartments->isNotEmpty() || $this->group_contract) {
+                $ret['Edit']['Modem']['options']['hide_create_button'] = 1;
+                $ret['Edit']['Modem']['info'] = trans('propertymanagement::messages.realty.modemRelationInfo');
+            }
+            if ($this->modems->isNotEmpty()) {
+                $ret['Edit']['Apartment']['options']['hide_create_button'] = 1;
+                $ret['Edit']['Apartment']['info'] = trans('propertymanagement::messages.realty.apartmentRelationInfo');
+            }
+
+            if ($this->group_contract) {
+                // Only 1 contract for group contracts
+                $ret['Edit']['GroupContract']['class'] = 'Contract';
+                if ($this->contract) {
+                    $ret['Edit']['GroupContract']['relation'] = collect([$this->contract]);
+                    $ret['Edit']['GroupContract']['options']['hide_create_button'] = 1;
+                } else {
+                    $ret['Edit']['GroupContract']['relation'] = collect();
+                    $ret['Edit']['GroupContract']['options']['hide_delete_button'] = 1;
+                }
+            }
+
+            // Show all indirectly related contracts as info
+            $contracts = $this->getRelatedContracts(false);
+            $key = $this->apartments->isEmpty() ? 'ContractInfoRealty' : 'ContractInfoApartment';
+
+            $ret['Edit'][$key]['class'] = 'Contract';
+            $ret['Edit'][$key]['relation'] = $contracts;
+            $ret['Edit'][$key]['options']['hide_create_button'] = 1;
+            $ret['Edit'][$key]['options']['hide_delete_button'] = 1;
         }
 
         return $ret;
@@ -147,19 +175,19 @@ class Realty extends \BaseModel
     /**
      * Relationships:
      */
-    public function contracts()
+    public function contract()
     {
-        return $this->HasMany(\Modules\ProvBase\Entities\Contract::class);
+        return $this->hasOne(\Modules\ProvBase\Entities\Contract::class);
     }
 
     public function apartments()
     {
-        return $this->HasMany(Apartment::class);
+        return $this->hasMany(Apartment::class);
     }
 
     public function modems()
     {
-        return $this->HasMany(\Modules\ProvBase\Entities\Modem::class);
+        return $this->hasMany(\Modules\ProvBase\Entities\Modem::class);
     }
 
     public function node()
@@ -176,10 +204,71 @@ class Realty extends \BaseModel
     {
         return $this->belongsTo(Contact::class, 'contact_local_id');
     }
+
+    /**
+     * Get all Contracts indirectly related via Modem or via Apartment -> Modem - and group contract if param set to true
+     *
+     * @param bool $withGroupContract, $withModems
+     * @return Illuminate\Database\Eloquent\Collection of \Modules\ProvBase\Entities\Contract
+     */
+    public function getRelatedContracts($withGroupContract, $withModems = false)
+    {
+        $contracts1 = \Modules\ProvBase\Entities\Contract::join('modem as am', 'am.contract_id', 'contract.id')
+            ->join('apartment', 'am.apartment_id', 'apartment.id')
+            ->where('apartment.realty_id', $this->id)
+            ->whereNull('apartment.deleted_at')
+            ->whereNull('am.deleted_at')
+            ->whereNull('contract.deleted_at')
+            ->select('contract.*');
+
+        $contracts2 = \Modules\ProvBase\Entities\Contract::join('modem as rm', 'rm.contract_id', 'contract.id')
+            ->where('rm.realty_id', $this->id)
+            ->whereNull('rm.deleted_at')
+            ->whereNull('contract.deleted_at')
+            ->select('contract.*');
+
+        $contracts = $contracts2->union($contracts1);
+        if ($withGroupContract) {
+            $contracts3 = \Modules\ProvBase\Entities\Contract::where('realty_id', $this->id);
+
+            $contracts = $contracts->union($contracts3);
+        }
+
+        if ($withModems) {
+            $contracts = $contracts->with('modems');
+        }
+
+        return $contracts->get();
+    }
+
+    /**
+     * Concatenate label from std class with realty data as returned from DB::table
+     *
+     * @param obj  $realty  PHP std class returned in collection from DB::table
+     * @return string
+     */
+    public static function labelFromData($realty)
+    {
+        $label = $realty->number ? $realty->number.' - ' : '';
+        $label .= $realty->street.' '.$realty->house_nr.', '.$realty->city;
+        $label .= $realty->name ? ' ('.$realty->name.')' : '';
+
+        return $label;
+    }
 }
 
 class RealtyObserver
 {
+    public function creating($realty)
+    {
+        $realty->setGeocodes();
+    }
+
+    public function updating($realty)
+    {
+        $realty->setGeocodes();
+    }
+
     public function updated($realty)
     {
         $this->updateRelatedModelsAddress($realty);
@@ -200,31 +289,23 @@ class RealtyObserver
             return;
         }
 
-        // modem -> vertrag -> apartment -> realty
-        // modem -> apartment -> realty
-        // modem -> vertrag -> realty
-        // modem -> realty
-        // contract -> apartment -> realty
-        // contract -> realty
-        // Note: On extending the array by a new class this class must have the function updateAddressFromProperty()
-        foreach (['Contract', 'Modem'] as $class) {
-            $fqdn = "\Modules\ProvBase\Entities\\$class";
-            $table = strtolower($class);
+        // Models: realty->contract,  realty->modem, realty->apartment->modem
+        $models = \Modules\ProvBase\Entities\Modem::leftJoin('apartment as a', 'a.id', '=', 'modem.apartment_id')
+            ->whereNull('a.deleted_at')
+            ->whereNull('modem.deleted_at')
+            ->where(function ($query) use ($realty) {
+                $query
+                ->where('modem.realty_id', $realty->id)
+                ->orWhere('a.realty_id', $realty->id);
+            })
+            ->select('modem.*')
+            ->get();
 
-            $models = $fqdn::leftJoin('apartment as a', 'a.id', '=', "$table.apartment_id")
-                ->where("$table.realty_id", $realty->id)
-                ->orWhere('a.realty_id', $realty->id)
-                ->select("$table.*")
-                ->get();
-
-            if ($class == 'Contract') {
-                $modelsAll = $models;
-            } else {
-                $modelsAll = $modelsAll->merge($models);
-            }
+        if ($realty->contract) {
+            $models = $models->merge([$realty->contract]);
         }
 
-        foreach ($modelsAll as $model) {
+        foreach ($models as $model) {
             $model->updateAddressFromProperty();
         }
     }
