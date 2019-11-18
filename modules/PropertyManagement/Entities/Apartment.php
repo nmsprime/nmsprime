@@ -79,7 +79,7 @@ class Apartment extends \BaseModel
 
     public function modems()
     {
-        return $this->HasMany(\Modules\ProvBase\Entities\Modem::class);
+        return $this->hasMany(\Modules\ProvBase\Entities\Modem::class);
     }
 
     public function realty()

@@ -78,7 +78,7 @@ class Node extends \BaseModel
      */
     public function realties()
     {
-        return $this->HasMany(Realty::class);
+        return $this->hasMany(Realty::class);
     }
 }
 
