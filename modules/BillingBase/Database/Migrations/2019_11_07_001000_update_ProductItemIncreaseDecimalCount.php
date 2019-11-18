@@ -2,7 +2,7 @@
 
 use Illuminate\Database\Schema\Blueprint;
 
-class ChangeFloatToDecimal extends BaseMigration
+class UpdateProductItemIncreaseDecimalCount extends BaseMigration
 {
     /**
      * As float is inaccurate the best way to store money amounts accurate is via decimal type
@@ -14,11 +14,11 @@ class ChangeFloatToDecimal extends BaseMigration
     public function up()
     {
         Schema::table('item', function (Blueprint $table) {
-            $table->decimal('credit_amount', 10, 4)->nullable()->change();
+            $table->decimal('credit_amount', 13, 4)->nullable()->change();
         });
 
         Schema::table('product', function (Blueprint $table) {
-            $table->decimal('price', 10, 4)->nullable()->change();
+            $table->decimal('price', 13, 4)->nullable()->change();
         });
     }
 
@@ -30,11 +30,11 @@ class ChangeFloatToDecimal extends BaseMigration
     public function down()
     {
         Schema::table('item', function (Blueprint $table) {
-            $table->float('credit_amount')->nullable()->change();
+            $table->decimal('credit_amount', 10, 4)->nullable()->change();
         });
 
         Schema::table('product', function (Blueprint $table) {
-            $table->float('price', 10, 4)->nullable()->change();
+            $table->decimal('price', 10, 4)->nullable()->change();
         });
     }
 }

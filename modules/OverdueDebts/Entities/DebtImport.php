@@ -82,15 +82,11 @@ class DebtImport
         $num = count($arr);
         if (! $num) {
             $msg = 'Empty file';
-            ChannelLog::error('overduedebts', $msg);
-            if ($this->output) {
-                $this->output->error("$msg\n");
-            }
 
-            exit(-1);
+            $this->stopOnError($msg);
         }
 
-        Debt::truncate();
+        Debt::withTrashed()->forceDelete();
 
         // Output
         $importInfo = trans('overduedebts::messages.import.count', ['number' => $num]);
@@ -110,6 +106,12 @@ class DebtImport
 
             $this->block = false;
             $line = str_getcsv($line, ';');
+
+            if (count($line) != 16) {
+                $msg = trans('overduedebts::messages.import.columnCountError', ['number' => 16]);
+
+                $this->stopOnError($msg);
+            }
 
             $contract = Contract::where('number', $line[self::C_NR])->first();
 
@@ -293,5 +295,19 @@ class DebtImport
                 $this->output->error($msg);
             }
         }
+    }
+
+    /**
+     * Exit script after logging message to log file and printing it on command line
+     */
+    private function stopOnError($msg)
+    {
+        ChannelLog::error('overduedebts', $msg);
+
+        if ($this->output) {
+            $this->output->error("$msg\n");
+        }
+
+        exit(-1);
     }
 }

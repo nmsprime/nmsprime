@@ -7,6 +7,7 @@ return [
     'csvImportActive' => 'Der OP-Import läuft gerade. Bitte warten Sie bis der Prozess beendet wurde.',
     'import' => [
         'block' => 'Blockiere Internetzugriff und füge Mahngebühren hinzu...',
+        'columnCountError' => 'Die Anzahl der Spalten in der CSV ist fehlerhaft. Die Anzahl muss :number Spalten betragen.',
         'contractsBlocked' => 'Der Internetzugriff der Modems folgender :count Verträge wurde während des OP-Imports geblockt: :numbers.',
         'contractsMissing' => 'Die folgenden Verträge konnten nicht im System gefunden werden, haben aber offene Posten gemäß der hochgeladenen Datei: :numbers.',
         'count' =>  'Importiere :number Offene Posten.',

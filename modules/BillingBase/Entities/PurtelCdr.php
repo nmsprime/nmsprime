@@ -92,7 +92,7 @@ class PurtelCdr extends CdrGetter
         $logged = $phonenumbers = $unassigned = $mismatches = [];
         $price = $count = 0;
         $customer_nrs = self::get_customer_nrs();
-        $registrar = 'deu3.purtel.com';
+        $registrar = 'purtel.com';
         $cdr_first_day_of_month = date('Y-m-01', strtotime('first day of -'.(1 + SettlementRunData::getConf('cdr_offset')).' month'));
 
         // get phonenumbers because only username is given in CDR.csv
