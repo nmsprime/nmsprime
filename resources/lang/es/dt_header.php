@@ -4,7 +4,7 @@ return [
     // Index DataTable Header
     'amount' => 'Cantidad',
     'city' => 'Ciudad',
-    'connected' => 'Connected',
+    'connected' => 'Conectado',
     'connection_type' => 'Connection type',
     'expansion_degree' => 'Grado de expansión',
     'floor' => 'Piso',
