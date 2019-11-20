@@ -101,15 +101,10 @@ class ProvMonController extends \BaseController
 
         // Configfile TR-069
         if (! $configfile = $this->getConfigfileText("/tftpboot/cm/$modem->hostname")) {
-            foreach (['sn', 'mac'] as $param) {
-                $preset = $modem->callGenieAcsApi("http://localhost:7557/presets/?query={\"_id\":\"{$param}_{$id}\"}", 'GET');
+            $prov = json_decode($modem->callGenieAcsApi("provisions/?query={\"_id\":\"{$id}\"}", 'GET'));
 
-                $array = preg_split('/(}"?,)/', $preset, -1, PREG_SPLIT_DELIM_CAPTURE);
-
-                if (preg_match('/[a-z]+/', $preset) != 0) {
-                    $configfile['text'] = $array;
-                    break;
-                }
+            if ($prov && isset($prov[0]->script)) {
+                $configfile['text'] = preg_split('/\r\n|\r|\n/', $prov[0]->script);
             }
         }
 
