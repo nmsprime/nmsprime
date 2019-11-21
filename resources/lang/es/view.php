@@ -314,7 +314,7 @@ return [
         //Contract
         'Button_Create Apartment'       => 'Create Apartment',
         'Button_Create Node'            => 'Create Node',
-        'Button_Create Realty'          => 'Create Realty',
+        'Button_Create Realty'          => 'Crear propiedad',
 
         'Button_Create Contract'        => 'Crear contrato',
         'Button_Create Domain'      => 'Crear dominio',
@@ -395,7 +395,7 @@ return [
     'Numberrange_Type' => 'Tipo',
 
 // VoIP
-    'PhonebookEntry' => 'Phonebook entry',
+    'PhonebookEntry' => 'Entrada de libreta telefónica',
 
 // Error
     'error_specify_id'          => 'Por favor especifique el nombre de host en lugar de la dirección ip.',
