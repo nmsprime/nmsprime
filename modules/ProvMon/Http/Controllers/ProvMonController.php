@@ -165,13 +165,13 @@ class ProvMonController extends \BaseController
 
         if ($modem->isTR069()) {
             foreach (['Device', 'InternetGatewayDevice'] as $dev) {
-                $genieModel = $modem->getGenieAcsModel("$dev.ManagementServer.ConnectionRequestURL");
+                $model = $modem->getGenieAcsModel("$dev.ManagementServer.ConnectionRequestURL");
 
-                if (! $genieModel || ! isset($genieModel->{$dev})) {
+                if (! $model) {
                     continue;
                 }
 
-                if (preg_match('/https?:\/\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $genieModel->{$dev}->ManagementServer->ConnectionRequestURL->_value, $match) != 1) {
+                if (preg_match('/https?:\/\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $model->_value, $match) != 1) {
                     continue;
                 }
 
