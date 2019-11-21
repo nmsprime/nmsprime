@@ -34,7 +34,7 @@ class SepaMandateController extends \BaseController
         return [
             ['form_type' => 'text', 'name' => 'reference', 'description' => 'Reference Number'],
             ['form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'hidden' => '1'],
-            ['form_type' => 'text', 'name' => 'holder', 'description' => 'Bank Account Holder'],
+            ['form_type' => 'text', 'name' => 'holder', 'description' => 'Bank Account Holder', 'help' => trans('billingbase::help.sepaMandate.holder')],
             ['form_type' => 'text', 'name' => 'iban', 'description' => 'IBAN'],
             ['form_type' => 'text', 'name' => 'bic', 'description' => 'BIC'],
             ['form_type' => 'text', 'name' => 'institute', 'description' => 'Bank Institute', 'space' => 1],
