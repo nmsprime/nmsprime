@@ -179,6 +179,23 @@ class ProvMonController extends \BaseController
 
                 break;
             }
+
+            // workaround for tr069 devices, which block ICMP requests,
+            // but listen on the HTTP(s) / SSH ports
+            $con = null;
+            foreach ([80, 443, 22] as $port) {
+                try {
+                    $con = fsockopen($ip, $port, $errno, $errstr, 1);
+                } catch (\Exception $e) {
+                    continue;
+                }
+
+                if ($con) {
+                    fclose($con);
+
+                    return ['ip' => $ip, 'online' => true];
+                }
+            }
         }
 
         // Ping: Only check if device is online
