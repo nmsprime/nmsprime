@@ -99,13 +99,14 @@ class ProvMonController extends \BaseController
         $view_var = $modem;
         $view_header = 'ProvMon-Analyses';
 
-        // Configfile TR-069
-        if (! $configfile = $this->getConfigfileText("/tftpboot/cm/$modem->hostname")) {
+        if ($modem->isTR069()) {
             $prov = json_decode($modem->callGenieAcsApi("provisions/?query={\"_id\":\"{$id}\"}", 'GET'));
 
             if ($prov && isset($prov[0]->script)) {
                 $configfile['text'] = preg_split('/\r\n|\r|\n/', $prov[0]->script);
             }
+        } else {
+            $configfile = $this->getConfigfileText("/tftpboot/cm/$modem->hostname");
         }
 
         // return $ip and $online
@@ -120,14 +121,18 @@ class ProvMonController extends \BaseController
                 $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
             }
 
-            // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
-            $realtime['measure'] = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
-            $realtime['forecast'] = 'TODO';
+            if ($modem->isTR069()) {
+                $realtime['measure'] = $this->realtimeTR069($modem, false);
+            } else {
+                // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
+                $realtime['measure'] = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
 
-            // get eventlog table
-            if (! array_key_exists('SNMP-Server not reachable', $realtime['measure'])) {
-                $eventlog = $modem->get_eventlog();
+                // get eventlog table
+                if (! array_key_exists('SNMP-Server not reachable', $realtime['measure'])) {
+                    $eventlog = $modem->get_eventlog();
+                }
             }
+            $realtime['forecast'] = 'TODO';
         }
 
         $device = \Modules\ProvBase\Entities\Configfile::where('id', $modem->configfile_id)->first()->device;
@@ -827,6 +832,42 @@ class ProvMonController extends \BaseController
         $ret['Upstream'] = $us;
 
         return $ret;
+    }
+
+    /**
+     * Fetch realtime values via GenieACS
+     *
+     * @param modem: modem object
+     * @param refresh: refresh values from device instead of unsing cached ones
+     * @return array[section][Fieldname][Values]
+     *
+     * @author Ole Ernst
+     */
+    public function realtimeTR069($modem, $refresh)
+    {
+        if (! preg_match('/#monitoring:({.*})/', $modem->configfile->text, $matches) || ! $mon = json_decode($matches[1], true)) {
+            return ['SNMP-Server not reachable' => ['' => ['']]];
+        }
+
+        if ($refresh) {
+            $request = ['name' => 'refreshObject'];
+            foreach (new \RecursiveIteratorIterator(new \RecursiveArrayIterator($mon), \RecursiveIteratorIterator::LEAVES_ONLY) as $value) {
+                $request['objectName'][] = $value;
+            }
+
+            $devId = rawurlencode($modem->getGenieAcsModel('_id'));
+            $modem->callGenieAcsApi("devices/$devId/tasks?timeout=3000&connection_request", 'POST', json_encode($request));
+        }
+
+        foreach ($mon as $category => &$values) {
+            $values = array_map(function ($value) use ($modem) {
+                $model = $modem->getGenieAcsModel($value);
+
+                return isset($model->_value) ? [$model->_value] : [];
+            }, $values);
+        }
+
+        return $mon;
     }
 
     /**
