@@ -100,7 +100,7 @@ class ProvMonController extends \BaseController
         $view_header = 'ProvMon-Analyses';
 
         if ($modem->isTR069()) {
-            $prov = json_decode($modem->callGenieAcsApi("provisions/?query={\"_id\":\"{$id}\"}", 'GET'));
+            $prov = json_decode(Modem::callGenieAcsApi("provisions/?query={\"_id\":\"{$id}\"}", 'GET'));
 
             if ($prov && isset($prov[0]->script)) {
                 $configfile['text'] = preg_split('/\r\n|\r|\n/', $prov[0]->script);
@@ -856,7 +856,7 @@ class ProvMonController extends \BaseController
             }
 
             $devId = rawurlencode($modem->getGenieAcsModel('_id'));
-            $modem->callGenieAcsApi("devices/$devId/tasks?timeout=3000&connection_request", 'POST', json_encode($request));
+            Modem::callGenieAcsApi("devices/$devId/tasks?timeout=3000&connection_request", 'POST', json_encode($request));
         }
 
         foreach ($mon as $category => &$values) {
