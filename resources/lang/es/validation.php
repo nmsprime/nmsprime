@@ -49,7 +49,7 @@ return [
     'in'                   => 'El :attribute seleccionado no es valido.',
     'integer'              => 'El :attribute debe ser un integer.',
     'in_array'             => 'El :attribute campo no existe en :other.',
-    'invalid_input'        => 'Input invalid – please correct the following errors.',
+    'invalid_input'        => 'Entrada no válida – por favor corrija los siguientes errores.',
     'max'                  => [
         'numeric' => 'El :attribute no debe ser mayor que :max.',
         'file'    => 'El :attribute no debe ser mayor que :max kilobytes.',
@@ -119,7 +119,7 @@ return [
     'null_if'              => 'Tiene que ser cero',
 
     'needed_depending_on_salutation' => 'El campo :attribute es necesario para el saludo elegido.',
-    'reassign_phonenumber_to_mta_fail' => 'Reassignement of phonenumber to MTA :id not allowed',
+    'reassign_phonenumber_to_mta_fail' => 'Asignación de número de teléfono a MTA :id no permitido',
 
     /*
     |--------------------------------------------------------------------------
