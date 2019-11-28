@@ -74,8 +74,8 @@ return [
         'Menu_Net Element Types'    => 'Tipos de Elementos de Red',
         'Menu_Realty'               => 'Bienes raíces',
         'Menu_TicketTypes'          => 'Tipo de Ticket',
-        'Menu_Nets'                 => 'Netze',
-        'Menu_allNets'              => 'Alle Netze',
+        'Menu_Nets'                 => 'Redes',
+        'Menu_allNets'              => 'Todas las redes',
 
     //User Settings
         'Menu_UserSettings'         => 'Configuraciones de usuario',
