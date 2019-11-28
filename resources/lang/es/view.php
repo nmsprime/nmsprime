@@ -35,10 +35,10 @@ return [
     //Main Menu
         'Menu_Apartment'            => 'Apartamentos',
         'Menu_BillingBase'          => 'Facturación',
-        'Menu_Contact'              => 'Contacts',
-        'Menu_CutoffList'           => 'Cut off list',
-        'Menu_Debt'                 => 'Debt list',
-        'Menu_Dunning'              => 'OverdueDebts',
+        'Menu_Contact'              => 'Contactos',
+        'Menu_CutoffList'           => 'Lista de cortados',
+        'Menu_Debt'                 => 'Lista de deudas',
+        'Menu_Dunning'              => 'Deudas vencidas',
         'Menu_MainMenu'             => 'Menú Principal',
         'Menu_Node'                 => 'Nodos',
         'Menu_Config Page'          => 'Configuración global',
@@ -62,7 +62,7 @@ return [
         'Menu_QoS'                  => 'QoS',
         'Menu_CMTS'                 => 'CMTS',
         'Menu_Ip-Pools'             => 'IP-Pools',
-        'Menu_OverdueDebts'         => 'Overdue debts',
+        'Menu_OverdueDebts'         => 'Deudas vencidas',
         'Menu_ProvVoip'             => 'VoIP',
         'Menu_PropertyManagement'   => 'Gestión de propiedades',
         'Menu_MTAs'                 => 'MTAs',
@@ -166,10 +166,10 @@ return [
         //Contract
         'Header_Salesman'           => 'Vendedores',
         'Header_Contract'           => 'Contrato|Contratos',
-        'Header_ContractInfoApartments' => 'Info: Contracts in apartments',
-        'Header_ContractInfoRealty' => 'Info: Contract of modems',
+        'Header_ContractInfoApartments' => 'Información: Contratos en apartamentos',
+        'Header_ContractInfoRealty' => 'Información: Contrato de módems',
         'Header_EditContract'       => 'Editar contrato',
-        'Header_GroupContract'      => 'Group Contract',
+        'Header_GroupContract'      => 'Contrato de grupo',
         'Header_SepaMandate'        => 'Orden SEPA|Ordenes SEPA',
         //Modems
         'Header_Modems'             => 'Modem|Modems', //workaround
@@ -223,7 +223,7 @@ return [
         'Header_EditPhonenumber'    => 'Editar numero telefonico',
         'Header_Phonenumbers'       => 'Numeros telefonicos',
         'Header_EditPhonenumbers'   => 'Editar numeros telefonicos',
-        'Header_PhonebookEntry'     => 'Phonebook entry',
+        'Header_PhonebookEntry'     => 'Entrada de libreta telefónica',
         'Header_Tickets'            => 'Ticket|Tickets',
         'Header_EditTickets'        => 'Editar Ticket',
         //Phone tariff
@@ -232,11 +232,11 @@ return [
         'Header_Phone tariffs'      => 'Tarifa telefonica|Tarifas telefonicas',
         'Header_EditPhone tariffs'  => 'Editar tarifas telefonicas',
     //ProvVoipEnvia
-        'Header_EnviaAPI'           => 'envia TEL API',
-        'Header_EnviaContract'      => 'envia TEL contract|envia TEL contracts',
-        'Header_EnviaOrder'         => 'envia TEL order|envia TEL orders',
+        'Header_EnviaAPI'           => 'API TEL de envia',
+        'Header_EnviaContract'      => 'contrato TEL de envia|contratos TEL de envia',
+        'Header_EnviaOrder'         => 'envia TEL orden|envia TEL ordenes',
 
-        'Header_Contact'            => 'Contacts',
+        'Header_Contact'            => 'Contactos',
         'Header_Debt'               => 'Historial de deuda',
         'Header_DebtResult'         => 'Total de pagos pendientes',
         'Header_Node'               => 'Nodos',
@@ -312,8 +312,8 @@ return [
 
     //Provisioning
         //Contract
-        'Button_Create Apartment'       => 'Create Apartment',
-        'Button_Create Node'            => 'Create Node',
+        'Button_Create Apartment'       => 'Crear Apartamento',
+        'Button_Create Node'            => 'Crear Nodo',
         'Button_Create Realty'          => 'Crear propiedad',
 
         'Button_Create Contract'        => 'Crear contrato',
