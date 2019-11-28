@@ -256,9 +256,9 @@ return [
     'Item Termination only end of month'=> 'Terminación del artículo sólo final de mes',
     'Language for settlement run' => 'Idioma del contrato',
     'Uncertain start/end dates for tariffs' => 'Fechas de inicio y fin incierto para los aranceles',
-    'modem_monitoring_error'=> 'This could be because the Modem was not online until now. Please note that Diagrams are only available
-    from the point that a modem was online. If all diagrams did not show properly then it should be a
-    bigger problem and there should be a cacti misconfiguration. Please consider the administrator on bigger problems.',
+    'modem_monitoring_error'=> 'Esto podría deberse a que el módem no estaba en línea hasta ahora. Tenga en cuenta que los diagramas solo están disponibles
+desde el punto en que un módem estaba en línea. Si todos los diagramas no se muestran correctamente, entonces debe ser un
+ problema más grande y debería haber una mala configuración de cacti. Por favor, considere al administrador para problemas mayores.',
     'Connection Info Template'  => 'Plantilla de información de conexión',
     'Upload Template'           => 'Subir plantilla',
     'SNMP Read Only Community'  => 'Comunidad SNMP de solo lectura',
@@ -276,7 +276,7 @@ return [
     'Additional modem reset button' => 'Botón adicional de reinicio de módem',
     'modemAnalysis' => [
         'cfOutdated' => 'El módem no se ejecuta con el archivo configfile actual. La última descarga fue antes de la hora de compilación del archivo configfile.',
-        'cfError' => 'There was an error creating the config file! Please be aware that this modem has currently no config file. Please check if the configfile can be created properly. To Test this, please execute the following command on the command line:',
+        'cfError' => '¡Hubo un error al crear el archivo de configuración! Tenga en cuenta que este módem no tiene actualmente ningún archivo de configuración. Por favor, compruebe si el archivo de configuración se puede crear correctamente. Para probar esto, por favor ejecute el siguiente comando en la línea de comandos:',
         'cpeMacMissmatch' => 'El estado del acceso a Internet y la telefonía no se pudo determinar, como mínimo 1 dirección CPE MAC difiere de los MACs de los MTAs asignados.',
         'fullAccess' => 'El acceso a Internet y la telefonía está permitido. (según el configfile)',
         'missingLD' => 'Info: La última descarga del archivo configfile fue hace mucho tiempo como para determinar si el módem ha incurrido en las configuraciones actuales.',
