@@ -610,8 +610,8 @@ return [
         'delete' => [
             'success' => 'Eliminado :model :id',
             'fail' => 'No se pudo eliminar :model :id',
-            'failChild' => 'Cannot delete :model :id: :child_model :child_id cannot be deleted',
-            'failChildNM' => 'Cannot delete :model :id: n:m relation with :child_model :child_id cannot be deleted',
+            'failChild' => 'No se puede eliminar :model :id: :child_model :child_id no se puede eliminar',
+            'failChildNM' => 'No se puede eliminar :model :id: n:m relación con :child_model :child_id no se puede eliminar',
             'noEntry' => 'No hay entrada para eliminar especificada',
             'multiSuccess' => 'Eliminado :deleted de :to_delete :model',
         ],
