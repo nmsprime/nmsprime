@@ -18,5 +18,8 @@ return [
         'invoiceHeadline'   => 'Ersetzt die Überschrift der Rechnung, die für diese Kostenstelle erstellt wird.',
         'invoiceText'       => 'Der Text der vier verschiedenen \'Rechnungstext\'-Felder wird automatisch in Abhängigkeit von Gesamtkosten und SEPA-Mandat gewählt und wird in der entsprechenden Rechnung für den Kunden festgelegt. Es ist möglich, alle Datenfeld-Schlüssel der Rechnungsklasse als Platzhalter in Form von {Feldname} zu verwenden, um eine Art von Vorlage zu erstellen. Diese werden durch den Ist-Wert der Rechnung ersetzt.',
     ],
+    'sepaMandate' => [
+        'holder' => 'Der Name des Kontoinhabers darf kein Semikolon enthalten.',
+    ],
     'texTemplate'           => 'TeX Vorlage',
 ];

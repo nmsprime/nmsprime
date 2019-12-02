@@ -29,11 +29,11 @@ class SepaAccount extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'name' 		=> 'required',
-            'holder' 	=> 'required',
+            'name'      => 'required',
+            'holder'    => 'required',
             'creditorid' => 'required|max:35|creditor_id',
-            'iban' 		=> 'required|iban',
-            'bic' 		=> 'bic',
+            'iban'      => 'required|iban',
+            'bic'       => 'bic',
             'template_invoice_upload' => 'mimetypes:text/x-tex,application/x-tex',
             'template_cdr_upload'     => 'mimetypes:text/x-tex,application/x-tex',
             ];
@@ -103,9 +103,9 @@ class SepaAccount extends \BaseModel
     /**
      * BILLING STUFF
      */
-    public $invoice_nr = 100000; 			// invoice number counter - default start nr is replaced by global config field
-    private $invoice_nr_prefix;				// see constructor
-    public $rcd; 							// requested collection date from global config
+    public $invoice_nr = 100000;            // invoice number counter - default start nr is replaced by global config field
+    private $invoice_nr_prefix;             // see constructor
+    public $rcd;                            // requested collection date from global config
 
     /**
      * get billing user language
@@ -161,7 +161,7 @@ class SepaAccount extends \BaseModel
     /**
      * Initialises the SepaAccount for the current settlementrun
      *
-     * @param int 	Requested Collection Date (day of month)
+     * @param int   Requested Collection Date (day of month)
      */
     public function settlementrun_init()
     {
@@ -176,7 +176,7 @@ class SepaAccount extends \BaseModel
     /**
      * Set invoice number counter of SEPA-account
      *
-     * @param array 	SepaAccount objects
+     * @param array     SepaAccount objects
      */
     private function _set_invoice_nr_counters()
     {
@@ -197,27 +197,27 @@ class SepaAccount extends \BaseModel
     /**
      * Adds an accounting record for this account of an item to the corresponding acc_recs-Array (item/tariff)
      *
-     * @param object 	$item
+     * @param object    $item
      */
     public function add_accounting_record($item)
     {
         $time = strtotime('last day of last month');
 
         $data = [
-            'Contractnr' 	=> $item->contract->number,
-            'Invoicenr' 	=> $this->_get_invoice_nr_formatted(),
+            'Contractnr'    => $item->contract->number,
+            'Invoicenr'     => $this->_get_invoice_nr_formatted(),
             'Target Month'  => date('m', $time),
-            'Date'			=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y', $time) : date('Y-m-d', $time),
+            'Date'          => ($this->_get_billing_lang() == 'de') ? date('d.m.Y', $time) : date('Y-m-d', $time),
             'Cost Center'   => isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
-            'Count'			=> $item->count,
-            'Description' 	=> $item->invoice_description,
-            'Price'			=> ($this->_get_billing_lang() == 'de') ? number_format($item->charge, 2, ',', '.') : number_format($item->charge, 2, '.', ','),
-            'Firstname'		=> $item->contract->firstname,
-            'Lastname' 		=> $item->contract->lastname,
-            'Street' 		=> $item->contract->street,
-            'Housenr' 		=> $item->contract->house_number,
-            'Zip' 			=> $item->contract->zip,
-            'City' 			=> $item->contract->city,
+            'Count'         => $item->count,
+            'Description'   => $item->invoice_description,
+            'Price'         => ($this->_get_billing_lang() == 'de') ? number_format($item->charge, 2, ',', '.') : number_format($item->charge, 2, '.', ','),
+            'Firstname'     => $item->contract->firstname,
+            'Lastname'      => $item->contract->lastname,
+            'Street'        => $item->contract->street,
+            'Housenr'       => $item->contract->house_number,
+            'Zip'           => $item->contract->zip,
+            'City'          => $item->contract->city,
         ];
 
         switch ($item->product->type) {
@@ -239,8 +239,8 @@ class SepaAccount extends \BaseModel
     /**
      * Adds a booking record for this account with the charge of a contract to the corresponding book_recs-Array (sepa/no_sepa)
      *
-     * @param object 	$contract, $mandate
-     * @param float 	$charge
+     * @param object    $contract, $mandate
+     * @param float     $charge
      */
     public function add_booking_record($contract, $mandate, $charge, $rcd)
     {
@@ -250,22 +250,22 @@ class SepaAccount extends \BaseModel
         $tax = round($charge['tax'], 2);
 
         $data = [
-            'Contractnr'	=> $contract->number,
-            'Invoicenr' 	=> $this->_get_invoice_nr_formatted(),
-            'Date' 			=> $german ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
-            'RCD' 			=> $rcd,
-            'Cost Center' 	=> isset($contract->costcenter->name) ? $contract->costcenter->name : '',
-            'Description' 	=> '',
-            'Net' 			=> $german ? number_format($net, 2, ',', '.') : number_format($net, 2, '.', ','),
-            'Tax' 			=> $german ? number_format($tax, 2, ',', '.') : number_format($tax, 2, '.', ','),
-            'Gross' 		=> $german ? number_format($net + $tax, 2, ',', '.') : number_format($net + $tax, 2, '.', ','),
-            'Currency' 		=> Currency::get(),
-            'Firstname' 	=> $contract->firstname,
-            'Lastname' 		=> $contract->lastname,
-            'Street' 		=> $contract->street,
-            'Housenr' 		=> $contract->house_number,
-            'Zip'			=> $contract->zip,
-            'City' 			=> $contract->city,
+            'Contractnr'    => $contract->number,
+            'Invoicenr'     => $this->_get_invoice_nr_formatted(),
+            'Date'          => $german ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
+            'RCD'           => $rcd,
+            'Cost Center'   => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
+            'Description'   => '',
+            'Net'           => $german ? number_format($net, 2, ',', '.') : number_format($net, 2, '.', ','),
+            'Tax'           => $german ? number_format($tax, 2, ',', '.') : number_format($tax, 2, '.', ','),
+            'Gross'         => $german ? number_format($net + $tax, 2, ',', '.') : number_format($net + $tax, 2, '.', ','),
+            'Currency'      => Currency::get(),
+            'Firstname'     => $contract->firstname,
+            'Lastname'      => $contract->lastname,
+            'Street'        => $contract->street,
+            'Housenr'       => $contract->house_number,
+            'Zip'           => $contract->zip,
+            'City'          => $contract->city,
             'District'      => $contract->district,
             ];
 
@@ -286,10 +286,10 @@ class SepaAccount extends \BaseModel
         if ($mandate) {
             $data2 = [
                 'Account Holder' => $mandate->holder,
-                'IBAN'			=> $mandate->iban,
-                'BIC' 			=> $mandate->bic,
-                'MandateID' 	=> $mandate->reference,
-                'MandateDate'	=> $mandate->signature_date,
+                'IBAN'          => $mandate->iban,
+                'BIC'           => $mandate->bic,
+                'MandateID'     => $mandate->reference,
+                'MandateDate'   => $mandate->signature_date,
             ];
 
             $data = array_merge($data, $data2);
@@ -303,19 +303,19 @@ class SepaAccount extends \BaseModel
     public function add_cdr_accounting_record($contract, $charge, $count)
     {
         $this->acc_recs['tariff'][] = [
-            'Contractnr' 	=> $contract->number,
-            'Invoicenr' 	=> $this->_get_invoice_nr_formatted(),
+            'Contractnr'    => $contract->number,
+            'Invoicenr'     => $this->_get_invoice_nr_formatted(),
             'Target Month'  => date('m'),
-            'Date' 			=> ($this->_get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
+            'Date'          => ($this->_get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
             'Cost Center'   => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
-            'Count'			=> $count,
+            'Count'         => $count,
             'Description'   => 'Telephone Calls',
-            'Price' 		=> $this->_get_billing_lang() == 'de' ? number_format($charge, 2, ',', '.') : number_format($charge, 2, '.', ','),
-            'Firstname'		=> $contract->firstname,
-            'Lastname' 		=> $contract->lastname,
-            'Street' 		=> $contract->street,
-            'Zip' 			=> $contract->zip,
-            'City' 			=> $contract->city,
+            'Price'         => $this->_get_billing_lang() == 'de' ? number_format($charge, 2, ',', '.') : number_format($charge, 2, '.', ','),
+            'Firstname'     => $contract->firstname,
+            'Lastname'      => $contract->lastname,
+            'Street'        => $contract->street,
+            'Zip'           => $contract->zip,
+            'City'          => $contract->city,
             ];
     }
 
@@ -356,9 +356,9 @@ class SepaAccount extends \BaseModel
     /**
      * Adds a sepa transfer for this account with the charge for a contract to the corresponding sepa_xml-Array (credit/debit)
      *
-     * @param object 	$mandate
-     * @param float 	$charge 	Must already be rounded to 2 decimals! (as it actually is we dont do it again here)
-     * @param array 	$dates 		last run info is important for transfer type
+     * @param object    $mandate
+     * @param float     $charge     Must already be rounded to 2 decimals! (as it actually is we dont do it again here)
+     * @param array     $dates      last run info is important for transfer type
      */
     public function add_sepa_transfer($mandate, $charge, $rcd)
     {
@@ -366,9 +366,10 @@ class SepaAccount extends \BaseModel
             return;
         }
 
-        $info = $this->invoice_headline.' - ';
-        $info .= $this->invoice_headline == 'Kostenumlage' ? date('Y').' (abzüglich Verstärker)' : trans('messages.month').' '.date('m/Y', strtotime('first day of last month'));
-        $info .= ' - '.$mandate->contract->lastname.', '.$mandate->contract->firstname;
+        $info = $this->invoice_headline.' ';
+        $info .= $this->invoice_headline == 'Kostenumlage' ? date('Y').' (abzüglich Verstärker)' : date('m/Y', strtotime('first day of last month'));
+        $info .= ' - '.$mandate->contract->number.' - ';
+        $info .= $mandate->contract->company ?: $mandate->contract->lastname.', '.$mandate->contract->firstname;
         $info .= ' - '.$this->company->name;
 
         // max length of SFirm
@@ -384,7 +385,7 @@ class SepaAccount extends \BaseModel
                 'creditorBic'           => $mandate->bic,
                 'creditorName'          => $mandate->holder,
                 'endToEndId'            => 'RG '.$this->_get_invoice_nr_formatted(),
-                'remittanceInformation' => substr("$info - $mandate->reference", 0, 140),
+                'remittanceInformation' => $info,
             ];
 
             $this->sepa_xml['credits'][] = $data;
@@ -394,7 +395,7 @@ class SepaAccount extends \BaseModel
 
         // Debits
         $data = [
-            'endToEndId'			=> 'RG '.$this->_get_invoice_nr_formatted(),
+            'endToEndId'            => 'RG '.$this->_get_invoice_nr_formatted(),
             'amount'                => $charge,
             'debtorIban'            => $mandate->iban,
             'debtorBic'             => $mandate->bic,
@@ -474,7 +475,7 @@ class SepaAccount extends \BaseModel
 
     private function get_sepa_xml_msg_id()
     {
-        return date('YmdHis').$this->id;		// km3 uses actual time
+        return date('YmdHis').$this->id;        // km3 uses actual time
     }
 
     public function get_relative_accounting_dir_path()

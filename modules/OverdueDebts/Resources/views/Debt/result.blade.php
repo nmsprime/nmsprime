@@ -1,12 +1,3 @@
-<?php
-	$bsclass = '';
-	if ($debt < 0) {
-		$bsclass = 'success';
-	} elseif ($debt > 0) {
-		$bsclass = 'warning';
-	}
-?>
-
 <table class="table">
   <tr>
     <td class="{{ $bsclass }}" align="center">

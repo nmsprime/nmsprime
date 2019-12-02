@@ -43,6 +43,8 @@ class OverdueDebtsServiceProvider extends ServiceProvider
     public function register()
     {
         $this->commands($this->commands);
+
+        $this->app->singleton('OverdueDebtsConfig', OverdueDebtsConfig::class);
     }
 
     /**

@@ -241,25 +241,10 @@ class DebtImport
         $blocked = [];
 
         foreach ($contracts as $c) {
-            $posDebtCount = $c->debts->where('missing_amount', '>', 0)->count();
+            if ($c->blockInetFromDebts()['block']) {
+                $blocked[] = $c->number;
 
-            $totalAmount = 0;
-            foreach ($c->debts as $debt) {
-                $totalAmount += $debt->missing_amount;
-            }
-
-            $highestIndicator = $c->debts->sortByDesc('indicator')->first()->indicator;
-
-            if (// Amount threshold is exceeded
-                ($this->conf->import_inet_block_amount && ($totalAmount >= $this->conf->import_inet_block_amount)) ||
-                // More than max num of positive debts
-                ($this->conf->import_inet_block_debts && ($posDebtCount >= $this->conf->import_inet_block_debts)) ||
-                // Highest dunning indicator too high
-                ($this->conf->import_inet_block_indicator && ($highestIndicator >= $this->conf->import_inet_block_indicator))
-            ) {
                 foreach ($c->modems as $modem) {
-                    $blocked[] = $c->number;
-
                     $modem->internet_access = 0;
                     // It's possible to only save when $modem->isDirty() is true
                     // So we could exclude contracts from blocked array when nothing changes here
