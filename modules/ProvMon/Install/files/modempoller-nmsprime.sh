@@ -1,4 +1,5 @@
 #!/bin/bash
+source scl_source enable rh-php71
 dir='/run/nmsprime/cacti'
 
 rm -rf "$dir"/*
