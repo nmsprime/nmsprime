@@ -845,7 +845,8 @@ class ProvMonController extends \BaseController
      */
     public function realtimeTR069($modem, $refresh)
     {
-        if (! preg_match('/#monitoring:({.*})/', $modem->configfile->text, $matches) || ! $mon = json_decode($matches[1], true)) {
+        $mon = $modem->configfile->getMonitoringConfig();
+        if (! $mon) {
             return ['SNMP-Server not reachable' => ['' => ['']]];
         }
 
