@@ -6,7 +6,7 @@ use IBAN;
 use Storage;
 use ChannelLog;
 use Modules\ProvBase\Entities\Contract;
-use Modules\BillingBase\Providers\Currency;
+use Modules\BillingBase\Providers\BillingConf;
 use App\Http\Controllers\BaseViewController;
 use Modules\BillingBase\Providers\SettlementRunData;
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
@@ -259,7 +259,7 @@ class SepaAccount extends \BaseModel
             'Net'           => $german ? number_format($net, 2, ',', '.') : number_format($net, 2, '.', ','),
             'Tax'           => $german ? number_format($tax, 2, ',', '.') : number_format($tax, 2, '.', ','),
             'Gross'         => $german ? number_format($net + $tax, 2, ',', '.') : number_format($net + $tax, 2, '.', ','),
-            'Currency'      => Currency::get(),
+            'Currency'      => BillingConf::currency(),
             'Firstname'     => $contract->firstname,
             'Lastname'      => $contract->lastname,
             'Street'        => $contract->street,

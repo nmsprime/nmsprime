@@ -3,7 +3,7 @@
 namespace Modules\OverdueDebts\Entities;
 
 use Modules\ProvBase\Entities\Contract;
-use Modules\BillingBase\Providers\Currency;
+use Modules\BillingBase\Providers\BillingConf;
 
 class Debt extends \BaseModel
 {
@@ -91,8 +91,8 @@ class Debt extends \BaseModel
 
     public function label()
     {
-        $label = (string) ($this->amount).Currency::get()." ($this->date)";
-        $label .= ' - '.trans('overduedebts::view.open').': '.$this->missing_amount.Currency::get();
+        $label = (string) ($this->amount).BillingConf::currency()." ($this->date)";
+        $label .= ' - '.trans('overduedebts::view.open').': '.$this->missing_amount.BillingConf::currency();
 
         return $label;
     }

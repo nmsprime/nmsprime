@@ -4,6 +4,7 @@ namespace Modules\BillingBase\Entities;
 
 use DB;
 use ChannelLog;
+use Modules\BillingBase\Providers\BillingConf;
 
 class Item extends \BaseModel
 {
@@ -145,12 +146,19 @@ class Item extends \BaseModel
 
     public function getItemPrice()
     {
-        if ($this->product) {
-            $price = floatval($this->credit_amount) ?: $this->product->price;
-            $price = ' | '.round($price, 4).\Modules\BillingBase\Providers\Currency::get();
-
-            return $price;
+        if (! $this->product) {
+            return '';
         }
+
+        $price = floatval($this->credit_amount) ?: $this->product->price;
+        $currency = BillingConf::currency();
+        $text = ' | '.round($price, 4).$currency;
+
+        if ($this->product->tax) {
+            $text .= ' ('.round($price * (1 + BillingConf::tax()), 2).$currency.')';
+        }
+
+        return $text;
     }
 
     /**

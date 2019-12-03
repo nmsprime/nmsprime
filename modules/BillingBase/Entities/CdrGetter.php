@@ -4,7 +4,7 @@ namespace Modules\BillingBase\Entities;
 
 use Storage;
 use ChannelLog;
-use Modules\BillingBase\Providers\Currency;
+use Modules\BillingBase\Providers\BillingConf;
 use Modules\BillingBase\Providers\SettlementRunData;
 
 class CdrGetter
@@ -229,7 +229,7 @@ class CdrGetter
                     'count' => $arr['count'],
                     'phonenr' => $p,
                     'price' => $price,
-                    'currency' => Currency::get(),
+                    'currency' => BillingConf::currency(),
                     ]));
             }
         }

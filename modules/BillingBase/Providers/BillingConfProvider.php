@@ -2,15 +2,22 @@
 
 namespace Modules\BillingBase\Providers;
 
+use Modules\BillingBase\Entities\BillingBase;
+
 /**
  * Set Currency globally for the app to avoid multiple database calls
  */
-class CurrencyProvider
+class BillingConfProvider
 {
     /**
      * @var string
      */
     protected $currency;
+
+    /**
+     * @var float
+     */
+    protected $tax;
 
     public static $labels = [
         'EUR' => '€',
@@ -25,25 +32,31 @@ class CurrencyProvider
 
     public function __construct()
     {
-        $this->setCurrency();
+        $this->setConf();
     }
 
-    private function setCurrency()
+    private function setConf()
     {
-        $currency = \Modules\BillingBase\Entities\BillingBase::first(['currency'])->currency;
+        $conf = BillingBase::first();
 
-        $this->currency = self::$labels[strtoupper($currency)] ?? '$';
+        $this->currency = self::$labels[strtoupper($conf->currency)] ?? '$';
+        $this->tax = $conf->tax / 100;
     }
 
-    public function get()
+    public function currency()
     {
         return $this->currency;
+    }
+
+    public function tax()
+    {
+        return $this->tax;
     }
 
     /**
      * Get LaTeX utf8 encoding for global currency - used in invoice templates
      */
-    public function getLatex()
+    public function currencyLatex()
     {
         return self::$latexEncoding[$this->currency] ?? '\\$';
     }
