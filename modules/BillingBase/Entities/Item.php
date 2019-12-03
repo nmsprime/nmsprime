@@ -433,6 +433,8 @@ class Item extends \BaseModel
                     $text = Invoice::langDateFormat(date('Y-m-01', $period_start));
                 }
 
+                $text .= ' - ';
+
                 // ended in last 3 months
                 if ($end && ($end > $period_start) && ($end < strtotime(date('Y-m-01', strtotime('next month'))))) {
                     $days = date('z', strtotime('last day of this month')) - date('z', $end);
