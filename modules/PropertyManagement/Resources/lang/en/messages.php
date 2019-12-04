@@ -10,4 +10,5 @@ return [
         'apartmentRelationInfo' => 'Apartments can only be assigned to a realty if this is an apartment building and no modems are assigned. Delete all modems if you want to add apartments to this realty.',
         'modemRelationInfo' => 'Modems can only be assigned to a realty if this is a family home and doesn\'t contain any apartments or a group contract. Delete all apartments if you want to assign modems directly to this realty.',
     ],
+    'tvContract' => 'No modems can be added to this contract as it is directly assigned to an apartment and therefor is only used to charge items.',
 ];

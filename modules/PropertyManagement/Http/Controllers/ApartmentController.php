@@ -9,13 +9,7 @@ class ApartmentController extends \BaseController
      */
     public function view_form_fields($model = null)
     {
-        // $realties = selectList('realty', ['number', 'name'], true, ' - ');
-        $realties = \DB::table('realty')->leftJoin('modem', 'modem.realty_id', 'realty.id')
-            // ->leftJoin('contract', 'contract.realty_id', 'realty.id')
-            // ->whereNull('contract.id')
-            ->whereNull('modem.id')
-            ->select('realty.*')
-            ->get();
+        $realties = \DB::table('realty')->get();
 
         $arr[null] = null;
         foreach ($realties as $realty) {

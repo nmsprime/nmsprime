@@ -99,19 +99,6 @@ class Realty extends \BaseModel
         $ret['Edit']['Apartment']['relation'] = $this->apartments;
 
         if (\Module::collections()->has('ProvBase')) {
-            // TODO: Hide create button for modems?
-            $ret['Edit']['Modem']['class'] = 'Modem';
-            $ret['Edit']['Modem']['relation'] = $this->modems;
-
-            if ($this->apartments->isNotEmpty() || $this->group_contract) {
-                $ret['Edit']['Modem']['options']['hide_create_button'] = 1;
-                $ret['Edit']['Modem']['info'] = trans('propertymanagement::messages.realty.modemRelationInfo');
-            }
-            if ($this->modems->isNotEmpty()) {
-                $ret['Edit']['Apartment']['options']['hide_create_button'] = 1;
-                $ret['Edit']['Apartment']['info'] = trans('propertymanagement::messages.realty.apartmentRelationInfo');
-            }
-
             if ($this->group_contract) {
                 // Only 1 contract for group contracts
                 $ret['Edit']['GroupContract']['class'] = 'Contract';
@@ -125,13 +112,10 @@ class Realty extends \BaseModel
             }
 
             // Show all indirectly related contracts as info
-            $contracts = $this->getRelatedContracts(false);
-            $key = $this->apartments->isEmpty() ? 'ContractInfoRealty' : 'ContractInfoApartment';
-
-            $ret['Edit'][$key]['class'] = 'Contract';
-            $ret['Edit'][$key]['relation'] = $contracts;
-            $ret['Edit'][$key]['options']['hide_create_button'] = 1;
-            $ret['Edit'][$key]['options']['hide_delete_button'] = 1;
+            $ret['Edit']['ContractInfoApartment']['class'] = 'Contract';
+            $ret['Edit']['ContractInfoApartment']['relation'] = $this->getRelatedContracts(false);
+            $ret['Edit']['ContractInfoApartment']['options']['hide_create_button'] = 1;
+            $ret['Edit']['ContractInfoApartment']['options']['hide_delete_button'] = 1;
         }
 
         return $ret;
@@ -183,11 +167,6 @@ class Realty extends \BaseModel
     public function apartments()
     {
         return $this->hasMany(Apartment::class);
-    }
-
-    public function modems()
-    {
-        return $this->hasMany(\Modules\ProvBase\Entities\Modem::class);
     }
 
     public function node()
