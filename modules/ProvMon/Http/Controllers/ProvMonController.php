@@ -104,6 +104,8 @@ class ProvMonController extends \BaseController
 
             if ($prov && isset($prov[0]->script)) {
                 $configfile['text'] = preg_split('/\r\n|\r|\n/', $prov[0]->script);
+            } else {
+                $configfile['text'] = [];
             }
         } else {
             $configfile = $this->getConfigfileText("/tftpboot/cm/$modem->hostname");
