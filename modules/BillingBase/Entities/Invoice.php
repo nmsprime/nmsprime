@@ -298,7 +298,7 @@ class Invoice extends \BaseModel
 
         // Add realty name + number
         if (\Module::collections()->has('PropertyManagement')) {
-            $realty = $contract->getRealty();
+            $realty = $contract->realty;
 
             if ($realty) {
                 $this->data['realty_name'] = escape_latex_special_chars($realty->name);

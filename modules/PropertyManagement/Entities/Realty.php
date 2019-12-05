@@ -113,7 +113,7 @@ class Realty extends \BaseModel
 
             // Show all indirectly related contracts as info
             $ret['Edit']['ContractInfoApartment']['class'] = 'Contract';
-            $ret['Edit']['ContractInfoApartment']['relation'] = $this->getRelatedContracts(false);
+            $ret['Edit']['ContractInfoApartment']['relation'] = $this->getApartmentContracts(false);
             $ret['Edit']['ContractInfoApartment']['options']['hide_create_button'] = 1;
             $ret['Edit']['ContractInfoApartment']['options']['hide_delete_button'] = 1;
         }
@@ -190,20 +190,22 @@ class Realty extends \BaseModel
      * @param bool $withGroupContract, $withModems
      * @return Illuminate\Database\Eloquent\Collection of \Modules\ProvBase\Entities\Contract
      */
-    public function getRelatedContracts($withGroupContract, $withModems = false)
+    public function getApartmentContracts($withGroupContract, $withModems = false)
     {
-        $contracts1 = \Modules\ProvBase\Entities\Contract::join('modem as am', 'am.contract_id', 'contract.id')
-            ->join('apartment', 'am.apartment_id', 'apartment.id')
+        if ($this->apartments->isEmpty()) {
+            return collect();
+        }
+
+        $contracts1 = \Modules\ProvBase\Entities\Contract::join('modem', 'modem.contract_id', 'contract.id')
+            ->join('apartment', 'modem.apartment_id', 'apartment.id')
             ->where('apartment.realty_id', $this->id)
             ->whereNull('apartment.deleted_at')
-            ->whereNull('am.deleted_at')
-            ->whereNull('contract.deleted_at')
+            ->whereNull('modem.deleted_at')
             ->select('contract.*');
 
-        $contracts2 = \Modules\ProvBase\Entities\Contract::join('modem as rm', 'rm.contract_id', 'contract.id')
-            ->where('rm.realty_id', $this->id)
-            ->whereNull('rm.deleted_at')
-            ->whereNull('contract.deleted_at')
+        $contracts2 = \Modules\ProvBase\Entities\Contract::join('apartment', 'contract.apartment_id', 'apartment.id')
+            ->where('apartment.realty_id', $this->id)
+            ->whereNull('apartment.deleted_at')
             ->select('contract.*');
 
         $contracts = $contracts2->union($contracts1);
