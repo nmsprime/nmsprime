@@ -99,18 +99,6 @@ class Realty extends \BaseModel
         $ret['Edit']['Apartment']['relation'] = $this->apartments;
 
         if (\Module::collections()->has('ProvBase')) {
-            if ($this->group_contract) {
-                // Only 1 contract for group contracts
-                $ret['Edit']['GroupContract']['class'] = 'Contract';
-                if ($this->contract) {
-                    $ret['Edit']['GroupContract']['relation'] = collect([$this->contract]);
-                    $ret['Edit']['GroupContract']['options']['hide_create_button'] = 1;
-                } else {
-                    $ret['Edit']['GroupContract']['relation'] = collect();
-                    $ret['Edit']['GroupContract']['options']['hide_delete_button'] = 1;
-                }
-            }
-
             // Show all indirectly related contracts as info
             $ret['Edit']['ContractInfoApartment']['class'] = 'Contract';
             $ret['Edit']['ContractInfoApartment']['relation'] = $this->getApartmentContracts(false);
@@ -159,14 +147,14 @@ class Realty extends \BaseModel
     /**
      * Relationships:
      */
-    public function contract()
-    {
-        return $this->hasOne(\Modules\ProvBase\Entities\Contract::class);
-    }
-
     public function apartments()
     {
         return $this->hasMany(Apartment::class);
+    }
+
+    public function contract()
+    {
+        return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class);
     }
 
     public function node()

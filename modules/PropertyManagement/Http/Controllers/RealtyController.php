@@ -2,6 +2,7 @@
 
 namespace Modules\PropertyManagement\Http\Controllers;
 
+use DB;
 use App\Http\Controllers\BaseViewController;
 use Modules\PropertyManagement\Entities\Contact;
 
@@ -14,8 +15,10 @@ class RealtyController extends \BaseController
     {
         $nodes = selectList('node', 'name', true);
 
-        $contactTypes['administration'] = \DB::table('contact')->whereNull('deleted_at')->where('administration', 1)->get();
-        $contactTypes['local'] = \DB::table('contact')->whereNull('deleted_at')->where('administration', 0)->get();
+        // TODO: Dont show administration if realty belongs to a group contract ? (realty->contract_id != NULL)
+        $contacts = DB::table('contact')->whereNull('deleted_at')->get();
+        $contactTypes['administration'] = $contacts->where('administration', 1);
+        $contactTypes['local'] = $contacts->where('administration', 0);
 
         $contactArr = ['administration' => [null => null], 'local' => [null => null]];
         foreach ($contactTypes as $key => $contacts) {
@@ -24,11 +27,11 @@ class RealtyController extends \BaseController
             }
         }
 
-        $contracts = DB::table('contract')->whereNotNull('realty_id')->get();
-
+        // Realty can only belong to a group Contract
+        $contracts = DB::table('contract')->whereNotNull('contact_id')->get();
         $contractList[null] = null;
         foreach ($contracts->all() as $contract) {
-            $contractList[] = \Modules\ProvBase\Entities\Contract::labelFromData($contract);
+            $contractList[$contract->id] = \Modules\ProvBase\Entities\Contract::labelFromData($contract);
         }
 
         // label has to be the same like column in sql table
@@ -47,7 +50,6 @@ class RealtyController extends \BaseController
             ['form_type' => 'html', 'name' => 'geopos', 'description' => trans('messages.geopos_x_y'), 'html' => BaseViewController::geoPosFields($model)],
             ['form_type' => 'text', 'name' => 'geocode_source', 'description' => 'Geocode origin', 'help' => trans('helper.Modem_GeocodeOrigin'), 'space' => 1],
 
-            ['form_type' => 'checkbox', 'name' => 'group_contract', 'description' => trans('propertymanagement::view.group_contract')],
             ['form_type' => 'checkbox', 'name' => 'concession_agreement', 'description' => trans('propertymanagement::view.realty.concession_agreement')],
             ['form_type' => 'text', 'name' => 'agreement_from', 'description' => trans('dt_header.realty.agreement_from'), 'checkbox' => 'show_on_concession_agreement'],
             ['form_type' => 'text', 'name' => 'agreement_to', 'description' => trans('dt_header.realty.agreement_to'), 'checkbox' => 'show_on_concession_agreement'],
