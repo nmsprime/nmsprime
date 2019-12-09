@@ -2,7 +2,10 @@
 
 return [
     'administration' => 'Administration company ?',
-    'apartment' => 'Apartment',
+    'apartment' => [
+        '' => 'Apartment',
+        'code' => 'Code',
+    ],
     'cutoffList' => [
         'headline' => 'Abschaltliste',
     ],

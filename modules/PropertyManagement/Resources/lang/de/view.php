@@ -2,7 +2,10 @@
 
 return [
     'administration' => 'Hausverwaltung ?',
-    'apartment' => 'Wohnung',
+    'apartment' => [
+        '' => 'Wohnung',
+        'code' => 'WE-Schlüssel',
+    ],
     'cutoffList' => [
         'headline' => 'Abschaltliste',
     ],

@@ -31,6 +31,10 @@ class ContactController extends \BaseController
             ['form_type' => 'text', 'name' => 'zip', 'description' => 'Zip', 'autocomplete' => []],
             ['form_type' => 'text', 'name' => 'city', 'description' => 'City', 'autocomplete' => []],
             ['form_type' => 'text', 'name' => 'district', 'description' => 'District', 'autocomplete' => [], 'space' => 1],
+
+            ['form_type' => 'text', 'name' => 'invoice_text1', 'description' => trans('messages.invoiceText').' 1'],
+            ['form_type' => 'text', 'name' => 'invoice_text2', 'description' => trans('messages.invoiceText').' 2'],
+            ['form_type' => 'text', 'name' => 'invoice_text3', 'description' => trans('messages.invoiceText').' 3'],
         ];
 
         return $fields;
