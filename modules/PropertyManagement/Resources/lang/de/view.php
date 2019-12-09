@@ -6,9 +6,10 @@ return [
     'cutoffList' => [
         'headline' => 'Abschaltliste',
     ],
-    'group_contract' => 'Gruppenvertrag',
+    'groupContract' => 'Gruppenvertrag',
     'menuName' => 'Liegenschafts - Verwaltung',
     'Node' => 'Übergabepunkt',
+    'propertyManagement' => 'Liegenschaftsverwaltung',
     'realty' => [
         '' => 'Liegenschaft',
         'apartmentCount' => 'Wohnungsanzahl angeschlossen / gesamt',

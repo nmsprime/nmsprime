@@ -56,6 +56,7 @@ class RealtyController extends \BaseController
             ['form_type' => 'text', 'name' => 'last_restoration_on', 'description' => trans('dt_header.realty.last_restoration_on')],
             ['form_type' => 'text', 'name' => 'expansion_degree', 'description' => trans('dt_header.expansion_degree'), 'space' => 1],
 
+            ['form_type' => 'select', 'name' => 'contract_id', 'description' => trans('propertymanagement::view.groupContract'), 'value' => $contractList],
             ['form_type' => 'select', 'name' => 'contact_id', 'value' => $contactArr['administration'], 'description' => trans('dt_header.realty.contact_id')],
             ['form_type' => 'select', 'name' => 'contact_local_id', 'value' => $contactArr['local'], 'description' => trans('dt_header.realty.contact_local_id'), 'space' => 1],
         ];
