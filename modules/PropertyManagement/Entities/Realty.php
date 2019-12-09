@@ -54,7 +54,7 @@ class Realty extends \BaseModel
     {
         $bsclass = 'success';
 
-        if ($this->group_contract) {
+        if ($this->contract_id) {
             $bsclass = 'warning';
         } elseif ($this->concession_agreement) {
             $bsclass = 'info';
@@ -68,7 +68,7 @@ class Realty extends \BaseModel
                 'index_header' => ['id', "$this->table.name", 'number', 'street', 'house_nr', 'zip', 'city',
                     "$this->table.contact_id", "$this->table.contact_local_id",
                     'expansion_degree', "$this->table.concession_agreement",
-                    "$this->table.agreement_from", "$this->table.agreement_to", "$this->table.last_restoration_on", 'group_contract',
+                    "$this->table.agreement_from", "$this->table.agreement_to", "$this->table.last_restoration_on",
                     "$this->table.apartmentCountConnected", "$this->table.apartmentCount",
                     ],
                 'header' => $label,
