@@ -185,6 +185,7 @@ class Invoice extends \BaseModel
         'item_table_positions'  => '', 			// tex table of all items to be charged for this invoice
         'cdr_charge' 			=> '', 			// Float with costs resulted from telephone calls
         'cdr_table_positions'	=> '',			// tex table of all call data records
+        'objectCount'           => '',          // PropertyManagement:
         'table_summary' 		=> '', 			// preformatted table - use following three keys to set table by yourself
         'table_sum_tax_percent' => '', 			// The tax percentage with % character
         'table_sum_charge_net'  => '', 			// net charge - without tax
@@ -313,6 +314,10 @@ class Invoice extends \BaseModel
         $this->tax = SettlementRunData::getConf('tax');
 
         $this->setCancelationDates($contract);
+
+        if ($contract->isGroupContract()) {
+            $this->data['realtyList'] = implode('\\\\', $contract->composeRealtyList());
+        }
     }
 
     /**
