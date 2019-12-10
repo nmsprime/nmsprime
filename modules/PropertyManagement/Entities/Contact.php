@@ -74,7 +74,7 @@ class Contact extends \BaseModel
      */
     public function realties()
     {
-        return $this->HasMany(Realty::class);
+        return $this->hasMany(Realty::class);
     }
 
     public static function labelFromData($contact = null)

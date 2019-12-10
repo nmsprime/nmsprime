@@ -64,18 +64,18 @@ class Invoice extends \BaseModel
      */
     public function contract()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Contract');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class);
     }
 
     public function settlementrun()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\SettlementRun');
+        return $this->belongsTo(SettlementRun::class);
     }
 
     public function debts()
     {
         if (\Module::collections()->has('OverdueDebts')) {
-            return $this->hasMany('Modules\OverdueDebts\Entities\Debt');
+            return $this->hasMany(\Modules\OverdueDebts\Entities\Debt::class);
         }
     }
 

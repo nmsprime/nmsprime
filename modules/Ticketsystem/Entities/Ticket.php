@@ -145,13 +145,13 @@ class Ticket extends \BaseModel
      */
     public function comments()
     {
-        return $this->hasMany('Modules\Ticketsystem\Entities\Comment')->orderBy('id', 'desc');
+        return $this->hasMany(Comment::class)->orderBy('id', 'desc');
     }
 
     // user who created the ticket
     public function user()
     {
-        return $this->belongsTo('App\User', 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     // assigned users
@@ -162,7 +162,7 @@ class Ticket extends \BaseModel
 
     public function contract()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Contract');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class);
     }
 
     public function tickettypes()

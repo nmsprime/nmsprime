@@ -95,17 +95,17 @@ class Product extends \BaseModel
      */
     public function quality()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Qos', 'qos_id');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Qos::class, 'qos_id');
     }
 
     public function item()
     {
-        return $this->hasMany('Modules\BillingBase\Entities\Item');
+        return $this->hasMany(Item::class);
     }
 
     public function costcenter()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\CostCenter', 'costcenter_id');
+        return $this->belongsTo(CostCenter::class, 'costcenter_id');
     }
 
     /**
@@ -149,7 +149,7 @@ class Product extends \BaseModel
             case 'internet':
                 $prod_ids = DB::table('product')->where('type', '=', $type)
                     ->where('qos_id', '!=', '0')->where('deleted_at', '=', null)->select('id')->get();
-                    // $prod_ids = Product::where('type', '=', 'Internet')->where('qos_id', '!=', '0')->select('id')->get()->pluck('id')->all();
+                    // $prod_ids = self::where('type', '=', 'Internet')->where('qos_id', '!=', '0')->select('id')->get()->pluck('id')->all();
                 break;
 
             case 'voip':

@@ -90,12 +90,12 @@ class SepaMandate extends \BaseModel
      */
     public function contract()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class, 'contract_id');
     }
 
     public function costcenter()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\CostCenter');
+        return $this->belongsTo(CostCenter::class);
     }
 
     /*
@@ -103,7 +103,7 @@ class SepaMandate extends \BaseModel
      */
     // public static function boot()
     // {
-    // 	SepaMandate::observe(new SepaMandateObserver);
+    // 	self::observe(new SepaMandateObserver);
     // 	parent::boot();
     // }
 

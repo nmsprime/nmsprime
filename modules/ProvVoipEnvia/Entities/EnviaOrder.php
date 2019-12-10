@@ -810,12 +810,12 @@ class EnviaOrder extends \BaseModel
 
     public function contract()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Contract');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class);
     }
 
     public function modem()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Modem');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Modem::class);
     }
 
     public function phonenumbers()
@@ -826,12 +826,12 @@ class EnviaOrder extends \BaseModel
 
     public function enviaorderdocument()
     {
-        return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrderDocument', 'enviaorder_id')->orderBy('created_at');
+        return $this->hasMany(EnviaOrderDocument::class, 'enviaorder_id')->orderBy('created_at');
     }
 
     public function enviacontract()
     {
-        return $this->belongsTo('Modules\ProvVoipEnvia\Entities\EnviaContract', 'enviacontract_id');
+        return $this->belongsTo(EnviaContract::class, 'enviacontract_id');
     }
 
     /**

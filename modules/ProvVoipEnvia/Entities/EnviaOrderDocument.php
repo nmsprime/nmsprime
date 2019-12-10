@@ -74,6 +74,6 @@ class EnviaOrderDocument extends \BaseModel
 
     public function enviaorder()
     {
-        return $this->belongsTo('Modules\ProvVoipEnvia\Entities\EnviaOrder', 'enviaorder_id');
+        return $this->belongsTo(EnviaOrder::class, 'enviaorder_id');
     }
 }

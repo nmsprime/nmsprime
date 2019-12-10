@@ -74,17 +74,17 @@ class CostCenter extends \BaseModel
      */
     public function sepaaccount()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\SepaAccount', 'sepaaccount_id');
+        return $this->belongsTo(SepaAccount::class, 'sepaaccount_id');
     }
 
     public function items()
     {
-        return $this->hasMany('Modules\BillingBase\Entities\Item');
+        return $this->hasMany(Item::class);
     }
 
     public function numberranges()
     {
-        return $this->hasMany('Modules\BillingBase\Entities\NumberRange', 'costcenter_id');
+        return $this->hasMany(NumberRange::class, 'costcenter_id');
     }
 
     /**

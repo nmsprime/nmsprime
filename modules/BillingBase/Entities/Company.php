@@ -74,7 +74,7 @@ class Company extends \BaseModel
      */
     public function accounts()
     {
-        return $this->hasMany('Modules\BillingBase\Entities\SepaAccount');
+        return $this->hasMany(SepaAccount::class);
     }
 
     /*
