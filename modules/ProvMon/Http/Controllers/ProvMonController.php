@@ -840,7 +840,7 @@ class ProvMonController extends \BaseController
      * Fetch realtime values via GenieACS
      *
      * @param modem: modem object
-     * @param refresh: refresh values from device instead of unsing cached ones
+     * @param refresh: bool refresh values from device instead of using cached ones
      * @return array[section][Fieldname][Values]
      *
      * @author Ole Ernst
@@ -854,9 +854,7 @@ class ProvMonController extends \BaseController
 
         if ($refresh) {
             $request = ['name' => 'refreshObject'];
-            foreach (new \RecursiveIteratorIterator(new \RecursiveArrayIterator($mon), \RecursiveIteratorIterator::LEAVES_ONLY) as $value) {
-                $request['objectName'][] = $value;
-            }
+            $request['objectName'] = \Illuminate\Support\Arr::flatten($mon);
 
             $devId = rawurlencode($modem->getGenieAcsModel('_id'));
             Modem::callGenieAcsApi("devices/$devId/tasks?timeout=3000&connection_request", 'POST', json_encode($request));
