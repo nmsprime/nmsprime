@@ -416,7 +416,7 @@ class Invoice extends \BaseModel
         $sum = moneyFormat($unitPrice * $count);
         $price = moneyFormat($unitPrice);
 
-        for ($i=1; $i <= $cycles; $i++) {
+        for ($i = 1; $i <= $cycles; $i++) {
             $month = str_pad($i + $offset, 2, 0, STR_PAD_LEFT);
             $description = $item->accounting_text ?: $item->product->name;
             $description .= " $month/".SettlementRunData::getDate('Y');

@@ -82,7 +82,7 @@ class Contact extends \BaseModel
 
     public function contracts()
     {
-        return $this->HasMany(\Modules\ProvBase\Entities\Contract::class);
+        return $this->hasMany(\Modules\ProvBase\Entities\Contract::class);
     }
 
     public static function labelFromData($contact = null)

@@ -247,7 +247,7 @@ class Realty extends \BaseModel
         foreach ($this->apartments as $apartment) {
             foreach ($apartment->contracts as $contract) {
                 $contract_ids[] = $contract->id;
-            };
+            }
 
             foreach ($apartment->modems as $modem) {
                 $modems_ids[] = $modem->id;
