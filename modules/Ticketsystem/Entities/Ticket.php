@@ -57,8 +57,8 @@ class Ticket extends \BaseModel
             'edit' => ['assigned_users' => 'get_assigned_users',
                 'tickettypes.name' => 'index_types',
                 'user_id' => 'username', ],
-            // 'filter' => ['tickettypes.name' => $this->tickettype_names_query()],
-            'disable_sortsearch' => ['tickettypes.name' => 'false', 'assigned_users' => 'false'],
+            'filter' => ['tickettypes.name' => $this->tickettype_names_query()],
+            'disable_sortsearch' => ['assigned_users' => 'false'],
         ];
     }
 
@@ -101,8 +101,8 @@ class Ticket extends \BaseModel
 
     public function tickettype_names_query()
     {
-        return "group_concat(tickettypes.names separator ', ') like ?";
-        // from ticket t, tickettype_ticket ttt, tickettype tt where t.id=ttt.ticket_id and ttt.tickettype_id=tt.id";
+        return "id in (SELECT t.id FROM tickettype tt JOIN tickettype_ticket ttt on tt.id=ttt.tickettype_id JOIN ticket t on t.id=ttt.ticket_id
+            WHERE tt.deleted_at is null and t.deleted_at is null and tt.name like ?)";
     }
 
     public function get_bsclass()
