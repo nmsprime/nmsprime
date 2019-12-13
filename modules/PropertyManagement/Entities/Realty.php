@@ -224,6 +224,46 @@ class Realty extends \BaseModel
 
         return $label;
     }
+
+    /**
+     * Update address of all related modems & contracts
+     */
+    public function updateRelatedModelsAddress()
+    {
+        if (! \Module::collections()->has('ProvBase')) {
+            return;
+        }
+
+        $diff = $this->getDirty();
+
+        if (! multi_array_key_exists(['street', 'house_nr', 'zip', 'city', 'district'], $diff)) {
+            return;
+        }
+
+        // Get all relations by one DB query - Models: realty->apartment->contract,  realty->apartment->modem->contract
+        $this->setRelation('apartments', $this->apartments()->with('contracts', 'modems')->get());
+
+        $contract_ids = $modem_ids = [];
+        foreach ($this->apartments as $apartment) {
+            foreach ($apartment->contracts as $contract) {
+                $contract_ids[] = $contract->id;
+            };
+
+            foreach ($apartment->modems as $modem) {
+                $modems_ids[] = $modem->id;
+                $contract_ids[] = $modem->contract_id;
+            }
+        }
+
+        if ($contract_ids) {
+            $contract = $contract ?? new \Modules\ProvBase\Entities\Contract;
+            $contract->updateAddressFromProperty($this, $contract_ids);
+        }
+
+        if ($modem_ids) {
+            $modem->updateAddressFromProperty($this, $modem_ids);
+        }
+    }
 }
 
 class RealtyObserver
@@ -240,42 +280,6 @@ class RealtyObserver
 
     public function updated($realty)
     {
-        $this->updateRelatedModelsAddress($realty);
-    }
-
-    /**
-     * Update address of all related modems & contracts
-     */
-    private function updateRelatedModelsAddress($realty)
-    {
-        if (! \Module::collections()->has('ProvBase')) {
-            return;
-        }
-
-        $diff = $realty->getDirty();
-
-        if (! multi_array_key_exists(['street', 'house_nr', 'zip', 'city', 'district'], $diff)) {
-            return;
-        }
-
-        // Models: realty->contract,  realty->modem, realty->apartment->modem
-        $models = \Modules\ProvBase\Entities\Modem::leftJoin('apartment as a', 'a.id', '=', 'modem.apartment_id')
-            ->whereNull('a.deleted_at')
-            ->whereNull('modem.deleted_at')
-            ->where(function ($query) use ($realty) {
-                $query
-                ->where('modem.realty_id', $realty->id)
-                ->orWhere('a.realty_id', $realty->id);
-            })
-            ->select('modem.*')
-            ->get();
-
-        if ($realty->contract) {
-            $models = $models->merge([$realty->contract]);
-        }
-
-        foreach ($models as $model) {
-            $model->updateAddressFromProperty();
-        }
+        $realty->updateRelatedModelsAddress();
     }
 }
