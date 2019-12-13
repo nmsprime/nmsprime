@@ -101,8 +101,8 @@ class Ticket extends \BaseModel
 
     public function tickettype_names_query()
     {
-        return "id in (SELECT t.id FROM tickettype tt JOIN tickettype_ticket ttt on tt.id=ttt.tickettype_id JOIN ticket t on t.id=ttt.ticket_id
-            WHERE tt.deleted_at is null and t.deleted_at is null and tt.name like ?)";
+        return 'id in (SELECT t.id FROM tickettype tt JOIN tickettype_ticket ttt on tt.id=ttt.tickettype_id JOIN ticket t on t.id=ttt.ticket_id
+            WHERE tt.deleted_at is null and t.deleted_at is null and tt.name like ?)';
     }
 
     public function get_bsclass()

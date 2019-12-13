@@ -6,8 +6,8 @@ use IBAN;
 use Storage;
 use ChannelLog;
 use Modules\ProvBase\Entities\Contract;
-use Modules\BillingBase\Providers\BillingConf;
 use App\Http\Controllers\BaseViewController;
+use Modules\BillingBase\Providers\BillingConf;
 use Modules\BillingBase\Providers\SettlementRunData;
 use Digitick\Sepa\TransferFile\Factory\TransferFileFacadeFactory;
 
