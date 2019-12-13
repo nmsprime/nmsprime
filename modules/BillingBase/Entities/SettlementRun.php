@@ -145,7 +145,7 @@ class SettlementRun extends \BaseModel
      */
     public function invoices()
     {
-        return $this->hasMany('Modules\BillingBase\Entities\Invoice');
+        return $this->hasMany(Invoice::class);
     }
 
     /**

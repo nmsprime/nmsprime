@@ -283,7 +283,7 @@ class TreeTopographyController extends HfcBaseController
                 $rstate += 1;
             }
 
-            if (($type == 'CMTS') || ($type == 'CLUSTER') || ($type == 'DATA') || ($type == 'NET')) {
+            if (($type == 'NETGW') || ($type == 'CLUSTER') || ($type == 'DATA') || ($type == 'NET')) {
                 $router += 1;
             }
 

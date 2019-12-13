@@ -52,7 +52,7 @@ class MprGeopos extends \BaseModel
     // NOTE: HfcBase Module is required !
     public function mpr()
     {
-        return $this->belongsTo('Modules\HfcCustomer\Entities\Mpr');
+        return $this->belongsTo(Mpr::class);
     }
 
     /*

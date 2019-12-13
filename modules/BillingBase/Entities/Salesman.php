@@ -62,7 +62,7 @@ class Salesman extends \BaseModel
      */
     public function contracts()
     {
-        return $this->hasMany('Modules\ProvBase\Entities\Contract');
+        return $this->hasMany(\Modules\ProvBase\Entities\Contract::class);
     }
 
     /**

@@ -4,8 +4,8 @@ namespace Modules\ProvMon\Http\Controllers;
 
 use View;
 use Acme\php\ArrayHelper;
-use Modules\ProvBase\Entities\Cmts;
 use Modules\ProvBase\Entities\Modem;
+use Modules\ProvBase\Entities\NetGw;
 use Modules\HfcReq\Entities\NetElement;
 use Modules\ProvBase\Entities\ProvBase;
 use Modules\ProvBase\Entities\Configfile;
@@ -81,76 +81,135 @@ class ProvMonController extends \BaseController
      */
     public function analyses($id)
     {
-        $ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = $data = null;
-        $modem = $this->modem ? $this->modem : Modem::find($id);
-        $view_var = $modem; // for top header
-        $error = '';
-        $message = trans('view.error_specify_id');
-
         // if there is no valid hostname specified, then return error view
         // to get the regular Analyses tab the hostname should be: cm-...
         if ($id == 'error') {
+            $error = '';
+            $message = trans('view.error_specify_id');
+
             return View::make('errors.generic', compact('error', 'message'));
         }
 
-        $hostname = $modem->hostname.'.'.$this->domain_name;
+        $modem = $this->modem ?? Modem::find($id);
         $mac = strtolower($modem->mac);
+        $hostname = $modem->hostname.'.'.$this->domain_name;
+        $onlineStatus = $this->modemOnlineStatus($modem, $hostname);
+
         $modem->help = 'modem_analysis';
+        $view_var = $modem;
+        $view_header = 'ProvMon-Analyses';
 
-        // takes approx 0.1 sec
-        $ip = gethostbyname($hostname);
-        $ip = ($ip == $hostname) ? null : $ip;
+        if ($modem->isTR069()) {
+            $prov = json_decode(Modem::callGenieAcsApi("provisions/?query={\"_id\":\"{$id}\"}", 'GET'));
 
-        // Ping: Only check if device is online
-        // takes approx 0.1 sec
-        exec('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
-        $online = $ret ? false : true;
-
-        // Flood Ping
-        $flood_ping = $this->flood_ping($hostname);
-
-        // Lease
-        $lease['text'] = $this->search_lease('hardware ethernet '.$mac);
-        $lease = $this->validate_lease($lease, $type);
-
-        // Configfile
-        $configfile = $this->_get_configfile("/tftpboot/cm/$modem->hostname");
-
-        // Realtime Measure - this takes the most time
-        // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
-        if ($online) {
-            // preg_match_all('/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/', $ping[0], $ip);
-            $realtime['measure'] = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
-            $realtime['forecast'] = 'TODO';
-            // get eventlog table
-            if (! array_key_exists('SNMP-Server not reachable', $realtime['measure'])) {
-                $eventlog = $modem->get_eventlog();
+            if ($prov && isset($prov[0]->script)) {
+                $configfile['text'] = preg_split('/\r\n|\r|\n/', $prov[0]->script);
+            } else {
+                $configfile['text'] = [];
             }
+        } else {
+            $configfile = $this->getConfigfileText("/tftpboot/cm/$modem->hostname");
         }
+
+        // return $ip and $online
+        foreach ($onlineStatus as $name => $value) {
+            $$name = $value;
+        }
+
+        $realtime = $eventlog = null;
+
+        if ($online) {
+            if ($modemConfigfileStatus = $this->modemConfigfileStatus($modem)) {
+                $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
+            }
+
+            if ($modem->isTR069()) {
+                $realtime['measure'] = $this->realtimeTR069($modem, false);
+            } else {
+                // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
+                $realtime['measure'] = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
+
+                // get eventlog table
+                if (! array_key_exists('SNMP-Server not reachable', $realtime['measure'])) {
+                    $eventlog = $modem->get_eventlog();
+                }
+            }
+            $realtime['forecast'] = 'TODO';
+        }
+
+        $device = \Modules\ProvBase\Entities\Configfile::where('id', $modem->configfile_id)->first()->device;
+        // time of this function should be observed - can take a huge time as well
+        $dash['modemServicesStatus'] = $this->modemServicesStatus($modem, $configfile, $device);
 
         // Log dhcp (discover, ...), tftp (configfile or firmware)
         // NOTE: This function takes a long time if syslog file is large - 0.4 to 0.6 sec
         $search = $ip ? "$mac|$modem->hostname[^0-9]|$ip " : "$mac|$modem->hostname[^0-9]";
-        $log = $this->_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
 
-        // Dashboard
-        $dash['modemServicesStatus'] = $this->modemServicesStatus($modem, $configfile);
-        // time of this function should be observed - can take a huge time as well
-        if ($online) {
-            $modemConfigfileStatus = $this->modemConfigfileStatus($modem);
-            if ($modemConfigfileStatus) {
-                $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
+        $log = $this->_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
+        $lease['text'] = $this->search_lease('hardware ethernet '.$mac);
+        $lease = $this->validate_lease($lease);
+        $host_id = $this->monitoring_get_host_id($modem);
+        $flood_ping = $this->flood_ping($hostname);
+
+        $tabs = $this->analysisPages($id);
+
+        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
+                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device')));
+    }
+
+    /**
+     * Get ID of Modem and ping it for Analyses page.
+     *
+     * @author  Roy Schneider
+     * @param   modem    Modules\ProvBase\Entities\Modem
+     * @param   hostname    string
+     * @return  array
+     */
+    public function modemOnlineStatus($modem, $hostname)
+    {
+        $ip = gethostbyname($hostname);
+        $ip = ($ip == $hostname) ? null : $ip;
+
+        if ($modem->isTR069()) {
+            foreach (['Device', 'InternetGatewayDevice'] as $dev) {
+                $model = $modem->getGenieAcsModel("$dev.ManagementServer.ConnectionRequestURL");
+
+                if (! $model) {
+                    continue;
+                }
+
+                if (preg_match('/https?:\/\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $model->_value, $match) != 1) {
+                    continue;
+                }
+
+                $ip = $hostname = $match[1];
+
+                break;
+            }
+
+            // workaround for tr069 devices, which block ICMP requests,
+            // but listen on the HTTP(s) / SSH ports
+            $con = null;
+            foreach ([80, 443, 22] as $port) {
+                try {
+                    $con = fsockopen($ip, $port, $errno, $errstr, 1);
+                } catch (\Exception $e) {
+                    continue;
+                }
+
+                if ($con) {
+                    fclose($con);
+
+                    return ['ip' => $ip, 'online' => true];
+                }
             }
         }
 
-        $host_id = $this->monitoring_get_host_id($modem);
+        // Ping: Only check if device is online
+        // takes approx 0.1 sec
+        exec('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
 
-        $tabs = $this->analysisPages($id);
-        $view_header = 'ProvMon-Analyses';
-
-        // View
-        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
-                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id')));
+        return ['ip' => $ip, 'online' => $ret ? false : true];
     }
 
     /**
@@ -160,7 +219,7 @@ class ProvMonController extends \BaseController
      * @param   path    String  Path of the configfile excluding its extension
      * @return  array
      */
-    private function _get_configfile($path)
+    private function getConfigfileText($path)
     {
         if (! is_file("$path.conf") || ! is_file("$path.cfg")) {
             return;
@@ -185,11 +244,15 @@ class ProvMonController extends \BaseController
      * @param array     Lines of Configfile
      * @return array    Color & status text
      */
-    public function modemServicesStatus($modem, $config)
+    public function modemServicesStatus($modem, $config, $device = 'cm')
     {
+        if ($device == 'tr069') {
+            return;
+        }
+
         if (! $config || ! isset($config['text']) || isset($config['warn'])) {
             return ['bsclass' => 'danger',
-                    'text' => $config['warn'] ?: trans('messages.modemAnalysis.cfError'),
+                    'text' => $config['warn'] ?? trans('messages.modemAnalysis.cfError'),
                     'instructions' => "docsis -e /tftpboot/cm/{$modem->hostname}.conf /tftpboot/keyfile /tftpboot/cm/{$modem->hostname}.cfg",
             ];
         }
@@ -240,8 +303,13 @@ class ProvMonController extends \BaseController
      */
     public function modemConfigfileStatus($modem)
     {
+        if (\Modules\ProvBase\Entities\Configfile::where('id', $modem->configfile_id)->first()->device == 'tr069') {
+            return;
+        }
+
         $path = '/var/log/nmsprime/tftpd-cm.log';
         $ts_cf = filemtime("/tftpboot/cm/$modem->hostname.cfg");
+
         $ts_dl = exec("zgrep $modem->hostname $path | tail -1 | cut -d' ' -f1");
 
         if (! $ts_dl) {
@@ -510,7 +578,7 @@ class ProvMonController extends \BaseController
         $lease = $this->validate_lease($lease, $type);
 
         // configfile
-        $configfile = $this->_get_configfile("/tftpboot/mta/$mta->hostname");
+        $configfile = $this->getConfigfileText("/tftpboot/mta/$mta->hostname");
 
         // log
         $ip = gethostbyname($mta->hostname);
@@ -529,14 +597,14 @@ class ProvMonController extends \BaseController
     }
 
     /**
-     * Returns view of cmts analysis page
+     * Returns view of netgw analysis page
      */
-    public function cmts_analysis($id)
+    public function netgw_analysis($id)
     {
         $ping = $lease = $log = $dash = $realtime = $monitoring = $type = $flood_ping = null;
-        $cmts = Cmts::find($id);
-        $ip = $cmts->ip;
-        $view_var = $cmts; // for top header
+        $netgw = NetGw::find($id);
+        $ip = $netgw->ip;
+        $view_var = $netgw; // for top header
 
         // Ping: Send 5 request's at once with max timeout of 1 second
         exec('sudo ping -c5 -i0 -w1 '.$ip, $ping);
@@ -546,26 +614,26 @@ class ProvMonController extends \BaseController
 
         // Realtime Measure
         if (count($ping) == 10) { // only fetch realtime values if all pings are successfull
-            $realtime['measure'] = $this->realtime_cmts($cmts, $cmts->get_ro_community());
+            $realtime['measure'] = $this->realtime_netgw($netgw, $netgw->get_ro_community());
             $realtime['forecast'] = 'TODO';
         }
 
-        $host_id = $this->monitoring_get_host_id($cmts);
+        $host_id = $this->monitoring_get_host_id($netgw);
 
         $tabs = [
-            ['name' => 'Edit', 'route' => 'Cmts.edit', 'link' => $id],
-            ['name' => 'Analysis', 'route' => 'ProvMon.cmts', 'link' => $id],
+            ['name' => 'Edit', 'route' => 'NetGw.edit', 'link' => $id],
+            ['name' => 'Analysis', 'route' => 'ProvMon.netgw', 'link' => $id],
         ];
 
-        $view_header = 'Provmon-CMTS';
+        $view_header = 'Provmon-NetGw';
 
-        return View::make('provmon::cmts_analysis', $this->compact_prep_view(compact('ping', 'tabs', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var', 'view_header')));
+        return View::make('provmon::netgw_analysis', $this->compact_prep_view(compact('ping', 'tabs', 'lease', 'log', 'dash', 'realtime', 'host_id', 'view_var', 'view_header')));
     }
 
     /**
      * Proves if the last found lease is actually valid or has already expired
      */
-    private function validate_lease($lease, $type)
+    private function validate_lease($lease, $type = null)
     {
         if ($lease['text'] && $lease['text'][0]) {
             // calculate endtime
@@ -703,7 +771,7 @@ class ProvMonController extends \BaseController
             }
         }
 
-        $cmts = Modem::get_cmts($ip);
+        $netgw = Modem::get_netgw($ip);
         $sys = [];
         // these values are not important for cacti, so only retrieve them on the analysis page
         if (! $cacti) {
@@ -712,10 +780,10 @@ class ProvMonController extends \BaseController
             $sys['Uptime'] = [$this->_secondsToTime(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
             $sys['Status Code'] = [snmpget($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.2.2')];
             $sys['DOCSIS'] = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
-            $sys['CMTS'] = [$cmts->hostname];
+            $sys['NetGw'] = [$netgw->hostname];
             $ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
             $us['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2'), 1000000);
-            $us['Modulation Profile'] = $this->_docsis_modulation($cmts->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
+            $us['Modulation Profile'] = $this->_docsis_modulation($netgw->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
         }
 
         // Downstream
@@ -736,7 +804,7 @@ class ProvMonController extends \BaseController
             $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
         }
 
-        $snrs = $cmts->get_us_snr($ip);
+        $snrs = $netgw->get_us_snr($ip);
         foreach ($us['Frequency MHz'] as $freq) {
             $us['SNR dB'][] = isset($snrs[strval($freq)]) ? $snrs[strval($freq)] : 'n/a';
         }
@@ -769,21 +837,56 @@ class ProvMonController extends \BaseController
     }
 
     /**
-     * The CMTS Realtime Measurement Function
-     * Fetches all realtime values from CMTS with SNMP
+     * Fetch realtime values via GenieACS
      *
-     * @param cmts:	CMTS object
-     * @param com:	SNMP RO community
-     * @param ctrl:	shall the RX power be controlled?
+     * @param modem: modem object
+     * @param refresh: bool refresh values from device instead of using cached ones
+     * @return array[section][Fieldname][Values]
+     *
+     * @author Ole Ernst
+     */
+    public function realtimeTR069($modem, $refresh)
+    {
+        $mon = $modem->configfile->getMonitoringConfig();
+        if (! $mon) {
+            return ['SNMP-Server not reachable' => ['' => ['']]];
+        }
+
+        if ($refresh) {
+            $request = ['name' => 'refreshObject'];
+            $request['objectName'] = \Illuminate\Support\Arr::flatten($mon);
+
+            $devId = rawurlencode($modem->getGenieAcsModel('_id'));
+            Modem::callGenieAcsApi("devices/$devId/tasks?timeout=3000&connection_request", 'POST', json_encode($request));
+        }
+
+        foreach ($mon as $category => &$values) {
+            $values = array_map(function ($value) use ($modem) {
+                $model = $modem->getGenieAcsModel($value);
+
+                return isset($model->_value) ? [$model->_value] : [];
+            }, $values);
+        }
+
+        return $mon;
+    }
+
+    /**
+     * The NETGW Realtime Measurement Function
+     * Fetches all realtime values from NETGW with SNMP
+     *
+     * @param netgw: NETGW object
+     * @param com: SNMP RO community
+     * @param ctrl: shall the RX power be controlled?
      * @return: array[section][Fieldname][Values]
      */
-    public function realtime_cmts($cmts, $com)
+    public function realtime_netgw($netgw, $com)
     {
         // Copy from SnmpController
         $this->snmp_def_mode();
         try {
             // First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
-            $docsis = snmpget($cmts->ip, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
+            $docsis = snmpget($netgw->ip, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
         } catch (\Exception $e) {
             if (((strpos($e->getMessage(), 'php_network_getaddresses: getaddrinfo failed: Name or service not known') !== false) || (strpos($e->getMessage(), 'No response from') !== false))) {
                 return ['SNMP-Server not reachable' => ['' => [0 => '']]];
@@ -794,23 +897,23 @@ class ProvMonController extends \BaseController
         }
 
         // System
-        $sys['SysDescr'] = [snmpget($cmts->ip, $com, '.1.3.6.1.2.1.1.1.0')];
-        $sys['Uptime'] = [$this->_secondsToTime(snmpget($cmts->ip, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
+        $sys['SysDescr'] = [snmpget($netgw->ip, $com, '.1.3.6.1.2.1.1.1.0')];
+        $sys['Uptime'] = [$this->_secondsToTime(snmpget($netgw->ip, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
         $sys['DOCSIS'] = [$this->_docsis_mode($docsis)];
 
-        $freq = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
+        $freq = snmprealwalk($netgw->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
         try {
-            $desc = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.31.1.1.1.18');
+            $desc = snmprealwalk($netgw->ip, $com, '.1.3.6.1.2.1.31.1.1.1.18');
         } catch (\Exception $e) {
             $desc = ['n/a'];
         }
-        $snr = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5');
+        $snr = snmprealwalk($netgw->ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5');
         try {
-            $util = snmprealwalk($cmts->ip, $com, '.1.3.6.1.2.1.10.127.1.3.9.1.3');
+            $util = snmprealwalk($netgw->ip, $com, '.1.3.6.1.2.1.10.127.1.3.9.1.3');
         } catch (\Exception $e) {
         }
         try {
-            $rx = snmprealwalk($cmts->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2');
+            $rx = snmprealwalk($netgw->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.25.1.2');
         } catch (\Exception $e) {
         }
 
@@ -827,7 +930,7 @@ class ProvMonController extends \BaseController
 
         // unset unused interfaces, as we don't want to show them on the web gui
         foreach (array_keys($us['SNR dB']) as $idx) {
-            if ($cmts->company == 'Casa' && $us['SNR dB'][$idx] == 0) {
+            if ($netgw->company == 'Casa' && $us['SNR dB'][$idx] == 0) {
                 foreach (array_keys($us) as $entry) {
                     unset($us[$entry][$idx]);
                 }
@@ -1017,9 +1120,9 @@ class ProvMonController extends \BaseController
      */
     public static function monitoring_get_netelement_graph_ids($netelem)
     {
-        // Search parent CMTS for type cluster
-        if ($netelem->netelementtype_id == 2 && ! $netelem->ip && $cmts = $netelem->get_parent_cmts()) {
-            $ip = $cmts->ip;
+        // Search parent NETGW for type cluster
+        if ($netelem->netelementtype_id == 2 && ! $netelem->ip && $netgw = $netelem->get_parent_netgw()) {
+            $ip = $netgw->ip;
         } else {
             $ip = $netelem->ip;
         }
@@ -1032,7 +1135,7 @@ class ProvMonController extends \BaseController
         }
         /*
         $vendor = $netelem->netelementtype->vendor;
-        $graph_template_id = self::monitoring_get_graph_template_id("$vendor CMTS Overview");
+        $graph_template_id = self::monitoring_get_graph_template_id("$vendor NETGW Overview");
         if (! $graph_template_id)
             return;
         */
@@ -1225,7 +1328,7 @@ class ProvMonController extends \BaseController
 
     /**
      * Defines all tabs for the Netelementtypes.
-     * Note: 1 = Net, 2 = Cluster, 3 = Cmts, 4 = Amplifier, 5 = Node, 6 = Data, 7 = UPS
+     * Note: 1 = Net, 2 = Cluster, 3 = NetGw, 4 = Amplifier, 5 = Node, 6 = Data, 7 = UPS
      *
      * @author Roy Schneider
      * @param Modules\HfcReq\Entities\NetElement

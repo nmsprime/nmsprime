@@ -183,17 +183,17 @@ class Item extends \BaseModel
      */
     public function product()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\Product');
+        return $this->belongsTo(Product::class);
     }
 
     public function contract()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Contract');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class);
     }
 
     public function costcenter()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\CostCenter');
+        return $this->belongsTo(CostCenter::class);
     }
 
     /*

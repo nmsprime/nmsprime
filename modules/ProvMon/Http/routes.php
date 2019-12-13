@@ -19,10 +19,10 @@ BaseRoute::group([], function () {
         'middleware' => ['can:view_analysis_pages_of,Modules\ProvBase\Entities\Modem'],
     ]);
 
-    BaseRoute::get('provmon_cmts/{id}', [
-        'as' => 'ProvMon.cmts',
-        'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@cmts_analysis',
-        'middleware' => ['can:view_analysis_pages_of,Modules\ProvBase\Entities\Cmts'],
+    BaseRoute::get('provmon_netgw/{id}', [
+        'as' => 'ProvMon.netgw',
+        'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@netgw_analysis',
+        'middleware' => ['can:view_analysis_pages_of,Modules\ProvBase\Entities\NetGw'],
     ]);
 
     BaseRoute::post('provmon/{id}', [

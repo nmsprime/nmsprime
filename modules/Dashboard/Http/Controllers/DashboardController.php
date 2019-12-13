@@ -147,19 +147,6 @@ class DashboardController extends BaseController
                 'text' => '<li>Next: Change default Password! '.\HTML::linkRoute('User.profile', 'Global Config', \Auth::user()->id), ];
         }
 
-        // check for insecure MySQL root password
-        // This requires to run: mysql_secure_installation
-        if (env('ROOT_DB_PASSWORD') == '') {
-            try {
-                \DB::connection('mysql-root')->getPdo();
-                if (\DB::connection()->getDatabaseName()) {
-                    return ['youtube' => 'https://www.youtube.com/embed/dZWjeL-LmG8',
-                        'text' => '<li>Danger! Run: mysql_secure_installation in bash as root!', ];
-                }
-            } catch (\Exception $e) {
-            }
-        }
-
         // means: secure – nothing todo
     }
 
@@ -177,10 +164,10 @@ class DashboardController extends BaseController
 
         $support = 'https://support.nmsprime.com';
 
-        $numCmts = 0;
+        $numNetGw = 0;
         $numModems = 0;
         if (\Module::collections()->has('ProvBase')) {
-            $numCmts = \Modules\ProvBase\Entities\Cmts::count();
+            $numNetGw = \Modules\ProvBase\Entities\NetGw::count();
             $numModems = \Modules\ProvBase\Entities\Modem::count();
         }
 
@@ -201,7 +188,7 @@ class DashboardController extends BaseController
         }
 
         $files = [
-            'news.json' => "$support/news.php?ns=&sla=".urlencode(\App\Sla::pluck('name')->first()).'&mc='.$numModems.'&nm='.$numCmts.'&nn='.$numNetelements.'&nt='.$numTvbillings,
+            'news.json' => "$support/news.php?ns=&sla=".urlencode(\App\Sla::pluck('name')->first()).'&mc='.$numModems.'&nm='.$numNetGw.'&nn='.$numNetelements.'&nt='.$numTvbillings,
             'documentation.json' => "$support/documentation.json",
         ];
 
@@ -252,10 +239,10 @@ class DashboardController extends BaseController
                 'text' => $text.\HTML::linkRoute('Config.index', trans('helper.set_isp_name')), ];
         }
 
-        // add CMTS
-        if (\Modules\ProvBase\Entities\Cmts::count() == 0) {
+        // add NetGw
+        if (\Modules\ProvBase\Entities\NetGw::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=159&',
-                'text' => $text.\HTML::linkRoute('Cmts.create', trans('helper.create_cmts')), ];
+                'text' => $text.\HTML::linkRoute('NetGw.create', trans('helper.create_netgw')), ];
         }
 
         // add CM and CPEPriv IP-Pool
@@ -263,7 +250,7 @@ class DashboardController extends BaseController
             if (\Modules\ProvBase\Entities\IpPool::where('type', $type)->count() == 0) {
                 return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
                     'text' => $text.\HTML::linkRoute('IpPool.create', trans('helper.create_'.strtolower($type).'_pool'),
-                            ['cmts_id' => \Modules\ProvBase\Entities\Cmts::first()->id, 'type' => $type]), ];
+                            ['netgw_id' => \Modules\ProvBase\Entities\NetGw::first()->id, 'type' => $type]), ];
             }
         }
 

@@ -42,7 +42,7 @@ class NumberRange extends \BaseModel
      */
     public function costcenter()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\CostCenter', 'costcenter_id');
+        return $this->belongsTo(CostCenter::class, 'costcenter_id');
     }
 
     /**

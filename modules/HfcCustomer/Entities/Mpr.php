@@ -52,7 +52,7 @@ class Mpr extends \BaseModel
     // NOTE: HfcReq Module is required !
     public function netelement()
     {
-        return $this->belongsTo('Modules\HfcReq\Entities\NetElement');
+        return $this->belongsTo(\Modules\HfcReq\Entities\NetElement::class);
     }
 
     // NOTE: HfcReq Module is required !
@@ -64,7 +64,7 @@ class Mpr extends \BaseModel
     // Relation to MPR Geopos
     public function mprgeopos()
     {
-        return $this->hasMany('Modules\HfcCustomer\Entities\MprGeopos');
+        return $this->hasMany(MprGeopos::class);
     }
 
     /*

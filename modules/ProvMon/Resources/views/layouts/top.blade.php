@@ -24,7 +24,7 @@
 		// Show link to actual site. This depends on if we are in Modem Analyses or CPE Analyses context
 		if (!isset($type))
 		{
-			$route_ext = $classname == 'Modem' ? 'index' : 'cmts';
+			$route_ext = $classname == 'Modem' ? 'index' : 'netgw';
 			$s .= "<li class='nav-tabs'>".HTML::linkRoute("ProvMon.$route_ext", 'Analyses', $view_var->id).'</li>';
 		}
 		elseif ($type == 'CPE')

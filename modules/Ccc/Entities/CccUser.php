@@ -32,7 +32,7 @@ class CccUser extends \BaseModel implements
 
     public function contract()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class, 'contract_id');
     }
 
     /**

@@ -112,7 +112,7 @@ class EnviaContract extends \BaseModel
      */
     public function contract()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class, 'contract_id');
     }
 
     /**
@@ -120,7 +120,7 @@ class EnviaContract extends \BaseModel
      */
     public function modem()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Modem', 'modem_id');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Modem::class, 'modem_id');
     }
 
     /**
@@ -128,7 +128,7 @@ class EnviaContract extends \BaseModel
      */
     public function enviaorders()
     {
-        return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrder', 'enviacontract_id');
+        return $this->hasMany(EnviaOrder::class, 'enviacontract_id');
     }
 
     /**
@@ -136,7 +136,7 @@ class EnviaContract extends \BaseModel
      */
     public function phonenumbermanagements()
     {
-        return $this->hasMany('Modules\ProvVoip\Entities\PhonenumberManagement', 'enviacontract_id');
+        return $this->hasMany(\Modules\ProvVoip\Entities\PhonenumberManagement::class, 'enviacontract_id');
     }
 
     /**
@@ -150,8 +150,8 @@ class EnviaContract extends \BaseModel
         }
 
         return collect($phonenumbers);
-        /* return $this->hasManyThrough('Modules\ProvVoip\Entities\Phonenumber', 'Modules\ProvVoip\Entities\PhonenumberManagement', 'enviacontract_id'); */
-        /* return $this->hasManyThrough('Modules\ProvVoip\Entities\Phonenumber', 'Modules\ProvVoip\Entities\PhonenumberManagement'); */
+        /* return $this->hasManyThrough(\Modules\ProvVoip\Entities\Phonenumber::class, \Modules\ProvVoip\Entities\PhonenumberManagement::class, 'enviacontract_id'); */
+        /* return $this->hasManyThrough(\Modules\ProvVoip\Entities\Phonenumber::class, \Modules\ProvVoip\Entities\PhonenumberManagement::class); */
     }
 
     /**

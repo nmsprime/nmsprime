@@ -41,11 +41,11 @@ class TicketType extends \BaseModel
 
     public function children()
     {
-        return $this->hasMany('\Modules\Ticketsystem\Entities\TicketType', 'parent_id');
+        return $this->hasMany(self::class, 'parent_id');
     }
 
     public function parent()
     {
-        return $this->belongsTo('\Modules\Ticketsystem\Entities\TicketType');
+        return $this->belongsTo(self::class);
     }
 }
