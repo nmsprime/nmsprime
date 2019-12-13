@@ -181,7 +181,7 @@ class Realty extends \BaseModel
     public function getApartmentContracts($withGroupContract, $withModems = false)
     {
         if ($this->apartments->isEmpty()) {
-            return collect();
+            return (new \Modules\ProvBase\Entities\Contract)->newCollection();
         }
 
         $contracts1 = \Modules\ProvBase\Entities\Contract::join('modem', 'modem.contract_id', 'contract.id')
