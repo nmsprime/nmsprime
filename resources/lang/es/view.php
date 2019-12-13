@@ -60,7 +60,7 @@ return [
         'Menu_Number Range'         => 'Intervalo de números',
         'Menu_Configfiles'          => 'Archivo de configuración',
         'Menu_QoS'                  => 'QoS',
-        'Menu_CMTS'                 => 'CMTS',
+        'Menu_NetGws'               => 'NetGws',
         'Menu_Ip-Pools'             => 'IP-Pools',
         'Menu_OverdueDebts'         => 'Deudas vencidas',
         'Menu_ProvVoip'             => 'VoIP',
@@ -191,9 +191,9 @@ return [
         'Header_QoS'                => 'Reglas-QoS',
         'Header_Device Type'        => 'Tipo de dispositivo',
         'Header_EditQoS'            => 'Editar reglas-QoS',
-        //CMTS
-        'Header_CMTS'               => 'CMTS|CMTSs',
-        'Header_EditCMTS'           => 'Editar CMTS',
+        //NetGw
+        'Header_NetGW'              => 'NetGW|NetGWs',
+        'Header_EditNetGW'          => 'Edit NetGW',
         'Header_Config'             => 'Config. propuesta|Config. propuestas',
         //IpPool
         'Header_IpPool'             => 'Pool de IP|IP-pool\'s',
@@ -337,9 +337,9 @@ return [
         'Button_Rerun Accounting Command' => 'Vuelva a ejecutar comando de contabilidad',
         'Button_Create QoS'             => 'Crear regla QoS',
         'Button_Create Qos'             => 'Crear regla QoS',
-        // //CMTS
-        'Button_Create CMTS'            => 'Crear CMTS',
-        'Button_Create Cmts'            => 'Crear CMTS',
+        // //NetGws
+        'Button_Create NetGws'          => 'Create NetGw',
+        'Button_Create Netgws'          => 'Create NetGw',
         // //IpPool
         'Button_Create IpPool'          => 'Crear IP-Pool', //workaround
         'Button_Create IP-Pools'        => 'Crear IP-Pools',
