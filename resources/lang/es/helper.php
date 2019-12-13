@@ -14,7 +14,7 @@ return [
     'Use api'                   => 'Esta capacidad permite o prohíbe el acceso a las rutas API con "Basic Auth" (el correo electrónico se usa como nombre de usuario).',
     'See income chart'          => 'Esta capacidad permite o prohíbe ver la tabla de ingresos en el panel de control.',
     'View analysis pages of modems' => 'Esta capacidad permite o prohíbe el acceso a las páginas de análisis de un módem.',
-    'View analysis pages of cmts' => 'Esta capacidad permite o prohíbe el acceso a las páginas de análisis de un CMTS.',
+    'View analysis pages of netgw' => 'This ability allows or forbids to access the analysis pages of a NetGw.',
     'Download settlement runs'  => 'Esta capacidad permite o prohíbe la descarga de ejecuciones de liquidación. Esta capacidad no tiene ningún impacto si está prohibido administrar ejecuciones de liquidación.',
  /*
   * Index Page - Datatables
@@ -72,7 +72,7 @@ return [
   */
     'next'                          => 'Siguiente paso: ',
     'set_isp_name'                  => 'Configure el nombre del proveedor de servicio de red',
-    'create_cmts'                   => 'Crear el primer CMTS',
+    'create_netgw'                  => 'Create first NetGw/CMTS',
     'create_cm_pool'                => 'Crear la primera pool de IP para los cable modem',
     'create_cpepriv_pool'           => 'Crear la primera pool privada de IP para CPE',
     'create_qos'                    => 'Crear el primer perfil QoS',
@@ -112,21 +112,21 @@ return [
         'valueDate' => 'Día del mes para una fecha específica del valor. Anula la fecha de colección solicitada de la configuración global para este contrato en el SEPA XML.',
     ],
     'rate_coefficient'              => 'La Maxima Tarifa Sostenida sera multiplicada por este valor para otorgar al usuario mas (> 1.0) rendimiento que el suscrito.',
-    'additional_modem_reset'        => 'Compruebe si debe mostrarse un botón adicional, que reinicie el módem a través de SNMP sin consultar el CMTS.',
+    'additional_modem_reset'        => 'Check if an additional button should be displayed, which resets the modem via SNMP without querying the NetGw.',
     'openning_new_tab_for_modem' => 'Marque la casilla para abrir la página de edición del módem en la nueva pestaña en vista topografía.',
     //ModemController
     'Modem_InternetAccess'          => 'Acceso a Internet para los CPEs (los MTAs no se consideran y siempre se conectarán cuando todas las demás configuraciones sean correctas). Tenga cuidado: Con el Módulo de facturación esta casilla se sobrescribirá por chequeo diario si cambia la tarifa.',
     'Modem_InstallationAddressChangeDate'   => 'En caso de (físico) reubicación del modem: agregar fecha de inicio para la nueva dirección ahí. Si es solo lectura, hay una orden de cambio de dirección pendiente en envia TEL.',
     'Modem_GeocodeOrigin'           => 'De donde vienen los datos geocode? Si se establece a "n/a", la direccion no podra ser geocoded para cualquier API. Sera establecido a su nombre en cambios manuales de geodata.',
-    'cmtsSupportState' => [
-        'full-support' => 'Más del 95% de los módulos cmts están listados como dispositivos compatibles.',
-        'restricted' => 'Entre 80%-95% de módulos cmts se listan como dispositivos compatibles.',
-        'not-supported' => 'Menos del 80% de los módulos cmts están listados como dispositivos compatibles.',
-        'verifying' => 'Menos del 80% de los módulos cmts están listados como dispositivos compatibles, pero el CMTS todavía está dentro del período de verificación de 6 semanas',
+    'netGwSupportState' => [
+        'full-support' => 'More than 95% of netGw modules are listed as supported devices.',
+        'restricted' => 'Between 80%-95% of netGw modules are listed as supported devices.',
+        'not-supported' => 'Less than 80% of netGw modules are listed as supported devices.',
+        'verifying' => 'Less than 80% of netGw modules are listed as supported devices, but the netGw is still within the verification period of 6 weeks',
     ],
     'contract_number'               => 'Atencion - Contrasena del Cliente es cambiado automaticamente cuando se cambia este campo!',
     'mac_formats'                   => "Formatos permitidos (case-insensitive):\n\n1) AA:BB:CC:DD:EE:FF\n2) AABB.CCDD.EEFF\n3) AABBCCDDEEFF",
-    'fixed_ip_warning'              => 'Usar una IP fija es altamente no recomendado, ya que pierde la habilidad de mover modems y sus CPEs libremente entre CMTSes. Envez de dar una IP fija al cliente, deberan ser provistos del hostname, el cual no cambiara.',
+    'fixed_ip_warning'              => 'Using fixed IP address is highly discouraged, as this breaks the ability to move modems and their CPEs freely among NetGws. Instead of telling the customer a fixed IP address they should be supplied with the hostname, which will not change.',
     'addReverse'                    => 'Para establecer un registro DNS inverso adicional, por ejemplo para servidores de correo',
     'modem_update_frequency'        => 'Este campo se actualiza una vez al día.',
     'modemSupportState' => [
