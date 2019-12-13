@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Facade;
 /**
  * Provider to get currency string for the whole application
  */
-class Currency extends Facade
+class BillingConf extends Facade
 {
     /**
      * Get the registered name of the component.
@@ -16,6 +16,6 @@ class Currency extends Facade
      */
     protected static function getFacadeAccessor()
     {
-        return 'currency';
+        return 'billingconf';
     }
 }

@@ -29,8 +29,6 @@ class DebtImport
      */
     private $notFound = [];
 
-    private $parser;
-
     /**
      * CSV column position definitions
      */
@@ -138,20 +136,6 @@ class DebtImport
      */
     private function addDebt($line, $contract)
     {
-        if (! $this->parser) {
-            $this->parser = new DefaultTransactionParser;
-        }
-
-        // Exclude specific invoice numbers
-        $arr = $this->parser->searchNumbers($line[self::VOUCHER_NR]);
-
-        if ($arr['exclude']) {
-            return;
-        }
-
-        // $invoiceId = \DB::table('invoice')->where('number', $arr['invoiceNr'])->select('id')->first();
-        // $invoiceId = $invoiceId ? $invoiceId->id : null;
-
         // Limit dunning indicator to number between 1 and 3
         $indicator = null;
         if ($line[self::INDICATOR] > 0 && $line[self::INDICATOR] <= 3) {
@@ -241,7 +225,7 @@ class DebtImport
         $blocked = [];
 
         foreach ($contracts as $c) {
-            if ($c->blockInetFromDebts()['block']) {
+            if ($c->blockInetFromDebts()) {
                 $blocked[] = $c->number;
 
                 foreach ($c->modems as $modem) {

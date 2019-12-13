@@ -4,7 +4,7 @@ namespace Modules\BillingBase\Entities;
 
 use Storage;
 use ChannelLog;
-use Modules\BillingBase\Providers\Currency;
+use Modules\BillingBase\Providers\BillingConf;
 use Modules\BillingBase\Providers\SettlementRunData;
 
 /**
@@ -385,7 +385,7 @@ class Invoice extends \BaseModel
         $price = \App::getLocale() == 'de' ? number_format($price, 2, ',', '.') : number_format($price, 2);
         $sum = \App::getLocale() == 'de' ? number_format($item->charge, 2, ',', '.') : number_format($item->charge, 2);
 
-        $this->data['item_table_positions'] .= $item->count.' & '.escape_latex_special_chars($item->invoice_description).' & '.$price.Currency::getLatex().' & '.$sum.Currency::getLatex().'\\\\';
+        $this->data['item_table_positions'] .= $item->count.' & '.escape_latex_special_chars($item->invoice_description).' & '.$price.BillingConf::currencyLatex().' & '.$sum.BillingConf::currencyLatex().'\\\\';
     }
 
     public function set_mandate($mandate)
@@ -437,9 +437,9 @@ class Invoice extends \BaseModel
         $this->data['table_sum_tax_formatted'] = \App::getLocale() == 'de' ? number_format($tax, 2, ',', '.') : number_format($tax, 2);
         $this->data['table_sum_charge_total_formatted'] = \App::getLocale() == 'de' ? number_format($total, 2, ',', '.') : number_format($total, 2);
 
-        $this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.$this->data['table_sum_charge_net_formatted'].Currency::getLatex().'\\\\';
-        $this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$this->data['table_sum_tax_formatted'].Currency::getLatex().'\\\\';
-        $this->data['table_summary'] .= '~ & \textbf{Rechnungsbetrag:} & ~ & \textbf{'.$this->data['table_sum_charge_total_formatted'].Currency::getLatex().'}\\\\';
+        $this->data['table_summary'] = '~ & Gesamtsumme: & ~ & '.$this->data['table_sum_charge_net_formatted'].BillingConf::currencyLatex().'\\\\';
+        $this->data['table_summary'] .= "~ & $tax_percent MwSt: & ~ & ".$this->data['table_sum_tax_formatted'].BillingConf::currencyLatex().'\\\\';
+        $this->data['table_summary'] .= '~ & \textbf{Rechnungsbetrag:} & ~ & \textbf{'.$this->data['table_sum_charge_total_formatted'].BillingConf::currencyLatex().'}\\\\';
 
         // make transfer reason (Verwendungszweck)
         if ($transfer_reason = $account->company->transfer_reason) {
@@ -538,7 +538,7 @@ class Invoice extends \BaseModel
         $sum = \App::getLocale() == 'de' ? number_format($sum, 2, ',', '.') : number_format($sum, 2);
         $this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'.$sum.'}\\\\';
         $plural = $count > 1 ? 'en' : '';
-        $this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural.' & '.$sum.Currency::getLatex().' & '.$sum.Currency::getLatex().'\\\\';
+        $this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural.' & '.$sum.BillingConf::currencyLatex().' & '.$sum.BillingConf::currencyLatex().'\\\\';
 
         $this->filename_cdr = date('Y_m', $time_cdr).'_cdr';
     }

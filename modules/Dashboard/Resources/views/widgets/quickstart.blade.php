@@ -8,17 +8,17 @@
     {{-- info/data --}}
     <div class="stats-info text-center">
 
-        {!! HTML::decode (HTML::linkRoute('Contract.create',
+        {!! HTML::decode (HTML::linkRoute('Contract.index',
             '<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
                 <i style="font-size: 25px;" class="img-center fa fa-address-book-o p-10"></i><br />
-                <span class="username text-ellipsis text-center">'.trans('view.Dashboard_AddContract').'</span>
+                <span class="username text-ellipsis text-center">'.trans('view.dashboard.contractIndexPage').'</span>
             </span>'))
         !!}
 
-        {!! HTML::decode (HTML::linkRoute('Ticket.create',
+        {!! HTML::decode (HTML::linkRoute('Ticket.index',
             '<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
                 <i style="font-size: 25px;" class="img-center fa fa-ticket p-10"></i><br />
-                <span class="username text-ellipsis text-center">'.trans('view.Dashboard_AddTicket').'</span>
+                <span class="username text-ellipsis text-center">'.trans('view.dashboard.ticketIndexPage').'</span>
             </span>'))
         !!}
 

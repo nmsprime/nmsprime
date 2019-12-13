@@ -3,7 +3,7 @@
 namespace Modules\BillingBase\Entities;
 
 use ChannelLog;
-use Modules\BillingBase\Providers\Currency;
+use Modules\BillingBase\Providers\BillingConf;
 
 class HlkommCdr extends CdrGetter
 {
@@ -164,7 +164,7 @@ class HlkommCdr extends CdrGetter
 
         foreach ($unassigned as $pn => $arr) {
             $price = \App::getLocale() == 'de' ? number_format($arr['price'], 2, ',', '.') : number_format($arr['price'], 2, '.', ',');
-            ChannelLog::error('billing', trans('messages.cdr_missing_phonenr', ['phonenr' => $pn, 'count' => $arr['count'], 'price' => $price, 'currency' => Currency::get()]));
+            ChannelLog::error('billing', trans('messages.cdr_missing_phonenr', ['phonenr' => $pn, 'count' => $arr['count'], 'price' => $price, 'currency' => BillingConf::currency()]));
         }
 
         return $calls;
