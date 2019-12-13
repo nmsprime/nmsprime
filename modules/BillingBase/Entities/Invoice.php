@@ -386,11 +386,44 @@ class Invoice extends \BaseModel
     public function add_item($item)
     {
         $count = $item->count ?: 1;
-        $price = $item->charge / $item->count;
-        $price = \App::getLocale() == 'de' ? number_format($price, 2, ',', '.') : number_format($price, 2);
-        $sum = \App::getLocale() == 'de' ? number_format($item->charge, 2, ',', '.') : number_format($item->charge, 2);
+        $unitPrice = $item->charge / $count;
+        $cycle = strtolower($item->product->billing_cycle);
 
-        $this->data['item_table_positions'] .= $item->count.' & '.escape_latex_special_chars($item->invoice_description).' & '.$price.BillingConf::currencyLatex().' & '.$sum.BillingConf::currencyLatex().'\\\\';
+        // TODO: Get object count by Realties and their apartments
+        if ($item->contract->isGroupContract() && strtolower($item->product->type) == 'tv') {
+            $this->data['apartmentCount'] = $count;
+        }
+
+        if (! $item->product->record_monthly || in_array($cycle, ['once', 'monthly'])) {
+            $price = moneyFormat($unitPrice);
+            $sum = moneyFormat($item->charge);
+
+            $this->data['item_table_positions'] .= $count.' & '.escape_latex_special_chars($item->invoice_description).' & '.
+                $price.BillingConf::currencyLatex().' & '.$sum.BillingConf::currencyLatex().'\\\\';
+
+            return;
+        }
+
+        $cycles = 12;
+        $offset = 0;
+
+        if ($cycle == 'quarterly') {
+            $cycles = 3;
+            $offset = intval(SettlementRunData::getDate('lastm')) - 2;
+        }
+
+        $unitPrice /= $cycles;
+        $sum = moneyFormat($unitPrice * $count);
+        $price = moneyFormat($unitPrice);
+
+        for ($i=1; $i <= $cycles; $i++) {
+            $month = str_pad($i + $offset, 2, 0, STR_PAD_LEFT);
+            $description = $item->accounting_text ?: $item->product->name;
+            $description .= " $month/".SettlementRunData::getDate('Y');
+
+            $this->data['item_table_positions'] .= $count.' & '.escape_latex_special_chars($description).' & '.
+                $price.BillingConf::currencyLatex().' & '.$sum.BillingConf::currencyLatex().'\\\\';
+        }
     }
 
     public function set_mandate($mandate)

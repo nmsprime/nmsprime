@@ -14,6 +14,9 @@ return [
         'showAGs'           => 'Adds a select list with contact persons to the contract page. The list has to be stored in appropriate Storage directory - check source code!',
         'SplitSEPA'         => 'Sepa Transfers are split to different XML-Files dependent of their transfer type',
     ],
+    'product' => [
+        'recordMonthly' => 'With activated checkbox the corresponding items will be recorded monthly on the invoice. The unit price will be calculated automatically.',
+    ],
     'sepaAccount' => [
         'invoiceHeadline'   => 'Replaces Headline in Invoices created for this Costcenter',
         'invoiceText'       => 'The Text of the separate four \'Invoice Text\'-Fields is automatically chosen dependent on the total charge and SEPA Mandate and is set in the appropriate Invoice for the Customer. It is possible to use all data field keys of the Invoice Class as placeholder in the form of {fieldname} to build a kind of template. These are replaced by the actual value of the Invoice.',

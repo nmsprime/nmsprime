@@ -14,6 +14,9 @@ return [
         'showAGs'           => 'Fügt eine Auswahlliste mit Ansprechpartnern von Antennengemeinschaften zur Vertragsseite hinzu. Die Liste muss als Textdatei im Storage hinterlegt werden. Siehe Quellcode!',
         'SplitSEPA'         => 'SEPA-Überweisungen sind in unterschiedliche XML-Dateien aufgeteilt, abhängig von ihrem Übertragungstyp.',
     ],
+    'product' => [
+        'recordMonthly' => 'Bei Aktivieren der Checkbox wird der Posten monatlich auf der Rechnung aufgeführt. Der Einzelpreis wird automatisch berechnet.',
+    ],
     'sepaAccount' => [
         'invoiceHeadline'   => 'Ersetzt die Überschrift der Rechnung, die für diese Kostenstelle erstellt wird.',
         'invoiceText'       => 'Der Text der vier verschiedenen \'Rechnungstext\'-Felder wird automatisch in Abhängigkeit von Gesamtkosten und SEPA-Mandat gewählt und wird in der entsprechenden Rechnung für den Kunden festgelegt. Es ist möglich, alle Datenfeld-Schlüssel der Rechnungsklasse als Platzhalter in Form von {Feldname} zu verwenden, um eine Art von Vorlage zu erstellen. Diese werden durch den Ist-Wert der Rechnung ersetzt.',
