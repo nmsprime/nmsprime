@@ -97,6 +97,7 @@ return [
     'Internet Access'           => 'Acceso a Internet',
     'Inventar Number'           => 'Número de inventario',
     'Invoice'                   => 'Factura',
+    'invoiceText'               => 'Invoice text',
     'Call Data Record'      => 'Registo de Datos de Llamada',
     'IP address'                => 'Dirección IP',
     'Language'                  => 'Idioma',
