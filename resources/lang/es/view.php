@@ -1,6 +1,8 @@
 <?php
 
 return [
+        'false' => 'false',
+        'true' => 'true',
 //SEARCH
         'Search_EnterKeyword'       => 'Ingresar palabra clave',
         'Search_MatchesFor'         => 'Coincide para',
@@ -166,10 +168,10 @@ return [
         //Contract
         'Header_Salesman'           => 'Vendedores',
         'Header_Contract'           => 'Contrato|Contratos',
-        'Header_ContractInfoApartments' => 'Información: Contratos en apartamentos',
+        'Header_ContractInfoApartments' => 'Contracts of realty (info)',
         'Header_ContractInfoRealty' => 'Información: Contrato de módems',
         'Header_EditContract'       => 'Editar contrato',
-        'Header_GroupContract'      => 'Contrato de grupo',
+        'Header_GroupContracts'      => 'Group Contracts',
         'Header_SepaMandate'        => 'Orden SEPA|Ordenes SEPA',
         //Modems
         'Header_Modems'             => 'Modem|Modems', //workaround
@@ -403,6 +405,7 @@ return [
     'error_specify_id'          => 'Por favor especifique el nombre de host en lugar de la dirección ip.',
     'error_ticket_settings'     => 'Por favor introduzca el nombre y dirección correo de auto respuesta en la página de configuración global.',
 
+    'company' => 'Company',
     'Credit' => 'Crédito',
     'critical' => 'crítico',
     'Debit' => 'Débito',
@@ -412,6 +415,7 @@ return [
     'info' => 'información',
     'Level' => 'Nivel',
     'Message' => 'Mensaje',
+    'name' => 'Name',
     'showChanges' => 'Mostrar el cambio|Mostrar :num cambios',
     'SettlementRun' => 'Arreglo',
     'Time' => 'Hora',
