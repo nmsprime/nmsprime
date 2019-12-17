@@ -160,6 +160,7 @@ return [
     'netgw.formatted_support_state' => 'Support State',
     'netgw.support_state' => 'Support State',
     // Contract
+    'contact_id' => 'Group contract',
     'contract.city' => 'Ciudad',
     'company' => 'Compañía',
     'contract.contract_end' => 'Fin de Contrato',
