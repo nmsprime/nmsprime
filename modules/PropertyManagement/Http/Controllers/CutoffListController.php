@@ -9,9 +9,7 @@ use Modules\PropertyManagement\Entities\CutoffList;
 class CutoffListController extends \BaseController
 {
     /**
-     * Separate index page for the resulting outstanding payments of each customer
-     *
-     * Here the all the customers with a sum unequal zero of all amounts and total fees of his debts are shown
+     * Separate index page with the list of all Apartments to cutoff
      *
      * @return View
      */
@@ -35,16 +33,22 @@ class CutoffListController extends \BaseController
         $DT = DataTables::make($request_query)->addColumn('responsive', '');
 
         $DT->setRowClass(function ($object) {
-            return $object->type == trans('propertymanagement::view.apartment') ? '' : 'info';
+            $bsclass = 'info';
+
+            if (strtotime($object->contract_end) < strtotime('-8 week')) {
+                $bsclass = 'warning';
+            }
+
+            if (strtotime($object->contract_end) < strtotime('-12 week')) {
+                $bsclass = 'danger';
+            }
+
+            return $bsclass;
         });
 
         $DT->editColumn('street', function ($object) {
-            $apartment = $object->type == trans('propertymanagement::view.apartment') ? true : false;
-            $routePrefix = $apartment ? 'Apartment' : 'Realty';
-            $className = '\\Modules\\PropertyManagement\\Entities\\'.$routePrefix;
-
-            return '<a href="'.route($routePrefix.'.edit', $object->apartmentId).'"><strong>'.
-                $className::view_icon().' '.$object->street.'</strong></a>';
+            return '<a href="'.route('Apartment.edit', $object->id).'"><strong>'.
+                \Modules\PropertyManagement\Entities\Apartment::view_icon().' '.$object->street.'</strong></a>';
         });
 
         $DT->rawColumns(['street']);

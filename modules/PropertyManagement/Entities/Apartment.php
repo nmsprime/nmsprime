@@ -59,6 +59,8 @@ class Apartment extends \BaseModel
         if (\Module::collections()->has('ProvBase')) {
             $ret['Edit']['Modem']['class'] = 'Modem';
             $ret['Edit']['Modem']['relation'] = $this->modems;
+            $ret['Edit']['Contract']['class'] = 'Contract';
+            $ret['Edit']['Contract']['relation'] = $this->contracts;
         }
 
         return $ret;
@@ -72,9 +74,9 @@ class Apartment extends \BaseModel
     /**
      * Relationships:
      */
-    public function contract()
+    public function contracts()
     {
-        return $this->hasOne(\Modules\ProvBase\Entities\Contract::class);
+        return $this->hasMany(\Modules\ProvBase\Entities\Contract::class);
     }
 
     public function modems()

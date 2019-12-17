@@ -13,11 +13,11 @@ class ContactController extends \BaseController
 
         // label has to be the same like column in sql table
         $fields = [
+            ['form_type' => 'text', 'name' => 'company', 'description' => trans('view.name').' / '.trans('view.company')],
             ['form_type' => 'text', 'name' => 'firstname1', 'description' => trans('messages.Firstname').' 1'],
             ['form_type' => 'text', 'name' => 'lastname1', 'description' => trans('messages.Lastname').' 1'],
             ['form_type' => 'text', 'name' => 'firstname2', 'description' => trans('messages.Firstname').' 2'],
-            ['form_type' => 'text', 'name' => 'lastname2', 'description' => trans('messages.Lastname').' 2'],
-            ['form_type' => 'text', 'name' => 'company', 'description' => 'Company', 'space' => 1],
+            ['form_type' => 'text', 'name' => 'lastname2', 'description' => trans('messages.Lastname').' 2', 'space' => 1],
 
             ['form_type' => 'text', 'name' => 'tel', 'description' => 'Phone'],
             ['form_type' => 'text', 'name' => 'tel_private', 'description' => 'Phone private'],
@@ -31,6 +31,10 @@ class ContactController extends \BaseController
             ['form_type' => 'text', 'name' => 'zip', 'description' => 'Zip', 'autocomplete' => []],
             ['form_type' => 'text', 'name' => 'city', 'description' => 'City', 'autocomplete' => []],
             ['form_type' => 'text', 'name' => 'district', 'description' => 'District', 'autocomplete' => [], 'space' => 1],
+
+            ['form_type' => 'text', 'name' => 'invoice_text1', 'description' => trans('messages.invoiceText').' 1'],
+            ['form_type' => 'text', 'name' => 'invoice_text2', 'description' => trans('messages.invoiceText').' 2'],
+            ['form_type' => 'text', 'name' => 'invoice_text3', 'description' => trans('messages.invoiceText').' 3'],
         ];
 
         return $fields;

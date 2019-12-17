@@ -2,13 +2,17 @@
 
 return [
     'administration' => 'Administration company ?',
-    'apartment' => 'Apartment',
+    'apartment' => [
+        '' => 'Apartment',
+        'code' => 'Code',
+    ],
     'cutoffList' => [
         'headline' => 'Abschaltliste',
     ],
-    'group_contract' => 'Group contract',
+    'groupContract' => 'Group contract',
     'menuName' => 'Property Management',
     'Node' => 'Node',
+    'propertyManagement' => 'Property Management',
     'realty' => [
         '' => 'Realty',
         'apartmentCount' => 'Apartment count connected / total',

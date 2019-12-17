@@ -2,6 +2,7 @@
 
 namespace Modules\PropertyManagement\Http\Controllers;
 
+use DB;
 use App\Http\Controllers\BaseViewController;
 use Modules\PropertyManagement\Entities\Contact;
 
@@ -14,8 +15,10 @@ class RealtyController extends \BaseController
     {
         $nodes = selectList('node', 'name', true);
 
-        $contactTypes['administration'] = \DB::table('contact')->whereNull('deleted_at')->where('administration', 1)->get();
-        $contactTypes['local'] = \DB::table('contact')->whereNull('deleted_at')->where('administration', 0)->get();
+        // TODO: Dont show administration if realty belongs to a group contract ? (realty->contract_id != NULL)
+        $contacts = DB::table('contact')->whereNull('deleted_at')->get();
+        $contactTypes['administration'] = $contacts->where('administration', 1);
+        $contactTypes['local'] = $contacts->where('administration', 0);
 
         $contactArr = ['administration' => [null => null], 'local' => [null => null]];
         foreach ($contactTypes as $key => $contacts) {
@@ -24,12 +27,20 @@ class RealtyController extends \BaseController
             }
         }
 
+        // Realty can only belong to a group Contract
+        $contracts = DB::table('contract')->whereNotNull('contact_id')->get();
+        $contractList[null] = null;
+        foreach ($contracts->all() as $contract) {
+            $contractList[$contract->id] = \Modules\ProvBase\Entities\Contract::labelFromData($contract);
+        }
+
         // label has to be the same like column in sql table
-        $fields1 = [
+        $fields = [
             ['form_type' => 'select', 'name' => 'node_id', 'description' => trans('propertymanagement::view.Node'), 'value' => $nodes, 'space' => 1],
 
             ['form_type' => 'text', 'name' => 'name', 'description' => 'Name'],
             ['form_type' => 'text', 'name' => 'number', 'description' => 'Number', 'space' => 1],
+
             ['form_type' => 'text', 'name' => 'street', 'description' => 'Street', 'autocomplete' => []],
             ['form_type' => 'text', 'name' => 'house_nr', 'description' => 'House number'],
             ['form_type' => 'text', 'name' => 'zip', 'description' => 'Zip', 'autocomplete' => []],
@@ -38,25 +49,14 @@ class RealtyController extends \BaseController
             ['form_type' => 'text', 'name' => 'country_code', 'description' => 'Country code', 'help' => trans('helper.countryCode')],
             ['form_type' => 'html', 'name' => 'geopos', 'description' => trans('messages.geopos_x_y'), 'html' => BaseViewController::geoPosFields($model)],
             ['form_type' => 'text', 'name' => 'geocode_source', 'description' => 'Geocode origin', 'help' => trans('helper.Modem_GeocodeOrigin'), 'space' => 1],
-        ];
 
-        $fields2 = [];
-        if (! $model->id || ($model->id && $model->apartments->isEmpty())) {
-            $fields2 = [
-                ['form_type' => 'text', 'name' => 'connection_type', 'description' => 'Connection type', 'autocomplete' => []],
-                ['form_type' => 'checkbox', 'name' => 'connected', 'description' => trans('dt_header.apartment.connected')],
-                ['form_type' => 'checkbox', 'name' => 'occupied', 'description' => trans('dt_header.apartment.occupied'), 'space' => 1],
-            ];
-        }
-
-        $fields3 = [
-            ['form_type' => 'checkbox', 'name' => 'group_contract', 'description' => trans('propertymanagement::view.group_contract')],
             ['form_type' => 'checkbox', 'name' => 'concession_agreement', 'description' => trans('propertymanagement::view.realty.concession_agreement')],
             ['form_type' => 'text', 'name' => 'agreement_from', 'description' => trans('dt_header.realty.agreement_from'), 'checkbox' => 'show_on_concession_agreement'],
             ['form_type' => 'text', 'name' => 'agreement_to', 'description' => trans('dt_header.realty.agreement_to'), 'checkbox' => 'show_on_concession_agreement'],
             ['form_type' => 'text', 'name' => 'last_restoration_on', 'description' => trans('dt_header.realty.last_restoration_on')],
             ['form_type' => 'text', 'name' => 'expansion_degree', 'description' => trans('dt_header.expansion_degree'), 'space' => 1],
 
+            ['form_type' => 'select', 'name' => 'contract_id', 'description' => trans('propertymanagement::view.groupContract'), 'value' => $contractList],
             ['form_type' => 'select', 'name' => 'contact_id', 'value' => $contactArr['administration'], 'description' => trans('dt_header.realty.contact_id')],
             ['form_type' => 'select', 'name' => 'contact_local_id', 'value' => $contactArr['local'], 'description' => trans('dt_header.realty.contact_local_id'), 'space' => 1],
         ];
@@ -64,11 +64,11 @@ class RealtyController extends \BaseController
         if ($model->id) {
             $model->apartmentCount = $model->apartments->where('connected', 1)->count().' / '.$model->apartments->count();
 
-            $fields3[] = ['form_type' => 'text', 'name' => 'apartmentCount', 'description' => trans('propertymanagement::view.realty.apartmentCount'), 'options' => ['readonly']];
+            $fields[] = ['form_type' => 'text', 'name' => 'apartmentCount', 'description' => trans('propertymanagement::view.realty.apartmentCount'), 'options' => ['readonly']];
         }
 
-        $fields3[] = ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'];
+        $fields[] = ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'];
 
-        return array_merge($fields1, $fields2, $fields3);
+        return $fields;
     }
 }

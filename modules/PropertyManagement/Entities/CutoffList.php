@@ -27,7 +27,7 @@ class CutoffList extends \BaseModel
             'table' => '',
             'index_header' => [
                 'street', 'house_nr', 'zip', 'city', 'district',
-                'number', 'floor', 'type',
+                'number', 'floor',
                 'connected', 'occupied', 'connection_type',
                 'contract_end',
             ],
@@ -36,7 +36,7 @@ class CutoffList extends \BaseModel
     }
 
     /**
-     * Query for Connected Apartments + Realties with canceled Contracts and no new valid Contract
+     * Query for Connected Apartments with canceled Contracts and no new valid Contract
      *
      * @return \Illuminate\Database\Query\Builder
      */
@@ -45,104 +45,59 @@ class CutoffList extends \BaseModel
         // SELECT: number, floor (A) | name (R) (int|string), connected (A+R), occupied (A+R), street (R),
         // house_nr (R), zip (R), city (R), district (R)
 
-        // Possible new Contract of an Apartment
-        $newContractSubQueryApartment = \Modules\ProvBase\Entities\Contract::join('modem', 'modem.contract_id', 'contract.id')
+        // Possible new Contract of an Apartment related via Modem
+        $newContractSubQuery = \Modules\ProvBase\Entities\Contract::join('modem', 'modem.contract_id', 'contract.id')
             ->join('apartment', 'modem.apartment_id', 'apartment.id')
             ->whereNull('contract.contract_end')
-            ->whereNull('modem.deleted_at')->whereNull('contract.deleted_at')->whereNull('apartment.deleted_at')
+            ->whereNull('modem.deleted_at')->whereNull('apartment.deleted_at')
             ->select('contract.id', 'apartment.id as apartmentId');
 
-        // Possible new Contract of a Realty
-        $newContractSubQueryRealty = \Modules\ProvBase\Entities\Contract::join('realty', 'contract.realty_id', 'realty.id')
-            ->where('group_contract', 1)
-            ->whereNull('contract.contract_end')
-            ->whereNull('contract.deleted_at')->whereNull('realty.deleted_at')
-            ->select('contract.id', 'realty.id as realtyId');
-
-        // We have to specify all columns here as realty.* conflicts with apartment.connected|occupied|connection_type
-        $selectArr = [
-            'realty.id',
-            'realty.created_at',
-            'realty.updated_at',
-            'realty.deleted_at',
-            'realty.node_id',
-            'realty.name',
-            'realty.street',
-            'realty.house_nr',
-            'realty.district',
-            'realty.zip',
-            'realty.city',
-            'realty.administration',
-            'realty.expansion_degree',
-            'realty.concession_agreement',
-            'realty.agreement_from',
-            'realty.agreement_to',
-            'realty.last_restoration_on',
-            'realty.group_contract',
-            'realty.description',
-            'realty.contact_id',
-            'realty.contact_local_id',
-            'realty.x',
-            'realty.y',
-            'realty.geocode_source',
-            'realty.country_code',
-
-            'modem.id as modemId',
-            'contract.id as cId',
-            'contract.contract_end',
-        ];
-
-        $type['apartment'] = trans('propertymanagement::view.apartment');
-        $type['realty'] = trans('propertymanagement::view.realty.');
-
-        // All connected apartments with a canceled Contract
+        // All connected apartments with a canceled Contract via Modem
         $apartmentsSubQuery = Apartment::join('modem', 'modem.apartment_id', 'apartment.id')
-            ->join('realty', 'realty.id', 'apartment.realty_id')
             ->join('contract', 'contract.id', 'modem.contract_id')
-            ->whereNull('modem.deleted_at')->whereNull('contract.deleted_at')->whereNull('apartment.deleted_at')
+            ->whereNull('modem.deleted_at')->whereNull('contract.deleted_at')
             ->where('apartment.connected', 1)
             ->where('contract.contract_start', '<', date('Y-m-d'))
             ->where('contract.contract_end', '<', date('Y-m-d'))
-            ->select(array_merge($selectArr, [
-                'apartment.connected', 'apartment.occupied', 'apartment.connection_type', 'apartment.number',
-                \DB::raw("'{$type['apartment']}' as type"), \DB::raw('CAST(floor as CHAR(10)) as floor'), 'apartment.id as apartmentId',
-            ]))
+            ->select('apartment.*', 'contract.contract_end')
             ->groupBy('contract.id');
 
-        // All connected realties with group contract set having a canceled Contract
-        $realtiesSubQuery = Realty::join('modem', 'modem.realty_id', 'realty.id')
-            ->join('contract', 'contract.id', 'modem.contract_id')
+        // Possible new Contract of an Apartment
+        $newDirectContractSubQuery = \Modules\ProvBase\Entities\Contract::join('apartment', 'contract.apartment_id', 'apartment.id')
+            ->whereNull('apartment.deleted_at')
+            ->whereNull('contract.contract_end')
+            ->select('contract.id', 'apartment.id as apartmentId');
+
+        // All connected Apartments having directly a canceled Contract
+        $directContractApartmentSubQuery = Apartment::join('contract', 'contract.apartment_id', 'apartment.id')
+            ->whereNull('contract.deleted_at')
             ->where('contract.contract_start', '<', date('Y-m-d'))
             ->where('contract.contract_end', '<', date('Y-m-d'))
-            ->where('realty.connected', 1)
-            ->select(array_merge($selectArr, [
-                'realty.connected', 'realty.occupied', 'realty.connection_type', 'realty.number as number',
-                \DB::raw("'{$type['realty']}' as type"), \DB::raw('NULL as floor'), 'realty.id as realtyId',
-            ]))
+            ->where('apartment.connected', 1)
+            ->select('apartment.*', 'contract.contract_end')
             ->groupBy('contract.id');
 
-        // All connected apartments having a canceled contract and no new valid contract
+        // All connected Apartments having a canceled Contract and no new valid Contract
         // (left joined by newContractSubQueryApartment and newContract.id must be null)
         $apartmentsQuery = \DB::table(\DB::raw("({$apartmentsSubQuery->toSql()}) as apartments"))
             ->mergeBindings($apartmentsSubQuery->getQuery())
-            ->select('apartments.*')
-            ->leftJoin(\DB::raw("({$newContractSubQueryApartment->toSql()}) as newContract"), 'newContract.apartmentId', '=', 'apartments.apartmentId')
-            ->mergeBindings($newContractSubQueryApartment->getQuery())
+            ->leftJoin(\DB::raw("({$newContractSubQuery->toSql()}) as newContract"), 'newContract.apartmentId', '=', 'apartments.id')
+            ->mergeBindings($newContractSubQuery->getQuery())
+            ->join('realty', 'realty.id', 'apartments.realty_id')
             ->whereNull('newContract.id')
-            ->groupBy('apartments.apartmentId')
-            ->orderBy('apartments.street')->orderBy('apartments.house_nr');
+            ->select('apartments.*', 'realty.street', 'realty.house_nr', 'realty.zip', 'realty.city', 'realty.district')
+            ->groupBy('apartments.id');
 
-        // All connected realties having a canceled contract and no new valid contract
-        // (left joined by newContractSubQueryRealty and newContract.id must be null)
-        $realtiesQuery = \DB::table(\DB::raw("({$realtiesSubQuery->toSql()}) as realties"))
-            ->mergeBindings($realtiesSubQuery->getQuery())
-            ->select('realties.*')
-            ->leftJoin(\DB::raw("({$newContractSubQueryRealty->toSql()}) as newContract"), 'newContract.realtyId', '=', 'realties.realtyId')
-            ->mergeBindings($newContractSubQueryRealty->getQuery())
+        // All connected Apartments having directly a canceled Contract and no new valid Contract
+        $directApartmentsQuery = \DB::table(\DB::raw("({$directContractApartmentSubQuery->toSql()}) as apartments"))
+            ->mergeBindings($directContractApartmentSubQuery->getQuery())
+            ->leftJoin(\DB::raw("({$newDirectContractSubQuery->toSql()}) as newContract"), 'newContract.apartmentId', '=', 'apartments.id')
+            ->mergeBindings($newDirectContractSubQuery->getQuery())
+            ->join('realty', 'realty.id', 'apartments.realty_id')
             ->whereNull('newContract.id')
-            ->groupBy('realties.realtyId')
-            ->orderBy('realties.street')->orderBy('realties.house_nr');
+            ->select('apartments.*', 'realty.street', 'realty.house_nr', 'realty.zip', 'realty.city', 'realty.district')
+            ->groupBy('apartments.id');
 
-        return $apartmentsQuery->union($realtiesQuery);
+        return $apartmentsQuery->union($directApartmentsQuery);
     }
 }

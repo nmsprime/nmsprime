@@ -271,7 +271,7 @@ class SepaAccount extends \BaseModel
 
         // Set Contact
         if (\Module::collections()->has('PropertyManagement')) {
-            $realty = $contract->getRealty();
+            $realty = $contract->realty;
             $contactId = $realty ? ($realty->contact_id ?: $realty->contact_local_id) : 0;
 
             $data['Contact'] = $contactId ? SettlementRunData::getContact($contactId) : '';

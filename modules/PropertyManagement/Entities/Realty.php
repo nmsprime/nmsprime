@@ -54,7 +54,7 @@ class Realty extends \BaseModel
     {
         $bsclass = 'success';
 
-        if ($this->group_contract) {
+        if ($this->contract_id) {
             $bsclass = 'warning';
         } elseif ($this->concession_agreement) {
             $bsclass = 'info';
@@ -68,7 +68,7 @@ class Realty extends \BaseModel
                 'index_header' => ['id', "$this->table.name", 'number', 'street', 'house_nr', 'zip', 'city',
                     "$this->table.contact_id", "$this->table.contact_local_id",
                     'expansion_degree', "$this->table.concession_agreement",
-                    "$this->table.agreement_from", "$this->table.agreement_to", "$this->table.last_restoration_on", 'group_contract',
+                    "$this->table.agreement_from", "$this->table.agreement_to", "$this->table.last_restoration_on",
                     "$this->table.apartmentCountConnected", "$this->table.apartmentCount",
                     ],
                 'header' => $label,
@@ -99,39 +99,11 @@ class Realty extends \BaseModel
         $ret['Edit']['Apartment']['relation'] = $this->apartments;
 
         if (\Module::collections()->has('ProvBase')) {
-            // TODO: Hide create button for modems?
-            $ret['Edit']['Modem']['class'] = 'Modem';
-            $ret['Edit']['Modem']['relation'] = $this->modems;
-
-            if ($this->apartments->isNotEmpty() || $this->group_contract) {
-                $ret['Edit']['Modem']['options']['hide_create_button'] = 1;
-                $ret['Edit']['Modem']['info'] = trans('propertymanagement::messages.realty.modemRelationInfo');
-            }
-            if ($this->modems->isNotEmpty()) {
-                $ret['Edit']['Apartment']['options']['hide_create_button'] = 1;
-                $ret['Edit']['Apartment']['info'] = trans('propertymanagement::messages.realty.apartmentRelationInfo');
-            }
-
-            if ($this->group_contract) {
-                // Only 1 contract for group contracts
-                $ret['Edit']['GroupContract']['class'] = 'Contract';
-                if ($this->contract) {
-                    $ret['Edit']['GroupContract']['relation'] = collect([$this->contract]);
-                    $ret['Edit']['GroupContract']['options']['hide_create_button'] = 1;
-                } else {
-                    $ret['Edit']['GroupContract']['relation'] = collect();
-                    $ret['Edit']['GroupContract']['options']['hide_delete_button'] = 1;
-                }
-            }
-
             // Show all indirectly related contracts as info
-            $contracts = $this->getRelatedContracts(false);
-            $key = $this->apartments->isEmpty() ? 'ContractInfoRealty' : 'ContractInfoApartment';
-
-            $ret['Edit'][$key]['class'] = 'Contract';
-            $ret['Edit'][$key]['relation'] = $contracts;
-            $ret['Edit'][$key]['options']['hide_create_button'] = 1;
-            $ret['Edit'][$key]['options']['hide_delete_button'] = 1;
+            $ret['Edit']['ContractInfoApartment']['class'] = 'Contract';
+            $ret['Edit']['ContractInfoApartment']['relation'] = $this->getApartmentContracts(false);
+            $ret['Edit']['ContractInfoApartment']['options']['hide_create_button'] = 1;
+            $ret['Edit']['ContractInfoApartment']['options']['hide_delete_button'] = 1;
         }
 
         return $ret;
@@ -175,19 +147,14 @@ class Realty extends \BaseModel
     /**
      * Relationships:
      */
-    public function contract()
-    {
-        return $this->hasOne(\Modules\ProvBase\Entities\Contract::class);
-    }
-
     public function apartments()
     {
         return $this->hasMany(Apartment::class);
     }
 
-    public function modems()
+    public function contract()
     {
-        return $this->hasMany(\Modules\ProvBase\Entities\Modem::class);
+        return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class);
     }
 
     public function node()
@@ -211,20 +178,22 @@ class Realty extends \BaseModel
      * @param bool $withGroupContract, $withModems
      * @return Illuminate\Database\Eloquent\Collection of \Modules\ProvBase\Entities\Contract
      */
-    public function getRelatedContracts($withGroupContract, $withModems = false)
+    public function getApartmentContracts($withGroupContract, $withModems = false)
     {
-        $contracts1 = \Modules\ProvBase\Entities\Contract::join('modem as am', 'am.contract_id', 'contract.id')
-            ->join('apartment', 'am.apartment_id', 'apartment.id')
+        if ($this->apartments->isEmpty()) {
+            return (new \Modules\ProvBase\Entities\Contract)->newCollection();
+        }
+
+        $contracts1 = \Modules\ProvBase\Entities\Contract::join('modem', 'modem.contract_id', 'contract.id')
+            ->join('apartment', 'modem.apartment_id', 'apartment.id')
             ->where('apartment.realty_id', $this->id)
             ->whereNull('apartment.deleted_at')
-            ->whereNull('am.deleted_at')
-            ->whereNull('contract.deleted_at')
+            ->whereNull('modem.deleted_at')
             ->select('contract.*');
 
-        $contracts2 = \Modules\ProvBase\Entities\Contract::join('modem as rm', 'rm.contract_id', 'contract.id')
-            ->where('rm.realty_id', $this->id)
-            ->whereNull('rm.deleted_at')
-            ->whereNull('contract.deleted_at')
+        $contracts2 = \Modules\ProvBase\Entities\Contract::join('apartment', 'contract.apartment_id', 'apartment.id')
+            ->where('apartment.realty_id', $this->id)
+            ->whereNull('apartment.deleted_at')
             ->select('contract.*');
 
         $contracts = $contracts2->union($contracts1);
@@ -255,6 +224,46 @@ class Realty extends \BaseModel
 
         return $label;
     }
+
+    /**
+     * Update address of all related modems & contracts
+     */
+    public function updateRelatedModelsAddress()
+    {
+        if (! \Module::collections()->has('ProvBase')) {
+            return;
+        }
+
+        $diff = $this->getDirty();
+
+        if (! multi_array_key_exists(['street', 'house_nr', 'zip', 'city', 'district'], $diff)) {
+            return;
+        }
+
+        // Get all relations by one DB query - Models: realty->apartment->contract,  realty->apartment->modem->contract
+        $this->setRelation('apartments', $this->apartments()->with('contracts', 'modems')->get());
+
+        $contract_ids = $modem_ids = [];
+        foreach ($this->apartments as $apartment) {
+            foreach ($apartment->contracts as $contract) {
+                $contract_ids[] = $contract->id;
+            }
+
+            foreach ($apartment->modems as $modem) {
+                $modems_ids[] = $modem->id;
+                $contract_ids[] = $modem->contract_id;
+            }
+        }
+
+        if ($contract_ids) {
+            $contract = $contract ?? new \Modules\ProvBase\Entities\Contract;
+            $contract->updateAddressFromProperty($this, $contract_ids);
+        }
+
+        if ($modem_ids) {
+            $modem->updateAddressFromProperty($this, $modem_ids);
+        }
+    }
 }
 
 class RealtyObserver
@@ -271,42 +280,6 @@ class RealtyObserver
 
     public function updated($realty)
     {
-        $this->updateRelatedModelsAddress($realty);
-    }
-
-    /**
-     * Update address of all related modems & contracts
-     */
-    private function updateRelatedModelsAddress($realty)
-    {
-        if (! \Module::collections()->has('ProvBase')) {
-            return;
-        }
-
-        $diff = $realty->getDirty();
-
-        if (! multi_array_key_exists(['street', 'house_nr', 'zip', 'city', 'district'], $diff)) {
-            return;
-        }
-
-        // Models: realty->contract,  realty->modem, realty->apartment->modem
-        $models = \Modules\ProvBase\Entities\Modem::leftJoin('apartment as a', 'a.id', '=', 'modem.apartment_id')
-            ->whereNull('a.deleted_at')
-            ->whereNull('modem.deleted_at')
-            ->where(function ($query) use ($realty) {
-                $query
-                ->where('modem.realty_id', $realty->id)
-                ->orWhere('a.realty_id', $realty->id);
-            })
-            ->select('modem.*')
-            ->get();
-
-        if ($realty->contract) {
-            $models = $models->merge([$realty->contract]);
-        }
-
-        foreach ($models as $model) {
-            $model->updateAddressFromProperty();
-        }
+        $realty->updateRelatedModelsAddress();
     }
 }

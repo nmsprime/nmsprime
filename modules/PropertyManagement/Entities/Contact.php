@@ -66,6 +66,9 @@ class Contact extends \BaseModel
         $ret['Edit']['Realty']['class'] = 'Realty';
         $ret['Edit']['Realty']['relation'] = $this->realties;
 
+        $ret['Edit']['GroupContracts']['class'] = 'Contract';
+        $ret['Edit']['GroupContracts']['relation'] = $this->contracts;
+
         return $ret;
     }
 
@@ -75,6 +78,11 @@ class Contact extends \BaseModel
     public function realties()
     {
         return $this->hasMany(Realty::class);
+    }
+
+    public function contracts()
+    {
+        return $this->hasMany(\Modules\ProvBase\Entities\Contract::class);
     }
 
     public static function labelFromData($contact = null)
