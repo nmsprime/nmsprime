@@ -373,7 +373,7 @@ class CccUserController extends \BaseController
             // update psw
             $customer = Auth::guard('ccc')->user();
             $rules = ['password' => 'required|confirmed|min:6'];
-            $data = \Request::get();
+            $data = \Request::all();
 
             $validator = \Validator::make($data, $rules);
 
