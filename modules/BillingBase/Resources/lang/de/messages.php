@@ -6,6 +6,7 @@ return [
         'missingEvn' => 'EVN von :provider fehlt.',
         'wrongArgument' => 'Fehlerhaftes Datumsformat. Befehl wird für letzten Monat ausgeführt. (Standard)',
     ],
+    'modemAddressToInvoice' => 'Es wird nur die Adresse eines Modems des zugehörigen Vertrages auf der Rechnung angezeigt.',
     'settlementrun' => [
         'state' => [
             'clean' => 'Bereinige Verzeichnis...',

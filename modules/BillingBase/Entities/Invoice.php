@@ -164,6 +164,8 @@ class Invoice extends \BaseModel
         'contract_city' 		=> '',
         'contract_address' 		=> '', 			// concatenated address for begin of letter
 
+        'modem_address'         => '',
+
         // Only with PropertyManagement module
         'realty_name'           => '',
         'realty_number'         => '',
@@ -272,39 +274,13 @@ class Invoice extends \BaseModel
         $this->data['contract_id'] = $contract->id;
         $this->contract_id = $contract->id;
         $this->data['contract_nr'] = $contract->number;
-        $this->data['contract_firstname'] = escape_latex_special_chars($contract->firstname);
-        $this->data['contract_lastname'] = escape_latex_special_chars($contract->lastname);
-        $this->data['contract_company'] = escape_latex_special_chars($contract->company);
-        $this->data['contract_department'] = escape_latex_special_chars($contract->department);
 
         // Set address strings
-        $this->data['contract_street'] = escape_latex_special_chars($contract->street);
-        $this->data['contract_housenumber'] = $contract->house_number;
-        $this->data['contract_zip'] = $contract->zip;
-        $this->data['contract_city'] = escape_latex_special_chars($contract->city);
-        $this->data['contract_district'] = escape_latex_special_chars($contract->district);
+        $this->setAddressStrings($contract);
 
-        $this->data['contract_address'] = '';
-        if ($contract->company) {
-            $this->data['contract_address'] .= escape_latex_special_chars($contract->company).'\\\\';
-            if ($contract->department) {
-                $this->data['contract_address'] .= escape_latex_special_chars($contract->department).'\\\\';
-            }
-        }
-        $this->data['contract_address'] .= ($contract->academic_degree ? "$contract->academic_degree " : '').
-            (($this->data['contract_firstname'] || $this->data['contract_lastname']) ? ($this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\') : '');
-        $this->data['contract_address'] .= $this->data['contract_district'] ? $this->data['contract_district'].'\\\\' : '';
-        $this->data['contract_address'] .= $this->data['contract_street'].' '.$this->data['contract_housenumber']."\\\\$contract->zip ".$this->data['contract_city'];
-        $this->data['contract_address'] = trim($this->data['contract_address']);
-
-        // Add realty name + number
-        if (\Module::collections()->has('PropertyManagement')) {
-            $realty = $contract->realty;
-
-            if ($realty) {
-                $this->data['realty_name'] = escape_latex_special_chars($realty->name);
-                $this->data['realty_number'] = escape_latex_special_chars($realty->number);
-            }
+        $modem = $contract->modems()->where('address_to_invoice', 1)->first();
+        if ($modem) {
+            $this->setAddressStrings($modem);
         }
 
         $this->data['start_of_term'] = self::langDateFormat($contract->contract_start);
@@ -315,9 +291,53 @@ class Invoice extends \BaseModel
 
         $this->setCancelationDates($contract);
 
-        if ($contract->isGroupContract()) {
-            $this->data['realtyList'] = implode('\\\\', $contract->composeRealtyList());
+        // Add realty name + number
+        if (\Module::collections()->has('PropertyManagement')) {
+            $realty = $contract->realty;
+
+            if ($realty) {
+                $this->data['realty_name'] = escape_latex_special_chars($realty->name);
+                $this->data['realty_number'] = escape_latex_special_chars($realty->number);
+            }
+
+            if ($contract->isGroupContract()) {
+                $this->data['realtyList'] = implode('\\\\', $contract->composeRealtyList());
+            }
         }
+    }
+
+    /**
+     * Set address strings of Contract and Modem (if checkbox is activated)
+     *
+     * @param \Modules\ProvBase\Entities\Contract|Modem
+     */
+    private function setAddressStrings($model)
+    {
+        $class = strtolower(class_basename(get_class($model)));
+
+        $this->data[$class.'_firstname'] = escape_latex_special_chars($model->firstname);
+        $this->data[$class.'_lastname'] = escape_latex_special_chars($model->lastname);
+        $this->data[$class.'_company'] = escape_latex_special_chars($model->company);
+        $this->data[$class.'_department'] = escape_latex_special_chars($model->department);
+
+        $this->data[$class.'_street'] = escape_latex_special_chars($model->street);
+        $this->data[$class.'_housenumber'] = $model->house_number;
+        $this->data[$class.'_zip'] = $model->zip;
+        $this->data[$class.'_city'] = escape_latex_special_chars($model->city);
+        $this->data[$class.'_district'] = escape_latex_special_chars($model->district);
+
+        $this->data[$class.'_address'] = '';
+        if ($model->company) {
+            $this->data[$class.'_address'] .= escape_latex_special_chars($model->company).'\\\\';
+            if ($model->department) {
+                $this->data[$class.'_address'] .= escape_latex_special_chars($model->department).'\\\\';
+            }
+        }
+        $this->data[$class.'_address'] .= ($model->academic_degree ? "$model->academic_degree " : '').
+            (($this->data[$class.'_firstname'] || $this->data[$class.'_lastname']) ? ($this->data[$class.'_firstname'].' '.$this->data[$class.'_lastname'].'\\\\') : '');
+        $this->data[$class.'_address'] .= $this->data[$class.'_district'] ? $this->data[$class.'_district'].'\\\\' : '';
+        $this->data[$class.'_address'] .= $this->data[$class.'_street'].' '.$this->data[$class.'_housenumber']."\\\\$model->zip ".$this->data[$class.'_city'];
+        $this->data[$class.'_address'] = trim($this->data[$class.'_address']);
     }
 
     /**
