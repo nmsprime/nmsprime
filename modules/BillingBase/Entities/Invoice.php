@@ -150,7 +150,7 @@ class Invoice extends \BaseModel
         'company_account_iban'  => '',
         'company_account_bic' 	=> '',
 
-        // Contract
+        // Addresses
         'contract_id' 			=> '',
         'contract_nr' 			=> '',
         'contract_firstname' 	=> '',
@@ -164,6 +164,15 @@ class Invoice extends \BaseModel
         'contract_city' 		=> '',
         'contract_address' 		=> '', 			// concatenated address for begin of letter
 
+        'modem_firstname'       => '',
+        'modem_lastname'        => '',
+        'modem_company'         => '',
+        'modem_department'      => '',
+        'modem_district'        => '',
+        'modem_street'          => '',
+        'modem_housenumber'     => '',
+        'modem_zip'             => '',
+        'modem_city'            => '',
         'modem_address'         => '',
 
         // Only with PropertyManagement module
