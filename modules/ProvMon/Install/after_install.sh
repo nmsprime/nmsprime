@@ -14,8 +14,8 @@ sed -i "s/^CACTI_DB_PASSWORD=$/CACTI_DB_PASSWORD=$mysql_cacti_psw/" "$env/provmo
 # allow cacti to access time_zone_name table
 mysql -u "$ROOT_DB_USERNAME" --password="$ROOT_DB_PASSWORD" << EOF
 CREATE DATABASE cacti CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
-GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY '$mysql_cacti_psw';"
-GRANT SELECT ON mysql.time_zone_name TO 'cactiuser'@'localhost';"
+GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY '$mysql_cacti_psw';
+GRANT SELECT ON mysql.time_zone_name TO 'cactiuser'@'localhost';
 EOF
 
 # set psw in cacti db config file
