@@ -50,14 +50,6 @@ su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules
 su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_casa_cmts.xml" apache
 su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_cisco_cmts.xml" apache
 
-/opt/rh/rh-php71/root/usr/bin/php /var/www/nmsprime/artisan view:clear
-
-# we call ProvMonController from cacti and thus need to be able to write to the following folder
-chmod o+w /var/www/nmsprime/storage/framework/views
-
-# create graphs for all existing modems
-/opt/rh/rh-php71/root/usr/bin/php /var/www/nmsprime/artisan nms:cacti
-
 # add our css rules to cacti, if they haven't been added yet (see after_upgrade.sh as well)
 file='/usr/share/cacti/include/themes/modern/main.css'
 if [[ -e "$file" && -z $(grep -o nmsprime "$file") ]]; then
