@@ -14,8 +14,8 @@ sed -i "s/^CACTI_DB_PASSWORD=$/CACTI_DB_PASSWORD=$mysql_cacti_psw/" "$env/provmo
 # allow cacti to access time_zone_name table
 mysql -u "$ROOT_DB_USERNAME" --password="$ROOT_DB_PASSWORD" << EOF
 CREATE DATABASE cacti CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
-GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY '$mysql_cacti_psw';"
-GRANT SELECT ON mysql.time_zone_name TO 'cactiuser'@'localhost';"
+GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY '$mysql_cacti_psw';
+GRANT SELECT ON mysql.time_zone_name TO 'cactiuser'@'localhost';
 EOF
 
 # set psw in cacti db config file
@@ -49,14 +49,6 @@ su -s /bin/bash -c "php add_tree.php --type=tree --name='CMTS' --sort-method=nat
 su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_cablemodem.xml" apache
 su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_casa_cmts.xml" apache
 su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_cisco_cmts.xml" apache
-
-/opt/rh/rh-php71/root/usr/bin/php /var/www/nmsprime/artisan view:clear
-
-# we call ProvMonController from cacti and thus need to be able to write to the following folder
-chmod o+w /var/www/nmsprime/storage/framework/views
-
-# create graphs for all existing modems
-/opt/rh/rh-php71/root/usr/bin/php /var/www/nmsprime/artisan nms:cacti
 
 # add our css rules to cacti, if they haven't been added yet (see after_upgrade.sh as well)
 file='/usr/share/cacti/include/themes/modern/main.css'
