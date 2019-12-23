@@ -38,7 +38,7 @@ class TreeBuildCommand extends Command
      *
      * @return mixed
      */
-    public function fire()
+    public function handle()
     {
         NetElement::relation_index_build_all(2);
     }

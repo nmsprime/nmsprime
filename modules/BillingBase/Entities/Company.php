@@ -14,7 +14,7 @@ class Company extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            // 'name' => 'required|unique:cmts,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
+            // 'name' => 'required|unique:netgw,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
             'name' 		=> 'required',
             'street' 	=> 'required',
             'zip'	 	=> 'required',
@@ -63,7 +63,10 @@ class Company extends \BaseModel
 
     public function view_has_many()
     {
-        return ['SepaAccount' => $this->accounts];
+        $ret['Edit']['SepaAccount']['class'] = 'SepaAccount';
+        $ret['Edit']['SepaAccount']['relation'] = $this->accounts;
+
+        return $ret;
     }
 
     /**
@@ -71,7 +74,7 @@ class Company extends \BaseModel
      */
     public function accounts()
     {
-        return $this->hasMany('Modules\BillingBase\Entities\SepaAccount');
+        return $this->hasMany(SepaAccount::class);
     }
 
     /*
@@ -96,7 +99,7 @@ class Company extends \BaseModel
         $ignore = ['created_at', 'updated_at', 'deleted_at', 'id'];
         $data = [];
 
-        foreach ($this->attributes as $key => $value) {
+        foreach ($this->getAttributes() as $key => $value) {
             if (in_array($key, $ignore)) {
                 continue;
             }

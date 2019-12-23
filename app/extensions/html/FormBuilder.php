@@ -104,7 +104,7 @@ class FormBuilder extends CollectiveFormBuilder
 
         // Call the parent input method so that Laravel can handle
         // the rest of the input set up.
-        return parent::label($name, $value, $options);
+        return parent::label($name, $value, $options, $escape_html);
     }
 
     /**
@@ -153,11 +153,17 @@ class FormBuilder extends CollectiveFormBuilder
     /**
      * Create a select box field.
      */
-    public function select($name, $list = [], $selected = null, $options = [])
-    {
-        $options = $this->appendClassToOptions('form-control', $options);
+    public function select(
+        $name,
+        $list = [],
+        $selected = null,
+        array $selectAttributes = [],
+        array $optionsAttributes = [],
+        array $optgroupsAttributes = []
+    ) {
+        $optionsAttributes = $this->appendClassToOptions('form-control', $optionsAttributes);
 
-        if (isset($options['translate'])) {
+        if (isset($optionsAttributes['translate'])) {
             foreach ($list as $key => $value) {
                 $list[$key] = \App\Http\Controllers\BaseViewController::translate_label($value);
             }
@@ -165,28 +171,11 @@ class FormBuilder extends CollectiveFormBuilder
 
         // Call the parent select method so that Laravel can handle
         // the rest of the select set up.
-        if (isset($options['style']) && Str::contains($options['style'], 'simple')) {
-            return parent::select($name, $list, $selected, $options);
+        if (isset($optionsAttributes['style']) && Str::contains($optionsAttributes['style'], 'simple')) {
+            return parent::select($name, $list, $selected, $selectAttributes, $optionsAttributes);
         }
 
-        return $this->appendDiv(parent::select($name, $list, $selected, $options));
-    }
-
-    /**
-     * Determine if the value is selected. Changed from Parent Formbuilder.
-     *
-     * @param  string $value
-     * @param  string $selected
-     *
-     * @return null|string
-     */
-    protected function getSelectedValue($value, $selected)
-    {
-        if (is_array($selected)) {
-            return in_array($value, $selected) ? 'selected' : null;
-        }
-
-        return ((string) $value == (string) $selected) ? 'selected' : null;
+        return $this->appendDiv(parent::select($name, $list, $selected, $selectAttributes, $optionsAttributes));
     }
 
     /**
@@ -326,7 +315,7 @@ class FormBuilder extends CollectiveFormBuilder
         // set it to an empty string.
         // NOTE: margin-top style moves label down to same horizontal
         //       line like html fields on right side (Torsten Schmidt)
-        $label = $label ? $this->label($name, $label, ['style' => 'margin-top: 10px;']) : '';
+        $label = $label ? $this->label($name, $label, ['style' => 'margin-top: 10px;'], false) : '';
 
         return $this->openDivClass(12, $color).'<div'.$this->html->attributes($options).'>'.$label;
     }
@@ -336,21 +325,22 @@ class FormBuilder extends CollectiveFormBuilder
      */
     public function closeGroup()
     {
-        // Get the last added name from the groupStack and
-        // remove it from the array.
+        $html = '';
+
+        // Get the last added name from the groupStack and remove it from the array
         $name = array_pop($this->groupStack);
 
         // Get the formatted errors for this form group.
         $errors = $this->getFormattedErrors($name);
 
-        // Get Layout col-md Setting
-        $col = 4;
-        if (isset(static::$layout_form_col_md['label'])) {
-            $col = static::$layout_form_col_md['label'];
+        // Append the errors to the group and close it out.
+        if ($errors) {
+            $col = static::$layout_form_col_md['label'] ?? 4;
+
+            $html = '<div class=col-md-'.$col.'></div><div class=col-md-'.(12 - $col).'>'.$errors.'</div>';
         }
 
-        // Append the errors to the group and close it out.
-        return '<div class=col-md-'.$col.'></div><div class=col-md-'.(12 - $col).'>'.$errors.'</div></div>'.$this->closeDivClass();
+        return $html.'</div>'.$this->closeDivClass();
     }
 
     public function openDivClass($col = 9, $color = false)

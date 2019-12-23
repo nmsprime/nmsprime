@@ -21,26 +21,26 @@ class SepaMandateController extends \BaseController
         }
 
         if (! $model->exists) {
-            $contract = \Modules\ProvBase\Entities\Contract::find(\Input::get('contract_id'));
+            $contract = \Modules\ProvBase\Entities\Contract::find(\Request::get('contract_id'));
             $model->contract = $contract;
 
             $model->reference = self::build_mandate_ref($model);
             $model->signature_date = date('Y-m-d');
-            $model->sepa_holder = $contract->firstname.' '.$contract->lastname;
-            $model->sepa_valid_from = date('Y-m-d');
+            $model->holder = $contract->firstname.' '.$contract->lastname;
+            $model->valid_from = date('Y-m-d');
         }
 
         // label has to be the same like column in sql table
         return [
-            ['form_type' => 'text', 'name' => 'reference', 'description' => 'Reference Number', 'create' => '1'],
+            ['form_type' => 'text', 'name' => 'reference', 'description' => 'Reference Number'],
             ['form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract', 'hidden' => '1'],
-            ['form_type' => 'text', 'name' => 'sepa_holder', 'description' => 'Bank Account Holder'],
-            ['form_type' => 'text', 'name' => 'sepa_iban', 'description' => 'IBAN'],
-            ['form_type' => 'text', 'name' => 'sepa_bic', 'description' => 'BIC'],
-            ['form_type' => 'text', 'name' => 'sepa_institute', 'description' => 'Bank Institute', 'space' => 1],
+            ['form_type' => 'text', 'name' => 'holder', 'description' => 'Bank Account Holder', 'help' => trans('billingbase::help.sepaMandate.holder')],
+            ['form_type' => 'text', 'name' => 'iban', 'description' => 'IBAN'],
+            ['form_type' => 'text', 'name' => 'bic', 'description' => 'BIC'],
+            ['form_type' => 'text', 'name' => 'institute', 'description' => 'Bank Institute', 'space' => 1],
             ['form_type' => 'text', 'name' => 'signature_date', 'description' => 'Date of Signature', 'options' => ['placeholder' => 'YYYY-MM-DD']],
-            ['form_type' => 'text', 'name' => 'sepa_valid_from', 'description' => 'Valid from', 'options' => ['placeholder' => 'YYYY-MM-DD']],
-            ['form_type' => 'text', 'name' => 'sepa_valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD'], 'space' => 1],
+            ['form_type' => 'text', 'name' => 'valid_from', 'description' => 'Valid from', 'options' => ['placeholder' => 'YYYY-MM-DD']],
+            ['form_type' => 'text', 'name' => 'valid_to', 'description' => 'Valid to', 'options' => ['placeholder' => 'YYYY-MM-DD'], 'space' => 1],
             ['form_type' => 'checkbox', 'name' => 'disable', 'description' => 'Disable temporary', 'value' => '1'],
             ['form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'CostCenter', 'value' => $model->html_list(CostCenter::all(), 'name', true), 'help' => trans('helper.sm_cc')],
             ['form_type' => 'select', 'name' => 'state', 'description' => 'State', 'value' => SepaMandate::getPossibleEnumValues('state'), 'space' => 1],
@@ -50,15 +50,15 @@ class SepaMandateController extends \BaseController
 
     public function prepare_input($data)
     {
-        $data['sepa_bic'] = $data['sepa_bic'] ?: SepaAccount::get_bic($data['sepa_iban']);
-        $data['sepa_bic'] = strtoupper(str_replace(' ', '', $data['sepa_bic']));
-        $data['sepa_iban'] = strtoupper(str_replace(' ', '', $data['sepa_iban']));
+        $data['bic'] = $data['bic'] ?: SepaAccount::get_bic($data['iban']);
+        $data['bic'] = strtoupper(str_replace(' ', '', $data['bic']));
+        $data['iban'] = strtoupper(str_replace(' ', '', $data['iban']));
         // $data['signature_date'] = $data['signature_date'] ? : date('Y-m-d');
 
         $data = parent::prepare_input($data);
 
         // set this to null if no value is given
-        $data = $this->_nullify_fields($data, ['costcenter_id', 'sepa_valid_to']);
+        $data = $this->_nullify_fields($data, ['costcenter_id', 'valid_to']);
 
         return $data;
     }
@@ -66,8 +66,8 @@ class SepaMandateController extends \BaseController
     public function prepare_rules($rules, $data)
     {
         // don't let BIC be empty when it's not found automatically (in prepare_input())
-        if (! $data['sepa_bic']) {
-            $rules['sepa_bic'] .= '|required';
+        if (! $data['bic']) {
+            $rules['bic'] .= '|required';
         }
 
         return parent::prepare_rules($rules, $data);
@@ -88,10 +88,10 @@ class SepaMandateController extends \BaseController
         preg_match_all('/(?<={)[^}]*(?=})/', $template, $matches);
 
         foreach ($matches[0] as $key) {
-            if (array_key_exists($key, $mandate->contract['attributes'])) {
-                $template = str_replace('{'.$key.'}', $mandate->contract['attributes'][$key], $template);
-            } elseif (array_key_exists($key, $mandate['attributes'])) {
-                $template = str_replace('{'.$key.'}', $mandate['attributes'][$key], $template);
+            if (array_key_exists($key, $mandate->contract->getAttributes())) {
+                $template = str_replace('{'.$key.'}', $mandate->contract->getAttribute($key), $template);
+            } elseif (array_key_exists($key, $mandate->getAttributes())) {
+                $template = str_replace('{'.$key.'}', $mandate->getAttribute($key), $template);
             }
         }
 

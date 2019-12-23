@@ -4,6 +4,7 @@ namespace Modules\BillingBase\Entities;
 
 use DB;
 use ChannelLog;
+use Modules\BillingBase\Providers\BillingConf;
 
 class Item extends \BaseModel
 {
@@ -25,7 +26,7 @@ class Item extends \BaseModel
         return [
             'product_id' 	=> 'required|numeric|Min:1',
             'valid_from'	=> 'date',	//|in_future ??
-            'valid_to'		=> 'date',
+            'valid_to'		=> 'nullable|date',
             'credit_amount' => 'nullable|numeric',
         ];
     }
@@ -91,18 +92,29 @@ class Item extends \BaseModel
         return $ret;
     }
 
+    /**
+     * Get label bootstrap class for colorization
+     *
+     * green: valid
+     * blue:  starts in future
+     * grey:  outdated/expired
+     */
     public function get_bsclass()
     {
-        // Evaluate Colours
-        // green: valid
-        // blue:  starts in future
-        // grey:  outdated/expired
-        // '$this->id' to dont check when index table header is determined!
-        if ($this->id && $this->check_validity('now')) {
+        // Dont check when index table header is determined!
+        if (! $this->id) {
+            return '';
+        }
+
+        if ($this->product->billing_cycle == 'Once' && ! $this->get_end_time() && $this->get_start_time() < strtotime('midnight first day of this month')) {
+            return 'active';
+        }
+
+        if ($this->isValid('now')) {
             return 'success';
         }
 
-        if ($this->id && $this->get_start_time() < strtotime('midnight first day of this month')) {
+        if ($this->get_start_time() < strtotime('midnight first day of this month')) {
             return 'active';
         }
 
@@ -134,12 +146,19 @@ class Item extends \BaseModel
 
     public function getItemPrice()
     {
-        if ($this->product) {
-            $price = floatval($this->credit_amount) ?: $this->product->price;
-            $price = ' | '.round($price, 4).'€';
-
-            return $price;
+        if (! $this->product) {
+            return '';
         }
+
+        $price = floatval($this->credit_amount) ?: $this->product->price;
+        $currency = BillingConf::currency();
+        $text = ' | '.round($price, 4).$currency;
+
+        if ($this->product->tax) {
+            $text .= ' ('.round($price * (1 + BillingConf::tax()), 2).$currency.')';
+        }
+
+        return $text;
     }
 
     /**
@@ -164,17 +183,17 @@ class Item extends \BaseModel
      */
     public function product()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\Product');
+        return $this->belongsTo(Product::class);
     }
 
     public function contract()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Contract');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class);
     }
 
     public function costcenter()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\CostCenter');
+        return $this->belongsTo(CostCenter::class);
     }
 
     /*
@@ -273,10 +292,11 @@ class Item extends \BaseModel
      * @return 	null if no costs incurred, true otherwise - NOTE: Amount to Charge is currently stored in Item Models temp variable ($charge)
      * @author 	Nino Ryschawy
      */
-    public function calculate_price_and_span($dates, $return_array = false, $update = true)
+    public function calculate_price_and_span($return_array = false, $update = true)
     {
         $ratio = 0;
         $text = '';			// dates of invoice text
+        $dates = \Modules\BillingBase\Providers\SettlementRunData::getDate();
 
         $billing_cycle = strtolower($this->get_billing_cycle());
 
@@ -300,7 +320,7 @@ class Item extends \BaseModel
         }
 
         // skip invalid items
-        if (! $this->check_validity($billing_cycle, null, [$start, $end])) {
+        if (! $this->isValid($billing_cycle, null, [$start, $end])) {
             ChannelLog::debug('billing', 'Item '.$this->product->name." ($this->id) is outdated", [$this->contract->id]);
 
             return;
@@ -344,14 +364,17 @@ class Item extends \BaseModel
                 }
 
                 $costcenter = $this->get_costcenter();
-                $billing_month = $costcenter->get_billing_month();		// June is default
+                $billing_month = $costcenter->get_billing_month();      // June is default
 
                 // calculate only for billing month
                 if ($billing_month != $dates['lastm']) {
-                    // or tariff started after billing month - then only pay on first settlement run - break otherwise
-                    // or contract ended last month (before billing month)
-                    if (! (((date('m', $start) >= $billing_month) && (date('Y-m', $start) == $dates['lastm_Y'])) ||
-                        (date('Y-m', $contract_end) == $dates['lastm_Y']))) {
+                    // or item/contract started after billing month
+                    // or item/contract ended before before billing month
+                    // then pay on next settlement run - break otherwise
+                    if (! ((date('Y-m', $start) >= date("Y-$billing_month") && date('Y-m', $start) <= $dates['lastm_Y'])
+                        ||
+                        ($contract_end && date('Y-m', $contract_end) <= date("Y-$billing_month") &&
+                            date('Y-m', $contract_end) <= $dates['lastm_Y']))) {
                         break;
                     }
                 }
@@ -417,6 +440,8 @@ class Item extends \BaseModel
                     $ratio = 1;
                     $text = Invoice::langDateFormat(date('Y-m-01', $period_start));
                 }
+
+                $text .= ' - ';
 
                 // ended in last 3 months
                 if ($end && ($end > $period_start) && ($end < strtotime(date('Y-m-01', strtotime('next month'))))) {
@@ -651,8 +676,6 @@ class ItemObserver
         $item->valid_to = $item->valid_to ?: null;
         $tariff = $item->contract->get_valid_tariff($item->product->type);
 
-        // \Log::debug('creating item');
-
         // set end date of old tariff to starting date of new tariff
         if (in_array($item->product->type, ['Internet', 'Voip', 'TV'])) {
             if ($tariff) {
@@ -672,22 +695,22 @@ class ItemObserver
 
     public function created($item)
     {
-        // \Log::debug('created item', [$item->id]);
-
         // this is ab(used) here for easily setting the correct values
-        $item->contract->daily_conversion();
+        if (in_array($item->product->type, ['Internet', 'Voip'])) {
+            $item->contract->daily_conversion();
+        }
 
         // on enabled envia module: check if data has to be changed via envia TEL API
         if (\Module::collections()->has('ProvVoipEnvia')) {
             $purchase_tariff = $item->contract->purchase_tariff;
             $next_purchase_tariff = $item->contract->next_purchase_tariff;
+            if ($purchase_tariff && $next_purchase_tariff && ($purchase_tariff != $next_purchase_tariff)) {
+                \Session::push('tmp_warning_above_form', trans('provvoipenvia::messages.itemChangeVariation'));
+            }
             $voip_id = $item->contract->voip_id;
             $next_voip_id = $item->contract->next_voip_id;
-            if ($next_purchase_tariff && ($purchase_tariff != $next_purchase_tariff)) {
-                \Session::push('tmp_warning_above_form', 'ATTENTION: You have to “Change purchase tariff” (envia TEL API), too!');
-            }
-            if ($next_voip_id && ($voip_id != $next_voip_id)) {
-                \Session::push('tmp_warning_above_form', 'ATTENTION: You have to “Change tariff” (envia TEL API), too!');
+            if ($voip_id && $next_voip_id && ($voip_id != $next_voip_id)) {
+                \Session::push('tmp_warning_above_form', trans('provvoipenvia::messages.itemChangeTariff'));
             }
         }
 
@@ -730,8 +753,6 @@ class ItemObserver
             }
         }
 
-        // \Log::debug('updating item', [$item->id]);
-
         // set end date for products with fixed number of cycles
         $this->handle_fixed_cycles($item);
     }
@@ -741,8 +762,6 @@ class ItemObserver
         if (! $item->observer_enabled) {
             return;
         }
-
-        // \Log::debug('updated item', [$item->id]);
 
         // Check if yearly charged item was already charged - maybe customer should get a credit then
         if ($item->isDirty('valid_to') && $item->product->proportional && $item->product->billing_cycle == 'Yearly' &&
@@ -756,16 +775,20 @@ class ItemObserver
 
         // this is ab(used) here for easily setting the correct values
         if ($item->observer_dailyconversion) {
-            $item->contract->daily_conversion();
+            // Only call for Internet & Voip Items
+            if (in_array($item->product->type, ['Internet', 'Voip']) ||
+                    ($item->isDirty('product_id') && in_array(Product::where('id', $item->getOriginal()['product_id'])->first()->type, ['Internet', 'Voip']))) {
+                $item->contract->daily_conversion();
+            }
         }
     }
 
     public function deleted($item)
     {
-        // \Log::debug('deleted item', [$item->id]);
-
         // this is ab(used) here for easily setting the correct values
-        $item->contract->daily_conversion();
+        if (in_array($item->product->type, ['Internet', 'Voip'])) {
+            $item->contract->daily_conversion();
+        }
     }
 
     /**

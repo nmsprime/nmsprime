@@ -10,7 +10,6 @@ use Modules\Ccc\Entities\Ccc;
 use Modules\NmsMail\Entities\Email;
 use Modules\ProvBase\Entities\Contract;
 use Modules\BillingBase\Entities\Invoice;
-use Modules\BillingBase\Entities\SettlementRun;
 
 class CccUserController extends \BaseController
 {
@@ -182,7 +181,11 @@ class CccUserController extends \BaseController
             mkdir($dir_path, 0733, true);
         }
 
-        $filename = sanitize_filename($contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info');
+        if ($contract->company) {
+            $filename = sanitize_filename($contract->number.'_'.$contract->company.'_info');
+        } else {
+            $filename = sanitize_filename($contract->number.'_'.$contract->firstname.'_'.$contract->lastname.'_info');
+        }
 
         // Replace placeholder by value
         $template = str_replace('\\_', '_', $template);
@@ -223,8 +226,11 @@ class CccUserController extends \BaseController
         $this->data['contract_zip'] = $contract->zip;
         $this->data['contract_city'] = escape_latex_special_chars($contract->city);
         $this->data['contract_district'] = escape_latex_special_chars($contract->district);
-        $this->data['contract_address'] = ($contract->company ? escape_latex_special_chars($contract->company).'\\\\' : '').($contract->academic_degree ? "$contract->academic_degree " : '').($this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\').$this->data['contract_street'].' '.$this->data['contract_housenumber']."\\\\$contract->zip ".$this->data['contract_city'];
-        $this->data['contract_address'] .= $this->data['contract_district'] ? ' OT '.$this->data['contract_district'] : '';
+        $this->data['contract_address'] = ($contract->company ? escape_latex_special_chars($contract->company).'\\\\' : '').
+            ($contract->academic_degree ? "$contract->academic_degree " : '').
+            (($this->data['contract_firstname'] || $this->data['contract_lastname']) ? ($this->data['contract_firstname'].' '.$this->data['contract_lastname'].'\\\\') : '');
+        $this->data['contract_address'] .= $this->data['contract_district'] ? $this->data['contract_district'].'\\\\' : '';
+        $this->data['contract_address'] .= $this->data['contract_street'].' '.$this->data['contract_housenumber']."\\\\$contract->zip ".$this->data['contract_city'];
         $this->data['login_name'] = $login_data['login_name'];
         $this->data['psw'] = $login_data['password'];
 
@@ -354,8 +360,8 @@ class CccUserController extends \BaseController
 
     public function psw_update()
     {
-        if (\Module::collections()->has('Mail') && \Input::has('email_id')) {
-            $email = Email::findorFail(\Input::get('email_id'));
+        if (\Module::collections()->has('Mail') && \Request::filled('email_id')) {
+            $email = Email::findorFail(\Request::get('email_id'));
             // customer requested email object, which does not belong to him
             // (by manually changing the email_id in the url)
             if ($email->contract != Auth::guard('ccc')->user()->contract) {
@@ -363,12 +369,11 @@ class CccUserController extends \BaseController
             }
         }
 
-        // dd(\Input::get(), \Input::get('password'));
-        if (\Input::has('password')) {
+        if (\Request::filled('password')) {
             // update psw
             $customer = Auth::guard('ccc')->user();
             $rules = ['password' => 'required|confirmed|min:6'];
-            $data = \Input::get();
+            $data = \Request::all();
 
             $validator = \Validator::make($data, $rules);
 
@@ -377,9 +382,9 @@ class CccUserController extends \BaseController
             }
 
             if (isset($email)) {
-                $email->psw_update(\Input::get('password'));
+                $email->psw_update(\Request::get('password'));
             } else {
-                $customer->password = \Hash::make(\Input::get('password'));
+                $customer->password = \Hash::make(\Request::get('password'));
                 $customer->save();
             }
 

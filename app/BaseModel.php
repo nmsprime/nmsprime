@@ -32,6 +32,8 @@ class BaseModel extends Eloquent
 
     public $observer_enabled = true;
 
+    protected $connection = 'mysql';
+
     /**
      * View specific stuff
      */
@@ -213,7 +215,7 @@ class BaseModel extends Eloquent
             // the calling method's name and use that as the relationship name as most
             // of the time this will be what we desire to use for the relationships.
             if (is_null($relation)) {
-                list($current, $caller) = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+                [$current, $caller] = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
 
                 $relation = $caller['function'];
             }
@@ -235,22 +237,25 @@ class BaseModel extends Eloquent
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany or \App\Extensions\Database\EmptyRelation
      * @author Patrick Reichel
      */
-    public function belongsToMany($related, $table = null, $foreignKey = null, $otherKey = null, $relation = null)
+    public function belongsToMany($related, $table = null, $foreignPivotKey = null,
+                                  $relatedPivotKey = null, $parentKey = null,
+                                  $relatedKey = null, $relation = null)
     {
         if ($this->_relationAvailable($related)) {
-            return parent::belongsToMany($related, $table, $foreignKey, $otherKey, $relation);
+            return parent::belongsToMany($related, $table, $foreignPivotKey,
+                                         $relatedPivotKey, $parentKey,
+                                         $relatedKey, $relation);
         } else {
             return new EmptyRelation();
         }
     }
 
     /**
-     * Basefunction for returning all objects that a model can have a relation to
-     * Place this function in the model where the edit/create view shall show all related objects
+     * Basefunction to define tabs with associated panels (relation or view) for the models edit page
+     * E.g. Add relation panel 'modems' on the right side of the contract edit page - see ContractController::view_has_many()
+     * Note: Use Controller::editTabs() to define tabs refering to new pages
      *
-     * @author Nino Ryschawy
-     *
-     * @return an array with the appropriate hasMany()-functions of the model
+     * @return array
      */
     public function view_has_many()
     {
@@ -390,7 +395,7 @@ class BaseModel extends Eloquent
     }
 
     /**
-     * Get all models
+     * Get all models extending the BaseModel
      *
      * Attention: The array is cached in the session - so if modules are enabled/disabled
      *	you have to logout & login to rebuild the array again
@@ -410,6 +415,7 @@ class BaseModel extends Eloquent
             'AddressFunctionsTrait',
             'Ability',
             'BaseModel',
+            'CsvData',
             'helpers',
             'BillingLogger',
             'BillingAnalysis',
@@ -429,7 +435,10 @@ class BaseModel extends Eloquent
             $model = str_replace(app_path().'/', '', $model);
             $model = str_replace('.php', '', $model);
             if (array_search($model, $exclude) === false) {
-                $result[$model] = 'App\\'.$model;
+                $namespace = 'App\\'.$model;
+                if (is_subclass_of($namespace, '\App\BaseModel')) {
+                    $result[$model] = $namespace;
+                }
             }
         }
 
@@ -452,7 +461,10 @@ class BaseModel extends Eloquent
                 $model = preg_replace("|$path/(.*?)/Entities/|", '', $model);
                 $model = str_replace('.php', '', $model);
                 if (array_search($model, $exclude) === false) {
-                    $result[$model] = "Modules\\$module\Entities\\".$model;
+                    $namespace = "Modules\\$module\Entities\\".$model;
+                    if (is_subclass_of($namespace, '\App\BaseModel')) {
+                        $result[$model] = $namespace;
+                    }
                 }
             }
         }
@@ -672,7 +684,7 @@ class BaseModel extends Eloquent
      */
     public function html_list($array, $columns, $empty_option = false, $separator = '--')
     {
-        $ret = $empty_option ? [0 => null] : [];
+        $ret = $empty_option ? [null => null] : [];
 
         if (is_string($columns)) {
             foreach ($array as $a) {
@@ -778,6 +790,7 @@ class BaseModel extends Eloquent
             'country_id',	// not used yet
             //'mibfile_id',
             //'oid_id',
+            'node_id',
             'product_id',
             'qos_id',
             'salesman_id',
@@ -791,45 +804,52 @@ class BaseModel extends Eloquent
 
         // Lookup all SQL Tables
         foreach (DB::select('SHOW TABLES') as $table) {
-            // Lookup SQL Fields for current $table
-            foreach (Schema::getColumnListing($table->$tables_var_name) as $column) {
-                // check if $column is actual table name object added by '_id'
-                if ($column == $this->table.'_id') {
-                    if (in_array($column, $exceptions)) {
+            $tablename = $table->{$tables_var_name};
+
+            // Get SQL columns for current table
+            foreach (Schema::getColumnListing($tablename) as $column) {
+                if ($column != $this->table.'_id') {
+                    continue;
+                }
+
+                if (in_array($column, $exceptions)) {
+                    continue;
+                }
+
+                $children = DB::table($tablename)->where($column, $this->id)->get();
+
+                foreach ($children as $child) {
+                    $class_child_name = $this->_guess_model_name($tablename);
+
+                    // check if we got a model name
+                    if ($class_child_name) {
+                        // yes! 1:n relation
+                        $class = new $class_child_name;
+                        $rel = $class->find($child->id);
+                        if (! is_null($rel)) {
+                            array_push($relations['1:n'], $rel);
+                        }
+
                         continue;
                     }
 
-                    // get all objects with $column
-                    $query = 'SELECT * FROM '.$table->$tables_var_name.' WHERE '.$column.'='.$this->id;
-                    foreach (DB::select($query) as $child) {
-                        $class_child_name = $this->_guess_model_name($table->$tables_var_name);
-                        // check if we got a model name
-                        if ($class_child_name) {
-                            // yes! 1:n relation
-                            $class = new $class_child_name;
-                            $rel = $class->find($child->id);
-                            if (! is_null($rel)) {
-                                array_push($relations['1:n'], $rel);
-                            }
-                        } else {
-                            // seems to be a n:m relation
-                            $parts = explode('_', $table->$tables_var_name);
-                            foreach ($parts as $part) {
-                                $class_child_name = $this->_guess_model_name($part);
+                    // seems to be a n:m relation
+                    $parts = explode('_', $tablename);
+                    foreach ($parts as $part) {
+                        $class_child_name = $this->_guess_model_name($part);
 
-                                // one of the models in pivot tables is the current model – skip
-                                if ($class_child_name == get_class($this)) {
-                                    continue;
-                                }
+                        // one of the models in pivot tables is the current model – skip
+                        if ($class_child_name == get_class($this)) {
+                            continue;
+                        }
 
-                                // add other model instances to relation array if existing
-                                $class = new $class_child_name;
-                                $id_col = $part.'_id';
-                                $rel = $class->find($child->{$id_col});
-                                if (! is_null($rel)) {
-                                    array_push($relations['n:m'], $rel);
-                                }
-                            }
+                        // add other model instances to relation array if existing
+                        $class = new $class_child_name;
+                        $id_col = $part.'_id';
+                        // TODO: Replace next line with $rel = $class_child_name::find($child->{$id_col});
+                        $rel = $class->find($child->{$id_col});
+                        if (! is_null($rel)) {
+                            array_push($relations['n:m'], $rel);
                         }
                     }
                 }
@@ -863,10 +883,6 @@ class BaseModel extends Eloquent
      */
     public function delete()
     {
-        // check from where the deletion request has been triggered and set the correct var to show information
-        $prev = explode('/', explode('?', \URL::previous())[0]);
-        $target = preg_match('/[a-z]/i', end($prev)) ? 'above_index_list' : 'above_relations';
-
         if ($this->delete_children) {
             $children = $this->get_all_children();
             // find and delete all children
@@ -877,8 +893,8 @@ class BaseModel extends Eloquent
                 // if one direct or indirect child cannot be deleted:
                 // do not delete anything
                 if (! $child->delete()) {
-                    $msg = 'Cannot delete '.$this->get_model_name()." $this->id: ".$child->get_model_name()." $child->id cannot be deleted";
-                    Session::push("tmp_error_$target", $msg);
+                    $msg = trans('messages.base.delete.failChild', ['model' => $this->get_model_name(), 'id' => $this->id, 'child_model' => $child->get_model_name(), 'child_id' => $child->id]);
+                    $this->addAboveMessage($msg, 'error');
 
                     return false;
                 }
@@ -894,8 +910,8 @@ class BaseModel extends Eloquent
                     // Keep Pivot Entries and children if method is not specified and just log a warning message
                     \Log::warning($this->get_model_name().' - N:M pivot entry deletion handling not implemented for '.$child->get_model_name());
                 } elseif (! $this->{$delete_method}($child)) {
-                    $msg = 'Cannot delete '.$this->get_model_name()." $this->id: n:m relation with ".$child->get_model_name()." $child->id. cannot be deleted";
-                    Session::push("tmp_error_$target", $msg);
+                    $msg = trans('messages.base.delete.failChildNM', ['model' => $this->get_model_name(), 'id' => $this->id, 'child_model' => $child->get_model_name(), 'child_id' => $child->id]);
+                    $this->addAboveMessage($msg, 'error');
 
                     return false;
                 }
@@ -906,10 +922,10 @@ class BaseModel extends Eloquent
         $deleted = $this->_delete();
         if ($deleted) {
             $msg = trans('messages.base.delete.success', ['model' => $this->get_model_name(), 'id' => $this->id]);
-            Session::push("tmp_success_$target", $msg);
+            $this->addAboveMessage($msg, 'success');
         } else {
             $msg = trans('messages.base.delete.fail', ['model' => $this->get_model_name(), 'id' => $this->id]);
-            Session::push("tmp_error_$target", $msg);
+            $this->addAboveMessage($msg, 'error');
         }
 
         return $deleted;
@@ -946,7 +962,7 @@ class BaseModel extends Eloquent
      *
      * @author Nino Ryschawy
      */
-    public function check_validity($timespan = 'monthly', $time = null, $start_end_ts = [])
+    public function isValid($timespan = 'monthly', $time = null, $start_end_ts = [])
     {
         $start = $start_end_ts ? $start_end_ts[0] : $this->get_start_time();
         $end = $start_end_ts ? $start_end_ts[1] : $this->get_end_time();
@@ -981,6 +997,74 @@ class BaseModel extends Eloquent
         }
 
         return true;
+    }
+
+    /**
+     * Helper to show info line above index_list|form depending on previous URL.
+     *
+     * @param string    $msg    The message to be shown
+     * @param string    $type   The type [info|success|warning|error], default is 'info'
+     * @param string    $place  Where to show the message above [index_list, form, relations];
+     *                              if not given try to determine from previous URL
+     *
+     * @return bool  true if message could be generated, false else
+     *
+     * @author Patrick Reichel
+     */
+    public function addAboveMessage($msg, $type = 'info', $place = null)
+    {
+        $allowed_types = [
+            'info',     // blue
+            'success',  // green
+            'warning',  // orange
+            'error',    // red
+        ];
+        $allowed_places = [
+            'index_list',
+            'form',
+            'relations',
+        ];
+
+        // check if type is valid
+        if (! in_array($type, $allowed_types)) {
+            throw new \UnexpectedValueException('$type has to be in ['.implode('|', $allowed_types).'], “'.$type.'” given.');
+        }
+
+        // determine or check place
+        if (is_null($place)) {
+            // check from where the deletion request has been triggered and set the correct var to show information
+            // snippet taken from https://stackoverflow.com/questions/40690202/previous-route-name-in-laravel-5-1-5-8
+            try {
+                $prev_route_name = app('router')->getRoutes()->match(app('request')->create(\URL::previous()))->getName();
+            } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $exception) {
+                // Exception is thrown if no mathing route found (e.g. if coming from outside).
+                \Log::warning('Could not determine previous route: '.$exception);
+
+                return false;
+            }
+            if (\Str::endsWith($prev_route_name, '.edit')) {
+                $place = 'form';
+            } else {
+                $place = 'index_list';
+            }
+        } else {
+            if (! in_array($place, $allowed_places)) {
+                throw new \UnexpectedValueException('$place has to be in ['.implode('|', $allowed_places).'], “'.$place.'” given.');
+            }
+        }
+
+        // build the message target
+        $target = 'tmp_'.$type.'_above_'.$place;
+
+        // push to session ⇒ will be shown once via resources/views/Generic/above_infos.blade.php
+        Session::push($target, $msg);
+    }
+
+    public static function getUser()
+    {
+        $user = \Auth::user();
+
+        return $user ? $user->first_name.' '.$user->last_name : 'cronjob';
     }
 }
 
@@ -1072,12 +1156,12 @@ class BaseObserver
             // get changed attributes
             $arr = [];
 
-            foreach ($model['attributes'] as $key => $value) {
+            foreach ($model->getAttributes() as $key => $value) {
                 if (in_array($key, $ignore)) {
                     continue;
                 }
 
-                $original = $model['original'][$key];
+                $original = $model->getOriginal($key);
                 if ($original != $value) {
                     if (in_array($key, $hide)) {
                         $arr[] = $key;

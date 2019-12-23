@@ -46,7 +46,7 @@ class addDefaultRolesCommand extends Command
      *
      * @return mixed
      */
-    public function fire()
+    public function handle()
     {
         $roles = self::get_default_roles();
         $roles_permissions = self::get_default_permissions();
@@ -170,7 +170,7 @@ class addDefaultRolesCommand extends Command
                 'GuiLog' 				=> ['view'],
                 'Ticket'				=> ['view'],
 
-                'Cmts' 					=> ['view'],
+                'NetGw' 				=> ['view'],
                 'Contract' 				=> ['view'],
                 'Modem' 				=> ['view'],
                 'ProvBase' 				=> ['view'],

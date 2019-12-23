@@ -3,7 +3,7 @@
 namespace Modules\ProvVoipEnvia\Entities;
 
 return [
-    'name' => 'Envia',
+    'name' => 'envia TEL',
     'MenuItems' => [
         'envia TEL orders' => [
             'link'	=> 'EnviaOrder.index',

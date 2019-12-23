@@ -2,19 +2,27 @@
 
 namespace Modules\ProvBase\Entities;
 
+use DB;
 use Log;
 use File;
+use Module;
+use App\Sla;
+use Request;
 use Exception;
-use GlobalConfig;
 use Acme\php\ArrayHelper;
 
 class Modem extends \BaseModel
 {
     // get functions for some address select options
     use \App\AddressFunctionsTrait;
+    use \App\Extensions\Geocoding\Geocoding;
+
+    const TYPES = ['cm', 'tr069'];
 
     // The associated SQL table for this Model
     public $table = 'modem';
+
+    protected $appends = ['formatted_support_state'];
 
     // Add your validation rules here
     // see: http://stackoverflow.com/questions/22405762/laravel-update-model-with-unique-validation-rule-for-attribute
@@ -22,10 +30,13 @@ class Modem extends \BaseModel
     {
         return [
             'mac' => 'required|mac|unique:modem,mac,'.$id.',id,deleted_at,NULL',
-            'birthday' => 'date',
+            'ppp_username' => 'nullable|unique:modem,ppp_username,'.$id.',id,deleted_at,NULL',
+            'birthday' => 'nullable|date',
             'country_code' => 'regex:/^[A-Z]{2}$/',
             'contract_id' => 'required|exists:contract,id,deleted_at,NULL',
-            'configfile_id' => 'required|exists:configfile,id,deleted_at,NULL,device,cm,public,yes',
+            'configfile_id' => 'required|exists:configfile,id,deleted_at,NULL,public,yes',
+            // Note: realty_id and apartment_id validations are done in ModemController@prepare_rules
+            // 'realty_id' => 'nullable|empty_with:apartment_id',
         ];
     }
 
@@ -49,25 +60,33 @@ class Modem extends \BaseModel
 
         // we need to put the filter into the session,
         // as the upcoming datatables AJAX request won't carry the input parameters
-        if (\Input::has('modem_show_filter')) {
-            \Session::put('modem_show_filter', \Input::get('modem_show_filter'));
+        if (\Request::filled('modem_show_filter')) {
+            \Session::put('modem_show_filter', \Request::get('modem_show_filter'));
         }
         // non-datatable request; current route is null on testing
-        elseif (\Route::getCurrentRoute() && basename(\Route::getCurrentRoute()->getPath()) == 'Modem') {
+        elseif (\Route::getCurrentRoute() && basename(\Route::getCurrentRoute()->uri) == 'Modem') {
             \Session::forget('modem_show_filter');
         }
 
-        return ['table' => $this->table,
-                'index_header' => [$this->table.'.id', $this->table.'.mac', 'configfile.name', $this->table.'.model', $this->table.'.sw_rev', $this->table.'.name', $this->table.'.firstname', $this->table.'.lastname', $this->table.'.city', $this->table.'.district', $this->table.'.street', $this->table.'.house_number', $this->table.'.us_pwr', $this->table.'.geocode_source', $this->table.'.inventar_num', 'contract_valid'],
-                'bsclass' => $bsclass,
-                'header' => $this->id.' - '.$this->mac.($this->name ? ' - '.$this->name : ''),
-                'edit' => ['us_pwr' => 'get_us_pwr', 'contract_valid' => 'get_contract_valid'],
-                'eager_loading' => ['configfile', 'contract'],
-                'disable_sortsearch' => ['contract_valid' => 'false'],
-                'help' => [$this->table.'.model' => 'modem_update_frequency', $this->table.'.sw_rev' => 'modem_update_frequency'],
-                'order_by' => ['0' => 'desc'],
-                'where_clauses' => self::_get_where_clause(),
-            ];
+        $ret = ['table' => $this->table,
+            'index_header' => [$this->table.'.id', $this->table.'.mac', 'configfile.name', $this->table.'.model', $this->table.'.sw_rev', $this->table.'.name', $this->table.'.firstname', $this->table.'.lastname', $this->table.'.city', $this->table.'.district', $this->table.'.street', $this->table.'.house_number', $this->table.'.us_pwr', $this->table.'.geocode_source', $this->table.'.inventar_num', 'contract_valid'],
+            'bsclass' => $bsclass,
+            'header' => $this->label(),
+            'edit' => ['us_pwr' => 'get_us_pwr', 'contract_valid' => 'get_contract_valid'],
+            'eager_loading' => ['configfile', 'contract'],
+            'disable_sortsearch' => ['contract_valid' => 'false'],
+            'help' => [$this->table.'.model' => 'modem_update_frequency', $this->table.'.sw_rev' => 'modem_update_frequency'],
+            'order_by' => ['0' => 'desc'],
+            'where_clauses' => self::_get_where_clause(),
+        ];
+
+        if (Sla::first()->valid()) {
+            $ret['index_header'][] = $this->table.'.support_state';
+            $ret['edit']['support_state'] = 'getSupportState';
+            $ret['raw_columns'][] = 'support_state';
+        }
+
+        return $ret;
     }
 
     public function get_bsclass()
@@ -78,7 +97,7 @@ class Modem extends \BaseModel
             case 0:	$bsclass = 'success'; break; // online
             case 1: $bsclass = 'warning'; break; // warning
             case 2: $bsclass = 'warning'; break; // critical
-            case 3: $bsclass = $this->internet_access && $this->contract->check_validity('Now') ? 'danger' : 'info'; break; // offline
+            case 3: $bsclass = $this->internet_access && $this->contract->isValid('Now') ? 'danger' : 'info'; break; // offline
 
             default: $bsclass = 'danger'; break;
         }
@@ -86,14 +105,44 @@ class Modem extends \BaseModel
         return $bsclass;
     }
 
+    public function label()
+    {
+        // return $this->id.' - '.$this->mac.($this->name ? ' - '.$this->name : '');
+        $label = $this->mac.($this->name ? ' - '.$this->name : '');
+        $label .= $this->firstname ? ' - '.$this->firstname.' '.$this->lastname : '';
+
+        return $label;
+    }
+
+    /**
+     * Return Fontawesome emoji class, and Bootstrap text color
+     * @return array
+     */
+    public function getFaSmileClass()
+    {
+        switch ($this->support_state) {
+            case 'full-support':      {$faClass = 'fa-smile-o'; $bsClass = 'success'; }  break;
+            case 'verifying':         {$faClass = 'fa-meh-o'; $bsClass = 'warning'; }  break;
+            case 'not-supported':     {$faClass = 'fa-frown-o'; $bsClass = 'danger'; }   break;
+            default: {$faClass = 'fa-smile'; $bsClass = 'success'; } break;
+        }
+
+        return ['fa-class'=> $faClass, 'bs-class'=> $bsClass];
+    }
+
     public function get_contract_valid()
     {
-        return $this->contract->check_validity('Now') ? \App\Http\Controllers\BaseViewController::translate_label('yes') : \App\Http\Controllers\BaseViewController::translate_label('no');
+        return $this->contract->isValid('Now') ? \App\Http\Controllers\BaseViewController::translate_label('yes') : \App\Http\Controllers\BaseViewController::translate_label('no');
     }
 
     public function get_us_pwr()
     {
         return $this->us_pwr.' dBmV';
+    }
+
+    public function getSupportState()
+    {
+        return $this->formatted_support_state." <i class='pull-right fa fa-2x ".$this->getFaSmileClass()['fa-class'].' text-'.$this->getFaSmileClass()['bs-class']."'></i>";
     }
 
     /**
@@ -117,7 +166,7 @@ class Modem extends \BaseModel
      */
     public function configfiles()
     {
-        return \DB::table('configfile')->select(['id', 'name'])->whereNull('deleted_at')->where('device', '=', 'CM')->where('public', '=', 'yes')->get();
+        return DB::table('configfile')->select(['id', 'name'])->whereNull('deleted_at')->whereIn('device', self::TYPES)->where('public', '=', 'yes')->get();
         // return Configfile::select(['id', 'name'])->where('device', '=', 'CM')->where('public', '=', 'yes')->get();
     }
 
@@ -126,7 +175,16 @@ class Modem extends \BaseModel
      */
     public function qualities()
     {
-        return \DB::table('qos')->whereNull('deleted_at')->get();
+        return DB::table('qos')->whereNull('deleted_at')->get();
+    }
+
+    /**
+     * Formatted attribute of support state.
+     * @return string
+     */
+    public function getFormattedSupportStateAttribute()
+    {
+        return ucfirst(str_replace('-', ' ', $this->support_state));
     }
 
     /**
@@ -140,11 +198,11 @@ class Modem extends \BaseModel
      */
     protected function _envia_orders()
     {
-        if (! \Module::collections()->has('ProvVoipEnvia')) {
+        if (! Module::collections()->has('ProvVoipEnvia')) {
             throw new \LogicException(__METHOD__.' only callable if module ProvVoipEnvia as active');
         }
 
-        return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrder')->where('ordertype', 'NOT LIKE', 'order/create_attachment');
+        return $this->hasMany(\Modules\ProvVoipEnvia\Entities\EnviaOrder::class)->where('ordertype', 'NOT LIKE', 'order/create_attachment');
     }
 
     /**
@@ -152,26 +210,26 @@ class Modem extends \BaseModel
      */
     public function enviacontracts()
     {
-        if (! \Module::collections()->has('ProvVoipEnvia')) {
+        if (! Module::collections()->has('ProvVoipEnvia')) {
             throw new \LogicException(__METHOD__.' only callable if module ProvVoipEnvia as active');
         } else {
-            return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaContract');
+            return $this->hasMany(\Modules\ProvVoipEnvia\Entities\EnviaContract::class);
         }
     }
 
     public function configfile()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Configfile');
+        return $this->belongsTo(Configfile::class);
     }
 
     public function qos()
     {
-        return $this->belongsTo("Modules\ProvBase\Entities\Qos");
+        return $this->belongsTo(Qos::class);
     }
 
     public function contract()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
+        return $this->belongsTo(Contract::class, 'contract_id');
     }
 
     /**
@@ -180,29 +238,60 @@ class Modem extends \BaseModel
      */
     public function contracts()
     {
-        // Contract::select(['id', 'lastname'])->get();
-        return \DB::table('contract')->whereNull('deleted_at')->get();
+        $contracts = DB::table('contract')->whereNull('deleted_at')->get();
+
+        $list = [];
+        foreach ($contracts as $contract) {
+            $list[$contract->id] = Contract::labelFromData($contract);
+        }
+
+        return $list;
     }
 
     public function mtas()
     {
-        return $this->hasMany('Modules\ProvVoip\Entities\Mta');
+        return $this->hasMany(\Modules\ProvVoip\Entities\Mta::class);
     }
 
     public function endpoints()
     {
-        return $this->hasMany('Modules\ProvBase\Entities\Endpoint');
+        return $this->hasMany(Endpoint::class);
     }
 
     // TODO: deprecated! use netelement function instead - search for all places where this function is used
     public function tree()
     {
-        return $this->belongsTo('Modules\HfcReq\Entities\NetElement');
+        return $this->belongsTo(\Modules\HfcReq\Entities\NetElement::class);
     }
 
     public function nelelement()
     {
-        return $this->belongsTo('Modules\HfcReq\Entities\NetElement', 'netelement_id');
+        return $this->belongsTo(\Modules\HfcReq\Entities\NetElement::class, 'netelement_id');
+    }
+
+    public function apartment()
+    {
+        return $this->belongsTo(\Modules\PropertyManagement\Entities\Apartment::class);
+    }
+
+    public function realty()
+    {
+        return $this->belongsTo(\Modules\PropertyManagement\Entities\Realty::class);
+    }
+
+    public function radcheck()
+    {
+        return $this->hasOne(RadCheck::class, 'username', 'ppp_username');
+    }
+
+    public function radreply()
+    {
+        return $this->hasOne(RadReply::class, 'username', 'ppp_username');
+    }
+
+    public function radusergroups()
+    {
+        return $this->hasMany(RadUserGroup::class, 'username', 'ppp_username');
     }
 
     /*
@@ -210,6 +299,15 @@ class Modem extends \BaseModel
      */
     public function view_belongs_to()
     {
+        $relation = null;
+        if (Module::collections()->has('PropertyManagement')) {
+            $relation = $this->apartment;
+        }
+
+        if ($relation) {
+            return collect([$relation, $this->contract]);
+        }
+
         return $this->contract;
     }
 
@@ -217,8 +315,8 @@ class Modem extends \BaseModel
     {
         $ret = [];
 
-        // we use a dummy here as this will be overwritten by ModemController::get_form_tabs()
-        if (\Module::collections()->has('ProvVoip')) {
+        // we use a dummy here as this will be overwritten by ModemController::editTabs()
+        if (Module::collections()->has('ProvVoip')) {
             $ret['Edit']['Mta']['class'] = 'Mta';
             $ret['Edit']['Mta']['relation'] = $this->mtas;
         }
@@ -229,7 +327,7 @@ class Modem extends \BaseModel
             $ret['Edit']['Endpoint']['relation'] = $this->endpoints;
         }
 
-        if (\Module::collections()->has('ProvVoipEnvia')) {
+        if (Module::collections()->has('ProvVoipEnvia')) {
             $ret['Edit']['EnviaContract']['class'] = 'EnviaContract';
             $ret['Edit']['EnviaContract']['relation'] = $this->enviacontracts;
             $ret['Edit']['EnviaContract']['options']['hide_create_button'] = 1;
@@ -237,11 +335,12 @@ class Modem extends \BaseModel
 
             $ret['Edit']['EnviaOrder']['class'] = 'EnviaOrder';
             $ret['Edit']['EnviaOrder']['relation'] = $this->_envia_orders;
-            $ret['envia TEL']['EnviaOrder']['options']['delete_button_text'] = 'Cancel order at envia TEL';
+            $ret['Edit']['EnviaOrder']['options']['create_button_text'] = trans('provvoipenvia::view.enviaOrder.createButton');
+            $ret['Edit']['EnviaOrder']['options']['delete_button_text'] = trans('provvoipenvia::view.enviaOrder.deleteButton');
 
             // TODO: auth - loading controller from model could be a security issue ?
-            $ret['Edit']['envia TEL API']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
-            $ret['Edit']['envia TEL API']['view']['vars']['extra_data'] = \Modules\ProvBase\Http\Controllers\ModemController::_get_envia_management_jobs($this);
+            $ret['Edit']['EnviaAPI']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
+            $ret['Edit']['EnviaAPI']['view']['vars']['extra_data'] = \Modules\ProvBase\Http\Controllers\ModemController::_get_envia_management_jobs($this);
         }
 
         return $ret;
@@ -286,7 +385,7 @@ class Modem extends \BaseModel
 
         $ret = 'host cm-'.$this->id.' { hardware ethernet '.$this->mac.'; filename "cm/cm-'.$this->id.'.cfg"; ddns-hostname "cm-'.$this->id.'";';
 
-        if (\Module::collections()->has('ProvVoip') && $this->mtas()->pluck('mac')->filter(function ($mac) {
+        if (Module::collections()->has('ProvVoip') && $this->mtas()->pluck('mac')->filter(function ($mac) {
             return stripos($mac, 'ff:') !== 0;
         })->count()) {
             $ret .= ' option ccc.dhcp-server-1 '.($server ?: ProvBase::first()->provisioning_server).';';
@@ -376,7 +475,7 @@ class Modem extends \BaseModel
             // get all not deleted modems
             // attention: do not use “where('internet_access', '>', '0')” to shrink the list
             //   ⇒ MTAs shall get IPs even if internet_access is disabled!
-            $modems_raw = \DB::select('SELECT hostname, mac FROM modem WHERE deleted_at IS NULL');
+            $modems_raw = DB::select('SELECT hostname, mac FROM modem WHERE deleted_at IS NULL');
             $modems = [];
             foreach ($modems_raw as $modem) {
                 $modems[\Str::lower($modem->mac)] = $modem->hostname;
@@ -549,6 +648,12 @@ class Modem extends \BaseModel
     {
         Log::debug(__METHOD__.' started for '.$this->hostname);
 
+        if ($this->isTR069()) {
+            $this->createGenieAcsPresets($this->configfile->text_make($this, 'tr069'));
+
+            return;
+        }
+
         /* Configfile */
         $dir = '/tftpboot/cm/';
         $cf_file = $dir."cm-$this->id.conf";
@@ -560,11 +665,11 @@ class Modem extends \BaseModel
 
         // Evaluate network access (NA) and MaxCPE count
         // Note: NA becomes only zero when internet is disabled on contract (no valid tariff) or modem (manually) and contract has no telephony
-        $cpe_cnt = \Modules\ProvBase\Entities\ProvBase::first()->max_cpe;
+        $cpe_cnt = ProvBase::first()->max_cpe;
         $max_cpe = $cpe_cnt ?: 2; 		// default 2
         $internet_access = 1;
 
-        if (\Module::collections()->has('ProvVoip') && (count($this->mtas))) {
+        if (Module::collections()->has('ProvVoip') && (count($this->mtas))) {
             if ($this->internet_access || $this->contract->has_telephony || $this->contract->internet_access) {
                 if (! $this->internet_access) {
                     $max_cpe = 0;
@@ -600,7 +705,7 @@ class Modem extends \BaseModel
             $conf .= "\tMaxCPE $max_cpe;\n";
         }
 
-        if (\Module::collections()->has('ProvVoip') && $internet_access) {
+        if (Module::collections()->has('ProvVoip') && $internet_access) {
             foreach ($this->mtas as $mta) {
                 $conf .= "\tCpeMacAddress $mta->mac;\n";
             }
@@ -612,16 +717,23 @@ class Modem extends \BaseModel
             die('Error writing to file');
         }
 
+        Log::info('Trying to build configfile for modem '.$this->hostname);
         Log::debug("configfile: docsis -e $cf_file $dir../keyfile $cfg_file");
 
         // "&" to start docsis process in background improves performance but we can't reliably proof if file exists anymore
-        // docsis tool always returns 0
         exec("docsis -e $cf_file $dir../keyfile $cfg_file >/dev/null 2>&1 &", $out);
+
+        // TODO: Error handling
+        // This is not trivial because docsis is started in background:
+        //      - therefore return value is always “0” (independent of the actual error code)
+        //      - STDERR output is not redirected and is stored in $out – but too late for a check
+        //      - same problem with checks for existance and date comparisions of .cfg files
+        // As there is no solution ATM (except removing the “&” and slowing down the whole process) nothing is done here!
+        //
+        // As a workaround there will be an Icinga check (existance of .cfg files and comparision of the dates of .conf and .cfg files)
 
         // change owner in case command was called from command line via php artisan nms:configfile that changes owner to root
         system('/bin/chown -R apache /tftpboot/cm');
-
-        Log::info('Configfile updated for Modem: '.$this->hostname);
 
         return true;
     }
@@ -661,14 +773,248 @@ class Modem extends \BaseModel
     }
 
     /**
-     * Get CMTS a CM is registered on
+     * Create TR-069 configfile.
+     * GenieACS API: https://github.com/genieacs/genieacs/wiki/API-Reference
+     *
+     * @author Ole Ernst
+     */
+    public function createGenieAcsPresets($text = null)
+    {
+        $text = $text ?? $this->configfile->text;
+        if (! $text) {
+            return;
+        }
+
+        $this->createGenieAcsProvisions($text);
+
+        $preset = [
+            'weight' => 0,
+            'precondition' => json_encode([
+                '_deviceId._SerialNumber' => $this->serial_num,
+            ]),
+            'events' => [
+                '0 BOOTSTRAP' => true,
+            ],
+            'configurations' => [
+                [
+                    'type' => 'provision',
+                    'name' => $this->id,
+                ],
+            ],
+        ];
+
+        self::callGenieAcsApi("presets/$this->id", 'PUT', json_encode($preset));
+
+        unset($preset['events']['0 BOOTSTRAP']);
+        $preset['events']['2 PERIODIC'] = true;
+        $preset['configurations'][0]['name'] = "mon-{$this->configfile->id}";
+
+        self::callGenieAcsApi("presets/mon-$this->id", 'PUT', json_encode($preset));
+    }
+
+    /**
+     * Refresh the online state of all TR069 device by checking
+     * if they last informed us within the last 5 minutes
+     *
+     * @author Ole Ernst
+     */
+    public static function refreshTR069()
+    {
+        $query = [
+            '_lastInform' => [
+                '$gt' => \Carbon\Carbon::now('UTC')->subMinute(5)->toIso8601ZuluString(),
+            ],
+        ];
+
+        $query = json_encode($query);
+        $route = "devices/?query=$query&projection=_deviceId._SerialNumber";
+
+        $online = array_map(function ($value) {
+            return $value->_deviceId->_SerialNumber ?? null;
+        }, json_decode(self::callGenieAcsApi($route, 'GET')) ?: []);
+
+        DB::beginTransaction();
+        // make all tr069 devices offline
+        // toBase() is needed since updated_at is ambiguous
+        self::join('configfile', 'configfile.id', 'modem.configfile_id')
+            ->where('configfile.device', 'tr069')
+            ->whereNull('configfile.deleted_at')
+            ->toBase()
+            ->update(['us_pwr' => 0, 'modem.updated_at' => now()]);
+
+        // make all tr069 devices online, which informed us in the last 5 minutes
+        // for now we set them to a sensible DOCIS US power level to make them green
+        self::whereIn('serial_num', $online)->update(['us_pwr' => 45]);
+        DB::commit();
+    }
+
+    /**
+     * Create Provision from configfile.text.
+     *
+     * @author Roy Schneider
+     * @param string $text
+     * @return bool
+     */
+    public function createGenieAcsProvisions($text)
+    {
+        $prefix = '';
+
+        // during bootstrap always clear the info we have about the device
+        $prov = [
+            "clear('Device', Date.now());",
+            "clear('InternetGatewayDevice', Date.now());",
+        ];
+
+        foreach (preg_split('/\r\n|\r|\n/', $text) as $line) {
+            $vals = str_getcsv(trim($line), ';');
+            if (! count($vals) || ! in_array($vals[0], ['add', 'clr', 'commit', 'del', 'get', 'jmp', 'reboot', 'set'])) {
+                continue;
+            }
+
+            if (! isset($vals[1])) {
+                $vals[1] = '';
+            }
+
+            $path = trim("$prefix.$vals[1]", '.');
+
+            switch ($vals[0]) {
+                case 'add':
+                    if (isset($vals[2])) {
+                        $prov[] = "declare('$path.[$vals[2]]', {value: Date.now()}, {path: 1});";
+                    }
+                    break;
+                case 'clr':
+                    $prov[] = "clear('$path', Date.now());";
+                    break;
+                case 'commit':
+                    $prov[] = 'commit();';
+                    break;
+                case 'del':
+                    $prov[] = "declare('$path.[]', null, {path: 0})";
+                    break;
+                case 'get':
+                    $prov[] = "declare('$path.*', {value: Date.now()});";
+                    break;
+                case 'jmp':
+                    $prefix = trim($vals[1], '.');
+                    break;
+                case 'reboot':
+                    if (! $vals[1]) {
+                        $vals[1] = 0;
+                    }
+                    $prov[] = "declare('Reboot', null, {value: Date.now() - ($vals[1] * 1000)});";
+                    break;
+                case 'set':
+                    if (isset($vals[2])) {
+                        $prov[] = "declare('$path', {value: Date.now()} , {value: '$vals[2]'});";
+                    }
+                    break;
+            }
+        }
+
+        self::callGenieAcsApi("provisions/$this->id", 'PUT', implode("\r\n", $prov));
+    }
+
+    /**
+     * Call API of GenieACS via PHP Curl.
+     *
+     * @author Roy Schneider
+     * @param string $route
+     * @param string $customRequest
+     * @param string $data
+     * @return mixed $result
+     */
+    public static function callGenieAcsApi($route, $customRequest, $data = null)
+    {
+        $ch = curl_init();
+
+        curl_setopt_array($ch, [
+                    CURLOPT_URL => "http://localhost:7557/$route",
+                    CURLOPT_RETURNTRANSFER => $customRequest == 'GET' ? true : false,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_CUSTOMREQUEST => $customRequest,
+                    CURLOPT_POSTFIELDS => $data,
+                ]);
+
+        $result = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        // No such device
+        if ($status == 202) {
+            $result = false;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get decoded json object of device from GenieACS via API.
+     *
+     * @param string $projection
+     * @return mixed
+     *
+     * @author Ole Ernst
+     */
+    public function getGenieAcsModel($projection = null)
+    {
+        $route = "devices/?query={\"_deviceId._SerialNumber\":\"$this->serial_num\"}";
+        if ($projection) {
+            $route .= "&projection=$projection";
+        }
+
+        $model = json_decode(self::callGenieAcsApi($route, 'GET'));
+
+        if (! $model) {
+            return false;
+        }
+
+        $model = reset($model);
+
+        if (! $projection) {
+            return $model;
+        }
+
+        foreach (explode('.', $projection) as $idx) {
+            if (! isset($model->{$idx})) {
+                return false;
+            }
+            $model = $model->{$idx};
+        }
+
+        return $model;
+    }
+
+    /**
+     * Delete GenieACS presets.
+     *
+     * @author Roy Schneider
+     */
+    public function deleteGenieAcsPreset()
+    {
+        self::callGenieAcsApi("presets/$this->id", 'DELETE');
+        self::callGenieAcsApi("presets/mon-$this->id", 'DELETE');
+    }
+
+    /**
+     * Delete GenieACS provision.
+     *
+     * @author Roy Schneider
+     */
+    public function deleteGenieAcsProvision()
+    {
+        self::callGenieAcsApi("provisions/$this->id", 'DELETE');
+    }
+
+    /**
+     * Get NETGW a CM is registered on
      *
      * @param  string 	ip 		address of cm
-     * @return object 	CMTS
+     * @return object 	NETGW
      *
      * @author Nino Ryschawy
      */
-    public static function get_cmts($ip)
+    public static function get_netgw($ip)
     {
         $validator = new \Acme\Validators\ExtendedValidator;
 
@@ -676,13 +1022,13 @@ class Modem extends \BaseModel
 
         foreach ($ippools as $pool) {
             if ($validator->validateIpInRange(0, $ip, [$pool->net, $pool->netmask])) {
-                $cmts_id = $pool->cmts_id;
+                $netgw_id = $pool->netgw_id;
                 break;
             }
         }
 
-        if (isset($cmts_id)) {
-            return Cmts::find($cmts_id);
+        if (isset($netgw_id)) {
+            return NetGw::find($netgw_id);
         }
     }
 
@@ -731,29 +1077,52 @@ class Modem extends \BaseModel
      */
     public static function update_model_firmware()
     {
-        foreach (\DB::table('modem')->whereNull('deleted_at')->pluck('id') as $id) {
+        foreach (DB::table('modem')->whereNull('deleted_at')->pluck('id') as $id) {
             $tmp = self::get_firmware_tree($id);
             if (! $tmp) {
                 continue;
             }
 
-            \DB::statement("UPDATE modem SET model = '$tmp[0] $tmp[1]', sw_rev = '$tmp[2]' where id='$id'");
+            DB::statement("UPDATE modem SET model = '$tmp[0] $tmp[1]', sw_rev = '$tmp[2]' where id='$id'");
         }
     }
 
     /**
      * Restarts modem through snmpset
      */
-    public function restart_modem($mac_changed = false, $modem_reset = false)
+    public function restart_modem($mac_changed = false, $modem_reset = false, $factoryReset = false)
     {
         // Log
-        Log::info('restart modem '.$this->hostname);
+        Log::info(($factoryReset ? 'factoryReset' : 'restart').' modem '.$this->hostname);
+
+        if ($this->isTR069()) {
+            $id = $this->getGenieAcsModel('_id');
+            if (! $id) {
+                \Session::push('tmp_warning_above_form', trans('messages.modem_restart_error'));
+
+                return;
+            }
+
+            $id = rawurlencode($id);
+            $action = $factoryReset ? 'factoryReset' : 'reboot';
+            $success = self::callGenieAcsApi("devices/$id/tasks?timeout=3000&connection_request", 'POST', "{ \"name\" : \"$action\" }");
+
+            if (! $success) {
+                \Session::push('tmp_warning_above_form', trans('messages.modem_restart_error'));
+
+                return;
+            }
+
+            \Session::push('tmp_info_above_form', trans('messages.modem_restart_success_direct'));
+
+            return;
+        }
 
         // if hostname cant be resolved we dont want to have an php error
         try {
             $config = ProvBase::first();
             $fqdn = $this->hostname.'.'.$config->domain_name;
-            $cmts = self::get_cmts(gethostbyname($fqdn));
+            $netgw = self::get_netgw(gethostbyname($fqdn));
             $mac = $mac_changed ? $this->getOriginal('mac') : $this->mac;
             $mac_oid = implode('.', array_map('hexdec', explode(':', $mac)));
 
@@ -761,25 +1130,25 @@ class Modem extends \BaseModel
                 throw new Exception('Reset Modem directly');
             }
 
-            if ($cmts && $cmts->company == 'Cisco') {
-                // delete modem entry in cmts - CISCO-DOCS-EXT-MIB::cdxCmCpeDeleteNow
-                snmpset($cmts->ip, $cmts->get_rw_community(), '1.3.6.1.4.1.9.9.116.1.3.1.1.9.'.$mac_oid, 'i', '1', 300000, 1);
-            } elseif ($cmts && $cmts->company == 'Casa') {
-                // reset modem via cmts, deleting is not possible - CASA-CABLE-CMCPE-MIB::casaCmtsCmCpeResetNow
-                snmpset($cmts->ip, $cmts->get_rw_community(), '1.3.6.1.4.1.20858.10.12.1.3.1.7.'.$mac_oid, 'i', '1', 300000, 1);
+            if ($netgw && $netgw->company == 'Cisco') {
+                // delete modem entry in netgw - CISCO-DOCS-EXT-MIB::cdxCmCpeDeleteNow
+                snmpset($netgw->ip, $netgw->get_rw_community(), '1.3.6.1.4.1.9.9.116.1.3.1.1.9.'.$mac_oid, 'i', '1', 300000, 1);
+            } elseif ($netgw && $netgw->company == 'Casa') {
+                // reset modem via netgw, deleting is not possible - CASA-CABLE-CMCPE-MIB::casaCmtsCmCpeResetNow
+                snmpset($netgw->ip, $netgw->get_rw_community(), '1.3.6.1.4.1.20858.10.12.1.3.1.7.'.$mac_oid, 'i', '1', 300000, 1);
             } else {
-                throw new Exception('CMTS company not set');
+                throw new Exception('NETGW company not set');
             }
             // success message
-            \Session::push('tmp_info_above_form', trans('messages.modem_restart_success_cmts'));
+            \Session::push('tmp_info_above_form', trans('messages.modem_restart_success_netgw'));
         } catch (Exception $e) {
-            \Log::error("Could not delete $this->hostname from CMTS ('".$e->getMessage()."'). Let's try to restart it directly.");
+            \Log::error("Could not delete $this->hostname from NETGW ('".$e->getMessage()."'). Let's try to restart it directly.");
 
             try {
                 // restart modem - DOCS-CABLE-DEV-MIB::docsDevResetNow
                 snmpset($fqdn, $config->rw_community, '1.3.6.1.2.1.69.1.1.3.0', 'i', '1', 300000, 1);
 
-                // success message - make it a warning as sth is wrong when it's not already restarted by CMTS??
+                // success message - make it a warning as sth is wrong when it's not already restarted by NETGW??
                 \Session::push('tmp_info_above_form', trans('messages.modem_restart_success_direct'));
             } catch (Exception $e) {
                 \Log::error("Could not restart $this->hostname directly ('".$e->getMessage()."')");
@@ -795,6 +1164,16 @@ class Modem extends \BaseModel
                 }
             }
         }
+    }
+
+    /**
+     * Perform a factory reset on a TR-069 device
+     *
+     * @author: Ole Ernst
+     */
+    public function factoryReset()
+    {
+        return $this->restart_modem(false, false, true);
     }
 
     /**
@@ -839,8 +1218,8 @@ class Modem extends \BaseModel
             $time = explode(' ', trim($time, '" '));
             $time[0] .= $time[1];
             unset($time[1]);
-            $time = array_map('hexdec', $time);
-            $time = sprintf('%02d.%02d.%04d %02d:%02d:%02d.%d', $time[3], $time[2], $time[0], $time[4], $time[5], $time[6], $time[7]);
+
+            $time = \Carbon\Carbon::create(...array_slice(array_map('hexdec', $time), 0, 6));
             $log[$time_key][$k] = $time;
         }
 
@@ -862,161 +1241,6 @@ class Modem extends \BaseModel
         }
 
         return $ret;
-    }
-
-    /*
-     * Refresh Modem State
-     *
-     * This function will update the modem upstream/downstream power level/SNR
-     * if online, otherwise it will set the value to 0.
-     *
-     * NOTE: This function will be called via artisan command modem-refresh. This command
-     *       is added to laravel scheduling api to refresh all modem states every 5min.
-     *
-     * NOTE: The function is written in a generic manner to fetch more than just upstream power level
-     *       For more see array $oids inside ..
-     *
-     * @param timeout: snmp timeout
-     * @return: result of snmpget as array of [oid1 => value1, ..]
-     * @author: Torsten Schmidt
-     */
-    public function refresh_state($timeout = 100 * 1000)
-    {
-        \Log::debug('Refresh Modem State', [$this->hostname]);
-
-        // Load Global Config
-        $config = ProvBase::first();
-        $community_ro = $config->ro_community;
-        $domain = $config->domain_name;
-
-        // Set SNMP default mode
-        // TODO: use a seperate funciton
-        snmp_set_quick_print(true);
-        snmp_set_oid_numeric_print(true);
-        snmp_set_valueretrieval(SNMP_VALUE_PLAIN);
-        snmp_set_oid_output_format(SNMP_OID_OUTPUT_NUMERIC);
-
-        // OID Array to parse
-        // Style: ['modem table field 1' => 'oid1', 'modem table field 2' => 'oid2, ..']
-        $oids = ['us_pwr' => '.1.3.6.1.2.1.10.127.1.2.2.1.3.2',
-                 /*'us_snr' => 'not possible using modem oids',*/
-                 'ds_pwr' => '.1.3.6.1.2.1.10.127.1.1.1.1.6',
-                 'ds_snr' => '.1.3.6.1.2.1.10.127.1.1.4.1.5',
-                 ];
-
-        $this->observer_disable();
-
-        // if hostname cant be resolved we dont want to have an php error
-        try {
-            // SNMP request
-            $session = new \SNMP(\SNMP::VERSION_2c, $this->hostname.'.'.$domain, $community_ro, $timeout);
-            $results = $r = $session->get($oids);
-
-            // parse and update results
-            foreach (array_reverse($oids) as $field => $oid) {
-                $this->{$field} = array_pop($r) / 10;
-            }	// TODO: added generic concept for multiplying options @Torsten Schmidt
-
-            // save
-            $this->save();
-        } catch (Exception $e) {
-            // catch error
-            // set fields to 0
-            foreach (array_reverse($oids) as $field => $oid) {
-                $this->{$field} = 0;
-            }
-
-            // save
-            $this->save();
-
-            return false;
-        }
-
-        return $results;
-    }
-
-    /**
-     * Refresh Modem State using cached value of Cacti
-     *
-     * This function will update the upstream/downstream power level/SNR
-     * if online. Because the last value of Cacti is used, the update is much quicker and doesn't
-     * generate a superfluous SNMP request.
-     *
-     * NOTE: This function will be called via artisan command modem-refresh. This command
-     *       is added to laravel scheduling api to refresh all modem states every 5min.
-     *
-     * @return: maximum power level of all upstream channels or -1 on error
-     * @author: Ole Ernst
-     */
-    public function refresh_state_cacti()
-    {
-        // cacti is not installed
-        if (! \Module::collections()->has('ProvMon')) {
-            return -1;
-        }
-
-        try {
-            $path = \DB::connection('mysql-cacti')->table('host')
-                ->join('data_local', 'host.id', '=', 'data_local.host_id')
-                ->join('data_template_data', 'data_local.id', '=', 'data_template_data.local_data_id')
-                ->where('host.description', '=', $this->hostname)
-                ->orderBy('data_local.id')
-                ->select('data_template_data.data_source_path')->first();
-        } catch (\PDOException $e) {
-            // Code 1049 == Unknown database '%s' -> cacti is not installed yet
-            if ($e->getCode() == 1049) {
-                return -1;
-            }
-            // don't catch other PDOExceptions
-            throw $e;
-        }
-
-        // no rrd file for current modem found in DB
-        if (! $path) {
-            return -1;
-        }
-
-        $file = str_replace('<path_rra>', '/usr/share/cacti/rra', $path->data_source_path);
-        // file does not exist
-        if (! File::exists($file)) {
-            return -1;
-        }
-
-        $output = [];
-        exec("rrdtool lastupdate $file", $output);
-        // unexpected number of lines from rrdtool
-        if (count($output) != 3) {
-            return -1;
-        }
-
-        $keys = explode(' ', trim(array_shift($output)));
-        $vals = explode(' ', trim(explode(':', array_pop($output))[1]));
-        $arr = array_combine($keys, $vals);
-
-        $res = ['us_pwr' => $arr['avgUsPow'],
-                'us_snr' => $arr['avgUsSNR'],
-                'ds_pwr' => $arr['avgDsPow'],
-                'ds_snr' => $arr['avgDsSNR'],
-                ];
-
-        $status = \DB::connection('mysql-cacti')->table('host')
-            ->where('description', '=', $this->hostname)
-            ->select('status')->first()->status;
-        // modem is offline, if we use last value of cacti instead of setting it
-        // to zero, it would seem as if the modem is still online
-        if ($status == 1) {
-            array_walk($res, function (&$val) {
-                $val = 0;
-            });
-        }
-
-        $this->observer_disable();
-        foreach ($res as $key => $val) {
-            $this->{$key} = round($val);
-        }
-        $this->save();
-
-        return $res;
     }
 
     /*
@@ -1059,325 +1283,6 @@ class Modem extends \BaseModel
         }
     }
 
-    /*
-     * Geocoding API
-     * Translate a address (like: Deutschland, Marienberg, Waldrand 4) in a geoposition (x,y)
-     *
-     * @author: Torsten Schmidt
-     *
-     * TODO: move to a seperate extensions class
-     */
-
-    // private variable to hold the last Geocoding response state
-    // use geocode_last_status()
-    private $geocode_state = null;
-
-    /**
-     * Modem Geocoding Function
-     * Geocode the modem address value in a geoposition and update values to x,y. Please
-     * note that the function is working in object context, so no addr parameters are required.
-     *
-     * @param save: Update Modem x,y value with a save() to DB. Notice this calls Observer !
-     * @return: true on success, false if coding fails. For error log see geocode_last_status()
-     * @author: Torsten Schmidt
-     *
-     * TODO: split in a general geocoding function and a modem specific one
-     */
-    public function geocode($save = true)
-    {
-        $geodata = null;
-
-        // first try to get geocoding from OSM
-        try {
-            $geodata = $this->_geocode_osm_nominatim();
-        } catch (Exception $ex) {
-            $msg = 'Error in geocoding against OSM Nominatim: '.$ex->getMessage();
-            \Session::push('tmp_error_above_form', $msg);
-            Log::error("$msg (".get_class($ex).' in '.$ex->getFile().' line '.$ex->getLine().')');
-        }
-
-        // fallback: ask google maps
-        if (! $geodata) {
-            try {
-                $geodata = $this->_geocode_google_maps($save);
-            } catch (Exception $ex) {
-                $msg = 'Error in geocoding against google maps: '.$ex->getMessage();
-                \Session::push('tmp_error_above_form', $msg);
-                Log::error("$msg (".get_class($ex).' in '.$ex->getFile().' line '.$ex->getLine().')');
-            }
-        }
-
-        if ($geodata) {
-            $this->y = $geodata['latitude'];
-            $this->x = $geodata['longitude'];
-            $this->geocode_source = $geodata['source'];
-            $this->geocode_state = 'OK';
-
-            Log::info('Geocoding successful, result: '.$this->y.','.$this->x.' (source: '.$geodata['source'].')');
-        } else {
-            // no geodata determined
-            if (! \App::runningInConsole()) {
-                // if running interactively: delete probably outdated geodata and inform user
-                $this->y = '';
-                $this->x = '';
-                $this->geocode_source = 'n/a';
-                $message = "Could not determine geo coordinates ($this->geocode_state) – please add manually";
-                \Session::push('tmp_error_above_form', $message);
-            } else {
-                // if running from console: preserve existing geodata (could have been be imported or manually set in older times)
-                $this->geocode_source = 'n/a (unchanged existing data)';
-            }
-            Log::warning('geocoding failed');
-        }
-
-        if ($save) {
-            $this->save();
-        }
-
-        return $geodata;
-    }
-
-    /**
-     * Some housenumbers need special handling. This method splits them to the needed parts.
-     *
-     * @author Patrick Reichel
-     */
-    protected function _split_housenumber_for_geocoding($house_number)
-    {
-        // regex from https://stackoverflow.com/questions/10180730/splitting-string-containing-letters-and-numbers-not-separated-by-any-particular
-        return preg_split("/(,?\s+)|((?<=[-\/a-z])(?=\d))|((?<=\d)(?=[-\/a-z]))/i", strtolower($this->house_number));
-    }
-
-    /**
-     * Get geodata from OpenStreetMap
-     *
-     * @author Patrick Reichel
-     */
-    protected function _geocode_osm_nominatim()
-    {
-        Log::debug(__METHOD__.' started for '.$this->hostname);
-
-        // don't ask API in testing mode (=faked data)
-        if (env('APP_ENV') == 'testing') {
-            Log::debug('Testing mode – will not ask OSM Nominatim with faked data');
-
-            return;
-        }
-
-        $geodata = null;
-        $base_url = 'https://nominatim.openstreetmap.org/search';
-
-        if (! filter_var(env('OSM_NOMINATIM_EMAIL'), FILTER_VALIDATE_EMAIL)) {
-            $message = 'Unable to ask OpenStreetMap Nominatim API for geocoding – OSM_NOMINATIM_EMAIL not set';
-            \Session::push('tmp_warning_above_form', $message);
-            Log::warning($message);
-
-            return false;
-        }
-
-        $country_code = $this->country_code ?: GlobalConfig::first()->default_country_code;
-
-        // problem: data is inconsistent in OSM – housenumbers with additional character can have two formats:
-        // “104 a” or “104a”; there is an 3-years-open bug report: https://trac.openstreetmap.org/ticket/5256
-        // so we have to try both variants if the first one does not return a result
-        $parts = $this->_split_housenumber_for_geocoding($this->house_number);
-
-        if (count($parts) < 2) {
-            $housenumber_variants = [$parts[0]];
-        } else {
-            $housenumber_variants = [
-                implode('', $parts),	// more often used according to bug report
-                implode(' ', $parts),
-            ];
-        }
-
-        foreach ($housenumber_variants as $housenumber_prepared) {
-            // see https://wiki.openstreetmap.org/wiki/DE:Nominatim#Parameter for details
-            // we are using the structured format (faster, saves server ressources – but marked experimental)
-            $params = [
-                'street' => "$housenumber_prepared $this->street",
-                'postalcode' => $this->zip,
-                'city' => $this->city,
-                'country' => $country_code,
-                'email' => env('OSM_NOMINATIM_EMAIL'),	// has to be set (https://operations.osmfoundation.org/policies/nominatim); else 403 Forbidden
-                'format' => 'json',			// return format
-                'dedupe' => '1',			// only one geolocation (even if address is split to multiple places)?
-                'polygon' => '0',			// include surrounding polygons?
-                'addressdetails' => '0',	// not available using API
-                'limit' => '1',				// only request one result
-            ];
-
-            $url = $base_url.'?';
-            if ($params) {
-                $tmp_params = [];
-                foreach ($params as $key => $value) {
-                    array_push($tmp_params, (urlencode($key).'='.urlencode($value)));
-                }
-                $url .= implode('&', $tmp_params);
-            }
-
-            Log::info('Trying to geocode modem '.$this->id." against $url");
-
-            $geojson = file_get_contents($url);
-            $geodata_raw = json_decode($geojson, true);
-
-            $matches = ['building', 'house', 'amenity', 'shop', 'tourism'];
-            foreach ($geodata_raw as $entry) {
-                $class = array_get($entry, 'class', '');
-                $type = array_get($entry, 'type', '');
-                $display_name = array_get($entry, 'display_name', '');
-                $lat = array_get($entry, 'lat', null);
-                $lon = array_get($entry, 'lon', null);
-
-                // check if returned entry is of certain type (e.g. “highway” indicates fuzzy match)
-                if ((in_array($class, $matches) || in_array($type, $matches)) && $lat && $lon) {
-
-                    // as both variants can appear in resulting address: check for all of them
-                    foreach ($housenumber_variants as $variant) {
-                        if (\Str::contains(strtolower($display_name), $variant)) {	// don't check for startswith; sometimes a company name is added before the house number
-                            $geodata = [
-                                'latitude' => $lat,
-                                'longitude' => $lon,
-                                'source' => 'OSM Nominatim',
-                            ];
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // if this try results in a match: exit the loop
-            if ($geodata) {
-                break;
-            }
-
-            // sleep to respect usage policy
-            if (count($housenumber_variants > 1)) {
-                sleep(1);
-            }
-        }
-
-        if (! $geodata) {
-            Log::warning('OSM Nominatim geocoding for modem '.$this->id.' failed');
-
-            return false;
-        }
-
-        return $geodata;
-    }
-
-    /**
-     * Get geodata from google maps
-     *
-     * @author Torsten Schmidt, Patrick Reichel
-     * @return array 	Geodata [lat, lon, source]
-     */
-    protected function _geocode_google_maps()
-    {
-        Log::debug(__METHOD__.' started for '.$this->hostname);
-
-        // don't ask API in testing mode (=faked data)
-        if (env('APP_ENV') == 'testing') {
-            Log::debug('Testing mode – will not ask Google Geocoding API with faked data');
-
-            return;
-        }
-
-        $geodata = null;
-
-        $country_code = $this->country_code ?: GlobalConfig::first()->default_country_code;
-
-        // beginning on 2018-06-11 geocode api can only be used with an api key (otherwise returning error)
-        // ⇒ https://cloud.google.com/maps-platform/user-guide
-        if (date('c') > '2018-06-10') {
-            if (! env('GOOGLE_API_KEY')) {
-                $message = 'Unable to ask Google Geocoding API – GOOGLE_API_KEY not set';
-                \Session::push('tmp_warning_above_form', $message);
-                Log::warning($message);
-
-                return false;
-            }
-            $key = '&key='.$_ENV['GOOGLE_API_KEY'];
-        } else {
-            // Load google key if .ENV is set
-            $key = '';
-            if (env('GOOGLE_API_KEY')) {
-                $key = '&key='.$_ENV['GOOGLE_API_KEY'];
-            }
-        }
-
-        // url encode the address
-        $address = urlencode($this->street.' '.$this->house_number.', '.$this->zip.', '.$country_code);
-
-        // google map geocode api url
-        $url = "https://maps.google.com/maps/api/geocode/json?sensor=false&address={$address}$key";
-
-        Log::info('Trying to geocode modem '.$this->id." against $url");
-
-        // get the json response
-        $resp_json = file_get_contents($url);
-        $resp = json_decode($resp_json, true);
-
-        $status = array_get($resp, 'status', 'n/a');
-
-        // response status will be 'OK', if able to geocode given address
-        if ($status == 'OK') {
-
-            // get the important data
-            $lati = array_get($resp, 'results.0.geometry.location.lat', null);
-            $longi = array_get($resp, 'results.0.geometry.location.lng', null);
-            $formatted_address = array_get($resp, 'results.0.formatted_address', null);
-            $location_type = array_get($resp, 'results.0.geometry.location_type', null);
-            $partial_match = array_get($resp, 'results.0.partial_match', null);
-
-            $matches = ['ROOFTOP'];
-            $interpolated_matches = ['ROOFTOP', 'RANGE_INTERPOLATED'];
-            // verify if data is complete and a real match
-            if (
-                $lati &&
-                $longi &&
-                $formatted_address &&
-                ! $partial_match &&
-                in_array($location_type, $matches)
-            ) {
-                $geodata = [
-                    'latitude' => $lati,
-                    'longitude' => $longi,
-                    'source' => 'Google Geocoding API',
-                ];
-
-                return $geodata;
-            }
-            // check if partial match (interpolated geocoords seem to be pretty good!)
-            // mark source as tainted to give the user a hint
-            elseif (
-                $lati &&
-                $longi &&
-                $formatted_address &&
-                $partial_match &&
-                in_array($location_type, $interpolated_matches)
-            ) {
-                $geodata = [
-                    'latitude' => $lati,
-                    'longitude' => $longi,
-                    'source' => 'Google Geocoding API (interpolated)',
-                ];
-
-                return $geodata;
-            } else {
-                $this->geocode_state = 'DATA_VERIFICATION_FAILED';
-                Log::warning('Google geocoding for modem '.$this->id.' failed: '.$this->geocode_state);
-
-                return;
-            }
-        } else {
-            $this->geocode_state = $status;
-            Log::warning('Google geocoding for modem '.$this->id.' failed: '.$this->geocode_state);
-
-            return;
-        }
-    }
-
     /**
      * Check if modem has phonenumbers attached
      *
@@ -1389,7 +1294,7 @@ class Modem extends \BaseModel
     {
 
         // if there is no voip module ⇒ there can be no numbers
-        if (! \Module::collections()->has('ProvVoip')) {
+        if (! Module::collections()->has('ProvVoip')) {
             return false;
         }
 
@@ -1412,7 +1317,7 @@ class Modem extends \BaseModel
     {
 
         // if voip module is not active: there can be no phonenumbers
-        if (! \Module::collections()->has('ProvVoip')) {
+        if (! Module::collections()->has('ProvVoip')) {
             return [];
         }
 
@@ -1485,7 +1390,7 @@ class Modem extends \BaseModel
 
         // first: check if envia module is enabled
         // if not: do nothing – this database fields could be in use by another voip provider module!
-        if (! \Module::collections()->has('ProvVoipEnvia')) {
+        if (! Module::collections()->has('ProvVoipEnvia')) {
             return;
         }
 
@@ -1498,10 +1403,10 @@ class Modem extends \BaseModel
 
     public function proximity_search($radius)
     {
-        $ids = 'id = 0';
-        foreach (self::all() as $modem) {
+        $ids = [0];
+        foreach (DB::table('modem')->select('id', 'x', 'y')->where('deleted_at', null)->get() as $modem) {
             if ($this->_haversine_great_circle_distance($modem) < $radius) {
-                $ids .= " OR id = $modem->id";
+                array_push($ids, $modem->id);
             }
         }
 
@@ -1513,7 +1418,7 @@ class Modem extends \BaseModel
      * relevant attribute was modified.
      *
      * @return 1 if reset via Modem or original mac is needed (mac was changed)
-     *		  -1 for reset via CMTS (faster),
+     *		  -1 for reset via NETGW (faster),
      *		   0 if no restart is needed
      *
      * @author Ole Ernst, Nino Ryschawy
@@ -1524,7 +1429,7 @@ class Modem extends \BaseModel
     {
         $diff = $this->getDirty();
 
-        // in case mac was changed, reset via cmts - or take original mac
+        // in case mac was changed, reset via netgw - or take original mac
         if (array_key_exists('mac', $diff)) {
             return 1;
         }
@@ -1534,6 +1439,320 @@ class Modem extends \BaseModel
         }
 
         return 0;
+    }
+
+    /**
+     * Store address from Realty internally in modem table too, as it is used in many places (e.g. EnviaAPI)
+     *
+     * @param \Modules\PropertyManagement\Entities\Realty
+     * @param array  of Contract IDs to update multiple Contracts by one DB query
+     */
+    public function updateAddressFromProperty($realty = null, $ids = [])
+    {
+        if (! Module::collections()->has('PropertyManagement')) {
+            return;
+        }
+
+        if (! $realty) {
+            $realty = $this->apartment ? $this->apartment->realty : null;
+        }
+
+        if (! $realty) {
+            return;
+        }
+
+        self::whereIn('id', $ids ?: [$this->id])->update([
+            'street' => $realty->street,
+            'house_number' => $realty->house_nr,
+            'zip' => $realty->zip,
+            'city' => $realty->city,
+            'district' => $realty->district,
+            ]);
+    }
+
+    /**
+     * Get list of apartments for select field of edit view
+     *
+     * @author Nino Ryschawy
+     * @return array
+     */
+    public function getApartmentsList()
+    {
+        if (! Module::collections()->has('PropertyManagement')) {
+            return [];
+        }
+
+        if (Request::has('contract_id')) {
+            $this->contract_id = Request::get('contract_id');
+        }
+
+        // Contracts indirectly related to an apartment that are not canceled
+        // under these can be a potential new contract of an apartment that already has a modem with a canceled contract
+        $contractSubQuery = Contract::join('modem', 'modem.contract_id', 'contract.id')
+            ->join('apartment', 'modem.apartment_id', 'apartment.id')
+            ->whereNull('contract.contract_end')
+            ->whereNull('modem.deleted_at')->whereNull('contract.deleted_at')->whereNull('apartment.deleted_at')
+            ->select('contract.id', 'apartment.id as apartmentId'
+                // , 'contract.number', 'contract.firstname', 'contract.lastname', 'contract.contract_start', 'contract.contract_end',
+                // 'modem.mac', 'contract.created_at',
+                );
+
+        /* All apartments that either
+            (1) do not have a modem assigned
+            (2) or that have already a modem assigned that belongs to the same contract as this modem belongs to
+            (3) or that have a contract that is already canceled
+        */
+        $apartmentsSubQuery = \Modules\PropertyManagement\Entities\Apartment::join('realty', 'realty.id', 'apartment.realty_id')
+            ->leftJoin('modem', 'modem.apartment_id', 'apartment.id')
+            ->leftJoin('contract', 'contract.id', 'modem.contract_id')
+            ->whereNull('apartment.deleted_at')
+            ->where(function ($query) {
+                $query
+                ->whereNull('modem.id')
+                ->orWhere('modem.contract_id', $this->contract_id)
+                ->orWhereNotNull('contract.contract_end');
+            })
+            ->select('realty.street', 'realty.house_nr', 'realty.city', 'apartment.id as apartmentId', 'apartment.number as anum', 'floor',
+                'modem.id as modemId', 'contract.id as cId'
+                // , 'realty.zip', 'realty.district', 'realty.number as rnum',
+                // 'contract.number as cnum', 'contract.firstname', 'contract.lastname', 'contract.contract_start', 'contract.contract_end',
+                );
+
+        // All the apartments (that have no contract or a/many canceled contract(s)) from the subquery are left joined
+        // with the possible new contracts to filter (dont show) apartments that indeed have a canceled contract but have
+        // already a new valid one assigned
+        // TODO: From Laravel v5.6 on it is possible to use fromSub()
+        $apartments = DB::table(DB::raw("({$apartmentsSubQuery->toSql()}) as apartments"))
+            ->mergeBindings($apartmentsSubQuery->getQuery())
+            ->select('apartments.street', 'apartments.house_nr', 'apartments.city', 'apartments.apartmentId as id',
+                'apartments.anum as number', 'floor'
+                // 'apartments.cnum', 'apartments.firstname', 'apartments.lastname', 'apartments.contract_start', 'apartments.contract_end',
+                // 'newContract.number as newContractNr'
+                )
+            ->leftJoin(DB::raw("({$contractSubQuery->toSql()}) as newContract"), 'newContract.apartmentId', '=', 'apartments.apartmentId')
+            ->mergeBindings($contractSubQuery->getQuery())
+            ->where(function ($query) {
+                $query
+                ->whereNull('apartments.modemId')
+                ->orWhere(function ($query) {
+                    $query
+                    ->whereNotNull('apartments.cId')
+                    ->where('apartments.cId', $this->contract_id);
+                })
+                ->orWhere(function ($query) {
+                    $query
+                    ->whereNull('newContract.id')
+                    ->orWhere('newContract.id', $this->contract_id);
+                });
+            })
+            ->orderBy('apartments.street')->orderBy('apartments.house_nr')->orderBy('apartments.anum')
+            ->get();
+
+        $arr[null] = null;
+        foreach ($apartments as $apartment) {
+            $arr[$apartment->id] = \Modules\PropertyManagement\Entities\Apartment::labelFromData($apartment);
+        }
+
+        return $arr;
+    }
+
+    /**
+     * Check if modem throughput is provisioned via PPP(oE)
+     *
+     * @return  true if PPP(oE) is used
+     *          false if PPP(oE) is not used
+     *
+     * @author Ole Ernst
+     */
+    public function isPPP()
+    {
+        return boolval($this->ppp_username);
+    }
+
+    /**
+     * Check if modem is provisioned via TR069
+     *
+     * @return  true if TR069 is used
+     *          false if TR069 is not used
+     *
+     * @author Ole Ernst
+     */
+    public function isTR069()
+    {
+        return $this->configfile->device === 'tr069';
+    }
+
+    /**
+     * Synchronize radcheck with modem table, if PPPoE is used.
+     *
+     * @author Ole Ernst
+     */
+    private function updateRadCheck($delete)
+    {
+        if ($delete || ! $this->isPPP() || ! $this->internet_access) {
+            $this->radcheck()->delete();
+
+            return;
+        }
+
+        // add RadCheck, if it doesn't exist
+        if (! $this->radcheck()->count()) {
+            $psw = $this->ppp_password;
+            if (! $psw) {
+                $psw = \Acme\php\Password::generate_password();
+                // update ppp_password without invoking the observer
+                self::where('id', $this->id)->update(['ppp_password' => $psw]);
+                // set $this->ppp_password as well to keep model in sync, e.g. getDirty()
+                $this->ppp_password = $psw;
+            }
+
+            $check = new RadCheck;
+            $check->username = $this->ppp_username;
+            $check->attribute = 'Cleartext-Password';
+            $check->op = ':=';
+            $check->value = $psw;
+            $check->save();
+
+            return;
+        }
+
+        // update existing RadCheck, if password was changed
+        if (array_key_exists('ppp_password', $this->getDirty())) {
+            $check = $this->radcheck;
+            $check->value = $this->ppp_password;
+            $check->save();
+            $this->make_configfile();
+            $this->factoryReset();
+        }
+    }
+
+    /**
+     * Synchronize radreply with modem table, if PPPoE is used.
+     *
+     * @author Ole Ernst
+     */
+    private function updateRadReply($delete)
+    {
+        $fqdn = $this->hostname.'.'.ProvBase::first()->domain_name.'.';
+
+        if ($delete || ! $this->isPPP() || ! $this->internet_access) {
+            $this->radreply()->delete();
+
+            return;
+        }
+
+        // add RadReply, if it doesn't exist
+        if (! $this->radreply()->count()) {
+            $reply = new RadReply;
+            $reply->username = $this->ppp_username;
+            $reply->attribute = 'Framed-IP-Address';
+            $reply->op = ':=';
+            $reply->value = gethostbyname($fqdn);
+            $reply->save();
+        }
+
+        // update existing RadReply, if public was changed
+        if (array_key_exists('public', $this->getDirty())) {
+            $reply = $this->radreply;
+            $reply->value = gethostbyname($fqdn);
+            $reply->save();
+            $this->restart_modem();
+        }
+    }
+
+    /**
+     * Synchronize radusergroups with modem table, if PPPoE is used.
+     *
+     * @author Ole Ernst
+     */
+    private function updateRadUserGroups($delete)
+    {
+        if ($delete || ! $this->isPPP() || ! $this->internet_access) {
+            $groups = $this->radusergroups()->delete();
+
+            return;
+        }
+
+        // add RadUserGroups, if non-exisiting
+        if (! $this->radusergroups()->count()) {
+            // default and QoS-specific group
+            foreach ([RadGroupReply::$defaultGroup, $this->qos_id] as $groupname) {
+                $group = new RadUserGroup;
+                $group->username = $this->ppp_username;
+                $group->groupname = $groupname;
+                $group->save();
+            }
+
+            return;
+        }
+
+        // update existing RadUserGroups, if qos was changed
+        if (array_key_exists('qos_id', $this->getDirty())) {
+            $this->radusergroups()
+                ->where('groupname', '!=', RadGroupReply::$defaultGroup)
+                ->update(['groupname' => $this->qos_id]);
+            $this->restart_modem();
+        }
+    }
+
+    /**
+     * Synchronize the freeradius tables with NMSPrime.
+     * This function should be called on created(), updated() and deleted()
+     * in the modem observer.
+     *
+     * @author Ole Ernst
+     */
+    public function updateRadius($delete)
+    {
+        $this->nsupdate($delete || ! $this->internet_access);
+
+        $fqdn = $this->hostname.'.'.ProvBase::first()->domain_name.'.';
+        $delete |= gethostbyname($fqdn) == $fqdn;
+
+        $this->updateRadCheck($delete);
+        $this->updateRadReply($delete);
+        $this->updateRadUserGroups($delete);
+    }
+
+    /**
+     * Set/Delete hostnames for PPP devices (ppp-$this->id)
+     *
+     * @author Ole Ernst
+     */
+    public function nsupdate($delete = false)
+    {
+        if (! $this->isPPP()) {
+            return;
+        }
+
+        $fqdn = $this->hostname.'.'.ProvBase::first()->domain_name.'.';
+
+        $ip = gethostbyname($fqdn);
+        if (! $delete && ! $ip = IpPool::findNextUnusedBrasIPAddress($this->public)) {
+            \Session::push('tmp_error_above_form', trans('messages.ippool_exhausted'));
+
+            return;
+        }
+
+        if ($ip == $fqdn) {
+            return;
+        }
+
+        $rev = implode('.', array_reverse(explode('.', $ip))).'.in-addr.arpa.';
+
+        $cmd = '';
+        if ($delete) {
+            $cmd .= "update delete $fqdn\nsend\n";
+            $cmd .= "update delete $rev\nsend\n";
+        } else {
+            $cmd .= "update add $fqdn 3600 A $ip\nsend\n";
+            $cmd .= "update add $rev 3600 PTR $fqdn\nsend\n";
+        }
+
+        $pw = env('DNS_PASSWORD');
+        $handle = popen("/usr/bin/nsupdate -v -l -y dhcpupdate:$pw", 'w');
+        fwrite($handle, $cmd);
+        pclose($handle);
     }
 }
 
@@ -1551,14 +1770,29 @@ class ModemObserver
     {
         Log::debug(__METHOD__.' started for '.$modem->hostname);
 
-        $modem->hostname = 'cm-'.$modem->id;
-        $modem->save();	 // forces to call the updating() and updated() method of the observer !
-        Modem::create_ignore_cpe_dhcp_file();
-
-        if (\Module::collections()->has('ProvMon')) {
-            Log::info("Create cacti diagrams for modem: $modem->hostname");
-            \Artisan::call('nms:cacti', ['--cmts-id' => 0, '--modem-id' => $modem->id]);
+        if (Module::collections()->has('PropertyManagement')) {
+            $modem->updateAddressFromProperty();
         }
+
+        $hostname = ($modem->isPPP() ? 'ppp-' : 'cm-').$modem->id;
+        $modem->hostname = $hostname;
+
+        if ($modem->isPPP()) {
+            $modem->updateRadius(false);
+            $modem->save();
+        } else {
+            $modem->save();  // forces to call the updating() and updated() method of the observer !
+            Modem::create_ignore_cpe_dhcp_file();
+
+            if (Module::collections()->has('ProvMon')) {
+                Log::info("Create cacti diagrams for modem: $modem->hostname");
+                \Artisan::call('nms:cacti', ['--netgw-id' => 0, '--modem-id' => $modem->id]);
+            }
+        }
+
+        // always set hostname, even if updating() fails (returns false)
+        // this is needed for a consistent dhcpd config
+        Modem::where('id', $modem->id)->update(['hostname' => $hostname]);
     }
 
     public function updating($modem)
@@ -1568,13 +1802,9 @@ class ModemObserver
         // reminder: on active envia TEL module: moving modem to other contract is not allowed!
         // check if this is running if you decide to implement moving of modems to other contracts
         // watch Ticket LAR-106
-        if (\Module::collections()->has('ProvVoipEnvia')) {
-            if (
-                // updating is also called on create – so we have to check this
-                (! $modem->wasRecentlyCreated)
-                &&
-                ($modem['original']['contract_id'] != $modem->contract_id)
-            ) {
+        if (Module::collections()->has('ProvVoipEnvia')) {
+            // updating is also called on create – so we have to check this
+            if ((! $modem->wasRecentlyCreated) && ($modem->isDirty('contract_id'))) {
                 // returning false should cancel the updating: verify this! There has been some problems with deleting modems – we had to put the logic in Modem::delete() probably caused by our Base* classes…
                 // see: http://laravel-tricks.com/tricks/cancelling-a-model-save-update-delete-through-events
                 return false;
@@ -1615,11 +1845,11 @@ class ModemObserver
 
         // Refresh MPS rules
         // Note: does not perform a save() which could trigger observer.
-        if (\Module::collections()->has('HfcCustomer')) {
+        if (Module::collections()->has('HfcCustomer')) {
             if (multi_array_key_exists(['x', 'y'], $diff)) {
                 // suppress output in this case
                 ob_start();
-                \Modules\HfcCustomer\Entities\Mpr::refresh($modem);
+                \Modules\HfcCustomer\Entities\Mpr::ruleMatching($modem);
                 ob_end_clean();
             }
         }
@@ -1637,27 +1867,49 @@ class ModemObserver
         $diff = $modem->getDirty();
 
         if (multi_array_key_exists(['contract_id', 'public', 'internet_access', 'configfile_id', 'qos_id', 'mac'], $diff)) {
-            Modem::create_ignore_cpe_dhcp_file();
-            $modem->make_dhcp_cm();
-            $modem->restart_modem(array_key_exists('mac', $diff));
+            if (! $modem->isTR069()) {
+                Modem::create_ignore_cpe_dhcp_file();
+                $modem->make_dhcp_cm();
+                $modem->restart_modem(array_key_exists('mac', $diff));
+            }
             $modem->make_configfile();
         }
+
+        if (array_key_exists('public', $diff)) {
+            $modem->nsupdate(true);
+        }
+
+        $modem->updateRadius(false);
 
         // ATTENTION:
         // If we ever think about moving modems to other contracts we have to delete envia TEL related stuff, too –
         // check contract_ext* and installation_address_change_date
         // moving then should only be allowed without attached phonenumbers and terminated envia TEL contract!
         // cleaner in Patrick's opinion would be to delete and re-create the modem
+
+        if (array_key_exists('apartment_id', $diff)) {
+            $modem->updateAddressFromProperty();
+        }
     }
 
     public function deleted($modem)
     {
         Log::debug(__METHOD__.' started for '.$modem->hostname);
 
-        // $modem->make_dhcp_cm_all();
-        Modem::create_ignore_cpe_dhcp_file();
-        $modem->make_dhcp_cm(true);
-        $modem->restart_modem();
-        $modem->delete_configfile();
+        if ($modem->isTR069()) {
+            $modem->deleteGenieAcsProvision();
+            $modem->deleteGenieAcsPreset();
+            $modem->factoryReset();
+        }
+
+        if ($modem->isPPP()) {
+            $modem->updateRadius(true);
+        } else {
+            // $modem->make_dhcp_cm_all();
+            Modem::create_ignore_cpe_dhcp_file();
+            $modem->make_dhcp_cm(true);
+            $modem->restart_modem();
+            $modem->delete_configfile();
+        }
     }
 }

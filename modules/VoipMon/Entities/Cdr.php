@@ -75,7 +75,7 @@ class Cdr extends \BaseModel
      */
     public function phonenumber()
     {
-        return $this->belongsTo('Modules\ProvVoip\Entities\Phonenumber', 'phonenumber_id');
+        return $this->belongsTo(\Modules\ProvVoip\Entities\Phonenumber::class, 'phonenumber_id');
     }
 
     // Belongs to a phonenumber

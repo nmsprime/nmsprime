@@ -2,6 +2,12 @@
 @extends('Generic.edit')
 
 @section('content_left')
+    @include ('Generic.logging')
+
+    @php
+        $blade_type = 'form';
+    @endphp
+    @include('Generic.above_infos')
 
 	@DivOpen(12)
 	<table class="table-hover">
@@ -14,7 +20,7 @@
 	</table>
 	@DivClose()
 
-	<?php
+	@php
 
 		if ($additional_data['user_actions']['hints'] || $additional_data['user_actions']['links']) {
 			echo '<div class="col-md-12" style="margin-top: 30px; padding-top: 20px; border-top:solid #888 1px">';
@@ -41,10 +47,10 @@
 			}
 			echo '</div>';
 		}
-	?>
+    @endphp
 
 	<div class="col-md-12" style="margin-top: 30px; padding-top: 20px; border-top:solid #888 1px">
-		<?php
+		@php
 
 			// show the mailto links
 			$tmp = array();
@@ -53,6 +59,6 @@
 			}
 			echo implode('<br>', $tmp);
 
-		?>
+        @endphp
 	</div>
 @stop

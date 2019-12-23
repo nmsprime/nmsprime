@@ -5,14 +5,12 @@ namespace App\Http\Controllers;
 use App;
 use Str;
 use Auth;
-use File;
 use Form;
-use View;
-use Input;
 use Route;
 use Config;
 use Module;
 use Bouncer;
+use Request;
 use Session;
 use BaseModel;
 
@@ -71,10 +69,10 @@ class BaseViewController extends Controller
     /**
      * Searches for a string in the language files under resources/lang/ and returns it for the active application language
      * used in everything view related
-     * @param string: 	string that is searched in resspurces/lang/{App-language}/view.php
-     * @param type: 	can be Header, Menu, Button, jQuery, Search
-     * @param count: 	standard at 1 , For plural translation - needs to be seperated with pipe "|""
-     *					example: Index Headers -> in view.php: 'Header_Mta'	=> 'MTA|MTAs',
+     * @param string:   string that is searched in resspurces/lang/{App-language}/view.php
+     * @param type:     can be Header, Menu, Button, jQuery, Search
+     * @param count:    standard at 1 , For plural translation - needs to be seperated with pipe "|""
+     *                  example: Index Headers -> in view.php: 'Header_Mta' => 'MTA|MTAs',
      * @author Christian Schramm
      */
     public static function translate_view($string, $type, $count = 1)
@@ -147,15 +145,13 @@ class BaseViewController extends Controller
             return Session::get('language');
         }
 
-        if (! isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-            return checkLocale();
-        }
-
         $user = Auth::user();
 
         if (! $user || $user->language == 'browser') {
             // check the Browser for the accepted language
-            return checkLocale(substr(explode(',', $_SERVER['HTTP_ACCEPT_LANGUAGE'])[0], 0, 2));
+            return isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ?
+                checkLocale(substr(explode(',', $_SERVER['HTTP_ACCEPT_LANGUAGE'])[0], 0, 2)) :
+                checkLocale();
         }
 
         Session::put('language', $userLang = checkLocale($user->language));
@@ -234,10 +230,10 @@ class BaseViewController extends Controller
                 $field['field_value'] = $model[$field['name']];
             }
 
-            // NOTE: Input::get should actually include $_POST global var and $_GET!!
+            // NOTE: Request::get should actually include $_POST global var and $_GET!!
             // 4.(sub-task) auto-fill all field_value's with HTML Input
-            if (Input::get($field['name'])) {
-                $field['field_value'] = Input::get($field['name']);
+            if (Request::get($field['name'])) {
+                $field['field_value'] = Request::get($field['name']);
             }
 
             // 4.(sub-task) auto-fill all field_value's with HTML POST array if supposed
@@ -256,7 +252,7 @@ class BaseViewController extends Controller
             if ($field['form_type'] == 'ip' || $field['form_type'] == 'ping') {
                 // Ping: Only check if ip is online
                 if ($model[$field['name']]) {
-                    // $model[$field['name']] is null e.g. on Cmts/create
+                    // $model[$field['name']] is null e.g. on NetGw/create
                     exec('sudo ping -c1 -i0 -w1 '.explode(':', $model[$field['name']])[0], $ping, $offline);
 
                     if ($offline) {
@@ -273,6 +269,18 @@ class BaseViewController extends Controller
                 }
 
                 $field['form_type'] = 'text';
+            }
+
+            // 6. prepare autocomplete field
+            if (isset($field['autocomplete']) && is_array($field['autocomplete'])) {
+                if (count($field['autocomplete']) === 0) {
+                    $field['autocomplete'][] = explode('.', Route::currentRouteName())[0];
+                }
+                if (count($field['autocomplete']) === 1) {
+                    $field['autocomplete'][] = $field['name'];
+                }
+            } else {
+                unset($field['autocomplete']);
             }
 
             array_push($ret, $field);
@@ -309,12 +317,6 @@ class BaseViewController extends Controller
         // foreach fields
         foreach ($fields as $field) {
             $s = '';
-
-            // ignore fields with 'html' parameter
-            if (isset($field['html'])) {
-                array_push($ret, $field);
-                continue;
-            }
 
             // hidden stuff
             if (array_key_exists('hidden', $field)) {
@@ -407,7 +409,7 @@ class BaseViewController extends Controller
                 case 'select':
                     if (isset($options['multiple']) && isset($field['selected'])) {
                         $escaped_field_name = Str::substr($field['name'], 0, Str::length($field['name']) - 2);
-                        $field['field_value'] = Input::old($escaped_field_name, array_keys($field['selected']));
+                        $field['field_value'] = Request::old($escaped_field_name, array_keys($field['selected']));
                         // values MUST be int, because of strict type checking in Form module
                         $field['field_value'] = array_map('intval', $field['field_value']);
                     }
@@ -423,6 +425,10 @@ class BaseViewController extends Controller
                     $s .= Form::link($field['name'], $field['url'], isset($field['color']) ?: 'default');
                     break;
 
+                case 'html':
+                    $s .= $field['html'];
+                    break;
+
                 default:
                     $form = $field['form_type'];
                     $s .= Form::$form($field['name'], $field['field_value'], $options);
@@ -431,15 +437,14 @@ class BaseViewController extends Controller
 
             // Help: add help icon/image behind form field
             if (isset($field['help'])) {
-                $s .= '<div name='.$field['name'].'-help class="col-1"><a data-toggle="popover" data-container="body"
-							data-trigger="hover" title="'.self::translate_label($field['description']).'" data-placement="right" data-content="'.$field['help'].'">'.
-                            '<i class="fa fa-2x text-info p-t-5 '.(isset($field['help_icon']) ? $field['help_icon'] : 'fa-question-circle').'"></i></a></div>';
+                $s .= self::helpIcon($field);
             }
 
             // Close Form Group
             $s .= Form::closeGroup();
 
             finish:
+
             // Space Element between fields and color switching
             if (array_key_exists('space', $field)) {
                 $s .= '<div class=col-md-12><br></div>';
@@ -477,7 +482,7 @@ class BaseViewController extends Controller
                 break;
 
             case 'select':
-                $s .= Form::select($field['name'], $value, $field['field_value'], $options);
+                $s .= Form::select($field['name'], $value, $field['field_value'], [], $options);
                 break;
 
             case 'password':
@@ -501,6 +506,40 @@ class BaseViewController extends Controller
         return $s;
     }
 
+    /**
+     * Compose HTML of help icon from form field
+     *
+     * @param array  $field  Entry of view_form_fields()
+     * @return string
+     */
+    public static function helpIcon($field)
+    {
+        $bsClass = $field['color'] ?? 'info';
+        $title = isset($field['description']) ? self::translate_label($field['description']) : '';
+        $icon = $field['help_icon'] ?? 'fa-question-circle';
+
+        return '<div class="col-1">
+            <a data-toggle="popover" data-container="body" data-trigger="hover" title="'.$title.'" data-placement="right" data-content="'.$field['help'].'">'.
+                '<i class="fa fa-2x p-t-5 '.$icon.' text-'.$bsClass.'"></i>
+            </a></div>';
+    }
+
+    /**
+     * Get HTML string for geoposition fields to use for html key in view_form_fields()
+     * (e.g. Modem, Node, Realty)
+     *
+     * @return string
+     */
+    public static function geoPosFields($model)
+    {
+        return "<div class=col-md-3>
+                <input class=form-control name=x type=text value='".$model['x']."' id=x style='background-color:inherit'>
+            </div>
+            <div class=col-md-4>
+                <input class=form-control name=y type=text value='".$model['y']."' id=y style='background-color:inherit'>
+            </div>";
+    }
+
     /*
      * This Method returns The Menuobjects for the Main Menu
      * which constist of icon, link and class of the page
@@ -522,6 +561,8 @@ class BaseViewController extends Controller
 
         $globalPages = Config::get('base.'.$configMenuItemKey);
 
+        $menu['Global']['link'] = Config::get('base.link');
+        $menu['Global']['translated_name'] = trans('view.Global');
         foreach ($globalPages as $page => $settings) {
             if (Bouncer::can('view', $settings['class'])) {
                 $menuItem = static::translate_view($page, 'Menu');
@@ -537,6 +578,9 @@ class BaseViewController extends Controller
                 $name = Config::get(Str::lower($module->name).'.'.'name') ?? $module->get('description');
                 $icon = ($module->get('icon') == '' ? '' : $module->get('icon'));
                 $menu[$name]['icon'] = $icon;
+                $menu[$name]['link'] = Config::get(Str::lower($module->name).'.link');
+                $menu[$name]['translated_name'] = static::translate_view($name, 'Menu');
+
                 foreach ($moduleMenuConfig as $page => $settings) {
                     if (Bouncer::can('view', $settings['class'])) {
                         $menuItem = static::translate_view($page, 'Menu');
@@ -638,9 +682,9 @@ class BaseViewController extends Controller
             }
 
             if ($i == 0) {
-                $breadcrumb_path = "<li class='nav-tabs'>".static::__link_route_html($view.'.edit', BaseViewController::translate_view($name, 'Header'), $model->id).$breadcrumb_path.'</li>';
+                $breadcrumb_path = "<li class='nav-tabs'>".static::__link_route_html($view.'.edit', self::translate_view($name, 'Header'), $model->id).$breadcrumb_path.'</li>';
             } else {
-                $breadcrumb_path = '<li>'.static::__link_route_html($view.'.edit', BaseViewController::translate_view($name, 'Header'), $model->id).'</li>'.$breadcrumb_path;
+                $breadcrumb_path = '<li>'.static::__link_route_html($view.'.edit', self::translate_view($name, 'Header'), $model->id).'</li>'.$breadcrumb_path;
             }
 
             return $breadcrumb_path;
@@ -729,19 +773,19 @@ class BaseViewController extends Controller
         }
 
         // Base Link to Index Table in front of all relations
-        // if (in_array($route_name, BaseController::get_config_modules()))	// parse: Global Config requires own link
-        // 	$s = \HTML::linkRoute('Config.index', BaseViewController::translate_view('Global Configurations', 'Header')).': '.$s;
+        // if (in_array($route_name, BaseController::get_config_modules())) // parse: Global Config requires own link
+        //  $s = \HTML::linkRoute('Config.index', BaseViewController::translate_view('Global Configurations', 'Header')).': '.$s;
         // else if (Route::has($route_name.'.index'))
-        // 	$s = \HTML::linkRoute($route_name.'.index', $route_name).': '.$s;
-        if (in_array($route_name, BaseController::get_config_modules())) {	// parse: Global Config requires own link
+        //  $s = \HTML::linkRoute($route_name.'.index', $route_name).': '.$s;
+        if (in_array($route_name, BaseController::get_config_modules())) {  // parse: Global Config requires own link
             $breadcrumb_path_base = "<li class='active'>".static::__link_route_html('Config.index', static::__get_view_icon($view_var).self::translate_view('Global Configurations', 'Header')).'</li>';
         } else {
             $breadcrumb_path_base = Route::has($route_name.'.index') ? '<li class="active">'.static::__link_route_html($route_name.'.index', static::__get_view_icon($view_var).$view_header).'</li>' : '';
         }
 
-        if (! $breadcrumb_paths) {	// if this array is still empty: put the one and only breadcrumb path in this array
+        if (! $breadcrumb_paths) {  // if this array is still empty: put the one and only breadcrumb path in this array
             array_push($breadcrumb_paths, $breadcrumb_path_base.$breadcrumb_path);
-        } else {	// multiple breadcrumb paths: show overture on a single line
+        } else {    // multiple breadcrumb paths: show overture on a single line
             array_unshift($breadcrumb_paths, $breadcrumb_path_base);
         }
 
@@ -763,49 +807,6 @@ class BaseViewController extends Controller
         }
 
         return 2;
-    }
-
-    /**
-     * Prepare Right Panels to View
-     *
-     * @param $view_var: object/model to be displayed
-     * @return: array() of fields with added ['html'] element containing the preformed html content
-     *
-     * @author: Torsten Schmidt
-     */
-    public static function prep_right_panels($view_var)
-    {
-        $arr = $view_var->view_has_many();
-        $api = static::get_view_has_many_api_version($arr);
-
-        if ($api == 1) {
-            $relations = $arr;
-        }
-
-        if ($api == 2) {
-            // API 2: use HTML GET 'blade' to switch between tabs
-            // TODO: validate Input blade
-            $blade = 0;
-            if (Input::get('blade') != '') {
-                $blade = Input::get('blade');
-            }
-
-            // get actual blade to $b from array of all blades in $arr
-            // $arr = $view_var->view_has_many();
-
-            if (count($arr) == 1) {
-                return current($arr);
-            }
-
-            $b = current($arr);
-            for ($i = 0; $i < $blade; $i++) {
-                $b = next($arr);
-            } // move to next blade/tab
-
-            $relations = $b;
-        }
-
-        return $relations;
     }
 
     /*

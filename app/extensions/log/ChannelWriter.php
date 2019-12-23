@@ -17,10 +17,10 @@ class ChannelWriter
             'path' => 'logs/billing.log',
             'level' => Logger::DEBUG,
         ],
-        // 'audit' => [
-        //     'path' => 'logs/audit.log',
-        //     'level' => Logger::INFO
-        // ]
+        'overduedebts' => [
+            'path' => 'logs/bank-transactions.log',
+            'level' => Logger::DEBUG,
+        ],
     ];
 
     /**

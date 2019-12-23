@@ -2,12 +2,16 @@
 
 namespace Modules\ProvBase\Http\Controllers;
 
+use Module;
+use App\Sla;
 use Bouncer;
+use Request;
 use App\GlobalConfig;
-use Modules\ProvBase\Entities\Qos;
 use Modules\ProvBase\Entities\Modem;
+use Modules\ProvBase\Entities\Contract;
+use Modules\ProvBase\Entities\ProvBase;
 use Modules\ProvBase\Entities\Configfile;
-use Modules\ProvMon\Http\Controllers\ProvMonController;
+use App\Http\Controllers\BaseViewController;
 
 class ModemController extends \BaseController
 {
@@ -17,12 +21,12 @@ class ModemController extends \BaseController
 
     // save button title ? for a help message
     protected $edit_view_second_button = true;
-    protected $second_button_name = 'Restart via CMTS';
+    protected $second_button_name = 'Restart via NetGw';
     protected $second_button_title_key = 'modem_force_restart_button_title';
 
     public function __construct()
     {
-        if (\Modules\ProvBase\Entities\ProvBase::first()->additional_modem_reset) {
+        if (ProvBase::first()->additional_modem_reset) {
             $this->edit_view_third_button = true;
             $this->third_button_name = 'Reset Modem';
             $this->third_button_title_key = 'modem_reset_button_title';
@@ -45,9 +49,9 @@ class ModemController extends \BaseController
             $model->country_code = $config->default_country_code;
         }
 
-        $pos = explode(',', \Input::get('pos'));
+        $pos = explode(',', Request::get('pos'));
         if (count($pos) == 2) {
-            list($model['x'], $model['y']) = $pos;
+            [$model['x'], $model['y']] = $pos;
         }
 
         $installation_address_change_date_options = ['placeholder' => 'YYYY-MM-DD'];
@@ -55,7 +59,7 @@ class ModemController extends \BaseController
         if (
             ($model['installation_address_change_date'])
             &&
-            (\Module::collections()->has('ProvVoipEnvia'))
+            (Module::collections()->has('ProvVoipEnvia'))
         ) {
             $orders = \Modules\ProvVoipEnvia\Entities\EnviaOrder::
                 where('modem_id', '=', $model->id)->
@@ -70,28 +74,38 @@ class ModemController extends \BaseController
             }
         }
 
+        $help['contract'] = $selectPropertyMgmt = [];
+        if (Module::collections()->has('PropertyManagement')) {
+            $selectPropertyMgmt = ['select' => 'noApartment'];
+            $help['contract'] = ['help' => trans('propertymanagement::help.modem.contract_id')];
+        }
+
+        $cfIds = $this->dynamicDisplayFormFields();
+
+        if (Module::collections()->has('HfcCustomer')) {
+            $rect = [round($model->x, 4) - 0.0001, round($model->x, 4) + 0.0001, round($model->y, 4) - 0.0001, round($model->y, 4) + 0.0001];
+            $geopos = link_to_route('CustomerModem.show', trans('messages.geopos_x_y'), ['true', $model->id]).'    ('.link_to_route('CustomerRect.show', trans('messages.proximity'), $rect).')';
+        } else {
+            $geopos = trans('messages.geopos_x_y');
+        }
+
         // label has to be the same like column in sql table
         $a = [
             ['form_type' => 'text', 'name' => 'name', 'description' => 'Name'],
-            ['form_type' => 'text', 'name' => 'hostname', 'description' => 'Hostname', 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'select', 'name' => 'configfile_id', 'description' => 'Configfile', 'value' => $model->html_list_with_count($model->configfiles(), 'name', false, '', 'configfile_id', 'modem'), 'help' => trans('helper.configfile_count'), 'select' => $cfIds['all']],
+            ['form_type' => 'text', 'name' => 'hostname', 'description' => 'Hostname', 'options' => ['readonly'], 'hidden' => 'C', 'space' => 1],
             // TODO: show this dropdown only if necessary (e.g. not if creating a modem from contract context)
-            ['form_type' => 'select', 'name' => 'contract_id', 'description' => 'Contract', 'hidden' => 'E', 'value' => $model->html_list($model->contracts(), 'lastname')],
             ['form_type' => 'text', 'name' => 'mac', 'description' => 'MAC Address', 'options' => ['placeholder' => 'AA:BB:CC:DD:EE:FF'], 'help' => trans('helper.mac_formats')],
-            ['form_type' => 'select', 'name' => 'configfile_id', 'description' => 'Configfile', 'value' => $model->html_list_with_count($model->configfiles(), 'name', false, '', 'configfile_id', 'modem'), 'help' => trans('helper.configfile_count')],
+            ['form_type' => 'text', 'name' => 'serial_num', 'description' => trans('messages.Serial Number'), 'select' => $cfIds['tr069']],
+            ['form_type' => 'text', 'name' => 'ppp_username', 'description' => trans('messages.Username'), 'select' => $cfIds['tr069'], 'options' => [$model->exists ? 'readonly' : '']],
+            ['form_type' => 'text', 'name' => 'ppp_password', 'description' => trans('messages.Password'), 'select' => $cfIds['tr069'], 'hidden' => 'C'],
+            array_merge(['form_type' => 'select', 'name' => 'contract_id', 'description' => 'Contract', 'hidden' => 'E', 'value' => $model->contracts()], $help['contract']),
             ['form_type' => 'checkbox', 'name' => 'public', 'description' => 'Public CPE', 'value' => '1'],
             ['form_type' => 'checkbox', 'name' => 'internet_access', 'description' => 'Internet Access', 'value' => '1', 'help' => trans('helper.Modem_InternetAccess')],
             ];
 
-        $b = \Module::collections()->has('BillingBase') ?
-            [['form_type' => 'text', 'name' => 'qos_id', 'description' => 'QoS', 'hidden' => 1, 'space' => '1']]
-            :
-            [['form_type' => 'select', 'name' => 'qos_id', 'description' => 'QoS', 'value' => $model->html_list($model->qualities(), 'name'), 'space' => '1']];
-
-        if (\Module::collections()->has('HfcCustomer')) {
-            $rect = [round($model->x, 4) - 0.0001, round($model->x, 4) + 0.0001, round($model->y, 4) - 0.0001, round($model->y, 4) + 0.0001];
-            $geopos = link_to_route('CustomerModem.show', 'Geopos X/Y', ['true', $model->id]).'    ('.link_to_route('CustomerRect.show', trans('messages.proximity'), $rect).')';
-        } else {
-            $geopos = 'Geopos X/Y';
+        if (Sla::first()->valid()) {
+            $a[] = ['form_type'=> 'text', 'name' => 'formatted_support_state', 'description' => 'Support State', 'field_value' => ucfirst(str_replace('-', ' ', $model->support_state)), 'help'=>trans('helper.modemSupportState.'.$model->support_state), 'help_icon'=> $model->getFaSmileClass()['fa-class'], 'options' =>['readonly'], 'color'=>$model->getFaSmileClass()['bs-class']];
         }
 
         $c = [
@@ -100,29 +114,59 @@ class ModemController extends \BaseController
             ['form_type' => 'select', 'name' => 'salutation', 'description' => 'Salutation', 'value' => $model->get_salutation_options()],
             ['form_type' => 'text', 'name' => 'firstname', 'description' => 'Firstname'],
             ['form_type' => 'text', 'name' => 'lastname', 'description' => 'Lastname'],
-            ['form_type' => 'text', 'name' => 'street', 'description' => 'Street'],
-            ['form_type' => 'text', 'name' => 'house_number', 'description' => 'House Number'],
-            ['form_type' => 'text', 'name' => 'zip', 'description' => 'Postcode'],
-            ['form_type' => 'text', 'name' => 'city', 'description' => 'City'],
-            ['form_type' => 'text', 'name' => 'district', 'description' => 'District'],
-            ['form_type' => 'text', 'name' => 'country_code', 'description' => 'Country code', 'help' => 'ISO 3166 ALPHA-2 (two characters)'],
+            ['form_type' => 'text', 'name' => 'birthday', 'description' => 'Birthday', 'space' => 1, 'options' => ['placeholder' => 'YYYY-MM-DD']],
+
+            array_merge(['form_type' => 'text', 'name' => 'street', 'description' => 'Street', 'autocomplete' => ['Contract']], $selectPropertyMgmt),
+            array_merge(['form_type' => 'text', 'name' => 'house_number', 'description' => 'House Number'], $selectPropertyMgmt),
+            array_merge(['form_type' => 'text', 'name' => 'zip', 'description' => 'Postcode', 'autocomplete' => ['Contract']], $selectPropertyMgmt),
+            array_merge(['form_type' => 'text', 'name' => 'city', 'description' => 'City', 'autocomplete' => ['Contract']], $selectPropertyMgmt),
+            array_merge(['form_type' => 'text', 'name' => 'district', 'description' => 'District', 'autocomplete' => ['Contract']], $selectPropertyMgmt),
+            array_merge(['form_type' => 'text', 'name' => 'country_code', 'description' => 'Country code', 'help' => 'ISO 3166 ALPHA-2 (two characters)'], $selectPropertyMgmt),
+        ];
+
+        if (Module::collections()->has('PropertyManagement')) {
+            $c[] = ['form_type' => 'select', 'name' => 'apartment_id', 'description' => 'Apartment', 'value' => $model->getApartmentsList(), 'hidden' => 0, 'help' => trans('propertymanagement::help.apartmentList')];
+        } else {
+            $c[] = ['form_type' => 'text', 'name' => 'apartment_nr', 'description' => 'Apartment number'];
+        }
+
+        if (Module::collections()->has('BillingBase')) {
+            $b = [['form_type' => 'text', 'name' => 'qos_id', 'description' => 'QoS', 'hidden' => 1, 'space' => '1']];
+            $c[] = ['form_type' => 'checkbox', 'name' => 'address_to_invoice', 'description' => trans('billingbase::view.modemAddressToInvoice'), 'space' => '1', 'help' => trans('billingbase::messages.modemAddressToInvoice')];
+        } else {
+            $b = [['form_type' => 'select', 'name' => 'qos_id', 'description' => 'QoS', 'value' => $model->html_list($model->qualities(), 'name'), 'space' => '1']];
+            $c[12] = array_merge($c[12], ['space' => 1]);
+        }
+
+        $d = [
+            ['form_type' => 'html', 'name' => 'geopos', 'description' => $geopos, 'html' => BaseViewController::geoPosFields($model)],
+            ['form_type' => 'text', 'name' => 'geocode_source', 'description' => 'Geocode origin', 'help' => trans('helper.Modem_GeocodeOrigin'), 'space' => 1],
+
             ['form_type' => 'text', 'name' => 'installation_address_change_date', 'description' => 'Date of installation address change', 'hidden' => 'C', 'options' => $installation_address_change_date_options, 'help' => trans('helper.Modem_InstallationAddressChangeDate')], // Date of adress change for notification at telephone provider - important for localisation of emergency calls
-            ['form_type' => 'text', 'name' => 'birthday', 'description' => 'Birthday', 'space' => '1', 'options' => ['placeholder' => 'YYYY-MM-DD']],
-
-            ['form_type' => 'text', 'name' => 'serial_num', 'description' => 'Serial Number'],
             ['form_type' => 'text', 'name' => 'inventar_num', 'description' => 'Inventar Number'],
-
-            ['form_type' => 'text', 'name' => 'x', 'description' => 'Geopos X', 'html' => "<div class=col-md-12 style='background-color:whitesmoke'>
-				<div class='form-group row'><label for=x class='col-md-4 control-label' style='margin-top: 10px;'>$geopos</label>
-				<div class=col-md-3><input class=form-control name=x type=text value='".$model['x']."' id=x style='background-color:whitesmoke'></div>"],
-            ['form_type' => 'text', 'name' => 'y', 'description' => 'Geopos Y', 'html' => "<div class=col-md-3><input class=form-control name=y type=text value='".$model['y']."' id=y style='background-color:whitesmoke'></div>
-				</div></div>"],
-
-            ['form_type' => 'text', 'name' => 'geocode_source', 'description' => 'Geocode origin', 'help' => trans('helper.Modem_GeocodeOrigin')],
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
         ];
 
-        return array_merge($a, $b, $c);
+        return array_merge($a, $b, $c, $d);
+    }
+
+    /**
+     * Change form fields based on selected configfile device (cm || tr069)
+     *
+     * @author Roy Schneider
+     * @return array with array of all ids from configfile of device cm or tr069 and string of ids from configfile of device cm/tr069
+     */
+    public function dynamicDisplayFormFields()
+    {
+        $all = Configfile::pluck('id');
+        $cfIds['all'] = $all->combine($all)->toArray();
+
+        // for now only tr069 is needed
+        foreach (/*Modem::TYPES*/['tr069'] as $type) {
+            $cfIds[$type] = Configfile::where('device', $type)->pluck('id')->implode(' ') ?: 'hide';
+        }
+
+        return $cfIds;
     }
 
     /**
@@ -149,23 +193,18 @@ class ModemController extends \BaseController
      * @return: array, e.g. [['name' => '..', 'route' => '', 'link' => [$view_var->id]], .. ]
      * @author: Torsten Schmidt
      */
-    protected function get_form_tabs($model)
+    protected function editTabs($model)
     {
         // defines which edit page you came from
         \Session::put('Edit', 'Modem');
-        $provmon = new ProvMonController;
 
-        $tabs = [];
+        $tabs = parent::editTabs($model);
 
-        if (! \Module::collections()->has('ProvMon')) {
-            $tabs = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => $model->id]];
-            $provmon->loggingTab($tabs, $model);
-
+        if (! Module::collections()->has('ProvMon')) {
             return $tabs;
         }
 
         if (\Bouncer::can('view_analysis_pages_of', Modem::class)) {
-            $tabs = [['name' => 'Edit', 'route' => 'Modem.edit', 'link' => $model->id]];
             array_push($tabs, ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $model->id],
                 ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => $model->id]);
 
@@ -174,9 +213,6 @@ class ModemController extends \BaseController
                 array_push($tabs, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => $model->id]);
             }
         }
-
-        // add 'Logging' tab
-        $tabs = $provmon->loggingTab($tabs, $model);
 
         return $tabs;
     }
@@ -194,16 +230,16 @@ class ModemController extends \BaseController
     {
         $obj = static::get_model_obj();
 
-        if (! \Module::collections()->has('HfcCustomer')) {
+        if (! Module::collections()->has('HfcCustomer')) {
             return parent::fulltextSearch();
         }
 
         // get the search scope
-        $scope = \Input::get('scope');
-        $mode = \Input::get('mode');
-        $query = \Input::get('query');
-        $pre_f = \Input::get('preselect_field');
-        $pre_v = \Input::get('preselect_value');
+        $scope = Request::get('scope');
+        $mode = Request::get('mode');
+        $query = Request::get('query');
+        $pre_f = Request::get('preselect_field');
+        $pre_v = Request::get('preselect_value');
         $pre_t = '';
 
         // perform Modem search
@@ -214,7 +250,7 @@ class ModemController extends \BaseController
         $contracts = $obj->getFulltextSearchResults('contract', $mode, $query, $pre_f, $pre_v)[0];
 
         // generate Topography
-        if (\Input::get('topo') == '1') {
+        if (Request::get('topo') == '1') {
             // Generate KML file
             $customer = new \Modules\HfcCustomer\Http\Controllers\CustomerTopoController;
             $file = $customer->kml_generate($modems);
@@ -236,8 +272,8 @@ class ModemController extends \BaseController
         $view_header = 'Modems '.$pre_t;
         $create_allowed = $this->index_create_allowed;
 
-        $preselect_field = \Input::get('preselect_field');
-        $preselect_value = \Input::get('preselect_value');
+        $preselect_field = Request::get('preselect_field');
+        $preselect_value = Request::get('preselect_value');
 
         return \View::make('provbase::Modem.index', $this->compact_prep_view(compact('tabs', 'view_header_right', 'view_var', 'create_allowed', 'file', 'target', 'route_name', 'view_header', 'body_onload', 'field', 'search', 'preselect_field', 'preselect_value')));
     }
@@ -276,7 +312,7 @@ class ModemController extends \BaseController
             return response()->json(['ret' => 'Object not found']);
         }
 
-        $domain_name = \Modules\ProvBase\Entities\ProvBase::first()->domain_name;
+        $domain_name = ProvBase::first()->domain_name;
         exec("sudo ping -c1 -i0 -w1 {$modem->hostname}.$domain_name", $ping, $offline);
 
         return response()->json(['ret' => 'success', 'online' => ! $offline]);
@@ -331,16 +367,37 @@ class ModemController extends \BaseController
         // ISO 3166 country codes are uppercase
         $data['country_code'] = \Str::upper($data['country_code']);
 
+        if (isset($data['serial_num'])) {
+            $data['serial_num'] = \Str::upper($data['serial_num']);
+        }
+
         return unify_mac($data);
     }
 
     public function prepare_rules($rules, $data)
     {
-        if (! \Module::collections()->has('BillingBase')) {
+        if (! Module::collections()->has('BillingBase')) {
             $rules['qos_id'] = 'required|exists:qos,id,deleted_at,NULL';
         }
 
+        if (Configfile::find($data['configfile_id'])->device == 'tr069') {
+            $id = \Route::current()->hasParameter('Modem') ? \Route::current()->parameters()['Modem'] : 0;
+            $rules['serial_num'] = "required|unique:modem,serial_num,$id,id,deleted_at,NULL";
+            $rules['ppp_username'] = "required|unique:modem,ppp_username,$id,id,deleted_at,NULL";
+        }
+
         return parent::prepare_rules($rules, $data);
+    }
+
+    public function store($redirect = true)
+    {
+        if (Request::get('ppp_username') && ! \Modules\ProvBase\Entities\IpPool::findNextUnusedBrasIPAddress(Request::get('public'))) {
+            \Session::push('tmp_error_above_form', trans('messages.ippool_exhausted'));
+
+            return \Redirect::back()->withInput();
+        }
+
+        return parent::store();
     }
 
     /**
@@ -349,12 +406,12 @@ class ModemController extends \BaseController
      */
     public function update($id)
     {
-        if (! \Input::has('_2nd_action') && ! \Input::has('_3rd_action')) {
+        if (! Request::filled('_2nd_action') && ! Request::filled('_3rd_action')) {
             return parent::update($id);
         }
 
         $modem = Modem::find($id);
-        $modem->restart_modem(false, \Input::has('_3rd_action'));
+        $modem->restart_modem(false, Request::filled('_3rd_action'));
 
         return \Redirect::back();
     }

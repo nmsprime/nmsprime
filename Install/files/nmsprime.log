@@ -5,13 +5,15 @@
 #   compress
 #   delaycompress
     notifempty
-    create 755 apache apache
+    create 644 apache apache
 }
 
-/var/www/nmsprime/storage/logs/billing.log {
+/var/www/nmsprime/storage/logs/billing.log
+/var/www/nmsprime/storage/logs/bank-transactions.log
+{
     monthly
     missingok
     rotate 6
     notifempty
-    create 755 apache apache
+    create 644 apache apache
 }

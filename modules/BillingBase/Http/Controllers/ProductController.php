@@ -41,6 +41,7 @@ class ProductController extends \BaseController
             ['form_type' => 'text', 'name' => 'period_of_notice', 'description' => 'Period of Notice', 'select' => 'Internet Voip', 'help' => trans('helper.product.pod')], 		// Kündigungsfrist
             ['form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs],
             ['form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)'],
+            ['form_type' => 'checkbox', 'name' => 'record_monthly', 'description' => trans('billingbase::view.product.recordMonthly'), 'help' => trans('billingbase::help.product.recordMonthly')],
             array_merge(['form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV Credit'], $model->tax === null ? ['checked' => true, 'value' => 1] : []),
             ['form_type' => 'text', 'name' => 'email_count', 'description' => 'No. of email addresses', 'select' => 'Internet', 'hidden' => 1],
             ['form_type' => 'checkbox', 'name' => 'bundled_with_voip', 'description' => 'Bundled with VoIP product?', 'select' => 'Internet', 'help' => trans('helper.product.bundle')],
@@ -87,7 +88,7 @@ class ProductController extends \BaseController
         $fields = ['maturity', 'maturity_min', 'period_of_notice'];
 
         foreach ($fields as $field) {
-            $data[$field] = $data[$field] ? strtoupper(str_replace(' ', '', $data[$field])) : null;
+            $data[$field] = isset($data[$field]) && $data[$field] ? strtoupper(str_replace(' ', '', $data[$field])) : null;
         }
 
         return $data;

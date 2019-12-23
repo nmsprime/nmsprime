@@ -108,7 +108,7 @@ function clk_init_1()
 		if (coord.test(descr))
 			// window.open("mapdia.header.php?kml="+descr, "_blank",
 			// "directories=no, status= no, fullscreen=no, location=no, menubar=no, resizeable=yes, scrollbars=yes, status=no, titlebar=no, toolbar=no, left=50, top=50, width=300, height=300");
-			window.open(global_url + "Tree/erd/pos/"+descr, "_bank");
+			window.open(global_url + "Tree/erd/pos/"+descr, "_blank");
 		else
 		{
 			var lines = descr.split("<br>").length;

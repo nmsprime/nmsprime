@@ -1,6 +1,5 @@
 <?php
 
-
 class UpdateCccAuthuserMoveTable extends BaseMigration
 {
     protected $tablename = 'cccauthuser';

@@ -3,8 +3,6 @@
 namespace Modules\BillingBase\Entities;
 
 use DB;
-use Str;
-use Session;
 
 class Product extends \BaseModel
 {
@@ -97,23 +95,23 @@ class Product extends \BaseModel
      */
     public function quality()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Qos', 'qos_id');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Qos::class, 'qos_id');
     }
 
     public function item()
     {
-        return $this->hasMany('Modules\BillingBase\Entities\Item');
+        return $this->hasMany(Item::class);
     }
 
     public function costcenter()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\CostCenter', 'costcenter_id');
+        return $this->belongsTo(CostCenter::class, 'costcenter_id');
     }
 
     /**
      * Check if product can be deleted
      *
-     * @author Roy Schneider
+     * @author Roy Schneider, Patrick Reichel
      *
      * @return bool
      */
@@ -121,36 +119,13 @@ class Product extends \BaseModel
     {
         // only delete if there are no items assigned for this product
         if ($this->item()->count() > 0) {
-            Session::push('tmp_error_above_index_list', trans('messages.assigned_items'));
+            $msg = trans('messages.assigned_items');
+            $this->addAboveMessage($msg, 'error');
 
             return false;
         }
 
-        return $this->generateAboveInfo($this->_delete());
-    }
-
-    /**
-     * Generate general above message when deleting a product
-     *
-     * @author Roy Schneider
-     *
-     * @return null
-     *
-     * @param bool     deleted
-     */
-    public function generateAboveInfo($deleted)
-    {
-        // check from where the deletion request has been triggered and set the correct var to show information
-        $prev = explode('?', \URL::previous())[0];
-        $prev = Str::lower($prev);
-
-        $msg = trans('messages.Product_Successfully_Deleted', ['id' => $this->id]);
-
-        if (Str::endsWith($prev, 'edit')) {
-            Session::push('tmp_success_above_relations', $msg);
-        }
-
-        return Session::push('tmp_success_above_index_list', $msg);
+        return parent::delete();
     }
 
     /*
@@ -174,7 +149,7 @@ class Product extends \BaseModel
             case 'internet':
                 $prod_ids = DB::table('product')->where('type', '=', $type)
                     ->where('qos_id', '!=', '0')->where('deleted_at', '=', null)->select('id')->get();
-                    // $prod_ids = Product::where('type', '=', 'Internet')->where('qos_id', '!=', '0')->select('id')->get()->pluck('id')->all();
+                    // $prod_ids = self::where('type', '=', 'Internet')->where('qos_id', '!=', '0')->select('id')->get()->pluck('id')->all();
                 break;
 
             case 'voip':

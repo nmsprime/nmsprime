@@ -11,7 +11,7 @@ class ProvVoipEnviaServiceProvider extends ServiceProvider
      *
      * @var bool
      */
-    protected $defer = true;
+    protected $defer = false;
 
     /**
      * The artisan commands provided by this module
@@ -91,7 +91,6 @@ class ProvVoipEnviaServiceProvider extends ServiceProvider
     public function registerTranslations()
     {
         $langPath = base_path('resources/lang/modules/provvoipenvia');
-
         if (is_dir($langPath)) {
             $this->loadTranslationsFrom($langPath, 'provvoipenvia');
         } else {

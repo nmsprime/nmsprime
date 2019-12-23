@@ -33,6 +33,6 @@ class Comment extends \BaseModel
      */
     public function ticket()
     {
-        return $this->belongsTo('Modules\Ticketsystem\Entities\Ticket', 'ticket_id');
+        return $this->belongsTo(Ticket::class, 'ticket_id');
     }
 }

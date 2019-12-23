@@ -2,7 +2,9 @@
 
 namespace Modules\ProvBase\Entities;
 
-use Modules\BillingBase\Entities\Invoice;
+use DB;
+use Module;
+use Session;
 use Modules\BillingBase\Entities\SettlementRun;
 
 class Contract extends \BaseModel
@@ -20,30 +22,34 @@ class Contract extends \BaseModel
     // temporary variable used during daily conversion
     private $changes_on_daily_conversion = false;
 
+    // Via modems -> mtas -> phonenumbers assigned Phonenumbers shown as read-only info field in edit view
+    public $guarded = ['related_phonenrs'];
+
     // Add your validation rules here
     // TODO: dependencies of active modules (billing)
     public static function rules($id = null)
     {
         $rules = [
             'number' => 'string|unique:contract,number,'.$id.',id,deleted_at,NULL',
-            'number2' => 'string|unique:contract,number2,'.$id.',id,deleted_at,NULL',
-            'number3' => 'string|unique:contract,number3,'.$id.',id,deleted_at,NULL',
+            'number2' => 'nullable|string|unique:contract,number2,'.$id.',id,deleted_at,NULL',
+            'number3' => 'nullable|string|unique:contract,number3,'.$id.',id,deleted_at,NULL',
             // 'number4' => 'string|unique:contract,number4,'.$id.',id,deleted_at,NULL', 	// old customer number must not be unique!
             'company' => 'required_if:salutation,Firma,Behörde',
             'firstname' => 'required_if:salutation,Herr,Frau',
             'lastname' => 'required_if:salutation,Herr,Frau',
-            'street' => 'required',
-            'house_number' => 'required',
-            'zip' => 'required',
-            'city' => 'required',
+
+            'street' => 'required_without_all:realty_id,apartment_id',
+            'house_number' => 'required_without_all:realty_id,apartment_id',
+            'zip' => 'required_without_all:realty_id,apartment_id',
+            'city' => 'required_without_all:realty_id,apartment_id',
             'phone' => 'required',
-            'email' => 'email',
+            'email' => 'nullable|email',
             'birthday' => 'required_if:salutation,Herr,Frau|nullable|date',
             'contract_start' => 'date',
-            'contract_end' => 'dateornull', // |after:now -> implies we can not change stuff in an out-dated contract
+            'contract_end' => 'nullable|date', // |after:now -> implies we can not change stuff in an out-dated contract
         ];
 
-        if (\Module::collections()->has('BillingBase')) {
+        if (Module::collections()->has('BillingBase')) {
             $rules['costcenter_id'] = 'required|numeric|min:1';
         }
 
@@ -69,18 +75,29 @@ class Contract extends \BaseModel
         $bsclass = $this->get_bsclass();
 
         $ret = ['table' => $this->table,
-                'index_header' => [$this->table.'.number', $this->table.'.firstname', $this->table.'.lastname', $this->table.'.company', $this->table.'.zip', $this->table.'.city', $this->table.'.district', $this->table.'.street', $this->table.'.house_number', $this->table.'.contract_start', $this->table.'.contract_end'],
-                'header' =>  $this->number.' '.$this->firstname.' '.$this->lastname,
+                'index_header' => [$this->table.'.number', $this->table.'.firstname', $this->table.'.lastname', 'company', 'email', $this->table.'.zip', $this->table.'.city', 'district', $this->table.'.street', $this->table.'.house_number', $this->table.'.contract_start', $this->table.'.contract_end'],
+                'header' =>  self::labelFromData($this),
                 'bsclass' => $bsclass,
                 'order_by' => ['0' => 'asc'], ];
 
-        if (\Module::collections()->has('BillingBase')) {
+        if (Module::collections()->has('BillingBase')) {
             $ret['index_header'][] = 'costcenter.name';
             $ret['eager_loading'] = ['costcenter'];
-            $ret['edit'] = ['costcenter.name' => 'get_costcenter_name'];
+            $ret['edit']['costcenter.name'] = 'get_costcenter_name';
+        }
+
+        if (Module::collections()->has('PropertyManagement')) {
+            $ret['index_header'][] = 'contact_id';
+            $ret['edit']['contact_id'] = 'isGroupContractAsString';
+            $ret['filter']['contact_id'] = $this->groupContractFilterQuery();
         }
 
         return $ret;
+    }
+
+    public function isGroupContractAsString()
+    {
+        return $this->isGroupContract() ? trans('view.true') : trans('view.false');
     }
 
     /**
@@ -90,16 +107,28 @@ class Contract extends \BaseModel
     {
         $bsclass = 'success';
 
-        if (! $this->internet_access) {
+        if ($this->isGroupContract()) {
+            return 'info';
+        }
+
+        if (! ($this->internet_access || $this->has_telephony)) {
             $bsclass = 'active';
 
             // '$this->id' to dont check when index table header is determined!
-            if ($this->id && $this->check_validity('now')) {
+            if ($this->id && $this->isValid('now')) {
                 $bsclass = 'warning';
             }
         }
 
         return $bsclass;
+    }
+
+    /**
+     * @return string
+     */
+    public static function labelFromData($contract)
+    {
+        return $contract->number.' - '.$contract->firstname.' '.$contract->lastname;
     }
 
     public function get_costcenter_name()
@@ -110,42 +139,91 @@ class Contract extends \BaseModel
     // View Relation.
     public function view_has_many()
     {
-        if (\Module::collections()->has('BillingBase')) {
-            // view has many version 1
-            $ret['Edit']['Modem'] = $this->modems;
-            $ret['Edit']['Item'] = $this->items;
-            $ret['Edit']['SepaMandate'] = $this->sepamandates;
-        }
+        $ret['Edit']['Modem']['class'] = 'Modem';
+        $ret['Edit']['Modem']['relation'] = $this->modems;
 
-        $ret['Edit']['Modem'] = $this->modems;
-
-        if (\Module::collections()->has('BillingBase')) {
+        if (Module::collections()->has('BillingBase')) {
             // view has many version 2
+            $ret['Edit']['Item']['class'] = 'Item';
+            $ret['Edit']['Item']['relation'] = $this->items;
             $ret['Billing']['Item']['class'] = 'Item';
             $ret['Billing']['Item']['relation'] = $this->items;
+            $ret['Edit']['SepaMandate']['class'] = 'SepaMandate';
+            $ret['Edit']['SepaMandate']['relation'] = $this->sepamandates;
             $ret['Billing']['SepaMandate']['class'] = 'SepaMandate';
             $ret['Billing']['SepaMandate']['relation'] = $this->sepamandates;
 
-            // Show invoices in 2 panels - 2nd panel with old invoices collapsed and in 2 columns
-            $p1 = $this->invoices()->orderBy('id', 'desc')->take(15)->get();
+            if (Module::collections()->has('PropertyManagement')) {
+                if ($this->contact_id || $this->apartment_id) {
+                    $ret['Edit']['Modem']['options']['hide_delete_button'] = 1;
+                    $ret['Edit']['Modem']['options']['hide_create_button'] = 1;
+                    $infoKey = $this->contact_id ? 'groupContract.modem' : 'tvContract';
+                    $ret['Edit']['Modem']['info'] = trans("propertymanagement::messages.$infoKey");
+                }
+
+                // Check if contract belongs to a group contract
+                $groupContract = $this->belongsToGroupContract();
+                if ($groupContract) {
+                    $msg = $groupContract === true ? trans('propertymanagement::messages.groupContract.item') : trans('propertymanagement::messages.groupContract.probably');
+
+                    $ret['Edit']['Item']['info'] = $msg;
+                    $ret['Billing']['Item']['info'] = $msg;
+                }
+
+                // Check if contract is a group contract
+                if ($this->isGroupContract()) {
+                    $tabName = trans('propertymanagement::view.propertyManagement');
+                    $ret[$tabName]['Realty']['class'] = 'Realty';
+                    $ret[$tabName]['Realty']['relation'] = $this->realties;
+                }
+            }
+
+            if (Module::collections()->has('OverdueDebts')) {
+                // resulting outstanding amount
+                $ret['Edit']['DebtResult']['view']['view'] = 'overduedebts::Debt.result';
+                $resultingDebt = $this->getResultingDebt();
+                $ret['Edit']['DebtResult']['view']['vars']['debt'] = $resultingDebt['amount'];
+                $ret['Edit']['DebtResult']['view']['vars']['bsclass'] = $resultingDebt['bsclass'];
+            }
+
+            // Show invoices in 2 panels
+            if (! $this->relationLoaded('invoices')) {
+                $this->setRelation('invoices', $this->invoices()->orderBy('id', 'desc')->get());
+            }
+
+            $invoicesPanel1 = collect();
+            $countPanel1 = $this->invoices->count() > 15 ? 15 : $this->invoices->count();
+
+            for ($i = 0; $i < $countPanel1; $i++) {
+                $invoicesPanel1->push($this->invoices[$i]);
+            }
+
+            if (Module::collections()->has('OverdueDebts')) {
+                $ret['Billing']['Debt']['class'] = 'Debt';
+                $ret['Billing']['Debt']['relation'] = $this->debts;
+            }
 
             $ret['Billing']['Invoice']['class'] = 'Invoice';
-            $ret['Billing']['Invoice']['relation'] = $p1;
+            $ret['Billing']['Invoice']['relation'] = $invoicesPanel1;
             $ret['Billing']['Invoice']['options']['hide_delete_button'] = 1;
             $ret['Billing']['Invoice']['options']['hide_create_button'] = 1;
 
-            if ($p1->count() == 15) {
-                $p2 = $this->invoices()->orderBy('id', 'desc')->where('id', '<', $p1->last()->id)->get();
+            // 2nd panel with old invoices - collapsed and in 2 columns
+            if ($this->invoices->count() > 15) {
+                $invoicesPanel2 = collect();
 
-                if (! $p2->isEmpty()) {
-                    $ret['Billing']['OldInvoices']['view']['view'] = 'billingbase::Contract.oldInvoices';
-                    $ret['Billing']['OldInvoices']['view']['vars']['invoices'] = $p2;
-                    $ret['Billing']['OldInvoices']['panelOptions']['display'] = 'none';
+                for ($i = 15; $i < $this->invoices->count(); $i++) {
+                    $invoicesPanel2->push($this->invoices[$i]);
                 }
+
+                $ret['Billing']['OldInvoices']['view']['view'] = 'billingbase::Contract.oldInvoices';
+                $ret['Billing']['OldInvoices']['view']['vars']['invoices'] = $invoicesPanel2;
+                $ret['Billing']['OldInvoices']['panelOptions']['display'] = 'none';
             }
         }
 
-        if (\Module::collections()->has('ProvVoipEnvia')) {
+        if (Module::collections()->has('ProvVoipEnvia') &&
+            (! Module::collections()->has('PropertyManagement') || (! $this->isGroupContract() && ! $this->apartment_id))) {
             $ret['envia TEL']['EnviaContract']['class'] = 'EnviaContract';
             $ret['envia TEL']['EnviaContract']['relation'] = $this->enviacontracts;
             $ret['envia TEL']['EnviaContract']['options']['hide_create_button'] = 1;
@@ -153,38 +231,70 @@ class Contract extends \BaseModel
 
             $ret['envia TEL']['EnviaOrder']['class'] = 'EnviaOrder';
             $ret['envia TEL']['EnviaOrder']['relation'] = $this->_envia_orders;
-            $ret['envia TEL']['EnviaOrder']['options']['delete_button_text'] = 'Cancel order at envia TEL';
+            $ret['envia TEL']['EnviaOrder']['options']['create_button_text'] = trans('provvoipenvia::view.enviaOrder.createButton');
+            $ret['envia TEL']['EnviaOrder']['options']['delete_button_text'] = trans('provvoipenvia::view.enviaOrder.deleteButton');
 
             // TODO: auth - loading controller from model could be a security issue ?
-            $ret['envia TEL']['envia TEL API']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
-            $ret['envia TEL']['envia TEL API']['view']['vars']['extra_data'] = \Modules\ProvBase\Http\Controllers\ContractController::_get_envia_management_jobs($this);
+            $ret['envia TEL']['EnviaAPI']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
+            $ret['envia TEL']['EnviaAPI']['view']['vars']['extra_data'] = \Modules\ProvBase\Http\Controllers\ContractController::_get_envia_management_jobs($this);
 
             // for better navigation: show modems also in envia TEL blade
             $ret['envia TEL']['Modem']['class'] = 'Modem';
             $ret['envia TEL']['Modem']['relation'] = $this->modems;
         }
 
-        if (\Module::collections()->has('Ccc')) {
+        if (Module::collections()->has('Ccc') && Module::collections()->has('BillingBase')) {
             $ret['Create Connection Infos']['Connection Information']['view']['view'] = 'ccc::prov.conn_info';
         }
 
-        if (\Module::collections()->has('Ticketsystem')) {
-            $ret['Edit']['Ticket'] = $this->tickets;
+        if (Module::collections()->has('Ticketsystem')) {
+            $ret['Edit']['Ticket']['class'] = 'Ticket';
+            $ret['Edit']['Ticket']['relation'] = $this->tickets;
         }
 
-        if (\Module::collections()->has('Mail')) {
+        if (Module::collections()->has('Mail')) {
             $ret['Email']['Email'] = $this->emails;
         }
 
         return $ret;
     }
 
+    public function view_belongs_to()
+    {
+        if (! Module::collections()->has('PropertyManagement')) {
+            return;
+        }
+
+        if ($this->realty_id) {
+            return $this->realty;
+        }
+
+        if ($this->apartment_id) {
+            return $this->apartment;
+        }
+
+        if ($this->modems->isNotEmpty()) {
+            return \Modules\PropertyManagement\Entities\Apartment::join('modem', 'apartment.id', 'modem.apartment_id')
+                ->join('contract', 'contract.id', 'modem.contract_id')
+                ->where('contract.id', $this->id)
+                ->whereNull('modem.deleted_at')
+                ->whereNull('apartment.deleted_at')
+                ->select('apartment.*')
+                ->first();
+        }
+    }
+
     /*
      * Relations
      */
+    public function debts()
+    {
+        return $this->hasMany(\Modules\OverdueDebts\Entities\Debt::class)->orderBy('date', 'desc')->orderBy('id', 'desc');
+    }
+
     public function modems()
     {
-        return $this->hasMany('Modules\ProvBase\Entities\Modem');
+        return $this->hasMany(Modem::class);
     }
 
     /**
@@ -192,10 +302,10 @@ class Contract extends \BaseModel
      */
     public function enviacontracts()
     {
-        if (! \Module::collections()->has('ProvVoipEnvia')) {
+        if (! Module::collections()->has('ProvVoipEnvia')) {
             throw new \LogicException(__METHOD__.' only callable if module ProvVoipEnvia as active');
         } else {
-            return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaContract');
+            return $this->hasMany(\Modules\ProvVoipEnvia\Entities\EnviaContract::class);
         }
     }
 
@@ -204,7 +314,7 @@ class Contract extends \BaseModel
      */
     public function phonetariff_purchase()
     {
-        return $this->belongsTo('Modules\ProvVoip\Entities\PhoneTariff', 'purchase_tariff');
+        return $this->belongsTo(\Modules\ProvVoip\Entities\PhoneTariff::class, 'purchase_tariff');
     }
 
     /**
@@ -212,7 +322,7 @@ class Contract extends \BaseModel
      */
     public function phonetariff_purchase_next()
     {
-        return $this->belongsTo('Modules\ProvVoip\Entities\PhoneTariff', 'next_purchase_tariff');
+        return $this->belongsTo(\Modules\ProvVoip\Entities\PhoneTariff::class, 'next_purchase_tariff');
     }
 
     /**
@@ -220,7 +330,7 @@ class Contract extends \BaseModel
      */
     public function phonetariff_sale()
     {
-        return $this->belongsTo('Modules\ProvVoip\Entities\PhoneTariff', 'voip_id');
+        return $this->belongsTo(\Modules\ProvVoip\Entities\PhoneTariff::class, 'voip_id');
     }
 
     /**
@@ -228,7 +338,7 @@ class Contract extends \BaseModel
      */
     public function phonetariff_sale_next()
     {
-        return $this->belongsTo('Modules\ProvVoip\Entities\PhoneTariff', 'next_voip_id');
+        return $this->belongsTo(\Modules\ProvVoip\Entities\PhoneTariff::class, 'next_voip_id');
     }
 
     /**
@@ -238,31 +348,31 @@ class Contract extends \BaseModel
      */
     protected function _envia_orders()
     {
-        if (! \Module::collections()->has('ProvVoipEnvia')) {
+        if (! Module::collections()->has('ProvVoipEnvia')) {
             throw new \LogicException(__METHOD__.' only callable if module ProvVoipEnvia as active');
         }
 
-        return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrder')->where('ordertype', 'NOT LIKE', 'order/create_attachment');
+        return $this->hasMany(\Modules\ProvVoipEnvia\Entities\EnviaOrder::class)->where('ordertype', 'NOT LIKE', 'order/create_attachment');
     }
 
     public function items()
     {
-        return $this->hasMany('Modules\BillingBase\Entities\Item');
+        return $this->hasMany(\Modules\BillingBase\Entities\Item::class);
     }
 
     public function items_sorted_by_valid_from_desc()
     {
-        return $this->hasMany('Modules\BillingBase\Entities\Item')->orderBy('valid_from', 'desc');
+        return $this->hasMany(\Modules\BillingBase\Entities\Item::class)->orderBy('valid_from', 'desc');
     }
 
     public function sepamandates()
     {
-        return $this->hasMany('Modules\BillingBase\Entities\SepaMandate');
+        return $this->hasMany(\Modules\BillingBase\Entities\SepaMandate::class);
     }
 
     public function emails()
     {
-        return $this->hasMany('Modules\NmsMail\Entities\Email');
+        return $this->hasMany(\Modules\NmsMail\Entities\Email::class);
     }
 
     public function get_email_count()
@@ -274,30 +384,72 @@ class Contract extends \BaseModel
 
     public function costcenter()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\CostCenter', 'costcenter_id');
+        return $this->belongsTo(\Modules\BillingBase\Entities\CostCenter::class, 'costcenter_id');
     }
 
     public function salesman()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\Salesman');
+        return $this->belongsTo(\Modules\BillingBase\Entities\Salesman::class);
     }
 
     public function invoices()
     {
-        return $this->hasMany('Modules\BillingBase\Entities\Invoice');
+        return $this->hasMany(\Modules\BillingBase\Entities\Invoice::class);
         // $srs  = SettlementRun::where('verified', '=', '0')->get(['id'])->pluck('id')->all();
         // $hide = $srs ? : 0;
-        // return $this->hasMany('Modules\BillingBase\Entities\Invoice')->where('contract_id', '=', $this->id)->where('settlementrun_id', '!=', [$hide]);
+        // return $this->hasMany(\Modules\BillingBase\Entities\Invoice::class)->where('contract_id', '=', $this->id)->where('settlementrun_id', '!=', [$hide]);
     }
 
     public function CccUser()
     {
-        return $this->hasOne('Modules\Ccc\Entities\CccUser');
+        return $this->hasOne(\Modules\Ccc\Entities\CccUser::class);
     }
 
     public function tickets()
     {
-        return $this->hasMany('Modules\Ticketsystem\Entities\Ticket');
+        return $this->hasMany(\Modules\Ticketsystem\Entities\Ticket::class);
+    }
+
+    public function realties()
+    {
+        return $this->hasMany(\Modules\PropertyManagement\Entities\Realty::class)->orderBy('street')->orderBy('house_nr');
+    }
+
+    public function apartment()
+    {
+        return $this->belongsTo(\Modules\PropertyManagement\Entities\Apartment::class);
+    }
+
+    /**
+     * Emulate a belongsTo contract->realty relation consisting actually of chain contract->modem->apartment->realty
+     * Note: A direct contract->realty relation can not exist
+     *
+     * @return \Modules\PropertyManagement\Entities\Realty
+     */
+    public function getRealtyAttribute()
+    {
+        if ($this->relationLoaded('realty')) {
+            return $this->getRelation('realty');
+        }
+
+        $realty = $this->realty();
+        $this->setRelation('realty', $realty);
+
+        return $realty;
+    }
+
+    public function realty()
+    {
+        // TODO - Laravel5.8/L5.8: use hasManyThrough or intermediate Tables (see https://laravel.com/docs/5.8/eloquent-relationships#has-one-through and https://laravel.com/docs/5.8/eloquent-relationships#defining-custom-intermediate-table-models)
+        return self::join('modem', 'modem.contract_id', 'contract.id')
+            ->join('apartment', 'apartment.id', 'modem.apartment_id')
+            ->join('realty', 'apartment.realty_id', 'realty.id')
+            ->where('contract.id', $this->id)
+            ->whereNull('modem.deleted_at')
+            ->whereNull('apartment.deleted_at')
+            ->whereNull('realty.deleted_at')
+            ->select('realty.*')
+            ->first();
     }
 
     /**
@@ -307,22 +459,6 @@ class Contract extends \BaseModel
     public function generate_password($length = 10)
     {
         $this->password = \Acme\php\Password::generate_password($length);
-    }
-
-    /**
-     * Helper to get the contract number.
-     * As there is no hard coded contract number in database we have to use this mapper. The semantic meaning of number…number4 can be defined in global configuration.
-     *
-     * @author Patrick Reichel
-     *
-     * @todo: in this first step the relation is hardcoded within the function. Later on we have to check the mapping against the configuration.
-     * @return current contract number
-     */
-    public function contract_number()
-    {
-        $contract_number = $this->number;
-
-        return $contract_number;
     }
 
     /**
@@ -374,7 +510,7 @@ class Contract extends \BaseModel
     {
 
         // if voip module is not active: there can be no phonenumbers
-        if (! \Module::collections()->has('ProvVoip')) {
+        if (! Module::collections()->has('ProvVoip')) {
             return [];
         }
 
@@ -457,7 +593,7 @@ class Contract extends \BaseModel
 
         \Log::Debug('Starting daily conversion for contract '.$this->number, [$this->id]);
 
-        if (! \Module::collections()->has('BillingBase')) {
+        if (! Module::collections()->has('BillingBase')) {
             $this->_update_internet_access_from_contract();
         } else {
 
@@ -466,7 +602,7 @@ class Contract extends \BaseModel
             $items = $this->items()
                 ->leftJoin('product', 'product.id', '=', 'item.product_id')
                 ->whereIn('product.type', ['Internet', 'Voip'])
-                ->where(whereLaterOrEqualThanDate('item.valid_to', date('Y-m-d', strtotime("-$item_max_ended_before days"))))
+                ->where(whereLaterOrEqual('item.valid_to', date('Y-m-d', strtotime("-$item_max_ended_before days"))))
                 // ->orderBy('valid_from', 'desc')
                 ->select('item.*')
                 ->with('product')
@@ -488,7 +624,7 @@ class Contract extends \BaseModel
             // Task 1 & 2 included
             $this->_update_service_access_from_items();
 
-            if (\Module::collections()->has('Mail')) {
+            if (Module::collections()->has('Mail')) {
                 $this->_update_email_index();
             }
         }
@@ -556,7 +692,7 @@ class Contract extends \BaseModel
         $active_count_internet = $active_tariff_info_internet['count'];
         $active_count_voip = $active_tariff_info_voip['count'];
 
-        if ($this->check_validity('Now')) {
+        if ($this->isValid('Now')) {
             // valid internet tariff
             if ($active_count_internet && ! $this->internet_access) {
                 $this->internet_access = 1;
@@ -619,7 +755,7 @@ class Contract extends \BaseModel
     protected function _update_inet_voip_dates()
     {
         // items only exist if Billingbase is enabled
-        if (! \Module::collections()->has('BillingBase')) {
+        if (! Module::collections()->has('BillingBase')) {
             return;
         }
 
@@ -737,7 +873,7 @@ class Contract extends \BaseModel
     public function monthly_conversion()
     {
         // with billing module -> done by daily conversion
-        if (\Module::collections()->has('BillingBase')) {
+        if (Module::collections()->has('BillingBase')) {
             return;
         }
 
@@ -811,7 +947,7 @@ class Contract extends \BaseModel
      */
     protected function _get_valid_tariff_item_and_count($type)
     {
-        if (! \Module::collections()->has('BillingBase')) {
+        if (! Module::collections()->has('BillingBase')) {
             return ['item' => null, 'count' => 0];
         }
 
@@ -829,7 +965,7 @@ class Contract extends \BaseModel
         }
 
         foreach ($tariffs as $item) {
-            if (! $item->check_validity('Now')) {
+            if (! $item->isValid('Now')) {
                 continue;
             }
 
@@ -1036,6 +1172,7 @@ class Contract extends \BaseModel
             $modem->save();
             $modem->restart_modem();
             $modem->make_configfile();
+            $modem->updateRadius(false);
         }
     }
 
@@ -1110,7 +1247,7 @@ class Contract extends \BaseModel
                 continue;
             }
 
-            if ($m->disable || ! $m->check_validity($timespan)) {
+            if ($m->disable || ! $m->isValid($timespan)) {
                 continue;
             }
 
@@ -1213,6 +1350,285 @@ class Contract extends \BaseModel
 
         return $ret;
     }
+
+    /**
+     * Return the outstanding amount and the bootstrap class
+     *
+     * @return array [(Float) amount, (String) bsclass]
+     */
+    public function getResultingDebt()
+    {
+        // https://stackoverflow.com/questions/17210787/php-float-calculation-error-when-subtracting
+        // return \Modules\OverdueDebts\Entities\Debt::where('contract_id', $this->id)
+        //     ->groupBy('contract_id')
+        //     ->select('missing_amount')
+        //     ->sum('missing_amount');
+        $block = false;
+        if (config('overduedebts.debtMgmtType') == 'csv') {
+            $block = $this->blockInetFromDebts();
+        }
+
+        $totalAmount = 0;
+        foreach ($this->debts as $debt) {
+            $totalAmount += $debt->missing_amount;
+        }
+
+        $bsclass = '';
+        if ($block) {
+            $bsclass = 'danger';
+        } elseif ($totalAmount < 0) {
+            $bsclass = 'success';
+        } elseif ($totalAmount > 0) {
+            $bsclass = 'warning';
+        }
+
+        return [
+            'amount' => $totalAmount,
+            'bsclass' => $bsclass,
+        ];
+    }
+
+    /**
+     * Check if the Contract has Debts that exceed the threshholds of the module configuration and therefore the internet has to be blocked
+     *
+     * @author Nino Ryschawy
+     * @return bool     internet should be blocked
+     */
+    public function blockInetFromDebts()
+    {
+        if (! Module::collections()->has('OverdueDebts')) {
+            return false;
+        }
+
+        $parser = new \Modules\OverdueDebts\Entities\DefaultTransactionParser;
+        $debts = clone $this->debts;
+
+        // Filter special debts to exclude (special voucher number and customer had less then 4 weeks to pay)
+        foreach ($debts as $key => $debt) {
+            $arr = $parser->searchNumbers($debt->voucher_nr);
+
+            // In SWIFT bank file specific transactions have be to excluded, but in CSV they shall be considered
+            // Date must be smaller than 4 weeks before now/created_at to make sure the customers have enough time to pay
+            // Note: Consider created_at date as result could otherwise be marked as red, but internet was not blocked
+            if ($arr['exclude'] && (strtotime($debt->date) > strtotime('-4 week', strtotime($debt->created_at)))) {
+                $debts->forget($key);
+            }
+        }
+
+        $posDebtCount = $debts->where('missing_amount', '>', 0)->count();
+
+        $totalAmount = 0;
+        foreach ($debts as $debt) {
+            $totalAmount += $debt->missing_amount;
+        }
+
+        $highestIndicator = $debts->sortByDesc('indicator')->first();
+        $highestIndicator = $highestIndicator ? $highestIndicator->indicator : 0;
+
+        $conf = app()->make('OverdueDebtsConfig')->get();
+
+        $block =
+            // Amount threshold is exceeded
+            ($conf->import_inet_block_amount && ($totalAmount >= $conf->import_inet_block_amount)) ||
+            // More than max num of positive debts
+            ($conf->import_inet_block_debts && ($posDebtCount >= $conf->import_inet_block_debts)) ||
+            // Highest dunning indicator too high
+            ($conf->import_inet_block_indicator && ($highestIndicator >= $conf->import_inet_block_indicator));
+
+        return $block;
+    }
+
+    /**
+     * Check if contract belongs to a group contract
+     * A group contract is a contract just added to charge multiple contracts belonging to one administration by the TV fee
+     *
+     * NOTE: Returns
+     *  false if contract is actually a group contract
+     *  true if realty of contract belongs to a contract
+     *
+     * @author Nino Ryschawy
+     * @return bool
+     */
+    public function belongsToGroupContract()
+    {
+        if (! Module::collections()->has('PropertyManagement')) {
+            return false;
+        }
+
+        // Is group contract itself
+        if ($this->realty_id) {
+            return false;
+        }
+
+        $realty = $this->apartment_id ? $this->apartment->realty : $this->realty;
+
+        if (! $realty) {
+            return false;
+        }
+
+        // TODO: Check if contract is valid?
+        return $realty->contract_id ? true : false;
+    }
+
+    /**
+     * Synchronize address of Realty and Contract as contract address is used in e.g. invoice
+     *
+     * @param \Modules\PropertyManagement\Entities\Realty
+     * @param array  of Contract IDs to update multiple Contracts by one DB query
+     */
+    public function updateAddressFromProperty($realty = null, $ids = [])
+    {
+        if (! Module::collections()->has('PropertyManagement')) {
+            return;
+        }
+
+        if (! $realty) {
+            $realty = $this->realty;
+        }
+
+        if (! $realty) {
+            return;
+        }
+
+        self::whereIn('id', $ids ?: [$this->id])->update([
+            'street' => $realty->street,
+            'house_number' => $realty->house_nr,
+            'zip' => $realty->zip,
+            'city' => $realty->city,
+            'district' => $realty->district,
+            ]);
+    }
+
+    public function isGroupContract()
+    {
+        if (! \Module::collections()->has('PropertyManagement')) {
+            return false;
+        }
+
+        return $this->contact_id ? true : false;
+    }
+
+    public function groupContractFilterQuery()
+    {
+        return "id in (SELECT id from contract WHERE IF(contact_id is null, '".trans('view.false')."', '".trans('view.true')."') like ?)";
+    }
+
+    /**
+     * Get list of Apartments for select field of edit view
+     *
+     * @return array
+     */
+    public function getSelectableApartments()
+    {
+        if (! \Module::collections()->has('PropertyManagement')) {
+            return [];
+        }
+
+        // All Apartments without Modems
+        // TODO: Filter all Apartments with a valid Contract?
+        $apartments = DB::table('apartment')->leftJoin('modem', 'modem.apartment_id', 'apartment.id')
+            ->join('realty', 'realty.id', 'apartment.realty_id')
+            ->whereNull('modem.id')
+            ->whereNull('modem.deleted_at')
+            ->select('apartment.*', 'realty.street', 'realty.house_nr', 'realty.city')
+            ->get();
+
+        $arr[null] = null;
+        foreach ($apartments as $apartment) {
+            $arr[$apartment->id] = \Modules\PropertyManagement\Entities\Apartment::labelFromData($apartment);
+        }
+
+        return $arr;
+    }
+
+    /**
+     * Compose list of ordered Realties belonging to a group Contract to be displayed on an Invoice
+     *
+     * @return array
+     */
+    public function composeRealtyList()
+    {
+        if ($this->realties->isEmpty()) {
+            return [];
+        }
+
+        // Initialise array
+        foreach ($this->realties as $key => $realty) {
+            $realties[$realty->street][] = str_replace(' ', '', strtolower($realty->house_nr));
+        }
+
+        // Sort array by street, even/odd housenr and housenr
+        foreach ($realties as $street => $housenrs) {
+            natsort($housenrs);
+
+            foreach ($housenrs as $housenr) {
+                preg_match('/\d*/', $housenr, $nr);
+
+                if (! $nr[0]) {
+                    \ChannelLog::error('billingbase', trans('propertymanagement::messages.invoice.invalidRealtyHousenr', ['id' => $realty->id, 'nr' => $realty->house_nr, 'contractnr' => $contract->number]));
+
+                    continue;
+                }
+
+                $nr = intval($nr[0]);
+
+                if (isset($list[$street][$nr % 2 ? 'odd' : 'even'][$nr])) {
+                    if (is_string($list[$street][$nr % 2 ? 'odd' : 'even'][$nr])) {
+                        $list[$street][$nr % 2 ? 'odd' : 'even'][$nr] = [$list[$street][$nr % 2 ? 'odd' : 'even'][$nr], $housenr];
+                    } else {
+                        $list[$street][$nr % 2 ? 'odd' : 'even'][$nr][] = $housenr;
+                    }
+                } else {
+                    $list[$street][$nr % 2 ? 'odd' : 'even'][$nr] = $housenr;
+                }
+            }
+        }
+
+        // Build groups in case buildings are adjacent (neighbours)
+        foreach ($list as $street => $streets) {
+            foreach ($streets as $evenOdd => $nrs) {
+                $previous = $key = 0;
+
+                foreach ($nrs as $nr => $block) {
+                    if ($previous && ($previous + 2 != $nr)) {
+                        $key++;
+                    }
+
+                    $groupList[$street][$evenOdd][$key][] = $block;
+
+                    $previous = $nr;
+                }
+            }
+        }
+
+        // Take first and last house of each group
+        foreach ($groupList as $street => $streets) {
+            foreach ($streets as $evenOdd => $groups) {
+                foreach ($groups as $group) {
+                    if (count($group) == 1) {
+                        if (is_string($group[0])) {
+                            $objList[] = $street.' '.$group[0];
+                        } else {
+                            $separator = count($group[0]) == 2 ? ',' : '-';
+
+                            $objList[] = $street.' '.$group[0][0].$separator.end($group[0]);
+                        }
+
+                        continue;
+                    }
+
+                    $separator = count($group) == 2 ? ',' : '-';
+
+                    $first = is_string($group[0]) ? $group[0] : $group[0][0];
+                    $last = is_string(end($group)) ? end($group) : end(end($group));
+
+                    $objList[] = $street.' '.$first.$separator.$last;
+                }
+            }
+        }
+
+        return $objList;
+    }
 }
 
 /**
@@ -1226,7 +1642,7 @@ class ContractObserver
 {
     public function creating($contract)
     {
-        if (! \Module::collections()->has('BillingBase')) {
+        if (! Module::collections()->has('BillingBase')) {
             $contract->sepa_iban = strtoupper($contract->sepa_iban);
             $contract->sepa_bic = strtoupper($contract->sepa_bic);
         }
@@ -1235,6 +1651,8 @@ class ContractObserver
     public function created($contract)
     {
         $contract->push_to_modems(); 	// should not run, because a new added contract can not have modems..
+
+        $contract->updateAddressFromProperty();
     }
 
     public function updating($contract)
@@ -1242,7 +1660,7 @@ class ContractObserver
         $original_number = $contract->getOriginal('number');
         $original_costcenter_id = $contract->getOriginal('costcenter_id');
 
-        if (! \Module::collections()->has('BillingBase')) {
+        if (! Module::collections()->has('BillingBase')) {
             $contract->sepa_iban = strtoupper($contract->sepa_iban);
             $contract->sepa_bic = strtoupper($contract->sepa_bic);
         }
@@ -1263,15 +1681,25 @@ class ContractObserver
             }
         }
 
+        // Set all related items start date to contracts start date if this behaviour is wished via global config
+        if (isset($changed_fields['contract_start']) && Module::collections()->has('BillingBase')) {
+            $conf = \Modules\BillingBase\Entities\BillingBase::first();
+
+            if ($conf->adapt_item_start) {
+                // Note: Calling item->save() is not necessary as contract->daily_conversion is called after and manages everything that is to do
+                \Modules\BillingBase\Entities\Item::where('contract_id', $contract->id)->update(['valid_from' => $contract->contract_start]);
+            }
+        }
+
         if (isset($changed_fields['contract_start']) || isset($changed_fields['contract_end'])) {
             $contract->daily_conversion();
 
-            if (\Module::collections()->has('BillingBase') && $contract->contract_end && isset($changed_fields['contract_end'])) {
+            if (Module::collections()->has('BillingBase') && $contract->contract_end && isset($changed_fields['contract_end'])) {
                 // Alert if end is lower than tariffs end of term
                 $ret = $contract->getCancelationDates();
 
                 if ($ret['end_of_term'] && $contract->contract_end < $ret['end_of_term']) {
-                    \Session::put('alert.danger', trans('messages.contract.early_cancel', ['date' => $ret['end_of_term']]));
+                    Session::put('alert.danger', trans('messages.contract.early_cancel', ['date' => $ret['end_of_term']]));
                 }
             }
         }
@@ -1294,8 +1722,19 @@ class ContractObserver
             $concede_credit = $query->count();
 
             if ($concede_credit) {
-                \Session::put('alert.warning', trans('messages.contract.concede_credit'));
+                Session::put('alert.warning', trans('messages.contract.concede_credit'));
             }
+        }
+
+        if (multi_array_key_exists(['realty_id', 'apartment_id'], $changed_fields)) {
+            $contract->updateAddressFromProperty();
+        }
+    }
+
+    public function deleting($contract)
+    {
+        if ($contract->cccUser) {
+            $contract->cccUser->delete();
         }
     }
 }
@@ -1336,7 +1775,7 @@ abstract class VoipRelatedDataUpdater
     protected function _check_modules()
     {
         foreach ($this->modules_to_be_active as $module) {
-            if (! \Module::collections()->has($module)) {
+            if (! Module::collections()->has($module)) {
                 return false;
             }
         }

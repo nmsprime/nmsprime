@@ -126,7 +126,7 @@ class importCommand extends Command
      * Check TODO(<nrs>) before Import!
      * (* set cluster mapping table)
      */
-    public function fire()
+    public function handle()
     {
         // NOTE: Search by TODO(2) for Contract Filter and TODO(3) to change restrictions for adding credits!
         if (! $this->confirm("IMPORTANT!!!\n\nHave following things been prepared for this import?:
@@ -145,7 +145,7 @@ class importCommand extends Command
             return $this->error('no configfile entry exists to use');
         }
 
-        if (! Product::count()) {
+        if (\Module::collections()->has('BillingBase') && ! Product::count()) {
             return $this->error('no product entry exists to use');
         }
 
@@ -239,7 +239,7 @@ class importCommand extends Command
                  */
                 $mtas = $km3->table('tbl_computer as c')
                     ->join('tbl_packetcablemtas as mta', 'mta.computer', '=', 'c.id')
-                    ->selectRaw('c.*, mta.*, mta.id as id')
+                    ->select(['c.*', 'mta.*', 'mta.id as id'])
                     ->where('c.modem', '=', $modem->id)
                     ->where('c.deleted', '=', 'false')
                     ->where('mta.deleted', '=', 'false')
@@ -392,7 +392,7 @@ class importCommand extends Command
         $c->email = $old_contract->email;
         $c->birthday = $old_contract->geburtsdatum ?: null;
 
-        $c->internet_access = $old_contract->internet_access;
+        $c->internet_access = $old_contract->network_access;
         $c->contract_start = $old_contract->angeschlossen;
         $c->contract_end = $old_contract->abgeklemmt ?: null;
         $c->create_invoice = $old_contract->rechnung;
@@ -466,7 +466,10 @@ class importCommand extends Command
         $tariffs = [
             'tarif' 			=> $old_contract->tarif,
             'tarif_next_month'  => $old_contract->tarif_next_month,
-            'voip' 				=> $old_contract->telefontarif,
+            'tarif_next'        => $old_contract->tarif_next,
+            'telefontarif'      => $old_contract->telefontarif,
+            'telefontarif_next_month' => $old_contract->telefontarif_next_month,
+            'telefontarif_next' => $old_contract->telefontarif_next,
             ];
 
         $items_new = $new_contract->items;
@@ -475,11 +478,11 @@ class importCommand extends Command
             $prod_id = -1;
 
             if (! $tariff) {
-                \Log::info("\tNo $key Item exists in old System");
+                \Log::debug("\tNo $key Item exists in old System");
                 continue;
             }
 
-            if ($key == 'voip') {
+            if (\Str::startsWith($key, 'telefontarif')) {
                 // Discard voip tariff if new contract doesnt have MTA
                 if (! isset($new_contract->has_mta)) {
                     Log::notice('Discard voip tariff as contract has no MTA assigned', [$new_contract->number]);
@@ -497,7 +500,7 @@ class importCommand extends Command
             }
 
             if ($prod_id == -1) {
-                $type = $key == 'voip' ? 'voip' : 'internet';
+                $type = \Str::startsWith($key, 'telefontarif') ? 'voip' : 'internet';
                 $msg = "Missing mapping for $type tariff $tariff (ID in km3 DB). Don't add voip item to contract $new_contract->number.";
                 \Log::error($msg);
                 $this->errors[] = $msg;
@@ -512,12 +515,19 @@ class importCommand extends Command
                 continue;
             }
 
+            $valid_from = $old_contract->angeschlossen;
+            if (strpos($key, 'tarif_next_month') !== false) {
+                $valid_from = date('Y-m-01', strtotime('first day of next month'));
+            } elseif (strpos($key, 'tarif_next') !== false) {
+                $valid_from = date('Y-m-d', strtotime($old_contract->{$key.'_date'}));
+            }
+
             Item::create([
                 'contract_id' 		=> $new_contract->id,
                 'product_id' 		=> $prod_id,
-                'valid_from' 		=> $key == 'tarif_next_month' ? date('Y-m-01', strtotime('first day of next month')) : $old_contract->angeschlossen,
+                'valid_from' 		=> $valid_from,
                 'valid_from_fixed' 	=> 1,
-                'valid_to' 			=> $key == 'tarif_next_month' ? null : $old_contract->abgeklemmt,
+                'valid_to' 			=> $old_contract->abgeklemmt,
                 'valid_to_fixed' 	=> 1,
                 ]);
 
@@ -583,12 +593,12 @@ class importCommand extends Command
                 'contract_id' 		=> $new_contract->id,
                 'reference' 		=> $new_contract->number ?: '', 			// TODO: number circle ?
                 'signature_date' 	=> $mandate->datum ?: '',
-                'sepa_holder' 		=> $mandate->kontoinhaber ? utf8_encode($mandate->kontoinhaber) : '',
-                'sepa_iban'			=> $mandate->iban ?: '',
-                'sepa_bic' 			=> $mandate->bic ?: '',
-                'sepa_institute' 	=> $mandate->institut ?: '',
-                'sepa_valid_from' 	=> $mandate->gueltig_ab,
-                'sepa_valid_to' 	=> $mandate->gueltig_bis,
+                'holder' 		=> $mandate->kontoinhaber ? utf8_encode($mandate->kontoinhaber) : '',
+                'iban'			=> $mandate->iban ?: '',
+                'bic' 			=> $mandate->bic ?: '',
+                'institute' 	=> $mandate->institut ?: '',
+                'valid_from' 	=> $mandate->gueltig_ab,
+                'valid_to' 	=> $mandate->gueltig_bis,
                 'disable' 			=> $old_contract->einzug ? false : true,
                 'state' 			=> 'RCUR',
                 ]);
@@ -603,10 +613,10 @@ class importCommand extends Command
     private function add_additional_items($new_contract, $db_con, $old_contract)
     {
         // Additional Items
-        $items = $db_con->table(\DB::raw('tbl_zusatzposten z, tbl_posten p'))
-                ->selectRaw('p.id, p.artikel, z.von, z.bis, z.menge, z.buchungstext, z.preis')
+        $items = $db_con->table('tbl_zusatzposten as z')
+                ->join('tbl_posten as p', 'z.posten', '=', 'p.id')
+                ->select(['p.id', 'p.artikel', 'z.von', 'z.bis', 'z.menge', 'z.buchungstext', 'z.preis', 'z.abrechnen', 'z.abgerechnet'])
                 ->where('z.vertrag', '=', $old_contract->id)
-                ->whereRaw('z.posten = p.id')
                 ->where('z.closed', '=', 'false')
                 ->where(function ($query) {
                     $query
@@ -636,16 +646,22 @@ class importCommand extends Command
 
             \Log::info("\tAdd Item [$new_contract->number]: $item->artikel (from: $item->von, to: $item->bis, price: $item->preis) [Old ID: $item->id]");
 
+            $valid_to = $item->bis;
+            if (! $item->von) {
+                $months = $item->abrechnen - $item->abgerechnet;
+                $valid_to = date('Y-m-d', strtotime("last day of +$months month"));
+            }
+
             Item::create([
                 'contract_id' 		=> $new_contract->id,
                 'product_id' 		=> $this->add_items[$item->id],
                 'count' 			=> $item->menge,
                 'valid_from' 		=> $item->von ?: date('Y-m-d'),
                 'valid_from_fixed' 	=> 1,
-                'valid_to' 			=> $item->bis,
+                'valid_to' 			=> $valid_to,
                 'valid_to_fixed' 	=> 1,
                 'credit_amount' 	=> (-1) * $item->preis,
-                'accounting_text' 	=> is_null($item->buchungstext) ? '' : $item->buchungstext,
+                'accounting_text' 	=> is_null($item->buchungstext) ? '' : utf8_encode($item->buchungstext),
             ]);
         }
     }
@@ -705,7 +721,7 @@ class importCommand extends Command
         $modem->serial_num = $old_modem->serial_num;
         $modem->inventar_num = $old_modem->inventar_num;
         $modem->description = $old_modem->beschreibung;
-        $modem->internet_access = $old_modem->internet_access;
+        $modem->internet_access = $old_modem->network_access;
 
         $modem->x = $old_modem->x / 10000000;
         $modem->y = $old_modem->y / 10000000;
@@ -743,12 +759,12 @@ class importCommand extends Command
         // Determine if Device has a public IP
         $validator = new \Acme\Validators\ExtendedValidator;
         $privateIps = [['10.0.0.0', '255.0.0.0'], ['192.168.0.0', '255.255.0.0'], ['172.16.0.0', '255.224.0.0'], ['100.64.0.0', '255.192.0.0']];
-        $modem->public = 1;
+        $modem->public = 0;
 
         foreach ($comps as $comp) {
             foreach ($privateIps as $range) {
-                if ($validator->validateIpInRange(null, $comp->ip, $range)) {
-                    $modem->public = 0;
+                if (! $validator->validateIpInRange(null, $comp->ip, $range)) {
+                    $modem->public = 1;
                     break;
                 }
             }
@@ -801,17 +817,11 @@ class importCommand extends Command
             return $new_mta;
         }
 
-        $cf = $db_con->table('tbl_configfiles')->where('id', '=', $old_mta->configfile)->first();
-
-        if ($cf) {
-            $cf = $cf->name;
-        }
-
         $mta = new MTA;
 
         $mta->modem_id = $new_modem->id;
         $mta->mac = $old_mta->mac_adresse;
-        $mta->configfile_id = isset($this->configfiles[$cf]) && is_int($this->configfiles[$cf]) ? $this->configfiles[$cf] : 0;
+        $mta->configfile_id = $this->configfiles[$old_mta->configfile] ?? 0;
         $mta->type = 'sip';
 
         $mta->save();
@@ -820,7 +830,7 @@ class importCommand extends Command
 
         \Log::info('ADD MTA: '.$mta->id.', '.$mta->mac.', CF-'.$mta->configfile_id);
 
-        if (! $cf) {
+        if (! $mta->configfile_id) {
             Log::warning("No Configfile set on MTA $mta->id (ID)");
         }
 
@@ -974,14 +984,14 @@ class importCommand extends Command
     public static function update_mandates_correct_encoding($db_con)
     {
         foreach (SepaMandate::all() as $m) {
-            if ($m->contract->firstname.' '.$m->contract->lastname == $m->sepa_holder) {
+            if ($m->contract->firstname.' '.$m->contract->lastname == $m->holder) {
                 continue;
             }
 
             $mandate_old = $db_con->table(\DB::raw('tbl_sepamandate s, tbl_lastschriftkonten l'))
                     ->selectRaw('s.*, l.*, l.id as id')
                     ->whereRaw('s.id = l.sepamandat')
-                    ->where('l.iban', '=', $m->sepa_iban)
+                    ->where('l.iban', '=', $m->iban)
                     ->where('s.deleted', '=', 'false')
                     ->where('l.deleted', '=', 'false')
                     ->orderBy('l.id')
@@ -994,13 +1004,13 @@ class importCommand extends Command
 
             $mandate_old = $mandate_old[0];
 
-            if ($m->sepa_holder == $mandate_old->kontoinhaber) {
+            if ($m->holder == $mandate_old->kontoinhaber) {
                 continue;
             }
 
-            echo "\nSEPAMANDATE UPDATE [$m->id]: $m->sepa_holder to $mandate_old->kontoinhaber";
+            echo "\nSEPAMANDATE UPDATE [$m->id]: $m->holder to $mandate_old->kontoinhaber";
 
-            $m->sepa_holder = $mandate_old->kontoinhaber ? utf8_encode($mandate_old->kontoinhaber) : '';
+            $m->holder = $mandate_old->kontoinhaber ? utf8_encode($mandate_old->kontoinhaber) : '';
 
             $m->save();
         }

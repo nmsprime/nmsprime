@@ -13,13 +13,7 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        'App\Console\Commands\Inspire',
-        'App\Console\Commands\TimeDeltaChecker',
-        'App\Console\Commands\StorageCleaner',
-        'App\Console\Commands\AuthCommand',
-        'App\Console\Commands\EnsureQueueListenerIsRunning',
-        'App\Console\Commands\addDefaultRolesCommand',
-        'App\Console\Commands\AdminCommand',
+        //
     ];
 
     /**
@@ -45,11 +39,18 @@ class Kernel extends ConsoleKernel
         // define some helpers
         $is_first_day_of_month = (date('d') == '01') ? true : false;
 
+        // calculate an offset that can be used to time-shift cron commands
+        // (e.g. to distribute load on external APIs)
+        // use like: ->dailyAt(date("H:i", strtotime("04:04 + $time_offset min")));
+        $key = getenv('APP_KEY') ?: 'n/a';
+        $hash = sha1($key);
+        $subhash = substr($hash, -2);   // [00..ff] => [0..255]
+        $time_offset = hexdec($subhash) % 32;    // offset in [0..31] minutes
+
         $schedule->command('queue:checkup')->everyMinute();
 
         $schedule->call('\Modules\Dashboard\Entities\BillingAnalysis@saveIncomeToJson')->dailyAt('00:07');
         $schedule->call('\Modules\Dashboard\Entities\BillingAnalysis@saveContractsToJson')->hourly();
-        $schedule->call('\Modules\Dashboard\Http\Controllers\DashboardController@save_modem_statistics')->everyMinute();
 
         // Remove all Log Entries older than 90 days
         $schedule->call('\App\GuiLog@cleanup')->weekly();
@@ -80,20 +81,20 @@ class Kernel extends ConsoleKernel
             // Update status of envia orders
             // Do this at the very beginning of a day
             $schedule->command('provvoipenvia:update_envia_orders')
-                ->dailyAt('00:01');
+                ->dailyAt(date('H:i', strtotime("04:04 + $time_offset min")));
             /* ->everyMinute(); */
 
             // Get envia TEL customer reference for contracts without this information
             $schedule->command('provvoipenvia:get_envia_customer_references')
-                ->dailyAt('01:13');
+                ->dailyAt(date('H:i', strtotime("01:13 + $time_offset min")));
 
             // Get/update envia TEL contracts
             $schedule->command('provvoipenvia:get_envia_contracts_by_customer')
-                ->dailyAt('01:18');
+                ->dailyAt(date('H:i', strtotime("01:18 + $time_offset min")));
 
             // Process envia TEL orders (do so after getting envia contracts)
             $schedule->command('provvoipenvia:process_envia_orders')
-                ->dailyAt('03:18');
+                ->dailyAt(date('H:i', strtotime("03:18 + $time_offset min")));
 
             // Get envia TEL contract reference for phonenumbers without this information or inactive linked envia contract
             // on first of a month: run in complete mode
@@ -104,7 +105,7 @@ class Kernel extends ConsoleKernel
                 $tmp_cmd = 'provvoipenvia:get_envia_contract_references';
             }
             $schedule->command($tmp_cmd)
-                ->dailyAt('03:23');
+                ->dailyAt(date('H:i', strtotime("03:23 + $time_offset min")));
 
             // Update voice data
             // on first of a month: run in complete mode
@@ -114,7 +115,7 @@ class Kernel extends ConsoleKernel
                 $tmp_cmd = 'provvoipenvia:update_voice_data';
             }
             $schedule->command($tmp_cmd)
-                ->dailyAt('03:53');
+                ->dailyAt(date('H:i', strtotime("01:23 + $time_offset min")));
         }
 
         // ProvBase Schedules
@@ -137,13 +138,19 @@ class Kernel extends ConsoleKernel
             $schedule->command('nms:contract daily')->daily()->at('00:03');
             $schedule->command('nms:contract monthly')->monthly()->at('00:13');
             $schedule->call(function () {
-                foreach (\Modules\ProvBase\Entities\Cmts::all() as $cmts) {
+                foreach (\Modules\ProvBase\Entities\NetGw::where('type', 'cmts')->get() as $cmts) {
                     $cmts->store_us_snrs();
                 }
             })->everyFiveMinutes();
 
+            // refresh the online state of all TR069 device
+            $schedule->call('\Modules\ProvBase\Entities\Modem@refreshTR069')->everyFiveMinutes();
+
             // update firmware version + model strings of all modems once a day
             $schedule->call('\Modules\ProvBase\Entities\Modem@update_model_firmware')->daily();
+
+            // Hardware support check for modems and CMTS
+            $schedule->command('nms:hardware-support daily')->twiceDaily(10, 14);
         }
 
         // Automatic Power Control based on measured SNR
@@ -169,8 +176,6 @@ class Kernel extends ConsoleKernel
 
             // Modem Positioning System
             $schedule->command('nms:mps')->daily();
-
-            $schedule->command('nms:modem-refresh')->everyFiveMinutes();
         }
 
         if (\Module::collections()->has('ProvMon')) {
@@ -186,6 +191,10 @@ class Kernel extends ConsoleKernel
         if (\Module::collections()->has('BillingBase')) {
             // Remove all old CDRs & Invoices
             $schedule->call('\Modules\BillingBase\Entities\Invoice@cleanup')->monthly();
+            // Reset payed_month column for yearly charged items for january settlementrun (in february)
+            $schedule->call(function () {
+                Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
+            })->cron('10 0 1 2 * *');
 
             // wrapping into a check if table billingbase exists (if not that crashes on every “php artisan” command – e.g. on migrations
             if (\Schema::hasTable('billingbase')) {
@@ -217,5 +226,7 @@ class Kernel extends ConsoleKernel
     protected function commands()
     {
         require base_path('routes/console.php');
+
+        $this->load(__DIR__.'/Commands');
     }
 }

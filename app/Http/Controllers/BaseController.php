@@ -2,24 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App;
 use Log;
 use Str;
 use Auth;
-use File;
 use View;
-use Input;
-use Route;
 use Config;
 use Bouncer;
+use Request;
 use Session;
 use Redirect;
 use BaseModel;
 use Validator;
 use GlobalConfig;
 use Monolog\Logger;
-use Yajra\Datatables\Datatables;
-use Illuminate\Support\Facades\Request;
+use Yajra\DataTables\DataTables;
 
 /*
  * BaseController: The Basic Controller in our MVC design.
@@ -87,34 +83,34 @@ class BaseController extends Controller
         // place your code here
     }
 
-    /*
-     * Base Function for Breadcrumb. -> Panel Header Right
-     * overwrite this function in child controller if required.
+    /**
+     * Base Function containing the default tabs for each model
+     * Overwrite/Extend this function in child controller to add more tabs refering to new pages
+     * Use models view_has_many() to add/structure panels inside separate tabs
      *
-     * NOTE: Breadcrumb means Panel Header Right in Bootstrap language
-     *
-     * @param view_var: the model object to be displayed
-     * @return: array, e.g. [['name' => '..', 'route' => '', 'link' => [$view_var->id]], .. ]
-     * @author: Torsten Schmidt
+     * @param model: the model object to be displayed
+     * @return: array of tab descriptions - e.g. [['name' => '..', 'route' => '', 'link' => [$model->id]], .. ]
+     * @author: Torsten Schmidt, Nino Ryschawy
      */
-    protected function get_form_tabs($view_var)
+    protected function editTabs($model)
     {
-        $class = NamespaceController::get_model_name();
+        $class = get_class($model);
 
         if (Str::contains($class, 'GuiLog')) {
             return;
         }
 
-        $class_name = substr(strrchr($class, '\\'), 1);
+        $class_name = $model->get_model_name();
 
-        return ['0' => [
-            'name' => 'Logging',
-            'route' => 'GuiLog.filter',
-            'link' => ['model_id' => $view_var->id, 'model' => $class_name],
-        ],
-        '1' => ['name' => 'Edit',
-                'route' => $class_name.'.edit',
-                'link' => ['model_id' => $view_var->id, 'model' => $class_name],
+        return [[
+                'name' => 'Edit',
+                // 'route' => $class_name.'.edit',
+                // 'link' => ['model_id' => $model->id, 'model' => $class_name],
+            ],
+            [
+                'name' => 'Logging',
+                'route' => 'GuiLog.filter',
+                'link' => ['model_id' => $model->id, 'model' => $class_name],
             ],
         ];
     }
@@ -236,9 +232,6 @@ class BaseController extends Controller
                 $field['name'] = str_replace('[]', '', $field['name']);
                 continue; 			// multiselects will have array in data so don't trim
             }
-
-            // trim all inputs as default
-            $data[$field['name']] = trim($data[$field['name']]);
         }
 
         return $data;
@@ -268,38 +261,40 @@ class BaseController extends Controller
     }
 
     /**
-     * Prepare Breadcrumb - $panel_right header
-     * Priority Handling: get_form_tabs(), view_has_many()
+     * Prepare tabs for edit page
+     * Merge defined tabs from editTabs() and view_has_many()
      *
-     * @param view_var: the view_var parameter from edit() context
-     * @return panel_right prepared array for default.blade
+     * @author Nino Ryschawy
+     * @param relations  from view_has_many()
+     * @param tabs       from editTabs()
+     * @return array     tabs for split-no-panel.blade and edit.blade
      */
-    protected function prepare_tabs($view_var)
+    protected function prepare_tabs($relations, $tabs)
     {
-        // Version 1
-        $ret = $this->get_form_tabs($view_var);
-        if (count($ret) > 2) {
-            return $ret;
+        // Generate tabs from array structure of relations
+        foreach ($relations as $tab => $panels) {
+            if (! $this->tabDefined($tab, $tabs)) {
+                $tabs[] = ['name' => $tab];
+            }
         }
-        // view_has_many() Version 2
-        $a = $view_var->view_has_many();
-        if (BaseViewController::get_view_has_many_api_version($a) == 2) {
-            // get actual blade to $b
-            $b = current($a);
-            $c = [];
-            for ($i = 0; $i < count($a); $i++) {
-                array_push($c, ['name' => key($a), 'route' => NamespaceController::get_route_name().'.edit', 'link' => [$view_var->id, 'blade='.$i]]);
-                $b = next($a);
-            }
-            // add tab for GuiLog
-            if ($ret) {
-                array_push($c, $ret[0]);
-            }
 
-            return $c;
-        } else {
-            return $ret;
+        return $tabs;
+    }
+
+    /**
+     * Check if tab of relations (defined in view_has_many()) is already defined tabs from editTabs()
+     *
+     * @return bool
+     */
+    private function tabDefined($relationsTab, $editTabs)
+    {
+        foreach ($editTabs as $key => $array) {
+            if ($array['name'] == $relationsTab) {
+                return true;
+            }
         }
+
+        return false;
     }
 
     /**
@@ -317,22 +312,22 @@ class BaseController extends Controller
     {
         $upload_field = $base_field.'_upload';
 
-        if (! Input::hasFile($upload_field)) {
+        if (! Request::hasFile($upload_field)) {
             return;
         }
 
         // get filename
-        $filename = Input::file($upload_field)->getClientOriginalName();
+        $filename = Request::file($upload_field)->getClientOriginalName();
 
         $ext = pathinfo($filename, PATHINFO_EXTENSION);
         $fn = pathinfo($filename, PATHINFO_FILENAME);
         $filename = sanitize_filename($fn).".$ext";
 
         // move file
-        Input::file($upload_field)->move($dst_path, $filename);
+        Request::file($upload_field)->move($dst_path, $filename);
 
         // place filename as chosen value in Input field
-        Input::merge([$base_field => $filename]);
+        Request::merge([$base_field => $filename]);
 
         return $filename;
     }
@@ -391,6 +386,10 @@ class BaseController extends Controller
 
         if (! isset($a['route_name'])) {
             $a['route_name'] = NamespaceController::get_route_name();
+        }
+
+        if (! isset($a['ajax_route_name'])) {
+            $a['ajax_route_name'] = $a['route_name'].'.data';
         }
 
         if (! isset($a['model_name'])) {
@@ -470,13 +469,13 @@ class BaseController extends Controller
     public function fulltextSearch()
     {
         // get the search scope
-        $scope = Input::get('scope');
+        $scope = Request::get('scope');
 
         // get the mode to use and transform to sql syntax
-        $mode = Input::get('mode');
+        $mode = Request::get('mode');
 
         // get the query to search for
-        $query = Input::get('query');
+        $query = Request::get('query');
 
         if ($scope == 'all') {
             $view_path = 'Generic.searchglobal';
@@ -495,7 +494,7 @@ class BaseController extends Controller
         $delete_allowed = static::get_controller_obj()->index_delete_allowed;
 
         $view_var = collect();
-        foreach ($obj->getFulltextSearchResults($scope, $mode, $query, Input::get('preselect_field'), Input::get('preselect_value')) as $result) {
+        foreach ($obj->getFulltextSearchResults($scope, $mode, $query, Request::get('preselect_field'), Request::get('preselect_value')) as $result) {
             $view_var = $view_var->merge($result->get());
         }
 
@@ -555,7 +554,7 @@ class BaseController extends Controller
         $delete_allowed = static::get_controller_obj()->index_delete_allowed;
 
         if ($this->index_tree_view) {
-            $view_var = $model::where('parent_id', 0)->get();
+            $view_var = $model::where('parent_id', null)->get();
             $undeletables = $model::undeletables();
 
             return View::make('Generic.tree', $this->compact_prep_view(compact('headline', 'view_header', 'view_var', 'create_allowed', 'undeletables')));
@@ -617,8 +616,56 @@ class BaseController extends Controller
 
         $model = static::get_model_obj();
         $fields = BaseViewController::prepare_form_fields(static::get_controller_obj()->view_form_fields($model), $model);
+        $fields = $this->apiHandleHtmlFields($fields);
 
         return response()->json($fields);
+    }
+
+    /**
+     * As form fields with form_type => 'html' can have multiple Input fields these have to be extracted for the API
+     *  This replaces the html form field by multiple fields expressing the input fields that the html field contains
+     *
+     * @author Nino Ryschawy
+     * @return array
+     */
+    private function apiHandleHtmlFields($fields)
+    {
+        foreach ($fields as $key => $field) {
+            if (! (isset($field['form_type']) && $field['form_type'] == 'html' && isset($field['html']))) {
+                continue;
+            }
+
+            preg_match_all('/<input.*?>/', $field['html'], $matches);
+
+            if (! $matches) {
+                continue;
+            }
+
+            foreach ($matches[0] as $input) {
+                preg_match('/name=(.*?) /', $input, $name);
+
+                if (! $name) {
+                    $name = $field['name'] ?? 'without name';
+                    Log::error("Name of input field $name of view_form_fields missing");
+
+                    continue;
+                }
+
+                $name = str_replace(['"', "'"], '', $name[1]);
+
+                $field['name'] = $name;
+
+                if (count($matches[0]) > 1) {
+                    $field['description'] .= ' '.$name;
+                }
+
+                $fields[] = $field;
+            }
+
+            unset($fields[$key]);
+        }
+
+        return $fields;
     }
 
     /**
@@ -632,15 +679,15 @@ class BaseController extends Controller
         $controller = static::get_controller_obj();
 
         // Prepare and Validate Input
-        $data = $controller->prepare_input(Input::all());
+        $data = $controller->prepare_input(Request::all());
         $rules = $controller->prepare_rules($obj::rules(), $data);
         $validator = Validator::make($data, $rules);
 
         if ($validator->fails()) {
             Log::info('Validation Rule Error: '.$validator->errors());
 
-            $msg = 'Input invalid – please correct the following errors';
-            Session::push('tmp_error_above_form', $msg);
+            $msg = trans('validation.invalid_input');
+            $obj->addAboveMessage($msg, 'error', 'form');
 
             return Redirect::back()->withErrors($validator)->withInput();
         }
@@ -660,7 +707,7 @@ class BaseController extends Controller
         }
 
         $msg = trans('messages.created');
-        Session::push('tmp_success_above_form', $msg);
+        $obj->addAboveMessage($msg, 'success', 'form');
 
         return Redirect::route(NamespaceController::get_route_name().'.edit', $id)->with('message', $msg)->with('message_color', 'success');
     }
@@ -721,26 +768,14 @@ class BaseController extends Controller
 
         $fields = BaseViewController::prepare_form_fields(static::get_controller_obj()->view_form_fields($view_var), $view_var);
         $form_fields = BaseViewController::add_html_string($fields, 'edit');
-        // $form_fields	= BaseViewController::add_html_string (static::get_controller_obj()->view_form_fields($view_var), $view_var, 'edit');
 
-        // prepare_tabs & prep_right_panels are redundant - TODO: improve
-        $tabs = $this->prepare_tabs($view_var);
-
-        $relations = BaseViewController::prep_right_panels($view_var);
+        // view_has_many should actually be a controller function!
+        $relations = $view_var->view_has_many();
+        $tabs = $this->prepare_tabs($relations, $this->editTabs($view_var));
 
         // check if there is additional data to be passed to blade template
         // on demand overwrite base method _get_additional_data_for_edit_view($model)
         $additional_data = $this->_get_additional_data_for_edit_view($view_var);
-
-        // we explicitly set the method to call in relation links
-        // if not given we set default to “edit“ to meet former behavior
-        foreach ($relations as $rel_key => $relation) {
-            if (! array_key_exists('method', $relation)) {
-                $method = 'edit';
-            } else {
-                $method = 'show';
-            }
-        }
 
         $view_path = 'Generic.edit';
         $form_path = 'Generic.form';
@@ -754,8 +789,7 @@ class BaseController extends Controller
         }
 
         // $config_routes = BaseController::get_config_modules();
-        // return View::make ($view_path, $this->compact_prep_view(compact('model_name', 'view_var', 'view_header', 'form_path', 'form_fields', 'config_routes', 'link_header', 'tabs', 'relations', 'extra_data')));
-        return View::make($view_path, $this->compact_prep_view(compact('model_name', 'view_var', 'view_header', 'form_path', 'form_fields', 'headline', 'tabs', 'relations', 'method', 'action', 'additional_data')));
+        return View::make($view_path, $this->compact_prep_view(compact('model_name', 'view_var', 'view_header', 'form_path', 'form_fields', 'headline', 'tabs', 'relations', 'action', 'additional_data')));
     }
 
     /**
@@ -770,15 +804,15 @@ class BaseController extends Controller
         $controller = static::get_controller_obj();
 
         // Prepare and Validate Input
-        $data = $controller->prepare_input(Input::all());
+        $data = $controller->prepare_input(Request::all());
         $rules = $controller->prepare_rules($obj::rules($id), $data);
         $validator = Validator::make($data, $rules);
 
         if ($validator->fails()) {
             Log::info('Validation Rule Error: '.$validator->errors());
 
-            $msg = 'Input invalid – please correct the following errors';
-            Session::push('tmp_error_above_form', $msg);
+            $msg = trans('validation.invalid_input');
+            $obj->addAboveMessage($msg, 'error', 'form');
 
             return Redirect::back()->withErrors($validator)->withInput();
         }
@@ -807,11 +841,11 @@ class BaseController extends Controller
         if (! Session::has('error')) {
             $msg = 'Updated!';
             $color = 'success';
-            Session::push('tmp_success_above_form', $msg);
+            $obj->addAboveMessage($msg, 'success', 'form');
         } else {
             $msg = Session::get('error');
             $color = 'warning';
-            Session::push('tmp_error_above_form', $msg);
+            $obj->addAboveMessage($msg, 'error', 'form');
         }
 
         $route_model = NamespaceController::get_route_name();
@@ -873,16 +907,16 @@ class BaseController extends Controller
      *
      * @return array
      */
-    private static function _api_prepopulate_fields($obj, $ctrl)
+    private function _api_prepopulate_fields($obj, $ctrl)
     {
         $fields = BaseViewController::prepare_form_fields($ctrl->view_form_fields($obj), $obj);
-        $inputs = Input::all();
+        $fields = $this->apiHandleHtmlFields($fields);
+        $inputs = Request::all();
         $data = [];
 
         foreach ($fields as $field) {
             $name = $field['name'];
-            // we can't use Input::has($name), as it claims $name does not exists, if it is an empty string
-            $data[$name] = array_key_exists($name, $inputs) ? $inputs[$name] : $field['field_value'];
+            $data[$name] = Request::has($name) ? Request::input($name) : $field['field_value'];
         }
 
         return $data;
@@ -979,17 +1013,17 @@ class BaseController extends Controller
         $deleted = 0;
         // bulk delete
         if ($id == 0) {
+            $obj = static::get_model_obj();
+
             // Error Message when no Model is specified - NOTE: delete_message must be an array of the structure below !
-            if (! Input::get('ids')) {
-                $message = 'No Entry For Deletion specified';
-                Session::push('tmp_error_above_index_list', $message);
+            if (! Request::get('ids')) {
+                $message = trans('messages.base.delete.noEntry');
+                $obj->addAboveMessage($message, 'error');
 
                 return Redirect::back()->with('delete_message', ['message' => $message, 'class' => NamespaceController::get_route_name(), 'color' => 'danger']);
             }
 
-            $obj = static::get_model_obj();
-
-            foreach (Input::get('ids') as $id => $val) {
+            foreach (Request::get('ids') as $id => $val) {
                 $obj = $obj->findOrFail($id);
                 $to_delete++;
 
@@ -1018,17 +1052,17 @@ class BaseController extends Controller
         $class = NamespaceController::get_route_name();
 
         if (! $deleted && ! $obj->force_delete) {
-            $message = 'Could not delete '.$class;
-            // Session::push('tmp_error_above_form', $message);
             $color = 'danger';
+            $message = trans('messages.base.delete.fail', ['model' => $class, 'id' => '']);
+            $obj->addAboveMessage($message, 'error');
         } elseif (($deleted == $to_delete) || $obj->force_delete) {
-            $message = 'Successful deleted '.$class;
-            // Session::push('tmp_success_above_form', $message);
             $color = 'success';
+            $message = trans('messages.base.delete.success', ['model' => $class, 'id' => '']);
+            $obj->addAboveMessage($message, 'success');
         } else {
-            $message = 'Deleted '.$deleted.' out of '.$to_delete.' '.$class;
             $color = 'warning';
-            Session::push('tmp_warning_above_form', $message);
+            $message = trans('messages.base.delete.multiSuccess', ['deleted' => $deleted, 'to_delete' => $to_delete, 'model' => $class]);
+            $obj->addAboveMessage($message, 'warning');
         }
 
         return Redirect::back()->with('delete_message', ['message' => $message, 'class' => $class, 'color' => $color]);
@@ -1072,8 +1106,8 @@ class BaseController extends Controller
         $model = NamespaceController::get_model_name();
         $model = $model::find($id);
 
-        if (\Input::has('ids')) {
-            $model->{$function}()->detach(array_keys(\Input::get('ids')));
+        if (\Request::has('ids')) {
+            $model->{$function}()->detach(array_keys(\Request::get('ids')));
         }
 
         return \Redirect::back();
@@ -1125,7 +1159,7 @@ class BaseController extends Controller
         }
 
         $query = static::get_model_obj();
-        foreach (Input::all() as $key => $val) {
+        foreach (Request::all() as $key => $val) {
             $query = $query->where($key, $val);
         }
 
@@ -1146,7 +1180,7 @@ class BaseController extends Controller
     {
         $this->output_format = 'json';
 
-        $data = Input::all();
+        $data = Request::all();
         $id = $data['id'];
         $func = $data['function'];
 
@@ -1310,12 +1344,9 @@ class BaseController extends Controller
      */
     public static function get_storage_file_list($dir)
     {
-        $files_raw = \Storage::files("config/$dir");
         $files[null] = 'None';
-
-        foreach ($files_raw as $file) {
-            $name = explode('/', $file);
-            $name = array_pop($name);
+        foreach (\Storage::files("config/$dir") as $file) {
+            $name = basename($file);
             $files[$name] = $name;
         }
 
@@ -1382,17 +1413,19 @@ class BaseController extends Controller
         $dt_config = $model->view_index_label();
 
         $header_fields = $dt_config['index_header'];
-        $edit_column_data = isset($dt_config['edit']) ? $dt_config['edit'] : [];
-        $filter_column_data = isset($dt_config['filter']) ? $dt_config['filter'] : [];
-        $eager_loading_tables = isset($dt_config['eager_loading']) ? $dt_config['eager_loading'] : [];
-        $additional_raw_where_clauses = isset($dt_config['where_clauses']) ? $dt_config['where_clauses'] : [];
-
-        // if no id Column is drawn, draw it to generate links with id
-        ! array_has($header_fields, $dt_config['table'].'.id') ? array_push($header_fields, 'id') : null;
+        $edit_column_data = $dt_config['edit'] ?? [];
+        $filter_column_data = $dt_config['filter'] ?? [];
+        $eager_loading_tables = $dt_config['eager_loading'] ?? [];
+        $additional_raw_where_clauses = $dt_config['where_clauses'] ?? [];
+        $raw_columns = $dt_config['raw_columns'] ?? []; // not run through htmlentities()
 
         if (empty($eager_loading_tables)) { //use eager loading only when its needed
             $request_query = $model::select($dt_config['table'].'.*');
-            $first_column = substr(head($header_fields), strlen($dt_config['table']) + 1);
+
+            $first_column = head($header_fields);
+            if (strpos($first_column, $dt_config['table'].'.') === 0) {
+                $first_column = substr($first_column, strlen($dt_config['table']) + 1);
+            }
         } else {
             $request_query = $model::with($eager_loading_tables)->select($dt_config['table'].'.*'); //eager loading | select($select_column_data);
             if (starts_with(head($header_fields), $dt_config['table'])) {
@@ -1407,13 +1440,25 @@ class BaseController extends Controller
             $request_query = $request_query->whereRaw($where_clause);
         }
 
-        $DT = Datatables::of($request_query);
-        $DT->addColumn('responsive', '')
+        $DT = DataTables::make($request_query)
+            ->addColumn('responsive', '')
             ->addColumn('checkbox', '');
 
         foreach ($filter_column_data as $column => $custom_query) {
+            // backward compatibility – accept strings as input, too
+            if (is_string($custom_query)) {
+                $custom_query = ['query' => $custom_query, 'eagers' => []];
+            } else {
+                if (! is_array($custom_query)) {
+                    throw new \Exception('$custom_query has to be string or array');
+                }
+            }
+
             $DT->filterColumn($column, function ($query, $keyword) use ($custom_query) {
-                $query->whereRaw($custom_query, ["%{$keyword}%"]);
+                foreach ($custom_query['eagers'] as $eager) {
+                    $query->with($eager);
+                }
+                $query->whereRaw($custom_query['query'], ["%{$keyword}%"]);
             });
         }
 
@@ -1449,7 +1494,9 @@ class BaseController extends Controller
             return $bsclass;
         });
 
-        return $DT->make(true);
+        array_unshift($raw_columns, 'checkbox', $first_column); // add everywhere used raw columns
+
+        return $DT->rawColumns($raw_columns)->make();
     }
 
     // NOTE: Import is a fast-forward-copy from https://github.com/LaravelDaily/Laravel-Import-CSV-Demo
@@ -1478,34 +1525,33 @@ class BaseController extends Controller
     {
         $path = $request->file('csv_file')->getRealPath();
 
-        if ($request->has('header')) {
-            $data = \Maatwebsite\Excel\Facades\Excel::load($path, function ($reader) {
-            })->get()->toArray();
-        } else {
-            $data = array_map('str_getcsv', file($path));
-        }
+        // if ($request->has('header')) {
+        //     $data = \Maatwebsite\Excel\Facades\Excel::load($path, function ($reader) {
+        //     })->get()->toArray();
+        // }
 
-        if (count($data) > 0) {
-            if ($request->has('header')) {
-                $csv_header_fields = [];
-                foreach ($data[0] as $key => $value) {
-                    $csv_header_fields[] = $key;
-                }
-            }
-            $csv_data = array_slice($data, 0, 2);
+        $data = file($path);
 
-            $csv_data_file = \App\CsvData::create([
-                'csv_filename' => $request->file('csv_file')->getClientOriginalName(),
-                'csv_header' => $request->has('header'),
-                'csv_data' => json_encode($data),
-                ]);
-        } else {
+        if (! count($data)) {
             return redirect()->back();
         }
 
-        $db_fields = \Schema::getColumnListing(static::get_model_obj()->getTable());
+        foreach ($data as $key => $line) {
+            $data[$key] = str_getcsv($line, ';');
+        }
 
-        // d($csv_header_fields, $csv_data, $csv_data_file, $db_fields);
+        $csv_header_fields = $request->has('header') ? $data[0] : [];
+        $offset = $request->has('header') ? 1 : 0;
+
+        $csv_data = array_slice($data, $offset, $offset + 2);
+
+        $csv_data_file = \App\CsvData::create([
+            'csv_filename' => $request->file('csv_file')->getClientOriginalName(),
+            'csv_header' => $request->has('header'),
+            'csv_data' => json_encode($data),
+            ]);
+
+        $db_fields = \Schema::getColumnListing(static::get_model_obj()->getTable());
 
         return View::make('Generic.import_fields', $this->compact_prep_view(compact('csv_header_fields', 'csv_data', 'csv_data_file', 'db_fields')));
     }
@@ -1562,7 +1608,7 @@ class BaseController extends Controller
         $model = static::get_model_obj();
 
         return $model->select($column)
-            ->where($column, 'like', '%'.\Input::get('q').'%')
+            ->where($column, 'like', '%'.\Request::get('q').'%')
             ->distinct()
             ->pluck($column);
     }

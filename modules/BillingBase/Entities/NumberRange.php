@@ -42,7 +42,7 @@ class NumberRange extends \BaseModel
      */
     public function costcenter()
     {
-        return $this->belongsTo('Modules\BillingBase\Entities\CostCenter', 'costcenter_id');
+        return $this->belongsTo(CostCenter::class, 'costcenter_id');
     }
 
     /**
@@ -127,8 +127,8 @@ class NumberRange extends \BaseModel
                 ->where('c1.costcenter_id', '=', $costcenter_id)
                 // only consider numbers where prefix and suffix really exists
                 ->where(\DB::raw('char_length(c1.number)'), '>=', $length_min)
-                ->where(\DB::raw("substring(c1.number, 1, char_length('$range->prefix'))"), '=', $range->prefix)
-                ->where(\DB::raw("substring(c1.number, -char_length('$range->suffix'))"), '=', $range->suffix)
+                ->where(\DB::raw("substring(c1.number, 1, char_length('$range->prefix'))"), '=', $range->prefix ?: '')
+                ->where(\DB::raw("substring(c1.number, -char_length('$range->suffix'))"), '=', $range->suffix ?: '')
                 // filter out all numbers not in predefined range
                 ->whereBetween(\DB::raw("substring(c1.number, char_length('$range->prefix') + 1,
 							char_length(c1.number) - char_length('$range->prefix') - char_length('$range->suffix'))"),
@@ -159,7 +159,8 @@ class NumberRange extends \BaseModel
                     ->orderBy('number')->get()->pluck('number')->all();
 
                 if ($contract_nrs) {
-                    session(['alert' => trans('messages.contract_nr_mismatch', ['nrs' => implode(', ', $contract_nrs)])]);
+                    \Session::push('tmp_error_above_form', trans('messages.contract_nr_mismatch', ['nrs' => implode(', ', $contract_nrs)]));
+                    // session(['alert.warning' => trans('messages.contract_nr_mismatch', ['nrs' => implode(', ', $contract_nrs)])]);
                 }
 
                 continue;

@@ -36,21 +36,6 @@ class CreateCccAuthuserTable extends BaseMigration
 
             $table->unique('login_name');
         });
-
-        // the following “seeding” is needed in every case – even if the seeders will not be run!
-        // add superuser => needed to configure the monster
-        //
-        // TODO: this should be disabled in production systems!
-        DB::table($this->tablename)->insert([
-            'id' => 1,
-            'first_name' => 'superuser',
-            'last_name' => 'initial',
-            'email' => 'root@localhost',
-            'login_name' => 'root',
-            'password' => Hash::make($this->initial_superuser_password),
-            'description' => 'Superuser to do base config. Initial password is “'.$this->initial_superuser_password.'” – change this ASAP or delete this user!!',
-            'contract_id' => 500000,
-        ]);
     }
 
     /**

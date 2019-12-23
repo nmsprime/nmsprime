@@ -6,7 +6,7 @@ use Str;
 use App\GuiLog;
 use App\BaseModel;
 use Illuminate\Http\Request;
-use Yajra\Datatables\Datatables;
+use Yajra\DataTables\DataTables;
 
 class GuiLogController extends BaseController
 {
@@ -34,26 +34,22 @@ class GuiLogController extends BaseController
 
         // add link of changed Model in edit view - Note: check if route exists is necessary because CccUser.edit is not available for instance
         if ($models && \Route::getRoutes()->hasNamedRoute($model->model.'.edit') && ! $isModelTrashed) {
-            array_push($fields, ['form_type' => 'text', 'name' => 'link', 'description' => 'Link', 'html' => '<div class="col-md-12" style="background-color:white">
-					<div class="form-group row"><label style="margin-top: 10px;" class="col-md-4 control-label">Link</label>
-						<div class="col-md-7">
-							<a class="btn btn-default btn-block" href="'.route($model->model.'.edit', ['id' => $model->model_id]).'"> '.$model->model.' '.$model->model_id.'</a>
-						</div>
-					</div>
+            $route = route($model->model.'.edit', ['id' => $model->model_id]);
+
+            $fields[] = ['form_type' => 'html', 'name' => 'link', 'description' => 'Link', 'html' => '<div class="col-md-7">
+					<a class="btn btn-default btn-block" href="'.$route.'"> '.$model->model.' '.$model->model_id.'</a>
 				</div>',
-                ]);
+            ];
         }
 
         // addition in edit view to create link for restoring deleted models
         if ($isModelTrashed && $restorable) {
-            array_push($fields, ['form_type' => 'text', 'name' => 'deleted_at', 'description' => 'Restore', 'html' => '<div class="col-md-12" style= background-color:white">
-						<div class= "form-group row"><label style =margin-top: 10px;" class="col-md-4 control-label">Restore</label>
-							<div class="col-md-7">
-								<a class="btn btn-default btn-block" href="'.route('Guilog.restore', ['id' => $model->id]).'"> Restore '.$model->model.'</a>
-							</div>
-						</div>
-					</div>',
-                ]);
+            $route = route('Guilog.restore', ['id' => $model->id]);
+
+            $fields[] = ['form_type' => 'html', 'name' => 'deleted_at', 'description' => 'Restore', 'html' => '<div class="col-md-7">
+					<a class="btn btn-default btn-block" href="'.$route.'"> Restore '.$model->model.'</a>
+				</div>',
+            ];
         }
 
         return $fields;
@@ -91,8 +87,8 @@ class GuiLogController extends BaseController
             ->orderBy('id', 'desc')
             ->get();
 
-        $DT = Datatables::of($request_query);
-        $DT->addColumn('responsive', '')
+        return DataTables::make($request_query)
+            ->addColumn('responsive', '')
             ->setRowClass(function ($object) {
                 $bsclass = 'info';
                 if ($object->method == 'created') {
@@ -105,10 +101,10 @@ class GuiLogController extends BaseController
                 return $bsclass;
             })
             ->editColumn('created_at', function ($object) use ($routeName) {
-                return '<a href="'.route($routeName.'.edit', $object->id).'"><strong>'.
-            $object->view_icon().$object->created_at.'</strong></a>';
-            });
-
-        return $DT->make(true);
+                return '<a href="'.route($routeName.'.edit', $object->id).'" title="'.str_replace(', ', '1&#013;', $object->text).'"><strong>'.
+                        $object->view_icon().$object->created_at.'</strong></a>';
+            })
+            ->rawColumns(['created_at'])
+            ->make();
     }
 }

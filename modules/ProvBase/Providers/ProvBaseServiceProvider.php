@@ -11,7 +11,7 @@ class ProvBaseServiceProvider extends ServiceProvider
      *
      * @var bool
      */
-    protected $defer = true;
+    protected $defer = false;
 
     /**
      * The artisan commands provided by this module
@@ -19,11 +19,13 @@ class ProvBaseServiceProvider extends ServiceProvider
     protected $commands = [
         'Modules\ProvBase\Console\configfileCommand',
         'Modules\ProvBase\Console\contractCommand',
+        'Modules\ProvBase\Console\cpeHostnameCommand',
         'Modules\ProvBase\Console\dhcpCommand',
         'Modules\ProvBase\Console\importCommand',
         'Modules\ProvBase\Console\importTvCustomersCommand',
         'Modules\ProvBase\Console\importNetUserCommand',
         'Modules\ProvBase\Console\geocodeCommand',
+        'Modules\ProvBase\Console\HardwareSupportCommand',
     ];
 
     /**
@@ -59,7 +61,7 @@ class ProvBaseServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('provbase.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/cmts.php', 'provbase.cmts'
+            __DIR__.'/../Config/netgw.php', 'provbase.netgw'
         );
         $this->mergeConfigFrom(
             __DIR__.'/../Config/config.php', 'provbase'

@@ -1,7 +1,5 @@
 @extends('ccc::layouts.master')
-
 <?php $classes = ['info', 'active']; ?>
-
 @section('content_left')
   <div class="row">
     @foreach($invoice_links as $year => $years)
@@ -61,6 +59,12 @@
       </div>
     @endforeach
   </div>
+
+  <div class="row">
+    @include('ccc::speed_test')
+  </div>
+</div>
+
 @stop
 
 @section('content_emails')
@@ -81,4 +85,8 @@
     @include ('bootstrap.panel', array ('content' => 'content_emails', 'emails' => $emails, 'view_header' => App\Http\Controllers\BaseViewController::translate_label('E-Mail Address'), 'md' => 4))
   @endif
 
+@stop
+
+@section('javascript')
+<script src="{{asset('components/nmsprime_speedtest.js')}}"></script>
 @stop

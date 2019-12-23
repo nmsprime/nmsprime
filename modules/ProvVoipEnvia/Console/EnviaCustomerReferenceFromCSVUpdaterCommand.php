@@ -35,7 +35,7 @@ class EnviaCustomerReferenceFromCSVUpdaterCommand extends Command
      *
      * @return null
      */
-    public function fire()
+    public function handle()
     {
         Log::info($this->description);
         echo "\n";

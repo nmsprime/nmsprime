@@ -6,6 +6,13 @@ class TicketType extends \BaseModel
 {
     public $table = 'tickettype';
 
+    public static function rules($id = null)
+    {
+        return [
+            'name' => 'required|string',
+        ];
+    }
+
     /**
      * View Stuff
      */
@@ -29,16 +36,16 @@ class TicketType extends \BaseModel
      */
     public function tickets()
     {
-        return $this->belongsToMany('\Modules\Ticketsystem\Entities\Ticket', 'tickettype_ticket', 'ticket_id', 'tickettype_id');
+        return $this->belongsToMany(Ticket::class, 'tickettype_ticket', 'ticket_id', 'tickettype_id');
     }
 
     public function children()
     {
-        return $this->hasMany('\Modules\Ticketsystem\Entities\TicketType', 'parent_id');
+        return $this->hasMany(self::class, 'parent_id');
     }
 
     public function parent()
     {
-        return $this->belongsTo('\Modules\Ticketsystem\Entities\TicketType');
+        return $this->belongsTo(self::class);
     }
 }

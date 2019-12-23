@@ -12,13 +12,13 @@ class Configfile extends \BaseModel
     // The associated SQL table for this Model
     public $table = 'configfile';
 
-    public $guarded = ['cvc_upload', 'firmware_upload'];
+    public $guarded = ['cvc_upload', 'firmware_upload', 'import'];
 
     // Add your validation rules here
     public static function rules($id = null)
     {
         return [
-            'name' => 'required|unique:configfile,name,'.$id.',id,deleted_at,NULL',
+            'name' => 'required_without:import|unique:configfile,name,'.$id.',id,deleted_at,NULL',
             'text' => 'docsis',
             'cvc' => 'required_with:firmware',
         ];
@@ -69,7 +69,7 @@ class Configfile extends \BaseModel
     {
         $id = $this->id;
         // TODO: this should not be a database query
-        $children = self::all()->where('parent_id', $id)->all();
+        $children = self::where('parent_id', $id)->get();
         $cf_tree = [];
 
         foreach ($children as $cf) {
@@ -128,22 +128,22 @@ class Configfile extends \BaseModel
      */
     public function modem()
     {
-        return $this->hasMany('Modules\ProvBase\Entities\Modem');
+        return $this->hasMany(Modem::class);
     }
 
     public function mtas()
     {
-        return $this->hasMany('Modules\ProvVoip\Entities\Mta');
+        return $this->hasMany(\Modules\ProvVoip\Entities\Mta::class);
     }
 
     public function children()
     {
-        return $this->hasMany('Modules\ProvBase\Entities\Configfile', 'parent_id');
+        return $this->hasMany(self::class, 'parent_id');
     }
 
     public function parent()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Configfile');
+        return $this->belongsTo(self::class);
     }
 
     /**
@@ -255,6 +255,23 @@ class Configfile extends \BaseModel
             case 'generic':
                 break;
 
+            case 'tr069':
+                $modem = [$device];
+                $db_schemata['modem'][0] = Schema::getColumnListing('modem');
+                $qos = [$device->qos];
+                $db_schemata['qos'][0] = Schema::getColumnListing('qos');
+
+                if (! $device->mtas->first()) {
+                    break;
+                }
+                foreach ($device->mtas->first()->phonenumbers as $phone) {
+                    // use the port number as primary index key, so {phonenumber.number.1} will be the phone with port 1, not id 1 !
+                    $phonenumber[$phone->port] = $phone;
+                    // get description of table phonennumbers; one subarray per (possible) number
+                    $db_schemata['phonenumber'][$phone->port] = Schema::getColumnListing('phonenumber');
+                }
+                break;
+
             // this is for unknown types – atm we do nothing
             default:
                 return false;
@@ -289,11 +306,11 @@ class Configfile extends \BaseModel
         }
 
         // DEBUG: var_dump ($search, $replace);
-
         /*
          * Search and Replace Configfile TEXT
          */
-        $text = str_replace($search, $replace, $this->text);
+        $text = str_replace($search, $replace, $this->text ?? $device->text);
+
         $rows = explode("\n", $text);
 
         // finally: append extensions; they have to be an array with one entry per line
@@ -306,7 +323,6 @@ class Configfile extends \BaseModel
             if (preg_match('/\\{[^\\{]*\\}/im', $row, $match) && ($row = self::_calc_eval($row, $match)) === null) {
                 continue;
             }
-
             $result .= "\n\t".$row;
         }
 
@@ -324,18 +340,27 @@ class Configfile extends \BaseModel
         $match = trim($match[0], '{}');
         $ops = explode(',', $match);
 
-        if (count($ops) != 3 || ! is_numeric($ops[0]) || ! is_numeric($ops[2]) || ! in_array($ops[1], ['+', '-', '*', '/'])) {
+        if (count($ops) != 3 || ! in_array($ops[1], ['+', '-', '*', '/', '?'])) {
             return;
         }
 
-        try {
-            $res = eval("return $ops[0] $ops[1] $ops[2];");
-        } catch (\Exception $e) {
-            // e.g. divide by zero
-            return;
+        /*
+         * overwrite configfile variable {}, which couldn't be resolved
+         * via the database with a default value (i.e. $ops[2])
+         * syntax: {{phonenumber.active.1},?,2};
+         */
+        if ($ops[1] === '?') {
+            $res = \Str::contains($ops[0], '}') ? $ops[2] : $ops[0];
+        } elseif (is_numeric($ops[0]) || is_numeric($ops[2])) {
+            try {
+                $res = eval("return $ops[0] $ops[1] $ops[2];");
+            } catch (\Exception $e) {
+                // e.g. divide by zero
+                return;
+            }
         }
 
-        return preg_replace('/\\{[^\\{]*\\}/im', $res, $row);
+        return preg_replace('/\\{.*\\}/im', $res, $row);
     }
 
     /**
@@ -417,6 +442,86 @@ class Configfile extends \BaseModel
 
         return $used_ids;
     }
+
+    /**
+     * Creates all configfiles for all modems.
+     * Logic from ConfigfileCommand nms:configfile.
+     */
+    public function execute($filter = null, $id = null)
+    {
+        \Log::debug("configfileCommand called with configfile id: $id");
+
+        // handle configfile observer functionality via job in background
+        if ($id) {
+            $cf = self::find($id);
+            $cf->build_corresponding_configfiles();
+            $cf->search_children(1);
+
+            return;
+        }
+
+        // Modem
+        foreach (Modem::TYPES as $type) {
+            if (! $filter || $filter == $type) {
+                $modems = Modem::join('configfile', 'configfile.id', 'modem.configfile_id')
+                    ->where('configfile.device', $type)
+                    ->whereNull('configfile.deleted_at')
+                    ->select('modem.*')
+                    ->get();
+
+                $this->build_configfiles($modems, $type);
+            }
+        }
+
+        // MTA
+        if (! $filter || $filter == 'mta') {
+            if (! \Module::collections()->has('ProvVoip')) {
+                return;
+            }
+
+            $mtas = \Modules\ProvVoip\Entities\Mta::all();
+            $this->build_configfiles($mtas, 'mta');
+        }
+    }
+
+    /**
+     * @param array  Objects of Modem or Mta
+     */
+    public function build_configfiles($devices, $type)
+    {
+        $i = 1;
+        $num = count($devices);
+        $type = strtoupper($type);
+
+        \Log::info("Build all $num $type configfiles");
+
+        foreach ($devices as $device) {
+            echo "$type: create config files: $i/$num \r";
+            $i++;
+            $device->make_configfile();
+        }
+
+        echo "\n";
+    }
+
+    /**
+     * Get monitoring config based on the json string found in the configfile
+     *
+     * @author Ole Ernst
+     */
+    public function getMonitoringConfig()
+    {
+        if (! preg_match('/#monitoring:({.*})/', $this->text, $matches)) {
+            return false;
+        }
+
+        $conf = json_decode($matches[1], true);
+        if (! $conf) {
+            return false;
+        }
+
+        return $conf;
+    }
 }
 
 /**
@@ -431,12 +536,15 @@ class ConfigfileObserver
 {
     public function created($configfile)
     {
+        $this->updateProvision($configfile, false);
         // When a Configfile was created we can not already have a relation - so dont call command
     }
 
     public function updated($configfile)
     {
-        \Queue::push(new \Modules\ProvBase\Console\configfileCommand($configfile->id));
+        $this->updateProvision($configfile, false);
+
+        \Queue::push(new \Modules\ProvBase\Jobs\ConfigfileJob(null, $configfile->id));
         // $configfile->build_corresponding_configfiles();
         // with parameter one the children are built
         // $configfile->search_children(1);
@@ -444,6 +552,35 @@ class ConfigfileObserver
 
     public function deleted($configfile)
     {
+        $this->updateProvision($configfile, true);
         // Actually it's only possible to delete configfiles that are not related to any cm/mta - so no CFs need to be built
+    }
+
+    /**
+     * Update monitoring provision of the corresponding configfile.
+     *
+     * The provision is assigned to every tr069 device having this configfile.
+     * This makes sure, that we retrieve all objects to be monitored during every PERIODIC INFORM.
+     *
+     * @author Ole Ernst
+     */
+    private function updateProvision($configfile, $deleted)
+    {
+        // always delete provision, GenieACS doesn't mind deleting non-exisiting provisions
+        // this way we don't need to care for a dirty $configfile->device
+        Modem::callGenieAcsApi("provisions/mon-$configfile->id", 'DELETE');
+
+        // nothing to do
+        if ($deleted || $configfile->device != 'tr069') {
+            return;
+        }
+
+        $prov = [];
+        $conf = $configfile->getMonitoringConfig() ?: [];
+        $prov = array_map(function ($value) {
+            return "declare('$value', {value: Date.now() - (290 * 1000)});";
+        }, \Illuminate\Support\Arr::flatten($conf));
+
+        Modem::callGenieAcsApi("provisions/mon-$configfile->id", 'PUT', implode("\r\n", $prov));
     }
 }

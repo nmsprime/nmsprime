@@ -20,7 +20,7 @@ class ProvBase extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'provisioning_server' => 'ip',
+            'provisioning_server' => 'nullable|ip',
             // TODO: Add max_cpe rule when validation errors are displayed again
             // 'max_cpe' => 'numeric|min:1|max:254',
         ];
@@ -200,7 +200,37 @@ class ProvBaseObserver
 
         // build all Modem Configfiles via Job as this will take a long time
         if (multi_array_key_exists(['ds_rate_coefficient', 'us_rate_coefficient', 'max_cpe'], $changes)) {
-            \Queue::push(new \Modules\ProvBase\Console\configfileCommand(0, 'cm'));
+            \Queue::push(new \Modules\ProvBase\Jobs\ConfigfileJob('cm'));
+        }
+
+        if (array_key_exists('ro_community', $changes)) {
+            // update cacti database: replace the original snmp ro_community with the new one
+            \DB::connection('mysql-cacti')
+                ->table('host')
+                ->where('snmp_community', $model->getOriginal('ro_community'))
+                ->update(['snmp_community' => $model->ro_community]);
+        }
+
+        if (array_key_exists('domain_name', $changes)) {
+            // update cacti database: replace the original domain_name with the new one
+            \DB::connection('mysql-cacti')
+                ->table('host')
+                ->where('hostname', 'like', "cm-%.{$model->getOriginal('domain_name')}")
+                ->update(['hostname' => \DB::raw("REPLACE(hostname, '{$model->getOriginal('domain_name')}', '$model->domain_name')")]);
+
+            // adjust named config and restart it
+            $sed_file = storage_path('app/tmp/update-domain.sed');
+            file_put_contents($sed_file, "s/zone \"{$model->getOriginal('domain_name')}\" IN/zone \"$model->domain_name\" IN/g");
+            exec("sudo sed -i -f $sed_file /etc/named-nmsprime.conf");
+
+            file_put_contents($sed_file, "s/{$model->getOriginal('domain_name')}/$model->domain_name/g");
+            exec("sudo sed -i -f $sed_file /etc/named-ddns.sh");
+
+            exec('sudo rndc sync -clean');
+            exec("sudo sed -i -f $sed_file /var/named/dynamic/in-addr.arpa.zone");
+            exec("sudo sed -i -f $sed_file /var/named/dynamic/nmsprime.test.zone");
+            exec('sudo systemctl restart named.service');
+            unlink($sed_file);
         }
     }
 }

@@ -18,8 +18,8 @@ class ProvVoipEnviaHelpers
     {
         $replace_func = function ($data) {
             $placeholders = [
-                'placeholder_yes' => '<span class="text-success">&#10004;</span>',
-                'placeholder_no' => '<span class="text-danger">&#10008;</span>',
+                'placeholder_yes' => '<span class="text-success centerblock">&#10004;</span>',
+                'placeholder_no' => '<span class="text-danger centerblock">&#10008;</span>',
                 'placeholder_unset' => '–',
             ];
             foreach ($placeholders as $placeholder => $replacement) {
@@ -72,11 +72,12 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            'Number',
-            'Address',
-            'Contract start',
-            'Contract end',
-            'Internet access?',
+            trans('provvoipenvia::view.enviaOrder.number'),
+            trans('provvoipenvia::view.enviaOrder.address'),
+            trans('provvoipenvia::view.enviaOrder.contractStart'),
+            trans('provvoipenvia::view.enviaOrder.contractEnd'),
+            trans('provvoipenvia::view.enviaOrder.hasInternet'),
+            trans('provvoipenvia::view.enviaOrder.hasTelephony'),
         ];
         array_push($data, $head);
 
@@ -89,18 +90,19 @@ class ProvVoipEnviaHelpers
         }
 
         $tmp_address = '';
-        $tmp_address .= (boolval($contract->company) ? $contract->company.',<br>' : '');
+        $tmp_address .= (boolval($contract->company) ? $contract->company.'<br>' : '');
         $tmp_address .= (boolval($contract->firstname) ? $contract->firstname.' ' : '');
         $tmp_address .= (boolval($contract->lastname) ? $contract->lastname : '');
-        $tmp_address .= ((boolval($contract->firstname) || boolval($contract->lastname)) ? ',<br>' : '');
-        $tmp_address .= $contract->street.(boolval($contract->house_number) ? '&nbsp;'.$contract->house_number : '').',<br>';
+        $tmp_address .= ((boolval($contract->firstname) || boolval($contract->lastname)) ? '<br>' : '');
+        $tmp_address .= (boolval($contract->district) ? $contract->district.'<br>' : '');
+        $tmp_address .= $contract->street.(boolval($contract->house_number) ? '&nbsp;'.$contract->house_number : '').'<br>';
         $tmp_address .= $contract->city;
-        $tmp_address .= (boolval($contract->district) ? ' OT '.$contract->district : '');
         array_push($row, $tmp_address);
 
         array_push($row, boolval($contract->contract_start) ? $contract->contract_start : 'placeholder_unset');
         array_push($row, boolval($contract->contract_end) ? $contract->contract_end : 'placeholder_unset');
         array_push($row, ($contract->internet_access > 0 ? 'placeholder_yes' : 'placeholder_no'));
+        array_push($row, ($contract->has_telephony > 0 ? 'placeholder_yes' : 'placeholder_no'));
 
         array_push($data, $row);
 
@@ -119,12 +121,12 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            'Product',
-            'Type',
-            'Valid from',
-            'Fix?',
-            'Valid to',
-            'Fix?',
+            trans('provvoipenvia::view.enviaOrder.product'),
+            trans('provvoipenvia::view.enviaOrder.type'),
+            trans('provvoipenvia::view.enviaOrder.validFrom'),
+            trans('provvoipenvia::view.enviaOrder.fix'),
+            trans('provvoipenvia::view.enviaOrder.validTo'),
+            trans('provvoipenvia::view.enviaOrder.fix'),
         ];
         array_push($data, $head);
 
@@ -172,12 +174,12 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            'MAC address',
-            'Hostname',
-            'Installation address',
-            'Configfile',
-            'QoS',
-            'Network access?',
+            trans('provvoipenvia::view.enviaOrder.macAddress'),
+            trans('provvoipenvia::view.enviaOrder.hostname'),
+            trans('provvoipenvia::view.enviaOrder.installationAddress'),
+            trans('provvoipenvia::view.enviaOrder.configfile'),
+            trans('provvoipenvia::view.enviaOrder.qos'),
+            trans('provvoipenvia::view.enviaOrder.hasInternet'),
         ];
         array_push($data, $head);
 
@@ -191,13 +193,13 @@ class ProvVoipEnviaHelpers
         array_push($row, $modem->hostname);
 
         $tmp_address = '';
-        $tmp_address .= (boolval($modem->company) ? $modem->company.',<br>' : '');
+        $tmp_address .= (boolval($modem->company) ? $modem->company.'<br>' : '');
         $tmp_address .= (boolval($modem->firstname) ? $modem->firstname.' ' : '');
         $tmp_address .= (boolval($modem->lastname) ? $modem->lastname : '');
-        $tmp_address .= ((boolval($modem->firstname) || boolval($modem->lastname)) ? ',<br>' : '');
-        $tmp_address .= $modem->street.(boolval($modem->house_number) ? '&nbsp;'.$modem->house_number : '').',<br>';
+        $tmp_address .= ((boolval($modem->firstname) || boolval($modem->lastname)) ? '<br>' : '');
+        $tmp_address .= (boolval($modem->district) ? $modem->district.'<br>' : '');
+        $tmp_address .= $modem->street.(boolval($modem->house_number) ? '&nbsp;'.$modem->house_number : '').'<br>';
         $tmp_address .= $modem->city;
-        $tmp_address .= (boolval($modem->district) ? ' OT '.$modem->district : '');
         array_push($row, $tmp_address);
 
         if ($modem->configfile) {
@@ -230,12 +232,12 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            'Phonenumber',
-            'Activation target',
-            'Activation confirmed',
-            'Deactivation target',
-            'Deactivation confirmed',
-            'Active?',
+            trans('provvoipenvia::view.enviaOrder.phonenumber'),
+            trans('provvoipenvia::view.enviaOrder.activationDate'),
+            trans('provvoipenvia::view.enviaOrder.activationDateEnvia'),
+            trans('provvoipenvia::view.enviaOrder.deactivationDate'),
+            trans('provvoipenvia::view.enviaOrder.deactivationDateEnvia'),
+            trans('provvoipenvia::view.enviaOrder.active'),
         ];
         array_push($data, $head);
 
@@ -316,10 +318,10 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            'envia TEL contract ID',
-            'State',
-            'Start date',
-            'End date',
+            trans('provvoipenvia::view.enviaOrder.enviaTelContractId'),
+            trans('provvoipenvia::view.enviaOrder.state'),
+            trans('provvoipenvia::view.enviaOrder.contractStart'),
+            trans('provvoipenvia::view.enviaOrder.contractEnd'),
         ];
         array_push($data, $head);
 
@@ -346,11 +348,11 @@ class ProvVoipEnviaHelpers
         $data = [];
 
         $head = [
-            'Order ID',
-            'Ordertype',
-            'Orderdate',
-            'Orderstatus',
-            'Method',
+            trans('provvoipenvia::view.enviaContract.orderId'),
+            trans('provvoipenvia::view.enviaContract.ordertype'),
+            trans('provvoipenvia::view.enviaContract.orderdate'),
+            trans('provvoipenvia::view.enviaContract.orderstatus'),
+            trans('provvoipenvia::view.enviaContract.method'),
         ];
         array_push($data, $head);
 

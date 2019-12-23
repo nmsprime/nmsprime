@@ -2,9 +2,8 @@
 
 namespace Modules\ProvVoipEnvia\Http\Controllers;
 
-use Input;
 use Bouncer;
-use Illuminate\Support\Facades\View;
+use Request;
 use Modules\ProvBase\Entities\Modem;
 use Modules\ProvBase\Entities\Contract;
 use Modules\ProvVoip\Entities\Phonenumber;
@@ -33,11 +32,11 @@ class EnviaOrderController extends \BaseController
 
             // order can be related to phonenumber and/or modem and/or contract
             // get the contract (has to be given; watch create()
-            $contract_id = Input::get('contract_id', null);
+            $contract_id = Request::get('contract_id', null);
             $init_values['contract_id'] = $contract_id;
 
             // try to get modem (can be given)
-            $modem_id = Input::get('modem_id', null);
+            $modem_id = Request::get('modem_id', null);
             if (boolval($modem_id)) {
                 $init_values['modem_id'] = $modem_id;
                 if (! $modem = Modem::find($modem_id)) {
@@ -47,7 +46,7 @@ class EnviaOrderController extends \BaseController
             }
 
             // try to get phonenumber (can be given)
-            $phonenumber_id = Input::get('phonenumber_id', null);
+            $phonenumber_id = Request::get('phonenumber_id', null);
             if (boolval($phonenumber_id)) {
                 $init_values['phonenumber_id'] = $phonenumber_id;
                 if (! $phonenumber = Phonenumber::find($phonenumber_id)) {
@@ -63,7 +62,7 @@ class EnviaOrderController extends \BaseController
             $related_id = $model->related_order_id;
             if (boolval($related_id)) {
                 $order_related = EnviaOrder::withTrashed()->find($related_id);
-                $init_values['related_order_id_show'] = $order_related->orderid.' <i>(DB ID: '.$order_related->id.')</i>';
+                $init_values['related_order_id_show'] = $order_related->orderid.' (DB ID: '.$order_related->id.')';
                 $init_values['related_order_type'] = $order_related->ordertype;
                 $init_values['related_order_created_at'] = $order_related->created_at;
                 $init_values['related_order_updated_at'] = $order_related->updated_at;
@@ -81,39 +80,39 @@ class EnviaOrderController extends \BaseController
             }
             $init_values['phonenumber_id'] = $phonenumber_ids;
 
-            $order_id = ['form_type' => 'text', 'name' => 'orderid', 'description' => 'Order ID', 'options' => ['readonly']];
+            $order_id = ['form_type' => 'text', 'name' => 'orderid', 'description' => trans('provvoipenvia::view.enviaOrder.id'), 'options' => ['readonly']];
         }
 
         // label has to be the same like column in sql table
         $ret_tmp = [
             $order_id,
-            ['form_type' => 'text', 'name' => 'created_at', 'description' => 'Created at', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'updated_at', 'description' => 'Last status update', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'last_user_interaction', 'description' => 'Last user interaction', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'method', 'description' => 'Method', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'ordertype_id', 'description' => 'Ordertype ID', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'ordertype', 'description' => 'Ordertype', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'orderstatus_id', 'description' => 'Orderstatus ID', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'orderstatus', 'description' => 'Orderstatus', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'orderdate', 'description' => 'Orderdate', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'ordercomment', 'description' => 'Ordercomment', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'customerreference', 'description' => 'envia TEL customer reference', 'options' => ['readonly'], 'hidden' => 'C'],
-            ['form_type' => 'text', 'name' => 'contractreference', 'description' => 'envia TEL contract reference', 'options' => ['readonly'], 'hidden' => 'C', 'space' => '1'],
-            ['form_type' => 'text', 'name' => 'contract_id', 'description' => 'Contract ID', 'options' => ['readonly'], 'hidden' => 1],
-            ['form_type' => 'text', 'name' => 'modem_id', 'description' => 'Modem ID', 'options' => ['readonly'], 'hidden' => 1],
-            ['form_type' => 'text', 'name' => 'phonenumber_id', 'description' => 'Phonenumber ID', 'options' => ['readonly'], 'hidden' => 1],
+            ['form_type' => 'text', 'name' => 'created_at', 'description' => trans('provvoipenvia::view.enviaOrder.createdAt'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'updated_at', 'description' => trans('provvoipenvia::view.enviaOrder.lastStatusUpdate'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'last_user_interaction', 'description' => trans('provvoipenvia::view.enviaOrder.lastUserInteraction'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'method', 'description' => trans('provvoipenvia::view.enviaOrder.method'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'ordertype_id', 'description' => trans('provvoipenvia::view.enviaOrder.ordertypeId'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'ordertype', 'description' => trans('provvoipenvia::view.enviaOrder.ordertype'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'orderstatus_id', 'description' => trans('provvoipenvia::view.enviaOrder.orderstatusId'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'orderstatus', 'description' => trans('provvoipenvia::view.enviaOrder.orderstatus'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'orderdate', 'description' => trans('provvoipenvia::view.enviaOrder.orderdate'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'ordercomment', 'description' => trans('provvoipenvia::view.enviaOrder.ordercomment'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'customerreference', 'description' => trans('provvoipenvia::view.enviaOrder.customerReference'), 'options' => ['readonly'], 'hidden' => 'C'],
+            ['form_type' => 'text', 'name' => 'contractreference', 'description' => trans('provvoipenvia::view.enviaOrder.contractReference'), 'options' => ['readonly'], 'hidden' => 'C', 'space' => '1'],
+            ['form_type' => 'text', 'name' => 'contract_id', 'description' => trans('provvoipenvia::view.enviaOrder.contractId'), 'options' => ['readonly'], 'hidden' => 1],
+            ['form_type' => 'text', 'name' => 'modem_id', 'description' => trans('provvoipenvia::view.enviaOrder.modemId'), 'options' => ['readonly'], 'hidden' => 1],
+            ['form_type' => 'text', 'name' => 'phonenumber_id', 'description' => trans('provvoipenvia::view.enviaOrder.phonenumberId'), 'options' => ['readonly'], 'hidden' => 1],
         ];
 
         // add information to related order (e.g. for “Stornierung”) if exists
         if (boolval($related_id)) {
             // this fields are for information only => they have to be removed in observer on updating
             // attention: related order can also be deleted!
-            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_id_show', 'description' => 'Related order ID', 'options' => ['readonly'], 'hidden' => 'C']);
-            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_type', 'description' => 'Related order type', 'options' => ['readonly'], 'hidden' => 'C']);
-            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_created_at', 'description' => 'Related order created', 'options' => ['readonly'], 'hidden' => 'C']);
-            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_updated_at', 'description' => 'Related order last updated', 'options' => ['readonly'], 'hidden' => 'C']);
+            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_id_show', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderId'), 'options' => ['readonly'], 'hidden' => 'C']);
+            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_type', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderType'), 'options' => ['readonly'], 'hidden' => 'C']);
+            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_created_at', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderCreated'), 'options' => ['readonly'], 'hidden' => 'C']);
+            array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_updated_at', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderLastUpdated'), 'options' => ['readonly'], 'hidden' => 'C']);
             if (array_key_exists('related_order_deleted_at', $init_values)) {
-                array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_deleted_at', 'description' => 'Related order deleted', 'options' => ['readonly'], 'hidden' => 'C']);
+                array_push($ret_tmp, ['form_type' => 'text', 'name' => 'related_order_deleted_at', 'description' => trans('provvoipenvia::view.enviaOrder.relatedOrderDeleted'), 'options' => ['readonly'], 'hidden' => 'C']);
             }
         }
 
@@ -136,17 +135,18 @@ class EnviaOrderController extends \BaseController
 
     public function create()
     {
-        $phonenumbermanagement_id = Input::get('phonenumbermanagement_id', null);
-        $phonenumber_id = Input::get('phonenumber_id', null);
-        $modem_id = Input::get('modem_id', null);
-        $contract_id = Input::get('contract_id', null);
+        $phonenumbermanagement_id = Request::get('phonenumbermanagement_id', null);
+        $phonenumber_id = Request::get('phonenumber_id', null);
+        $modem_id = Request::get('modem_id', null);
+        $contract_id = Request::get('contract_id', null);
 
         // if contract_id is given: all is fine => call parent
         // in this case we take for sure that the caller is is either contract=>create_envia_order or a redirected phonenumbermanagement=>create_envia_order
         if (! is_null($contract_id)) {
             if (! Contract::find($contract_id)) {
                 $this->edit_view_save_button = false;
-                \Session::push('tmp_info_above_form', "Cannot create EnviaOrder – contract $contract_id does not exist");
+                $msg = trans('provvoipenvia::messages.orderCannotCreateModelMissing', ['model' => 'Contract', 'id' => $contract_id]);
+                \Session::push('tmp_error_above_form', $msg);
             }
 
             return parent::create();
@@ -158,7 +158,7 @@ class EnviaOrderController extends \BaseController
         $params = $_GET;
 
         // then we add all possibly given input values (this is e.g. the _token to avoid CSRF attacks)
-        foreach (Input::all() as $key => $value) {
+        foreach (Request::all() as $key => $value) {
             if (! array_key_exists($key, $params)) {
                 $params[$key] = $value;
             }
@@ -167,7 +167,8 @@ class EnviaOrderController extends \BaseController
         // if no contract_id has been given: calculate contract_id and (if possible) modem_id and/or phonenumber_id
         if (is_null($modem_id) && is_null($phonenumbermanagement_id)) {
             $this->edit_view_save_button = false;
-            \Session::push('tmp_info_above_form', 'Cannot create EnviaOrder – neither contract_id nor modem_id nor phonenumbermanagement_id given.');
+            $msg = trans('provvoipenvia::messages.orderCannotCreateIdMissing');
+            \Session::push('tmp_error_above_form', $msg);
 
             return parent::create();
         }
@@ -175,7 +176,8 @@ class EnviaOrderController extends \BaseController
         if (! is_null($phonenumbermanagement_id)) {
             if (! $phonenumbermanagement = PhonenumberManagement::find($phonenumbermanagement_id)) {
                 $this->edit_view_save_button = false;
-                \Session::push('tmp_info_above_form', "Cannot create EnviaOrder – PhonenumberManagement $phonenumbermanagement_id does not exist");
+                $msg = trans('provvoipenvia::messages.orderCannotCreateModelMissing', ['model' => 'PhonenumberManagement', 'id' => $phonenumbermanagement_id]);
+                \Session::push('tmp_error_above_form', $msg);
 
                 return parent::create();
             }
@@ -187,7 +189,8 @@ class EnviaOrderController extends \BaseController
         } elseif (! is_null($modem_id)) {
             if (! $modem = Modem::find($modem_id)) {
                 $this->edit_view_save_button = false;
-                \Session::push('tmp_info_above_form', "Cannot create EnviaOrder – Modem $modem_id does not exist");
+                $msg = trans('provvoipenvia::messages.orderCannotCreateModelMissing', ['model' => 'Modem', 'id' => $modem_id]);
+                \Session::push('tmp_error_above_form', $msg);
 
                 return parent::create();
             }
@@ -258,7 +261,7 @@ class EnviaOrderController extends \BaseController
         $parent_return = parent::edit($id);
 
         // if already updated against envia TEL API: show edit form
-        if (Input::get('recently_updated', false)) {
+        if (Request::get('recently_updated', false)) {
             return $parent_return;
         }
 
@@ -292,7 +295,7 @@ class EnviaOrderController extends \BaseController
         }
 
         // else redirect to check newly created order against envia TEL API
-        $order_id = Input::get('orderid');
+        $order_id = Request::get('orderid');
         $params = [
             'job' => 'order_get_status',
             'order_id' => $order_id,
@@ -312,13 +315,13 @@ class EnviaOrderController extends \BaseController
     {
         if (Bouncer::cannot('delete', EnviaOrder::class) &&
             Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia')) {
-            throw new AuthException('Access to model '.$modelToCheck.' not allowed for user '.Auth::user()->login_name.'.');
+            throw new AuthException('Access to model EnviaOrder not allowed for user '.Auth::user()->login_name.'.');
         }
         // get all orders to be canceled
         $orders = [];
         if ($id == 0) {
             // bulk deletion is not supported (yet?)
-            $ids = Input::all()['ids'];
+            $ids = Request::all()['ids'];
             if (count($ids) > 1) {
                 // TODO: make a nicer output
                 echo '<h3>Error: Cannot cancel more than one order per time</h3>';
@@ -337,7 +340,6 @@ class EnviaOrderController extends \BaseController
         $params = [
             'job' => 'order_cancel',
             'order_id' => $order->orderid,
-            /* 'origin' => urlencode(\Request::getUri()), */
             'origin' => urlencode(\URL::previous()),
         ];
 

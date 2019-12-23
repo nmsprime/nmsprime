@@ -3,6 +3,7 @@
 namespace Modules\ProvVoip\Entities;
 
 use Illuminate\Support\Collection;
+use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 
 class Phonenumber extends \BaseModel
 {
@@ -180,6 +181,17 @@ class Phonenumber extends \BaseModel
         return $this->prefix_number.'/'.$this->number;
     }
 
+    public function asString()
+    {
+        if ($this->country_code == '0049' && $this->prefix_number[0] == 0) {
+            return $this->prefix_number.$this->number;
+        }
+
+        $local = $this->prefix_number[0] == 0 ? substr($this->prefix_number, 1) : $this->prefix_number;
+
+        return $this->country_code.$local.$this->number;
+    }
+
     public function modem_city()
     {
         return $this->mta->modem->zip.' '.$this->mta->modem->city;
@@ -191,7 +203,7 @@ class Phonenumber extends \BaseModel
      */
     public function mta()
     {
-        return $this->belongsTo('Modules\ProvVoip\Entities\Mta', 'mta_id');
+        return $this->belongsTo(Mta::class, 'mta_id');
     }
 
     // belongs to an mta
@@ -221,13 +233,13 @@ class Phonenumber extends \BaseModel
 
         if (\Module::collections()->has('ProvVoipEnvia')) {
             // TODO: auth - loading controller from model could be a security issue ?
-            $ret['Edit']['envia TEL API']['html'] = '<h4>Available envia TEL API jobs</h4>';
-            $ret['Edit']['envia TEL API']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
-            $ret['Edit']['envia TEL API']['view']['vars']['extra_data'] = \Modules\ProvVoip\Http\Controllers\PhonenumberController::_get_envia_management_jobs($this);
+            $ret['Edit']['EnviaAPI']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
+            $ret['Edit']['EnviaAPI']['view']['vars']['extra_data'] = \Modules\ProvVoip\Http\Controllers\PhonenumberController::_get_envia_management_jobs($this);
         }
 
         if (\Module::collections()->has('VoipMon')) {
-            $ret['Monitoring']['Cdr'] = $this->cdrs()->orderBy('id', 'DESC')->get();
+            $ret['Monitoring']['Cdr']['class'] = 'Cdr';
+            $ret['Monitoring']['Cdr']['relation'] = $this->cdrs()->orderBy('id', 'DESC')->get();
         }
 
         return $ret;
@@ -372,7 +384,7 @@ class Phonenumber extends \BaseModel
      */
     public function phonenumbermanagement()
     {
-        return $this->hasOne('Modules\ProvVoip\Entities\PhonenumberManagement');
+        return $this->hasOne(PhonenumberManagement::class);
     }
 
     /**
@@ -388,14 +400,16 @@ class Phonenumber extends \BaseModel
     public function enviaorders($withTrashed = false, $whereStatement = '1')
     {
         if (! \Module::collections()->has('ProvVoipEnvia')) {
-            return;
+            return new \App\Extensions\Database\EmptyRelation();
         }
 
+        $orders = $this->belongsToMany(EnviaOrder::class, 'enviaorder_phonenumber',
+                            'phonenumber_id', 'enviaorder_id')
+                        ->whereRaw($whereStatement)
+                        ->withTimestamps();
+
         if ($withTrashed) {
-            $orders = $this->belongsToMany('Modules\ProvVoipEnvia\Entities\EnviaOrder', 'enviaorder_phonenumber', 'phonenumber_id', 'enviaorder_id')->withTrashed()->whereRaw($whereStatement)->withTimestamps();
-        } else {
-            $orders = $this->belongsToMany('Modules\ProvVoipEnvia\Entities\EnviaOrder', 'enviaorder_phonenumber', 'phonenumber_id', 'enviaorder_id')->whereRaw($whereStatement)->withTimestamps();
-            /* $orders = $this->belongsToMany('Modules\ProvVoipEnvia\Entities\EnviaOrder', 'enviaorder_phonenumber', 'phonenumber_id', 'enviaorder_id'); */
+            return $orders->withTrashed();
         }
 
         return $orders;
@@ -485,7 +499,7 @@ class Phonenumber extends \BaseModel
      */
     public function cdrs()
     {
-        return $this->hasMany('Modules\VoipMon\Entities\Cdr');
+        return $this->hasMany(\Modules\VoipMon\Entities\Cdr::class);
     }
 
     /**
@@ -642,8 +656,7 @@ class PhonenumberObserver
 
     public function created($phonenumber)
     {
-        $phonenumber->mta->make_configfile();
-        $phonenumber->mta->restart();
+        $this->renewConfig($phonenumber);
     }
 
     /**
@@ -670,7 +683,8 @@ class PhonenumberObserver
         }
 
         if (! $phonenumber->phonenumber_reassignment_allowed($old_mta->modem, $new_mta->modem)) {
-            \Session::push('tmp_error_above_form', "Reassignement of phonenumber to MTA $new_mta->id not allowed");
+            $msg = trans('validation.reassign_phonenumber_to_mta_fail', ['id' => $new_mta->id]);
+            $phonenumber->addAboveMessage($msg, 'error', 'form');
 
             return false;
         }
@@ -700,8 +714,7 @@ class PhonenumberObserver
         $this->_check_and_process_sip_data_change($phonenumber);
 
         // rebuild the current mta's configfile and restart the modem – has to be done in each case
-        $phonenumber->mta->make_configfile();
-        $phonenumber->mta->restart();
+        $this->renewConfig($phonenumber);
     }
 
     /**
@@ -711,7 +724,7 @@ class PhonenumberObserver
      */
     protected function _check_and_process_mta_change($phonenumber)
     {
-        $old_mta_id = intval($phonenumber['original']['mta_id']);
+        $old_mta_id = intval($phonenumber->getOriginal('mta_id'));
         $new_mta_id = intval($phonenumber->mta_id);
 
         // if the MTA has not been changed we have nothing to do :-)
@@ -756,7 +769,8 @@ class PhonenumberObserver
         if (
             (! $phonenumber->contract_external_id)
         ) {
-            \Session::push('tmp_info_above_form', 'Number has not been created at envia TEL – will not change any modem data.');
+            $msg = trans('provvoipenvia::messages.phonenumberNotCreatedAtEnviaNoModemChange');
+            $phonenumber->addAboveMessage($msg, 'info', 'form');
 
             return;
         }
@@ -826,7 +840,8 @@ class PhonenumberObserver
             }
             $numbers = '<br>&nbsp;&nbsp;'.implode('<br>&nbsp;&nbsp;', $numbers);
 
-            \Session::push('tmp_info_above_form', 'There are still phonenumbers attached to '.$modem_href."! Don't forget to move them, too:".$numbers);
+            $msg = trans('provvoipenvia::messages.modemStillNumbersAttached', ['href' => $modem_href, 'numbers' => $numbers]);
+            $phonenumber->addAboveMessage($msg, 'warning', 'form');
         }
     }
 
@@ -837,13 +852,7 @@ class PhonenumberObserver
      */
     protected function _check_and_process_sip_data_change($phonenumber)
     {
-        if (
-            ($phonenumber['original']['username'] != $phonenumber->username)
-            ||
-            ($phonenumber['original']['password'] != $phonenumber->password)
-            ||
-            ($phonenumber['original']['sipdomain'] != $phonenumber->sipdomain)
-        ) {
+        if ($phonenumber->isDirty('username', 'password', 'sipdomain')) {
             $this->_check_and_process_sip_data_change_for_envia($phonenumber);
         }
     }
@@ -880,10 +889,11 @@ class PhonenumberObserver
                 'phonenumber_id' => $phonenumber->id,
                 ];
 
-            $title = 'DO THIS MANUALLY NOW!';
+            $title = trans('provvoipenvia::messages.doManuallyNow');
             $envia_href = \HTML::linkRoute('ProvVoipEnvia.request', $title, $parameters);
 
-            \Session::push('tmp_info_above_form', 'Autochanging of SIP data at envia TEL is not implemented yet.<br>You have to '.$envia_href);
+            $msg = trans('provvoipenvia::messages.sipDateNotChangedAutomaticallyAtEnvia', ['href' => $envia_href]);
+            $phonenumber->addAboveMessage($msg, 'warning', 'form');
         }
     }
 
@@ -954,10 +964,26 @@ class PhonenumberObserver
         \Session::put('alert.danger', trans('messages.phonenumber_nr_change_hlkomm'));
     }
 
+    /**
+     * Rebuild the current configfile/provision and restart/factoryReset the device
+     *
+     * @param $phonenumber \Modules\ProvVoip\Entities\Phonenumber
+     * @author Ole Ernst
+     */
+    private function renewConfig($phonenumber)
+    {
+        if ($phonenumber->mta->modem->isTR069()) {
+            $phonenumber->mta->modem->make_configfile();
+            $phonenumber->mta->modem->factoryReset();
+        } else {
+            $phonenumber->mta->make_configfile();
+            $phonenumber->mta->restart();
+        }
+    }
+
     public function deleted($phonenumber)
     {
-        $phonenumber->mta->make_configfile();
-        $phonenumber->mta->restart();
+        $this->renewConfig($phonenumber);
 
         // check if this number has been the last on old modem ⇒ if so remove envia related data from modem
         if (! $phonenumber->mta->modem->has_phonenumbers_attached()) {

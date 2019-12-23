@@ -23,7 +23,7 @@ class SnmpController extends \BaseController
     private $device;
 
     /**
-     * @var  object     Used for parent cmts of a cluster
+     * @var  object     Used for parent netgw of a cluster
      */
     private $parent_device;
 
@@ -51,15 +51,15 @@ class SnmpController extends \BaseController
         $this->device = $device;
         $this->index = $index ? [$index] : 0;
 
-        // Search parent CMTS for type cluster
+        // Search parent NetGw for type cluster
         if ($device->netelementtype_id == 2) {
-            $cmts = $device->get_parent_cmts();
-            $this->parent_device = $cmts ?: null;
+            $netgw = $device->get_parent_netgw();
+            $this->parent_device = $netgw ?: null;
             if (! $this->device->ip) {
-                if ($cmts) {
-                    $this->device->ip = $cmts->ip;
+                if ($netgw) {
+                    $this->device->ip = $netgw->ip;
                 } else {
-                    Session::push('tmp_info_above_form', trans('messages.snmp.missing_cmts'));
+                    Session::push('tmp_error_above_form', trans('messages.snmp.missing_netgw'));
                 }
             }
         }
@@ -95,9 +95,8 @@ class SnmpController extends \BaseController
         // Error messages
         if (isset($e)) {
             Session::push('tmp_error_above_form', $e->getMessage());
-        } elseif (! $form_fields && ! Session::exists('tmp_info_above_form')) {
-            $msg = trans('messages.snmp.undefined');
-            Session::push('tmp_info_above_form', $msg);
+        } elseif (! $form_fields && ! Session::exists('tmp_error_above_form')) {
+            Session::push('tmp_error_above_form', trans('messages.snmp.undefined'));
         } elseif ($this->errors) {
             $msg = trans('messages.snmp.errors_walk', ['oids' => implode(', ', $this->errors)]);
             Session::push('tmp_error_above_form', $msg);
@@ -108,8 +107,7 @@ class SnmpController extends \BaseController
         $view_var = $netelem;
         $route_name = \NamespaceController::get_route_name();
         $headline = BaseViewController::compute_headline(\NamespaceController::get_route_name(), $view_header, $view_var).' > controlling';
-        $provmon = new ProvMonController;
-        $tabs = $provmon->checkNetelementtype($netelem);
+        $tabs = ProvMonController::checkNetelementtype($netelem);
 
         $view_path = 'hfcsnmp::NetElement.controlling';
         $form_path = 'Generic.form';
@@ -164,7 +162,7 @@ class SnmpController extends \BaseController
 
         $device = $this->device;
 
-        // use parent cmts for cluster
+        // use parent netgw for cluster
         if ($this->device->netelementtype_id == 2) {
             if (! $this->parent_device) {
                 return [];
@@ -230,6 +228,8 @@ class SnmpController extends \BaseController
 
         // TODO: if device not reachable take already saved SnmpValues from Database but show a hint - check via snmpget !?
         if (! $this->device->ip) {
+            Session::push('tmp_error_above_form', trans('messages.snmp.missingIp'));
+
             return [];
         }
 
@@ -417,7 +417,7 @@ class SnmpController extends \BaseController
         }
 
         if ($oid->access == 'read-only') {
-            $options[] = 'readonly';
+            $options['htmlReadonly'] = 'readonly';
         }
 
         // description of table is set only once for table head
@@ -781,7 +781,7 @@ class SnmpController extends \BaseController
      */
     private function _get_community($access = 'ro')
     {
-        return $this->device->{'community_'.$access} ?: \Modules\ProvBase\Entities\ProvBase::get([$access.'_community'])->first()->{$access.'_community'};
+        return $this->device->{'community_'.$access} ?: \Modules\HfcBase\Entities\HfcBase::get([$access.'_community'])->first()->{$access.'_community'};
     }
 
     /**

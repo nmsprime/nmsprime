@@ -2,15 +2,14 @@
 
 namespace Modules\Dashboard\Http\Controllers;
 
-use Log;
-use Auth;
 use View;
-use Module;
-use Bouncer;
 use Storage;
-use Modules\ProvBase\Entities\Contract;
+use App\GuiLog;
+use Illuminate\Support\Facades\Auth;
+use Modules\ProvBase\Entities\Modem;
 use App\Http\Controllers\BaseController;
-use Modules\Dashboard\Entities\BillingAnalysis;
+use Modules\HfcCustomer\Entities\ModemHelper;
+use Modules\HfcBase\Http\Controllers\HfcBaseController;
 
 class DashboardController extends BaseController
 {
@@ -20,50 +19,19 @@ class DashboardController extends BaseController
     public function index()
     {
         $title = 'Dashboard';
-        $netelements = $services = [];
-        $view = self::_get_view_permissions();
+        $logs = GuiLog::where([['username', '!=', 'cronjob'], ['model', '!=', 'User']])
+            ->orderBy('updated_at', 'desc')->orderBy('user_id', 'asc')
+            ->limit(50)->get();
+        $tickets['table'] = Auth::user()->tickets()->where('state', '=', 'New')->get();
+        $tickets['total'] = count($tickets['table']);
 
-        if ($view['contracts']) {
-            $data['contracts'] = BillingAnalysis::getContractData();
-        }
+        $news = $this->news();
 
-        if ($view['income']) {
-            $data['income'] = BillingAnalysis::getIncomeData();
-        }
+        // This is the most timeconsuming task
+        $netelements = HfcBaseController::get_impaired_netelements();
+        $services = HfcBaseController::get_impaired_services();
 
-        // TODO: add panel with table of tickets
-        if ($view['tickets']) {
-            $data['tickets']['table'] = self::get_new_tickets();
-            $data['tickets']['total'] = count($data['tickets']['table']);
-        }
-
-        if ($view['hfc']) {
-            $netelements = $this->_get_impaired_netelements();
-            $services = $this->_get_impaired_services();
-        }
-
-        $data['news'] = $this->news();
-
-        return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'data', 'view', 'netelements', 'services')));
-    }
-
-    /**
-     * Return Array of boolean values of different categories that shall (/not) be shown in dashboard (index.blade)
-     */
-    private static function _get_view_permissions()
-    {
-        return [
-            'date'          => true,
-            'provvoipenvia' => false,
-            'income'        => (Module::collections()->has('BillingBase') &&
-                               Bouncer::can('see income chart')),
-            'contracts'     => (Module::collections()->has('ProvBase') &&
-                               Bouncer::can('view', \Modules\ProvBase\Entities\Contract::class)),
-            'tickets'       => (Module::collections()->has('Ticketsystem') &&
-                               Bouncer::can('view', \Modules\Ticketsystem\Entities\Ticket::class)),
-            'hfc'           => (Module::collections()->has('HfcReq') &&
-                               Bouncer::can('view', \Modules\HfcReq\Entities\NetElement::class)),
-        ];
+        return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'logs', 'tickets', 'netelements', 'services', 'news')));
     }
 
     /**
@@ -74,11 +42,11 @@ class DashboardController extends BaseController
     {
         $avg_critical_us = 52;
         if (\Module::collections()->has('HfcCustomer')) {
-            $avg_critical_us = \Modules\HfcCustomer\Entities\ModemHelper::$avg_warning_us;
+            $avg_critical_us = ModemHelper::$avg_warning_us;
         }
 
         // Get only modems from valid contracts
-        $query = \Modules\ProvBase\Entities\Modem::join('contract as c', 'c.id', '=', 'modem.contract_id')
+        $query = Modem::join('contract as c', 'c.id', '=', 'modem.contract_id')
             ->where('c.contract_start', '<=', date('Y-m-d'))
             ->where(function ($query) {
                 $query
@@ -93,7 +61,7 @@ class DashboardController extends BaseController
             'critical' => $query->where('modem.us_pwr', '>', $avg_critical_us)->count(),
         ];
 
-        \Storage::disk('chart-data')->put('modems.json', json_encode($modems));
+        Storage::disk('chart-data')->put('modems.json', json_encode($modems));
     }
 
     /**
@@ -103,7 +71,7 @@ class DashboardController extends BaseController
      */
     public static function get_modem_statistics()
     {
-        if (\Storage::disk('chart-data')->has('modems.json') === false) {
+        if (Storage::disk('chart-data')->has('modems.json') === false) {
             return false;
         }
 
@@ -111,11 +79,11 @@ class DashboardController extends BaseController
             return false;
         }
 
-        $a = json_decode(\Storage::disk('chart-data')->get('modems.json'));
+        $a = json_decode(Storage::disk('chart-data')->get('modems.json'));
 
         $a->text = 'Modems<br>'.$a->online.' / '.$a->all;
 
-        $a->state = \Modules\HfcCustomer\Entities\ModemHelper::_ms_state($a->online, $a->all, 40);
+        $a->state = ModemHelper::_ms_state($a->online, $a->all, 40);
         switch ($a->state) {
             case 'OK':			$a->fa = 'fa fa-thumbs-up'; $a->style = 'success'; break;
             case 'WARNING':		$a->fa = 'fa fa-meh-o'; $a->style = 'warning'; break;
@@ -126,184 +94,6 @@ class DashboardController extends BaseController
         }
 
         return $a;
-    }
-
-    /**
-     * Returns all tickets with state = new
-     *
-     * @return array
-     */
-    private static function get_new_tickets()
-    {
-        if (! Module::collections()->has('Ticketsystem')) {
-            return;
-        }
-
-        return Auth::user()->tickets()->where('state', '=', 'New')->get();
-    }
-
-    /**
-     * Return all impaired netelements in a table array
-     *
-     * @author Ole Ernst
-     * @return array
-     *
-     * TODO: This function is actually the most timeconsuming while creating the dashboard index view
-     *	-> calculate in Background ? (comment by Nino Ryschawy 2017-11-21)
-     */
-    private static function _get_impaired_netelements()
-    {
-        $ret = [];
-
-        if (! \Modules\HfcBase\Entities\IcingaObjects::db_exists()) {
-            return $ret;
-        }
-
-        foreach (\Modules\HfcReq\Entities\NetElement::where('id', '>', '2')->get() as $element) {
-            $state = $element->get_bsclass();
-            if ($state == 'success' || $state == 'info') {
-                continue;
-            }
-            if (! isset($element->icingaobjects->icingahoststatus) || $element->icingaobjects->icingahoststatus->problem_has_been_acknowledged || ! $element->icingaobjects->is_active) {
-                continue;
-            }
-
-            $status = $element->icingaobjects->icingahoststatus;
-            $link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/host/show?host='.$element->id.'_'.$element->name, $element->name);
-            $ret['clr'][] = $state;
-            $ret['row'][] = [$link, $status->output, $status->last_time_up];
-        }
-
-        if ($ret) {
-            $ret['hdr'] = ['Name', 'Status', 'since'];
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Return all impaired services in a table array
-     *
-     * @author Ole Ernst
-     * @return array
-     */
-    private static function _get_impaired_services()
-    {
-        $ret = [];
-        $clr = ['success', 'warning', 'danger', 'info'];
-
-        if (! \Modules\HfcBase\Entities\IcingaObjects::db_exists()) {
-            return $ret;
-        }
-
-        $objs = \Modules\HfcBase\Entities\IcingaObjects::join('icinga_servicestatus', 'object_id', '=', 'service_object_id')
-            ->where('is_active', '=', '1')
-            ->where('name2', '<>', 'ping4')
-            ->where('last_hard_state', '<>', '0')
-            ->where('problem_has_been_acknowledged', '<>', '1')
-            ->orderByRaw("name2='clusters' desc")
-            ->orderBy('last_time_ok', 'desc');
-
-        foreach ($objs->get() as $service) {
-            $tmp = \Modules\HfcReq\Entities\NetElement::find($service->name1);
-
-            $link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/service/show?host='.$service->name1.'&service='.$service->name2, $tmp ? $tmp->name : $service->name1);
-            // add additional controlling link if available
-            $id = explode('_', $service->name1)[0];
-            if (is_numeric($id)) {
-                $link .= '<br>'.link_to_route('NetElement.controlling_edit', '(Controlling)', [$id, 0, 0]);
-            }
-
-            $ret['clr'][] = $clr[$service->last_hard_state];
-            $ret['row'][] = [$link, $service->name2, $service->output, $service->last_time_ok];
-            $ret['perf'][] = self::_get_impaired_services_perfdata($service->perfdata);
-        }
-
-        if ($ret) {
-            $ret['hdr'] = ['Host', 'Service', 'Status', 'since'];
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Return formatted impaired performance data for a given perfdata string
-     *
-     * @author Ole Ernst
-     * @return array
-     */
-    private static function _get_impaired_services_perfdata($perf)
-    {
-        $ret = [];
-        preg_match_all("/('.+?'|[^ ]+)=([^ ]+)/", $perf, $matches, PREG_SET_ORDER);
-        foreach ($matches as $idx => $val) {
-            $ret[$idx]['text'] = $val[1];
-            $p = explode(';', rtrim($val[2], ';'));
-            // we are dealing with percentages
-            if (substr($p[0], -1) == '%') {
-                $p[3] = 0;
-                $p[4] = 100;
-            }
-            $ret[$idx]['val'] = $p[0];
-            // remove unit of measurement, such as percent
-            $p[0] = preg_replace('/[^0-9.]/', '', $p[0]);
-
-            // set the colour according to the current $p[0], warning $p[1] and critical $p[2] value
-            $cls = null;
-            if (isset($p[1]) && isset($p[2])) {
-                $cls = self::_get_perfdata_class($p[0], $p[1], $p[2]);
-                // don't show non-impaired perf data
-                if ($cls == 'success') {
-                    unset($ret[$idx]);
-                    continue;
-                }
-            }
-            $ret[$idx]['cls'] = $cls;
-
-            try {
-                // set the percentage according to the current $p[0], minimum $p[3] and maximum $p[4] value
-                $per = ($p[0] - $p[3]) / ($p[4] - $p[3]) * 100;
-                $ret[$idx]['text'] .= sprintf(' (%.1f%%)', $per);
-            } catch (\ErrorException $e) {
-                $per = null;
-            }
-            $ret[$idx]['per'] = $per;
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Return performance data colour class according to given limits
-     *
-     * @author Ole Ernst
-     * @return string
-     */
-    private static function _get_perfdata_class($cur, $warn, $crit)
-    {
-        if ($crit > $warn) {
-            if ($cur < $warn) {
-                return 'success';
-            }
-            if ($cur < $crit) {
-                return 'warning';
-            }
-            if ($cur > $crit) {
-                return 'danger';
-            }
-        } elseif ($crit < $warn) {
-            if ($cur > $warn) {
-                return 'success';
-            }
-            if ($cur > $crit) {
-                return 'warning';
-            }
-            if ($cur < $crit) {
-                return 'danger';
-            }
-        } else {
-            return 'warning';
-        }
     }
 
     /*
@@ -335,7 +125,7 @@ class DashboardController extends BaseController
         // crowdin - check if language is still supported, otherwise show crowdin link
         if (! in_array(\Auth::user()->language, config('app.supported_locales'))) {
             return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
-                    'text' => ' <li>NMS PRIME is not yet translated to your language. Help translating NMS PRIME with
+                'text' => ' <li>NMS PRIME is not yet translated to your language. Help translating NMS PRIME with
                     <a href="https://crowdin.com/project/nmsprime/'.\Auth::user()->language.'" target="_blank">Crowdin</a></li>', ];
         }
 
@@ -354,20 +144,7 @@ class DashboardController extends BaseController
         // change default psw's
         if (\Hash::check('toor', \Auth::user()->password)) {
             return ['youtube' => 'https://www.youtube.com/embed/TVjJ7T8NZKw',
-                    'text' => '<li>Next: Change default Password! '.\HTML::linkRoute('User.profile', 'Global Config', \Auth::user()->id), ];
-        }
-
-        // check for insecure MySQL root password
-        // This requires to run: mysql_secure_installation
-        if (env('ROOT_DB_PASSWORD') == '') {
-            try {
-                \DB::connection('mysql-root')->getPdo();
-                if (\DB::connection()->getDatabaseName()) {
-                    return ['youtube' => 'https://www.youtube.com/embed/dZWjeL-LmG8',
-                    'text' => '<li>Danger! Run: mysql_secure_installation in bash as root!', ];
-                }
-            } catch (\Exception $e) {
-            }
+                'text' => '<li>Next: Change default Password! '.\HTML::linkRoute('User.profile', 'Global Config', \Auth::user()->id), ];
         }
 
         // means: secure – nothing todo
@@ -385,12 +162,33 @@ class DashboardController extends BaseController
             return false;
         }
 
-        // get actual network size based on SLA table
-        $sla = \App\Sla::first();
         $support = 'https://support.nmsprime.com';
 
+        $numNetGw = 0;
+        $numModems = 0;
+        if (\Module::collections()->has('ProvBase')) {
+            $numNetGw = \Modules\ProvBase\Entities\NetGw::count();
+            $numModems = \Modules\ProvBase\Entities\Modem::count();
+        }
+
+        $numNetelements = 0;
+        if (\Module::collections()->has('HfcReq')) {
+            $numNetelements = \Modules\HfcReq\Entities\NetElement::count();
+        }
+
+        $numTvbillings = 0;
+        if (\Module::collections()->has('BillingBase')) {
+            $numTvbillings = \Modules\BillingBase\Entities\Item::join('product', 'item.product_id', 'product.id')
+            ->where('type', 'TV')
+            ->where(function ($query) {
+                $query->where('valid_to', null)
+                    ->orWhere('valid_to', '>=', date('Y-m-d'));
+            })
+            ->count();
+        }
+
         $files = [
-            'news.json' => "$support/news.php?ns=".urlencode($sla->get_sla_size()).'&sla='.urlencode($sla->name),
+            'news.json' => "$support/news.php?ns=&sla=".urlencode(\App\Sla::pluck('name')->first()).'&mc='.$numModems.'&nm='.$numNetGw.'&nn='.$numNetelements.'&nt='.$numTvbillings,
             'documentation.json' => "$support/documentation.json",
         ];
 
@@ -424,7 +222,7 @@ class DashboardController extends BaseController
         }
 
         return ['youtube' => $json->youtube,
-                'text' => $json->text, ];
+            'text' => $json->text, ];
     }
 
     /*
@@ -438,41 +236,41 @@ class DashboardController extends BaseController
         // set ISP name
         if (! \GlobalConfig::first()->name) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s',
-                    'text' => $text.\HTML::linkRoute('Config.index', trans('helper.set_isp_name')), ];
+                'text' => $text.\HTML::linkRoute('Config.index', trans('helper.set_isp_name')), ];
         }
 
-        // add CMTS
-        if (\Modules\ProvBase\Entities\Cmts::count() == 0) {
+        // add NetGw
+        if (\Modules\ProvBase\Entities\NetGw::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=159&',
-                    'text' => $text.\HTML::linkRoute('Cmts.create', trans('helper.create_cmts')), ];
+                'text' => $text.\HTML::linkRoute('NetGw.create', trans('helper.create_netgw')), ];
         }
 
         // add CM and CPEPriv IP-Pool
         foreach (['CM', 'CPEPriv'] as $type) {
             if (\Modules\ProvBase\Entities\IpPool::where('type', $type)->count() == 0) {
                 return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
-                        'text' => $text.\HTML::linkRoute('IpPool.create', trans('helper.create_'.strtolower($type).'_pool'),
-                        ['cmts_id' => \Modules\ProvBase\Entities\Cmts::first()->id, 'type' => $type]), ];
+                    'text' => $text.\HTML::linkRoute('IpPool.create', trans('helper.create_'.strtolower($type).'_pool'),
+                            ['netgw_id' => \Modules\ProvBase\Entities\NetGw::first()->id, 'type' => $type]), ];
             }
         }
 
         // QoS
         if (\Modules\ProvBase\Entities\Qos::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=380&',
-                    'text' => $text.\HTML::linkRoute('Qos.create', trans('helper.create_qos')), ];
+                'text' => $text.\HTML::linkRoute('Qos.create', trans('helper.create_qos')), ];
         }
 
         // Product
         if (\Module::collections()->has('BillingBase') &&
             \Modules\BillingBase\Entities\Product::where('type', '=', 'Internet')->count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=425&',
-                    'text' => $text.\HTML::linkRoute('Product.create', trans('helper.create_product')), ];
+                'text' => $text.\HTML::linkRoute('Product.create', trans('helper.create_product')), ];
         }
 
         // Configfile
         if (\Modules\ProvBase\Entities\Configfile::where('device', '=', 'cm')->where('public', '=', 'yes')->count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=500&',
-                    'text' => $text.\HTML::linkRoute('Configfile.create', trans('helper.create_configfile')), ];
+                'text' => $text.\HTML::linkRoute('Configfile.create', trans('helper.create_configfile')), ];
         }
 
         // add sepa account
@@ -488,7 +286,7 @@ class DashboardController extends BaseController
         // add Contract
         if (\Modules\ProvBase\Entities\Contract::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=0&',
-                    'text' => $text.\HTML::linkRoute('Contract.create', trans('helper.create_contract')), ];
+                'text' => $text.\HTML::linkRoute('Contract.create', trans('helper.create_contract')), ];
         }
 
         // check if nominatim email address is set, otherwise osm geocoding won't be possible
@@ -510,7 +308,7 @@ class DashboardController extends BaseController
         // add Modem
         if (\Modules\ProvBase\Entities\Modem::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=40&',
-                    'text' => $text.\HTML::linkRoute('Contract.edit', trans('helper.create_modem'), \Modules\ProvBase\Entities\Contract::first()), ];
+                'text' => $text.\HTML::linkRoute('Contract.edit', trans('helper.create_modem'), \Modules\ProvBase\Entities\Contract::first()), ];
         }
 
         return false;

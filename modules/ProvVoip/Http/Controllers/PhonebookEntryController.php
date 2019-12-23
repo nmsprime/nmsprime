@@ -14,22 +14,6 @@ class PhonebookEntryController extends \BaseController
     protected $index_create_allowed = false;
 
     /**
-     * Extend create: check if a phonenumbermanagement exists to attach this phonebook entry to
-     *
-     * @author Patrick Reichel
-     */
-    public function create()
-    {
-        if ((! \Input::has('phonenumbermanagement_id')) ||
-            ! (PhonenumberManagement::find(\Input::get('phonenumbermanagement_id')))) {
-            $this->edit_view_save_button = false;
-            \Session::push('tmp_error_above_form', 'Cannot create phonebookentry – phonenumbermanagement ID missing or phonenumbermanagement not found');
-        }
-
-        return parent::create();
-    }
-
-    /**
      * defines the formular fields for the edit and create view
      */
     public function view_form_fields($model = null)
@@ -45,9 +29,9 @@ class PhonebookEntryController extends \BaseController
         // in most cases the phonebook data is identical to contract's data ⇒ on create we prefill these values with data from contract
         if (! $model->exists) {
             if (
-                (! \Input::has('phonenumbermanagement_id'))
+                (! \Request::filled('phonenumbermanagement_id'))
                 ||
-                ! ($phonenumbermanagement = PhonenumberManagement::find(\Input::get('phonenumbermanagement_id')))
+                ! ($phonenumbermanagement = PhonenumberManagement::find(\Request::get('phonenumbermanagement_id')))
             ) {
                 return [];
             }
@@ -71,18 +55,16 @@ class PhonebookEntryController extends \BaseController
             $init_values = [];
         }
 
-        // helper to set selected correctly
-        // if nothing is set we need to return an empty string – on null every entry in dropdown get a selected option
-        /* $get_selected = function($field) { */
-
-        /* 	if (!is_null($this->model->$field)) { */
-        /* 		dd($this->model->$field); */
-        /* 		return $this->model->$field; */
-        /* 	} */
-        /* 	else { */
-        /* 		return ''; */
-        /* 	} */
-        /* }; */
+        if (\Module::collections()->has('ProvVoipEnvia')) {
+            $last_update_telekom = max($model->external_creation_date, $model->external_update_date);
+            if ($last_update_telekom) {
+                $msg = trans('messages.PhonebookEntry_lastExternalUpdateTelekom').": $last_update_telekom";
+                $model->addAboveMessage($msg, 'info', 'form');
+            } else {
+                $msg = trans('messages.PhonebookEntry_noExternalUpdateTelekom');
+                $model->addAboveMessage($msg, 'warning', 'form');
+            }
+        }
 
         $ret_tmp = [
 

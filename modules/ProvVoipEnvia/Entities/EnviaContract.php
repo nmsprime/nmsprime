@@ -8,6 +8,9 @@ use Modules\ProvVoip\Entities\Phonenumber;
 
 class EnviaContract extends \BaseModel
 {
+    // get DataTables functions
+    use DtFunctionsTrait;
+
     // The associated SQL table for this Model
     public $table = 'enviacontract';
 
@@ -34,11 +37,16 @@ class EnviaContract extends \BaseModel
         $bsclass = $this->get_bsclass();
 
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.envia_contract_reference', $this->table.'.state', $this->table.'.start_date', $this->table.'.end_date', 'contract.number', 'modem.id'],
-                'eager_loading' => ['contract', 'modem'],
+                'index_header' => [$this->table.'.envia_contract_reference', $this->table.'.state', $this->table.'.start_date', $this->table.'.end_date', 'contract.id', 'modem.id'],
                 'bsclass' => $bsclass,
-                'edit' => ['envia_contract_reference' => 'get_envia_contract_reference', 'state' => 'get_state', 'start_date' => 'get_start_date', 'end_date' => 'get_end_date', 'contract.number' => 'get_contract_nr', 'modem.id' => 'get_modem_id'],
+                'eager_loading' => ['contract', 'modem'],
+                'edit' => ['envia_contract_reference' => 'get_envia_contract_reference', 'state' => 'get_state', 'start_date' => 'get_start_date', 'end_date' => 'get_end_date', 'contract.id' => 'get_contract_data', 'modem.id' => 'get_modem_data'],
                 'header' => $envia_contract_reference,
+                'filter' => [
+                    'contract.id' => $this->get_contract_filtercolumn_query(),
+                    'modem.id' => $this->get_modem_filtercolumn_query(),
+                ],
+                'raw_columns' => ['contract.id', 'modem.id'],
         ];
     }
 
@@ -87,38 +95,6 @@ class EnviaContract extends \BaseModel
         return $envia_contract_reference;
     }
 
-    public function get_contract_nr()
-    {
-        if (! $this->contract_id) {
-            $contract_nr = '–';
-        } else {
-            $contract = Contract::withTrashed()->where('id', $this->contract_id)->first();
-            if (! is_null($contract->deleted_at)) {
-                $contract_nr = '<s>'.$contract->number.'</s>';
-            } else {
-                $contract_nr = '<a href="'.\URL::route('Contract.edit', [$this->contract_id]).'" target="_blank">'.$contract->number.'</a>';
-            }
-        }
-
-        return $contract_nr;
-    }
-
-    public function get_modem_id()
-    {
-        if (! $this->modem_id) {
-            $modem_id = '–';
-        } else {
-            $modem = Modem::withTrashed()->where('id', $this->modem_id)->first();
-            if (! is_null($modem->deleted_at)) {
-                $modem_id = '<s>'.$this->modem_id.'</s>';
-            } else {
-                $modem_id = '<a href="'.\URL::route('Modem.edit', [$this->modem_id]).'" target="_blank">'.$this->modem_id.'</a>';
-            }
-        }
-
-        return $modem_id;
-    }
-
     /* // View Relation. */
     /* public function view_has_many() */
     /* { */
@@ -136,7 +112,7 @@ class EnviaContract extends \BaseModel
      */
     public function contract()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Contract', 'contract_id');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class, 'contract_id');
     }
 
     /**
@@ -144,7 +120,7 @@ class EnviaContract extends \BaseModel
      */
     public function modem()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Modem', 'modem_id');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Modem::class, 'modem_id');
     }
 
     /**
@@ -152,7 +128,7 @@ class EnviaContract extends \BaseModel
      */
     public function enviaorders()
     {
-        return $this->hasMany('Modules\ProvVoipEnvia\Entities\EnviaOrder', 'enviacontract_id');
+        return $this->hasMany(EnviaOrder::class, 'enviacontract_id');
     }
 
     /**
@@ -160,7 +136,7 @@ class EnviaContract extends \BaseModel
      */
     public function phonenumbermanagements()
     {
-        return $this->hasMany('Modules\ProvVoip\Entities\PhonenumberManagement', 'enviacontract_id');
+        return $this->hasMany(\Modules\ProvVoip\Entities\PhonenumberManagement::class, 'enviacontract_id');
     }
 
     /**
@@ -174,8 +150,8 @@ class EnviaContract extends \BaseModel
         }
 
         return collect($phonenumbers);
-        /* return $this->hasManyThrough('Modules\ProvVoip\Entities\Phonenumber', 'Modules\ProvVoip\Entities\PhonenumberManagement', 'enviacontract_id'); */
-        /* return $this->hasManyThrough('Modules\ProvVoip\Entities\Phonenumber', 'Modules\ProvVoip\Entities\PhonenumberManagement'); */
+        /* return $this->hasManyThrough(\Modules\ProvVoip\Entities\Phonenumber::class, \Modules\ProvVoip\Entities\PhonenumberManagement::class, 'enviacontract_id'); */
+        /* return $this->hasManyThrough(\Modules\ProvVoip\Entities\Phonenumber::class, \Modules\ProvVoip\Entities\PhonenumberManagement::class); */
     }
 
     /**
@@ -236,12 +212,12 @@ class EnviaContract extends \BaseModel
 
         if ($this->contract_id) {
             $contract = Contract::withTrashed()->find($this->contract_id);
-            $relations['hints']['Contract'] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
+            $relations['hints'][trans('provvoipenvia::view.enviaContract.contract')] = ProvVoipEnviaHelpers::get_user_action_information_contract($contract);
         }
 
         if ($this->modem_id) {
             $modem = Modem::withTrashed()->find($this->modem_id);
-            $relations['hints']['Modem'] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
+            $relations['hints'][trans('provvoipenvia::view.enviaContract.modem')] = ProvVoipEnviaHelpers::get_user_action_information_modem($modem);
         }
 
         $mgmts = $this->phonenumbermanagements;
@@ -251,11 +227,11 @@ class EnviaContract extends \BaseModel
                 array_push($phonenumbers, $mgmt->phonenumber);
             }
             $this->phonenumbers = collect($phonenumbers);
-            $relations['hints']['Phonenumbers'] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $this->phonenumbers);
+            $relations['hints'][trans('provvoipenvia::view.enviaContract.phonenumbers')] = ProvVoipEnviaHelpers::get_user_action_information_phonenumbers($this, $this->phonenumbers);
         }
 
         if ($this->enviaorders) {
-            $relations['hints']['envia TEL orders'] = ProvVoipEnviaHelpers::get_user_action_information_enviaorders($this->enviaorders->sortBy('orderdate'));
+            $relations['hints'][trans('provvoipenvia::view.enviaContract.orders')] = ProvVoipEnviaHelpers::get_user_action_information_enviaorders($this->enviaorders->sortBy('orderdate'));
         }
 
         return $relations;
@@ -271,17 +247,8 @@ class EnviaContract extends \BaseModel
      */
     public function delete()
     {
-
-        // check from where the deletion request has been triggered and set the correct var to show information
-        $prev = explode('?', \URL::previous())[0];
-        $prev = \Str::lower($prev);
-
-        $msg = 'Deletion of envia TEL contracts will be done via cron job';
-        if (\Str::endsWith($prev, 'edit')) {
-            \Session::push('tmp_info_above_relations', $msg);
-        } else {
-            \Session::push('tmp_info_above_index_list', $msg);
-        }
+        $msg = trans('provvoipenvia::messages.enviaContractDeletedByCron');
+        $this->addAboveMessage($msg, 'info');
 
         return true;
     }

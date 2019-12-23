@@ -83,9 +83,10 @@ class Mta extends \BaseModel
 
     public function view_has_many()
     {
-        return [
-            'Phonenumber' => $this->phonenumbers,
-        ];
+        $ret['Edit']['Phonenumber']['class'] = 'Phonenumber';
+        $ret['Edit']['Phonenumber']['relation'] = $this->phonenumbers;
+
+        return $ret;
     }
 
     /**
@@ -93,17 +94,17 @@ class Mta extends \BaseModel
      */
     public function configfile()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Configfile', 'configfile_id');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Configfile::class, 'configfile_id');
     }
 
     public function modem()
     {
-        return $this->belongsTo('Modules\ProvBase\Entities\Modem', 'modem_id');
+        return $this->belongsTo(\Modules\ProvBase\Entities\Modem::class, 'modem_id');
     }
 
     public function phonenumbers()
     {
-        return $this->hasMany('Modules\ProvVoip\Entities\Phonenumber');
+        return $this->hasMany(Phonenumber::class);
     }
 
     // return all Configfile Objects for MTAs
@@ -151,6 +152,8 @@ class Mta extends \BaseModel
         Log::info("docsis -eu -p $conf_file $cfg_file");
         // "&" to start docsis process in background improves performance but we can't reliably proof if file exists anymore
         exec("docsis -eu -p $conf_file $cfg_file >/dev/null 2>&1 &", $out);
+
+        // TODO: Error handling missing (see Modem for more information)
 
         // this only is valid when we dont execute docsis in background
         // if (!file_exists($cfg_file))
@@ -375,7 +378,7 @@ class MtaObserver
                 $mta->modem->make_configfile();
 
                 // in case mta mac begun with or is changed to 'ff:' the modem dhcp entry has to be changed as well
-                $mta->modem->make_dhcp_cm();
+                $mta->modem->make_dhcp_cm(false, true);
             }
 
             $mta->make_configfile();

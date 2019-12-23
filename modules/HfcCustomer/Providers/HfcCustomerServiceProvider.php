@@ -11,14 +11,13 @@ class HfcCustomerServiceProvider extends ServiceProvider
      *
      * @var bool
      */
-    protected $defer = true;
+    protected $defer = false;
 
     /**
      * The artisan commands provided by this module
      */
     protected $commands = [
         'Modules\HfcCustomer\Console\MpsCommand',
-        'Modules\HfcCustomer\Console\ModemRefreshCommand',
         'Modules\HfcCustomer\Console\ClustersCommand',
     ];
 
