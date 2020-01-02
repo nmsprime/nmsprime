@@ -68,16 +68,14 @@ class SettlementRun extends \BaseModel
         $bsclass = $this->get_bsclass();
         $time = $this->executed_at ?? '';
 
-        return ['table' 		=> $this->table,
-                'index_header' 	=> [$this->table.'.year',
-                                    $this->table.'.month',
-                                    $this->table.'.executed_at',
-                                    'verified', ],
-                'header' 		=>  $this->year.' - '.$this->month.' - '.$time,
-                'bsclass' 		=> $bsclass,
-                'order_by' 		=> ['0' => 'desc'],
-                'edit' 			=> ['verified' => 'run_verified'],
-                ];
+        return [
+            'table' 		=> $this->table,
+            'index_header' 	=> [$this->table.'.year', $this->table.'.month', $this->table.'.executed_at', 'verified'],
+            'header' 		=> $this->year.' - '.$this->month.' - '.$time,
+            'bsclass' 		=> $bsclass,
+            'order_by' 		=> ['0' => 'desc'],
+            'edit' 			=> ['verified' => 'run_verified'],
+        ];
     }
 
     public function get_bsclass()
@@ -805,7 +803,7 @@ class SettlementRun extends \BaseModel
         $arr = [
             'message' => $msg,
             'value'   => round($value),
-            ];
+        ];
 
         Storage::put('tmp/accCmdStatus', json_encode($arr));
     }
@@ -845,7 +843,7 @@ class SettlementRun extends \BaseModel
             'due_date' => $rcd ?: date('Y-m-d', strtotime('last day of last month')),
             'amount' => $amount,
             'parent_id' => $parent_id,
-            ]);
+        ]);
 
         return $debt->id;
     }
