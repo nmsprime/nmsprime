@@ -161,7 +161,13 @@ class SettlementRun extends \BaseModel
 
         $arr = [];
 
-        $files = \File::allFiles($this->directory);
+        try {
+            // It is possible that permissions are not yet set correctly during settlement run
+            // (e.g. a file is currently written by root user and the user tries to open the edit page before owner was changed by the process)
+            $files = \File::allFiles($this->directory);
+        } catch (\Exception $e) {
+            return $arr;
+        }
 
         //order files
         foreach ($files as $file) {
@@ -373,7 +379,10 @@ class SettlementRun extends \BaseModel
             $this->user_output('clean', 0);
             $this->directory_cleanup();
         } else {
-            mkdir(self::get_absolute_accounting_dir_path(), 0700, true);
+            $dir = self::get_absolute_accounting_dir_path();
+
+            mkdir($dir, 0700, true);
+            system("chown -R apache $dir");
         }
 
         // TODO: Reset mandate state on rerun if changed

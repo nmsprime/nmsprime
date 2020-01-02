@@ -461,6 +461,11 @@ class SepaAccount extends \BaseModel
                 $this->_log("$key1 $key records", $fn);
             }
         }
+
+        $dir = $this->absoluteAccountingDirectoryPath;
+        if (is_dir($dir)) {
+            system('chown -R apache '.$dir);
+        }
     }
 
     /*
@@ -481,6 +486,11 @@ class SepaAccount extends \BaseModel
     public function get_relative_accounting_dir_path()
     {
         return SettlementRun::get_relative_accounting_dir_path().'/'.sanitize_filename($this->name);
+    }
+
+    public function getAbsoluteAccountingDirectoryPathAttribute()
+    {
+        return storage_path('app/'.self::get_relative_accounting_dir_path());
     }
 
     /**
@@ -586,6 +596,11 @@ class SepaAccount extends \BaseModel
 
         if ($this->sepa_xml['credits']) {
             $this->make_credit_file();
+        }
+
+        $dir = $this->absoluteAccountingDirectoryPath;
+        if (is_dir($dir)) {
+            system('chown -R apache '.$dir);
         }
     }
 
