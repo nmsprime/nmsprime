@@ -465,11 +465,14 @@ class SettlementRun extends \BaseModel
 
     private function resetItemPayedMonth()
     {
+        $lastMonth = intval(SettlementRunData::getDate('lastm'));
+
         // TODO: Remove when cronjob is tested
-        if (SettlementRunData::getDate('lastm') == '01') {
+        if ($lastMonth == 1) {
             // Senseless where statement is necessary because update can not be called directly
             // only for contracts that are still valid / not canceled
             Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
+            ChannelLog::info('billing', 'Reset all items payed_month flag (to 0)');
         }
 
         // Update SepaAccount specific items in case item was charged in first run, but sth changed during
@@ -477,9 +480,10 @@ class SettlementRun extends \BaseModel
         if ($this->specificSepaAcc) {
             $query = self::getSepaAccSpecificContractsBaseQuery();
 
-            $query->where('p.billing_cycle', 'Yearly')->toBase()->update(['i.payed_month' => '0']);
+            $query->where('p.billing_cycle', 'Yearly')->where('payed_month', $lastMonth)->toBase()->update(['i.payed_month' => '0']);
         } else {
-            Item::where('payed_month', SettlementRunData::getDate('lastm'))->update(['payed_month' => '0']);
+            Item::where('payed_month', $lastMonth)->update(['payed_month' => '0']);
+            ChannelLog::info('billing', "Reset items with payed_month flag of $lastMonth (to 0)");
         }
     }
 
