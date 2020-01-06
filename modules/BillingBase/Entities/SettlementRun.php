@@ -569,7 +569,7 @@ class SettlementRun extends \BaseModel
                 }
             } elseif ($tempFiles) {
                 // Error on failed PDF creation - possible errors: syntax/filename/...
-                ChannelLog::error('billing', 'pdflatex: Error creating Invoice PDF '.$fn);
+                ChannelLog::error('billing', 'pdflatex: Error creating Invoice PDF '.$filepath);
             }
 
             // Delete debts
