@@ -365,22 +365,20 @@ class Item extends \BaseModel
 
                 $costcenter = $this->get_costcenter();
                 $billing_month = $costcenter->get_billing_month();      // June is default
+                $year = (int) $dates['Y'];
 
                 // calculate only for billing month
                 if ($billing_month != $dates['lastm']) {
                     // or item/contract started after billing month
                     // or item/contract ended before before billing month
                     // then pay on next settlement run - break otherwise
-                    if (! ((date('Y-m', $start) >= date("Y-$billing_month") && date('Y-m', $start) <= $dates['lastm_Y'])
+                    if (! ((date('Y-m', $start) >= date("$year-$billing_month") && date('Y-m', $start) <= $dates['lastm_Y'])
                         ||
-                        ($contract_end && date('Y-m', $contract_end) <= date("Y-$billing_month") &&
+                        ($contract_end && date('Y-m', $contract_end) <= date("$year-$billing_month") &&
                             date('Y-m', $contract_end) <= $dates['lastm_Y']))) {
                         break;
                     }
                 }
-
-                // in case billing month is december we have to consider the last year as current month is january of this year
-                $year = (int) $billing_month == 12 ? date('Y') - 1 : date('Y');
 
                 if (! $this->product->proportional) {
                     $start = strtotime("$year-01-01");
