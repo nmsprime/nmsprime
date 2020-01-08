@@ -77,12 +77,14 @@ $(document).ready(function() {
             data:{ _token: "{{ csrf_token() }}", },
             dataType:"json",
             success: function(result) {
-                if (result == null) {
+                if (! result || result == 'processing') {
                     document.getElementById("pleaseWait").innerHTML = '';
-                    document.getElementById("notValid").innerHTML = "{{ trans('messages.noSpectrum') }}";
+                    document.getElementById("notValid").innerHTML = result ? "{{ trans('provmon::messages.spectrum.processing') }}" :
+                        "{{ trans('messages.noSpectrum') }}";
 
                     return;
                 }
+
                 document.getElementById("pleaseWait").innerHTML = '';
                 document.getElementById("notValid").innerHTML = '';
 

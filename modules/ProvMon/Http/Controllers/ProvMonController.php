@@ -2,6 +2,7 @@
 
 namespace Modules\ProvMon\Http\Controllers;
 
+use Log;
 use View;
 use Acme\php\ArrayHelper;
 use Modules\ProvBase\Entities\Modem;
@@ -1433,7 +1434,7 @@ class ProvMonController extends \BaseController
     /**
      * Retrieve Data via SNMP and create Array for spectrum in Modem Analyses page.
      *
-     * @author Roy Schneider
+     * @author Roy Schneider, Nino Ryschawy
      * @param Modules\ProvBase\Entities\Modem
      * @return JSON response
      */
@@ -1444,45 +1445,116 @@ class ProvMonController extends \BaseController
         $hostname = $modem->hostname;
         $roCommunity = $provbase->ro_community;
         $rwCommunity = $provbase->rw_community;
+        $expressions = [];
 
-        // set frequency span from 150 to 862 MHz
-        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', 154000000);
-        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', 866000000);
+        // Configure and start spectrum measurement only if not yet done
+        $ret = snmp2_get($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.1.0');
 
-        // every 8 MHz
-        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', 8000000);
+        if ($ret != '1') {
+            Log::debug("Set Pwr Spectrum measurement values for modem $id");
+            // NOTE: It's actually possible that these OIDs can be set even if the modem doesn't support spectrum measurement
+            // NOTE: NO RESPONSE leads to exception and message that spectrum can not be created for this modem, but it's currently [Jan 2020]
+            // quite common that the SNMP server stops to respond for some time when spectrum measurement is done
+            // Set frequency span from 150 to 862 MHz with 8 MHz intervals
+            $r1 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', 154000000);
+            $r2 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', 866000000);
+            $r3 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', 8000000);
 
-        // enable docsIf3CmSpectrumAnalysisCtrlCmd after setting values
-        snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.1.0', 'i', 1);
+            if (! $r1 || ! $r2 || !$r3) {
+                Log::error("Set Pwr Spectrum measurement values for modem $id failed");
+            }
+
+            // Enable docsIf3CmSpectrumAnalysisCtrlCmd - Start measurement - By default the measurement is stopped after 300 seconds
+            // Time to stop measurement can be set in seconds with .1.3.6.1.4.1.4491.2.1.20.1.34.2.0
+            $r4 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.1.0', 'i', 1);
+
+            if (! $r4) {
+                Log::error("Start Pwr Spectrum measurement for modem $id failed");
+            }
+        } else {
+            Log::debug("Pwr Spectrum measurement of modem $id is already running");
+        }
+
+        Log::info("Get Pwr Spectrum measurement values for modem $id");
 
         // after enabling docsIf3CmSpectrumAnalysisCtrlCmd it may take a few seconds to start the snmpwalḱ (error: End of MIB)
-        $time = 1;
-        while ($time <= 30) {
-            try {
-                $expressions = snmp2_real_walk($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3');
-            } catch (\Exception $e) {
-                $time++;
-                sleep(1);
+        $time = 0;
+        while ($time <= 20) {
+            $time += 2;
+
+            // Unset makes php really get new value from exec command - seems otherwise to be cached and not really executing the command
+            unset($expressions);
+            exec("snmpbulkwalk -v2c -c$roCommunity $hostname .1.3.6.1.4.1.4491.2.1.20.1.35.1.3", $expressions);
+
+            // END OF MIB means the spectrum is not yet fully created
+            if ($expressions && strtolower($expressions[0]) == 'end of mib') {
+                Log::debug("Pwr Spectrum measurement of modem $id after $time seconds not ready: end of mib");
+
+                sleep(2);
                 continue;
             }
 
             break;
+
+            // NOTE: These functions should be used but are currently (Jan 2020) way less reliable
+            // try {
+            //     $expressions = snmp2_real_walk($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3', 100, 0);
+            //     $expressions = snmprealwalk($hostname, $roCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.35.1.3', 100, 0);
+
+            //     break;
+            // } catch (\Exception $e) {
+            //     $time++;
+            //     Log::debug("Pwr Spectrum measurement of modem $id after $time seconds not ready (exception): ".$e->getMessage());
+            //     sleep(2);
+            // }
         }
 
-        // in case we don't get return values
-        if (! isset($expressions)) {
+        if (! $this->snmpReturnValueValid($expressions, $modem)) {
             return;
         }
 
-        // filter expression for ampitude
-        // returned values: level in 10th dB and frequency in Hz
-        // Example: SNMPv2-SMI::enterprises.4491.2.1.20.1.35.1.3.985500000 = INTEGER: -361
-        foreach ($expressions as $oid => $level) {
-            preg_match('/[0-9]{7,}/', $oid, $frequency);
-            $data['span'][] = $frequency[0] / 1000000;
-            $data['amplitudes'][] = intval($level) / 10;
+        if (strtolower($expressions[0]) == 'end of mib') {
+            return response()->json('processing');
+        }
+
+        // Log::debug("Pwr Spectrum measurement of modem $id first return value: ".$expressions[0]);
+
+        // Returned value example: SNMPv2-SMI::enterprises.4491.2.1.20.1.35.1.3.985500000 = INTEGER: -361
+        // foreach ($expressions as $oid => $level) {
+        foreach ($expressions as $entry) {
+            // preg_match('/[0-9]{7,} =/', $oid, $frequency);
+            preg_match('/[0-9]{7,} =/', $entry, $frequency);
+            if (! $frequency) {
+                continue;
+            }
+
+            $frequency = str_replace(' =', '', $frequency[0]);
+            $data['span'][] = $frequency / 1000000;
+            $data['amplitudes'][] = intval(substr($entry, strpos($entry, 'INTEGER:') + 8)) / 10;
+            // $data['amplitudes'][] = intval($level) / 10;
         }
 
         return response()->json($data);
+    }
+
+    /**
+     * Derermine if return value of the SNMP request is valid
+     *
+     * @return bool
+     */
+    private function snmpReturnValueValid($array, $modem = null)
+    {
+        if (! $array) {
+            return false;
+        }
+
+        // OID is not supported
+        if (strpos(strtolower($array[0]), 'no such instance') !== false) {
+            Log::error("Pwr spectrum measurement of modem $modem->id failed - returned 'No such instance ...'.");
+
+            return false;
+        }
+
+        return true;
     }
 }
