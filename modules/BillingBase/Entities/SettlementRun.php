@@ -68,16 +68,14 @@ class SettlementRun extends \BaseModel
         $bsclass = $this->get_bsclass();
         $time = $this->executed_at ?? '';
 
-        return ['table' 		=> $this->table,
-                'index_header' 	=> [$this->table.'.year',
-                                    $this->table.'.month',
-                                    $this->table.'.executed_at',
-                                    'verified', ],
-                'header' 		=>  $this->year.' - '.$this->month.' - '.$time,
-                'bsclass' 		=> $bsclass,
-                'order_by' 		=> ['0' => 'desc'],
-                'edit' 			=> ['verified' => 'run_verified'],
-                ];
+        return [
+            'table' 		=> $this->table,
+            'index_header' 	=> [$this->table.'.year', $this->table.'.month', $this->table.'.executed_at', 'verified'],
+            'header' 		=> $this->year.' - '.$this->month.' - '.$time,
+            'bsclass' 		=> $bsclass,
+            'order_by' 		=> ['0' => 'desc'],
+            'edit' 			=> ['verified' => 'run_verified'],
+        ];
     }
 
     public function get_bsclass()
@@ -161,7 +159,13 @@ class SettlementRun extends \BaseModel
 
         $arr = [];
 
-        $files = \File::allFiles($this->directory);
+        try {
+            // It is possible that permissions are not yet set correctly during settlement run
+            // (e.g. a file is currently written by root user and the user tries to open the edit page before owner was changed by the process)
+            $files = \File::allFiles($this->directory);
+        } catch (\Exception $e) {
+            return $arr;
+        }
 
         //order files
         foreach ($files as $file) {
@@ -373,7 +377,10 @@ class SettlementRun extends \BaseModel
             $this->user_output('clean', 0);
             $this->directory_cleanup();
         } else {
-            mkdir(self::get_absolute_accounting_dir_path(), 0700, true);
+            $dir = self::get_absolute_accounting_dir_path();
+
+            mkdir($dir, 0700, true);
+            system("chown -R apache $dir");
         }
 
         // TODO: Reset mandate state on rerun if changed
@@ -458,11 +465,14 @@ class SettlementRun extends \BaseModel
 
     private function resetItemPayedMonth()
     {
+        $lastMonth = intval(SettlementRunData::getDate('lastm'));
+
         // TODO: Remove when cronjob is tested
-        if (SettlementRunData::getDate('lastm') == '01') {
+        if ($lastMonth == 1) {
             // Senseless where statement is necessary because update can not be called directly
             // only for contracts that are still valid / not canceled
             Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
+            ChannelLog::info('billing', 'Reset all items payed_month flag (to 0)');
         }
 
         // Update SepaAccount specific items in case item was charged in first run, but sth changed during
@@ -470,9 +480,10 @@ class SettlementRun extends \BaseModel
         if ($this->specificSepaAcc) {
             $query = self::getSepaAccSpecificContractsBaseQuery();
 
-            $query->where('p.billing_cycle', 'Yearly')->toBase()->update(['i.payed_month' => '0']);
+            $query->where('p.billing_cycle', 'Yearly')->where('payed_month', $lastMonth)->toBase()->update(['i.payed_month' => '0']);
         } else {
-            Item::where('payed_month', SettlementRunData::getDate('lastm'))->update(['payed_month' => '0']);
+            Item::where('payed_month', $lastMonth)->update(['payed_month' => '0']);
+            ChannelLog::info('billing', "Reset items with payed_month flag of $lastMonth (to 0)");
         }
     }
 
@@ -558,7 +569,7 @@ class SettlementRun extends \BaseModel
                 }
             } elseif ($tempFiles) {
                 // Error on failed PDF creation - possible errors: syntax/filename/...
-                ChannelLog::error('billing', 'pdflatex: Error creating Invoice PDF '.$fn);
+                ChannelLog::error('billing', 'pdflatex: Error creating Invoice PDF '.$filepath);
             }
 
             // Delete debts
@@ -796,7 +807,7 @@ class SettlementRun extends \BaseModel
         $arr = [
             'message' => $msg,
             'value'   => round($value),
-            ];
+        ];
 
         Storage::put('tmp/accCmdStatus', json_encode($arr));
     }
@@ -836,7 +847,7 @@ class SettlementRun extends \BaseModel
             'due_date' => $rcd ?: date('Y-m-d', strtotime('last day of last month')),
             'amount' => $amount,
             'parent_id' => $parent_id,
-            ]);
+        ]);
 
         return $debt->id;
     }
