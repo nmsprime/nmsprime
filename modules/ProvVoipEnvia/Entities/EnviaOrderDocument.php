@@ -61,9 +61,9 @@ class EnviaOrderDocument extends \BaseModel
         $bsclass = 'success';
 
         return ['index' => [$this->id],
-                'index_header' => ['ID'],
-                'bsclass' => $bsclass,
-                'header' => $this->created_at.': '.$this->document_type.' ('.$this->upload_order_id.')', ];
+            'index_header' => ['ID'],
+            'bsclass' => $bsclass,
+            'header' => $this->created_at.': '.$this->document_type.' ('.$this->upload_order_id.')', ];
     }
 
     // belongs to a modem - see BaseModel for explanation

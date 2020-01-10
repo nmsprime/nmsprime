@@ -138,7 +138,7 @@ class EnviaCdr extends CdrGetter
                 'duration'  => $arr[6],
                 'called_nr' => $arr[7],
                 'price'     => str_replace(',', '.', $arr[10]),
-                ];
+            ];
 
             // extend $data for other providers
             // attention: envia sends latin-1 – we have to convert to UTF-8…

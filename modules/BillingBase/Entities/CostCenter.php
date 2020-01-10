@@ -48,10 +48,10 @@ class CostCenter extends \BaseModel
     public function view_index_label()
     {
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.name', $this->table.'.number', 'sepaaccount.name'],
-                'header' =>  $this->name,
-                'order_by' => ['0' => 'asc'],  // columnindex => direction
-                'eager_loading' => ['sepaaccount'], ];
+            'index_header' => [$this->table.'.name', $this->table.'.number', 'sepaaccount.name'],
+            'header' =>  $this->name,
+            'order_by' => ['0' => 'asc'],  // columnindex => direction
+            'eager_loading' => ['sepaaccount'], ];
     }
 
     public function view_belongs_to()

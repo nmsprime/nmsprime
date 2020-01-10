@@ -140,7 +140,7 @@ class HlkommCdr extends CdrGetter
                 'duration'  => $line[10],
                 'called_nr' => $phonenr2,
                 'price'     => str_replace(',', '.', $line[13]),
-                ];
+            ];
 
             // calculate price with hlkomms distance zone
             // $a[5] = strpos($line[3], 'Mobilfunk national') !== false ? $a[5] * ($config->voip_extracharge_mobile_national / 100 + 1) : $a[5] * ($config->voip_extracharge_default / 100 + 1);

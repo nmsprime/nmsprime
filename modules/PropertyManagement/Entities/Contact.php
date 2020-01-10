@@ -46,14 +46,14 @@ class Contact extends \BaseModel
         }
 
         return ['table' => $this->table,
-                'index_header' => ["$this->table.firstname1", 'lastname1', 'firstname2', 'lastname2', 'company',
-                    'tel', 'tel_private', 'email1', 'email2',
-                    "$this->table.administration",
-                    'street', 'house_nr', 'zip', 'city', 'district',
-                    ],
-                'header' => $this->label(),
-                'bsclass' => $bsclass,
-            ];
+            'index_header' => ["$this->table.firstname1", 'lastname1', 'firstname2', 'lastname2', 'company',
+                'tel', 'tel_private', 'email1', 'email2',
+                "$this->table.administration",
+                'street', 'house_nr', 'zip', 'city', 'district',
+            ],
+            'header' => $this->label(),
+            'bsclass' => $bsclass,
+        ];
     }
 
     public function label()

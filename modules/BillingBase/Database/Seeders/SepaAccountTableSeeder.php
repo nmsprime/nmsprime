@@ -30,7 +30,7 @@ class SepaAccountTableSeeder extends \BaseSeeder
                 'invoice_text_negativ' => 'Bitte informieren Sie uns über das Konto auf das die Gutschrift erfolgen soll.',
                 'template_invoice' => 'erz.tex',
                 'template_cdr' => 'cdr.tex',
-                ]);
+            ]);
         }
     }
 }

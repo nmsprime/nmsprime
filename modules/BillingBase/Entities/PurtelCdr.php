@@ -126,7 +126,7 @@ class PurtelCdr extends CdrGetter
                 'duration'  => gmdate('H:i:s', $arr[4]),
                 'called_nr' => $arr[3],
                 'price'     => $arr[10] / 100,
-                ];
+            ];
 
             if (in_array($customer_nr, $customer_nrs)) {
                 $calls[$customer_nr][] = $data;

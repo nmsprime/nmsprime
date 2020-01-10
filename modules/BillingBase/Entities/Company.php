@@ -47,11 +47,11 @@ class Company extends \BaseModel
         $bsclass = $this->get_bsclass();
 
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.name', $this->table.'.city', $this->table.'.phone', $this->table.'.mail'],
-                'bsclass' => $bsclass,
-                'header' => $this->name,
-                'order_by' => ['0' => 'asc'], // columnindex => direction
-                ];
+            'index_header' => [$this->table.'.name', $this->table.'.city', $this->table.'.phone', $this->table.'.mail'],
+            'bsclass' => $bsclass,
+            'header' => $this->name,
+            'order_by' => ['0' => 'asc'], // columnindex => direction
+        ];
     }
 
     public function get_bsclass()

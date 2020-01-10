@@ -41,9 +41,9 @@ class Invoice extends \BaseModel
         $type = $this->type == 'CDR' ? ' ('.trans('messages.Call Data Record').')' : '';
 
         return ['table' => $this->table,
-                'header' =>  $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT).$type,
-                'bsclass' => $this->get_bsclass(),
-            ];
+            'header' =>  $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT).$type,
+            'bsclass' => $this->get_bsclass(),
+        ];
     }
 
     public function get_bsclass()

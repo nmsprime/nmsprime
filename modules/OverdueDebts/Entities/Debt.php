@@ -56,17 +56,17 @@ class Debt extends \BaseModel
         $bsclass = $this->getBsClass();
 
         $properties = ['table' => $this->table,
-                'index_header' => ['contract.firstname', 'contract.lastname', 'contract.number',
-                    'debt.date', 'debt.voucher_nr', 'debt.number', 'amount', 'debt.missing_amount', 'debt.total_fee',
-                    'debt.due_date', 'debt.indicator', ],
-                'header' => $this->label(),
-                'bsclass' => $bsclass,
-                'eager_loading' => ['contract'],
-                'edit' => [
-                    'contract.firstname' => 'getContractFirstname',
-                    'contract.lastname' => 'getContractLastname',
-                ],
-            ];
+            'index_header' => ['contract.firstname', 'contract.lastname', 'contract.number',
+                'debt.date', 'debt.voucher_nr', 'debt.number', 'amount', 'debt.missing_amount', 'debt.total_fee',
+                'debt.due_date', 'debt.indicator', ],
+            'header' => $this->label(),
+            'bsclass' => $bsclass,
+            'eager_loading' => ['contract'],
+            'edit' => [
+                'contract.firstname' => 'getContractFirstname',
+                'contract.lastname' => 'getContractLastname',
+            ],
+        ];
 
         // Filter all debts that are cleared in debts result table (different route)
         if (\Str::contains(\Route::getCurrentRoute()->uri, 'result')) {

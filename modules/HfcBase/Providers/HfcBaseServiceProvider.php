@@ -17,7 +17,7 @@ class HfcBaseServiceProvider extends ServiceProvider
      * The artisan commands provided by this module
      */
     protected $commands = [
-    'Modules\HfcBase\Console\TreeBuildCommand',
+        'Modules\HfcBase\Console\TreeBuildCommand',
     ];
 
     /**

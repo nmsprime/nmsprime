@@ -60,7 +60,7 @@ class CccUserController extends \BaseController
         'company_account_institute' => '',
         'company_account_iban'  => '',
         'company_account_bic' 	=> '',
-        ];
+    ];
 
     /**
      * Create and Download Connection Information
