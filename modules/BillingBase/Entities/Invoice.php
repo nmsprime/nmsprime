@@ -743,8 +743,8 @@ class Invoice extends \BaseModel
 
         \Log::info("Delete all CDRs older than $period Months");
 
-        $date = $target_time_o->__get('year').'-'.intval($target_time_o->__get('month'));
-        $query = self::where('type', '=', 'CDR')->where(\DB::raw("CONCAT(year,'-',month)"), '<', $date);
+        $date = $target_time_o->__get('year').'-'.str_pad($target_time_o->__get('month'), 2, '0', STR_PAD_LEFT);
+        $query = self::where('type', '=', 'CDR')->where(\DB::raw("CONCAT(year, '-', LPAD(month, 2, '0'))"), '<', $date);
 
         $cdrs = $query->get();
 
