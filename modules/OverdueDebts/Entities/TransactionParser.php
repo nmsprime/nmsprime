@@ -73,7 +73,7 @@ class TransactionParser
                 'debitCredit' => trans("view.$debitCredit"),
                 'description' => $transaction->getDescription(),
                 'price' => $transaction->getPrice(),
-                ]));
+            ]));
 
             return true;
         }

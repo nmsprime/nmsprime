@@ -42,8 +42,8 @@ class ProvMonController extends \BaseController
         $modem = $this->modem ?: Modem::findOrFail($id);
 
         $tabs = [['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $id],
-                ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => $id],
-                ];
+            ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => $id],
+        ];
 
         array_unshift($tabs, $this->defineEditRoute($id));
 
@@ -253,8 +253,8 @@ class ProvMonController extends \BaseController
 
         if (! $config || ! isset($config['text']) || isset($config['warn'])) {
             return ['bsclass' => 'danger',
-                    'text' => $config['warn'] ?? trans('messages.modemAnalysis.cfError'),
-                    'instructions' => "docsis -e /tftpboot/cm/{$modem->hostname}.conf /tftpboot/keyfile /tftpboot/cm/{$modem->hostname}.cfg",
+                'text' => $config['warn'] ?? trans('messages.modemAnalysis.cfError'),
+                'instructions' => "docsis -e /tftpboot/cm/{$modem->hostname}.conf /tftpboot/keyfile /tftpboot/cm/{$modem->hostname}.cfg",
             ];
         }
 
@@ -1460,7 +1460,7 @@ class ProvMonController extends \BaseController
             $r2 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', 866000000);
             $r3 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', 8000000);
 
-            if (! $r1 || ! $r2 || !$r3) {
+            if (! $r1 || ! $r2 || ! $r3) {
                 Log::error("Set Pwr Spectrum measurement values for modem $id failed");
             }
 

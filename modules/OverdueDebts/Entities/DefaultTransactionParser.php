@@ -59,7 +59,7 @@ class DefaultTransactionParser
         'OAMT+' => 'amount',        // Ursprünglicher Umsatzbetrag
         'RREF+' => '',              // Retourenreferenz
         'SVWZ+' => '',              // SEPA Verwendungszweck
-// TODO: Move to specific TransactionParser
+        // TODO: Move to specific TransactionParser
         'PURP+' => '',              // Volksbank Purpose ?
     ];
 
@@ -111,7 +111,7 @@ class DefaultTransactionParser
             'price' => number_format_lang($this->transaction->getPrice()),
             'iban' => $this->iban,
             'reason' => $this->description,
-            ]);
+        ]);
 
         if ($this->setDebitDebtRelations() === false) {
             return $this->debt = null;
@@ -204,11 +204,11 @@ class DefaultTransactionParser
         }
 
         $this->logMsg = trans('overduedebts::messages.transaction.default.credit', [
-                'holder' => $this->holder,
-                'price' => number_format_lang($this->transaction->getPrice()),
-                'iban' => $this->iban,
-                'reason' => $this->description,
-            ]);
+            'holder' => $this->holder,
+            'price' => number_format_lang($this->transaction->getPrice()),
+            'iban' => $this->iban,
+            'reason' => $this->description,
+        ]);
 
         $numbers = $this->searchNumbers($this->description);
 

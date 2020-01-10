@@ -83,7 +83,7 @@ class ProvVoipEnvia extends \BaseModel
             'major' => $version_major,
             'minor' => $version_minor,
             'micro' => $version_micro,
-            ];
+        ];
     }
 
     /**
@@ -752,17 +752,17 @@ class ProvVoipEnvia extends \BaseModel
 
                 if ($view_level == 'phonebookentry') {
                     array_push($ret, [
-                    'linktext' => trans('provvoipenvia::view.api.phonebookEntryCreate'),
-                    'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
-                    'help' => trans('provvoipenvia::help.api.phonebookEntryCreate'),
+                        'linktext' => trans('provvoipenvia::view.api.phonebookEntryCreate'),
+                        'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
+                        'help' => trans('provvoipenvia::help.api.phonebookEntryCreate'),
                     ]);
                 }
 
                 if ($view_level == 'phonebookentry') {
                     array_push($ret, [
-                    'linktext' => trans('provvoipenvia::view.api.phonebookEntryDelete'),
-                    'url' => $base.'phonebookentry_delete'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
-                    'help' => trans('provvoipenvia::help.api.phonebookEntryDelete'),
+                        'linktext' => trans('provvoipenvia::view.api.phonebookEntryDelete'),
+                        'url' => $base.'phonebookentry_delete'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
+                        'help' => trans('provvoipenvia::help.api.phonebookEntryDelete'),
                     ]);
                 }
             }
@@ -1828,7 +1828,7 @@ class ProvVoipEnvia extends \BaseModel
                 'subscriber_zip',
                 'subscriber_city',
                 'subscriber_district',
-                ];
+            ];
 
             foreach ($phonenumbers_to_create as $nr_id) {
 
@@ -2328,7 +2328,7 @@ class ProvVoipEnvia extends \BaseModel
                     'contract_change_variation',
                     'contract_relocate',
                     'voip_account_create',
-                    ]
+                ]
                 )
                 ||
                 (
@@ -2379,7 +2379,7 @@ class ProvVoipEnvia extends \BaseModel
             $this->job, [
                 'contract_get_tariff',
                 'contract_get_variation',
-                ])
+            ])
         ) {
             if (isset($this->phonenumber)) {
                 $external_contract_reference = $this->phonenumber->contract_external_id;

@@ -208,7 +208,7 @@ class CdrGetter
                     'provider' => $provider,
                     'contractnr' => $contract_nr,
                     'phonenr' => $p,
-                    ]));
+                ]));
             }
         }
     }
@@ -230,7 +230,7 @@ class CdrGetter
                     'phonenr' => $p,
                     'price' => $price,
                     'currency' => BillingConf::currency(),
-                    ]));
+                ]));
             }
         }
     }

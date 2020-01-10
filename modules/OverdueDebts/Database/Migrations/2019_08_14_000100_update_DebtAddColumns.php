@@ -41,7 +41,7 @@ class UpdateDebtAddColumns extends BaseMigration
                 'cleared',
                 'dunning_date',
                 'indicator',
-                ]);
+            ]);
         });
     }
 }

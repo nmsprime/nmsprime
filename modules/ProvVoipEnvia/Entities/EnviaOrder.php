@@ -616,18 +616,18 @@ class EnviaOrder extends \BaseModel
         }
 
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.ordertype', $this->table.'.orderstatus', 'escalation_level', 'contract.id', 'modem.id', 'phonenumber.number', 'enviacontract.envia_contract_reference',  $this->table.'.created_at', $this->table.'.updated_at', $this->table.'.orderdate', 'enviaorder_current'],
-                'bsclass' => $bsclass,
-                'disable_sortsearch' => ['phonenumber.number' => 'false', 'enviaorder_current' => 'false'],
-                'eager_loading' => ['contract', 'modem', 'enviacontract', 'phonenumbers'],
-                'edit' => ['ordertype' => 'get_ordertype', 'orderstatus'  => 'get_orderstatus', 'modem.id' => 'get_modem_data', 'contract.id' => 'get_contract_data', 'enviacontract.envia_contract_reference' => 'get_enviacontract_ref', 'enviaorder_current' => 'get_user_interaction_necessary', 'phonenumber.number' => 'get_phonenumbers', 'escalation_level' => 'get_escalation_level'],
-                'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
-                'where_clauses' => $where_clauses,
-                'filter' => [
-                    'contract.id' => $this->get_contract_filtercolumn_query(),
-                    'modem.id' => $this->get_modem_filtercolumn_query(),
-                ],
-                'raw_columns' => ['contract.id', 'modem.id', 'phonenumber.number', 'enviacontract.envia_contract_reference', 'enviaorder_current'],
+            'index_header' => [$this->table.'.ordertype', $this->table.'.orderstatus', 'escalation_level', 'contract.id', 'modem.id', 'phonenumber.number', 'enviacontract.envia_contract_reference',  $this->table.'.created_at', $this->table.'.updated_at', $this->table.'.orderdate', 'enviaorder_current'],
+            'bsclass' => $bsclass,
+            'disable_sortsearch' => ['phonenumber.number' => 'false', 'enviaorder_current' => 'false'],
+            'eager_loading' => ['contract', 'modem', 'enviacontract', 'phonenumbers'],
+            'edit' => ['ordertype' => 'get_ordertype', 'orderstatus'  => 'get_orderstatus', 'modem.id' => 'get_modem_data', 'contract.id' => 'get_contract_data', 'enviacontract.envia_contract_reference' => 'get_enviacontract_ref', 'enviaorder_current' => 'get_user_interaction_necessary', 'phonenumber.number' => 'get_phonenumbers', 'escalation_level' => 'get_escalation_level'],
+            'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
+            'where_clauses' => $where_clauses,
+            'filter' => [
+                'contract.id' => $this->get_contract_filtercolumn_query(),
+                'modem.id' => $this->get_modem_filtercolumn_query(),
+            ],
+            'raw_columns' => ['contract.id', 'modem.id', 'phonenumber.number', 'enviacontract.envia_contract_reference', 'enviaorder_current'],
         ];
     }
 

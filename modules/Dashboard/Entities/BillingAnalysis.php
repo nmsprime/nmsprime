@@ -247,7 +247,7 @@ class BillingAnalysis
             'Internet_only'     => ['Internet', 'not', 'Voip'],
             'Voip_only'         => ['Voip', 'not', 'Internet'],
             'Internet_and_Voip' => ['Internet', '', 'Voip'],
-            ];
+        ];
 
         $date = date('Y-m-d');
         $contracts['total'] = self::countContracts($date);

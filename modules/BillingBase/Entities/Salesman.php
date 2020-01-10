@@ -43,9 +43,9 @@ class Salesman extends \BaseModel
     public function view_index_label()
     {
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.id', $this->table.'.lastname', $this->table.'.firstname'],
-                'order_by' => ['0' => 'asc'],  // columnindex => direction
-                'header' =>  $this->lastname.' '.$this->firstname, ];
+            'index_header' => [$this->table.'.id', $this->table.'.lastname', $this->table.'.firstname'],
+            'order_by' => ['0' => 'asc'],  // columnindex => direction
+            'header' =>  $this->lastname.' '.$this->firstname, ];
     }
 
     // View Relation.
@@ -118,7 +118,7 @@ class Salesman extends \BaseModel
             'product_count' 	=> $item->count,
             'charge' 			=> $item->charge,
             'sepaaccount_id' 	=> $sepaaccount_id,
-            ];
+        ];
     }
 
     /**
@@ -158,7 +158,7 @@ class Salesman extends \BaseModel
             'salesman.firstname' => $this->firstname,
             'salesman.lastname'  => $this->lastname,
             'commission in %' 	 => number_format_lang($this->commission),
-            ];
+        ];
 
         foreach ($this->items as $key => $array) {
             if ($key == 0) {

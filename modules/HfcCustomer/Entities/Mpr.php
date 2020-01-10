@@ -42,10 +42,10 @@ class Mpr extends \BaseModel
     public function view_index_label()
     {
         return ['table' => $this->table,
-                'index_header' => ['id', $this->table.'.name', 'prio', 'netelement.name'],
-                'header' =>  $this->name,
-                'order_by' => ['0' => 'asc'], // columnindex => direction
-                'eager_loading' => ['netelement'], ];
+            'index_header' => ['id', $this->table.'.name', 'prio', 'netelement.name'],
+            'header' =>  $this->name,
+            'order_by' => ['0' => 'asc'], // columnindex => direction
+            'eager_loading' => ['netelement'], ];
     }
 
     // Relation to NetElement

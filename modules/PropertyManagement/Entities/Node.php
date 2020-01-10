@@ -57,12 +57,12 @@ class Node extends \BaseModel
         $label = $this->street.' '.$this->house_nr.', '.$this->city.' - '.$this->name;
 
         return ['table' => $this->table,
-                'index_header' => ['node.name', 'street', 'house_nr', 'zip', 'city', "$this->table.type", "$this->table.headend"],
-                'header' => $label,
-                'bsclass' => $bsclass,
-                // 'eager_loading' => ['contract'],
-                // 'edit' => ['contract.firstname' => 'getContractFirstname'],
-            ];
+            'index_header' => ['node.name', 'street', 'house_nr', 'zip', 'city', "$this->table.type", "$this->table.headend"],
+            'header' => $label,
+            'bsclass' => $bsclass,
+            // 'eager_loading' => ['contract'],
+            // 'edit' => ['contract.firstname' => 'getContractFirstname'],
+        ];
     }
 
     public function view_has_many()

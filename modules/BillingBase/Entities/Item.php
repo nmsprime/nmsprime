@@ -54,21 +54,21 @@ class Item extends \BaseModel
         $price = $this->getItemPrice();
 
         $ret = ['table' => $this->table,
-                'index_header' => [
-                    'contract.number',
-                    'contract.firstname',
-                    'contract.lastname',
-                    'contract.city',
-                    'contract.district',
-                    'contract.contract_start',
-                    'contract.contract_end',
-                    'product.name',
-                    $this->table.'.valid_from',
-                    $this->table.'.valid_to',
-                    'product.price',
-                ],
-                'eager_loading' => ['product', 'contract'],
-            ];
+            'index_header' => [
+                'contract.number',
+                'contract.firstname',
+                'contract.lastname',
+                'contract.city',
+                'contract.district',
+                'contract.contract_start',
+                'contract.contract_end',
+                'product.name',
+                $this->table.'.valid_from',
+                $this->table.'.valid_to',
+                'product.price',
+            ],
+            'eager_loading' => ['product', 'contract'],
+        ];
 
         // if enabled add item.valid_from and item.valid_to to index page
         if ($this->fluidDates()) {
@@ -747,7 +747,7 @@ class ItemObserver
                 Item::where('id', $tariff->id)->update([
                     'valid_to' => date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from))),
                     'valid_to_fixed' => $item->valid_from_fixed || $tariff->valid_to_fixed ? true : false,
-                    ]);
+                ]);
             }
         }
 

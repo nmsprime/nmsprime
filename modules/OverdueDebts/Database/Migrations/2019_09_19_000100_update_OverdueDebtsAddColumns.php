@@ -54,7 +54,7 @@ class UpdateOverdueDebtsAddColumns extends BaseMigration
                 'import_inet_block_amount',
                 'import_inet_block_debts',
                 'import_inet_block_indicator',
-                ]);
+            ]);
 
             $table->float('fine1', 10, 4);
             $table->float('fine2', 10, 4);

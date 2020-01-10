@@ -319,7 +319,7 @@ class SettlementRunController extends \BaseController
                 'time'      => $timestamp,
                 'type'      => $type,
                 'message'   => substr($string, strpos($string, ': ') + 2),
-                ];
+            ];
 
             if ($old == $arr) {
                 continue;

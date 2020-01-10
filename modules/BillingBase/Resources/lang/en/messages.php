@@ -5,7 +5,7 @@ return [
     'cdr' => [
         'missingEvn' => 'Missing CDR of :provider.',
         'wrongArgument' => 'Wrong format of date option. Execute the command for last month. (Default case)',
-        ],
+    ],
     'modemAddressToInvoice' => 'Only the address of one modem of the corresponding contract will be added to the invoice.',
     'settlementrun' => [
         'state' => [

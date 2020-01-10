@@ -28,7 +28,7 @@ class CompanyTableSeeder extends \BaseSeeder
                 'tax_id_nr' => 'DE123456789',
                 'tax_nr' => '123/456/78910',
                 'logo' => 'logo.pdf',
-                ]);
+            ]);
         }
     }
 }

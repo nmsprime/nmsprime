@@ -48,11 +48,11 @@ class SepaMandate extends \BaseModel
         $valid_to = $this->valid_to ? ' - '.$this->valid_to : '';
 
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.holder', $this->table.'.valid_from', $this->table.'.valid_to', $this->table.'.reference', 'iban', $this->table.'.disable'],
-                'bsclass' => $bsclass,
-                'order_by' => ['0' => 'asc'],
-                'header' =>  "$this->reference - $this->iban - $this->valid_from $valid_to",
-            ];
+            'index_header' => [$this->table.'.holder', $this->table.'.valid_from', $this->table.'.valid_to', $this->table.'.reference', 'iban', $this->table.'.disable'],
+            'bsclass' => $bsclass,
+            'order_by' => ['0' => 'asc'],
+            'header' =>  "$this->reference - $this->iban - $this->valid_from $valid_to",
+        ];
     }
 
     /**
