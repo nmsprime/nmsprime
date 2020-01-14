@@ -55,3 +55,6 @@ phpunit/*.txt
 
 # ignore xml files created from template
 phpunit/*.xml
+
+# ignore php cs fixer cache
+.php_cs.cache
