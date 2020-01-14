@@ -71,7 +71,7 @@ class MprGeopos extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new MprGeoposObserver);
+        self::observe(new MprGeoposObserver());
     }
 }
 
@@ -91,7 +91,7 @@ class MprGeoposObserver
             return;
         }
 
-        \Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
+        \Queue::push(new \Modules\HfcCustomer\Console\MpsCommand());
     }
 
     public function deleted($mprgeopos)
@@ -100,6 +100,6 @@ class MprGeoposObserver
             return;
         }
 
-        \Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
+        \Queue::push(new \Modules\HfcCustomer\Console\MpsCommand());
     }
 }

@@ -41,7 +41,7 @@ class ModemController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new Modem;
+            $model = new Modem();
         }
 
         if (! $model->exists) {
@@ -58,8 +58,7 @@ class ModemController extends \BaseController
         // check if installation_address_change_date is readonly (address change has been sent to envia TEL API)
         if (
             ($model['installation_address_change_date'])
-            &&
-            (Module::collections()->has('ProvVoipEnvia'))
+            && (Module::collections()->has('ProvVoipEnvia'))
         ) {
             $orders = \Modules\ProvVoipEnvia\Entities\EnviaOrder::
                 where('modem_id', '=', $model->id)->
@@ -105,7 +104,7 @@ class ModemController extends \BaseController
         ];
 
         if (Sla::first()->valid()) {
-            $a[] = ['form_type'=> 'text', 'name' => 'formatted_support_state', 'description' => 'Support State', 'field_value' => ucfirst(str_replace('-', ' ', $model->support_state)), 'help'=>trans('helper.modemSupportState.'.$model->support_state), 'help_icon'=> $model->getFaSmileClass()['fa-class'], 'options' =>['readonly'], 'color'=>$model->getFaSmileClass()['bs-class']];
+            $a[] = ['form_type' => 'text', 'name' => 'formatted_support_state', 'description' => 'Support State', 'field_value' => ucfirst(str_replace('-', ' ', $model->support_state)), 'help' => trans('helper.modemSupportState.'.$model->support_state), 'help_icon' => $model->getFaSmileClass()['fa-class'], 'options' => ['readonly'], 'color' => $model->getFaSmileClass()['bs-class']];
         }
 
         $c = [
@@ -154,6 +153,7 @@ class ModemController extends \BaseController
      * Change form fields based on selected configfile device (cm || tr069)
      *
      * @author Roy Schneider
+     *
      * @return array with array of all ids from configfile of device cm or tr069 and string of ids from configfile of device cm/tr069
      */
     public function dynamicDisplayFormFields()
@@ -173,7 +173,9 @@ class ModemController extends \BaseController
      * Get all management jobs for envia TEL
      *
      * @author Patrick Reichel
+     *
      * @param $modem current modem object
+     *
      * @return array containing linktexts and URLs to perform actions against REST API
      */
     public static function _get_envia_management_jobs($modem)
@@ -205,8 +207,11 @@ class ModemController extends \BaseController
         }
 
         if (\Bouncer::can('view_analysis_pages_of', Modem::class)) {
-            array_push($tabs, ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $model->id],
-                ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => $model->id]);
+            array_push(
+                $tabs,
+                ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $model->id],
+                ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => $model->id]
+            );
 
             // MTA: only show MTA analysis if Modem has MTA's
             if (isset($model->mtas) && isset($model->mtas[0])) {
@@ -246,13 +251,13 @@ class ModemController extends \BaseController
         $modems = $obj->getFulltextSearchResults($scope, $mode, $query, $pre_f, $pre_v)[0];
 
         // perform contract search
-        $obj = new \Modules\ProvBase\Entities\Contract;
+        $obj = new \Modules\ProvBase\Entities\Contract();
         $contracts = $obj->getFulltextSearchResults('contract', $mode, $query, $pre_f, $pre_v)[0];
 
         // generate Topography
         if (Request::get('topo') == '1') {
             // Generate KML file
-            $customer = new \Modules\HfcCustomer\Http\Controllers\CustomerTopoController;
+            $customer = new \Modules\HfcCustomer\Http\Controllers\CustomerTopoController();
             $file = $customer->kml_generate($modems);
 
             $view_header_right = 'Topography';

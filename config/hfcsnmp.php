@@ -8,7 +8,7 @@ return [
     'MenuItems' => [
         'MibFile' => [
             'link' => 'MibFile.index',
-            'icon'	=> 'fa-file-o',
+            'icon' => 'fa-file-o',
             'class' => MibFile::class,
         ],
     ],

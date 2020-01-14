@@ -18,7 +18,7 @@ class ItemController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new Item;
+            $model = new Item();
         }
 
         $products = Product::select('id', 'type', 'name')->orderBy('type')->orderBy('name')->get()->all();

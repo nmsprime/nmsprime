@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Application Name
@@ -151,7 +150,6 @@ return [
     */
 
     'providers' => [
-
         /*
          * Laravel Framework Service Providers...
          */
@@ -205,7 +203,6 @@ return [
     */
 
     'aliases' => [
-
         'App' => Illuminate\Support\Facades\App::class,
         'Artisan' => Illuminate\Support\Facades\Artisan::class,
         'Auth' => Illuminate\Support\Facades\Auth::class,
@@ -240,14 +237,14 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
 
-        'Form'      => Collective\Html\FormFacade::class,
-        'Html'      => Collective\Html\HtmlFacade::class,
-        'HTML'      => Collective\Html\HtmlFacade::class,
-        'Str'       => Illuminate\Support\Str::class,
+        'Form' => Collective\Html\FormFacade::class,
+        'Html' => Collective\Html\HtmlFacade::class,
+        'HTML' => Collective\Html\HtmlFacade::class,
+        'Str' => Illuminate\Support\Str::class,
 
         'BaseController' => App\Http\Controllers\BaseController::class,
-        'HtmlServiceProvider'  => Acme\html\HtmlServiceProvider::class,
-        'BaseRoute'     => Acme\core\BaseRoute::class,
+        'HtmlServiceProvider' => Acme\html\HtmlServiceProvider::class,
+        'BaseRoute' => Acme\core\BaseRoute::class,
         'NamespaceController' => App\Http\Controllers\NamespaceController::class,
         'BaseModel' => App\BaseModel::class,
         'GlobalConfig' => App\GlobalConfig::class,
@@ -264,5 +261,4 @@ return [
     |
     */
     'googleApiKey' => env('GOOGLE_API_KEY'),
-
 ];

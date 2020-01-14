@@ -53,7 +53,8 @@ class ProvMonServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('provmon.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'provmon'
+            __DIR__.'/../Config/config.php',
+            'provmon'
         );
     }
 

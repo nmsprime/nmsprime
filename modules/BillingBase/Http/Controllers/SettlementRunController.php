@@ -178,7 +178,7 @@ class SettlementRunController extends \BaseController
      * Check State of Job "SettlementRunCommand"
      * Send Reload info when job has finished
      *
-     * @return  response    Stream
+     * @return response Stream
      */
     public function check_state()
     {
@@ -268,7 +268,7 @@ class SettlementRunController extends \BaseController
      *
      * Note: you need to set Product IDs in storage/app/config/billingbase/post-invoice-product-ids
      *
-     * @return view  SettlementRun edit page
+     * @return view SettlementRun edit page
      */
     public function create_post_invoices_pdf($id)
     {
@@ -285,7 +285,8 @@ class SettlementRunController extends \BaseController
      *
      * @param ts_from       Unix Timestamp      Return only Log entries after this timestamp
      * @param severity_lvl  Enum                Minimum Severity Level to show
-     * @return array        [timestamp => [color, type, message], ...]
+     *
+     * @return array [timestamp => [color, type, message], ...]
      */
     public static function get_logs($ts_from, $severity_lvl = Logger::NOTICE, $logfile = 'billing.log')
     {
@@ -315,10 +316,10 @@ class SettlementRunController extends \BaseController
             }
 
             $arr = [
-                'color'     => $bsclass,
-                'time'      => $timestamp,
-                'type'      => $type,
-                'message'   => substr($string, strpos($string, ': ') + 2),
+                'color' => $bsclass,
+                'time' => $timestamp,
+                'type' => $type,
+                'message' => substr($string, strpos($string, ': ') + 2),
             ];
 
             if ($old == $arr) {

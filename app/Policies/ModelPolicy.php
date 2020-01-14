@@ -15,6 +15,5 @@ class ModelPolicy
      */
     public function __construct()
     {
-        //
     }
 }

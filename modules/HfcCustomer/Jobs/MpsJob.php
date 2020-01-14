@@ -9,7 +9,9 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 
 class MpsJob implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * Execute the console command - Refresh all MPS rules

@@ -13,7 +13,7 @@ class HfcReqController extends \BaseController
     /**
      * Return the View for Assigning existing OIDs to the NetElementType or Parameter itself (children)
      *
-     * @return  View
+     * @return View
      */
     public function assign($id)
     {

@@ -21,7 +21,7 @@ class ConfigfileController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new Configfile;
+            $model = new Configfile();
         }
 
         $firmware_files = Configfile::get_files('fw');
@@ -73,6 +73,7 @@ class ConfigfileController extends \BaseController
 
     /**
      * Overwrites the base method => we need to handle file uploads
+     *
      * @author Patrick Reichel
      */
     public function store($redirect = true)
@@ -96,6 +97,7 @@ class ConfigfileController extends \BaseController
      * Generate tree of configfiles.
      *
      * @author Roy Schneider
+     *
      * @return void|string Void on Success, Error message on failure
      */
     public function importTree()
@@ -115,7 +117,9 @@ class ConfigfileController extends \BaseController
      * Replace all id's and parent_id's.
      *
      * @author Roy Schneider
+     *
      * @param string $content JSON String from uploaded File
+     *
      * @return string
      */
     public function replaceIds(string $content): string
@@ -163,11 +167,12 @@ class ConfigfileController extends \BaseController
      * created Configfiles the IDs are overwritten and cause DB errors. The
      * Ids get replaced with a higher number to prevent that.
      *
-     * @param string $content   JSON string from uploaded file
-     * @param array $importedIds[int]   Original ids from imported JSON as integer
-     * @param array $importedIdStrings[string]  Strings with the ids that should be replaced
-     * @param int $start    possible duplicate id
-     * @param int $tempImportId     high id number that guarantees no conflict
+     * @param string $content                   JSON string from uploaded file
+     * @param array  $importedIds[int]          Original ids from imported JSON as integer
+     * @param array  $importedIdStrings[string] Strings with the ids that should be replaced
+     * @param int    $start                     possible duplicate id
+     * @param int    $tempImportId              high id number that guarantees no conflict
+     *
      * @return void
      */
     protected function replaceDuplicateId(string &$content, array &$importedIds, array &$importedIdStrings, int $start, int $tempImportId): void
@@ -187,9 +192,11 @@ class ConfigfileController extends \BaseController
      * Recursively create all configfiles with related children.
      *
      * @author Roy Schneider
-     * @param array $content    Current Configfile
-     * @param bool $hasName     Take Name of Input field for first Configfile?
-     * @param Illuminate\Support\Collection $originalConfigfiles    Data of all Configfiles
+     *
+     * @param array                         $content             Current Configfile
+     * @param bool                          $hasName             Take Name of Input field for first Configfile?
+     * @param Illuminate\Support\Collection $originalConfigfiles Data of all Configfiles
+     *
      * @return void
      */
     public function recreateTree(array $content, bool $hasName, \Illuminate\Support\Collection $originalConfigfiles): void
@@ -234,8 +241,10 @@ class ConfigfileController extends \BaseController
      * Create configfiles or replace input if validation passes.
      *
      * @author Roy Schneider
-     * @param array $configfile Config file data
-     * @param bool $requestHasNameInput
+     *
+     * @param array $configfile          Config file data
+     * @param bool  $requestHasNameInput
+     *
      * @return bool
      */
     public function checkAndSetContent(array $configfile, bool $requestHasNameInput): bool
@@ -258,6 +267,7 @@ class ConfigfileController extends \BaseController
 
     /**
      * Overwrites the base method => we need to handle file uploads
+     *
      * @author Patrick Reichel
      */
     public function update($id)
@@ -283,7 +293,9 @@ class ConfigfileController extends \BaseController
      * Note: takes about 7-10 ms per configfile
      *
      * @author Roy Schneider
+     *
      * @param int $id
+     *
      * @return array $tree
      */
     public function exportTree($id, $configfiles)

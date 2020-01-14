@@ -63,6 +63,7 @@ class NamespaceController
      * NOTE: will only perform in Ping Pong Context
      *
      * @author Torsten Schmidt, Patrick Reichel
+     *
      * @return model name
      */
     public static function module_get_pure_model_name()
@@ -84,6 +85,7 @@ class NamespaceController
      * Return Model Name
      *
      * @author Torsten Schmidt, Patrick Reichel
+     *
      * @return model name
      */
     public static function get_model_name()

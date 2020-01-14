@@ -53,7 +53,8 @@ class HfcReqServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('hfcreq.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'hfcreq'
+            __DIR__.'/../Config/config.php',
+            'hfcreq'
         );
     }
 

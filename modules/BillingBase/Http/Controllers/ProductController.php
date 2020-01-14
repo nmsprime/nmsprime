@@ -15,7 +15,7 @@ class ProductController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new Product;
+            $model = new Product();
         }
 
         // don't use array_merge for this because that reassignes the index!
@@ -69,6 +69,7 @@ class ProductController extends \BaseController
             case 'Other':
             case 'TV':
                 $data['qos_id'] = 0;
+                // no break
             case 'Internet':
                 $data['voip_sales_tariff_id'] = 0;
                 $data['voip_purchase_tariff_id'] = 0;

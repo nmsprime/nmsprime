@@ -75,7 +75,6 @@ class EnviaOrderProcessorCommand extends Command
                 }
 
                 if ($phonenumber->contract_external_id != $order->contractreference) {
-
                     // find old and new enviacontracts; create if not existing
                     $old_enviacontract = EnviaContract::firstOrCreate(['envia_contract_reference' => $phonenumber->contract_external_id]);
                     $new_enviacontract = EnviaContract::firstOrCreate(['envia_contract_reference' => $order->contractreference]);

@@ -59,7 +59,8 @@ class ProvVoipEnviaServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('provvoipenvia.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'provvoipenvia'
+            __DIR__.'/../Config/config.php',
+            'provvoipenvia'
         );
     }
 

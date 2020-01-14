@@ -26,12 +26,12 @@ class NetElement extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'name' 			=> 'required|string',
-            'pos' 			=> 'nullable|geopos',
-            'community_ro' 	=> 'nullable|regex:/(^[A-Za-z0-9]+$)+/',
-            'community_rw' 	=> 'nullable|regex:/(^[A-Za-z0-9]+$)+/',
-            'netelementtype_id'	=> 'required|exists:netelementtype,id,deleted_at,NULL|min:1',
-            'agc_offset'	=> 'nullable|numeric|between:-99.9,99.9',
+            'name' => 'required|string',
+            'pos' => 'nullable|geopos',
+            'community_ro' => 'nullable|regex:/(^[A-Za-z0-9]+$)+/',
+            'community_rw' => 'nullable|regex:/(^[A-Za-z0-9]+$)+/',
+            'netelementtype_id' => 'required|exists:netelementtype,id,deleted_at,NULL|min:1',
+            'agc_offset' => 'nullable|numeric|between:-99.9,99.9',
         ];
     }
 
@@ -39,7 +39,7 @@ class NetElement extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new NetElementObserver);
+        self::observe(new NetElementObserver());
     }
 
     // Name of View
@@ -90,7 +90,7 @@ class NetElement extends \BaseModel
 
         return ['table' => $this->table,
             'index_header' => [$this->table.'.id', 'netelementtype.name', $this->table.'.name',  $this->table.'.ip', $this->table.'.pos', $this->table.'.options'],
-            'header' =>  $this->id.' - '.$this->name,
+            'header' => $this->id.' - '.$this->name,
             'bsclass' => $bsclass,
             'order_by' => ['0' => 'asc'],
             'eager_loading' => ['netelementtype'],
@@ -257,6 +257,7 @@ class NetElement extends \BaseModel
 
     /**
      * Returns all available firmware files (via directory listing)
+     *
      * @author Patrick Reichel
      */
     public function kml_files()
@@ -390,6 +391,7 @@ class NetElement extends \BaseModel
      * Return the base NetElementType id
      *
      * @param
+     *
      * @return int [1: Net, 2: Cluster, 3: NetGw, 4: Amp, 5: Node, 6: Data]
      */
     public function get_base_netelementtype()
@@ -402,6 +404,7 @@ class NetElement extends \BaseModel
      * NOTE: this is of course type dependent
      *
      * @param
+     *
      * @return array()
      */
     public function get_options_array()

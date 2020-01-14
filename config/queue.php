@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Default Queue Driver
@@ -29,7 +28,6 @@ return [
     */
 
     'connections' => [
-
         'sync' => [
             'driver' => 'sync',
         ],
@@ -58,11 +56,11 @@ return [
         ],
 
         'iron' => [
-            'driver'  => 'iron',
-            'host'    => 'mq-aws-us-east-1.iron.io',
-            'token'   => 'your-token',
+            'driver' => 'iron',
+            'host' => 'mq-aws-us-east-1.iron.io',
+            'token' => 'your-token',
             'project' => 'your-project-id',
-            'queue'   => 'your-queue-name',
+            'queue' => 'your-queue-name',
             'encrypt' => true,
         ],
 
@@ -72,7 +70,6 @@ return [
             'queue' => 'default',
             'retry_after' => 90,
         ],
-
     ],
 
     /*
@@ -90,5 +87,4 @@ return [
         'database' => env('DB_CONNECTION', 'mysql'),
         'table' => 'failed_jobs',
     ],
-
 ];

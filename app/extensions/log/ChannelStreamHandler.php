@@ -21,6 +21,7 @@ class ChannelStreamHandler extends StreamHandler
 
     /**
      * @param string $channel Channel name to write
+     *
      * @see parent __construct for params
      */
     public function __construct($channel, $stream, $level = Logger::DEBUG, $bubble = true, $filePermission = null, $useLocking = false)
@@ -38,6 +39,7 @@ class ChannelStreamHandler extends StreamHandler
      * When to handle the log record.
      *
      * @param array $record
+     *
      * @return type
      */
     public function isHandling(array $record)
@@ -46,8 +48,7 @@ class ChannelStreamHandler extends StreamHandler
         //AND CHANNELS MATCHING!
         if (isset($record['channel'])) {
             return
-                $record['level'] >= $this->level &&
-                $record['channel'] == $this->channel;
+                $record['level'] >= $this->level && $record['channel'] == $this->channel;
         } else {
             return
                 $record['level'] >= $this->level;

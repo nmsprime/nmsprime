@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Default Filesystem Disk
@@ -42,7 +41,6 @@ return [
     */
 
     'disks' => [
-
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app'),
@@ -64,13 +62,13 @@ return [
         ],
 
         'rackspace' => [
-            'driver'    => 'rackspace',
-            'username'  => 'your-username',
-            'key'       => 'your-key',
+            'driver' => 'rackspace',
+            'username' => 'your-username',
+            'key' => 'your-key',
             'container' => 'your-container',
-            'endpoint'  => 'https://identity.api.rackspacecloud.com/v2.0/',
-            'region'    => 'IAD',
-            'url_type'  => 'publicURL',
+            'endpoint' => 'https://identity.api.rackspacecloud.com/v2.0/',
+            'region' => 'IAD',
+            'url_type' => 'publicURL',
         ],
 
         'chart-data' => [
@@ -78,5 +76,4 @@ return [
             'root' => storage_path('/app/data/dashboard'),
         ],
     ],
-
 ];

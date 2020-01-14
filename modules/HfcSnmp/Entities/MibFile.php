@@ -42,7 +42,7 @@ class MibFile extends \BaseModel
     {
         return ['table' => $this->table,
             'index_header' => [$this->table.'.id', $this->table.'.name',  $this->table.'.version'],
-            'header' =>  $this->name,
+            'header' => $this->name,
             'bsclass' => $this->get_bsclass(),
             'order_by' => ['1' => 'asc'],
         ];
@@ -89,7 +89,7 @@ class MibFile extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new MibFileObserver);
+        self::observe(new MibFileObserver());
     }
 
     public function get_full_filepath()
@@ -102,7 +102,7 @@ class MibFile extends \BaseModel
      * Create OID Database Entries from parsing snmptranslate outputs of all OIDs of the MIB
      * Extract informations of OID: name, syntax, access, type, values, description, ...
      *
-     * @return  0  on success, Redirect::back Object on Error
+     * @return 0 on success, Redirect::back Object on Error
      *
      * @author Nino Ryschawy
      */
@@ -216,18 +216,18 @@ class MibFile extends \BaseModel
 
             // create OID
             OID::create([
-                'mibfile_id' 	=> $this->id,
-                'oid' 			=> $oid,
-                'name'	 		=> $name,
-                'access'	 	=> $access,
-                'syntax' 		=> $syntax,
-                'type' 			=> $type,
-                'oid_table' 	=> ($tab = preg_match('/[a-z][a-zA-Z0-9]*Table$/', $name)) ? $tab : 0,
-                'html_type' 	=> is_string($value_set) ? 'select' : 'text',
-                'value_set'		=> is_string($value_set) ? $value_set : null,
-                'startvalue' 	=> is_string($value_set) ? null : $value_set[0],
-                'endvalue' 		=> is_string($value_set) ? null : $value_set[1],
-                'description' 	=> $description,
+                'mibfile_id' => $this->id,
+                'oid' => $oid,
+                'name' => $name,
+                'access' => $access,
+                'syntax' => $syntax,
+                'type' => $type,
+                'oid_table' => ($tab = preg_match('/[a-z][a-zA-Z0-9]*Table$/', $name)) ? $tab : 0,
+                'html_type' => is_string($value_set) ? 'select' : 'text',
+                'value_set' => is_string($value_set) ? $value_set : null,
+                'startvalue' => is_string($value_set) ? null : $value_set[0],
+                'endvalue' => is_string($value_set) ? null : $value_set[1],
+                'description' => $description,
             ]);
         }
 

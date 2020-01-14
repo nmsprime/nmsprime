@@ -56,7 +56,6 @@ class EnviaOrderController extends \BaseController
                 $init_values['contract_id'] = $phonenumber->mta->modem->contract->id;
             }
         } else {
-
             // try to get related order
             // this can also be deleted!
             $related_id = $model->related_order_id;
@@ -119,7 +118,6 @@ class EnviaOrderController extends \BaseController
         // add init values if set
         $ret = [];
         foreach ($ret_tmp as $elem) {
-
             /* echo '<pre>'; */
             /* print_r($elem); */
             /* echo '</pre>'; */
@@ -237,8 +235,7 @@ class EnviaOrderController extends \BaseController
      */
     public function mark_solved($id)
     {
-        if (Bouncer::can('update', EnviaOrder::class) &&
-            Bouncer::can('update', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia')) {
+        if (Bouncer::can('update', EnviaOrder::class) && Bouncer::can('update', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia')) {
             $model = EnviaOrder::findOrFail($id);
             $model->mark_as_solved();
         } else {
@@ -255,7 +252,6 @@ class EnviaOrderController extends \BaseController
      */
     public function edit($id)
     {
-
         // call parent and store return
         // so authentication is done!
         $parent_return = parent::edit($id);
@@ -284,7 +280,6 @@ class EnviaOrderController extends \BaseController
      */
     public function store($redirect = true)
     {
-
         // call parent and store return
         // so authentication is done!
         $parent_return = parent::store($redirect);
@@ -313,8 +308,7 @@ class EnviaOrderController extends \BaseController
      */
     public function destroy($id)
     {
-        if (Bouncer::cannot('delete', EnviaOrder::class) &&
-            Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia')) {
+        if (Bouncer::cannot('delete', EnviaOrder::class) && Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia')) {
             throw new AuthException('Access to model EnviaOrder not allowed for user '.Auth::user()->login_name.'.');
         }
         // get all orders to be canceled

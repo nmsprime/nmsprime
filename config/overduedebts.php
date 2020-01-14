@@ -8,8 +8,8 @@ return [
     'debtMgmtType' => env('DEBT_MGMT_TYPE', 'sta'),
     'MenuItems' => [
         'Debt' => [
-            'link'	=> 'Debt.result',
-            'icon'	=> 'fa-usd',
+            'link' => 'Debt.result',
+            'icon' => 'fa-usd',
             'class' => Debt::class,
         ],
     ],

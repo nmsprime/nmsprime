@@ -116,6 +116,7 @@ class Modem extends \BaseModel
 
     /**
      * Return Fontawesome emoji class, and Bootstrap text color
+     *
      * @return array
      */
     public function getFaSmileClass()
@@ -127,7 +128,7 @@ class Modem extends \BaseModel
             default: $faClass = 'fa-smile'; $bsClass = 'success'; break;
         }
 
-        return ['fa-class'=> $faClass, 'bs-class'=> $bsClass];
+        return ['fa-class' => $faClass, 'bs-class' => $bsClass];
     }
 
     public function get_contract_valid()
@@ -180,6 +181,7 @@ class Modem extends \BaseModel
 
     /**
      * Formatted attribute of support state.
+     *
      * @return string
      */
     public function getFormattedSupportStateAttribute()
@@ -356,8 +358,8 @@ class Modem extends \BaseModel
 
         parent::boot();
 
-        self::observe(new \App\SystemdObserver);
-        self::observe(new ModemObserver);
+        self::observe(new \App\SystemdObserver());
+        self::observe(new ModemObserver());
     }
 
     /**
@@ -467,7 +469,6 @@ class Modem extends \BaseModel
      */
     public static function create_ignore_cpe_dhcp_file()
     {
-
         // only add content if multiple dhcp servers exist
         if (! ProvBase::first()->multiple_provisioning_systems) {
             $content = "# Ignoring no devices – multiple_provisioning_systems not set in ProvBase\n";
@@ -852,7 +853,9 @@ class Modem extends \BaseModel
      * Create Provision from configfile.text.
      *
      * @author Roy Schneider
+     *
      * @param string $text
+     *
      * @return bool
      */
     public function createGenieAcsProvisions($text)
@@ -919,9 +922,11 @@ class Modem extends \BaseModel
      * Call API of GenieACS via PHP Curl.
      *
      * @author Roy Schneider
+     *
      * @param string $route
      * @param string $customRequest
      * @param string $data
+     *
      * @return mixed $result
      */
     public static function callGenieAcsApi($route, $customRequest, $data = null)
@@ -952,6 +957,7 @@ class Modem extends \BaseModel
      * Get decoded json object of device from GenieACS via API.
      *
      * @param string $projection
+     *
      * @return mixed
      *
      * @author Ole Ernst
@@ -1010,13 +1016,14 @@ class Modem extends \BaseModel
      * Get NETGW a CM is registered on
      *
      * @param  string 	ip 		address of cm
-     * @return object 	NETGW
+     *
+     * @return object NETGW
      *
      * @author Nino Ryschawy
      */
     public static function get_netgw($ip)
     {
-        $validator = new \Acme\Validators\ExtendedValidator;
+        $validator = new \Acme\Validators\ExtendedValidator();
 
         $ippools = IpPool::where('type', '=', 'CM')->get();
 
@@ -1036,6 +1043,7 @@ class Modem extends \BaseModel
      * Get all used firmwares of specified modem(s)
      *
      * @param string $id Modem identifier (all modems if $id is null)
+     *
      * @return array Hierarchical object (vendor->model->sw_rev) of all used firmwares
      *
      * @author Ole Ernst
@@ -1045,9 +1053,7 @@ class Modem extends \BaseModel
         $ret = [];
         foreach (glob("/var/lib/cacti/rra/cm-$id*.json") as $file) {
             if (filemtime($file) < time() - 86400 || // ignore json files, which haven't been updated within a day
-                ! ($json = file_get_contents($file)) ||
-                ! ($json = json_decode($json)) ||
-                ! isset($json->descr)) {
+                ! ($json = file_get_contents($file)) || ! ($json = json_decode($json)) || ! isset($json->descr)) {
                 continue;
             }
 
@@ -1064,7 +1070,7 @@ class Modem extends \BaseModel
                 $ret[$vendor][$model][$sw_rev] = 0;
             }
 
-            $ret[$vendor][$model][$sw_rev] += 1;
+            $ret[$vendor][$model][$sw_rev]++;
         }
 
         return $ret;
@@ -1153,9 +1159,7 @@ class Modem extends \BaseModel
             } catch (Exception $e) {
                 \Log::error("Could not restart $this->hostname directly ('".$e->getMessage()."')");
 
-                if (((strpos($e->getMessage(), 'php_network_getaddresses: getaddrinfo failed: Name or service not known') !== false) ||
-                    (strpos($e->getMessage(), 'snmpset(): No response from') !== false)) ||
-                    // this is not necessarily an error, e.g. the modem was deleted (i.e. Cisco) and user clicked on restart again
+                if (((strpos($e->getMessage(), 'php_network_getaddresses: getaddrinfo failed: Name or service not known') !== false) || (strpos($e->getMessage(), 'snmpset(): No response from') !== false)) || // this is not necessarily an error, e.g. the modem was deleted (i.e. Cisco) and user clicked on restart again
                     (strpos($e->getMessage(), 'noSuchName') !== false)) {
                     \Session::push('tmp_warning_above_form', trans('messages.modem_restart_error'));
                 } else {
@@ -1292,7 +1296,6 @@ class Modem extends \BaseModel
      */
     public function has_phonenumbers_attached()
     {
-
         // if there is no voip module ⇒ there can be no numbers
         if (! Module::collections()->has('ProvVoip')) {
             return false;
@@ -1315,7 +1318,6 @@ class Modem extends \BaseModel
      */
     public function related_phonenumbers()
     {
-
         // if voip module is not active: there can be no phonenumbers
         if (! Module::collections()->has('ProvVoip')) {
             return [];
@@ -1387,7 +1389,6 @@ class Modem extends \BaseModel
      */
     public function remove_envia_related_data()
     {
-
         // first: check if envia module is enabled
         // if not: do nothing – this database fields could be in use by another voip provider module!
         if (! Module::collections()->has('ProvVoipEnvia')) {
@@ -1418,8 +1419,8 @@ class Modem extends \BaseModel
      * relevant attribute was modified.
      *
      * @return 1 if reset via Modem or original mac is needed (mac was changed)
-     *		  -1 for reset via NETGW (faster),
-     *		   0 if no restart is needed
+     *           -1 for reset via NETGW (faster),
+     *           0 if no restart is needed
      *
      * @author Ole Ernst, Nino Ryschawy
      *
@@ -1474,6 +1475,7 @@ class Modem extends \BaseModel
      * Get list of apartments for select field of edit view
      *
      * @author Nino Ryschawy
+     *
      * @return array
      */
     public function getApartmentsList()
@@ -1492,10 +1494,12 @@ class Modem extends \BaseModel
             ->join('apartment', 'modem.apartment_id', 'apartment.id')
             ->whereNull('contract.contract_end')
             ->whereNull('modem.deleted_at')->whereNull('contract.deleted_at')->whereNull('apartment.deleted_at')
-            ->select('contract.id', 'apartment.id as apartmentId'
+            ->select(
+                'contract.id',
+                'apartment.id as apartmentId'
                 // , 'contract.number', 'contract.firstname', 'contract.lastname', 'contract.contract_start', 'contract.contract_end',
                 // 'modem.mac', 'contract.created_at',
-                );
+            );
 
         /* All apartments that either
             (1) do not have a modem assigned
@@ -1512,11 +1516,18 @@ class Modem extends \BaseModel
                 ->orWhere('modem.contract_id', $this->contract_id)
                 ->orWhereNotNull('contract.contract_end');
             })
-            ->select('realty.street', 'realty.house_nr', 'realty.city', 'apartment.id as apartmentId', 'apartment.number as anum', 'floor',
-                'modem.id as modemId', 'contract.id as cId'
+            ->select(
+                'realty.street',
+                'realty.house_nr',
+                'realty.city',
+                'apartment.id as apartmentId',
+                'apartment.number as anum',
+                'floor',
+                'modem.id as modemId',
+                'contract.id as cId'
                 // , 'realty.zip', 'realty.district', 'realty.number as rnum',
                 // 'contract.number as cnum', 'contract.firstname', 'contract.lastname', 'contract.contract_start', 'contract.contract_end',
-                );
+            );
 
         // All the apartments (that have no contract or a/many canceled contract(s)) from the subquery are left joined
         // with the possible new contracts to filter (dont show) apartments that indeed have a canceled contract but have
@@ -1524,11 +1535,16 @@ class Modem extends \BaseModel
         // TODO: From Laravel v5.6 on it is possible to use fromSub()
         $apartments = DB::table(DB::raw("({$apartmentsSubQuery->toSql()}) as apartments"))
             ->mergeBindings($apartmentsSubQuery->getQuery())
-            ->select('apartments.street', 'apartments.house_nr', 'apartments.city', 'apartments.apartmentId as id',
-                'apartments.anum as number', 'floor'
+            ->select(
+                'apartments.street',
+                'apartments.house_nr',
+                'apartments.city',
+                'apartments.apartmentId as id',
+                'apartments.anum as number',
+                'floor'
                 // 'apartments.cnum', 'apartments.firstname', 'apartments.lastname', 'apartments.contract_start', 'apartments.contract_end',
                 // 'newContract.number as newContractNr'
-                )
+            )
             ->leftJoin(DB::raw("({$contractSubQuery->toSql()}) as newContract"), 'newContract.apartmentId', '=', 'apartments.apartmentId')
             ->mergeBindings($contractSubQuery->getQuery())
             ->where(function ($query) {
@@ -1559,8 +1575,8 @@ class Modem extends \BaseModel
     /**
      * Check if modem throughput is provisioned via PPP(oE)
      *
-     * @return  true if PPP(oE) is used
-     *          false if PPP(oE) is not used
+     * @return true if PPP(oE) is used
+     *              false if PPP(oE) is not used
      *
      * @author Ole Ernst
      */
@@ -1572,8 +1588,8 @@ class Modem extends \BaseModel
     /**
      * Check if modem is provisioned via TR069
      *
-     * @return  true if TR069 is used
-     *          false if TR069 is not used
+     * @return true if TR069 is used
+     *              false if TR069 is not used
      *
      * @author Ole Ernst
      */
@@ -1606,7 +1622,7 @@ class Modem extends \BaseModel
                 $this->ppp_password = $psw;
             }
 
-            $check = new RadCheck;
+            $check = new RadCheck();
             $check->username = $this->ppp_username;
             $check->attribute = 'Cleartext-Password';
             $check->op = ':=';
@@ -1643,7 +1659,7 @@ class Modem extends \BaseModel
 
         // add RadReply, if it doesn't exist
         if (! $this->radreply()->count()) {
-            $reply = new RadReply;
+            $reply = new RadReply();
             $reply->username = $this->ppp_username;
             $reply->attribute = 'Framed-IP-Address';
             $reply->op = ':=';
@@ -1677,7 +1693,7 @@ class Modem extends \BaseModel
         if (! $this->radusergroups()->count()) {
             // default and QoS-specific group
             foreach ([RadGroupReply::$defaultGroup, $this->qos_id] as $groupname) {
-                $group = new RadUserGroup;
+                $group = new RadUserGroup();
                 $group->username = $this->ppp_username;
                 $group->groupname = $groupname;
                 $group->save();
@@ -1828,8 +1844,7 @@ class ModemObserver
         //         the Observer and re-call update() -> endless loop is the result.
         if (
             ($modem->wasRecentlyCreated)    // new modem
-            ||
-            (multi_array_key_exists(['street', 'house_number', 'zip', 'city'], $diff))  // address changed
+            || (multi_array_key_exists(['street', 'house_number', 'zip', 'city'], $diff))  // address changed
         ) {
             $modem->geocode(false);
         } elseif (multi_array_key_exists(['x', 'y'], $diff)) {  // manually changed geodata

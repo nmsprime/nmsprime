@@ -204,7 +204,6 @@ class EnviaOrderUpdaterCommand extends Command
 
         $envia_contract = new EnviaContract();
         foreach ($envia_orders as $envia_order) {
-
             // if there is no contract reference we are not able to find a match
             if (! $envia_order->contractreference) {
                 continue;

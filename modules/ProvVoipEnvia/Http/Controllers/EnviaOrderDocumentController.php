@@ -20,11 +20,10 @@ class EnviaOrderDocumentController extends \BaseController
      *
      * @author Patrick Reichel
      *
-     * @param $attributes pass through to Eloquent contstructor.
+     * @param $attributes pass through to Eloquent contstructor
      */
     public function __construct($attributes = [])
     {
-
         // call Eloquent constructor
         // $attributes are needed! (or e.g. seeding and creating will not work)
         parent::__construct($attributes);
@@ -50,11 +49,11 @@ class EnviaOrderDocumentController extends \BaseController
 
     /**
      * Overwrites the base method => we need to handle file uploads
+     *
      * @author Patrick Reichel
      */
     public function store($redirect = true)
     {
-
         // check and handle uploaded documents
         // perform only if file is uploaded, otherwise let the model decide what to do
         if (Request::hasFile('document_upload')) {
@@ -104,7 +103,6 @@ class EnviaOrderDocumentController extends \BaseController
 
         // if still not uploaded to envia TEL (that means there is no order id for this upload) => send to API
         if (! boolval($document->upload_order_id)) {
-
             // we realize this using redirect
             $params = [
                 'job' => 'order_create_attachment',
@@ -128,7 +126,6 @@ class EnviaOrderDocumentController extends \BaseController
      */
     protected function _handle_document_upload()
     {
-
         // build path to store document in – this is the base path with subdir contract ID
         $enviaorder_id = Request::get('enviaorder_id', -1);
         if ($enviaorder_id < 0) {
@@ -178,6 +175,7 @@ class EnviaOrderDocumentController extends \BaseController
      * inside this method.
      *
      * @return void
+     *
      * @author Christian Schramm
      */
     public function checkForPermission(): void

@@ -49,7 +49,7 @@ class BaseModel extends Eloquent
      *
      * @author Patrick Reichel
      *
-     * @param $attributes pass through to Eloquent contstructor.
+     * @param $attributes pass through to Eloquent contstructor
      */
     public function __construct($attributes = [])
     {
@@ -103,7 +103,7 @@ class BaseModel extends Eloquent
 
         // we simply add BaseObserver to each model
         // the real database writing part is in singleton that prevents duplicat log entries
-        $model_name::observe(new BaseObserver);
+        $model_name::observe(new BaseObserver());
     }
 
     /**
@@ -133,8 +133,9 @@ class BaseModel extends Eloquent
      * Use PHP Reflection API to receive the default of a given Property.
      * CAUTION this returns not the current state of the property.
      *
-     * @param string $class Basename of class or fully qualified classname
+     * @param string $class    Basename of class or fully qualified classname
      * @param string $property Property you want to receive the default value for
+     *
      * @return mixed
      */
     public function getDefaultProperty(string $class, string $property)
@@ -156,7 +157,6 @@ class BaseModel extends Eloquent
      */
     protected function _relationAvailable($related)
     {
-
         // remove all leading backslashes
         $related = ltrim($related, '\\');
 
@@ -165,7 +165,6 @@ class BaseModel extends Eloquent
 
         // check if requested relation is in module context
         if (Str::lower($context) == 'modules') {
-
             // check if requested module is active
             $module = $parts[1];
             if (! \Module::collections()->has($module)) {
@@ -180,10 +179,12 @@ class BaseModel extends Eloquent
     /**
      * Extension to original hasMany – returns an empty relation if the related module is not available.
      *
-     * @param  string  $related
-     * @param  string  $foreignKey
-     * @param  string  $localKey
+     * @param string $related
+     * @param string $foreignKey
+     * @param string $localKey
+     *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany or \App\Extensions\Database\EmptyRelation
+     *
      * @author Patrick Reichel
      */
     public function hasMany($related, $foreignKey = null, $localKey = null)
@@ -198,10 +199,12 @@ class BaseModel extends Eloquent
     /**
      * Extension to original hasOne – returns an empty relation if the related module is not available.
      *
-     * @param  string  $related
-     * @param  string  $foreignKey
-     * @param  string  $localKey
+     * @param string $related
+     * @param string $foreignKey
+     * @param string $localKey
+     *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne or \App\Extensions\Database\EmptyRelation
+     *
      * @author Patrick Reichel
      */
     public function hasOne($related, $foreignKey = null, $localKey = null)
@@ -216,17 +219,18 @@ class BaseModel extends Eloquent
     /**
      * Extension to original belongsTo – returns an empty relation if the related module is not available.
      *
-     * @param  string  $related
-     * @param  string  $foreignKey
-     * @param  string  $localKey
-     * @param  string  $relation
+     * @param string $related
+     * @param string $foreignKey
+     * @param string $localKey
+     * @param string $relation
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo or \App\Extensions\Database\EmptyRelation
+     *
      * @author Patrick Reichel
      */
     public function belongsTo($related, $foreignKey = null, $otherKey = null, $relation = null)
     {
         if ($this->_relationAvailable($related)) {
-
             // Patrick Reichel: get $relation if not given (copied from Eloquent/Model.php to get proper backtrace)
             // If no relation name was given, we will use this debug backtrace to extract
             // the calling method's name and use that as the relationship name as most
@@ -246,22 +250,35 @@ class BaseModel extends Eloquent
     /**
      * Extension to original belongsToMany – returns an empty relation if the related module is not available.
      *
-     * @param  string  $related
-     * @param  string  $table
-     * @param  string  $foreignKey
-     * @param  string  $otherKey
-     * @param  string  $relation
+     * @param string $related
+     * @param string $table
+     * @param string $foreignKey
+     * @param string $otherKey
+     * @param string $relation
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany or \App\Extensions\Database\EmptyRelation
+     *
      * @author Patrick Reichel
      */
-    public function belongsToMany($related, $table = null, $foreignPivotKey = null,
-                                  $relatedPivotKey = null, $parentKey = null,
-                                  $relatedKey = null, $relation = null)
-    {
+    public function belongsToMany(
+        $related,
+        $table = null,
+        $foreignPivotKey = null,
+        $relatedPivotKey = null,
+        $parentKey = null,
+        $relatedKey = null,
+        $relation = null
+    ) {
         if ($this->_relationAvailable($related)) {
-            return parent::belongsToMany($related, $table, $foreignPivotKey,
-                                         $relatedPivotKey, $parentKey,
-                                         $relatedKey, $relation);
+            return parent::belongsToMany(
+                $related,
+                $table,
+                $foreignPivotKey,
+                $relatedPivotKey,
+                $parentKey,
+                $relatedKey,
+                $relation
+            );
         } else {
             return new EmptyRelation();
         }
@@ -364,7 +381,7 @@ class BaseModel extends Eloquent
     public static function getPossibleEnumValues($name, $with_empty_option = false)
     {
         // create an instance of the model to be able to get the table name
-        $instance = new static;
+        $instance = new static();
 
         // get metadata for the given column and extract enum options
         $type = DB::select(DB::raw('SHOW COLUMNS FROM '.$instance->getTable().' WHERE Field = "'.$name.'"'))[0]->Type;
@@ -393,7 +410,9 @@ class BaseModel extends Eloquent
      * They have to be passed as a param to a MATCH-AGAINST query
      *
      * @param $table database to get index columns from
+     *
      * @return comma separated string of columns
+     *
      * @author Patrick Reichel
      */
     protected function _getFulltextIndexColumns($table)
@@ -418,6 +437,7 @@ class BaseModel extends Eloquent
      *	you have to logout & login to rebuild the array again
      *
      * @return array of all models except base models
+     *
      * @author Patrick Reichel,
      *         Torsten Schmidt: add modules path
      */
@@ -511,7 +531,9 @@ class BaseModel extends Eloquent
      *
      * @param $field sql field for pre selection
      * @param $field sql search value for pre selection
+     *
      * @return sql search statement, could be included in a normal while()
+     *
      * @author Torsten Schmidt
      */
     private function __preselect_search($field, $value, $model)
@@ -542,7 +564,9 @@ class BaseModel extends Eloquent
      * @param $query query to search for
      * @param $preselect_field sql field for pre selection
      * @param $preselect_field sql search value for pre selection
+     *
      * @return search result: array of whereRaw() results, this means array of class Illuminate\Database\Quer\Builder objects
+     *
      * @author Patrick Reichel,
      *         Torsten Schmidt: add preselection, add Model checking
      */
@@ -559,7 +583,7 @@ class BaseModel extends Eloquent
                 continue;
             }
 
-            $tmp = new $model;
+            $tmp = new $model();
 
             if (! property_exists($tmp, 'table')) {
                 continue;
@@ -578,7 +602,7 @@ class BaseModel extends Eloquent
         $result = [];
         foreach ($models as $model) {
             // get the database table used for given model
-            $tmp = new $model;
+            $tmp = new $model();
             $table = $tmp->getTable();
             $cols = $model::getTableColumns($table);
 
@@ -595,7 +619,9 @@ class BaseModel extends Eloquent
      * Get all database fields
      *
      * @param table database table to get structure from
+     *
      * @return comma separated string of columns
+     *
      * @author Patrick Reichel
      */
     public static function getTableColumns($table)
@@ -617,7 +643,6 @@ class BaseModel extends Eloquent
      */
     protected function _chooseFulltextSearchAlgo($mode, $query)
     {
-
         // search query is left truncated => simple search
         if ((Str::startsWith($query, '%')) || (Str::startsWith($query, '*'))) {
             $mode = 'simple';
@@ -640,12 +665,10 @@ class BaseModel extends Eloquent
      */
     public function getFulltextSearchResults($scope, $mode, $query, $preselect_field = null, $preselect_value = null)
     {
-
         // some searches cannot be performed against fulltext index
         $mode = $this->_chooseFulltextSearchAlgo($mode, $query);
 
         if ($mode == 'simple') {
-
             // replace wildcard chars
             $query = str_replace('*', '%', $query);
             // wrap with wildcards (if not given) => necessary because of the concatenation of all table rows
@@ -694,10 +717,12 @@ class BaseModel extends Eloquent
 
     /**
      * Generic function to build a list with key of id
-     * @param 	array 			$array 	 		list of Models/Objects
-     * @param 	String/Array 	$column 		sql column name(s) that contain(s) the description of the entry
-     * @param 	bool 			$empty_option 	true it first entry shall be empty
-     * @return  array 			$ret 			list
+     *
+     * @param array        $array        list of Models/Objects
+     * @param String/Array $column       sql column name(s) that contain(s) the description of the entry
+     * @param bool         $empty_option true it first entry shall be empty
+     *
+     * @return array $ret 			list
      */
     public function html_list($array, $columns, $empty_option = false, $separator = '--')
     {
@@ -726,12 +751,13 @@ class BaseModel extends Eloquent
     /**
      * Generic function to build a list with key of id and usage count.
      *
-     * @param array         $array          list of Models/Objects
-     * @param String/Array  $column         sql column name(s) that contain(s) the description of the entry
-     * @param bool          $empty_option   true it first entry shall be empty
-     * @param string        $colname        the column to count
-     * @param string        $count_at       the database table to count at
-     * @return array        $ret            list
+     * @param array        $array        list of Models/Objects
+     * @param String/Array $column       sql column name(s) that contain(s) the description of the entry
+     * @param bool         $empty_option true it first entry shall be empty
+     * @param string       $colname      the column to count
+     * @param string       $count_at     the database table to count at
+     *
+     * @return array $ret            list
      *
      * @author Patrick Reichel
      */
@@ -841,7 +867,7 @@ class BaseModel extends Eloquent
                     // check if we got a model name
                     if ($class_child_name) {
                         // yes! 1:n relation
-                        $class = new $class_child_name;
+                        $class = new $class_child_name();
                         $rel = $class->find($child->id);
                         if (! is_null($rel)) {
                             array_push($relations['1:n'], $rel);
@@ -861,7 +887,7 @@ class BaseModel extends Eloquent
                         }
 
                         // add other model instances to relation array if existing
-                        $class = new $class_child_name;
+                        $class = new $class_child_name();
                         $id_col = $part.'_id';
                         // TODO: Replace next line with $rel = $class_child_name::find($child->{$id_col});
                         $rel = $class->find($child->{$id_col});
@@ -878,6 +904,7 @@ class BaseModel extends Eloquent
 
     /**
      * Local Helper to differ between soft- and force-deletes
+     *
      * @return type mixed
      */
     protected function _delete()
@@ -906,7 +933,6 @@ class BaseModel extends Eloquent
 
             // deletion of 1:n related children is straight forward
             foreach ($children['1:n'] as $child) {
-
                 // if one direct or indirect child cannot be deleted:
                 // do not delete anything
                 if (! $child->delete()) {
@@ -950,7 +976,7 @@ class BaseModel extends Eloquent
 
     public static function destroy($ids)
     {
-        $instance = new static;
+        $instance = new static();
 
         foreach ($ids as $id => $help) {
             $instance->findOrFail($id)->delete();
@@ -975,7 +1001,7 @@ class BaseModel extends Eloquent
      * @param 	time 			Integer 	Seconds since 1970 - check for timespan of specific point of time
      * @param 	start_end_ts 	Array 		UTC Timestamps [start, end] (in sec)
      *
-     * @return 	bool  			true, if model had valid dates during last month / year or is actually valid (now)
+     * @return bool true, if model had valid dates during last month / year or is actually valid (now)
      *
      * @author Nino Ryschawy
      */
@@ -1019,12 +1045,12 @@ class BaseModel extends Eloquent
     /**
      * Helper to show info line above index_list|form depending on previous URL.
      *
-     * @param string    $msg    The message to be shown
-     * @param string    $type   The type [info|success|warning|error], default is 'info'
-     * @param string    $place  Where to show the message above [index_list, form, relations];
-     *                              if not given try to determine from previous URL
+     * @param string $msg   The message to be shown
+     * @param string $type  The type [info|success|warning|error], default is 'info'
+     * @param string $place Where to show the message above [index_list, form, relations];
+     *                      if not given try to determine from previous URL
      *
-     * @return bool  true if message could be generated, false else
+     * @return bool true if message could be generated, false else
      *
      * @author Patrick Reichel
      */
@@ -1159,7 +1185,6 @@ class BaseObserver
 
         // if really updated (and not updated by model->save() in observer->created() like in contract)
         if (($action == 'updated') && (! $model->wasRecentlyCreated)) {
-
             // skip following attributes - TODO:
             $ignore = [
                 'updated_at',
@@ -1194,12 +1219,12 @@ class BaseObserver
         }
 
         $data = [
-            'user_id' 	=> $user ? $user->id : 0,
-            'username' 	=> $user ? $user->first_name.' '.$user->last_name : 'cronjob',
-            'method' 	=> $action,
-            'model' 	=> $model_name,
-            'model_id'  => $model->id,
-            'text' 		=> $text,
+            'user_id' => $user ? $user->id : 0,
+            'username' => $user ? $user->first_name.' '.$user->last_name : 'cronjob',
+            'method' => $action,
+            'model' => $model_name,
+            'model_id' => $model->id,
+            'text' => $text,
         ];
 
         GuiLog::log_changes($data);

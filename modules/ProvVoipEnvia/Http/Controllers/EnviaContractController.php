@@ -13,7 +13,7 @@ class EnviaContractController extends \BaseController
     /**
      * defines the formular fields for the edit and create view
      *
-     * @return 	array
+     * @return array
      */
     public function view_form_fields($model = null)
     {
@@ -21,7 +21,7 @@ class EnviaContractController extends \BaseController
             $sale_tariffs = PhoneTariff::where('external_identifier', '=', $model->tariff_id)->where('type', '=', 'sale')->get();
             $purchase_tariffs = PhoneTariff::where('external_identifier', '=', $model->variation_id)->where('type', '=', 'purchase')->get();
         } else {
-            $model = new EnviaContract;
+            $model = new EnviaContract();
             $sale_tariffs = [];
             $purchase_tariffs = [];
         }

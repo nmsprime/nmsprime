@@ -22,7 +22,10 @@ use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
  */
 class User extends BaseModel implements AuthenticatableContract, AuthorizableContract
 {
-    use Authenticatable, Authorizable, HasRolesAndAbilities, Notifiable;
+    use Authenticatable;
+    use Authorizable;
+    use HasRolesAndAbilities;
+    use Notifiable;
 
     public $table = 'users';
 
@@ -42,7 +45,7 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
     {
         parent::boot();
 
-        self::observe(new UserObserver);
+        self::observe(new UserObserver());
     }
 
     /**
@@ -169,6 +172,7 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
      * Checks if this is the first own Login of a User.
      *
      * @param App\User $user
+     *
      * @return bool
      */
     public function isFirstLogin(): bool
@@ -179,8 +183,9 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
     /**
      * Checks if the password of the current user is expired.
      *
-     * @param App\User $user
+     * @param App\User      $user
      * @param Carbon\Carbon $now
+     *
      * @return bool
      */
     public function isPasswordExpired(): bool

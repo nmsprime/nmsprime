@@ -32,7 +32,6 @@ class DashboardServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
     }
 
     /**
@@ -46,7 +45,8 @@ class DashboardServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('dashboard.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'dashboard'
+            __DIR__.'/../Config/config.php',
+            'dashboard'
         );
     }
 

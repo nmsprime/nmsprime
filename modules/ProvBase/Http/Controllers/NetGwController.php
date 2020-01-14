@@ -15,7 +15,7 @@ class NetGwController extends \BaseController
         $init_values = [];
 
         if (! $model) {
-            $model = new NetGw;
+            $model = new NetGw();
         }
 
         // create context: calc next free ip pool
@@ -73,13 +73,13 @@ class NetGwController extends \BaseController
             // ['form_type' => 'text', 'name' => 'monitoring', 'description' => 'Monitoring', 'hidden' => 1],
         ];
         if (Sla::first()->valid()) {
-            $ret_tmp[] = ['form_type'=> 'text',
+            $ret_tmp[] = ['form_type' => 'text',
                 'name' => 'formatted_support_state',
                 'description' => 'Support State',
-                'field_value'=> ucfirst(str_replace('-', ' ', $model->support_state)),
-                'help'=>trans('helper.netGwSupportState.'.$model->support_state),
-                'help_icon'=> $model->getFaSmileClass()['fa-class'],
-                'options' =>['readonly'], 'color'=> $model->getFaSmileClass()['bs-class'], ];
+                'field_value' => ucfirst(str_replace('-', ' ', $model->support_state)),
+                'help' => trans('helper.netGwSupportState.'.$model->support_state),
+                'help_icon' => $model->getFaSmileClass()['fa-class'],
+                'options' => ['readonly'], 'color' => $model->getFaSmileClass()['bs-class'], ];
         }
 
         // add init values if set
@@ -96,6 +96,7 @@ class NetGwController extends \BaseController
 
     /**
      * @param Modules\ProvBase\Entities\NetGw
+     *
      * @return array
      */
     protected function editTabs($netgw)

@@ -44,6 +44,7 @@ class TreeTopographyController extends HfcBaseController
      *
      * @param field: search field name in tree table
      * @param search: the search value to look in tree table $field
+     *
      * @return view with KML file
      *
      * @author: Torsten Schmidt
@@ -92,6 +93,7 @@ class TreeTopographyController extends HfcBaseController
      * enable and see dd() for a more detailed view
      *
      * @param trees: The Tree Objects to be displayed, without ->get() call
+     *
      * @return array of MPS rules and geopos for all $tree objects
      *
      * @author: Torsten Schmidt
@@ -124,6 +126,7 @@ class TreeTopographyController extends HfcBaseController
      * Generate the KML File
      *
      * @param obj  Collection of relevant netelements
+     *
      * @return the path of the generated *.kml file, could be included via asset ()
      *
      * @author: Torsten Schmidt
@@ -156,10 +159,7 @@ class TreeTopographyController extends HfcBaseController
             $tp = $netelement->tp;
 
             // skip empty pos and lines to elements not in search string
-            if ($pos2 == null ||
-                $pos2 == '' ||
-                $pos2 == '0,0' ||
-                ! ArrayHelper::objArraySearch($netelements, 'id', $netelement->parent->id)) {
+            if ($pos2 == null || $pos2 == '' || $pos2 == '0,0' || ! ArrayHelper::objArraySearch($netelements, 'id', $netelement->parent->id)) {
                 continue;
             }
 
@@ -226,8 +226,7 @@ class TreeTopographyController extends HfcBaseController
                     </Placemark>";
 
                     // Draw Customer Marker
-                    $file .=
-                    '
+                    $file .= '
                     <Placemark>
                         <name></name>
                         <description><![CDATA[';
@@ -276,19 +275,19 @@ class TreeTopographyController extends HfcBaseController
             $state = $netelement->get_bsclass();
 
             if ($netelement->state == 'warning') {
-                $ystate += 1;
+                $ystate++;
             }
 
             if ($netelement->state == 'danger') {
-                $rstate += 1;
+                $rstate++;
             }
 
             if (($type == 'NETGW') || ($type == 'CLUSTER') || ($type == 'DATA') || ($type == 'NET')) {
-                $router += 1;
+                $router++;
             }
 
             if ($type == 'NODE') {
-                $fiber += 1;
+                $fiber++;
             }
 
             if ($p1 != $p2) {

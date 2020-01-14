@@ -10,7 +10,9 @@ use Modules\BillingBase\Entities\SettlementRun;
 
 class DeleteSettlementRun implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     protected $settlementrun;
 

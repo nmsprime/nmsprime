@@ -29,13 +29,13 @@ class ChannelWriter
      * @var array
      */
     protected $levels = [
-        'debug'     => Logger::DEBUG,
-        'info'      => Logger::INFO,
-        'notice'    => Logger::NOTICE,
-        'warning'   => Logger::WARNING,
-        'error'     => Logger::ERROR,
-        'critical'  => Logger::CRITICAL,
-        'alert'     => Logger::ALERT,
+        'debug' => Logger::DEBUG,
+        'info' => Logger::INFO,
+        'notice' => Logger::NOTICE,
+        'warning' => Logger::WARNING,
+        'error' => Logger::ERROR,
+        'critical' => Logger::CRITICAL,
+        'alert' => Logger::ALERT,
         'emergency' => Logger::EMERGENCY,
     ];
 
@@ -46,9 +46,10 @@ class ChannelWriter
     /**
      * Write to log based on the given channel and log level set
      *
-     * @param type $channel
-     * @param type $message
+     * @param type  $channel
+     * @param type  $message
      * @param array $context
+     *
      * @throws InvalidArgumentException
      */
     public function writeLog($channel, $level, $message, array $context = [])

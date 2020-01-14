@@ -1,7 +1,6 @@
 <?php
 
 BaseRoute::group([], function () {
-
     // Note: Defining this route after resource() results in Laravel calling the edit route with param 'result' (as $id) as the request URI matches this route first in the route definitions
     BaseRoute::get('Debt/result', [
         'as' => 'Debt.result',

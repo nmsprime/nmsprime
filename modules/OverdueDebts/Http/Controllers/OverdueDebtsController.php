@@ -15,7 +15,7 @@ class OverdueDebtsController extends \BaseController
             ['form_type' => 'text', 'name' => 'dunning_charge3', 'description' => trans('overduedebts::view.dunningCharge').' 3'],
             ['form_type' => 'textarea', 'name' => 'dunning_text1', 'description' => trans('overduedebts::view.dunningText').' 1'],
             ['form_type' => 'textarea', 'name' => 'dunning_text2', 'description' => trans('overduedebts::view.dunningText').' 2'],
-            ['form_type' => 'textarea', 'name' => 'dunning_text3', 'description' => trans('overduedebts::view.dunningText').' 3', 'space' =>1],
+            ['form_type' => 'textarea', 'name' => 'dunning_text3', 'description' => trans('overduedebts::view.dunningText').' 3', 'space' => 1],
         ];
 
         $ret2 = [];

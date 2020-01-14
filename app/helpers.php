@@ -67,6 +67,7 @@ function sanitize_filename($string)
  * Check if at least one of the needle array keys exists in the haystack array
  *
  * @return true if one array key of needle array exists in haystack array, false otherwise
+ *
  * @author Nino Ryschawy
  */
 function multi_array_key_exists($needles, $haystack)
@@ -95,16 +96,16 @@ function escape_latex_special_chars($string)
     // NOTE: "\\" has to be on top as it otherwise would replace all replacements in following loop
     $map = [
         '\\' => '\\textbackslash',
-        '#'  => '\\#',
-        '$'  => '\$',
-        '%'  => '\\%',
-        '&'  => '\\&',
-        '{'  => '\\{',
-        '}'  => '\\}',
-        '_'  => '\\_',
-        '~'  => '\\~{}',
-        '^'  => '\\^{}',
-        '€'  => '\\euro',   // there could be products containing “€”
+        '#' => '\\#',
+        '$' => '\$',
+        '%' => '\\%',
+        '&' => '\\&',
+        '{' => '\\{',
+        '}' => '\\}',
+        '_' => '\\_',
+        '~' => '\\~{}',
+        '^' => '\\^{}',
+        '€' => '\\euro',   // there could be products containing “€”
         '´' => '\'',
     ];
 
@@ -121,7 +122,8 @@ function escape_latex_special_chars($string)
  * @param 	mixed  		source files
  * @param 	string 		target filename
  * @param 	bool 		run processes multithreaded in background
- * @return 	int 	    PID (process ID of background process) if parallel is true, otherwise 0
+ *
+ * @return int PID (process ID of background process) if parallel is true, otherwise 0
  */
 function concat_pdfs($sourcefiles, $target_fn, $multithreaded = false)
 {
@@ -152,7 +154,8 @@ function concat_pdfs($sourcefiles, $target_fn, $multithreaded = false)
  *
  * @param string 	directory & filename
  * @param bool 	 	start latex process in background (for faster SettlementRun)
- * @return int      return value of pdflatex - 0 on success
+ *
+ * @return int return value of pdflatex - 0 on success
  */
 function pdflatex($dir, $filename, $background = false)
 {
@@ -184,7 +187,8 @@ function pdflatex($dir, $filename, $background = false)
  * @param int       pdflatex return code
  * @param bool      log message or not
  * @param string    path of file
- * @return string   message
+ *
+ * @return string message
  */
 function pdflatex_error_msg($code, $log = false, $filename = '')
 {
@@ -232,6 +236,7 @@ function number_format_lang($number)
  * is set to English, when no other configuration in 'app/config' is set.
  *
  * @param string|null $locale
+ *
  * @return string
  */
 function checkLocale($locale = null): string
@@ -248,6 +253,7 @@ function checkLocale($locale = null): string
  *
  * @param string    db column name - must be table.column in joined statements
  * @param string    date string like '2019-02-06'
+ *
  * @return function db query to use in (chained) where clause
  *
  * @author Nino Ryschawy
@@ -290,6 +296,7 @@ function clearFailedJobs($command = 'all')
  * Format date string dependent of set locale language
  *
  * @param $date
+ *
  * @return false|int|string
  */
 function langDateFormat($date)
@@ -330,7 +337,7 @@ function moneyFormat($amount)
  */
 function selectList($table, $columns, $empty_option = false, $separator = '--')
 {
-    $model = new \App\BaseModel;
+    $model = new \App\BaseModel();
 
     if (is_array($columns)) {
         $select = $columns;

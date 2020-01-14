@@ -386,7 +386,8 @@ class SettlementRunZipper
      * Check if process is running
      *
      * @param int   pid (Process-ID)
-     * @return bool     True if process is still running
+     *
+     * @return bool True if process is still running
      */
     public static function process_running($pid)
     {

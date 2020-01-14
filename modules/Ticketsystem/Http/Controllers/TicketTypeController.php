@@ -11,7 +11,7 @@ class TicketTypeController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new TicketType;
+            $model = new TicketType();
         }
 
         $parents = $model->html_list(TicketType::where('id', '!=', $model->id)->get()->all(), 'name', true);

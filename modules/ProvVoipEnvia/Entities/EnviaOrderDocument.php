@@ -24,7 +24,6 @@ class EnviaOrderDocument extends \BaseModel
     // Add your validation rules here
     public static function rules($id = null)
     {
-
         // for validation rule we only need the concrete type (e.g. pdf instead of application/pdf)
         $mimes_short = [];
         foreach (self::$allowed_mimetypes as $mime) {

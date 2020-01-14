@@ -8,7 +8,7 @@ use Collective\Html\FormBuilder as CollectiveFormBuilder;
 
 class FormBuilder extends CollectiveFormBuilder
 {
-    private static $layout_form_col_md = ['label'=>4, 'form'=>7, 'help'=>1];
+    private static $layout_form_col_md = ['label' => 4, 'form' => 7, 'help' => 1];
 
     /**
      * An array containing the currently opened form groups.
@@ -361,9 +361,11 @@ class FormBuilder extends CollectiveFormBuilder
      * Create a form range slider (Ion.RangeSlider).
      *
      * @author Roy Schneider
+     *
      * @param string $name
-     * @param mixed $value
-     * @param array $options
+     * @param mixed  $value
+     * @param array  $options
+     *
      * @return HTML
      */
     public function slider($name, $value = null, $options = [])
@@ -383,9 +385,11 @@ class FormBuilder extends CollectiveFormBuilder
      * 0 = green, 1 = yellow , 2 = red, error/null = grey
      *
      * @author Roy Schneider
+     *
      * @param string $name
-     * @param int $value
-     * @param array $options
+     * @param int    $value
+     * @param array  $options
+     *
      * @return HTML
      */
     public function trafficLight($name, $value = null, $options = [])
@@ -403,8 +407,10 @@ class FormBuilder extends CollectiveFormBuilder
      * Defines the color of the traffic light depending on the values in view_form_fields.
      *
      * @author Roy Schneider
-     * @param int $value
+     *
+     * @param int   $value
      * @param array $options
+     *
      * @return array [$color0, $color1, $color2]
      */
     public function trafficLightColor($value, $options)

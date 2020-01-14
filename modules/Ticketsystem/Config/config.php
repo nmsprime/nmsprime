@@ -8,12 +8,12 @@ return [
     'MenuItems' => [
         'Tickets' => [
             'link' => 'Ticket.index',
-            'icon'	=> 'fa-ticket',
+            'icon' => 'fa-ticket',
             'class' => Ticket::class,
         ],
         'TicketTypes' => [
             'link' => 'TicketType.index',
-            'icon'	=> 'fa-ticket',
+            'icon' => 'fa-ticket',
             'class' => TicketType::class,
         ],
     ],

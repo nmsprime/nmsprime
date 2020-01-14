@@ -32,7 +32,6 @@ class TicketsystemServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
     }
 
     /**
@@ -46,7 +45,8 @@ class TicketsystemServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('ticketsystem.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'ticketsystem'
+            __DIR__.'/../Config/config.php',
+            'ticketsystem'
         );
     }
 

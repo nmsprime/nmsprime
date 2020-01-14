@@ -62,7 +62,7 @@ class Mt940Parser
 
         foreach ($statements as $statement) {
             foreach ($statement->getTransactions() as $transaction) {
-                $debt = new Debt;
+                $debt = new Debt();
                 $debt->voucher_nr = $voucherNr;
 
                 $debt = $transactionParser->parse($transaction, $debt);

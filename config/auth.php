@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Authentication Defaults
@@ -14,8 +13,8 @@ return [
     */
 
     'defaults' => [
-        'guard'        => 'admin',
-        'passwords'    => 'admin',
+        'guard' => 'admin',
+        'passwords' => 'admin',
     ],
 
     /*
@@ -37,15 +36,15 @@ return [
 
     'guards' => [
         'admin' => [
-            'driver'   => 'session',
+            'driver' => 'session',
             'provider' => 'admin',
         ],
         'ccc' => [
-            'driver'   => 'session',
+            'driver' => 'session',
             'provider' => 'ccc',
         ],
         'api' => [
-            'driver'   => 'token',
+            'driver' => 'token',
             'provider' => 'admin',
         ],
     ],

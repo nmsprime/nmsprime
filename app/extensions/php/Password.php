@@ -11,6 +11,7 @@ class Password
      * Generates a password.
      *
      * @author Torsten Schmidt, Patrick Reichel
+     *
      * @param $length length of the password
      * @param $target used for example to use different character sets. (implemented is envia).
      */

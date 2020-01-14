@@ -43,7 +43,7 @@ class SettlementRun extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new SettlementRunObserver);
+        self::observe(new SettlementRunObserver());
     }
 
     /**
@@ -69,12 +69,12 @@ class SettlementRun extends \BaseModel
         $time = $this->executed_at ?? '';
 
         return [
-            'table' 		=> $this->table,
-            'index_header' 	=> [$this->table.'.year', $this->table.'.month', $this->table.'.executed_at', 'verified'],
-            'header' 		=> $this->year.' - '.$this->month.' - '.$time,
-            'bsclass' 		=> $bsclass,
-            'order_by' 		=> ['0' => 'desc'],
-            'edit' 			=> ['verified' => 'run_verified'],
+            'table' => $this->table,
+            'index_header' => [$this->table.'.year', $this->table.'.month', $this->table.'.executed_at', 'verified'],
+            'header' => $this->year.' - '.$this->month.' - '.$time,
+            'bsclass' => $bsclass,
+            'order_by' => ['0' => 'desc'],
+            'edit' => ['verified' => 'run_verified'],
         ];
     }
 
@@ -121,7 +121,7 @@ class SettlementRun extends \BaseModel
      * Mutator function to get accounting storage directory path via: model->directory
      * (so calling it in e.g. constructor is superfluous, used in e.g. ZipCommand)
      *
-     * @return string   SettlementRun absolute directory path
+     * @return string SettlementRun absolute directory path
      */
     public function getDirectoryAttribute()
     {
@@ -131,7 +131,7 @@ class SettlementRun extends \BaseModel
     /**
      * Mutator function to get accounting storage directory path via: model->relativeDirectory
      *
-     * @return string   SettlementRun relative directory path
+     * @return string SettlementRun relative directory path
      */
     public function getRelativeDirectoryAttribute()
     {
@@ -149,7 +149,7 @@ class SettlementRun extends \BaseModel
     /**
      * Return all Billing Files the corresponding directory contains
      *
-     * @return array 	containing all files ordered for view
+     * @return array containing all files ordered for view
      */
     public function accounting_files()
     {
@@ -199,8 +199,8 @@ class SettlementRun extends \BaseModel
      *
      * Creates invoices, SEPA xmls, booking & accounting record files
      *
-     * @param  SepaAccount  $sepaacc  The SEPA account the run shall be executed for - null for all accounts
-     * @param  Illuminate\Console\OutputStyle  $output  console output
+     * @param SepaAccount                    $sepaacc The SEPA account the run shall be executed for - null for all accounts
+     * @param Illuminate\Console\OutputStyle $output  console output
      */
     public function execute($sepaacc = null, $output = null)
     {
@@ -281,7 +281,7 @@ class SettlementRun extends \BaseModel
                 // increase invoice nr of sepa account
                 if (! isset($c->charge[$acc->id])) {
                     $c->charge[$acc->id] = ['net' => 0, 'tax' => 0];
-                    $acc->invoice_nr += 1;
+                    $acc->invoice_nr++;
                 }
 
                 // increase charge for account by price, calculate tax
@@ -291,7 +291,7 @@ class SettlementRun extends \BaseModel
                 $item->charge = round($item->charge, 2);
 
                 // save to accounting table (as backup for future) - NOTE: invoice nr counters are set initially from that table
-                $rec = new AccountingRecord;
+                $rec = new AccountingRecord();
                 $rec->store_item($item, $acc);
 
                 // add item to accounting records of account, invoice and salesman
@@ -489,7 +489,8 @@ class SettlementRun extends \BaseModel
 
     /**
      * @param  int if > 0 the pathname of the timestamps month is returned
-     * @return string  Absolute path of accounting directory for actual settlement run (when no argument is specified)
+     *
+     * @return string Absolute path of accounting directory for actual settlement run (when no argument is specified)
      */
     public static function get_absolute_accounting_dir_path($timestamp = 0)
     {
@@ -498,7 +499,8 @@ class SettlementRun extends \BaseModel
 
     /**
      * @param  int if > 0 the pathname of the timestamps month is returned
-     * @return string  Relative path of accounting dir to storage dir for actual settlement run
+     *
+     * @return string Relative path of accounting dir to storage dir for actual settlement run
      */
     public static function get_relative_accounting_dir_path($timestamp = 0)
     {
@@ -541,7 +543,7 @@ class SettlementRun extends \BaseModel
      *
      *  Used to clean up directory and DB on repeated run of SettlementRun::execute()
      *
-     * @param  bool  $tempFiles  Delete only temporary LaTeX files created during SettlementRun and check if Invoices where created successfully
+     * @param bool $tempFiles Delete only temporary LaTeX files created during SettlementRun and check if Invoices where created successfully
      */
     public function delete_current_invoices($tempFiles = false)
     {
@@ -736,14 +738,14 @@ class SettlementRun extends \BaseModel
             // this case should only happen when contract/voip tarif ended and deferred CDRs are calculated
             ChannelLog::notice('billing', trans('messages.accCmd_notice_CDR', ['contract_nr' => $c->number, 'contract_id' => $c->id]));
             $c->charge[$acc->id] = ['net' => 0, 'tax' => 0];
-            $acc->invoice_nr += 1;
+            $acc->invoice_nr++;
         }
 
         $c->charge[$acc->id]['net'] += $charge;
         $c->charge[$acc->id]['tax'] += $charge * SettlementRunData::getConf('tax') / 100;
 
         // accounting record
-        $rec = new AccountingRecord;
+        $rec = new AccountingRecord();
         $rec->add_cdr($c, $acc, $charge, $calls);
         $acc->add_cdr_accounting_record($c, $charge, $calls);
 
@@ -806,7 +808,7 @@ class SettlementRun extends \BaseModel
     {
         $arr = [
             'message' => $msg,
-            'value'   => round($value),
+            'value' => round($value),
         ];
 
         Storage::put('tmp/accCmdStatus', json_encode($arr));
@@ -856,7 +858,7 @@ class SettlementRun extends \BaseModel
      * Get requested collection date / date of value for contract
      * This is the date when the bank performs the booking of the customers debit
      *
-     * @return string   date
+     * @return string date
      */
     private function rcd($contract)
     {

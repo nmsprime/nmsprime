@@ -56,15 +56,15 @@ class StorageCleaner extends Command
      * Populate the instance array holding age thresholds for compressing/deleting.
      *
      * @TODO these thresholds are hardcoded in this first step – later on this should be configurable using .env or GlobalConfig
+     *
      * @author Patrick Reichel
      */
     protected function _prepare_metadata()
     {
         if (\Module::collections()->has('ProvVoipEnvia')) {
-
             // defaults
             $envia_api_xml_thresholds = [
-                'path' =>storage_path().'/app/data/provvoipenvia/XML', // the base path holding the date subdirs
+                'path' => storage_path().'/app/data/provvoipenvia/XML', // the base path holding the date subdirs
                 'function' => '_monthly_folders', // function to call
                 'compress' => '6M', // age threshold for compressing the subdirs
                 'delete' => '24M', // age threshold for deleting .tar.bz2 files
@@ -180,12 +180,10 @@ class StorageCleaner extends Command
 
         // get the base directories content
         foreach (new \DirectoryIterator($path) as $element) {
-
             // if element doesn't match one of the regexes: ignore
             if (
                 (preg_match($dir_regex, $element) == 0)
-                &&
-                (preg_match($file_regex, $element) == 0)
+                && (preg_match($file_regex, $element) == 0)
             ) {
                 continue;
             }
@@ -200,7 +198,6 @@ class StorageCleaner extends Command
         // compress the folders
         if (! is_null($compress)) {
             foreach ($dirs as $dir) {
-
                 // if above the threshold: ignore
                 if ($dir >= $compress) {
                     continue;
@@ -236,7 +233,6 @@ class StorageCleaner extends Command
 
         if (! is_null($delete)) {
             foreach ($elements as $element) {
-
                 // if above the threshold: ignore
                 if ($element >= $delete) {
                     continue;

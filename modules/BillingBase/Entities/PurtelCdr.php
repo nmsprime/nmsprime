@@ -11,7 +11,8 @@ class PurtelCdr extends CdrGetter
      * Load Call Data Records from PURTel Interface and save to accounting directory of appropriate date
      *
      * @param int       timestamp
-     * @return int      0|1 success|error
+     *
+     * @return int 0|1 success|error
      */
     public static function get($time = 0)
     {
@@ -59,7 +60,7 @@ class PurtelCdr extends CdrGetter
      *
      * NOTE: Username to phonenumber combination must never change!
      *
-     * @return array    [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
+     * @return array [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
      */
     public function parse()
     {
@@ -121,11 +122,11 @@ class PurtelCdr extends CdrGetter
 
             $data = [
                 'calling_nr' => $phonenumbers[$username],
-                'date'      => $date[0],
+                'date' => $date[0],
                 'starttime' => $date[1],
-                'duration'  => gmdate('H:i:s', $arr[4]),
+                'duration' => gmdate('H:i:s', $arr[4]),
                 'called_nr' => $arr[3],
-                'price'     => $arr[10] / 100,
+                'price' => $arr[10] / 100,
             ];
 
             if (in_array($customer_nr, $customer_nrs)) {
@@ -143,7 +144,7 @@ class PurtelCdr extends CdrGetter
                     $unassigned[$arr[7]][$data['calling_nr']] = ['count' => 0, 'price' => 0];
                 }
 
-                $unassigned[$arr[7]][$data['calling_nr']]['count'] += 1;
+                $unassigned[$arr[7]][$data['calling_nr']]['count']++;
                 $unassigned[$arr[7]][$data['calling_nr']]['price'] += $data['price'];
             }
         }

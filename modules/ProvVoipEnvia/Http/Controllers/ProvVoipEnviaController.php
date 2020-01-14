@@ -18,7 +18,6 @@ class ProvVoipEnviaController extends \BaseController
      */
     public function __construct()
     {
-
         // we need to create the model manually
         $this->model = new ProvVoipEnvia();
 
@@ -57,8 +56,7 @@ class ProvVoipEnviaController extends \BaseController
 
         if (
             ($job == 'customer_get_contracts')
-            &&
-            ($this->model->api_version_less_than('2.2'))
+            && ($this->model->api_version_less_than('2.2'))
         ) {
             return false;
         }
@@ -135,7 +133,6 @@ class ProvVoipEnviaController extends \BaseController
         if (! $this->_job_allowed($job)) {
             $view_var = $this->_show_job_not_allowed_info($job, $origin);
         } else {
-
             // the API URL to use for the request
             $url = $allowed_cron_jobs[$job];
 
@@ -241,6 +238,7 @@ class ProvVoipEnviaController extends \BaseController
      *
      * @param $url URL to use
      * @param $payload string containing XML to send
+     *
      * @return array containing informations about errors, the http status and the received data
      */
     protected function _ask_envia($url, $payload)
@@ -263,7 +261,6 @@ class ProvVoipEnviaController extends \BaseController
         ];
 
         try {
-
             // perform cURL session
             $ret = curl_exec($ch);
 
@@ -302,7 +299,6 @@ class ProvVoipEnviaController extends \BaseController
      */
     protected function _get_curl_headers($url, $payload)
     {
-
         // headers for http request
         $http_headers = [
             'Content-type: text/xml;charset="utf-8"',
@@ -313,7 +309,6 @@ class ProvVoipEnviaController extends \BaseController
 
         // defining cURL options (http://php.net/manual/en/function.curl-setopt.php)
         $curl_options = [
-
             // basic options
             CURLOPT_URL => $url,
             CURLOPT_HTTPHEADER => $http_headers,
@@ -348,11 +343,11 @@ class ProvVoipEnviaController extends \BaseController
      * @param $url URL for webservice
      * @param $payload data to transmit (XML)
      * @param $job job to do
+     *
      * @return data for view (currently plain HTML)
      */
     protected function _perform_request($url, $payload, $job)
     {
-
         /* echo "<h3>We are not sending data to envia TEL yet! Will now exit…</h3>"; */
         /* exit(); */
 
@@ -386,7 +381,6 @@ class ProvVoipEnviaController extends \BaseController
      */
     protected function _job_allowed($job)
     {
-
         // these jobs are allowed in every case
         $unrestricted_jobs = [
             'availability_check',
@@ -634,6 +628,7 @@ class ProvVoipEnviaController extends \BaseController
      * Used for every job that changes data at envia TEL.
      *
      * @author Patrick Reichel
+     *
      * @param $payload generated XML
      * @param $url API-URL to send XML to
      * @param $origin previous URL (to be able to switch back)
@@ -672,6 +667,7 @@ class ProvVoipEnviaController extends \BaseController
      * @author Patrick Reichel
      *
      * @param $xml xml for debug output
+     *
      * @return data for view (currently plain HTML)
      */
     private function __debug_xml($xml)
@@ -697,7 +693,6 @@ class ProvVoipEnviaController extends \BaseController
      */
     protected function _get_envia_job_to_url_mappings()
     {
-
         // the URLs to use for the jobs to do
         $urls = [
             /* 'blacklist_create_entry' => $this->base_url.'____TODO____', */
@@ -762,11 +757,11 @@ class ProvVoipEnviaController extends \BaseController
      * @author Patrick Reichel
      *
      * @param $job comes from the route ([…]/provvoipenvia/request/{job})
+     *
      * @return view for showing the data
      */
     public function request($job)
     {
-
         // check if a non standard return type is wanted
         // usable: view (default), html
         $return_type = \Request::get('return_type', 'view');
@@ -826,8 +821,7 @@ class ProvVoipEnviaController extends \BaseController
         // collect this information from user
         elseif (
             ($job == 'contract_create')
-            &&
-            (! \Request::get('phonenumbers_to_create', []))
+            && (! \Request::get('phonenumbers_to_create', []))
         ) {
             $view_var = $this->_ask_for_phonenumbers_to_be_created_with_contract($url, $origin);
         }
@@ -857,7 +851,6 @@ class ProvVoipEnviaController extends \BaseController
                 if (! \Request::get('really', false)) {
                     $view_var = $this->_show_confirmation_request($payload, $url, $origin);
                 } else {
-
                     // this is the default case – we perform a request against envia API…
                     $view_var = $this->_perform_request($url, $payload, $job);
 
@@ -892,6 +885,7 @@ class ProvVoipEnviaController extends \BaseController
      *
      * @param $job job which should have been done
      * @param $data collected data from request try
+     *
      * @return data for view (currently plain HTML)
      */
     protected function _handle_curl_error($job, $data)
@@ -912,11 +906,11 @@ class ProvVoipEnviaController extends \BaseController
      *
      * @param $job job which should have been done
      * @param $data collected data from request try
+     *
      * @return data for view (currently plain HTML)
      */
     protected function _handle_curl_success($job, $data)
     {
-
         // in the following if statement we decide the method to call by HTTP status codes in API respond
         // first we handle all specific errors, then success and finally process all not specific errors
 
@@ -1040,11 +1034,11 @@ class ProvVoipEnviaController extends \BaseController
      *
      * @param $job job which should have been done
      * @param $data collected data from request try
+     *
      * @return data for view (currently plain HTML)
      */
     protected function _handle_request_failed($job, $data)
     {
-
         // check if we want to store the xml
         $xml = new \SimpleXMLElement($data['xml']);
         $this->model->store_xml($job.'_response', $xml);
@@ -1091,6 +1085,7 @@ class ProvVoipEnviaController extends \BaseController
      *
      * @param $job job which should have been done
      * @param $data collected data from request try
+     *
      * @return data for view (currently plain HTML)
      */
     protected function _handle_request_success($job, $data)

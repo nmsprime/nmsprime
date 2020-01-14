@@ -11,7 +11,9 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 
 class configfileCommand extends Command implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * The console command name.
@@ -30,7 +32,7 @@ class configfileCommand extends Command implements ShouldQueue
     /**
      * Filter (from argument) to only build cable modem or mta configfiles
      *
-     * @var string 		cm|mta
+     * @var string cm|mta
      */
     protected $filter = '';
 
@@ -57,7 +59,7 @@ class configfileCommand extends Command implements ShouldQueue
             $this->filter = $this->argument('filter');
         }
 
-        $configfile = new \Modules\ProvBase\Entities\Configfile;
+        $configfile = new \Modules\ProvBase\Entities\Configfile();
         $configfile->execute($this->filter);
     }
 }

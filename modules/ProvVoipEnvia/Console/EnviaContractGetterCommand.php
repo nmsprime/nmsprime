@@ -41,7 +41,6 @@ class EnviaContractGetterCommand extends Command
      */
     public function __construct()
     {
-
         // this comes from config/app.php (key 'url')
         $this->base_url = \Config::get('app.url');
 
@@ -74,14 +73,11 @@ class EnviaContractGetterCommand extends Command
         $contracts = Contract::all();
 
         foreach ($contracts as $contract) {
-
             // get only for active contracts
             if (
                 (boolval($contract->contract_end))
-                &&
-                ($contract->contract_end != '0000-00-00')
-                &&
-                ($contract->contract_end <= date('Y-m-d'))
+                && ($contract->contract_end != '0000-00-00')
+                && ($contract->contract_end <= date('Y-m-d'))
             ) {
                 continue;
             }
@@ -93,8 +89,7 @@ class EnviaContractGetterCommand extends Command
             foreach ($phonenumbers as $phonenumber) {
                 if (
                     ($phonenumber->active)
-                    &&
-                    (! is_null($phonenumber->phonenumbermanagement))
+                    && (! is_null($phonenumber->phonenumbermanagement))
                 ) {
                     $has_active_number = true;
                     break;

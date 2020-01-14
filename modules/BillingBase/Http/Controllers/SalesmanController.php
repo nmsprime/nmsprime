@@ -13,7 +13,7 @@ class SalesmanController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new Salesman;
+            $model = new Salesman();
         }
 
         $types = implode(', ', Product::getPossibleEnumValues('type'));

@@ -31,7 +31,7 @@ class TicketController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new Ticket;
+            $model = new Ticket();
         }
 
         return [

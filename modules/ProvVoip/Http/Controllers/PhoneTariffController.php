@@ -12,7 +12,7 @@ class PhoneTariffController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new PhoneTariff;
+            $model = new PhoneTariff();
         }
 
         // label has to be the same like column in sql table

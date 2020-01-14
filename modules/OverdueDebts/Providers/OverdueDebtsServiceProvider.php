@@ -58,7 +58,8 @@ class OverdueDebtsServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('overduedebts.php'),
         ], 'config');
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'overduedebts'
+            __DIR__.'/../Config/config.php',
+            'overduedebts'
         );
     }
 
@@ -100,6 +101,7 @@ class OverdueDebtsServiceProvider extends ServiceProvider
 
     /**
      * Register an additional directory of factories.
+     *
      * @source https://github.com/sebastiaanluca/laravel-resource-flow/blob/develop/src/Modules/ModuleServiceProvider.php#L66
      */
     public function registerFactories()

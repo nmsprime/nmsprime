@@ -53,5 +53,5 @@ Route::group(['middleware' => ['web', 'auth:ccc'], 'prefix' => 'customer'], func
     Route::get('customer/speedtest/garbage', [
         'as' => 'Customer.Garbage',
         'uses' => 'Modules\Ccc\Http\Controllers\SpeedtestController@garbage',
-        'middleware'=>'web',
+        'middleware' => 'web',
     ]);

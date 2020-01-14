@@ -37,24 +37,24 @@ function ss_docsis($hostname, $snmp_community)
 
     $helper = [
         'DsSNR2' => '.1.3.6.1.2.1.10.127.1.1.4.1.5',
-        'UsRng' =>  '.1.3.6.1.4.1.4491.2.1.20.1.2.1.9',
+        'UsRng' => '.1.3.6.1.4.1.4491.2.1.20.1.2.1.9',
         'UsPow2' => '.1.3.6.1.2.1.10.127.1.2.2.1.3',
         'UsFreq' => '.1.3.6.1.2.1.10.127.1.1.2.1.2',
     ];
 
     $non_reps = [
-        'T3Timeout' =>      '.1.3.6.1.2.1.10.127.1.2.2.1.12',
-        'T4Timeout' =>      '.1.3.6.1.2.1.10.127.1.2.2.1.13',
-        'Corrected' =>      '.1.3.6.1.2.1.10.127.1.1.4.1.3',
-        'Uncorrectable' =>  '.1.3.6.1.2.1.10.127.1.1.4.1.4',
-        'ifHCInOctets' =>   '.1.3.6.1.2.1.31.1.1.1.6',
-        'ifHCOutOctets' =>  '.1.3.6.1.2.1.31.1.1.1.10',
+        'T3Timeout' => '.1.3.6.1.2.1.10.127.1.2.2.1.12',
+        'T4Timeout' => '.1.3.6.1.2.1.10.127.1.2.2.1.13',
+        'Corrected' => '.1.3.6.1.2.1.10.127.1.1.4.1.3',
+        'Uncorrectable' => '.1.3.6.1.2.1.10.127.1.1.4.1.4',
+        'ifHCInOctets' => '.1.3.6.1.2.1.31.1.1.1.6',
+        'ifHCOutOctets' => '.1.3.6.1.2.1.31.1.1.1.10',
     ];
 
     $json = [
-        'PreEqu' =>     '.1.3.6.1.2.1.10.127.1.2.2.1.17',
-        'UsWidth' =>    '.1.3.6.1.2.1.10.127.1.1.2.1.3',
-        'SysDescr' =>   '.1.3.6.1.2.1.1.1',
+        'PreEqu' => '.1.3.6.1.2.1.10.127.1.2.2.1.17',
+        'UsWidth' => '.1.3.6.1.2.1.10.127.1.1.2.1.3',
+        'SysDescr' => '.1.3.6.1.2.1.1.1',
     ];
 
     $path = '/run/nmsprime/cacti';
@@ -162,11 +162,7 @@ function ss_docsis($hostname, $snmp_community)
         file_put_contents($json_file, json_encode($preq));
     }
 
-    if (isset($res['avgUsPow']) && is_numeric($res['avgUsPow']) &&
-        isset($res['avgUsSNR']) && is_numeric($res['avgUsSNR']) &&
-        isset($res['avgDsPow']) && is_numeric($res['avgDsPow']) &&
-        isset($res['avgDsSNR']) && is_numeric($res['avgDsSNR']) &&
-        preg_match('/^cm-(\d+)\./m', $hostname, $match)) {
+    if (isset($res['avgUsPow']) && is_numeric($res['avgUsPow']) && isset($res['avgUsSNR']) && is_numeric($res['avgUsSNR']) && isset($res['avgDsPow']) && is_numeric($res['avgDsPow']) && isset($res['avgDsSNR']) && is_numeric($res['avgDsSNR']) && preg_match('/^cm-(\d+)\./m', $hostname, $match)) {
         $content = sprintf(
             "UPDATE modem SET us_pwr = %d, us_snr = %d, ds_pwr = %d, ds_snr = %d WHERE id = %d;\n",
             round($res['avgUsPow']),

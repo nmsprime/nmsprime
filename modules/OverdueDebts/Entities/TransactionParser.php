@@ -25,12 +25,13 @@ class TransactionParser
      * Determines the correct parser dependent of the Mt940.sta file
      *
      * @param string
+     *
      * @return DefaultTransactionParser
      */
     private static function detectParser($text)
     {
         // Actually works for Sparkasse and Volksbank
-        return new DefaultTransactionParser;
+        return new DefaultTransactionParser();
         // return new SpkTransactionParser;
     }
 

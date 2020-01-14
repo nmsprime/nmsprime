@@ -78,7 +78,6 @@ class EnviaCustomerReferenceGetterCommand extends Command
         // keep only those with related phonenumbers having an external contract id
         foreach ($contracts_without_customer_reference as $contract) {
             foreach ($contract->related_phonenumbers() as $phonenumber) {
-
                 // check if there is an external contract id on this phonenumber
                 if (is_null($phonenumber->contract_external_id)) {
                     continue;

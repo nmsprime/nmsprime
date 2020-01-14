@@ -31,7 +31,8 @@ class BillingAnalysis
      * Generate date by given period
      *
      * @param string $period
-     * @param int $days
+     * @param int    $days
+     *
      * @return false|string
      */
     private function generateReferenceDate($period = null, $days = null)
@@ -60,7 +61,7 @@ class BillingAnalysis
     /**
      * Returns rehashed data for the line chart, total number of contracts for the widget and format the data for the table
      *
-     * @return array    [chart => Array, total => Integer]
+     * @return array [chart => Array, total => Integer]
      */
     public static function getContractData()
     {
@@ -131,8 +132,9 @@ class BillingAnalysis
     /**
      * Count contracts for given time interval
      *
-     * @param array $contracts
+     * @param array  $contracts
      * @param string $date_interval_start
+     *
      * @return int
      */
     private static function countContracts($date)
@@ -224,7 +226,9 @@ class BillingAnalysis
      * Check if Json key exists
      *
      * @author Roy Schneider
+     *
      * @param array
+     *
      * @return void
      */
     public static function checkJson($data)
@@ -244,8 +248,8 @@ class BillingAnalysis
     public static function saveContractsToJson()
     {
         $queries = [
-            'Internet_only'     => ['Internet', 'not', 'Voip'],
-            'Voip_only'         => ['Voip', 'not', 'Internet'],
+            'Internet_only' => ['Internet', 'not', 'Voip'],
+            'Voip_only' => ['Voip', 'not', 'Internet'],
             'Internet_and_Voip' => ['Internet', '', 'Voip'],
         ];
 
@@ -366,6 +370,7 @@ class BillingAnalysis
      *
      * @param array     [first, last] day of month
      * @param array
+     *
      * @author Nino Ryschawy
      */
     public static function getContractCount($date, $combinations)
@@ -412,6 +417,7 @@ class BillingAnalysis
      * Get count of new customers
      *
      * @param array     [first, last] day of month
+     *
      * @return int
      *
      * @author Nino Ryschawy
@@ -464,6 +470,7 @@ class BillingAnalysis
      * Get count of customers that canceled their contract
      *
      * @param array     [first, last] day of month
+     *
      * @return int
      */
     public static function getCancelationCount($month)
@@ -512,6 +519,7 @@ class BillingAnalysis
      * Returns rehashed data for the bar chart
      *
      * @param array $income
+     *
      * @return array
      */
     private static function formatChartDataIncome(array $income)

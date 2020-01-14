@@ -18,22 +18,22 @@ class SnmpController extends \BaseController
     private $retry = 1;
 
     /**
-     * @var  object 	NetElement
+     * @var object NetElement
      */
     private $device;
 
     /**
-     * @var  object     Used for parent netgw of a cluster
+     * @var object Used for parent netgw of a cluster
      */
     private $parent_device;
 
     /**
-     * @var  array  of OID-Strings that threw an exception during SNMP-Set
+     * @var array of OID-Strings that threw an exception during SNMP-Set
      */
     private $errors = [];
 
     /**
-     * @var  bool 	If Set we only want to show the 3rd dimension parameters of this index for the controlling view
+     * @var bool If Set we only want to show the 3rd dimension parameters of this index for the controlling view
      */
     private $index = 0;
 
@@ -75,6 +75,7 @@ class SnmpController extends \BaseController
      * @param 	id  		The NetElement id
      * @param 	param_id 	ID of the Parameter for 3rd Dimension View
      * @param 	index 		The Index we want to see 3rd Dim for
+     *
      * @author 	Torsten Schmidt, Nino Ryschawy
      */
     public function controlling_edit($id, $param_id = 0, $index = 0)
@@ -152,7 +153,7 @@ class SnmpController extends \BaseController
     /**
      * Get the necessary parameters (OIDs) of the netelementtype
      *
-     * @return \Illuminate\Database\Eloquent\Collection 	of Parameter objects with related OID object
+     * @return \Illuminate\Database\Eloquent\Collection of Parameter objects with related OID object
      */
     private function _get_parameter($param_id)
     {
@@ -189,7 +190,6 @@ class SnmpController extends \BaseController
         \Log::debug(__FUNCTION__.": $netelem_id, $param_id, $index, $reload, ".count($params));
 
         $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($params, $reload) {
-
             // Get data and push to client
             $start = microtime(true);
             echo 'data: '.$this->get_snmp_values($params)."\n\n";
@@ -214,7 +214,9 @@ class SnmpController extends \BaseController
      * @param array 	params 		Array of Parameter Objects
      * @param bool 		ordered 	true:  @return SNMP values as structured array to build initial view
      * 								false: @return raw json data to update values via Ajax
-     * @return array 				TODO: explain output array
+     *
+     * @return array TODO: explain output array
+     *
      * @author Nino Ryschawy
      */
     public function get_snmp_values($params, $ordered = false)
@@ -260,7 +262,7 @@ class SnmpController extends \BaseController
 
                     if (! $subparam || $subparam->oid != $suboid) {
                         if ($param->children->isEmpty()) {
-                            $subparam = new Parameter;
+                            $subparam = new Parameter();
                             $subparam->setRelation('oid', OID::where('oid', '=', $suboid)->first());
                         } else {
                             // Note: If existent Subparams are already fetched from DB in snmp_table() with joined OID
@@ -425,11 +427,11 @@ class SnmpController extends \BaseController
         $description = $table ? '' : ($oid->name_gui ? $oid->name_gui.$ext : $oid->name.$ext);
 
         $field = [
-            'form_type' 	=> $oid->html_type,
-            'name' 			=> $oid->oid.$index,
-            'description' 	=> $description,
-            'field_value' 	=> $value,
-            'options' 		=> $options,
+            'form_type' => $oid->html_type,
+            'name' => $oid->oid.$index,
+            'description' => $description,
+            'field_value' => $value,
+            'options' => $options,
             // 'help' 			=> $oid->description,
         ];
 
@@ -447,7 +449,8 @@ class SnmpController extends \BaseController
      *
      * @param 	object
      * @param   array   of strings
-     * @return 	array 	SNMP values in form: [OID => value]
+     *
+     * @return array SNMP values in form: [OID => value]
      *
      * @author Torsten Schmidt, Nino Ryschawy
      */
@@ -517,7 +520,8 @@ class SnmpController extends \BaseController
      * SNMP Walk over a Table OID Parameter - Can also be a walk over all it's SubOIDs
      *
      * @param 	param 	Table Object ID
-     * @return 	array	[values => [index => [oid => value]], [diff-OIDs]]
+     *
+     * @return array [values => [index => [oid => value]], [diff-OIDs]]
      *
      * @author 	Nino Ryschawy
      */
@@ -654,11 +658,11 @@ class SnmpController extends \BaseController
                 // Create GuiLog Entry
                 \App\GuiLog::log_changes([
                     'user_id' => $user ? $user->id : 0,
-                    'username' 	=> $user ? $user->first_name.' '.$user->last_name : 'cronjob',
-                    'method' 	=> 'updated',
-                    'model' 	=> 'NetElement',
-                    'model_id'  => $this->device->netelementtype_id == 2 ? $device->id : $this->device->id,
-                    'text' 		=> ($oid_o->name_gui ?: $oid_o->name)." ($full_oid):  '".$old_val."' => '$value'",
+                    'username' => $user ? $user->first_name.' '.$user->last_name : 'cronjob',
+                    'method' => 'updated',
+                    'model' => 'NetElement',
+                    'model_id' => $this->device->netelementtype_id == 2 ? $device->id : $this->device->id,
+                    'text' => ($oid_o->name_gui ?: $oid_o->name)." ($full_oid):  '".$old_val."' => '$value'",
                 ]);
 
                 $old_vals->{$full_oid} = $value;
@@ -681,7 +685,7 @@ class SnmpController extends \BaseController
      * Gets all necessary OIDs if it's probable that they will be necessary for update so that
      *	we have only one DB-Query and not multiple queries inside the for loop
      *
-     * @return \Illuminate\Database\Eloquent\Collection  - empty by default - filled with OIDs if it's possible to increase performance
+     * @return \Illuminate\Database\Eloquent\Collection - empty by default - filled with OIDs if it's possible to increase performance
      */
     private function _get_oid_collection()
     {
@@ -705,7 +709,8 @@ class SnmpController extends \BaseController
      * NOTE: If Value is specified the post configuration is done
      *
      * @param 	value   the value of the Parameter before the Configuration to reset
-     * @return 	value of Parameter before the configuration, null when resetting the Parameter to this value (specified in argument)
+     *
+     * @return value of Parameter before the configuration, null when resetting the Parameter to this value (specified in argument)
      *
      * @author 	Nino Ryschawy
      */
@@ -750,6 +755,7 @@ class SnmpController extends \BaseController
      *
      * @param object oid
      * @param string|int value
+     *
      * @return true on success, otherwise false
      *
      * @author Torsten Schmidt, Nino Ryschawy
@@ -777,6 +783,7 @@ class SnmpController extends \BaseController
      * Return the Community String for Read-Only or Read-Write Access
      *
      * @param 	access 	String 	'ro' or 'rw'
+     *
      * @author 	Nino Ryschawy
      */
     private function _get_community($access = 'ro')
@@ -802,7 +809,8 @@ class SnmpController extends \BaseController
      * Check if device was reachable via snmp
      *
      * @param exception
-     * @throws exception    when device is not reachable
+     *
+     * @throws exception when device is not reachable
      */
     public static function check_reachability(Exception $e)
     {

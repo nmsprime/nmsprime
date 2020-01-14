@@ -14,7 +14,7 @@ class Ticket extends \BaseModel
     public static function boot()
     {
         parent::boot();
-        self::observe(new TicketObserver);
+        self::observe(new TicketObserver());
     }
 
     public static function view_headline()
@@ -68,6 +68,7 @@ class Ticket extends \BaseModel
 
     /**
      * Concatenate names of assigned users for index view
+     *
      * @return string
      */
     public function get_assigned_users()
@@ -213,12 +214,15 @@ class Ticket extends \BaseModel
                 $ticketAssigned = trans('messages.newTicketAssigned');
             }
 
-            \Mail::send('ticketsystem::emails.assignticket', ['user' => $user, 'ticket' => $this, 'ticketAssigned' => $ticketAssigned],
+            \Mail::send(
+                'ticketsystem::emails.assignticket',
+                ['user' => $user, 'ticket' => $this, 'ticketAssigned' => $ticketAssigned],
                 function ($message) use ($user, $subject, $settings) {
                     $message->from($settings['noReplyMail'], $settings['noReplyName'])
                             ->to($user->email, $user->last_name.', '.$user->first_name)
                             ->subject($subject);
-                });
+                }
+            );
         }
     }
 
@@ -226,6 +230,7 @@ class Ticket extends \BaseModel
      * Send Email to users who were deleted from the ticket.
      *
      * @author Roy Schneider
+     *
      * @param  array
      */
     public function mailDeletedTicketUsers($deletedUsers)
@@ -247,12 +252,14 @@ class Ticket extends \BaseModel
                 continue;
             }
 
-            \Mail::raw(trans('messages.deletedTicketUsersMessage', ['id' => $this->id]),
+            \Mail::raw(
+                trans('messages.deletedTicketUsersMessage', ['id' => $this->id]),
                 function ($message) use ($user, $subject, $settings) {
                     $message->from($settings['noReplyMail'], $settings['noReplyName'])
                             ->to($user->email, $user->last_name.', '.$user->first_name)
                             ->subject($subject);
-                });
+                }
+            );
         }
     }
 
@@ -261,6 +268,7 @@ class Ticket extends \BaseModel
      * Check if there are changes in name, state, priority, duedate, users_ids and description.
      *
      * @author Roy Schneider
+     *
      * @return mixed values
      */
     public function importantChanges()
@@ -282,7 +290,9 @@ class Ticket extends \BaseModel
      * Find all valid Users of a Ticket
      *
      * @author Roy Schneider
+     *
      * @param array $ticketUsers
+     *
      * @return Illuminate\Database\Eloquent\Collection
      */
     public function getTicketUsers($ticketUsers)
@@ -294,6 +304,7 @@ class Ticket extends \BaseModel
      * Get app/GlobalConfig.php and check if noReplyName and noReplyMail are set.
      *
      * @author Roy Schneider
+     *
      * @return array
      */
     public function validGlobalSettings()

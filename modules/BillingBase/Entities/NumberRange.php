@@ -10,9 +10,9 @@ class NumberRange extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'name'		=> 'required',
-            'start'		=> 'required|numeric',
-            'end'		=> 'required|numeric',
+            'name' => 'required',
+            'start' => 'required|numeric',
+            'end' => 'required|numeric',
         ];
     }
 
@@ -68,7 +68,6 @@ class NumberRange extends \BaseModel
         $new_number = null;
 
         switch ($type) {
-
             case 'invoice':
                 $new_number = self::get_new_invoice_number($costcenter_id);
                 break;
@@ -88,7 +87,7 @@ class NumberRange extends \BaseModel
      *
      * @author Nino Ryschawy
      *
-     * @return string 	PrefixNumberSuffix
+     * @return string PrefixNumberSuffix
      */
     protected static function get_next_contract_number($costcenter_id)
     {
@@ -130,9 +129,11 @@ class NumberRange extends \BaseModel
                 ->where(\DB::raw("substring(c1.number, 1, char_length('$range->prefix'))"), '=', $range->prefix ?: '')
                 ->where(\DB::raw("substring(c1.number, -char_length('$range->suffix'))"), '=', $range->suffix ?: '')
                 // filter out all numbers not in predefined range
-                ->whereBetween(\DB::raw("substring(c1.number, char_length('$range->prefix') + 1,
+                ->whereBetween(
+                    \DB::raw("substring(c1.number, char_length('$range->prefix') + 1,
 							char_length(c1.number) - char_length('$range->prefix') - char_length('$range->suffix'))"),
-                        [$range->start, $range->end])
+                    [$range->start, $range->end]
+                )
                 ->get();
 
             $num = $num[0]->nextNum;

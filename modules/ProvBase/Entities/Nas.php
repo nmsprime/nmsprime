@@ -38,7 +38,7 @@ class Nas extends \BaseModel
     {
         return ['table' => $this->table,
             'index_header' => ["{$this->table}.nasname", 'netgw.hostname'],
-            'header' =>  $this->nasname,
+            'header' => $this->nasname,
             'bsclass' => $this->get_bsclass(),
             'eager_loading' => ['netgw'],
         ];
@@ -58,7 +58,7 @@ class Nas extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new NasObserver);
+        self::observe(new NasObserver());
     }
 
     public function netgw()

@@ -29,7 +29,7 @@ class NodeController extends \BaseController
         ];
 
         if (\Module::collections()->has('HfcReq')) {
-            $netelement = new \Modules\HfcReq\Entities\NetElement;
+            $netelement = new \Modules\HfcReq\Entities\NetElement();
             $netelements = $netelement->getParentList();
 
             $fields[] = ['form_type' => 'select', 'name' => 'netelement_id', 'description' => 'NetElement', 'value' => $netelements];

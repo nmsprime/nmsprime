@@ -41,7 +41,7 @@ class Invoice extends \BaseModel
         $type = $this->type == 'CDR' ? ' ('.trans('messages.Call Data Record').')' : '';
 
         return ['table' => $this->table,
-            'header' =>  $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT).$type,
+            'header' => $this->year.' - '.str_pad($this->month, 2, 0, STR_PAD_LEFT).$type,
             'bsclass' => $this->get_bsclass(),
         ];
     }
@@ -86,11 +86,11 @@ class Invoice extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new InvoiceObserver);
+        self::observe(new InvoiceObserver());
     }
 
     /**
-     * @var strings  - template directory paths relativ to Storage app path and temporary filename variables
+     * @var strings - template directory paths relativ to Storage app path and temporary filename variables
      */
     private $rel_template_dir_path = 'config/billingbase/template/';
     private $template_invoice_fname = '';
@@ -109,110 +109,109 @@ class Invoice extends \BaseModel
     /**
      * Temporary CDR Variables
      *
-     * @var bool 		$has_cdr 	1 - Invoice has Call Data Records, 0 - Only Invoice
-     * @var int 	$time_cdr 	Unix Timestamp of month of the telefone calls - set in add_cdr_data()
+     * @var bool 1 - Invoice has Call Data Records, 0 - Only Invoice
+     * @var int  $time_cdr 	Unix Timestamp of month of the telefone calls - set in add_cdr_data()
      */
     public $has_cdr = 0;
     private $time_cdr;
 
     /**
-     * @var bool 	Error Flag - if set then invoice cant be created
+     * @var bool Error Flag - if set then invoice cant be created
      */
     private $error_flag = false;
 
     /**
-     * @var array 	All the data used to fill the invoice template file
+     * @var array All the data used to fill the invoice template file
      */
     public $data = [
-
         // Company - NOTE: Set by Company->template_data()
-        'company_name'			=> '',
-        'company_street'		=> '',
-        'company_zip'			=> '',
-        'company_city'			=> '',
-        'company_phone'			=> '',
-        'company_fax'			=> '',
-        'company_mail'			=> '',
-        'company_web'			=> '',
+        'company_name' => '',
+        'company_street' => '',
+        'company_zip' => '',
+        'company_city' => '',
+        'company_phone' => '',
+        'company_fax' => '',
+        'company_mail' => '',
+        'company_web' => '',
         'company_registration_court' => '', 	// all 3 fields together separated by tex newline ('\\\\')
         'company_registration_court_1' => '',
         'company_registration_court_2' => '',
         'company_registration_court_3' => '',
-        'company_management' 	=> '',
-        'company_directorate' 	=> '',
-        'company_tax_id_nr' 	=> '',
-        'company_tax_nr' 		=> '',
-        'company_logo'			=> '',
+        'company_management' => '',
+        'company_directorate' => '',
+        'company_tax_id_nr' => '',
+        'company_tax_nr' => '',
+        'company_logo' => '',
 
         // SepaAccount
-        'company_creditor_id' 	=> '',
+        'company_creditor_id' => '',
         'company_account_institute' => '',
-        'company_account_iban'  => '',
-        'company_account_bic' 	=> '',
+        'company_account_iban' => '',
+        'company_account_bic' => '',
 
         // Addresses
-        'contract_id' 			=> '',
-        'contract_nr' 			=> '',
-        'contract_firstname' 	=> '',
-        'contract_lastname' 	=> '',
-        'contract_company' 		=> '',
-        'contract_department'	=> '',
-        'contract_district'		=> '',
-        'contract_street' 		=> '',
-        'contract_housenumber'	=> '',
-        'contract_zip' 			=> '',
-        'contract_city' 		=> '',
-        'contract_address' 		=> '', 			// concatenated address for begin of letter
+        'contract_id' => '',
+        'contract_nr' => '',
+        'contract_firstname' => '',
+        'contract_lastname' => '',
+        'contract_company' => '',
+        'contract_department' => '',
+        'contract_district' => '',
+        'contract_street' => '',
+        'contract_housenumber' => '',
+        'contract_zip' => '',
+        'contract_city' => '',
+        'contract_address' => '', 			// concatenated address for begin of letter
 
-        'modem_firstname'       => '',
-        'modem_lastname'        => '',
-        'modem_company'         => '',
-        'modem_department'      => '',
-        'modem_district'        => '',
-        'modem_street'          => '',
-        'modem_housenumber'     => '',
-        'modem_zip'             => '',
-        'modem_city'            => '',
-        'modem_address'         => '',
+        'modem_firstname' => '',
+        'modem_lastname' => '',
+        'modem_company' => '',
+        'modem_department' => '',
+        'modem_district' => '',
+        'modem_street' => '',
+        'modem_housenumber' => '',
+        'modem_zip' => '',
+        'modem_city' => '',
+        'modem_address' => '',
 
         // Only with PropertyManagement module
-        'realty_name'           => '',
-        'realty_number'         => '',
+        'realty_name' => '',
+        'realty_number' => '',
 
         // SEPA
-        'contract_mandate_iban'	=> '', 			// iban of the customer
-        'contract_mandate_ref'	=> '', 			// mandate reference of the customer
+        'contract_mandate_iban' => '', 			// iban of the customer
+        'contract_mandate_ref' => '', 			// mandate reference of the customer
 
-        'date_invoice'			=> '',
-        'invoice_nr' 			=> '',
-        'invoice_text'			=> '',			// appropriate invoice text from company dependent of total charge & sepa mandate as table with sepa mandate info
-        'invoice_msg' 			=> '', 			// invoice text without sepa mandate information
-        'invoice_headline'		=> '',
-        'rcd' 					=> '',			// Fälligkeitsdatum / Buchungsdatum
-        'cdr_month'				=> '', 			// Month of Call Data Records
-        'payment_method'        => '',          // for conditional texts in PDF [directdebit|banktransfer|none]
+        'date_invoice' => '',
+        'invoice_nr' => '',
+        'invoice_text' => '',			// appropriate invoice text from company dependent of total charge & sepa mandate as table with sepa mandate info
+        'invoice_msg' => '', 			// invoice text without sepa mandate information
+        'invoice_headline' => '',
+        'rcd' => '',			// Fälligkeitsdatum / Buchungsdatum
+        'cdr_month' => '', 			// Month of Call Data Records
+        'payment_method' => '',          // for conditional texts in PDF [directdebit|banktransfer|none]
 
         // Charges
-        'item_table_positions'  => '', 			// tex table of all items to be charged for this invoice
-        'cdr_charge' 			=> '', 			// Float with costs resulted from telephone calls
-        'cdr_table_positions'	=> '',			// tex table of all call data records
-        'objectCount'           => '',          // PropertyManagement:
-        'table_summary' 		=> '', 			// preformatted table - use following three keys to set table by yourself
+        'item_table_positions' => '', 			// tex table of all items to be charged for this invoice
+        'cdr_charge' => '', 			// Float with costs resulted from telephone calls
+        'cdr_table_positions' => '',			// tex table of all call data records
+        'objectCount' => '',          // PropertyManagement:
+        'table_summary' => '', 			// preformatted table - use following three keys to set table by yourself
         'table_sum_tax_percent' => '', 			// The tax percentage with % character
-        'table_sum_charge_net'  => '', 			// net charge - without tax
-        'table_sum_tax' 		=> '', 			// The tax
+        'table_sum_charge_net' => '', 			// net charge - without tax
+        'table_sum_tax' => '', 			// The tax
         'table_sum_charge_total' => '', 		// total charge - with tax
         'table_sum_charge_net_formatted' => '', // net charge formatted for billing language (e.g. for german: comma as decimal separator and point as thousands separator)
         'table_sum_tax_formatted' => '',
         'table_sum_charge_total_formatted' => '',
 
         // Cancelation Dates - as prescribed by law from 2018-01-01
-        'start_of_term' 	=> '', 				// contract start
-        'maturity' 			=> '', 				// Tariflaufzeit
-        'end_of_term' 		=> '', 				// Aktuelles Vertragsende
-        'period_of_notice' 	=> '', 				// Kündigungsfrist
-        'last_cancel_date' 	=> '', 				// letzter Kündigungszeitpunkt der aktuellen Laufzeit, if empty -> contract was already canceled!
-        'canceled_to'       => '',              // Contract was already canceled
+        'start_of_term' => '', 				// contract start
+        'maturity' => '', 				// Tariflaufzeit
+        'end_of_term' => '', 				// Aktuelles Vertragsende
+        'period_of_notice' => '', 				// Kündigungsfrist
+        'last_cancel_date' => '', 				// letzter Kündigungszeitpunkt der aktuellen Laufzeit, if empty -> contract was already canceled!
+        'canceled_to' => '',              // Contract was already canceled
     ];
 
     public function get_invoice_dir_path()
@@ -225,6 +224,7 @@ class Invoice extends \BaseModel
      *  Has better performance when invoice object must not be instantiated
      *
      * @param  json obj
+     *
      * @return string
      */
     public static function getFilePathFromData(&$invoice)
@@ -233,8 +233,9 @@ class Invoice extends \BaseModel
     }
 
     /**
-     * @param 	string 		$type 		invoice or cdr
-     * @return 	string 					absolute Path & Filename of Template File
+     * @param string $type invoice or cdr
+     *
+     * @return string absolute Path & Filename of Template File
      */
     private function _get_abs_template_path($type = 'invoice')
     {
@@ -242,7 +243,7 @@ class Invoice extends \BaseModel
     }
 
     /**
-     * @return string 	Date part of the invoice filename
+     * @return string Date part of the invoice filename
      *
      * NOTE: This has to be adapted if we want support creating invoices for multiple months in the past
      */
@@ -255,7 +256,9 @@ class Invoice extends \BaseModel
      * Format date string dependent of set locale/billing language
      *
      * @param string/integer
+     *
      * @return string
+     *
      * @deprecated use app/heplers function with the same name
      */
     public static function langDateFormat($date)
@@ -404,7 +407,7 @@ class Invoice extends \BaseModel
 
         $cancel_dates = [
             'end_of_term' => self::langDateFormat($ret['end_of_term']),
-            'maturity' 		=> $txt_m,
+            'maturity' => $txt_m,
             'period_of_notice' => $txt_pon,
             'last_cancel_date' => self::langDateFormat($ret['cancelation_day']),
         ];
@@ -473,7 +476,8 @@ class Invoice extends \BaseModel
      * invoice template path
      *
      * @param 	Obj 	SepaAccount
-     * @return 	bool 	false - error (missing required data), true - success
+     *
+     * @return bool false - error (missing required data), true - success
      */
     public function set_company_data($account)
     {
@@ -644,7 +648,7 @@ class Invoice extends \BaseModel
     /**
      * Create Database Entry for an Invoice or a Call Data Record
      *
-     * @param 	int 	$type 	[1] Invoice, [0] Call Data Record
+     * @param int $type [1] Invoice, [0] Call Data Record
      */
     private function _create_db_entry($type = 1)
     {
@@ -652,15 +656,15 @@ class Invoice extends \BaseModel
         $time = $type ? strtotime('first day of last month') : $this->time_cdr; // strtotime('-2 month');
 
         $data = [
-            'contract_id' 	=> $this->data['contract_id'],
-            'settlementrun_id' 	=> $this->settlementrun_id,
+            'contract_id' => $this->data['contract_id'],
+            'settlementrun_id' => $this->settlementrun_id,
             'sepaaccount_id' => $this->sepaaccount_id,
-            'year' 			=> date('Y', $time),
-            'month' 		=> date('m', $time),
-            'filename' 		=> $type ? $this->filename_invoice.'.pdf' : $this->filename_cdr.'.pdf',
-            'type'  		=> $type ? 'Invoice' : 'CDR',
-            'number' 		=> $this->data['invoice_nr'],
-            'charge' 		=> $type ? $this->data['table_sum_charge_net'] : $this->data['cdr_charge'],
+            'year' => date('Y', $time),
+            'month' => date('m', $time),
+            'filename' => $type ? $this->filename_invoice.'.pdf' : $this->filename_cdr.'.pdf',
+            'type' => $type ? 'Invoice' : 'CDR',
+            'number' => $this->data['invoice_nr'],
+            'charge' => $type ? $this->data['table_sum_charge_net'] : $this->data['cdr_charge'],
         ];
 
         $ret = self::create($data);
@@ -672,7 +676,7 @@ class Invoice extends \BaseModel
      * Creates Tex File of Invoice or CDR
      * replaces all '\_' and all fields of data array that are set by it's value
      *
-     * @param string	$type 	'invoice'/'cdr'
+     * @param string $type 'invoice'/'cdr'
      */
     private function _make_tex($type = 'invoice')
     {

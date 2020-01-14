@@ -85,7 +85,7 @@ class MprController extends \BaseController
             }
         }
 
-        \Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
+        \Queue::push(new \Modules\HfcCustomer\Console\MpsCommand());
 
         return \Redirect::route(\NamespaceController::get_route_name().'.edit', $mpr_id)->with('message', 'Created!');
     }
@@ -127,7 +127,7 @@ class MprController extends \BaseController
             MprGeopos::create(['mpr_id' => $id, 'x' => array_shift($gp_new), 'y' => array_shift($gp_new)]);
         }
 
-        \Queue::push(new \Modules\HfcCustomer\Console\MpsCommand);
+        \Queue::push(new \Modules\HfcCustomer\Console\MpsCommand());
 
         return back();
     }

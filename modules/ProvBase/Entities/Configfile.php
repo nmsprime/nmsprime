@@ -56,13 +56,14 @@ class Configfile extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new ConfigfileObserver);
+        self::observe(new ConfigfileObserver());
     }
 
     /**
      * Searches children of a parent configfile recursivly to build the whole tree structure of all confifgfiles
      *
      * @author Nino Ryschawy
+     *
      * @param bool variable - if 1 all modems and mtas that belong to the configfile (and their children) are built
      */
     public function search_children($build = 0)
@@ -87,6 +88,7 @@ class Configfile extends \BaseModel
 
     /**
      * Returns all available files (via directory listing)
+     *
      * @author Patrick Reichel
      */
     public static function get_files($folder)
@@ -109,6 +111,7 @@ class Configfile extends \BaseModel
     /**
      * Returns text section of Code Validation Certificate in a human readable format
      * while skipping non-relevant sections (i.e. hashes)
+     *
      * @author Ole Ernst
      */
     public function get_cvc_help()
@@ -157,7 +160,7 @@ class Configfile extends \BaseModel
     {
         // for cfs of type modem, mta or generic
         // get global config - provisioning settings
-        $db_schemata ['provbase'][0] = Schema::getColumnListing('provbase');
+        $db_schemata['provbase'][0] = Schema::getColumnListing('provbase');
         $provbase = ProvBase::get();
 
         // array to extend the configfile; e.g. for firmware
@@ -181,7 +184,6 @@ class Configfile extends \BaseModel
 
         // using the given type we decide what to do
         switch ($type) {
-
             // this is for modem's config files
             case 'modem':
 
@@ -190,7 +192,7 @@ class Configfile extends \BaseModel
 
                 // Set test data rate if no qos is assigned - 1 Mbit
                 if (! $this->parent_id && ! $device->qos) {
-                    $qos[0] = new Qos;
+                    $qos[0] = new Qos();
                     $qos[0]->id = 0;
                     $qos[0]->ds_rate_max_help = 1024000;
                     $qos[0]->us_rate_max_help = 512000;
@@ -201,8 +203,8 @@ class Configfile extends \BaseModel
                 /*
                  * generate Table array with SQL columns
                  */
-                $db_schemata ['modem'][0] = Schema::getColumnListing('modem');
-                $db_schemata ['qos'][0] = Schema::getColumnListing('qos');
+                $db_schemata['modem'][0] = Schema::getColumnListing('modem');
+                $db_schemata['qos'][0] = Schema::getColumnListing('qos');
 
                 // if there is a specific firmware: add entries for upgrade
                 if ($this->firmware && ! $sw_up) {
@@ -275,7 +277,6 @@ class Configfile extends \BaseModel
             // this is for unknown types – atm we do nothing
             default:
                 return false;
-
         }	// switch
 
         // Generate search and replace arrays

@@ -9,7 +9,7 @@ class SepaAccountController extends \BaseController
 {
     protected $file_upload_paths = [
         'template_invoice' => 'app/config/billingbase/template/',
-        'template_cdr' 	   => 'app/config/billingbase/template/',
+        'template_cdr' => 'app/config/billingbase/template/',
     ];
 
     /**
@@ -18,7 +18,7 @@ class SepaAccountController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new SepaAccount;
+            $model = new SepaAccount();
         }
 
         $list = $model->html_list(Company::all(), 'name');

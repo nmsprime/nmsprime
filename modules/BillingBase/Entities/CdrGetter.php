@@ -82,9 +82,9 @@ class CdrGetter
      * NOTE/TODO: 1000 Phonecalls need a bit more than 1 MB memory - if files get too large and we get memory
      *  problems again, we should probably save calls to database and get them during command when needed
      *
-     * @return array    [contract_id_1 => [phonr_nr, time, duration, ...],
-     *                   contract_id_2 => [...],
-     *                   ...]
+     * @return array [contract_id_1 => [phonr_nr, time, duration, ...],
+     *               contract_id_2 => [...],
+     *               ...]
      */
     public function parse()
     {
@@ -92,7 +92,7 @@ class CdrGetter
 
         foreach (self::$providers as $name) {
             $className = self::getClassNameFromProvider($name);
-            $class = new $className;
+            $class = new $className();
 
             $calls = $class->parse();
 
@@ -116,6 +116,7 @@ class CdrGetter
 
     /**
      * @param string
+     *
      * @return string
      */
     public static function getClassNameFromProvider($provider)
@@ -124,7 +125,7 @@ class CdrGetter
     }
 
     /**
-     * @return int  Timestamp to build directory pathname from
+     * @return int Timestamp to build directory pathname from
      */
     public static function get_time_of_dir($timestamp = 0)
     {
@@ -134,7 +135,7 @@ class CdrGetter
     }
 
     /**
-     * @return int  Timestamp to build file pathname from
+     * @return int Timestamp to build file pathname from
      */
     public static function get_time_of_file($timestamp = 0)
     {
@@ -150,7 +151,8 @@ class CdrGetter
      * @param  string   envia|hlkomm|purtel
      * @param  int  Optional timestamp if you want a previous CDR (with records of that timestamps month)
      * @param  int  Optional if already fetched from DB to improve performance
-     * @return string   Absolute path and filename of csv
+     *
+     * @return string Absolute path and filename of csv
      */
     public static function get_cdr_pathname($provider, $timestamp = 0)
     {
@@ -172,7 +174,8 @@ class CdrGetter
      *
      * @param  int  Optional timestamp if you want a previous CDR (with records of that timestamps month)
      * @param  int  Optional if already fetched from DB to improve performance
-     * @return array    of Strings - Absolute path and filenames of CSVs
+     *
+     * @return array of Strings - Absolute path and filenames of CSVs
      */
     public static function get_cdr_pathnames($timestamp = 0)
     {
@@ -202,7 +205,6 @@ class CdrGetter
     {
         foreach ($mismatches as $contract_nr => $pns) {
             foreach ($pns as $p => $type) {
-
                 // NOTE: type actually can be missing or mismatch
                 ChannelLog::warning('billing', trans("messages.phonenumber_$type", [
                     'provider' => $provider,
@@ -239,7 +241,7 @@ class CdrGetter
      * Get Array of formerly used prefixes of external customer numbers on provider side (EnviaTel, PurTel, ...)
      * These prefixes have to be removed to establish the connection to the customers in NMSPrime
      *
-     * @return array    default is an empty array (file does not exist)
+     * @return array default is an empty array (file does not exist)
      */
     protected static function getCdrNrPrefixReplacements()
     {

@@ -12,7 +12,9 @@ use Modules\BillingBase\Entities\SettlementRunZipper;
 
 class ZipSettlementRun implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     protected $settlementrun;
 
@@ -37,7 +39,8 @@ class ZipSettlementRun implements ShouldQueue
     /**
      * The job failed to process.
      *
-     * @param  Exception  $exception
+     * @param Exception $exception
+     *
      * @return void
      */
     public function failed(\Exception $exception)

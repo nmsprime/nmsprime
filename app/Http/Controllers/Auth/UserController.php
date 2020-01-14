@@ -47,10 +47,7 @@ class UserController extends BaseController
             }
         }
 
-        if ($model->exists &&
-             $current_user != $model &&
-             $current_user->isNotAn('admin') &&
-             $current_user_rank <= $user_model_rank) {
+        if ($model->exists && $current_user != $model && $current_user->isNotAn('admin') && $current_user_rank <= $user_model_rank) {
             throw new AuthException(trans('Not allowed to acces this user').'!');
         }
 

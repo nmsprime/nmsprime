@@ -45,15 +45,14 @@ class PhonenumberManagementController extends \BaseController
     {
         // create
         if (! $model) {
-            $model = new PhonenumberManagement;
+            $model = new PhonenumberManagement();
         }
 
         // in most cases the subscriber is identical to contract partner ⇒ on create we prefill these values with data from contract
         if (! $model->exists) {
             if (
                 (! \Request::filled('phonenumber_id'))
-                ||
-                ! ($phonenumber = Phonenumber::find(\Request::get('phonenumber_id')))
+                || ! ($phonenumber = Phonenumber::find(\Request::get('phonenumber_id')))
             ) {
                 return [];
             }
@@ -298,7 +297,9 @@ class PhonenumberManagementController extends \BaseController
      * Get all management jobs for envia TEL
      *
      * @author Patrick Reichel
+     *
      * @param $phonenumbermanagement current phonenumbermanagement object
+     *
      * @return array containing linktexts and URLs to perform actions against REST API
      */
     public static function _get_envia_management_jobs($phonenumbermanagement)

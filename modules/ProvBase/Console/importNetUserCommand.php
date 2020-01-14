@@ -236,7 +236,7 @@ class importNetUserCommand extends Command
             return $c;
         }
 
-        $c = new Contract;
+        $c = new Contract();
 
         $c->number = $old_contract->Kundennr;
         $c->number2 = $old_contract->Kundennr;
@@ -310,7 +310,7 @@ class importNetUserCommand extends Command
             return $new_cm;
         }
 
-        $modem = new Modem;
+        $modem = new Modem();
 
         // import fields
         $modem->mac = $old_modem->MACaddress;
@@ -382,7 +382,7 @@ class importNetUserCommand extends Command
         }
 
         // Determine if Device has a public IP
-        $validator = new \Acme\Validators\ExtendedValidator;
+        $validator = new \Acme\Validators\ExtendedValidator();
         $privateIps = [['10.0.0.0', '255.0.0.0'], ['192.168.0.0', '255.255.0.0'], ['172.16.0.0', '255.224.0.0'], ['100.64.0.0', '255.192.0.0']];
         $modem->public = 0;
 
@@ -440,7 +440,8 @@ class importNetUserCommand extends Command
      * Extract Cable Modem data rates from configfile
      *
      * @param  string   Modem Configfile
-     * @return array    Datarates [DS, US]
+     *
+     * @return array Datarates [DS, US]
      */
     public static function get_modem_data_rates($config)
     {
@@ -450,14 +451,14 @@ class importNetUserCommand extends Command
         // Info: it is searched for the number behind the key inside the regex's matches
         $conditions = [
             'ds' => [
-                'MaxRateSustained'  => '/DsServiceFlow(.*?)}/ms',
-                'MaxRateDown'       => '/ClassOfService(.*?)}/ms',
-                'max_down_rate ='   => '/cos {(.*?)}/ms',
+                'MaxRateSustained' => '/DsServiceFlow(.*?)}/ms',
+                'MaxRateDown' => '/ClassOfService(.*?)}/ms',
+                'max_down_rate =' => '/cos {(.*?)}/ms',
             ],
             'us' => [
-                'MaxRateSustained'  => '/UsServiceFlow(.*?)}/ms',
-                'MaxRateUp'         => '/ClassOfService(.*?)}/ms',
-                'max_up_rate ='     => '/cos {(.*?)}/ms',
+                'MaxRateSustained' => '/UsServiceFlow(.*?)}/ms',
+                'MaxRateUp' => '/ClassOfService(.*?)}/ms',
+                'max_up_rate =' => '/cos {(.*?)}/ms',
             ],
         ];
 
@@ -519,7 +520,7 @@ class importNetUserCommand extends Command
             return $new_mta;
         }
 
-        $mta = new MTA;
+        $mta = new MTA();
 
         $mta->modem_id = $new_modem->id;
         $mta->mac = $old_mta->MACaddress;
@@ -580,7 +581,7 @@ class importNetUserCommand extends Command
             $max_numbers = $filter == 'SnmpMibObject iso.3.6.1.4.1.872' ? 10 : 2;
 
             for ($i = 1; $i <= $max_numbers; $i++) {
-                $pn = new Phonenumber;
+                $pn = new Phonenumber();
 
                 foreach ($fields as $col_name => $oid) {
                     $id = ($filter == 'SnmpMibObject iso.3.6.1.4.1.4115' && $col_name == 'sipdomain') ? 0 : $i;

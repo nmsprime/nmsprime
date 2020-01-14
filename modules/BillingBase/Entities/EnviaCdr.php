@@ -11,7 +11,8 @@ class EnviaCdr extends CdrGetter
      * Load Call Data Records from EnviaTel Interface and save to accounting directory of appropriate date
      *
      * @param int       timestamp
-     * @return int      0|1 success|error
+     *
+     * @return int 0|1 success|error
      */
     public static function get($time = 0)
     {
@@ -32,7 +33,7 @@ class EnviaCdr extends CdrGetter
 
         try {
             ChannelLog::debug('billing', "GET: https://$user:$password@portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $timeOfFile));
-            $context = stream_context_create(['http' => ['header'  => 'Authorization: Basic '.base64_encode("$user:$password")]]);
+            $context = stream_context_create(['http' => ['header' => 'Authorization: Basic '.base64_encode("$user:$password")]]);
             $data = file_get_contents("https://portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $timeOfFile), false, $context);
         } catch (\Exception $e) {
             ChannelLog::alert('billing', 'CDR-Import: Could not get Call Data Records from envia TEL for month: '.date('m', $timeOfFile), ["portal.enviatel.de/vertrieb2/reseller/evn/$customer/".date('Y/m', $timeOfFile)]);
@@ -51,7 +52,7 @@ class EnviaCdr extends CdrGetter
             mkdir($target_dir, 0744, true);
         }
 
-        $zipper = new Zipper;
+        $zipper = new Zipper();
         $zipper->make("$tmp_dir/$tmp_file")->extractTo($tmp_dir);
 
         // TODO: Rename File
@@ -80,7 +81,7 @@ class EnviaCdr extends CdrGetter
     /**
      * Parse envia TEL CSV and Check if customerNr to Phonenr assignment exists
      *
-     * @return array  [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
+     * @return array [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
      */
     public function parse()
     {
@@ -133,11 +134,11 @@ class EnviaCdr extends CdrGetter
 
             $data = [
                 'calling_nr' => $arr[3],
-                'date'      => substr($arr[4], 4).'-'.substr($arr[4], 2, 2).'-'.substr($arr[4], 0, 2),
+                'date' => substr($arr[4], 4).'-'.substr($arr[4], 2, 2).'-'.substr($arr[4], 0, 2),
                 'starttime' => $arr[5],
-                'duration'  => $arr[6],
+                'duration' => $arr[6],
                 'called_nr' => $arr[7],
-                'price'     => str_replace(',', '.', $arr[10]),
+                'price' => str_replace(',', '.', $arr[10]),
             ];
 
             // extend $data for other providers
@@ -161,7 +162,7 @@ class EnviaCdr extends CdrGetter
                     $unassigned[$arr[0]][$data['calling_nr']] = ['count' => 0, 'price' => 0];
                 }
 
-                $unassigned[$arr[0]][$data['calling_nr']]['count'] += 1;
+                $unassigned[$arr[0]][$data['calling_nr']]['count']++;
                 $unassigned[$arr[0]][$data['calling_nr']]['price'] += $data['price'];
             }
         }

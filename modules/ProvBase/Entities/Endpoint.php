@@ -41,7 +41,7 @@ class Endpoint extends \BaseModel
 
         return ['table' => $this->table,
             'index_header' => [$this->table.'.hostname', $this->table.'.mac', $this->table.'.ip', $this->table.'.description'],
-            'header' =>  $header,
+            'header' => $header,
             'bsclass' => $bsclass, ];
     }
 
@@ -111,8 +111,8 @@ class Endpoint extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new EndpointObserver);
-        self::observe(new \App\SystemdObserver);
+        self::observe(new EndpointObserver());
+        self::observe(new \App\SystemdObserver());
     }
 
     /**

@@ -34,7 +34,6 @@ class PropertyManagementServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
     }
 
     /**
@@ -48,7 +47,8 @@ class PropertyManagementServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('propertymanagement.php'),
         ], 'config');
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'propertymanagement'
+            __DIR__.'/../Config/config.php',
+            'propertymanagement'
         );
     }
 
@@ -90,6 +90,7 @@ class PropertyManagementServiceProvider extends ServiceProvider
 
     /**
      * Register an additional directory of factories.
+     *
      * @source https://github.com/sebastiaanluca/laravel-resource-flow/blob/develop/src/Modules/ModuleServiceProvider.php#L66
      */
     public function registerFactories()

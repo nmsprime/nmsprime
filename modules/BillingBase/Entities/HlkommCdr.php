@@ -11,7 +11,8 @@ class HlkommCdr extends CdrGetter
      * Load Call Data Records from HLKomm Interface and save to accounting directory of appropriate date
      *
      * @param int       timestamp
-     * @return int      0 on success, -1 on error
+     *
+     * @return int 0 on success, -1 on error
      */
     public static function get($time = 0)
     {
@@ -82,7 +83,7 @@ class HlkommCdr extends CdrGetter
     /**
      * Parse HLKomm CSV
      *
-     * @return array    [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
+     * @return array [contract_id/contract_number => [Calling Number, Date, Starttime, Duration, Called Number, Price], ...]
      */
     public function parse()
     {
@@ -135,11 +136,11 @@ class HlkommCdr extends CdrGetter
 
             $data = [
                 'calling_nr' => $phonenr1,
-                'date'      => $line[0],
+                'date' => $line[0],
                 'starttime' => $line[1],
-                'duration'  => $line[10],
+                'duration' => $line[10],
                 'called_nr' => $phonenr2,
-                'price'     => str_replace(',', '.', $line[13]),
+                'price' => str_replace(',', '.', $line[13]),
             ];
 
             // calculate price with hlkomms distance zone
@@ -157,7 +158,7 @@ class HlkommCdr extends CdrGetter
                     $unassigned[$phonenr1] = ['count' => 0, 'price' => 0];
                 }
 
-                $unassigned[$phonenr1]['count'] += 1;
+                $unassigned[$phonenr1]['count']++;
                 $unassigned[$phonenr1]['price'] += $data['price'];
             }
         }

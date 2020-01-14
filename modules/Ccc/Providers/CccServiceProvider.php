@@ -53,7 +53,8 @@ class CccServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('ccc.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'ccc'
+            __DIR__.'/../Config/config.php',
+            'ccc'
         );
     }
 

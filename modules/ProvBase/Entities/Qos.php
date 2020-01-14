@@ -55,7 +55,7 @@ class Qos extends \BaseModel
 
         return ['table' => $this->table,
             'index_header' => [$this->table.'.name', $this->table.'.ds_rate_max', $this->table.'.us_rate_max'],
-            'header' =>  $this->name,
+            'header' => $this->name,
             'bsclass' => $bsclass,
             'edit' => ['ds_rate_max' => 'unit_ds_rate_max', 'us_rate_max' => 'unit_us_rate_max'],
             'order_by' => ['0' => 'asc'], ];
@@ -85,7 +85,7 @@ class Qos extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new QosObserver);
+        self::observe(new QosObserver());
     }
 }
 
@@ -99,7 +99,7 @@ class QosObserver
     {
         foreach (RadGroupReply::$radiusAttributes as $key => $attributes) {
             foreach ($attributes as $attribute) {
-                $new = new RadGroupReply;
+                $new = new RadGroupReply();
                 $new->groupname = $qos->id;
                 $new->attribute = $attribute;
                 $new->op = ':=';

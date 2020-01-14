@@ -30,7 +30,7 @@ class Debt extends \BaseModel
      */
     public static function boot()
     {
-        self::observe(new DebtObserver);
+        self::observe(new DebtObserver());
         parent::boot();
     }
 

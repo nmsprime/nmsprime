@@ -75,9 +75,7 @@ class RoutesAuthTest extends TestCase
             $method = $value->getMethods()[0];
 
             // no name – no test
-            if (! boolval($name) ||
-                in_array($name, $this->routes_not_using_auth_middleware) ||
-                in_array($name, $this->routes_which_are_not_checked)
+            if (! boolval($name) || in_array($name, $this->routes_not_using_auth_middleware) || in_array($name, $this->routes_which_are_not_checked)
                 ) {
                 continue;
             }
@@ -102,7 +100,6 @@ class RoutesAuthTest extends TestCase
                 $this->call($method, $url, []);
                 $this->assertResponseStatus(302);
             } else {  // all other routes should return 403 if not logged in
-
                 $this->call($method, $url, []);
                 $this->assertResponseStatus(403);
             }

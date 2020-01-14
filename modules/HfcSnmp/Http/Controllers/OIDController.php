@@ -13,7 +13,7 @@ class OIDController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new OID;
+            $model = new OID();
         }
 
         $snmp_types = $snmp_types_select = OID::getPossibleEnumValues('type', true);

@@ -9,7 +9,9 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 
 class ConfigfileJob implements ShouldQueue
 {
-    use InteractsWithQueue, SerializesModels, Queueable;
+    use InteractsWithQueue;
+    use SerializesModels;
+    use Queueable;
 
     protected $filter;
 
@@ -33,7 +35,7 @@ class ConfigfileJob implements ShouldQueue
      */
     public function handle()
     {
-        $configfile = new \Modules\ProvBase\Entities\Configfile;
+        $configfile = new \Modules\ProvBase\Entities\Configfile();
         if (isset($this->cfId)) {
             $configfile->execute(null, $this->cfId);
 

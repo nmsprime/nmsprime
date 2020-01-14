@@ -30,7 +30,7 @@ class Realty extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new RealtyObserver);
+        self::observe(new RealtyObserver());
     }
 
     /**
@@ -176,12 +176,13 @@ class Realty extends \BaseModel
      * Get all Contracts indirectly related via Modem or via Apartment -> Modem - and group contract if param set to true
      *
      * @param bool $withGroupContract, $withModems
+     *
      * @return Illuminate\Database\Eloquent\Collection of \Modules\ProvBase\Entities\Contract
      */
     public function getApartmentContracts($withGroupContract, $withModems = false)
     {
         if ($this->apartments->isEmpty()) {
-            return (new \Modules\ProvBase\Entities\Contract)->newCollection();
+            return (new \Modules\ProvBase\Entities\Contract())->newCollection();
         }
 
         $contracts1 = \Modules\ProvBase\Entities\Contract::join('modem', 'modem.contract_id', 'contract.id')
@@ -213,7 +214,8 @@ class Realty extends \BaseModel
     /**
      * Concatenate label from std class with realty data as returned from DB::table
      *
-     * @param obj  $realty  PHP std class returned in collection from DB::table
+     * @param obj $realty PHP std class returned in collection from DB::table
+     *
      * @return string
      */
     public static function labelFromData($realty)
@@ -256,7 +258,7 @@ class Realty extends \BaseModel
         }
 
         if ($contract_ids) {
-            $contract = $contract ?? new \Modules\ProvBase\Entities\Contract;
+            $contract = $contract ?? new \Modules\ProvBase\Entities\Contract();
             $contract->updateAddressFromProperty($this, $contract_ids);
         }
 

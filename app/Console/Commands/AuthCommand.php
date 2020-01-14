@@ -59,19 +59,19 @@ class AuthCommand extends Command
                 'name' => 'view_analysis_pages_of',
                 'title' => 'View analysis pages of modems',
                 'entity_type' => \Modules\ProvBase\Entities\Modem::class,
-                'only_owned'  =>'0',
+                'only_owned' => '0',
             ],
             [
                 'name' => 'view_analysis_pages_of',
                 'title' => 'View analysis pages of netgw',
                 'entity_type' => \Modules\ProvBase\Entities\NetGw::class,
-                'only_owned'  =>'0',
+                'only_owned' => '0',
             ],
             [
                 'name' => 'download',
                 'title' => 'Download settlement runs',
                 'entity_type' => \Modules\BillingBase\Entities\SettlementRun::class,
-                'only_owned' =>'0',
+                'only_owned' => '0',
             ],
         ]);
     }

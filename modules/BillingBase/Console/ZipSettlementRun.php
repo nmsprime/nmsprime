@@ -23,12 +23,12 @@ class ZipSettlementRun extends Command
     protected $signature = 'billing:zip {sepaacc_id?} {--settlementrun=} {--postal-invoices}';
 
     /**
-     * @var object  SettlementRun the ZIP shall be built for
+     * @var object SettlementRun the ZIP shall be built for
      */
     private $settlementrun;
 
     /**
-     * @var bool    If true -> concatenate invoices to single PDF that need to be sent via post
+     * @var bool If true -> concatenate invoices to single PDF that need to be sent via post
      */
     private $postalInvoices;
 

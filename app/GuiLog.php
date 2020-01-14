@@ -39,7 +39,7 @@ class GuiLog extends \BaseModel
             'index_header' => [$this->table.'.created_at', $this->table.'.username', $this->table.'.method', $this->table.'.model', $this->table.'.model_id'],
             'bsclass' => $bsclass,
             'header' => $this->id.' - '.$this->mac.($this->name ? ' - '.$this->name : ''),
-            'edit'	=> ['model_id' => 'generate_model_link'],
+            'edit' => ['model_id' => 'generate_model_link'],
             'order_by' => ['0' => 'desc'],
             'raw_columns' => ['model_id'],
         ];
@@ -156,7 +156,6 @@ class GuiLogWriter
      */
     protected static function _have_to_log($data)
     {
-
         // work on a copy for easier use (e.g. array_pop)
         $changes_logged = static::$changes_logged;
 
@@ -170,10 +169,8 @@ class GuiLogWriter
         while ($entry = array_pop($changes_logged)) {
             if (
                 ($entry['model'] == $data['model'])
-                &&
-                ($entry['model_id'] == $data['model_id'])
-                &&
-                ($entry['method'] == $data['method'])
+                && ($entry['model_id'] == $data['model_id'])
+                && ($entry['method'] == $data['method'])
             ) {
                 // see if the changes are the same again
                 if ($entry['text'] == $data['text']) {
@@ -197,7 +194,6 @@ class GuiLogWriter
      */
     public static function log_changes($data)
     {
-
         // if we have already logged this event: do nothing
         if (! self::_have_to_log($data)) {
             return;

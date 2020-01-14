@@ -16,12 +16,13 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
  * This is the Model, holding the User data for CCC authentication.
  * To gain access data the Middleware will check for Permissions.
  */
-class CccUser extends \BaseModel implements
-    AuthenticatableContract,
-    AuthorizableContract,
-    CanResetPasswordContract
+class CccUser extends \BaseModel implements AuthenticatableContract, AuthorizableContract, CanResetPasswordContract
 {
-    use Authenticatable, Authorizable, CanResetPassword, HasRolesAndAbilities, Notifiable;
+    use Authenticatable;
+    use Authorizable;
+    use CanResetPassword;
+    use HasRolesAndAbilities;
+    use Notifiable;
 
     public $table = 'cccauthuser';
     // SQL connection
@@ -40,7 +41,7 @@ class CccUser extends \BaseModel implements
      * NOTE: We can not overwrite save()-function here as it is called on logout what in consequence changes the password
      * of the user and a new login isnt possible anymore
      *
-     * @return array  	login data
+     * @return array login data
      */
     public function update(array $attributes = [], array $options = [])
     {
@@ -74,7 +75,7 @@ class CccUser extends \BaseModel implements
     /**
      * Generate Customer User Data for Creating/Updating a User related to a contract
      *
-     * @return array 	user data for sql db
+     * @return array user data for sql db
      *
      * @author Nino Ryschawy
      */
@@ -87,13 +88,13 @@ class CccUser extends \BaseModel implements
 
             $data = [
                 'contract_id' => $this->contract_id,
-                'login_name'  => $contract->number,
-                'password' 	  => \Hash::make($psw),
-                'first_name'  => $contract->firstname,
-                'last_name'   => $contract->lastname,
-                'email' 	  => $contract->email,
+                'login_name' => $contract->number,
+                'password' => \Hash::make($psw),
+                'first_name' => $contract->firstname,
+                'last_name' => $contract->lastname,
+                'email' => $contract->email,
                 // 'active' 	  => 1 // TODO: deactivate non active customers for login
-                'active' 	  => $contract->isValid('Now') ? 1 : 0,
+                'active' => $contract->isValid('Now') ? 1 : 0,
             ];
         } else {
             Log::error('Contract for CccUser does not exist', [$this->id]);

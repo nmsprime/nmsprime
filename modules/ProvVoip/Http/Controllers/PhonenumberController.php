@@ -20,7 +20,7 @@ class PhonenumberController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new Phonenumber;
+            $model = new Phonenumber();
         }
 
         if (\Module::collections()->has('ProvVoipEnvia')) {
@@ -41,7 +41,6 @@ class PhonenumberController extends \BaseController
         }
         // otherwise: store value in hidden form field and show symbol to indicate the current state instead
         else {
-
             // TODO: move style to css file or use existing styles
             $active_symbol_style = 'font-size: 1.4em; padding-top:0.4em; padding-left: 4.8em';
 
@@ -182,7 +181,6 @@ class PhonenumberController extends \BaseController
      */
     public function prepare_rules($rules, $data)
     {
-
         // check if there is an phonenumber id (= updating), else set to -1 (a not used database id)
         $id = $rules['id'];
         if (! $id) {
@@ -205,7 +203,9 @@ class PhonenumberController extends \BaseController
      * Get all management jobs for envia TEL
      *
      * @author Patrick Reichel
+     *
      * @param $phonenumber current phonenumber object
+     *
      * @return array containing linktexts and URLs to perform actions against REST API
      */
     public static function _get_envia_management_jobs($phonenumber)

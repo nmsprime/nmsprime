@@ -58,7 +58,7 @@ class NetGw extends \BaseModel
 
         $ret = ['table' => $this->table,
             'index_header' => [$this->table.'.id', $this->table.'.hostname', $this->table.'.ip', $this->table.'.company', $this->table.'.series'],
-            'header' =>  $this->hostname,
+            'header' => $this->hostname,
             'bsclass' => $bsclass,
             'order_by' => ['0' => 'asc'], ];
 
@@ -88,6 +88,7 @@ class NetGw extends \BaseModel
 
     /**
      * Return Fontawesome emoji class, and Bootstrap text color
+     *
      * @return array
      */
     public function getFaSmileClass()
@@ -100,7 +101,7 @@ class NetGw extends \BaseModel
             default: $faClass = 'fa-smile'; $bsClass = 'success'; break;
         }
 
-        return ['fa-class'=> $faClass, 'bs-class'=> $bsClass];
+        return ['fa-class' => $faClass, 'bs-class' => $bsClass];
     }
 
     public function getSupportState()
@@ -110,6 +111,7 @@ class NetGw extends \BaseModel
 
     /**
      * Formatted attribute of support state.
+     *
      * @return string
      */
     public function getFormattedSupportStateAttribute()
@@ -124,8 +126,8 @@ class NetGw extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new NetGwObserver);
-        self::observe(new \App\SystemdObserver);
+        self::observe(new NetGwObserver());
+        self::observe(new \App\SystemdObserver());
     }
 
     /**
@@ -440,6 +442,7 @@ class NetGw extends \BaseModel
      * Get US modulations of the respective channel ID
      *
      * @param ch_ids: Array of channel IDs
+     *
      * @return array of corresponding modulations used (docsIfCmtsModType)
      *
      * @author Ole Ernst

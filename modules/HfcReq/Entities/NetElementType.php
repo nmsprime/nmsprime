@@ -112,7 +112,7 @@ class NetElementType extends \BaseModel
 
     public static function param_list($id)
     {
-        $eager_loading_model = new OID;
+        $eager_loading_model = new OID();
         $params = Parameter::where('netelementtype_id', '=', $id)->with($eager_loading_model->table)->get();
         $list = [];
 
@@ -139,6 +139,7 @@ class NetElementType extends \BaseModel
      * Only deletable if there is no netelement assigned.
      *
      * @author Roy Schneider
+     *
      * @return array
      */
     public static function undeletables()
@@ -161,6 +162,7 @@ class NetElementType extends \BaseModel
      * @note: base device means: parent_id = 0, 2 (cluster)
      *
      * @param
+     *
      * @return int id of base device netelementtype
      */
     public function get_base_type()

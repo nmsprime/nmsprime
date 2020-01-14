@@ -12,7 +12,7 @@ class MibFileController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new MibFile;
+            $model = new MibFile();
         }
 
         // label has to be the same like column in sql table
@@ -22,7 +22,6 @@ class MibFileController extends \BaseController
             ['form_type' => 'text', 'name' => 'version', 'description' => 'Version | Revision', 'hidden' => 'C'],
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
             ['form_type' => 'file', 'name' => 'mibfile_upload', 'description' => 'Upload MIB-File', 'hidden' => 'E'],
-
         ];
     }
 
@@ -121,9 +120,9 @@ class MibFileController extends \BaseController
 
         // Set Input Default Values
         \Request::merge([
-            'name' 		=> $name,
-            'filename'  => $filename,
-            'version' 	=> $version,
+            'name' => $name,
+            'filename' => $filename,
+            'version' => $version,
             'description' => $description,
         ]);
 

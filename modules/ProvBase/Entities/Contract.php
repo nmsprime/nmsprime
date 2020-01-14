@@ -76,7 +76,7 @@ class Contract extends \BaseModel
 
         $ret = ['table' => $this->table,
             'index_header' => [$this->table.'.number', $this->table.'.firstname', $this->table.'.lastname', 'company', 'email', $this->table.'.zip', $this->table.'.city', 'district', $this->table.'.street', $this->table.'.house_number', $this->table.'.contract_start', $this->table.'.contract_end'],
-            'header' =>  self::labelFromData($this),
+            'header' => self::labelFromData($this),
             'bsclass' => $bsclass,
             'order_by' => ['0' => 'asc'], ];
 
@@ -101,7 +101,7 @@ class Contract extends \BaseModel
     }
 
     /**
-     * @return string  Bootstrap Color Class
+     * @return string Bootstrap Color Class
      */
     public function get_bsclass()
     {
@@ -222,8 +222,7 @@ class Contract extends \BaseModel
             }
         }
 
-        if (Module::collections()->has('ProvVoipEnvia') &&
-            (! Module::collections()->has('PropertyManagement') || (! $this->isGroupContract() && ! $this->apartment_id))) {
+        if (Module::collections()->has('ProvVoipEnvia') && (! Module::collections()->has('PropertyManagement') || (! $this->isGroupContract() && ! $this->apartment_id))) {
             $ret['envia TEL']['EnviaContract']['class'] = 'EnviaContract';
             $ret['envia TEL']['EnviaContract']['relation'] = $this->enviacontracts;
             $ret['envia TEL']['EnviaContract']['options']['hide_create_button'] = 1;
@@ -468,6 +467,7 @@ class Contract extends \BaseModel
      * @author Patrick Reichel
      *
      * @todo: in this first step the relation is hardcoded within the function. Later on we have to check the mapping against the configuration.
+     *
      * @return current customer number
      */
     public function customer_number()
@@ -488,6 +488,7 @@ class Contract extends \BaseModel
      * @author Patrick Reichel
      *
      * @todo: in this first step the relation is hardcoded within the function. Later on we have to check the mapping against the configuration.
+     *
      * @return current customer number
      */
     public function customer_number_legacy()
@@ -508,7 +509,6 @@ class Contract extends \BaseModel
      */
     public function related_phonenumbers()
     {
-
         // if voip module is not active: there can be no phonenumbers
         if (! Module::collections()->has('ProvVoip')) {
             return [];
@@ -581,6 +581,7 @@ class Contract extends \BaseModel
      *  3. Change QoS id and Voip id if actual valid (billing-) tariff changes
      *
      * @return none
+     *
      * @author Torsten Schmidt, Nino Ryschawy, Patrick Reichel
      */
     public function daily_conversion()
@@ -596,7 +597,6 @@ class Contract extends \BaseModel
         if (! Module::collections()->has('BillingBase')) {
             $this->_update_internet_access_from_contract();
         } else {
-
             // Get items by only 1 db query & set them as contract relations to work with them in next functions
             // with that there are no more refresh database queries necessary (items do not have to be reloaded again)
             $items = $this->items()
@@ -822,6 +822,7 @@ class Contract extends \BaseModel
      * An email index of 0 means disabled, 1 is the primary email address.
      *
      * @return none
+     *
      * @author Ole Ernst
      */
     protected function _update_email_index()
@@ -868,6 +869,7 @@ class Contract extends \BaseModel
      * To write long term changes to DB we have to check all items in this monthly conversion.
      *
      * @return none
+     *
      * @author Torsten Schmidt, Patrick Reichel
      */
     public function monthly_conversion()
@@ -882,8 +884,7 @@ class Contract extends \BaseModel
         // Tariff: monthly Tariff change – "Tarifwechsel"
         if (
             ($this->next_qos_id > 0)
-            &&
-            ($this->qos_id != $this->next_qos_id)
+            && ($this->qos_id != $this->next_qos_id)
         ) {
             \Log::Info('monthly: contract: change Tariff for '.$this->id.' from '.$this->qos_id.' to '.$this->next_qos_id);
             $this->qos_id = $this->next_qos_id;
@@ -911,7 +912,7 @@ class Contract extends \BaseModel
      *
      * @param $type product type as string (e.g. 'Internet', 'Voip', etc.)
      *
-     * @return object 	item
+     * @return object item
      */
     public function get_valid_tariff($type)
     {
@@ -942,8 +943,8 @@ class Contract extends \BaseModel
      * @param $type product type as string (e.g. 'Internet', 'Voip', etc.)
      *
      * @return array containing two values:
-     *	'item' => the last startet tariff (item object)
-     *	'count' => integer
+     *               'item' => the last startet tariff (item object)
+     *               'count' => integer
      */
     protected function _get_valid_tariff_item_and_count($type)
     {
@@ -1022,13 +1023,10 @@ class Contract extends \BaseModel
                 //	- latest possible startday is today
                 //	- closest possible endday is today
                 // there should only be one of each type
-                ($item->valid_from <= date('Y-m-d')) &&
-                (
-                    $this->_date_null($item->valid_to) ||
-                    ($item->valid_to >= date('Y-m-d'))
+                ($item->valid_from <= date('Y-m-d')) && (
+                    $this->_date_null($item->valid_to) || ($item->valid_to >= date('Y-m-d'))
                 )
             ) {
-
                 // check if there is more than one active item for given type ⇒ this is an error
                 // this can happen if one fixes thè start date of one and forgets to fix the end date
                 // of an other item
@@ -1085,14 +1083,13 @@ class Contract extends \BaseModel
      * @param $item to be analyzed
      *
      * @return null
-     * Sets global var $changes_on_daily_conversion when contract data has changed
+     *              Sets global var $changes_on_daily_conversion when contract data has changed
      */
     protected function _update_product_related_current_data($item)
     {
         $contract_changed = false;
 
         if ($item->product->type == 'Voip') {
-
             // check if there are changes in state for voip_id and purchase_tariff
             if ($this->voip_id != $item->product->voip_sales_tariff_id) {
                 $this->voip_id = $item->product->voip_sales_tariff_id;
@@ -1123,14 +1120,13 @@ class Contract extends \BaseModel
      * @param $item to be analyzed
      *
      * @return null
-     * Sets global var $changes_on_daily_conversion when contract data has changed
+     *              Sets global var $changes_on_daily_conversion when contract data has changed
      */
     protected function _update_product_related_future_data($item)
     {
         $contract_changed = false;
 
         if ($item->product->type == 'Voip') {
-
             // check if there are changes in state for voip_id and purchase_tariff
             if ($this->next_voip_id != $item->product->voip_sales_tariff_id) {
                 $this->next_voip_id = $item->product->voip_sales_tariff_id;
@@ -1183,7 +1179,6 @@ class Contract extends \BaseModel
      */
     public function get_column_description($col_name)
     {
-
         // later use global config to get mapping
         $mappings = [
             'number' => 'Contract number',
@@ -1203,13 +1198,13 @@ class Contract extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new ContractObserver);
+        self::observe(new ContractObserver());
     }
 
     /**
      * Returns start time of item - Note: contract_start field has higher priority than created_at
      *
-     * @return int 		time in seconds after 1970
+     * @return int time in seconds after 1970
      */
     public function get_start_time()
     {
@@ -1221,7 +1216,7 @@ class Contract extends \BaseModel
     /**
      * Returns start time of item - Note: contract_start field has higher priority than created_at
      *
-     * @return int 		time in seconds after 1970
+     * @return int time in seconds after 1970
      */
     public function get_end_time()
     {
@@ -1233,7 +1228,8 @@ class Contract extends \BaseModel
      *
      * @param 	string 		Timespan - LAST (!!) 'year'/'month' or 'now
      * @param 	int 	If Set only Mandates related to specific SepaAccount are considered (related via CostCenter)
-     * @return 	object 		Valid Sepa Mandate with latest start date
+     *
+     * @return object Valid Sepa Mandate with latest start date
      *
      * @author Nino Ryschawy
      */
@@ -1281,8 +1277,9 @@ class Contract extends \BaseModel
      *
      * @param string 	Date for that cancelation dates shall be retrieved: e.g. for today (for alert in observer)
      *                  or last day of last month (settlement run)
-     * @return array 	case 1: default
-     *                  case 2: contract was already canceled (important for settlement run) - 'canceled_to' is set
+     *
+     * @return array case 1: default
+     *               case 2: contract was already canceled (important for settlement run) - 'canceled_to' is set
      *
      * NOTE: if date is last day of last month it's automatically assumed that cancelation dates are requested for/from the settlement run
      */
@@ -1392,7 +1389,8 @@ class Contract extends \BaseModel
      * Check if the Contract has Debts that exceed the threshholds of the module configuration and therefore the internet has to be blocked
      *
      * @author Nino Ryschawy
-     * @return bool     internet should be blocked
+     *
+     * @return bool internet should be blocked
      */
     public function blockInetFromDebts()
     {
@@ -1400,7 +1398,7 @@ class Contract extends \BaseModel
             return false;
         }
 
-        $parser = new \Modules\OverdueDebts\Entities\DefaultTransactionParser;
+        $parser = new \Modules\OverdueDebts\Entities\DefaultTransactionParser();
         $debts = clone $this->debts;
 
         // Filter special debts to exclude (special voucher number and customer had less then 4 weeks to pay)
@@ -1427,12 +1425,9 @@ class Contract extends \BaseModel
 
         $conf = app()->make('OverdueDebtsConfig')->get();
 
-        $block =
-            // Amount threshold is exceeded
-            ($conf->import_inet_block_amount && ($totalAmount >= $conf->import_inet_block_amount)) ||
-            // More than max num of positive debts
-            ($conf->import_inet_block_debts && ($posDebtCount >= $conf->import_inet_block_debts)) ||
-            // Highest dunning indicator too high
+        $block = // Amount threshold is exceeded
+            ($conf->import_inet_block_amount && ($totalAmount >= $conf->import_inet_block_amount)) || // More than max num of positive debts
+            ($conf->import_inet_block_debts && ($posDebtCount >= $conf->import_inet_block_debts)) || // Highest dunning indicator too high
             ($conf->import_inet_block_indicator && ($highestIndicator >= $conf->import_inet_block_indicator));
 
         return $block;
@@ -1447,6 +1442,7 @@ class Contract extends \BaseModel
      *  true if realty of contract belongs to a contract
      *
      * @author Nino Ryschawy
+     *
      * @return bool
      */
     public function belongsToGroupContract()
@@ -1711,8 +1707,7 @@ class ContractObserver
 
             if (date('Y', strtotime($contract->contract_end)) == date('Y')) {
                 $query = $query->where('payed_month', '!=', 0);
-            } elseif (date('m') == '01' && $contract->contract_end != date('Y-12-31', strtotime('last year')) &&
-                date('Y', strtotime($contract->contract_end)) == (date('Y') - 1)
+            } elseif (date('m') == '01' && $contract->contract_end != date('Y-12-31', strtotime('last year')) && date('Y', strtotime($contract->contract_end)) == (date('Y') - 1)
                 ) {
                 // e.g. in january of current year the user enters belatedly a cancelation date of last year in dec
             } else {

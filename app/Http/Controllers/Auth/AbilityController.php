@@ -21,13 +21,14 @@ class AbilityController extends Controller
      * Properties which are used only inside Blade context.
      *
      * @return Illuminate\Support\Collection
+     *
      * @author Christian Schramm
      */
     public static function getCrudActions()
     {
         return collect([
-            '*'  => ['name' => 'manage', 'icon' => 'fa-star', 'bsclass' => 'success'],
-            'view'   => ['name' => 'view', 'icon' => 'fa-eye', 'bsclass' => 'info'],
+            '*' => ['name' => 'manage', 'icon' => 'fa-star', 'bsclass' => 'success'],
+            'view' => ['name' => 'view', 'icon' => 'fa-eye', 'bsclass' => 'info'],
             'create' => ['name' => 'create', 'icon' => 'fa-plus', 'bsclass' => 'primary'],
             'update' => ['name' => 'update', 'icon' => 'fa-pencil', 'bsclass' => 'warning'],
             'delete' => ['name' => 'delete', 'icon' => 'fa-trash', 'bsclass' => 'danger'],
@@ -40,7 +41,9 @@ class AbilityController extends Controller
      * Route "customAbility.update" and called via AJAX Requests.
      *
      * @param Illuminate\Http\Request $requestData
+     *
      * @return Illuminate\Support\Collection
+     *
      * @author Christian Schramm
      */
     protected function updateCustomAbility(Request $requestData)
@@ -66,7 +69,9 @@ class AbilityController extends Controller
      * called via AJAX Requests.
      *
      * @param Illuminate\Http\Request $request
+     *
      * @return json
+     *
      * @author Christian Schramm
      */
     protected function updateModelAbility(Request $request)
@@ -98,10 +103,12 @@ class AbilityController extends Controller
      * with respect to the "allow all" ability. Only changed Abilities are
      * handled to increase the Performance.
      *
-     * @param mixed $requestData
-     * @param string $roleName
+     * @param mixed                                   $requestData
+     * @param string                                  $roleName
      * @param Illuminate\Database\Eloquent\Collection $abilities
+     *
      * @return void
+     *
      * @author Christian Schramm
      */
     protected function registerCustomAbility($requestData, string $roleName, $abilities)
@@ -135,10 +142,12 @@ class AbilityController extends Controller
      * Gate with respect to the "allow all" ability. Only changed Abilities
      * are handled to increase the Performance.
      *
-     * @param App\Role $role
+     * @param App\Role                                $role
      * @param Illuminate\Database\Eloquent\Collection $modelAbilities
-     * @param string $allowAll
+     * @param string                                  $allowAll
+     *
      * @return void
+     *
      * @author Christian Schramm
      */
     protected function registerModelAbilities(Role $role, $modelAbilities, $allowAll)
@@ -182,6 +191,7 @@ class AbilityController extends Controller
      * Get all non-Crud Abilities and Compose a Collection to use in Blade
      *
      * @return Illuminate\Database\Eloquent\Collection
+     *
      * @author Christian Schramm
      */
     public static function getCustomAbilities()
@@ -205,7 +215,9 @@ class AbilityController extends Controller
      * Module Context is used. The Grouping was done to increase the UX.
      *
      * @param App\Role $role
+     *
      * @return Illuminate\Database\Eloquent\Collection
+     *
      * @author Christian Schramm
      */
     public static function getModelAbilities(Role $role)
@@ -270,10 +282,12 @@ class AbilityController extends Controller
      * This Method performs a custom sort for Models to Modules. To keep the
      * Ability-Interface clear and concise for the Users.
      *
-     * @param string $name
-     * @param Illuminate\Support\Collection $models
+     * @param string                                  $name
+     * @param Illuminate\Support\Collection           $models
      * @param Illuminate\Database\Eloquent\Collection $allAbilities
+     *
      * @return Illuminate\Support\Collection
+     *
      * @author Christian Schramm
      */
     private static function getModelsAndActions(string $name, $models, $allAbilities)
@@ -297,10 +311,12 @@ class AbilityController extends Controller
     /**
      * This method returns the assigned Actions for a given Model.
      *
-     * @param string $name
-     * @param Illuminate\Support\Collection $models
+     * @param string                                  $name
+     * @param Illuminate\Support\Collection           $models
      * @param Illuminate\Database\Eloquent\Collection $allAbilities
+     *
      * @return array
+     *
      * @author Christian Schramm
      */
     private static function getModelActions(string $name, $models, $allAbilities)
@@ -316,7 +332,9 @@ class AbilityController extends Controller
      * Check if only one or if multiple Custom Abilities were changed.
      *
      * @param Illuminate\Http\Request $requestData
+     *
      * @return bool
+     *
      * @author Christian Schramm
      */
     private function getChangedIds($requestData)
@@ -330,7 +348,9 @@ class AbilityController extends Controller
      * Get All Abilities and return only the non-Crud based ones.
      *
      * @param Illuminate\Database\Eloquent\Collection $abilities
+     *
      * @return Illuminate\Support\Collection
+     *
      * @author Christian Schramm
      */
     public static function mapCustomAbilities($abilities)
@@ -344,7 +364,9 @@ class AbilityController extends Controller
      * Get All Abilities and return only the Crud based Abilities.
      *
      * @param Illuminate\Database\Eloquent\Collection $abilities
+     *
      * @return Illuminate\Support\Collection
+     *
      * @author Christian Schramm
      */
     public static function mapModelAbilities($abilities)
@@ -365,13 +387,13 @@ class AbilityController extends Controller
      * Checks if the given Ability is a Custom one.
      *
      * @param App\Ability $ability
+     *
      * @return bool
+     *
      * @author Christian Schramm
      */
     private static function isCustom(Ability $ability)
     {
-        return Str::startsWith($ability->entity_type, '*') ||
-                $ability->entity_type == null ||
-                ! self::getCrudActions()->has($ability->name);
+        return Str::startsWith($ability->entity_type, '*') || $ability->entity_type == null || ! self::getCrudActions()->has($ability->name);
     }
 }

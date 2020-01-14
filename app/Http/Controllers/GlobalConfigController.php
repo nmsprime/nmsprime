@@ -34,7 +34,8 @@ class GlobalConfigController extends BaseController
         ];
 
         if (\Module::collections()->has('Ticketsystem') && array_key_exists('noReplyMail', \GlobalConfig::first()->getAttributes())) {
-            array_push($form,
+            array_push(
+                $form,
                 ['form_type' => 'text', 'name' => 'noReplyMail', 'description' => trans('messages.noReplyMail'), 'help' => trans('helper.noReplyMail')],
                 ['form_type' => 'text', 'name' => 'noReplyName', 'description' => trans('messages.noReplyName'), 'help' => trans('helper.noReplyName')]
             );
@@ -48,7 +49,6 @@ class GlobalConfigController extends BaseController
      */
     public function prepare_input($data)
     {
-
         // ISO 3166 country codes are uppercase
         $data['default_country_code'] = Str::upper($data['default_country_code']);
 
@@ -66,7 +66,7 @@ class GlobalConfigController extends BaseController
     public function index()
     {
         $tmp = get_parent_class();
-        $base_controller = new $tmp;
+        $base_controller = new $tmp();
 
         $view_header = BaseViewController::translate_view('Global Configurations', 'Header');
         $route_name = 'Config.index';
@@ -86,11 +86,10 @@ class GlobalConfigController extends BaseController
 
             $mod_controller_name = 'Modules\\'.$tmp.'\\Http\\Controllers\\'.$tmp.'Controller';
             $mod_model_namespace = 'Modules\\'.$tmp.'\\Entities\\'.$tmp;
-            $mod_controller = new $mod_controller_name;
+            $mod_controller = new $mod_controller_name();
 
-            if (method_exists($mod_controller, 'view_form_fields') &&
-                Bouncer::can('view', $mod_model_namespace)) {
-                $mod_model = new $mod_model_namespace;
+            if (method_exists($mod_controller, 'view_form_fields') && Bouncer::can('view', $mod_model_namespace)) {
+                $mod_model = new $mod_model_namespace();
 
                 $module_controller[$i] = $mod_controller;
                 $module_model[$i] = $mod_model->first();
@@ -104,8 +103,8 @@ class GlobalConfigController extends BaseController
 
         // Add SLA Tab
         if (Bouncer::can('view', '\App\Sla')) {
-            $module_controller[$i] = new \App\Http\Controllers\SlaController;
-            $sla_model = new \App\Sla;
+            $module_controller[$i] = new \App\Http\Controllers\SlaController();
+            $sla_model = new \App\Sla();
             $module_model[$i] = $sla_model->first();
             $links[$i] = ['name' => 'SLA', 'link' => 'Sla'];
             $i++;

@@ -71,6 +71,7 @@ class ExtendedValidator
      *
      * @param 1 net_ip
      * @param 2 netmask
+     *
      * @return true if inside
      *
      * @author Nino Ryschawy
@@ -315,7 +316,6 @@ class ExtendedValidator
      */
     public function validatePhonebookPredefinedString($attribute, $value, $parameters)
     {
-
         // see: https://laracasts.com/discuss/channels/general-discussion/extending-validation-with-custom-message-attribute?page=1
         // when laravel calls the validation function (validate) they luckily pass "$this" that is the Validator instance as 4th argument - so we can get it here
         $validator = \func_get_arg(3);
@@ -340,7 +340,6 @@ class ExtendedValidator
      */
     public function validatePhonebookOneCharacterOption($attribute, $value, $parameters)
     {
-
         // see: https://laracasts.com/discuss/channels/general-discussion/extending-validation-with-custom-message-attribute?page=1
         // when laravel calls the validation function (validate) they luckily pass "$this" that is the Validator instance as 4th argument - so we can get it here
         $validator = \func_get_arg(3);
@@ -367,7 +366,6 @@ class ExtendedValidator
      */
     public function validatePhonebookEntryTypeDependend($attribute, $value, $parameters)
     {
-
         // see: https://laracasts.com/discuss/channels/general-discussion/extending-validation-with-custom-message-attribute?page=1
         // when laravel calls the validation function (validate) they luckily pass "$this" that is the Validator instance as 4th argument - so we can get it here
         $validator = \func_get_arg(3);

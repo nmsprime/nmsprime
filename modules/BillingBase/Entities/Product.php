@@ -13,8 +13,8 @@ class Product extends \BaseModel
      * The default Period of Notice (14 days) and maturity for products where string is not set in DB
      * (needed for Invoice creation during SettlementRun)
      *
-     * @var string 	pon
-     * @var string  maturity
+     * @var string pon
+     * @var string maturity
      */
     public static $pon = '14D';
     public static $maturity_min = '1M';
@@ -25,13 +25,13 @@ class Product extends \BaseModel
     {
         // Pay attention to the prepare_rules()-function in Controller
         return [
-            'name' 	=> 'required|unique:product,name,'.$id.',id,deleted_at,NULL',
-            'type' 	=> 'required|not_null',
+            'name' => 'required|unique:product,name,'.$id.',id,deleted_at,NULL',
+            'type' => 'required|not_null',
             // 'type' => "required|not_null|unique:product,type,$id,id,type,Credit,deleted_at,NULL",	// if credit shall exist only once
             'voip_sales_tariff_id' => 'required_if:type,Voip',
             'voip_purchase_tariff_id' => 'required_if:type,Voip',
             'qos_id' => 'required_if:type,Internet',
-            'price'  => 'required_if:type,Internet,Voip,TV,Other,Device,Mixed',
+            'price' => 'required_if:type,Internet,Voip,TV,Other,Device,Mixed',
             'maturity_min' => 'nullable|regex:/^\d+[dDmMyY]$/',
             'maturity' => 'nullable|regex:/^\d+[dDmMyY]$/',
             'period_of_notice' => 'nullable|regex:/^\d+[dDmMyY]$/',
@@ -62,7 +62,7 @@ class Product extends \BaseModel
 
         return ['table' => $this->table,
             'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price', 'costcenter.name', $this->table.'.proportional'],
-            'header' =>  $this->type.' - '.$this->name.' | '.$this->price.' €',
+            'header' => $this->type.' - '.$this->name.' | '.$this->price.' €',
             'bsclass' => $bsclass,
             'eager_loading' => ['costcenter'],
             'edit' => ['costcenter.name' => 'getCostcenterName'],
@@ -139,7 +139,8 @@ class Product extends \BaseModel
      *	is called for every Contract during daily_conversion
      *
      * @param 	String/Enum 	[internet|voip|tv]
-     * @return 	array
+     *
+     * @return array
      *
      * @author Nino Ryschawy
      */
@@ -184,6 +185,7 @@ class Product extends \BaseModel
      * Returns an array of available product types
      *
      * @return array|null
+     *
      * @throws \Exception
      */
     public static function get_product_types()

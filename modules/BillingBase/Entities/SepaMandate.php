@@ -14,14 +14,14 @@ class SepaMandate extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'reference' 	=> 'required',
+            'reference' => 'required',
             // holder must not contain a semicolon supposed to DFÜ-Abkommen Anlage 3 v3.3 said by Sparkasse
-            'holder'        => 'String|Max:70|regex:/^([^;]*)$/',
-            'iban'          => 'required|iban',
-            'bic' 			=> 'bic|regex:/^[A-Z]{6}[A-Z2-9][A-NP-Z0-9]([A-Z0-9]{3}){0,3}$/',			// see SepaMandateController@prep_rules, Sparkasse/S-Firm regex from error message of sepa-xml upload
+            'holder' => 'String|Max:70|regex:/^([^;]*)$/',
+            'iban' => 'required|iban',
+            'bic' => 'bic|regex:/^[A-Z]{6}[A-Z2-9][A-NP-Z0-9]([A-Z0-9]{3}){0,3}$/',			// see SepaMandateController@prep_rules, Sparkasse/S-Firm regex from error message of sepa-xml upload
             'signature_date' => 'date|required',
-            'valid_from' 	=> 'date|required',
-            'valid_to'		=> 'nullable|date',
+            'valid_from' => 'date|required',
+            'valid_to' => 'nullable|date',
         ];
     }
 
@@ -51,7 +51,7 @@ class SepaMandate extends \BaseModel
             'index_header' => [$this->table.'.holder', $this->table.'.valid_from', $this->table.'.valid_to', $this->table.'.reference', 'iban', $this->table.'.disable'],
             'bsclass' => $bsclass,
             'order_by' => ['0' => 'asc'],
-            'header' =>  "$this->reference - $this->iban - $this->valid_from $valid_to",
+            'header' => "$this->reference - $this->iban - $this->valid_from $valid_to",
         ];
     }
 
@@ -139,7 +139,7 @@ class SepaMandate extends \BaseModel
     /**
      * Returns start time of item - Note: valid_from field has higher priority than created_at
      *
-     * @return int 		time in seconds after 1970
+     * @return int time in seconds after 1970
      */
     public function get_start_time()
     {
@@ -151,7 +151,7 @@ class SepaMandate extends \BaseModel
     /**
      * Returns start time of item - Note: valid_from field has higher priority than created_at
      *
-     * @return int 		time in seconds after 1970
+     * @return int time in seconds after 1970
      */
     public function get_end_time()
     {

@@ -17,7 +17,7 @@ class MtaController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new Mta;
+            $model = new Mta();
         }
 
         $mac = Request::get('mac', '');
@@ -64,7 +64,9 @@ class MtaController extends \BaseController
      * See: BaseController native function for more information
      *
      * @param Modules\ProvVoip\Entities\Mta
+     *
      * @return array
+     *
      * @author Roy Schneider
      */
     protected function editTabs($model)
@@ -74,7 +76,8 @@ class MtaController extends \BaseController
         $tabs = parent::editTabs($model);
 
         if (\Module::collections()->has('ProvMon') && \Bouncer::can('view_analysis_pages_of', Modem::class)) {
-            array_push($tabs,
+            array_push(
+                $tabs,
                 ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $model->modem_id],
                 ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => $model->modem_id],
                 ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => $model->modem_id]

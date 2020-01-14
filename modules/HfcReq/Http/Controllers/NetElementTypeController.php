@@ -48,7 +48,8 @@ class NetElementTypeController extends HfcReqController
      * Note: Input comes from NetElementType.settings.blade.php
      *
      * @param 	id  	Integer 	NetElementType ID
-     * @return 	Edit View of NetElementType
+     *
+     * @return Edit View of NetElementType
      */
     public function settings($id)
     {

@@ -32,7 +32,6 @@ class MailServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
     }
 
     /**
@@ -46,7 +45,8 @@ class MailServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('nmsmail.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'nmsmail'
+            __DIR__.'/../Config/config.php',
+            'nmsmail'
         );
     }
 

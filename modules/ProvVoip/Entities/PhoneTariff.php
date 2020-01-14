@@ -81,7 +81,7 @@ class PhoneTariff extends \BaseModel
      *
      * @author Patrick Reichel
      *
-     * @param $type The tariff type as string (currently purchase and sale).
+     * @param $type the tariff type as string (currently purchase and sale)
      *
      * @return array with phonetariff.id=>phonetariff.name
      */

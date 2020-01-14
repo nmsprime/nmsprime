@@ -20,7 +20,7 @@ class PhonebookEntryController extends \BaseController
     {
         // create
         if (! $model) {
-            $model = new PhonebookEntry;
+            $model = new PhonebookEntry();
         }
 
         // set reference for later use
@@ -30,8 +30,7 @@ class PhonebookEntryController extends \BaseController
         if (! $model->exists) {
             if (
                 (! \Request::filled('phonenumbermanagement_id'))
-                ||
-                ! ($phonenumbermanagement = PhonenumberManagement::find(\Request::get('phonenumbermanagement_id')))
+                || ! ($phonenumbermanagement = PhonenumberManagement::find(\Request::get('phonenumbermanagement_id')))
             ) {
                 return [];
             }
@@ -67,7 +66,6 @@ class PhonebookEntryController extends \BaseController
         }
 
         $ret_tmp = [
-
             /* todo: write the rest of the form (attention: some special cases!!!) */
             ['form_type' => 'select', 'name' => 'phonenumbermanagement_id', 'description' => 'PhonenumberManagement', 'value' => $model->html_list($model->phonenumbermanagement(), 'id'), 'hidden' => '1'],
             ['form_type' => 'select', 'name' => 'reverse_search', 'description' => 'Reverse search', 'value' => $model->get_options_from_list('reverse_search', true)],
@@ -91,7 +89,6 @@ class PhonebookEntryController extends \BaseController
             ['form_type' => 'text', 'name' => 'urban_district', 'description' => 'Urban district'],
             ['form_type' => 'select', 'name' => 'business', 'description' => 'Business', 'value' => $model->get_options_from_file('business')],
             ['form_type' => 'select', 'name' => 'usage', 'description' => 'Number usage', 'value' => $model->get_options_from_list('usage', true)],
-
         ];
 
         // starting with API version 2.7 envia TEL ignores “tag”
@@ -123,9 +120,8 @@ class PhonebookEntryController extends \BaseController
      */
     public function prepare_rules($rules, $data)
     {
-
         // lambda to replace strings after a colon
-        $replace_after_colon = function (&$subject, $key, $replacement_data = ['search'=>'', 'replace'=>'']) {
+        $replace_after_colon = function (&$subject, $key, $replacement_data = ['search' => '', 'replace' => '']) {
             $search = $replacement_data['search'];
             $replace = $replacement_data['replace'];
 
@@ -161,7 +157,6 @@ class PhonebookEntryController extends \BaseController
 
             // we need to go through complete data => e.g. we need to replace lastname AND entry_type in valitation of lastname
             foreach ($data as $varname => $value) {
-
                 // replace varnames after colons by there value
                 $replacement_data = ['search' => $varname, 'replace' => $value];
                 array_walk($form_name_rules, $replace_after_colon, $replacement_data);
@@ -194,7 +189,9 @@ class PhonebookEntryController extends \BaseController
      * Get all management jobs for envia TEL
      *
      * @author Patrick Reichel
+     *
      * @param $phonebookentry current phonebookentry object
+     *
      * @return array containing linktexts and URLs to perform actions against REST API
      */
     public static function _get_envia_management_jobs($phonebookentry)

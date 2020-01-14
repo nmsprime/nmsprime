@@ -33,8 +33,8 @@ class BillingBaseController extends \BaseController
         }
 
         // build data for mandate reference help string
-        $contract = new Contract;
-        $mandate = new SepaMandate;
+        $contract = new Contract();
+        $mandate = new SepaMandate();
         $cols1 = Schema::getColumnListing($contract->getTable());
         $cols2 = Schema::getColumnListing($mandate->getTable());
         $cols = array_merge($cols1, $cols2);

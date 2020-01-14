@@ -23,7 +23,10 @@ return PhpCsFixer\Config::create()
         'syntax' => 'short'
     ],
     'binary_operator_spaces' => [
-        'default' => 'align_single_space_minimal'
+        'default' => 'single_space'
+    ],
+    'increment_style' => [
+        'style' => 'post'
     ],
     'not_operator_with_successor_space' => true,
     'method_argument_space' => [

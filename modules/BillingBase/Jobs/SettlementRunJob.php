@@ -11,7 +11,9 @@ use Modules\BillingBase\Entities\SettlementRun;
 
 class SettlementRunJob implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     protected $sr;
     protected $sepaacc; 			// is set in constructor if we only wish to run command for specific SepaAccount
@@ -40,7 +42,8 @@ class SettlementRunJob implements ShouldQueue
     /**
      * The job failed to process.
      *
-     * @param  Exception  $exception
+     * @param Exception $exception
+     *
      * @return void
      */
     public function failed(\Exception $exception)

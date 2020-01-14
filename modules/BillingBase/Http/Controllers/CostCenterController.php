@@ -13,7 +13,7 @@ class CostCenterController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new CostCenter;
+            $model = new CostCenter();
         }
 
         // the options should start with a 0 entry which is chosen if nothing is given explicitely

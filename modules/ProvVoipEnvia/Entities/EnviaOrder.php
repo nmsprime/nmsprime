@@ -22,7 +22,6 @@ class EnviaOrder extends \BaseModel
     // collect all order related informations ⇒ later we can use subarrays of this array to get needed informations
     // mark missing data with value null
     protected static $meta = [
-
         // TODO: Process the list with all possible ordertypes
         'orders' => [
             [
@@ -261,7 +260,6 @@ class EnviaOrder extends \BaseModel
                 'final' => false,
             ],
         ],
-
     ];
 
     /**
@@ -312,10 +310,10 @@ class EnviaOrder extends \BaseModel
      * @author Patrick Reichel
      *
      * @return array containing metadata for all order types:
-     *			ordertype (string),
-     *			ordertype_id (int),
-     *			method (str)
-     *			phonenumber_related (bool)
+     *               ordertype (string),
+     *               ordertype_id (int),
+     *               method (str)
+     *               phonenumber_related (bool)
      */
     public static function get_orders_metadata()
     {
@@ -328,11 +326,11 @@ class EnviaOrder extends \BaseModel
      * @author Patrick Reichel
      *
      * @return array containing metadata for all order states:
-     *			orderstatus_id (int),
-     *			orderstatus (str),
-     *			view_class (str),
-     *			state_type (str),
-     *			final (bool),
+     *               orderstatus_id (int),
+     *               orderstatus (str),
+     *               view_class (str),
+     *               state_type (str),
+     *               final (bool),
      */
     public static function get_states_metadata()
     {
@@ -368,8 +366,7 @@ class EnviaOrder extends \BaseModel
 
         $final_state = (
             in_array($order->orderstatus_id, $finals)
-            ||
-            in_array($order->orderstatus, $finals)
+            || in_array($order->orderstatus, $finals)
         );
 
         return $final_state;
@@ -402,10 +399,8 @@ class EnviaOrder extends \BaseModel
 
         $related_state = (
             in_array($order->ordertype, $relates)
-            ||
-            in_array($order->ordertype_id, $relates)
-            ||
-            in_array($order->method, $relates)
+            || in_array($order->ordertype_id, $relates)
+            || in_array($order->method, $relates)
         );
 
         return $related_state;
@@ -438,10 +433,8 @@ class EnviaOrder extends \BaseModel
 
         $mapped_to_method = (
             in_array($order->ordertype, $matches)
-            ||
-            in_array($order->ordertype_id, $matches)
-            ||
-            in_array($order->method, $matches)
+            || in_array($order->ordertype_id, $matches)
+            || in_array($order->method, $matches)
         );
 
         return $mapped_to_method;
@@ -472,8 +465,7 @@ class EnviaOrder extends \BaseModel
 
         $mapped_to_state_type = (
             in_array($order->orderstatus, $matches)
-            ||
-            in_array($order->orderstatus_id, $matches)
+            || in_array($order->orderstatus_id, $matches)
         );
 
         return $mapped_to_state_type;
@@ -491,8 +483,7 @@ class EnviaOrder extends \BaseModel
     {
         if (
             (($order->orderstatus_id == 1017) || ($order->orderstatus == 'Stornierung bestätigt'))
-            &&
-            ($order->ordertype != 'Stornierung eines Auftrags')
+            && ($order->ordertype != 'Stornierung eines Auftrags')
         ) {
             return true;
         } else {
@@ -620,7 +611,7 @@ class EnviaOrder extends \BaseModel
             'bsclass' => $bsclass,
             'disable_sortsearch' => ['phonenumber.number' => 'false', 'enviaorder_current' => 'false'],
             'eager_loading' => ['contract', 'modem', 'enviacontract', 'phonenumbers'],
-            'edit' => ['ordertype' => 'get_ordertype', 'orderstatus'  => 'get_orderstatus', 'modem.id' => 'get_modem_data', 'contract.id' => 'get_contract_data', 'enviacontract.envia_contract_reference' => 'get_enviacontract_ref', 'enviaorder_current' => 'get_user_interaction_necessary', 'phonenumber.number' => 'get_phonenumbers', 'escalation_level' => 'get_escalation_level'],
+            'edit' => ['ordertype' => 'get_ordertype', 'orderstatus' => 'get_orderstatus', 'modem.id' => 'get_modem_data', 'contract.id' => 'get_contract_data', 'enviacontract.envia_contract_reference' => 'get_enviacontract_ref', 'enviaorder_current' => 'get_user_interaction_necessary', 'phonenumber.number' => 'get_phonenumbers', 'escalation_level' => 'get_escalation_level'],
             'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
             'where_clauses' => $where_clauses,
             'filter' => [
@@ -749,7 +740,6 @@ class EnviaOrder extends \BaseModel
      */
     public function store_index_show_filter_in_session()
     {
-
         // first: check context
         // if called by datatables: do nothing
         if (\Str::contains(\URL::current(), '/EnviaOrder/datatables')) {
@@ -820,8 +810,12 @@ class EnviaOrder extends \BaseModel
 
     public function phonenumbers()
     {
-        return $this->belongsToMany(Phonenumber::class, 'enviaorder_phonenumber',
-                    'enviaorder_id', 'phonenumber_id')->withTimestamps();
+        return $this->belongsToMany(
+            Phonenumber::class,
+            'enviaorder_phonenumber',
+            'enviaorder_id',
+            'phonenumber_id'
+        )->withTimestamps();
     }
 
     public function enviaorderdocument()
@@ -887,7 +881,6 @@ class EnviaOrder extends \BaseModel
 
         // show headline and link to solve if order has changed since the last user interaction
         if ($this->user_interaction_necessary()) {
-
             // show that user interaction is necessary
             $user_actions['head'] = '<h5 class="text-danger">'.trans('provvoipenvia::messages.orderHasBeenUpdated').'</h5>';
             $user_actions['head'] .= trans('provvoipenvia::messages.orderCheckInteraction').'<br><br>';
@@ -989,7 +982,6 @@ class EnviaOrder extends \BaseModel
      */
     public function user_interaction_necessary()
     {
-
         // first: if last user interaction was after last status update – nothing to do
         if ($this->last_user_interaction > $this->updated_at) {
             return false;
@@ -1018,7 +1010,6 @@ class EnviaOrder extends \BaseModel
      */
     public function mark_as_solved()
     {
-
         // temporary disable refreshing of timestamps (= don't touch updated_at)
         $this->timestamps = false;
 

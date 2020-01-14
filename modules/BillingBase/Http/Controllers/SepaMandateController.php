@@ -17,7 +17,7 @@ class SepaMandateController extends \BaseController
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new SepaMandate;
+            $model = new SepaMandate();
         }
 
         if (! $model->exists) {

@@ -32,7 +32,6 @@ class HfcSnmpServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
     }
 
     /**
@@ -46,7 +45,8 @@ class HfcSnmpServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('hfcsnmp.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'hfcsnmp'
+            __DIR__.'/../Config/config.php',
+            'hfcsnmp'
         );
     }
 

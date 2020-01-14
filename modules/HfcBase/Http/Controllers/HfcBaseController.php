@@ -40,8 +40,9 @@ class HfcBaseController extends BaseController
      *
      * @author Ole Ernst
      *
-     * @param string $type filetype, either kml or svg
+     * @param string $type     filetype, either kml or svg
      * @param string $filename name of the file
+     *
      * @return mixed
      */
     public function get_file($type, $filename)
@@ -58,6 +59,7 @@ class HfcBaseController extends BaseController
      * KML Upload Array: Generate the KML file array
      *
      * @param Collection of NetElements
+     *
      * @return Collection KML files, like ['file', 'descr']
      *
      * @author Torsten Schmidt, Christian Schramm
@@ -78,6 +80,7 @@ class HfcBaseController extends BaseController
      * Return all impaired netelements in a table array
      *
      * @author Ole Ernst
+     *
      * @return array
      */
     public static function get_impaired_netelements()
@@ -120,6 +123,7 @@ class HfcBaseController extends BaseController
      * Return all impaired services in a table array
      *
      * @author Ole Ernst
+     *
      * @return array
      */
     public static function get_impaired_services()
@@ -164,6 +168,7 @@ class HfcBaseController extends BaseController
      * Return formatted impaired performance data for a given perfdata string
      *
      * @author Ole Ernst
+     *
      * @return array
      */
     private static function _get_impaired_services_perfdata($perf)
@@ -210,6 +215,7 @@ class HfcBaseController extends BaseController
      * Return performance data colour class according to given limits
      *
      * @author Ole Ernst
+     *
      * @return string
      */
     private static function _get_perfdata_class($cur, $warn, $crit)

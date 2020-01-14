@@ -45,12 +45,12 @@ class SettlementRunCommand extends Command
         $sr = SettlementRun::where('year', '=', $dates['Y'])->where('month', '=', (int) $dates['lastm'])->orderBy('id', 'desc')->first();
 
         if (! $sr || ! $sr->getAttribute('id')) {
-            $sr = new SettlementRun;
+            $sr = new SettlementRun();
             // Disable observer to not queue this command again - Note: Disable via observer_enable=false doesn't work
             $sr->flushEventListeners();
             $sr = $sr->create(['year' => $dates['Y'], 'month' => SettlementRunData::getDate('lastm')]);
             // Enable observer again
-            $sr->observe(new \Modules\BillingBase\Entities\SettlementRunObserver);
+            $sr->observe(new \Modules\BillingBase\Entities\SettlementRunObserver());
         }
 
         return $sr;

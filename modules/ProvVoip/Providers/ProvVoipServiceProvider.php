@@ -56,7 +56,8 @@ class ProvVoipServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('provvoip.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'provvoip'
+            __DIR__.'/../Config/config.php',
+            'provvoip'
         );
     }
 

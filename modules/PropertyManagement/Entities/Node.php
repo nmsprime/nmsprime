@@ -17,7 +17,7 @@ class Node extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new NodeObserver);
+        self::observe(new NodeObserver());
     }
 
     // Add your validation rules here

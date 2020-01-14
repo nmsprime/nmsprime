@@ -54,7 +54,8 @@ class VoipMonServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('voipmon.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'voipmon'
+            __DIR__.'/../Config/config.php',
+            'voipmon'
         );
     }
 

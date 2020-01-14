@@ -37,6 +37,7 @@ class BaseViewController extends Controller
      * Searches for a string in the language files under resources/lang/ and returns it for the active application language
      * Searches for a "*" (required field), deletes it for trans function and appends it at the end
      * used in everything Form related (Labels, descriptions)
+     *
      * @author Nino Ryschawy, Christian Schramm
      */
     public static function translate_label($string)
@@ -69,10 +70,12 @@ class BaseViewController extends Controller
     /**
      * Searches for a string in the language files under resources/lang/ and returns it for the active application language
      * used in everything view related
+     *
      * @param string:   string that is searched in resspurces/lang/{App-language}/view.php
      * @param type:     can be Header, Menu, Button, jQuery, Search
      * @param count:    standard at 1 , For plural translation - needs to be seperated with pipe "|""
      *                  example: Index Headers -> in view.php: 'Header_Mta' => 'MTA|MTAs',
+     *
      * @author Christian Schramm
      */
     public static function translate_view($string, $type, $count = 1)
@@ -94,8 +97,9 @@ class BaseViewController extends Controller
     /**
      * Translate every value of a given Array
      *
-     * @param array $array or iterable
+     * @param array  $array or iterable
      * @param string $file
+     *
      * @return Illuminate\Support\Collection
      */
     public static function translateArray($array, $file = 'messages')
@@ -124,13 +128,14 @@ class BaseViewController extends Controller
      * Generate the Array for Language selection in select fields
      *
      * @param array $languageArray or iterable
+     *
      * @return Illuminate\Support\Collection
      */
     public static function generateLanguageArray($languageArray)
     {
         return collect($languageArray)
             ->mapWithKeys(function ($langShortcut) {
-                return [$langShortcut  => config('language.'.$langShortcut)];
+                return [$langShortcut => config('language.'.$langShortcut)];
             });
     }
 
@@ -207,14 +212,11 @@ class BaseViewController extends Controller
             if (
                 // does a view relation exists?
                 (is_object($view_belongs_to))
-                &&
-                // not a n:m relation (in which case we have an pivot table)
+                && // not a n:m relation (in which case we have an pivot table)
                 (! ($view_belongs_to instanceof \Illuminate\Support\Collection))
-                &&
-                // view table name (*_id) == field name ?
+                && // view table name (*_id) == field name ?
                 ($view_belongs_to->table.'_id' == $field['name'])
-                &&
-                // hidden was not explicitly set
+                && // hidden was not explicitly set
                 (! isset($field['hidden']))
             ) {
                 $field['hidden'] = '1';
@@ -509,7 +511,8 @@ class BaseViewController extends Controller
     /**
      * Compose HTML of help icon from form field
      *
-     * @param array  $field  Entry of view_form_fields()
+     * @param array $field Entry of view_form_fields()
+     *
      * @return string
      */
     public static function helpIcon($field)
@@ -597,6 +600,7 @@ class BaseViewController extends Controller
 
     /**
      * This is a local helper to be able to show HTML code (like images) in breadcrumb
+     *
      * @author: Torsten Schmidt
      * @todo: move to a generic helper class
      */
@@ -607,7 +611,9 @@ class BaseViewController extends Controller
 
     /**
      * Get the ICON of the class or object or from actual context
+     *
      * @param $class_or_obj: the class or object to look for the icon
+     *
      * @return the HTML icon (with HTML tags)
      * @author: Torsten Schmidt
      */
@@ -636,7 +642,9 @@ class BaseViewController extends Controller
      * @param $view_header: the view header name
      * @param $view_var: the object to generate the link from
      * @param $html: the HTML GET array. See note bellow!
+     *
      * @return the HTML link line to be directly included in blade
+     *
      * @author Torsten Schmidt, Patrick Reichel
      *
      * NOTE: in create context we are forced to work with HTML GET array in $html.
@@ -658,7 +666,7 @@ class BaseViewController extends Controller
             $class_name = BaseModel::_guess_model_name(ucwords(explode('_id', $key)[0]));
 
             if (class_exists($class_name)) {
-                $class = new $class_name;
+                $class = new $class_name();
                 $view_var = $class->find($html[$key]);
             }
         }
@@ -666,7 +674,6 @@ class BaseViewController extends Controller
         // lambda function to extend the current breadcrumb by its predecessor
         // code within this function originally written by Torsten
         $extend_breadcrumb_path = function ($breadcrumb_path, $model, $i) {
-
             // following is the original source code written by Torsten
             $tmp = explode('\\', get_class($model));
             $view = end($tmp);
@@ -691,7 +698,6 @@ class BaseViewController extends Controller
         };
 
         if ($view_var != null) {
-
             // Recursively parse all relations from view_var
             $parent = $view_var;
             $i = 0;
@@ -699,8 +705,7 @@ class BaseViewController extends Controller
                 if (
                     // if $parent is not a Collection we have a 1:1 or 1:n relation
                     (! ($parent instanceof \Illuminate\Support\Collection))
-                    ||
-                    // there is a potential n:m relation, but only one model is really connected
+                    || // there is a potential n:m relation, but only one model is really connected
                     ($parent->count() == 1)
                 ) {
                     // this means we have an explicit next step in our breadcrumb path
@@ -725,7 +730,6 @@ class BaseViewController extends Controller
                     $multicrumbs = '';
 
                     foreach ($parent as $p) {
-
                         // get the breadcrumb for the current parent
                         $extended_path = $extend_breadcrumb_path($breadcrumb_path, $p, $i);
                         $breadcrumb = str_replace($breadcrumb_path_before_split, '', $extended_path);
@@ -742,11 +746,9 @@ class BaseViewController extends Controller
 
                         // collect all parent breadcrumbs
                         if (! $multicrumbs) {
-
                             // the first one is simple :-)
                             $multicrumbs = $breadcrumb;
                         } else {
-
                             // insert the current breadcrumb into the existing <li> element
 
                             // therefore we extract all text from the first opening to the last closing <a> tag

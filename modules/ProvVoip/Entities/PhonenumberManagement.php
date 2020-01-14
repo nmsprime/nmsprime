@@ -199,11 +199,9 @@ class PhonenumberManagement extends \BaseModel
      */
     public function delete()
     {
-
         // with activated envia TEL module we have to perform some extra checks
         // we have to check this here as using ModemObserver::deleting() with return false does not prevent the monster from deleting child model instances!
         if (\Module::collections()->has('ProvVoipEnvia')) {
-
             // check if there is a not completely terminated envia TEL contract related to this management
             if ($this->envia_contract) {
                 if (in_array($this->envia_contract->state, ['Aktiv', 'In Realisierung'])) {
@@ -243,7 +241,7 @@ class PhonenumberManagement extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new PhonenumberManagementObserver);
+        self::observe(new PhonenumberManagementObserver());
     }
 }
 

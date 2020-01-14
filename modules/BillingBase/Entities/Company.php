@@ -15,10 +15,10 @@ class Company extends \BaseModel
     {
         return [
             // 'name' => 'required|unique:netgw,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
-            'name' 		=> 'required',
-            'street' 	=> 'required',
-            'zip'	 	=> 'required',
-            'city'	 	=> 'required',
+            'name' => 'required',
+            'street' => 'required',
+            'zip' => 'required',
+            'city' => 'required',
             'logo_upload' => 'mimes:jpg,jpeg,bmp,png,pdf',
             'conn_info_template_fn_upload' => 'mimetypes:text/x-tex,application/x-tex',
         ];
@@ -82,7 +82,7 @@ class Company extends \BaseModel
      */
     public static function boot()
     {
-        self::observe(new CompanyObserver);
+        self::observe(new CompanyObserver());
         parent::boot();
     }
 

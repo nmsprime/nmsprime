@@ -17,7 +17,7 @@ class ScopeBouncer
     /**
      * Constructor.
      *
-     * @param \Silber\Bouncer\Bouncer  $bouncer
+     * @param \Silber\Bouncer\Bouncer $bouncer
      */
     public function __construct(Bouncer $bouncer)
     {
@@ -27,8 +27,9 @@ class ScopeBouncer
     /**
      * Set the proper Bouncer scope for the incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
+     * @param \Illuminate\Http\Request $request
+     * @param \Closure                 $next
+     *
      * @return mixed
      */
     public function handle($request, Closure $next)

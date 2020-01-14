@@ -14,7 +14,7 @@ use Modules\HfcBase\Http\Controllers\HfcBaseController;
 class DashboardController extends BaseController
 {
     /**
-     * @return Obj 	View: Dashboard (index.blade)
+     * @return Obj View: Dashboard (index.blade)
      */
     public function index()
     {
@@ -249,8 +249,11 @@ class DashboardController extends BaseController
         foreach (['CM', 'CPEPriv'] as $type) {
             if (\Modules\ProvBase\Entities\IpPool::where('type', $type)->count() == 0) {
                 return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
-                    'text' => $text.\HTML::linkRoute('IpPool.create', trans('helper.create_'.strtolower($type).'_pool'),
-                            ['netgw_id' => \Modules\ProvBase\Entities\NetGw::first()->id, 'type' => $type]), ];
+                    'text' => $text.\HTML::linkRoute(
+                        'IpPool.create',
+                        trans('helper.create_'.strtolower($type).'_pool'),
+                        ['netgw_id' => \Modules\ProvBase\Entities\NetGw::first()->id, 'type' => $type]
+                    ), ];
             }
         }
 
@@ -261,8 +264,7 @@ class DashboardController extends BaseController
         }
 
         // Product
-        if (\Module::collections()->has('BillingBase') &&
-            \Modules\BillingBase\Entities\Product::where('type', '=', 'Internet')->count() == 0) {
+        if (\Module::collections()->has('BillingBase') && \Modules\BillingBase\Entities\Product::where('type', '=', 'Internet')->count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=425&',
                 'text' => $text.\HTML::linkRoute('Product.create', trans('helper.create_product')), ];
         }

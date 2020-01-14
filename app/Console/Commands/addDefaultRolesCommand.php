@@ -151,62 +151,62 @@ class addDefaultRolesCommand extends Command
         // technican
         $role[4] = [
             'modules' => [
-                'Dashboard' 		=> ['view'],
-                'HfcBase' 			=> ['view'],
-                'HfcCustomer'		=> ['view'],
-                'HfcReq' 			=> ['view'],
-                'ProvVoipEnvia'		=> ['view'],
+                'Dashboard' => ['view'],
+                'HfcBase' => ['view'],
+                'HfcCustomer' => ['view'],
+                'HfcReq' => ['view'],
+                'ProvVoipEnvia' => ['view'],
             ],
             'models' => [
-                'Role' 					=> ['view'],
-                'User' 					=> ['view'],
-                'GlobalConfig'			=> ['view'],
+                'Role' => ['view'],
+                'User' => ['view'],
+                'GlobalConfig' => ['view'],
 
-                'Item' 					=> ['view'],
+                'Item' => ['view'],
 
-                'User' 					=> ['view'],
+                'User' => ['view'],
 
-                'Cdr'					=> ['view'],
-                'GuiLog' 				=> ['view'],
-                'Ticket'				=> ['view'],
+                'Cdr' => ['view'],
+                'GuiLog' => ['view'],
+                'Ticket' => ['view'],
 
-                'NetGw' 				=> ['view'],
-                'Contract' 				=> ['view'],
-                'Modem' 				=> ['view'],
-                'ProvBase' 				=> ['view'],
+                'NetGw' => ['view'],
+                'Contract' => ['view'],
+                'Modem' => ['view'],
+                'ProvBase' => ['view'],
 
-                'Mta' 					=> ['view'],
-                'PhonebookEntry' 		=> ['view'],
-                'Phonenumber' 			=> ['view'],
+                'Mta' => ['view'],
+                'PhonebookEntry' => ['view'],
+                'Phonenumber' => ['view'],
                 'PhonenumberManagement' => ['view'],
-                'ProvVoip' 				=> ['view'],
+                'ProvVoip' => ['view'],
 
-                'EnviaOrderDocument' 	=> ['view'],
-                'ProvVoipEnvia' 		=> ['view'],
-                'ProvVoipEnviaHelpers' 	=> ['view'],
+                'EnviaOrderDocument' => ['view'],
+                'ProvVoipEnvia' => ['view'],
+                'ProvVoipEnviaHelpers' => ['view'],
 
-                'Parameter' 			=> ['view'],
-                'Oid' 					=> ['view'],
-                'SnmpValue' 			=> ['view'],
+                'Parameter' => ['view'],
+                'Oid' => ['view'],
+                'SnmpValue' => ['view'],
             ], ];
 
         // accounting
         $role[5] = [
             'modules' => [
-                'BillingBase'			=> ['view'],
-                'Dashboard'				=> ['view'],
-                'Ticketsystem'			=> ['view'],
+                'BillingBase' => ['view'],
+                'Dashboard' => ['view'],
+                'Ticketsystem' => ['view'],
             ],
             'models' => [
-                'Contract'				=> ['manage'],
-                'GlobalConfig'			=> ['manage'],
-                'GuiLog'				=> ['view'],
-                'Modem'					=> ['manage'],
-                'Mta'					=> ['manage'],
-                'Phonenumber'			=> ['view'],
-                'PhonenumberManagement'	=> ['manage'],
-                'PhoneTariff'			=> ['view'],
-                'ProvBase'				=> ['view'],
+                'Contract' => ['manage'],
+                'GlobalConfig' => ['manage'],
+                'GuiLog' => ['view'],
+                'Modem' => ['manage'],
+                'Mta' => ['manage'],
+                'Phonenumber' => ['view'],
+                'PhonenumberManagement' => ['manage'],
+                'PhoneTariff' => ['view'],
+                'ProvBase' => ['view'],
             ], ];
 
         return $role;

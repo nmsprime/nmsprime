@@ -58,6 +58,7 @@ class TreeErdController extends HfcBaseController
      *
      * @param field: search field name in netelement table
      * @param search: the search value to look in netelement table $field
+     *
      * @return view with SVG image
      *
      * Note: called from sidebar.blade.php
@@ -139,7 +140,9 @@ class TreeErdController extends HfcBaseController
      * Shows all necessary tabs for Erd view.
      *
      * @author Roy Schneider
+     *
      * @param Modules\HfcReq\Entities\NetElement ->netelementtype, ->id
+     *
      * @return array
      */
     public static function getTabs($netelementtype, $id)
@@ -162,8 +165,9 @@ class TreeErdController extends HfcBaseController
      * Generate the SVG and HTML Map File
      *
      * @param query: The Query to get the Tree Objects to be displayed
+     *
      * @return the path of the generated file(s) without ending
-     *         this files could be included via asset ()
+     *             this files could be included via asset ()
      *
      * @author: Torsten Schmidt
      */

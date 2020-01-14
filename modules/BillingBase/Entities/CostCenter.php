@@ -14,7 +14,7 @@ class CostCenter extends \BaseModel
         // $m = date('m');
 
         return [
-            'name' 			=> 'required',
+            'name' => 'required',
             'billing_month' => 'Numeric', //|Min:'.$m,
         ];
     }
@@ -24,7 +24,7 @@ class CostCenter extends \BaseModel
      */
     public static function boot()
     {
-        self::observe(new CostCenterObserver);
+        self::observe(new CostCenterObserver());
         parent::boot();
     }
 
@@ -49,7 +49,7 @@ class CostCenter extends \BaseModel
     {
         return ['table' => $this->table,
             'index_header' => [$this->table.'.name', $this->table.'.number', 'sepaaccount.name'],
-            'header' =>  $this->name,
+            'header' => $this->name,
             'order_by' => ['0' => 'asc'],  // columnindex => direction
             'eager_loading' => ['sepaaccount'], ];
     }

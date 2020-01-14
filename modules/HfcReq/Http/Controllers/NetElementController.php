@@ -27,7 +27,7 @@ class NetElementController extends HfcBaseController
      */
     public function view_form_fields($netelement = null)
     {
-        $netelement = $netelement ?: new NetElement;
+        $netelement = $netelement ?: new NetElement();
 
         $empty_field = $netelement->exists;
         $parents = $netelement->getParentList();
@@ -135,7 +135,9 @@ class NetElementController extends HfcBaseController
      * Show tabs in Netelement edit page.
      *
      * @author Roy Schneider
+     *
      * @param Modules\HfcReq\Entities\NetElement
+     *
      * @return array
      */
     protected function editTabs($netelement)

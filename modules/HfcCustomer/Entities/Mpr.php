@@ -43,7 +43,7 @@ class Mpr extends \BaseModel
     {
         return ['table' => $this->table,
             'index_header' => ['id', $this->table.'.name', 'prio', 'netelement.name'],
-            'header' =>  $this->name,
+            'header' => $this->name,
             'order_by' => ['0' => 'asc'], // columnindex => direction
             'eager_loading' => ['netelement'], ];
     }
@@ -224,7 +224,7 @@ class Mpr extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new MprObserver);
+        self::observe(new MprObserver());
     }
 }
 
@@ -242,6 +242,6 @@ class MprObserver
     // be called in MprGeoposObserver if MPRs (including their geopos) are created or deleted
     public function updated($modem)
     {
-        \Queue::push(new \Modules\HfcCustomer\Jobs\MpsJob);
+        \Queue::push(new \Modules\HfcCustomer\Jobs\MpsJob());
     }
 }

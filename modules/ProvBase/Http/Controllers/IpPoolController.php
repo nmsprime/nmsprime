@@ -17,7 +17,7 @@ class IpPoolController extends \BaseController
         $init_values = [];
 
         if (! $model) {
-            $model = new IpPool;
+            $model = new IpPool();
         }
 
         $types = BaseviewController::translateArray([

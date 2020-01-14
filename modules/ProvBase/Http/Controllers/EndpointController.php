@@ -20,7 +20,6 @@ class EndpointController extends \BaseController
             ['form_type' => 'text', 'name' => 'ip', 'description' => 'Fixed IP', 'checkbox' => 'show_on_fixed_ip'],
             ['form_type' => 'text', 'name' => 'add_reverse', 'description' => 'Additional rDNS record', 'checkbox' => 'show_on_fixed_ip', 'help' => trans('helper.addReverse')],
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
-
         ];
     }
 

@@ -59,7 +59,8 @@ class BillingBaseServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('billingbase.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'billingbase'
+            __DIR__.'/../Config/config.php',
+            'billingbase'
         );
     }
 

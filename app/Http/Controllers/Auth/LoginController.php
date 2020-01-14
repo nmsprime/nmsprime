@@ -77,8 +77,9 @@ class LoginController extends Controller
     /**
      * The user has been authenticated.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  App\User  $user
+     * @param \Illuminate\Http\Request $request
+     * @param App\User                 $user
+     *
      * @return mixed
      */
     protected function authenticated(Request $request, $user)
@@ -116,7 +117,7 @@ class LoginController extends Controller
             $alerts['alert1'] = [
                 'message' => $conf->alert1,
                 'level' => 'info',
-                'reason'=>'', ];
+                'reason' => '', ];
         }
 
         if ($conf->alert2) {

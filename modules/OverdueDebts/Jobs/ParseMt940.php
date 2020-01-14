@@ -10,7 +10,9 @@ use Modules\OverdueDebts\Entities\Mt940Parser;
 
 class ParseMt940 implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     protected $path;
     protected $voucherNr;
@@ -41,7 +43,8 @@ class ParseMt940 implements ShouldQueue
     /**
      * The job failed to process.
      *
-     * @param  Exception  $exception
+     * @param Exception $exception
+     *
      * @return void
      */
     public function failed(\Exception $exception)

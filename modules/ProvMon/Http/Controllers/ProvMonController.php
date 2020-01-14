@@ -34,7 +34,9 @@ class ProvMonController extends \BaseController
      * Creates tabs to analysis pages.
      *
      * @author Roy Schneider
+     *
      * @param int   modem id
+     *
      * @return array
      */
     public function analysisPages($id)
@@ -58,7 +60,9 @@ class ProvMonController extends \BaseController
      * Route for Modem or MTA edit page
      *
      * @author Roy Schneider
+     *
      * @param int
+     *
      * @return array
      */
     public function defineEditRoute($id)
@@ -154,17 +158,36 @@ class ProvMonController extends \BaseController
 
         $tabs = $this->analysisPages($id);
 
-        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
-                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device')));
+        return View::make('provmon::analyses', $this->compact_prep_view(compact(
+            'modem',
+            'online',
+            'tabs',
+            'lease',
+            'log',
+            'configfile',
+            'eventlog',
+            'dash',
+            'realtime',
+            'host_id',
+            'view_var',
+            'flood_ping',
+            'ip',
+            'view_header',
+            'data',
+            'id',
+            'device'
+        )));
     }
 
     /**
      * Get ID of Modem and ping it for Analyses page.
      *
      * @author  Roy Schneider
+     *
      * @param   modem    Modules\ProvBase\Entities\Modem
      * @param   hostname    string
-     * @return  array
+     *
+     * @return array
      */
     public function modemOnlineStatus($modem, $hostname)
     {
@@ -217,8 +240,10 @@ class ProvMonController extends \BaseController
      * Get contents, mtime of configfile and warn if it is outdated
      *
      * @author  Ole Ernst
+     *
      * @param   path    String  Path of the configfile excluding its extension
-     * @return  array
+     *
+     * @return array
      */
     private function getConfigfileText($path)
     {
@@ -243,7 +268,8 @@ class ProvMonController extends \BaseController
      *
      * @param object    Modem
      * @param array     Lines of Configfile
-     * @return array    Color & status text
+     *
+     * @return array Color & status text
      */
     public function modemServicesStatus($modem, $config, $device = 'cm')
     {
@@ -346,7 +372,8 @@ class ProvMonController extends \BaseController
      *
      * @param 	search 		String 		to search
      * @param 	grep_pipes 	String 		restrict matches
-     * @return 	array
+     *
+     * @return array
      */
     private function _get_syslog_entries($search, $grep_pipes)
     {
@@ -371,7 +398,8 @@ class ProvMonController extends \BaseController
      * called in analyses.blade.php in javascript content
      *
      * @param 	ip 			String
-     * @return 	response 	Stream
+     *
+     * @return response Stream
      *
      * @author Nino Ryschawy
      */
@@ -425,6 +453,7 @@ class ProvMonController extends \BaseController
      * --- /etc/sudoers.d/nms-nmsprime ---
      *
      * @param hostname  the host to send a flood ping
+     *
      * @return flood ping exec result
      */
     public function flood_ping($hostname)
@@ -764,8 +793,7 @@ class ProvMonController extends \BaseController
             // First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
             $docsis = snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
         } catch (\Exception $e) {
-            if (strpos($e->getMessage(), 'php_network_getaddresses: getaddrinfo failed: Name or service not known') !== false ||
-                strpos($e->getMessage(), 'No response from') !== false) {
+            if (strpos($e->getMessage(), 'php_network_getaddresses: getaddrinfo failed: Name or service not known') !== false || strpos($e->getMessage(), 'No response from') !== false) {
                 return ['SNMP-Server not reachable' => ['' => [0 => '']]];
             } elseif (strpos($e->getMessage(), 'Error in packet at') !== false) {
                 $docsis = 1;
@@ -842,6 +870,7 @@ class ProvMonController extends \BaseController
      *
      * @param modem: modem object
      * @param refresh: bool refresh values from device instead of using cached ones
+     *
      * @return array[section][Fieldname][Values]
      *
      * @author Ole Ernst
@@ -966,7 +995,7 @@ class ProvMonController extends \BaseController
      * TODO: make a seperate class for dhcpd
      * lease stuff (search, replace, ..)
      *
-     * @return array 	of lease entry strings
+     * @return array of lease entry strings
      */
     public function search_lease()
     {
@@ -1304,6 +1333,7 @@ class ProvMonController extends \BaseController
      * Returns the Diagram View for a NetElement (Device)
      *
      * @param   id          The NetElement id
+     *
      * @author  Ole Ernst
      */
     public function diagram_edit($id)
@@ -1332,7 +1362,9 @@ class ProvMonController extends \BaseController
      * Note: 1 = Net, 2 = Cluster, 3 = NetGw, 4 = Amplifier, 5 = Node, 6 = Data, 7 = UPS
      *
      * @author Roy Schneider
+     *
      * @param Modules\HfcReq\Entities\NetElement
+     *
      * @return array
      */
     public static function checkNetelementtype($model)
@@ -1342,12 +1374,13 @@ class ProvMonController extends \BaseController
         }
 
         $type = $model->netelementtype->get_base_type();
-        $provmon = new self;
+        $provmon = new self();
 
         $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $model->id]];
 
         if ($type <= 2) {
-            array_push($tabs,
+            array_push(
+                $tabs,
                 ['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$model->netelementtype->name, $model->id]],
                 ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$model->netelementtype->name, $model->id]]
             );
@@ -1373,7 +1406,9 @@ class ProvMonController extends \BaseController
      * Return number from IP address field if the record is written like: 'cm-...'.
      *
      * @author Roy Schneider
+     *
      * @param string
+     *
      * @return string
      */
     public function createAnalysisTab($ip)
@@ -1435,7 +1470,9 @@ class ProvMonController extends \BaseController
      * Retrieve Data via SNMP and create Array for spectrum in Modem Analyses page.
      *
      * @author Roy Schneider, Nino Ryschawy
+     *
      * @param Modules\ProvBase\Entities\Modem
+     *
      * @return JSON response
      */
     public function getSpectrumData($id)

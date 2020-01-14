@@ -38,8 +38,8 @@ class SupportRequest extends BaseModel
     {
         parent::boot();
 
-        self::observe(new SupportRequestObserver);
-        self::observe(new \App\SystemdObserver);
+        self::observe(new SupportRequestObserver());
+        self::observe(new \App\SystemdObserver());
     }
 
     /**
@@ -100,7 +100,7 @@ class SupportRequestObserver
 
         // Mail is sent internally and triggered via http post
         $data_arr = [
-            'destination'   => $destination,
+            'destination' => $destination,
             'supportrequest' => $supportrequest->getDirty(),
             'system_status' => SupportRequest::system_status(),
         ];

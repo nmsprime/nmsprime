@@ -56,7 +56,8 @@ class HfcCustomerServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('hfccustomer.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'hfccustomer'
+            __DIR__.'/../Config/config.php',
+            'hfccustomer'
         );
     }
 

@@ -42,7 +42,7 @@ class Cdr extends \BaseModel
 
         return ['table' => $this->table,
             'index_header' => [$this->table.'.calldate', $this->table.'.caller', $this->table.'.called', $this->table.'.mos_min_mult10'],
-            'header' =>  'Caller: '.$this->caller.' (Start: '.$this->calldate.')',
+            'header' => 'Caller: '.$this->caller.' (Start: '.$this->calldate.')',
             'bsclass' => $bsclass,
             'edit' => ['mos_min_mult10' => 'mos_min_normalized'],
             'order_by' => ['0' => 'desc'], ];

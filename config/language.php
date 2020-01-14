@@ -139,7 +139,7 @@ return [
     'sm' => 'a Samoa',
     'sg' => 'yângâ tî sängö',
     'sr' => 'српски језик',
-    'gd' =>  'Gàidhlig',
+    'gd' => 'Gàidhlig',
     'sn' => 'chiShona',
     'si' => 'සිංහල',
     'sk' => 'slovenčina, slovenský jazyk',

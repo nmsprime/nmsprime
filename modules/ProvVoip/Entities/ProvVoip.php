@@ -41,8 +41,8 @@ class ProvVoip extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new ProvVoipObserver);
-        self::observe(new \App\SystemdObserver);
+        self::observe(new ProvVoipObserver());
+        self::observe(new \App\SystemdObserver());
     }
 }
 

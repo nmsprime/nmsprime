@@ -19,7 +19,9 @@ class BaseRoute
 
     /**
      * Return the correct base URL
+     *
      * @todo move somewhere else
+     *
      * @return type string the actual base url
      */
     public static function get_base_url()
@@ -46,9 +48,10 @@ class BaseRoute
      * @author Torsten Schmidt
      * @author Christian Schramm
      *
-     * @param  string  $name
-     * @param  string  $controller
-     * @param  array  $options
+     * @param string $name
+     * @param string $controller
+     * @param array  $options
+     *
      * @return void
      */
     public static function resource(string $name, string $controller, array $options = [])
@@ -159,7 +162,7 @@ class BaseRoute
         Route::delete("$name/{{$name}}", [
             'as' => $name.'.destroy',
             'uses' => $controller.'@destroy',
-            'middleware' =>  ['web', 'can:delete,'.$models[$name]],
+            'middleware' => ['web', 'can:delete,'.$models[$name]],
             $options,
         ]);
 
@@ -228,7 +231,7 @@ class BaseRoute
             Route::delete("$name/{{$name}}", [
                 'as' => $name.'.api_destroy',
                 'uses' => $controller.'@api_destroy',
-                'middleware' =>  ['api', 'auth.basic', 'can:delete,'.$models[$name]],
+                'middleware' => ['api', 'auth.basic', 'can:delete,'.$models[$name]],
                 $options,
             ]);
         });
@@ -239,8 +242,10 @@ class BaseRoute
      * like prefix and as statement we MUST use.
      *
      * @author Torsten Schmidt
-     * @param  array  $attributes
-     * @param  \Closure  $callback
+     *
+     * @param array    $attributes
+     * @param \Closure $callback
+     *
      * @return void
      */
     public static function group(array $attributes, \Closure $callback)

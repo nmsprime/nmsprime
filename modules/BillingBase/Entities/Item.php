@@ -24,9 +24,9 @@ class Item extends \BaseModel
         // see ItemController@prepare_rules
 
         return [
-            'product_id' 	=> 'required|numeric|Min:1',
-            'valid_from'	=> 'date',	//|in_future ??
-            'valid_to'		=> 'nullable|date',
+            'product_id' => 'required|numeric|Min:1',
+            'valid_from' => 'date',	//|in_future ??
+            'valid_to' => 'nullable|date',
             'credit_amount' => 'nullable|numeric',
         ];
     }
@@ -165,7 +165,9 @@ class Item extends \BaseModel
      * Check if item.valid_from/valid_to is enabled.
      *
      * @author Roy Schneider
+     *
      * @param void
+     *
      * @return bool
      */
     protected function fluidDates()
@@ -201,7 +203,7 @@ class Item extends \BaseModel
      */
     public static function boot()
     {
-        self::observe(new ItemObserver);
+        self::observe(new ItemObserver());
         parent::boot();
     }
 
@@ -233,7 +235,7 @@ class Item extends \BaseModel
     /**
      * Returns start time of item - Note: valid_from field has higher priority than created_at
      *
-     * @return int 		time in seconds after 1970
+     * @return int time in seconds after 1970
      */
     public function get_start_time()
     {
@@ -245,7 +247,7 @@ class Item extends \BaseModel
     /**
      * Returns start time of item - Note: valid_from field has higher priority than created_at
      *
-     * @return int 		time in seconds after 1970
+     * @return int time in seconds after 1970
      */
     public function get_end_time()
     {
@@ -255,7 +257,7 @@ class Item extends \BaseModel
     /**
      * Returns billing cycle
      *
-     * @return String/Enum 	('Monthly', 'Yearly', 'Quarterly', 'Once')
+     * @return String/Enum ('Monthly', 'Yearly', 'Quarterly', 'Once')
      */
     public function get_billing_cycle()
     {
@@ -266,7 +268,7 @@ class Item extends \BaseModel
     /**
      * Returns the assigned Costcenter (CC) by following descendend priorities (1. item CC -> 2. product CC -> 3. contract CC)
      *
-     * @return object 	Costcenter
+     * @return object Costcenter
      */
     public function get_costcenter()
     {
@@ -276,7 +278,7 @@ class Item extends \BaseModel
     /**
      * Check if item is of type Tariff or not
      *
-     * @return 	int 	1 - yes is Tariff, 0 - no it's another type
+     * @return int 1 - yes is Tariff, 0 - no it's another type
      */
     public function is_tariff()
     {
@@ -289,7 +291,8 @@ class Item extends \BaseModel
      * @param 	array 	dates 			of often used billing dates
      * @param 	bool 	return_array 	return [charge, ratio, invoice_descrption] if true
      *
-     * @return 	null if no costs incurred, true otherwise - NOTE: Amount to Charge is currently stored in Item Models temp variable ($charge)
+     * @return null if no costs incurred, true otherwise - NOTE: Amount to Charge is currently stored in Item Models temp variable ($charge)
+     *
      * @author 	Nino Ryschawy
      */
     public function calculate_price_and_span($return_array = false, $update = true)
@@ -373,9 +376,7 @@ class Item extends \BaseModel
                     // or item/contract ended before before billing month
                     // then pay on next settlement run - break otherwise
                     if (! ((date('Y-m', $start) >= date("$year-$billing_month") && date('Y-m', $start) <= $dates['lastm_Y'])
-                        ||
-                        ($contract_end && date('Y-m', $contract_end) <= date("$year-$billing_month") &&
-                            date('Y-m', $contract_end) <= $dates['lastm_Y']))) {
+                        || ($contract_end && date('Y-m', $contract_end) <= date("$year-$billing_month") && date('Y-m', $contract_end) <= $dates['lastm_Y']))) {
                         break;
                     }
                 }
@@ -544,8 +545,8 @@ class Item extends \BaseModel
      *
      * @author Nino Ryschawy
      *
-     * @return array 	[End of Term, Last possible Cancelation Day]
-     *         null     on error
+     * @return array [End of Term, Last possible Cancelation Day]
+     *               null     on error
      */
     public function getNextCancelationDate($date = '')
     {
@@ -734,12 +735,10 @@ class ItemObserver
 
             if (
                 $tariff
-                &&
-                // prevent from writing smaller valid_to than valid_from which
+                && // prevent from writing smaller valid_to than valid_from which
                 // before adding this was caused by daily_conversion
                 ($tariff->valid_from < $item->valid_from)
-                &&
-                // do not consider updated items
+                && // do not consider updated items
                 ($tariff->id != $item->id)
             ) {
                 \Log::debug('update old tariff', [$item->id]);
@@ -762,11 +761,9 @@ class ItemObserver
         }
 
         // Check if yearly charged item was already charged - maybe customer should get a credit then
-        if ($item->isDirty('valid_to') && $item->product->proportional && $item->product->billing_cycle == 'Yearly' &&
-            ($item->payed_month != 0 && date('Y', strtotime($item->valid_to)) == date('Y')) ||
-                (date('m') == '01' && $item->valid_to != date('Y-12-31', strtotime('last year')) &&
-                    date('Y-m', strtotime($item->valid_to)) == date('Y-12', strtotime('last year'))
-                    )
+        if ($item->isDirty('valid_to') && $item->product->proportional && $item->product->billing_cycle == 'Yearly' && ($item->payed_month != 0 && date('Y', strtotime($item->valid_to)) == date('Y')) || (
+            date('m') == '01' && $item->valid_to != date('Y-12-31', strtotime('last year')) && date('Y-m', strtotime($item->valid_to)) == date('Y-12', strtotime('last year'))
+        )
             ) {
             \Session::put('alert.warning', trans('messages.iteM.concede_credit'));
         }
@@ -774,8 +771,7 @@ class ItemObserver
         // this is ab(used) here for easily setting the correct values
         if ($item->observer_dailyconversion) {
             // Only call for Internet & Voip Items
-            if (in_array($item->product->type, ['Internet', 'Voip']) ||
-                    ($item->isDirty('product_id') && in_array(Product::where('id', $item->getOriginal()['product_id'])->first()->type, ['Internet', 'Voip']))) {
+            if (in_array($item->product->type, ['Internet', 'Voip']) || ($item->isDirty('product_id') && in_array(Product::where('id', $item->getOriginal()['product_id'])->first()->type, ['Internet', 'Voip']))) {
                 $item->contract->daily_conversion();
             }
         }

@@ -105,7 +105,6 @@ class EnviaCustomerReferenceFromCSVUpdaterCommand extends Command
         $field_lastname = 'LASTNAME';
 
         foreach ($csv as $key => $data) {
-
             // get the currently used contract number (removing the defined prefixes)
             $customer_nr = $data[$field_customer_nr];
             $customer_nr_clean = $customer_nr;
@@ -127,8 +126,7 @@ class EnviaCustomerReferenceFromCSVUpdaterCommand extends Command
             $combined_name_db_reversed = $contract->firstname.' '.$contract->lastname;
             if (
                 ($combined_name_data != $combined_name_db)
-                &&
-                ($combined_name_data != $combined_name_db_reversed)
+                && ($combined_name_data != $combined_name_db_reversed)
             ) {
                 $msg = "Name mismatch for $customer_nr ($combined_name_db != $combined_name_data)";
                 echo "\nERROR: $msg";

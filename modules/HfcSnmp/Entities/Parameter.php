@@ -12,7 +12,7 @@ class Parameter extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new ParameterObserver);
+        self::observe(new ParameterObserver());
     }
 
     // Add your validation rules here
@@ -45,7 +45,7 @@ class Parameter extends \BaseModel
 
         return ['table' => $this->table,
             'index_header' => ['oid.name', 'oid.oid',  'oid.access'],
-            'header' =>  $header,
+            'header' => $header,
             'order_by' => ['1' => 'asc'],
             'bsclass' => $this->get_bsclass(),
             'eager_loading' => ['oid'], ];

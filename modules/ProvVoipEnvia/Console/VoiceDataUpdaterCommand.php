@@ -119,7 +119,6 @@ class VoiceDataUpdaterCommand extends Command
 
         // process numbers and check if update has to be done
         foreach ($phonenumbers as $phonenumber) {
-
             // check if phonenumber is SIP (this can be determined from mta type)
             $mta = $phonenumber->mta;
             if (is_null($mta) || ($mta->type != 'sip')) {
@@ -151,7 +150,6 @@ class VoiceDataUpdaterCommand extends Command
      */
     protected function _get_envia_mcgp_contracts()
     {
-
         // do nothing
     }
 

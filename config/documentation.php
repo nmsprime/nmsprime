@@ -13,7 +13,6 @@ if (file_exists($file) && $ret = json_decode(file_get_contents($file), true)) {
 }
 
 return [
-
     // Prov Base
 
     'netgw' => ['doc' => 'https://devel.roetzer-engineering.com/confluence/display/NMS/CMTS+setup',
@@ -108,5 +107,4 @@ return [
     'numberrange' => ['doc' => null,
         'youtube' => 'https://www.youtube.com/watch?v=QDsxx6oe4mw&t=600s',
         'url' => null, ],
-
 ];

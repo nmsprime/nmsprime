@@ -311,7 +311,6 @@ class Phonenumber extends \BaseModel
      */
     public function phonenumber_reassignment_allowed($cur_modem, $new_modem)
     {
-
         // check if modems belong to the same contract
         if ($cur_modem->contract->id != $new_modem->contract->id) {
             return false;
@@ -320,26 +319,16 @@ class Phonenumber extends \BaseModel
         // check if installation addresses are equal
         if (
             ($cur_modem->salutation != $new_modem->salutation)
-            ||
-            ($cur_modem->company != $new_modem->company)
-            ||
-            ($cur_modem->department != $new_modem->department)
-            ||
-            ($cur_modem->firstname != $new_modem->firstname)
-            ||
-            ($cur_modem->lastname != $new_modem->lastname)
-            ||
-            ($cur_modem->street != $new_modem->street)
-            ||
-            ($cur_modem->house_number != $new_modem->house_number)
-            ||
-            ($cur_modem->zip != $new_modem->zip)
-            ||
-            ($cur_modem->city != $new_modem->city)
-            ||
-            ($cur_modem->district != $new_modem->district)
-            ||
-            ($cur_modem->installation_address_change_date != $new_modem->installation_address_change_date)
+            || ($cur_modem->company != $new_modem->company)
+            || ($cur_modem->department != $new_modem->department)
+            || ($cur_modem->firstname != $new_modem->firstname)
+            || ($cur_modem->lastname != $new_modem->lastname)
+            || ($cur_modem->street != $new_modem->street)
+            || ($cur_modem->house_number != $new_modem->house_number)
+            || ($cur_modem->zip != $new_modem->zip)
+            || ($cur_modem->city != $new_modem->city)
+            || ($cur_modem->district != $new_modem->district)
+            || ($cur_modem->installation_address_change_date != $new_modem->installation_address_change_date)
         ) {
             return false;
         }
@@ -355,7 +344,6 @@ class Phonenumber extends \BaseModel
      */
     public function mtas_list_phonenumber_can_be_reassigned_to()
     {
-
         // special case activated envia TEL module:
         //   - MTA has to belong to the same contract
         //   - Installation address of current modem match installation address of new modem
@@ -393,7 +381,8 @@ class Phonenumber extends \BaseModel
      * @param	$withTrashed boolean; if true return also soft deleted orders; default is false
      * @param	$whereStatement raw SQL query; default is returning of all orders
      *				Attention: Syntax of given string has to meet SQL syntax!
-     * @return	EnviaOrders if module ProvVoipEnvia is enabled, else “null”
+     *
+     * @return EnviaOrders if module ProvVoipEnvia is enabled, else “null”
      *
      * @author Patrick Reichel
      */
@@ -403,8 +392,12 @@ class Phonenumber extends \BaseModel
             return new \App\Extensions\Database\EmptyRelation();
         }
 
-        $orders = $this->belongsToMany(EnviaOrder::class, 'enviaorder_phonenumber',
-                            'phonenumber_id', 'enviaorder_id')
+        $orders = $this->belongsToMany(
+            EnviaOrder::class,
+            'enviaorder_phonenumber',
+            'phonenumber_id',
+            'enviaorder_id'
+        )
                         ->whereRaw($whereStatement)
                         ->withTimestamps();
 
@@ -420,16 +413,14 @@ class Phonenumber extends \BaseModel
      * You can either make a bool test against this method or get the id of a contract has been created
      *
      * @return misc:
-     *			null if module ProvVoipEnvia is disabled
-     *			false if there is no envia TEL contract
-     *			external_contract_id for the contract the number belongs to
-     *
+     *               null if module ProvVoipEnvia is disabled
+     *               false if there is no envia TEL contract
+     *               external_contract_id for the contract the number belongs to
      *
      * @author Patrick Reichel
      */
     public function envia_contract_created()
     {
-
         // no envia module ⇒ no envia contracts
         if (! \Module::collections()->has('ProvVoipEnvia')) {
             return;
@@ -455,15 +446,14 @@ class Phonenumber extends \BaseModel
      * You can either make a bool test against this method or get the id of a contract if terminated
      *
      * @return misc:
-     *			null if module ProvVoipEnvia is disabled
-     *			false if there is no envia TEL contract or the contract is still active
-     *			external_contract_id for the contract if terminated
+     *               null if module ProvVoipEnvia is disabled
+     *               false if there is no envia TEL contract or the contract is still active
+     *               external_contract_id for the contract if terminated
      *
      * @author Patrick Reichel
      */
     public function envia_contract_terminated()
     {
-
         // no envia module ⇒ no envia contracts
         if (! \Module::collections()->has('ProvVoipEnvia')) {
             return;
@@ -524,7 +514,6 @@ class Phonenumber extends \BaseModel
         $management = $this->phonenumbermanagement;
 
         if (is_null($management)) {
-
             // if there is still no management: deactivate the number
             // TODO: decide if a phonenumbermanagement is required in each case or not
             // until then: don't change the state on missing management
@@ -534,20 +523,17 @@ class Phonenumber extends \BaseModel
             /* } */
             \Log::info('No PhonenumberManagement for phonenumber '.$this->prefix_number.'/'.$this->number.' (ID '.$this->id.') – will not change the active state.');
         } else {
-
             // get the dates for this number
             $act = $management->activation_date;
             $deact = $management->deactivation_date;
 
             if (! boolval($act)) {
-
                 // Activation date not yet reached: deactivate
                 if ($this->active) {
                     $this->active = false;
                     $changed = true;
                 }
             } elseif ($act > date('c')) {
-
                 // Activation date not yet reached: deactivate
                 if ($this->active) {
                     $this->active = false;
@@ -555,7 +541,6 @@ class Phonenumber extends \BaseModel
                 }
             } else {
                 if (! boolval($deact)) {
-
                     // activation date today or in the past, no deactivation date: activate
                     if (! $this->active) {
                         $this->active = true;
@@ -563,14 +548,12 @@ class Phonenumber extends \BaseModel
                     }
                 } else {
                     if ($deact > date('c')) {
-
                         // activation date today or in the past, deactivation date in the future: activate
                         if (! $this->active) {
                             $this->active = true;
                             $changed = true;
                         }
                     } else {
-
                         // deactivation date today or in the past: deactivate
                         if ($this->active) {
                             $this->active = false;
@@ -612,7 +595,7 @@ class Phonenumber extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new PhonenumberObserver);
+        self::observe(new PhonenumberObserver());
     }
 }
 
@@ -645,7 +628,6 @@ class PhonenumberObserver
 
     public function creating($phonenumber)
     {
-
         // TODO: ATM we don't force the creation of phonenumbermanagements – if we change our mind we can activate this line again
         // on creating there can not be a phonenumbermanagement – so we can set active state to false in each case
         // $phonenumber->active = 0;
@@ -667,7 +649,6 @@ class PhonenumberObserver
      */
     protected function _updating_allowed($phonenumber)
     {
-
         // no envia TEL => no problems
         if (! \Module::collections()->has('ProvVoipEnvia')) {
             return true;
@@ -752,7 +733,6 @@ class PhonenumberObserver
      */
     protected function _check_and_process_mta_change_for_envia($phonenumber, $old_mta, $new_mta)
     {
-
         // check if module is enabled
         if (! \Module::collections()->has('ProvVoipEnvia')) {
             return;
@@ -817,7 +797,7 @@ class PhonenumberObserver
         if (! $old_modem->has_phonenumbers_attached()) {
             $old_modem->remove_envia_related_data();
         } else {
-            $attributes = ['target'=>'_blank'];
+            $attributes = ['target' => '_blank'];
 
             // prepare the link (for view) for old modem (this may be useful as we get the breadcrumb for the new modem on our return to phonenumber.edit)
             $parameters = [
@@ -865,7 +845,6 @@ class PhonenumberObserver
      */
     protected function _check_and_process_sip_data_change_for_envia($phonenumber)
     {
-
         // check if module is enabled
         if (! \Module::collections()->has('ProvVoipEnvia')) {
             return;
@@ -874,8 +853,7 @@ class PhonenumberObserver
         // check what changed the SIP data
         if (
             (strpos(\URL::current(), 'request/contract_get_voice_data') !== false)
-            ||
-            (strpos(\URL::current(), 'cron/contract_get_voice_data') !== false)
+            || (strpos(\URL::current(), 'cron/contract_get_voice_data') !== false)
         ) {
             // changed through API method get_voice_data: do nothing
             return;
@@ -968,6 +946,7 @@ class PhonenumberObserver
      * Rebuild the current configfile/provision and restart/factoryReset the device
      *
      * @param $phonenumber \Modules\ProvVoip\Entities\Phonenumber
+     *
      * @author Ole Ernst
      */
     private function renewConfig($phonenumber)

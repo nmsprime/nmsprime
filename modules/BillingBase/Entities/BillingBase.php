@@ -12,10 +12,10 @@ class BillingBase extends \BaseModel
     {
         return [
             // 'rcd' 	=> 'numeric|between:1,28',
-            'cdr_offset'						=> 'nullable|numeric|between:0,11',
-            'tax' 								=> 'nullable|numeric|between:0,100',
-            'voip_extracharge_default' 			=> 'nullable|numeric',
-            'voip_extracharge_mobile_national' 	=> 'nullable|numeric',
+            'cdr_offset' => 'nullable|numeric|between:0,11',
+            'tax' => 'nullable|numeric|between:0,100',
+            'voip_extracharge_default' => 'nullable|numeric',
+            'voip_extracharge_mobile_national' => 'nullable|numeric',
         ];
     }
 

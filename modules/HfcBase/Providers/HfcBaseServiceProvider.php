@@ -53,7 +53,8 @@ class HfcBaseServiceProvider extends ServiceProvider
             __DIR__.'/../Config/config.php' => config_path('hfcbase.php'),
         ]);
         $this->mergeConfigFrom(
-            __DIR__.'/../Config/config.php', 'hfcbase'
+            __DIR__.'/../Config/config.php',
+            'hfcbase'
         );
     }
 

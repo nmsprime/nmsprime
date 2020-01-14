@@ -47,6 +47,7 @@ class geocodeCommand extends Command
      * This method takes care for usage policies of OSM/google (meaning that this has not to be handled in Modem::geocode()
      *
      * @return mixed
+     *
      * @author Torsten Schmidt, Patrick Reichel
      */
     public function handle()
@@ -99,7 +100,6 @@ class geocodeCommand extends Command
      */
     protected function getParams()
     {
-
         // get number of modems to geocode
         $modem_count = $this->argument('modem_count');
 

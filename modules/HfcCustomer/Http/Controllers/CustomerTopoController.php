@@ -110,6 +110,7 @@ class CustomerTopoController extends NetElementController
      *
      * @param field: search field name in tree table
      * @param search: the search value to look in tree table $field
+     *
      * @return view with SVG image
      *
      * @author: Torsten Schmidt
@@ -289,7 +290,9 @@ class CustomerTopoController extends NetElementController
      * Only show the selected model.
      *
      * @author Roy Schneider
+     *
      * @param Illuminate\Database\Eloquent\Builder $modems
+     *
      * @return Illuminate\Database\Eloquent\Builder
      */
     public function filterModel($modemQuery)
@@ -309,6 +312,7 @@ class CustomerTopoController extends NetElementController
      * kml files which are in relation to a modem cluster.
      *
      * @param Collection modems list
+     *
      * @return array of KML files, like ['file', 'descr']
      *
      * @author: Torsten Schmidt, Nino Ryschawy
@@ -344,7 +348,7 @@ class CustomerTopoController extends NetElementController
         }
 
         $monitoring = [];
-        $provmon = new \Modules\ProvMon\Http\Controllers\ProvMonController;
+        $provmon = new \Modules\ProvMon\Http\Controllers\ProvMonController();
         $before = microtime(true);
         $types = ['ds_pwr', 'ds_snr', 'us_snr', 'us_pwr'];
 
@@ -440,7 +444,8 @@ class CustomerTopoController extends NetElementController
      * Generate KML File with Customer Modems Inside
      *
      * @param  obj      Collection of the modems to display
-     * @return string   the path of the generated *.kml file to be included via asset ()
+     *
+     * @return string the path of the generated *.kml file to be included via asset ()
      *
      * @author: Torsten Schmidt
      */
@@ -524,7 +529,7 @@ class CustomerTopoController extends NetElementController
 
             // add descr line
             $descr .= '<a target="'.$this->html_target."\" href='".$baseUrl."/Modem/$modem->id'>$modem->mac</a>, $modem->contract_id, $modem->lastname, $states[$cur_clr] ($row_val)<br>";
-            $num += 1;
+            $num++;
         }
 
         //
@@ -564,6 +569,7 @@ class CustomerTopoController extends NetElementController
      * @author Ole Ernst
      *
      * @param string $filename name of the file
+     *
      * @return mixed
      */
     public function get_file($type, $filename)

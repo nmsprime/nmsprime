@@ -168,7 +168,7 @@ trait Geocoding
             $className = (new \ReflectionClass($this))->getShortName();
             Log::info("Trying to geocode $className $this->id against $url");
 
-            $geojson = file_get_contents($url, false, stream_context_create(['http'=> ['timeout' => 5]]));
+            $geojson = file_get_contents($url, false, stream_context_create(['http' => ['timeout' => 5]]));
             $geodata_raw = json_decode($geojson, true);
 
             $matches = ['building', 'house', 'amenity', 'shop', 'tourism'];
@@ -181,7 +181,6 @@ trait Geocoding
 
                 // check if returned entry is of certain type (e.g. “highway” indicates fuzzy match)
                 if ((in_array($class, $matches) || in_array($type, $matches)) && $lat && $lon) {
-
                     // as both variants can appear in resulting address: check for all of them
                     foreach ($housenumber_variants as $variant) {
                         if (\Str::contains(strtolower($display_name), $variant)) {	// don't check for startswith; sometimes a company name is added before the house number
@@ -220,7 +219,8 @@ trait Geocoding
      * Get geodata from google maps
      *
      * @author Torsten Schmidt, Patrick Reichel
-     * @return array 	Geodata [lat, lon, source]
+     *
+     * @return array Geodata [lat, lon, source]
      */
     protected function _geocode_google_maps()
     {
@@ -268,14 +268,13 @@ trait Geocoding
         Log::info("Trying to geocode $className $this->id against $url");
 
         // get the json response
-        $resp_json = file_get_contents($url, false, stream_context_create(['http'=> ['timeout' => 5]]));
+        $resp_json = file_get_contents($url, false, stream_context_create(['http' => ['timeout' => 5]]));
         $resp = json_decode($resp_json, true);
 
         $status = array_get($resp, 'status', 'n/a');
 
         // response status will be 'OK', if able to geocode given address
         if ($status == 'OK') {
-
             // get the important data
             $lati = array_get($resp, 'results.0.geometry.location.lat', null);
             $longi = array_get($resp, 'results.0.geometry.location.lng', null);
@@ -287,11 +286,7 @@ trait Geocoding
             $interpolated_matches = ['ROOFTOP', 'RANGE_INTERPOLATED'];
             // verify if data is complete and a real match
             if (
-                $lati &&
-                $longi &&
-                $formatted_address &&
-                ! $partial_match &&
-                in_array($location_type, $matches)
+                $lati && $longi && $formatted_address && ! $partial_match && in_array($location_type, $matches)
             ) {
                 $geodata = [
                     'latitude' => $lati,
@@ -304,11 +299,7 @@ trait Geocoding
             // check if partial match (interpolated geocoords seem to be pretty good!)
             // mark source as tainted to give the user a hint
             elseif (
-                $lati &&
-                $longi &&
-                $formatted_address &&
-                $partial_match &&
-                in_array($location_type, $interpolated_matches)
+                $lati && $longi && $formatted_address && $partial_match && in_array($location_type, $interpolated_matches)
             ) {
                 $geodata = [
                     'latitude' => $lati,

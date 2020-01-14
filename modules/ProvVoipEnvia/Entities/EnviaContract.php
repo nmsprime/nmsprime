@@ -185,8 +185,7 @@ class EnviaContract extends \BaseModel
             // deactivation date set and today or in the past
             if (
                 (! is_null($mgmt->deactivation_date))
-                &&
-                ($mgmt->deactivation_date <= $isodate)
+                && ($mgmt->deactivation_date <= $isodate)
             ) {
                 continue;
             }

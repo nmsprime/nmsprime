@@ -13,7 +13,6 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        //
     ];
 
     /**
@@ -23,7 +22,8 @@ class Kernel extends ConsoleKernel
      * and should never be required. But if a task hangs up, this will
      * avoid starting many parallel tasks. (Torsten Schmidt)
      *
-     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
+     * @param \Illuminate\Console\Scheduling\Schedule $schedule
+     *
      * @return void
      */
     protected function schedule(Schedule $schedule)
@@ -62,7 +62,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('main:storage_cleaner')->dailyAt('04:18');
 
         if (\Module::collections()->has('ProvVoip')) {
-
             // Update database table carriercode with csv data if necessary
             $schedule->command('provvoip:update_carrier_code_database')
                 ->dailyAt('04:23');
@@ -77,7 +76,6 @@ class Kernel extends ConsoleKernel
         }
 
         if (\Module::collections()->has('ProvVoipEnvia')) {
-
             // Update status of envia orders
             // Do this at the very beginning of a day
             $schedule->command('provvoipenvia:update_envia_orders')

@@ -129,7 +129,7 @@ class DefaultTransactionParser
      * Check if there's no mismatch in relation of contract to sepamandate or invoice
      * Set relation IDs on debt object if all is correct
      *
-     * @return bool     true on success, false on mismatch
+     * @return bool true on success, false on mismatch
      */
     private function setDebitDebtRelations()
     {
@@ -234,7 +234,7 @@ class DefaultTransactionParser
      * NOTE: Invoice number is mandatory as transaction could otherwise have a totally different intention
      *  e.g. like costs for electrician or sth else not handled by NMSPrime
      *
-     * @return bool     true on success, false otherwise
+     * @return bool true on success, false otherwise
      */
     private function setCreditDebtRelations($numbers)
     {
@@ -500,6 +500,7 @@ class DefaultTransactionParser
      * These transactions can never belong to NMSPrime
      *
      * @param  string
+     *
      * @return bool
      */
     private function discardTransactionType($code)
@@ -515,6 +516,7 @@ class DefaultTransactionParser
      * Parse a Transaction description line for (1) mandatory informations and (2) transfer reason
      *
      * @param  string   line of transfer reason without beginning number
+     *
      * @return array
      */
     private function getVarFromDesignator($line)
