@@ -10,9 +10,9 @@ class Endpoint extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'mac' => 'required|mac|unique:endpoint,mac,'.$id.',id,deleted_at,NULL',
+            'mac'      => 'required|mac|unique:endpoint,mac,'.$id.',id,deleted_at,NULL',
             'hostname' => 'required|regex:/^(?!cm-)(?!mta-)[0-9A-Za-z\-]+$/|unique:endpoint,hostname,'.$id.',id,deleted_at,NULL',
-            'ip' => 'required|ip|unique:endpoint,ip,'.$id.',id,deleted_at,NULL',
+            'ip'       => 'required|ip|unique:endpoint,ip,'.$id.',id,deleted_at,NULL',
         ];
     }
 
@@ -39,10 +39,10 @@ class Endpoint extends \BaseModel
             $header = "$this->hostname ($this->mac)";
         }
 
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => [$this->table.'.hostname', $this->table.'.mac', $this->table.'.ip', $this->table.'.description'],
-            'header' => $header,
-            'bsclass' => $bsclass, ];
+            'header'       => $header,
+            'bsclass'      => $bsclass, ];
     }
 
     public function get_bsclass()

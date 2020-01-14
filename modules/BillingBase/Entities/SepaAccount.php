@@ -29,13 +29,13 @@ class SepaAccount extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'name' => 'required',
-            'holder' => 'required',
-            'creditorid' => 'required|max:35|creditor_id',
-            'iban' => 'required|iban',
-            'bic' => 'bic',
+            'name'                    => 'required',
+            'holder'                  => 'required',
+            'creditorid'              => 'required|max:35|creditor_id',
+            'iban'                    => 'required|iban',
+            'bic'                     => 'bic',
             'template_invoice_upload' => 'mimetypes:text/x-tex,application/x-tex',
-            'template_cdr_upload' => 'mimetypes:text/x-tex,application/x-tex',
+            'template_cdr_upload'     => 'mimetypes:text/x-tex,application/x-tex',
         ];
     }
 
@@ -59,10 +59,10 @@ class SepaAccount extends \BaseModel
     public function view_index_label()
     {
         return [
-            'table' => $this->table,
+            'table'        => $this->table,
             'index_header' => ['id', $this->table.'.name', $this->table.'.institute', $this->table.'.iban', $this->table.'.template_invoice'],
-            'order_by' => ['0' => 'asc'],  // columnindex => direction
-            'header' => $this->name,
+            'order_by'     => ['0' => 'asc'],  // columnindex => direction
+            'header'       => $this->name,
         ];
     }
 
@@ -211,20 +211,20 @@ class SepaAccount extends \BaseModel
         $time = strtotime('last day of last month');
 
         $data = [
-            'Contractnr' => $item->contract->number,
-            'Invoicenr' => $this->_get_invoice_nr_formatted(),
+            'Contractnr'   => $item->contract->number,
+            'Invoicenr'    => $this->_get_invoice_nr_formatted(),
             'Target Month' => date('m', $time),
-            'Date' => ($this->_get_billing_lang() == 'de') ? date('d.m.Y', $time) : date('Y-m-d', $time),
-            'Cost Center' => isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
-            'Count' => $item->count,
-            'Description' => $item->invoice_description,
-            'Price' => ($this->_get_billing_lang() == 'de') ? number_format($item->charge, 2, ',', '.') : number_format($item->charge, 2, '.', ','),
-            'Firstname' => $item->contract->firstname,
-            'Lastname' => $item->contract->lastname,
-            'Street' => $item->contract->street,
-            'Housenr' => $item->contract->house_number,
-            'Zip' => $item->contract->zip,
-            'City' => $item->contract->city,
+            'Date'         => ($this->_get_billing_lang() == 'de') ? date('d.m.Y', $time) : date('Y-m-d', $time),
+            'Cost Center'  => isset($item->contract->costcenter->name) ? $item->contract->costcenter->name : '',
+            'Count'        => $item->count,
+            'Description'  => $item->invoice_description,
+            'Price'        => ($this->_get_billing_lang() == 'de') ? number_format($item->charge, 2, ',', '.') : number_format($item->charge, 2, '.', ','),
+            'Firstname'    => $item->contract->firstname,
+            'Lastname'     => $item->contract->lastname,
+            'Street'       => $item->contract->street,
+            'Housenr'      => $item->contract->house_number,
+            'Zip'          => $item->contract->zip,
+            'City'         => $item->contract->city,
         ];
 
         switch ($item->product->type) {
@@ -257,23 +257,23 @@ class SepaAccount extends \BaseModel
         $tax = round($charge['tax'], 2);
 
         $data = [
-            'Contractnr' => $contract->number,
-            'Invoicenr' => $this->_get_invoice_nr_formatted(),
-            'Date' => $german ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
-            'RCD' => $rcd,
+            'Contractnr'  => $contract->number,
+            'Invoicenr'   => $this->_get_invoice_nr_formatted(),
+            'Date'        => $german ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
+            'RCD'         => $rcd,
             'Cost Center' => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
             'Description' => '',
-            'Net' => $german ? number_format($net, 2, ',', '.') : number_format($net, 2, '.', ','),
-            'Tax' => $german ? number_format($tax, 2, ',', '.') : number_format($tax, 2, '.', ','),
-            'Gross' => $german ? number_format($net + $tax, 2, ',', '.') : number_format($net + $tax, 2, '.', ','),
-            'Currency' => BillingConf::currency(),
-            'Firstname' => $contract->firstname,
-            'Lastname' => $contract->lastname,
-            'Street' => $contract->street,
-            'Housenr' => $contract->house_number,
-            'Zip' => $contract->zip,
-            'City' => $contract->city,
-            'District' => $contract->district,
+            'Net'         => $german ? number_format($net, 2, ',', '.') : number_format($net, 2, '.', ','),
+            'Tax'         => $german ? number_format($tax, 2, ',', '.') : number_format($tax, 2, '.', ','),
+            'Gross'       => $german ? number_format($net + $tax, 2, ',', '.') : number_format($net + $tax, 2, '.', ','),
+            'Currency'    => BillingConf::currency(),
+            'Firstname'   => $contract->firstname,
+            'Lastname'    => $contract->lastname,
+            'Street'      => $contract->street,
+            'Housenr'     => $contract->house_number,
+            'Zip'         => $contract->zip,
+            'City'        => $contract->city,
+            'District'    => $contract->district,
         ];
 
         // Set Contact
@@ -293,10 +293,10 @@ class SepaAccount extends \BaseModel
         if ($mandate) {
             $data2 = [
                 'Account Holder' => $mandate->holder,
-                'IBAN' => $mandate->iban,
-                'BIC' => $mandate->bic,
-                'MandateID' => $mandate->reference,
-                'MandateDate' => $mandate->signature_date,
+                'IBAN'           => $mandate->iban,
+                'BIC'            => $mandate->bic,
+                'MandateID'      => $mandate->reference,
+                'MandateDate'    => $mandate->signature_date,
             ];
 
             $data = array_merge($data, $data2);
@@ -310,19 +310,19 @@ class SepaAccount extends \BaseModel
     public function add_cdr_accounting_record($contract, $charge, $count)
     {
         $this->acc_recs['tariff'][] = [
-            'Contractnr' => $contract->number,
-            'Invoicenr' => $this->_get_invoice_nr_formatted(),
+            'Contractnr'   => $contract->number,
+            'Invoicenr'    => $this->_get_invoice_nr_formatted(),
             'Target Month' => date('m'),
-            'Date' => ($this->_get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
-            'Cost Center' => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
-            'Count' => $count,
-            'Description' => 'Telephone Calls',
-            'Price' => $this->_get_billing_lang() == 'de' ? number_format($charge, 2, ',', '.') : number_format($charge, 2, '.', ','),
-            'Firstname' => $contract->firstname,
-            'Lastname' => $contract->lastname,
-            'Street' => $contract->street,
-            'Zip' => $contract->zip,
-            'City' => $contract->city,
+            'Date'         => ($this->_get_billing_lang() == 'de') ? date('d.m.Y') : date('Y-m-d'),
+            'Cost Center'  => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
+            'Count'        => $count,
+            'Description'  => 'Telephone Calls',
+            'Price'        => $this->_get_billing_lang() == 'de' ? number_format($charge, 2, ',', '.') : number_format($charge, 2, '.', ','),
+            'Firstname'    => $contract->firstname,
+            'Lastname'     => $contract->lastname,
+            'Street'       => $contract->street,
+            'Zip'          => $contract->zip,
+            'City'         => $contract->city,
         ];
     }
 
@@ -387,11 +387,11 @@ class SepaAccount extends \BaseModel
         // Credits
         if ($charge < 0) {
             $data = [
-                'amount' => $charge * (-1),
-                'creditorIban' => $mandate->iban,
-                'creditorBic' => $mandate->bic,
-                'creditorName' => $mandate->holder,
-                'endToEndId' => 'RG '.$this->_get_invoice_nr_formatted(),
+                'amount'                => $charge * (-1),
+                'creditorIban'          => $mandate->iban,
+                'creditorBic'           => $mandate->bic,
+                'creditorName'          => $mandate->holder,
+                'endToEndId'            => 'RG '.$this->_get_invoice_nr_formatted(),
                 'remittanceInformation' => $info,
             ];
 
@@ -402,12 +402,12 @@ class SepaAccount extends \BaseModel
 
         // Debits
         $data = [
-            'endToEndId' => 'RG '.$this->_get_invoice_nr_formatted(),
-            'amount' => $charge,
-            'debtorIban' => $mandate->iban,
-            'debtorBic' => $mandate->bic,
-            'debtorName' => $mandate->holder,
-            'debtorMandate' => $mandate->reference,
+            'endToEndId'            => 'RG '.$this->_get_invoice_nr_formatted(),
+            'amount'                => $charge,
+            'debtorIban'            => $mandate->iban,
+            'debtorBic'             => $mandate->bic,
+            'debtorName'            => $mandate->holder,
+            'debtorMandate'         => $mandate->reference,
             'debtorMandateSignDate' => $mandate->signature_date,
             'remittanceInformation' => $info,
         ];
@@ -523,13 +523,13 @@ class SepaAccount extends \BaseModel
             foreach ($rcds as $rcd => $records) {
                 // create a payment
                 $directDebit->addPaymentInfo($msg_id.$type.$rcd, [
-                    'id' => $msg_id,
-                    'creditorName' => $this->name,
+                    'id'                  => $msg_id,
+                    'creditorName'        => $this->name,
                     'creditorAccountIBAN' => $this->iban,
-                    'creditorAgentBIC' => $this->bic,
-                    'seqType' => $type,
-                    'creditorId' => $this->creditorid,
-                    'dueDate' => $rcd,
+                    'creditorAgentBIC'    => $this->bic,
+                    'seqType'             => $type,
+                    'creditorId'          => $this->creditorid,
+                    'dueDate'             => $rcd,
                 ]);
 
                 // Add Transactions to the named payment
@@ -571,10 +571,10 @@ class SepaAccount extends \BaseModel
         $customerCredit = TransferFileFacadeFactory::createCustomerCredit($msg_id.'C', $this->name);
 
         $customerCredit->addPaymentInfo($msg_id.'C', [
-            'id' => $msg_id.'C',
-            'debtorName' => $this->name,
+            'id'                => $msg_id.'C',
+            'debtorName'        => $this->name,
             'debtorAccountIBAN' => $this->iban,
-            'debtorAgentBIC' => $this->bic,
+            'debtorAgentBIC'    => $this->bic,
         ]);
 
         // Add Transactions to the named payment

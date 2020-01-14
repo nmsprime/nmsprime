@@ -105,10 +105,10 @@ class EnviaOrderDocumentController extends \BaseController
         if (! boolval($document->upload_order_id)) {
             // we realize this using redirect
             $params = [
-                'job' => 'order_create_attachment',
-                'order_id' => $document->enviaorder->orderid,
+                'job'                   => 'order_create_attachment',
+                'order_id'              => $document->enviaorder->orderid,
                 'enviaorderdocument_id' => $id,
-                'origin' => urlencode(\Request::fullUrl()),
+                'origin'                => urlencode(\Request::fullUrl()),
             ];
 
             return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request', $params);

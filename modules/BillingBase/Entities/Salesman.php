@@ -15,10 +15,10 @@ class Salesman extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'firstname' => 'required',
-            'lastname' => 'required',
+            'firstname'  => 'required',
+            'lastname'   => 'required',
             'commission' => 'required|numeric|between:0,100',
-            'products' => 'product',
+            'products'   => 'product',
         ];
     }
 
@@ -42,10 +42,10 @@ class Salesman extends \BaseModel
     // generates datatable content and classes for model
     public function view_index_label()
     {
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => [$this->table.'.id', $this->table.'.lastname', $this->table.'.firstname'],
-            'order_by' => ['0' => 'asc'],  // columnindex => direction
-            'header' => $this->lastname.' '.$this->firstname, ];
+            'order_by'     => ['0' => 'asc'],  // columnindex => direction
+            'header'       => $this->lastname.' '.$this->firstname, ];
     }
 
     // View Relation.
@@ -72,21 +72,21 @@ class Salesman extends \BaseModel
     // all items he gets commission for (in actual billing cycle)
     protected $items = [0 => [
         // salesman specific fields
-        'salesman_id' => 0,
+        'salesman_id'        => 0,
         'salesman.firstname' => '',
-        'salesman.lastname' => '',
-        'commission in %' => 0,
+        'salesman.lastname'  => '',
+        'commission in %'    => 0,
         // item sepecific
-        'contract_nr' => 0,
-        'contract_name' => '',
-        'contract_start' => '',
-        'contract_end' => '',
-        'product_name' => '',
-        'product_type' => '',
-        'product_count' => 0,
-        'charge' => 0,
+        'contract_nr'         => 0,
+        'contract_name'       => '',
+        'contract_start'      => '',
+        'contract_end'        => '',
+        'product_name'        => '',
+        'product_type'        => '',
+        'product_count'       => 0,
+        'charge'              => 0,
         'salesman_commission' => 0,
-        'sepaaccount_id' => 0,
+        'sepaaccount_id'      => 0,
     ]];
 
     public static $filename = 'salesmen_commission';
@@ -109,14 +109,14 @@ class Salesman extends \BaseModel
         // $this->total_commission[$sepaaccount_id] += $item->charge;
 
         $this->items[] = [
-            'contract_nr' => $contract->number,
-            'contract_name' => "$contract->lastname, $contract->firstname",
+            'contract_nr'    => $contract->number,
+            'contract_name'  => "$contract->lastname, $contract->firstname",
             'contract_start' => $contract->contract_start,
-            'contract_end' => $contract->contract_end,
-            'product_name' => $item->product->name,
-            'product_type' => $item->product->type,
-            'product_count' => $item->count,
-            'charge' => $item->charge,
+            'contract_end'   => $contract->contract_end,
+            'product_name'   => $item->product->name,
+            'product_type'   => $item->product->type,
+            'product_count'  => $item->count,
+            'charge'         => $item->charge,
             'sepaaccount_id' => $sepaaccount_id,
         ];
     }
@@ -154,10 +154,10 @@ class Salesman extends \BaseModel
     public function print_commission()
     {
         $infos = [
-            'salesman_id' => $this->id,
+            'salesman_id'        => $this->id,
             'salesman.firstname' => $this->firstname,
-            'salesman.lastname' => $this->lastname,
-            'commission in %' => number_format_lang($this->commission),
+            'salesman.lastname'  => $this->lastname,
+            'commission in %'    => number_format_lang($this->commission),
         ];
 
         foreach ($this->items as $key => $array) {

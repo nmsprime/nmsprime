@@ -56,8 +56,8 @@ class DashboardController extends BaseController
             });
 
         $modems = [
-            'all' => $query->where('modem.id', '>', '0')->count(),
-            'online' => $query->where('modem.us_pwr', '>', '0')->count(),
+            'all'      => $query->where('modem.id', '>', '0')->count(),
+            'online'   => $query->where('modem.us_pwr', '>', '0')->count(),
             'critical' => $query->where('modem.us_pwr', '>', $avg_critical_us)->count(),
         ];
 
@@ -125,7 +125,7 @@ class DashboardController extends BaseController
         // crowdin - check if language is still supported, otherwise show crowdin link
         if (! in_array(\Auth::user()->language, config('app.supported_locales'))) {
             return ['youtube' => 'https://www.youtube.com/embed/9mydbfHDDP4',
-                'text' => ' <li>NMS PRIME is not yet translated to your language. Help translating NMS PRIME with
+                'text'        => ' <li>NMS PRIME is not yet translated to your language. Help translating NMS PRIME with
                     <a href="https://crowdin.com/project/nmsprime/'.\Auth::user()->language.'" target="_blank">Crowdin</a></li>', ];
         }
 
@@ -144,7 +144,7 @@ class DashboardController extends BaseController
         // change default psw's
         if (\Hash::check('toor', \Auth::user()->password)) {
             return ['youtube' => 'https://www.youtube.com/embed/TVjJ7T8NZKw',
-                'text' => '<li>Next: Change default Password! '.\HTML::linkRoute('User.profile', 'Global Config', \Auth::user()->id), ];
+                'text'        => '<li>Next: Change default Password! '.\HTML::linkRoute('User.profile', 'Global Config', \Auth::user()->id), ];
         }
 
         // means: secure – nothing todo
@@ -188,7 +188,7 @@ class DashboardController extends BaseController
         }
 
         $files = [
-            'news.json' => "$support/news.php?ns=&sla=".urlencode(\App\Sla::pluck('name')->first()).'&mc='.$numModems.'&nm='.$numNetGw.'&nn='.$numNetelements.'&nt='.$numTvbillings,
+            'news.json'          => "$support/news.php?ns=&sla=".urlencode(\App\Sla::pluck('name')->first()).'&mc='.$numModems.'&nm='.$numNetGw.'&nn='.$numNetelements.'&nt='.$numTvbillings,
             'documentation.json' => "$support/documentation.json",
         ];
 
@@ -222,7 +222,7 @@ class DashboardController extends BaseController
         }
 
         return ['youtube' => $json->youtube,
-            'text' => $json->text, ];
+            'text'        => $json->text, ];
     }
 
     /*
@@ -236,20 +236,20 @@ class DashboardController extends BaseController
         // set ISP name
         if (! \GlobalConfig::first()->name) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s',
-                'text' => $text.\HTML::linkRoute('Config.index', trans('helper.set_isp_name')), ];
+                'text'        => $text.\HTML::linkRoute('Config.index', trans('helper.set_isp_name')), ];
         }
 
         // add NetGw
         if (\Modules\ProvBase\Entities\NetGw::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=159&',
-                'text' => $text.\HTML::linkRoute('NetGw.create', trans('helper.create_netgw')), ];
+                'text'        => $text.\HTML::linkRoute('NetGw.create', trans('helper.create_netgw')), ];
         }
 
         // add CM and CPEPriv IP-Pool
         foreach (['CM', 'CPEPriv'] as $type) {
             if (\Modules\ProvBase\Entities\IpPool::where('type', $type)->count() == 0) {
                 return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=240&',
-                    'text' => $text.\HTML::linkRoute(
+                    'text'        => $text.\HTML::linkRoute(
                         'IpPool.create',
                         trans('helper.create_'.strtolower($type).'_pool'),
                         ['netgw_id' => \Modules\ProvBase\Entities\NetGw::first()->id, 'type' => $type]
@@ -260,19 +260,19 @@ class DashboardController extends BaseController
         // QoS
         if (\Modules\ProvBase\Entities\Qos::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=380&',
-                'text' => $text.\HTML::linkRoute('Qos.create', trans('helper.create_qos')), ];
+                'text'        => $text.\HTML::linkRoute('Qos.create', trans('helper.create_qos')), ];
         }
 
         // Product
         if (\Module::collections()->has('BillingBase') && \Modules\BillingBase\Entities\Product::where('type', '=', 'Internet')->count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=425&',
-                'text' => $text.\HTML::linkRoute('Product.create', trans('helper.create_product')), ];
+                'text'        => $text.\HTML::linkRoute('Product.create', trans('helper.create_product')), ];
         }
 
         // Configfile
         if (\Modules\ProvBase\Entities\Configfile::where('device', '=', 'cm')->where('public', '=', 'yes')->count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/aYjuWXhaV3s?start=500&',
-                'text' => $text.\HTML::linkRoute('Configfile.create', trans('helper.create_configfile')), ];
+                'text'        => $text.\HTML::linkRoute('Configfile.create', trans('helper.create_configfile')), ];
         }
 
         // add sepa account
@@ -288,7 +288,7 @@ class DashboardController extends BaseController
         // add Contract
         if (\Modules\ProvBase\Entities\Contract::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=0&',
-                'text' => $text.\HTML::linkRoute('Contract.create', trans('helper.create_contract')), ];
+                'text'        => $text.\HTML::linkRoute('Contract.create', trans('helper.create_contract')), ];
         }
 
         // check if nominatim email address is set, otherwise osm geocoding won't be possible
@@ -310,7 +310,7 @@ class DashboardController extends BaseController
         // add Modem
         if (\Modules\ProvBase\Entities\Modem::count() == 0) {
             return ['youtube' => 'https://www.youtube.com/embed/t-PFsy42cI0?start=40&',
-                'text' => $text.\HTML::linkRoute('Contract.edit', trans('helper.create_modem'), \Modules\ProvBase\Entities\Contract::first()), ];
+                'text'        => $text.\HTML::linkRoute('Contract.edit', trans('helper.create_modem'), \Modules\ProvBase\Entities\Contract::first()), ];
         }
 
         return false;

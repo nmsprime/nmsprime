@@ -10,9 +10,9 @@ class NumberRange extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'name' => 'required',
+            'name'  => 'required',
             'start' => 'required|numeric',
-            'end' => 'required|numeric',
+            'end'   => 'required|numeric',
         ];
     }
 
@@ -29,10 +29,10 @@ class NumberRange extends \BaseModel
     public function view_index_label()
     {
         return [
-            'table' => $this->table,
-            'index_header' => [$this->table.'.id', $this->table.'.name', $this->table.'.prefix', $this->table.'.suffix', $this->table.'.start', $this->table.'.end', 'costcenter.name'],
-            'header' => $this->id.' - '.$this->name,
-            'order_by' => ['0' => 'asc'],
+            'table'         => $this->table,
+            'index_header'  => [$this->table.'.id', $this->table.'.name', $this->table.'.prefix', $this->table.'.suffix', $this->table.'.start', $this->table.'.end', 'costcenter.name'],
+            'header'        => $this->id.' - '.$this->name,
+            'order_by'      => ['0' => 'asc'],
             'eager_loading' => ['costcenter'],
         ];
     }

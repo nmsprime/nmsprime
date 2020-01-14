@@ -9,7 +9,7 @@ class SepaAccountController extends \BaseController
 {
     protected $file_upload_paths = [
         'template_invoice' => 'app/config/billingbase/template/',
-        'template_cdr' => 'app/config/billingbase/template/',
+        'template_cdr'     => 'app/config/billingbase/template/',
     ];
 
     /**

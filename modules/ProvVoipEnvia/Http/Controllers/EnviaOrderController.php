@@ -263,10 +263,10 @@ class EnviaOrderController extends \BaseController
 
         // else redirect to update order against envia TEL
         $params = [
-            'job' => 'order_get_status',
-            'order_id' => EnviaOrder::findOrFail($id)->orderid,
-            'really' => 'true',
-            'origin' => urlencode(\URL::current()),
+            'job'              => 'order_get_status',
+            'order_id'         => EnviaOrder::findOrFail($id)->orderid,
+            'really'           => 'true',
+            'origin'           => urlencode(\URL::current()),
             'instant_redirect' => true,
         ];
 
@@ -292,10 +292,10 @@ class EnviaOrderController extends \BaseController
         // else redirect to check newly created order against envia TEL API
         $order_id = Request::get('orderid');
         $params = [
-            'job' => 'order_get_status',
+            'job'      => 'order_get_status',
             'order_id' => $order_id,
-            'really' => 'true',
-            'origin' => urlencode(\URL::previous()),
+            'really'   => 'true',
+            'origin'   => urlencode(\URL::previous()),
         ];
 
         return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request', $params);
@@ -332,9 +332,9 @@ class EnviaOrderController extends \BaseController
         }
 
         $params = [
-            'job' => 'order_cancel',
+            'job'      => 'order_cancel',
             'order_id' => $order->orderid,
-            'origin' => urlencode(\URL::previous()),
+            'origin'   => urlencode(\URL::previous()),
         ];
 
         return \Redirect::action('\Modules\ProvVoipEnvia\Http\Controllers\ProvVoipEnviaController@request', $params);

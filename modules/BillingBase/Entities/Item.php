@@ -24,9 +24,9 @@ class Item extends \BaseModel
         // see ItemController@prepare_rules
 
         return [
-            'product_id' => 'required|numeric|Min:1',
-            'valid_from' => 'date',	//|in_future ??
-            'valid_to' => 'nullable|date',
+            'product_id'    => 'required|numeric|Min:1',
+            'valid_from'    => 'date',	//|in_future ??
+            'valid_to'      => 'nullable|date',
             'credit_amount' => 'nullable|numeric',
         ];
     }
@@ -53,7 +53,7 @@ class Item extends \BaseModel
         $dates = $this->dateLabels();
         $price = $this->getItemPrice();
 
-        $ret = ['table' => $this->table,
+        $ret = ['table'    => $this->table,
             'index_header' => [
                 'contract.number',
                 'contract.firstname',
@@ -556,9 +556,9 @@ class Item extends \BaseModel
 
         $ret = [
             'cancelation_day' => '',
-            'canceled_to' => '',
-            'end_of_term' => '',
-            'maturity' => '',
+            'canceled_to'     => '',
+            'end_of_term'     => '',
+            'maturity'        => '',
         ];
 
         // Item was already canceled
@@ -744,7 +744,7 @@ class ItemObserver
                 \Log::debug('update old tariff', [$item->id]);
 
                 Item::where('id', $tariff->id)->update([
-                    'valid_to' => date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from))),
+                    'valid_to'       => date('Y-m-d', strtotime('-1 day', strtotime($item->valid_from))),
                     'valid_to_fixed' => $item->valid_from_fixed || $tariff->valid_to_fixed ? true : false,
                 ]);
             }

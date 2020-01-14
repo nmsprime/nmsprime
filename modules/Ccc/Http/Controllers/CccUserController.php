@@ -23,42 +23,42 @@ class CccUserController extends \BaseController
      * @var array Data to fill placeholder in Connection Info Template
      */
     private $data = [
-        'contract_address' => '', 			// company, degree, name, street + nr, city
-        'contract_nr' => '',
-        'contract_firstname' => '',
-        'contract_lastname' => '',
-        'contract_street' => '',
+        'contract_address'     => '', 			// company, degree, name, street + nr, city
+        'contract_nr'          => '',
+        'contract_firstname'   => '',
+        'contract_lastname'    => '',
+        'contract_street'      => '',
         'contract_housenumber' => '',
-        'contract_zip' => '',
-        'contract_district' => '',
-        'contract_city' => '',
-        'login_name' => '',
-        'psw' => '',
+        'contract_zip'         => '',
+        'contract_district'    => '',
+        'contract_city'        => '',
+        'login_name'           => '',
+        'psw'                  => '',
 
         // Only if Billing is enabled !
         // Company
-        'company_name' => '',
-        'company_street' => '',
-        'company_zip' => '',
-        'company_city' => '',
-        'company_phone' => '',
-        'company_fax' => '',
-        'company_mail' => '',
-        'company_web' => '',
+        'company_name'                 => '',
+        'company_street'               => '',
+        'company_zip'                  => '',
+        'company_city'                 => '',
+        'company_phone'                => '',
+        'company_fax'                  => '',
+        'company_mail'                 => '',
+        'company_web'                  => '',
         'company_registration_court_1' => '',
         'company_registration_court_2' => '',
         'company_registration_court_3' => '',
-        'company_management' => '',
-        'company_directorate' => '',
-        'company_tax_id_nr' => '',
-        'company_tax_nr' => '',
-        'company_logo' => '',
+        'company_management'           => '',
+        'company_directorate'          => '',
+        'company_tax_id_nr'            => '',
+        'company_tax_nr'               => '',
+        'company_logo'                 => '',
 
         // SepaAcc
-        'company_creditor_id' => '',
+        'company_creditor_id'       => '',
         'company_account_institute' => '',
-        'company_account_iban' => '',
-        'company_account_bic' => '',
+        'company_account_iban'      => '',
+        'company_account_bic'       => '',
     ];
 
     /**

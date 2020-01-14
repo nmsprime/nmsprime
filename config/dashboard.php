@@ -14,13 +14,13 @@ while ($i < 13) {
 }
 
 return [
-    'name' => 'Dashboard',
+    'name'      => 'Dashboard',
     'contracts' => [
-        'labels' => $labels,
+        'labels'    => $labels,
         'contracts' => $contracts,
     ],
     'income' => [
         'labels' => ['Internet', 'Voip', 'TV', 'Other'],
-        'data' => [0.0, 0.0, 0.0, 0.0],
+        'data'   => [0.0, 0.0, 0.0, 0.0],
     ],
 ];

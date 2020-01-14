@@ -69,12 +69,12 @@ class SettlementRun extends \BaseModel
         $time = $this->executed_at ?? '';
 
         return [
-            'table' => $this->table,
+            'table'        => $this->table,
             'index_header' => [$this->table.'.year', $this->table.'.month', $this->table.'.executed_at', 'verified'],
-            'header' => $this->year.' - '.$this->month.' - '.$time,
-            'bsclass' => $bsclass,
-            'order_by' => ['0' => 'desc'],
-            'edit' => ['verified' => 'run_verified'],
+            'header'       => $this->year.' - '.$this->month.' - '.$time,
+            'bsclass'      => $bsclass,
+            'order_by'     => ['0' => 'desc'],
+            'edit'         => ['verified' => 'run_verified'],
         ];
     }
 
@@ -808,7 +808,7 @@ class SettlementRun extends \BaseModel
     {
         $arr = [
             'message' => $msg,
-            'value' => round($value),
+            'value'   => round($value),
         ];
 
         Storage::put('tmp/accCmdStatus', json_encode($arr));
@@ -842,12 +842,12 @@ class SettlementRun extends \BaseModel
 
         $debt = \Modules\OverdueDebts\Entities\Debt::create([
             'contract_id' => $contract->id,
-            'invoice_id' => $invoice->id,
-            'voucher_nr' => $invoice->data['invoice_nr'],
+            'invoice_id'  => $invoice->id,
+            'voucher_nr'  => $invoice->data['invoice_nr'],
             // TODO: Make date configurable? (Global conf: number for specific day, or d for actual day or rcd for rcd)
-            'date' => date('Y-m-d', strtotime('last day of last month')),
-            'due_date' => $rcd ?: date('Y-m-d', strtotime('last day of last month')),
-            'amount' => $amount,
+            'date'      => date('Y-m-d', strtotime('last day of last month')),
+            'due_date'  => $rcd ?: date('Y-m-d', strtotime('last day of last month')),
+            'amount'    => $amount,
             'parent_id' => $parent_id,
         ]);
 

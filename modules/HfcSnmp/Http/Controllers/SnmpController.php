@@ -427,11 +427,11 @@ class SnmpController extends \BaseController
         $description = $table ? '' : ($oid->name_gui ? $oid->name_gui.$ext : $oid->name.$ext);
 
         $field = [
-            'form_type' => $oid->html_type,
-            'name' => $oid->oid.$index,
+            'form_type'   => $oid->html_type,
+            'name'        => $oid->oid.$index,
             'description' => $description,
             'field_value' => $value,
-            'options' => $options,
+            'options'     => $options,
             // 'help' 			=> $oid->description,
         ];
 
@@ -657,12 +657,12 @@ class SnmpController extends \BaseController
             if ($ret) {
                 // Create GuiLog Entry
                 \App\GuiLog::log_changes([
-                    'user_id' => $user ? $user->id : 0,
+                    'user_id'  => $user ? $user->id : 0,
                     'username' => $user ? $user->first_name.' '.$user->last_name : 'cronjob',
-                    'method' => 'updated',
-                    'model' => 'NetElement',
+                    'method'   => 'updated',
+                    'model'    => 'NetElement',
                     'model_id' => $this->device->netelementtype_id == 2 ? $device->id : $this->device->id,
-                    'text' => ($oid_o->name_gui ?: $oid_o->name)." ($full_oid):  '".$old_val."' => '$value'",
+                    'text'     => ($oid_o->name_gui ?: $oid_o->name)." ($full_oid):  '".$old_val."' => '$value'",
                 ]);
 
                 $old_vals->{$full_oid} = $value;

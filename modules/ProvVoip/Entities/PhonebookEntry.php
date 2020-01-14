@@ -14,28 +14,28 @@ class PhonebookEntry extends \BaseModel
     public static function rules($id = null)
     {
         $ret = [
-            'phonenumbermanagement_id' => 'required|exists:phonenumbermanagement,id,deleted_at,NULL|min:1',
-            'reverse_search' => 'required|phonebook_one_character_option',
-            'publish_in_print_media' => 'required|phonebook_one_character_option',
+            'phonenumbermanagement_id'    => 'required|exists:phonenumbermanagement,id,deleted_at,NULL|min:1',
+            'reverse_search'              => 'required|phonebook_one_character_option',
+            'publish_in_print_media'      => 'required|phonebook_one_character_option',
             'publish_in_electronic_media' => 'required|phonebook_one_character_option',
-            'directory_assistance' => 'required|phonebook_one_character_option',
-            'entry_type' => 'required|phonebook_one_character_option',
-            'publish_address' => 'required|phonebook_one_character_option',
-            'company' => 'phonebook_entry_type_dependend:entry_type|phonebook_string',
-            'salutation' => 'phonebook_entry_type_dependend:entry_type|phonebook_predefined_string',
-            'academic_degree' => 'phonebook_entry_type_dependend:entry_type|phonebook_predefined_string',
-            'noble_rank' => 'phonebook_entry_type_dependend:entry_type|phonebook_predefined_string',
-            'nobiliary_particle' => 'phonebook_entry_type_dependend:entry_type|phonebook_predefined_string',
-            'lastname' => 'phonebook_entry_type_dependend:entry_type|phonebook_string',
-            'other_name_suffix' => 'phonebook_entry_type_dependend:entry_type|phonebook_predefined_string',
-            'firstname' => 'phonebook_entry_type_dependend:entry_type|phonebook_string',
-            'street' => 'required|phonebook_string',
-            'houseno' => 'required|phonebook_string',
-            'zipcode' => 'required|phonebook_string',
-            'city' => 'required|phonebook_string',
-            'urban_district' => 'phonebook_string',
-            'business' => 'phonebook_predefined_string',
-            'usage' => 'required|phonebook_one_character_option',
+            'directory_assistance'        => 'required|phonebook_one_character_option',
+            'entry_type'                  => 'required|phonebook_one_character_option',
+            'publish_address'             => 'required|phonebook_one_character_option',
+            'company'                     => 'phonebook_entry_type_dependend:entry_type|phonebook_string',
+            'salutation'                  => 'phonebook_entry_type_dependend:entry_type|phonebook_predefined_string',
+            'academic_degree'             => 'phonebook_entry_type_dependend:entry_type|phonebook_predefined_string',
+            'noble_rank'                  => 'phonebook_entry_type_dependend:entry_type|phonebook_predefined_string',
+            'nobiliary_particle'          => 'phonebook_entry_type_dependend:entry_type|phonebook_predefined_string',
+            'lastname'                    => 'phonebook_entry_type_dependend:entry_type|phonebook_string',
+            'other_name_suffix'           => 'phonebook_entry_type_dependend:entry_type|phonebook_predefined_string',
+            'firstname'                   => 'phonebook_entry_type_dependend:entry_type|phonebook_string',
+            'street'                      => 'required|phonebook_string',
+            'houseno'                     => 'required|phonebook_string',
+            'zipcode'                     => 'required|phonebook_string',
+            'city'                        => 'required|phonebook_string',
+            'urban_district'              => 'phonebook_string',
+            'business'                    => 'phonebook_predefined_string',
+            'usage'                       => 'required|phonebook_one_character_option',
         ];
 
         // starting with API version 2.7 envia TEL ignores “tag”
@@ -138,10 +138,10 @@ class PhonebookEntry extends \BaseModel
     {
         $bsclass = $this->get_bsclass();
 
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => [$this->table.'.id'],
-            'header' => trans('view.PhonebookEntry'),
-            'bsclass' => $bsclass, ];
+            'header'       => trans('view.PhonebookEntry'),
+            'bsclass'      => $bsclass, ];
     }
 
     public function get_bsclass()

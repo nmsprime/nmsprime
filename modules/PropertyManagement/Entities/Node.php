@@ -25,10 +25,10 @@ class Node extends \BaseModel
     {
         return [
             // 'name' => 'required',
-            'street' => 'required',
+            'street'   => 'required',
             'house_nr' => 'required',
-            'zip' => 'required',
-            'city' => 'required',
+            'zip'      => 'required',
+            'city'     => 'required',
         ];
     }
 
@@ -56,10 +56,10 @@ class Node extends \BaseModel
 
         $label = $this->street.' '.$this->house_nr.', '.$this->city.' - '.$this->name;
 
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => ['node.name', 'street', 'house_nr', 'zip', 'city', "$this->table.type", "$this->table.headend"],
-            'header' => $label,
-            'bsclass' => $bsclass,
+            'header'       => $label,
+            'bsclass'      => $bsclass,
             // 'eager_loading' => ['contract'],
             // 'edit' => ['contract.firstname' => 'getContractFirstname'],
         ];

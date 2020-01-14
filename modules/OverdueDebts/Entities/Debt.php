@@ -18,10 +18,10 @@ class Debt extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'amount' => 'required',
-            'date' => 'required|date',
+            'amount'     => 'required',
+            'date'       => 'required|date',
             'voucher_nr' => 'required',
-            'due_date' => 'date|nullable',
+            'due_date'   => 'date|nullable',
         ];
     }
 
@@ -56,15 +56,15 @@ class Debt extends \BaseModel
         $bsclass = $this->getBsClass();
 
         $properties = ['table' => $this->table,
-            'index_header' => ['contract.firstname', 'contract.lastname', 'contract.number',
+            'index_header'     => ['contract.firstname', 'contract.lastname', 'contract.number',
                 'debt.date', 'debt.voucher_nr', 'debt.number', 'amount', 'debt.missing_amount', 'debt.total_fee',
                 'debt.due_date', 'debt.indicator', ],
-            'header' => $this->label(),
-            'bsclass' => $bsclass,
+            'header'        => $this->label(),
+            'bsclass'       => $bsclass,
             'eager_loading' => ['contract'],
-            'edit' => [
+            'edit'          => [
                 'contract.firstname' => 'getContractFirstname',
-                'contract.lastname' => 'getContractLastname',
+                'contract.lastname'  => 'getContractLastname',
             ],
         ];
 

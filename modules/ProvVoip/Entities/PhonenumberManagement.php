@@ -19,12 +19,12 @@ class PhonenumberManagement extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'phonenumber_id' => 'required|exists:phonenumber,id,deleted_at,NULL|min:1',
-            'trcclass' => 'required|exists:trcclass,id,deleted_at,NULL',
-            'carrier_in' => 'required|exists:carriercode,id,deleted_at,NULL',
-            'carrier_out' => 'required|exists:carriercode,id,deleted_at,NULL',
-            'ekp_in' => 'required|exists:ekpcode,id,deleted_at,NULL',
-            'activation_date' => 'nullable|date',
+            'phonenumber_id'    => 'required|exists:phonenumber,id,deleted_at,NULL|min:1',
+            'trcclass'          => 'required|exists:trcclass,id,deleted_at,NULL',
+            'carrier_in'        => 'required|exists:carriercode,id,deleted_at,NULL',
+            'carrier_out'       => 'required|exists:carriercode,id,deleted_at,NULL',
+            'ekp_in'            => 'required|exists:ekpcode,id,deleted_at,NULL',
+            'activation_date'   => 'nullable|date',
             'deactivation_date' => 'nullable|date',
         ];
     }
@@ -73,10 +73,10 @@ class PhonenumberManagement extends \BaseModel
         $bsclass = $this->get_bsclass();
         $header = isset($this->phonenumber) ? 'PhonenumberManagement ('.$this->phonenumber->prefix_number.'/'.$this->phonenumber->number.')' : '';
 
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => [$this->table.'.id'],
-            'bsclass' => $bsclass,
-            'header' => $header, ];
+            'bsclass'      => $bsclass,
+            'header'       => $header, ];
     }
 
     public function get_bsclass()

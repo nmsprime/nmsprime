@@ -464,12 +464,12 @@ class importCommand extends Command
     private function add_tariffs($new_contract, $products_new, $old_contract)
     {
         $tariffs = [
-            'tarif' => $old_contract->tarif,
-            'tarif_next_month' => $old_contract->tarif_next_month,
-            'tarif_next' => $old_contract->tarif_next,
-            'telefontarif' => $old_contract->telefontarif,
+            'tarif'                   => $old_contract->tarif,
+            'tarif_next_month'        => $old_contract->tarif_next_month,
+            'tarif_next'              => $old_contract->tarif_next,
+            'telefontarif'            => $old_contract->telefontarif,
             'telefontarif_next_month' => $old_contract->telefontarif_next_month,
-            'telefontarif_next' => $old_contract->telefontarif_next,
+            'telefontarif_next'       => $old_contract->telefontarif_next,
         ];
 
         $items_new = $new_contract->items;
@@ -523,12 +523,12 @@ class importCommand extends Command
             }
 
             Item::create([
-                'contract_id' => $new_contract->id,
-                'product_id' => $prod_id,
-                'valid_from' => $valid_from,
+                'contract_id'      => $new_contract->id,
+                'product_id'       => $prod_id,
+                'valid_from'       => $valid_from,
                 'valid_from_fixed' => 1,
-                'valid_to' => $old_contract->abgeklemmt,
-                'valid_to_fixed' => 1,
+                'valid_to'         => $old_contract->abgeklemmt,
+                'valid_to_fixed'   => 1,
             ]);
 
             \Log::info("ITEM ADD $key: ".$products_new->find($prod_id)->name.' ('.$prod_id.')');
@@ -552,13 +552,13 @@ class importCommand extends Command
         \Log::info("Add extra Credit as Customer had volume tariff. [$new_contract->number]");
 
         Item::create([
-            'contract_id' => $new_contract->id,
-            'product_id' => self::$credit_id,
-            'valid_from' => date('Y-m-01', strtotime('first day of next month')),
+            'contract_id'      => $new_contract->id,
+            'product_id'       => self::$credit_id,
+            'valid_from'       => date('Y-m-01', strtotime('first day of next month')),
             'valid_from_fixed' => 1,
-            'valid_to' => date('Y-m-d', strtotime('last day of next year')),
-            'valid_to_fixed' => 1,
-            'credit_amount' => 4.2017,
+            'valid_to'         => date('Y-m-d', strtotime('last day of next year')),
+            'valid_to_fixed'   => 1,
+            'credit_amount'    => 4.2017,
         ]);
     }
 
@@ -590,17 +590,17 @@ class importCommand extends Command
 
         foreach ($mandates_old as $mandate) {
             SepaMandate::create([
-                'contract_id' => $new_contract->id,
-                'reference' => $new_contract->number ?: '', 			// TODO: number circle ?
+                'contract_id'    => $new_contract->id,
+                'reference'      => $new_contract->number ?: '', 			// TODO: number circle ?
                 'signature_date' => $mandate->datum ?: '',
-                'holder' => $mandate->kontoinhaber ? utf8_encode($mandate->kontoinhaber) : '',
-                'iban' => $mandate->iban ?: '',
-                'bic' => $mandate->bic ?: '',
-                'institute' => $mandate->institut ?: '',
-                'valid_from' => $mandate->gueltig_ab,
-                'valid_to' => $mandate->gueltig_bis,
-                'disable' => $old_contract->einzug ? false : true,
-                'state' => 'RCUR',
+                'holder'         => $mandate->kontoinhaber ? utf8_encode($mandate->kontoinhaber) : '',
+                'iban'           => $mandate->iban ?: '',
+                'bic'            => $mandate->bic ?: '',
+                'institute'      => $mandate->institut ?: '',
+                'valid_from'     => $mandate->gueltig_ab,
+                'valid_to'       => $mandate->gueltig_bis,
+                'disable'        => $old_contract->einzug ? false : true,
+                'state'          => 'RCUR',
             ]);
 
             \Log::info('SEPAMANDATE ADD: '.utf8_encode($mandate->kontoinhaber).', '.$mandate->iban.', '.$mandate->institut.', '.$mandate->datum);
@@ -653,15 +653,15 @@ class importCommand extends Command
             }
 
             Item::create([
-                'contract_id' => $new_contract->id,
-                'product_id' => $this->add_items[$item->id],
-                'count' => $item->menge,
-                'valid_from' => $item->von ?: date('Y-m-d'),
+                'contract_id'      => $new_contract->id,
+                'product_id'       => $this->add_items[$item->id],
+                'count'            => $item->menge,
+                'valid_from'       => $item->von ?: date('Y-m-d'),
                 'valid_from_fixed' => 1,
-                'valid_to' => $valid_to,
-                'valid_to_fixed' => 1,
-                'credit_amount' => (-1) * $item->preis,
-                'accounting_text' => is_null($item->buchungstext) ? '' : utf8_encode($item->buchungstext),
+                'valid_to'         => $valid_to,
+                'valid_to_fixed'   => 1,
+                'credit_amount'    => (-1) * $item->preis,
+                'accounting_text'  => is_null($item->buchungstext) ? '' : utf8_encode($item->buchungstext),
             ]);
         }
     }
@@ -680,12 +680,12 @@ class importCommand extends Command
 
         foreach ($emails as $email) {
             Email::create([
-                'contract_id' => $new_contract->id,
-                'localpart' => $email->alias,
-                'password' => $email->passwort,
+                'contract_id'  => $new_contract->id,
+                'localpart'    => $email->alias,
+                'password'     => $email->passwort,
                 'blacklisting' => $email->blacklisting,
-                'greylisting' => $email->greylisting,
-                'forwardto' => $email->forwardto ?: '',
+                'greylisting'  => $email->greylisting,
+                'forwardto'    => $email->forwardto ?: '',
             ]);
         }
 

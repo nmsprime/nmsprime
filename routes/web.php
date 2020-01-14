@@ -19,17 +19,17 @@ Route::get('', ['as' => 'Home', 'uses' => 'WelcomeController@index', 'middleware
  */
 Route::group(['prefix' => 'admin', 'middleware' => ['web']], function () {
     Route::get('login', [
-        'as' => 'adminLogin',
+        'as'   => 'adminLogin',
         'uses' => 'Auth\LoginController@showLoginForm',
     ]);
 
     Route::post('login', [
-        'as' => 'login.post',
+        'as'   => 'login.post',
         'uses' => 'Auth\LoginController@login',
     ]);
 
     Route::post('logout', [
-        'as' => 'logout.post',
+        'as'   => 'logout.post',
         'uses' => 'Auth\LoginController@logout',
     ]);
 });
@@ -45,77 +45,77 @@ BaseRoute::group([], function () {
     // As we dont want authorization middleware (only authentication) we can not set the routes with our general function and have to set them manually
     BaseRoute::get('SupportRequest', [
         'uses' => 'SupportRequestController@index',
-        'as' => 'SupportRequest.index',
+        'as'   => 'SupportRequest.index',
     ]);
     BaseRoute::post('SupportRequest', [
         'uses' => 'SupportRequestController@store',
-        'as' => 'SupportRequest.store',
+        'as'   => 'SupportRequest.store',
     ]);
     BaseRoute::get('SupportRequest/create', [
         'uses' => 'SupportRequestController@create',
-        'as' => 'SupportRequest.create',
+        'as'   => 'SupportRequest.create',
     ]);
     BaseRoute::get('SupportRequest/{id}', [
         'uses' => 'SupportRequestController@edit',
-        'as' => 'SupportRequest.edit',
+        'as'   => 'SupportRequest.edit',
     ]);
     BaseRoute::put('SupportRequest/{id}', [
         'uses' => 'SupportRequestController@update',
-        'as' => 'SupportRequest.update',
+        'as'   => 'SupportRequest.update',
     ]);
     BaseRoute::get('SupportRequest/{id}/log', [
         'uses' => '\App\Http\Controllers\GuiLogController@filter',
-        'as' => 'SupportRequest.guilog',
+        'as'   => 'SupportRequest.guilog',
     ]);
 
     BaseRoute::get('base/fulltextSearch', [
-        'as' => 'Base.fulltextSearch',
+        'as'   => 'Base.fulltextSearch',
         'uses' => 'BaseController@fulltextSearch',
     ]);
 
     BaseRoute::get('Config', [
-        'as' => 'Config.index',
+        'as'   => 'Config.index',
         'uses' => 'GlobalConfigController@index',
     ]);
 
     BaseRoute::get('profile/{id}', [
-        'as' => 'User.profile',
-        'uses' => 'Auth\UserController@edit',
+        'as'         => 'User.profile',
+        'uses'       => 'Auth\UserController@edit',
         'middleware' => ['owns:view,App\User'],
     ]);
 
     BaseRoute::put('profile/{id}', [
-        'as' => 'Profile.update',
-        'uses' => 'Auth\UserController@update',
+        'as'         => 'Profile.update',
+        'uses'       => 'Auth\UserController@update',
         'middleware' => ['owns:update,App\User'],
     ]);
 
     BaseRoute::post('user/detach/{id}/{func}', [
-        'as' => 'user.detach',
-        'uses' => 'Auth\UserController@detach',
+        'as'         => 'user.detach',
+        'uses'       => 'Auth\UserController@detach',
         'middleware' => ['can:delete,App\User'],
     ]);
 
     BaseRoute::post('Role/customAbility', [
-        'as' => 'customAbility.update',
-        'uses' => 'Auth\AbilityController@updateCustomAbility',
+        'as'         => 'customAbility.update',
+        'uses'       => 'Auth\AbilityController@updateCustomAbility',
         'middleware' => ['can:update,App\Role'],
     ]);
 
     BaseRoute::post('Role/modelAbility', [
-        'as' => 'modelAbility.update',
-        'uses' => 'Auth\AbilityController@updateModelAbility',
+        'as'         => 'modelAbility.update',
+        'uses'       => 'Auth\AbilityController@updateModelAbility',
         'middleware' => ['can:update,App\Role'],
     ]);
 
     BaseRoute::get('Guilog/restore/{id}', [
-        'as' => 'Guilog.restore',
-        'uses' => 'GuiLogController@restoreModel',
+        'as'         => 'Guilog.restore',
+        'uses'       => 'GuiLogController@restoreModel',
         'middleware' => ['can:delete,App\Role'],
     ]);
 
     BaseRoute::post('Sla/clicked', [
-        'as' => 'Sla.clicked_sla',
+        'as'   => 'Sla.clicked_sla',
         'uses' => 'SlaController@clicked_sla',
     ]);
 });

@@ -13,7 +13,7 @@ return [
     */
 
     'defaults' => [
-        'guard' => 'admin',
+        'guard'     => 'admin',
         'passwords' => 'admin',
     ],
 
@@ -36,15 +36,15 @@ return [
 
     'guards' => [
         'admin' => [
-            'driver' => 'session',
+            'driver'   => 'session',
             'provider' => 'admin',
         ],
         'ccc' => [
-            'driver' => 'session',
+            'driver'   => 'session',
             'provider' => 'ccc',
         ],
         'api' => [
-            'driver' => 'token',
+            'driver'   => 'token',
             'provider' => 'admin',
         ],
     ],
@@ -69,11 +69,11 @@ return [
     'providers' => [
         'admin' => [
             'driver' => 'eloquent',
-            'model' => App\User::class,
+            'model'  => App\User::class,
         ],
         'ccc' => [
             'driver' => 'eloquent',
-            'model' => \Modules\Ccc\Entities\CccUser::class,
+            'model'  => \Modules\Ccc\Entities\CccUser::class,
         ],
     ],
 
@@ -95,15 +95,15 @@ return [
     'passwords' => [
         'admin' => [
             'provider' => 'admin',
-            'email' => 'auth.emails.password', // TODO: set to ENV var
-            'table' => 'password_resets',
-            'expire' => 60,
+            'email'    => 'auth.emails.password', // TODO: set to ENV var
+            'table'    => 'password_resets',
+            'expire'   => 60,
         ],
         'ccc' => [
             'provider' => 'ccc',
-            'email' => 'auth.emails.password', // TODO: set to ENV var
-            'table' => 'password_resets',
-            'expire' => 60,
+            'email'    => 'auth.emails.password', // TODO: set to ENV var
+            'table'    => 'password_resets',
+            'expire'   => 60,
         ],
     ],
 ];

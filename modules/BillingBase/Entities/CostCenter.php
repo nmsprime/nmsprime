@@ -14,7 +14,7 @@ class CostCenter extends \BaseModel
         // $m = date('m');
 
         return [
-            'name' => 'required',
+            'name'          => 'required',
             'billing_month' => 'Numeric', //|Min:'.$m,
         ];
     }
@@ -47,10 +47,10 @@ class CostCenter extends \BaseModel
     // generates datatable content and classes for model
     public function view_index_label()
     {
-        return ['table' => $this->table,
-            'index_header' => [$this->table.'.name', $this->table.'.number', 'sepaaccount.name'],
-            'header' => $this->name,
-            'order_by' => ['0' => 'asc'],  // columnindex => direction
+        return ['table'     => $this->table,
+            'index_header'  => [$this->table.'.name', $this->table.'.number', 'sepaaccount.name'],
+            'header'        => $this->name,
+            'order_by'      => ['0' => 'asc'],  // columnindex => direction
             'eager_loading' => ['sepaaccount'], ];
     }
 

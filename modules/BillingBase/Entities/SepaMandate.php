@@ -16,12 +16,12 @@ class SepaMandate extends \BaseModel
         return [
             'reference' => 'required',
             // holder must not contain a semicolon supposed to DFÜ-Abkommen Anlage 3 v3.3 said by Sparkasse
-            'holder' => 'String|Max:70|regex:/^([^;]*)$/',
-            'iban' => 'required|iban',
-            'bic' => 'bic|regex:/^[A-Z]{6}[A-Z2-9][A-NP-Z0-9]([A-Z0-9]{3}){0,3}$/',			// see SepaMandateController@prep_rules, Sparkasse/S-Firm regex from error message of sepa-xml upload
+            'holder'         => 'String|Max:70|regex:/^([^;]*)$/',
+            'iban'           => 'required|iban',
+            'bic'            => 'bic|regex:/^[A-Z]{6}[A-Z2-9][A-NP-Z0-9]([A-Z0-9]{3}){0,3}$/',			// see SepaMandateController@prep_rules, Sparkasse/S-Firm regex from error message of sepa-xml upload
             'signature_date' => 'date|required',
-            'valid_from' => 'date|required',
-            'valid_to' => 'nullable|date',
+            'valid_from'     => 'date|required',
+            'valid_to'       => 'nullable|date',
         ];
     }
 
@@ -47,11 +47,11 @@ class SepaMandate extends \BaseModel
         $bsclass = $this->get_bsclass();
         $valid_to = $this->valid_to ? ' - '.$this->valid_to : '';
 
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => [$this->table.'.holder', $this->table.'.valid_from', $this->table.'.valid_to', $this->table.'.reference', 'iban', $this->table.'.disable'],
-            'bsclass' => $bsclass,
-            'order_by' => ['0' => 'asc'],
-            'header' => "$this->reference - $this->iban - $this->valid_from $valid_to",
+            'bsclass'      => $bsclass,
+            'order_by'     => ['0' => 'asc'],
+            'header'       => "$this->reference - $this->iban - $this->valid_from $valid_to",
         ];
     }
 

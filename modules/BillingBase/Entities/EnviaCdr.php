@@ -134,11 +134,11 @@ class EnviaCdr extends CdrGetter
 
             $data = [
                 'calling_nr' => $arr[3],
-                'date' => substr($arr[4], 4).'-'.substr($arr[4], 2, 2).'-'.substr($arr[4], 0, 2),
-                'starttime' => $arr[5],
-                'duration' => $arr[6],
-                'called_nr' => $arr[7],
-                'price' => str_replace(',', '.', $arr[10]),
+                'date'       => substr($arr[4], 4).'-'.substr($arr[4], 2, 2).'-'.substr($arr[4], 0, 2),
+                'starttime'  => $arr[5],
+                'duration'   => $arr[6],
+                'called_nr'  => $arr[7],
+                'price'      => str_replace(',', '.', $arr[10]),
             ];
 
             // extend $data for other providers

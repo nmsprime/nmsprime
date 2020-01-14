@@ -43,37 +43,37 @@ return [
     'disks' => [
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app'),
+            'root'   => storage_path('app'),
         ],
 
         'public' => [
-            'driver' => 'local',
-            'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'driver'     => 'local',
+            'root'       => storage_path('app/public'),
+            'url'        => env('APP_URL').'/storage',
             'visibility' => 'public',
         ],
 
         's3' => [
             'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID', 'your-key'),
+            'key'    => env('AWS_ACCESS_KEY_ID', 'your-key'),
             'secret' => env('AWS_SECRET_ACCESS_KEY', 'your-secret'),
             'region' => env('AWS_DEFAULT_REGION', 'your-region'),
             'bucket' => env('AWS_BUCKET', 'your-bucket'),
         ],
 
         'rackspace' => [
-            'driver' => 'rackspace',
-            'username' => 'your-username',
-            'key' => 'your-key',
+            'driver'    => 'rackspace',
+            'username'  => 'your-username',
+            'key'       => 'your-key',
             'container' => 'your-container',
-            'endpoint' => 'https://identity.api.rackspacecloud.com/v2.0/',
-            'region' => 'IAD',
-            'url_type' => 'publicURL',
+            'endpoint'  => 'https://identity.api.rackspacecloud.com/v2.0/',
+            'region'    => 'IAD',
+            'url_type'  => 'publicURL',
         ],
 
         'chart-data' => [
             'driver' => 'local',
-            'root' => storage_path('/app/data/dashboard'),
+            'root'   => storage_path('/app/data/dashboard'),
         ],
     ],
 ];

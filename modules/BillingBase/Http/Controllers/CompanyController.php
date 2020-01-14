@@ -5,7 +5,7 @@ namespace Modules\BillingBase\Http\Controllers;
 class CompanyController extends \BaseController
 {
     protected $file_upload_paths = [
-        'logo' => 'app/config/billingbase/logo/',
+        'logo'                  => 'app/config/billingbase/logo/',
         'conn_info_template_fn' => 'app/config/ccc/template/',
     ];
 

@@ -30,23 +30,23 @@ class Contract extends \BaseModel
     public static function rules($id = null)
     {
         $rules = [
-            'number' => 'string|unique:contract,number,'.$id.',id,deleted_at,NULL',
+            'number'  => 'string|unique:contract,number,'.$id.',id,deleted_at,NULL',
             'number2' => 'nullable|string|unique:contract,number2,'.$id.',id,deleted_at,NULL',
             'number3' => 'nullable|string|unique:contract,number3,'.$id.',id,deleted_at,NULL',
             // 'number4' => 'string|unique:contract,number4,'.$id.',id,deleted_at,NULL', 	// old customer number must not be unique!
-            'company' => 'required_if:salutation,placeholder_salutations_institution',
+            'company'   => 'required_if:salutation,placeholder_salutations_institution',
             'firstname' => 'required_if:salutation,placeholder_salutations_person',
-            'lastname' => 'required_if:salutation,placeholder_salutations_person',
+            'lastname'  => 'required_if:salutation,placeholder_salutations_person',
 
-            'street' => 'required_without_all:realty_id,apartment_id',
-            'house_number' => 'required_without_all:realty_id,apartment_id',
-            'zip' => 'required_without_all:realty_id,apartment_id',
-            'city' => 'required_without_all:realty_id,apartment_id',
-            'phone' => 'required',
-            'email' => 'nullable|email',
-            'birthday' => 'required_if:salutation,placeholder_salutations_person|nullable|date',
+            'street'         => 'required_without_all:realty_id,apartment_id',
+            'house_number'   => 'required_without_all:realty_id,apartment_id',
+            'zip'            => 'required_without_all:realty_id,apartment_id',
+            'city'           => 'required_without_all:realty_id,apartment_id',
+            'phone'          => 'required',
+            'email'          => 'nullable|email',
+            'birthday'       => 'required_if:salutation,placeholder_salutations_person|nullable|date',
             'contract_start' => 'date',
-            'contract_end' => 'nullable|date', // |after:now -> implies we can not change stuff in an out-dated contract
+            'contract_end'   => 'nullable|date', // |after:now -> implies we can not change stuff in an out-dated contract
         ];
 
         if (Module::collections()->has('BillingBase')) {
@@ -74,11 +74,11 @@ class Contract extends \BaseModel
     {
         $bsclass = $this->get_bsclass();
 
-        $ret = ['table' => $this->table,
+        $ret = ['table'    => $this->table,
             'index_header' => [$this->table.'.number', $this->table.'.firstname', $this->table.'.lastname', 'company', 'email', $this->table.'.zip', $this->table.'.city', 'district', $this->table.'.street', $this->table.'.house_number', $this->table.'.contract_start', $this->table.'.contract_end'],
-            'header' => self::labelFromData($this),
-            'bsclass' => $bsclass,
-            'order_by' => ['0' => 'asc'], ];
+            'header'       => self::labelFromData($this),
+            'bsclass'      => $bsclass,
+            'order_by'     => ['0' => 'asc'], ];
 
         if (Module::collections()->has('BillingBase')) {
             $ret['index_header'][] = 'costcenter.name';
@@ -1181,7 +1181,7 @@ class Contract extends \BaseModel
     {
         // later use global config to get mapping
         $mappings = [
-            'number' => 'Contract number',
+            'number'  => 'Contract number',
             'number2' => 'Contract number legacy',
             'number3' => 'Customer number',
             'number4' => 'Customer number legacy',
@@ -1287,10 +1287,10 @@ class Contract extends \BaseModel
     {
         $ret = [
             'cancelation_day' => '',
-            'canceled_to' => '',
-            'end_of_term' => '',
-            'maturity' => '',
-            'tariff' => null,           // current valid tariff
+            'canceled_to'     => '',
+            'end_of_term'     => '',
+            'maturity'        => '',
+            'tariff'          => null,           // current valid tariff
         ];
 
         // check if contract was already canceled for settlement run
@@ -1380,7 +1380,7 @@ class Contract extends \BaseModel
         }
 
         return [
-            'amount' => $totalAmount,
+            'amount'  => $totalAmount,
             'bsclass' => $bsclass,
         ];
     }
@@ -1487,11 +1487,11 @@ class Contract extends \BaseModel
         }
 
         self::whereIn('id', $ids ?: [$this->id])->update([
-            'street' => $realty->street,
+            'street'       => $realty->street,
             'house_number' => $realty->house_nr,
-            'zip' => $realty->zip,
-            'city' => $realty->city,
-            'district' => $realty->district,
+            'zip'          => $realty->zip,
+            'city'         => $realty->city,
+            'district'     => $realty->district,
         ]);
     }
 

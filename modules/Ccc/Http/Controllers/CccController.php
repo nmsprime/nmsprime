@@ -19,8 +19,8 @@ class CccController extends \BaseController
             ['form_type' => 'text', 'name' => 'headline1', 'description' => 'Headline 1'],
             ['form_type' => 'text', 'name' => 'headline2', 'description' => 'Headline 2'],
             ['form_type' => 'select', 'name' => 'language', 'description' => 'Language',
-                'value' => $languages,
-                'help' => trans('helper.translate').' https://crowdin.com/project/nmsprime', ],
+                'value'  => $languages,
+                'help'   => trans('helper.translate').' https://crowdin.com/project/nmsprime', ],
         ];
 
         $b = [];

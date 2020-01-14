@@ -26,8 +26,8 @@ class NetGw extends \BaseModel
 
         return [
             'hostname' => 'required|unique:netgw,hostname,'.$id.',id,deleted_at,NULL',  	// unique: table, column, exception , (where clause)
-            'company' => 'required',
-            'type' => "required|in:$types",
+            'company'  => 'required',
+            'type'     => "required|in:$types",
         ];
     }
 
@@ -56,11 +56,11 @@ class NetGw extends \BaseModel
     {
         $bsclass = $this->get_bsclass();
 
-        $ret = ['table' => $this->table,
+        $ret = ['table'    => $this->table,
             'index_header' => [$this->table.'.id', $this->table.'.hostname', $this->table.'.ip', $this->table.'.company', $this->table.'.series'],
-            'header' => $this->hostname,
-            'bsclass' => $bsclass,
-            'order_by' => ['0' => 'asc'], ];
+            'header'       => $this->hostname,
+            'bsclass'      => $bsclass,
+            'order_by'     => ['0' => 'asc'], ];
 
         if (Sla::first()->valid()) {
             $ret['index_header'][] = $this->table.'.support_state';

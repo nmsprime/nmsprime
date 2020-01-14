@@ -46,9 +46,9 @@ class Indices extends \BaseModel
     {
         $header = isset($this->parameter) ? $this->parameter->id.': '.$this->parameter->oid->name : '';
 
-        return ['table' => $this->table,
-            'index_header' => ['parameter.oid.name'],
-            'header' => $header,
+        return ['table'     => $this->table,
+            'index_header'  => ['parameter.oid.name'],
+            'header'        => $header,
             'eager_loading' => ['parameter'], ];
     }
 

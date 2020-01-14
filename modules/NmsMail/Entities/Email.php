@@ -27,7 +27,7 @@ class Email extends \BaseModel
         return [
             'localpart' => 'regex:/^[0-9A-Za-z\.\-\_]+$/|required|max:64|unique:email,localpart,'.$id.',id,deleted_at,NULL',
             'domain_id' => 'required',
-            'index' => 'integer|required',
+            'index'     => 'integer|required',
             'forwardto' => 'email',
         ];
     }
@@ -38,11 +38,11 @@ class Email extends \BaseModel
     {
         $bsclass = $this->get_bsclass();
 
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => [$this->table.'.localpart', $this->table.'.index',  $this->table.'.greylisting',  $this->table.'.blacklisting',  $this->table.'.forwardto'],
             //'header' =>  $this->index.': '.$this->localpart.'@'.isset($this->domain) ? $this->domain->name : 'no-domain.com' ,
-            'bsclass' => $bsclass,
-            'order_by' => ['1' => 'asc'],
+            'bsclass'       => $bsclass,
+            'order_by'      => ['1' => 'asc'],
             'eager_loading' => ['domain'], ];
     }
 

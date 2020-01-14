@@ -72,15 +72,15 @@ class importTvCustomersCommand extends Command
     // mapping of Watt amount to credit
     // Watt amount => product_id
     const CREDITS_WATT = [
-        '4,5' => 51,
-        5 => 64,
-        7 => 62, 	// & 63
-        8 => 53,
-        '8,5' => 55,
-        11 => 65,
-        14 => 54,
-        15 => 61,
-        16 => 58,
+        '4,5'  => 51,
+        5      => 64,
+        7      => 62, 	// & 63
+        8      => 53,
+        '8,5'  => 55,
+        11     => 65,
+        14     => 54,
+        15     => 61,
+        16     => 58,
         '16,5' => 52, // & 57
     ];
 
@@ -333,12 +333,12 @@ class importTvCustomersCommand extends Command
         }
 
         Item::create([
-            'contract_id' => $contract->id,
-            'product_id' => $product_id,
-            'valid_from' => $line[self::C_START] ?: '2000-01-01',
+            'contract_id'      => $contract->id,
+            'product_id'       => $product_id,
+            'valid_from'       => $line[self::C_START] ?: '2000-01-01',
             'valid_from_fixed' => 1,
-            'valid_to' => $contract->contract_end,
-            'valid_to_fixed' => 1,
+            'valid_to'         => $contract->contract_end,
+            'valid_to_fixed'   => 1,
         ]);
 
         \Log::info("Add TV Tariff $product_id for Contract $contract->number");
@@ -390,12 +390,12 @@ class importTvCustomersCommand extends Command
         }
 
         Item::create([
-            'contract_id' => $contract->id,
-            'product_id' => $product_id,
-            'valid_from' => $contract->contract_start,
+            'contract_id'      => $contract->id,
+            'product_id'       => $product_id,
+            'valid_from'       => $contract->contract_start,
             'valid_from_fixed' => 1,
-            'valid_to' => $contract->contract_end,
-            'valid_to_fixed' => 1,
+            'valid_to'         => $contract->contract_end,
+            'valid_to_fixed'   => 1,
             // 'credit_amount' 	=> $credit_amount,
             'costcenter_id' => $this->option('ccContract'),
         ]);
@@ -436,16 +436,16 @@ class importTvCustomersCommand extends Command
         }
 
         SepaMandate::create([
-            'contract_id' => $contract->id,
-            'reference' => $line[self::C_NR],
+            'contract_id'    => $contract->id,
+            'reference'      => $line[self::C_NR],
             'signature_date' => $signature_date,
-            'holder' => $line[self::S_HOLDER],
-            'iban' => $line[self::S_IBAN],
-            'bic' => $line[self::S_BIC],
-            'institute' => $line[self::S_INST],
-            'valid_from' => date('Y-m-d', strtotime($line[self::S_SIGNATURE])),
-            'state' => 'RCUR',
-            'costcenter_id' => $this->option('ccSepa'),
+            'holder'         => $line[self::S_HOLDER],
+            'iban'           => $line[self::S_IBAN],
+            'bic'            => $line[self::S_BIC],
+            'institute'      => $line[self::S_INST],
+            'valid_from'     => date('Y-m-d', strtotime($line[self::S_SIGNATURE])),
+            'state'          => 'RCUR',
+            'costcenter_id'  => $this->option('ccSepa'),
             // 'valid_to' 	=> NULL,
         ]);
 

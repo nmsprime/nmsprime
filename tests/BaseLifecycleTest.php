@@ -708,9 +708,9 @@ class BaseLifecycleTest extends TestCase
             // this is necessary because of the datables there is no HTML content to be clicked
             $form_data = [
                 '_delete' => '',
-                '_token' => Session::token(),
+                '_token'  => Session::token(),
                 '_method' => 'DELETE',
-                'ids' => $post_ids,
+                'ids'     => $post_ids,
             ];
 
             // the url to send the POST request to

@@ -91,16 +91,16 @@ class ProvVoipEnviaController extends \BaseController
 
         // as this method is not protected by normal auth mechanism we will allow only a small number of jobs
         $allowed_cron_jobs = [
-            'misc_get_keys' => $base_url.'misc/get_keys',
-            'misc_get_orders_csv' => $base_url.'misc/get_orders_csv',
-            'order_get_status' => $base_url.'order/get_status',
-            'contract_get_reference' => $base_url.'contract/get_reference',
-            'contract_get_tariff' => $base_url.'contract/get_tariff',
-            'contract_get_variation' => $base_url.'contract/get_variation',
-            'contract_get_voice_data' => $base_url.'contract/get_voice_data',
-            'customer_get_contracts' => $base_url.'customer/get_contracts',
-            'customer_get_reference' => $base_url.'customer/get_reference',
-            'customer_get_reference_by_legacy_number' => $base_url.'customer/get_reference',
+            'misc_get_keys'                            => $base_url.'misc/get_keys',
+            'misc_get_orders_csv'                      => $base_url.'misc/get_orders_csv',
+            'order_get_status'                         => $base_url.'order/get_status',
+            'contract_get_reference'                   => $base_url.'contract/get_reference',
+            'contract_get_tariff'                      => $base_url.'contract/get_tariff',
+            'contract_get_variation'                   => $base_url.'contract/get_variation',
+            'contract_get_voice_data'                  => $base_url.'contract/get_voice_data',
+            'customer_get_contracts'                   => $base_url.'customer/get_contracts',
+            'customer_get_reference'                   => $base_url.'customer/get_reference',
+            'customer_get_reference_by_legacy_number'  => $base_url.'customer/get_reference',
             'misc_get_orders_csv_process_single_order' => '',
         ];
 
@@ -253,11 +253,11 @@ class ProvVoipEnviaController extends \BaseController
 
         // default values for data array
         $data = [
-            'error' => false,
+            'error'      => false,
             'error_type' => null,
-            'error_msg' => null,
-            'status' => null,
-            'xml' => null,
+            'error_msg'  => null,
+            'status'     => null,
+            'xml'        => null,
         ];
 
         try {
@@ -310,11 +310,11 @@ class ProvVoipEnviaController extends \BaseController
         // defining cURL options (http://php.net/manual/en/function.curl-setopt.php)
         $curl_options = [
             // basic options
-            CURLOPT_URL => $url,
+            CURLOPT_URL        => $url,
             CURLOPT_HTTPHEADER => $http_headers,
 
             // method and data to use
-            CURLOPT_POST => true,
+            CURLOPT_POST       => true,
             CURLOPT_POSTFIELDS => $payload,
 
             // verify peer's certificate to prevent MITM attacks
@@ -709,43 +709,43 @@ class ProvVoipEnviaController extends \BaseController
 
             'availability_check' => $this->base_url.'availability/check',
 
-            'contract_change_method' => $this->base_url.'contract/change_method',
-            'contract_change_sla' => $this->base_url.'____TODO____',
-            'contract_change_tariff' => $this->base_url.'contract/change_tariff',
+            'contract_change_method'    => $this->base_url.'contract/change_method',
+            'contract_change_sla'       => $this->base_url.'____TODO____',
+            'contract_change_tariff'    => $this->base_url.'contract/change_tariff',
             'contract_change_variation' => $this->base_url.'contract/change_variation',
-            'contract_create' => $this->base_url.'contract/create',
-            'contract_get_reference' => $this->base_url.'contract/get_reference',
-            'contract_get_tariff' => $this->base_url.'contract/get_tariff',
-            'contract_get_variation' => $this->base_url.'contract/get_variation',
-            'contract_get_voice_data' => $this->base_url.'contract/get_voice_data',
-            'contract_lock' => $this->base_url.'____TODO____',
-            'contract_relocate' => $this->base_url.'contract/relocate',
-            'contract_terminate' => $this->base_url.'contract/terminate',
-            'contract_unlock' => $this->base_url.'____TODO____',
+            'contract_create'           => $this->base_url.'contract/create',
+            'contract_get_reference'    => $this->base_url.'contract/get_reference',
+            'contract_get_tariff'       => $this->base_url.'contract/get_tariff',
+            'contract_get_variation'    => $this->base_url.'contract/get_variation',
+            'contract_get_voice_data'   => $this->base_url.'contract/get_voice_data',
+            'contract_lock'             => $this->base_url.'____TODO____',
+            'contract_relocate'         => $this->base_url.'contract/relocate',
+            'contract_terminate'        => $this->base_url.'contract/terminate',
+            'contract_unlock'           => $this->base_url.'____TODO____',
 
-            'customer_get_contracts' => $this->base_url.'customer/get_contracts',
-            'customer_get_reference' => $this->base_url.'customer/get_reference',
+            'customer_get_contracts'                  => $this->base_url.'customer/get_contracts',
+            'customer_get_reference'                  => $this->base_url.'customer/get_reference',
             'customer_get_reference_by_legacy_number' => $this->base_url.'customer/get_reference',
-            'customer_update' => $this->base_url.'customer/update',
+            'customer_update'                         => $this->base_url.'customer/update',
 
             'misc_get_free_numbers' => $this->base_url.'misc/get_free_numbers',
-            'misc_get_keys' => $this->base_url.'misc/get_keys',
-            'misc_get_orders_csv' => $this->base_url.'misc/get_orders_csv',
-            'misc_get_usage_csv' => $this->base_url.'misc/get_usage_csv',
-            'misc_ping' => $this->base_url.'misc/ping',
+            'misc_get_keys'         => $this->base_url.'misc/get_keys',
+            'misc_get_orders_csv'   => $this->base_url.'misc/get_orders_csv',
+            'misc_get_usage_csv'    => $this->base_url.'misc/get_usage_csv',
+            'misc_ping'             => $this->base_url.'misc/ping',
 
-            'order_add_mgcp_details' => $this->base_url.'____TODO____',
-            'order_cancel' => $this->base_url.'order/cancel',
+            'order_add_mgcp_details'  => $this->base_url.'____TODO____',
+            'order_cancel'            => $this->base_url.'order/cancel',
             'order_create_attachment' => $this->base_url.'order/create_attachment',
-            'order_get_status' => $this->base_url.'order/get_status',
+            'order_get_status'        => $this->base_url.'order/get_status',
 
             'phonebookentry_create' => $this->base_url.'phonebookentry/create',
             'phonebookentry_delete' => $this->base_url.'phonebookentry/delete',
-            'phonebookentry_get' => $this->base_url.'phonebookentry/get',
+            'phonebookentry_get'    => $this->base_url.'phonebookentry/get',
 
-            'voip_account_create' => $this->base_url.'voip_account/create',
+            'voip_account_create'    => $this->base_url.'voip_account/create',
             'voip_account_terminate' => $this->base_url.'voip_account/terminate',
-            'voip_account_update' => $this->base_url.'voip_account/update',
+            'voip_account_update'    => $this->base_url.'voip_account/update',
         ];
 
         return $urls;

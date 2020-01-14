@@ -1,16 +1,16 @@
 <?php
 
 return[
-    'link' => 'Dashboard.index',
+    'link'      => 'Dashboard.index',
     'MenuItems' => [
         'Config Page' => [
-            'link' => 'Config.index',
-            'icon' => 'fa-book',
+            'link'  => 'Config.index',
+            'icon'  => 'fa-book',
             'class' => App\GlobalConfig::class,
         ],
         'Logging' => [
-            'link' => 'GuiLog.index',
-            'icon' => 'fa-history',
+            'link'  => 'GuiLog.index',
+            'icon'  => 'fa-history',
             'class' => App\GuiLog::class,
         ],
     ],

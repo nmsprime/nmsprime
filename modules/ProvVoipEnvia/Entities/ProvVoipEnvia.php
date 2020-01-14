@@ -513,13 +513,13 @@ class ProvVoipEnvia extends \BaseModel
                 ['class' => trans('provvoipenvia::view.api.misc')],
                 [
                     'linktext' => trans('provvoipenvia::view.api.miscPing'),
-                    'url' => $base.'misc_ping'.$origin.$really,
-                    'help' => trans('provvoipenvia::help.api.miscPing'),
+                    'url'      => $base.'misc_ping'.$origin.$really,
+                    'help'     => trans('provvoipenvia::help.api.miscPing'),
                 ],
                 [
                     'linktext' => trans('provvoipenvia::view.api.miscGetFreeNumbers'),
-                    'url' => $base.'misc_get_free_numbers'.$origin.$really,
-                    'help' => trans('provvoipenvia::help.api.miscGetFreeNumbers'),
+                    'url'      => $base.'misc_get_free_numbers'.$origin.$really,
+                    'help'     => trans('provvoipenvia::help.api.miscGetFreeNumbers'),
                 ],
             ];
 
@@ -533,8 +533,8 @@ class ProvVoipEnvia extends \BaseModel
 
             array_push($ret, [
                 'linktext' => trans('provvoipenvia::view.api.miscGetUsageCsv'),
-                'url' => $base.'misc_get_usage_csv'.$origin.$really,
-                'help' => trans('provvoipenvia::help.api.miscGetUsageCsv'),
+                'url'      => $base.'misc_get_usage_csv'.$origin.$really,
+                'help'     => trans('provvoipenvia::help.api.miscGetUsageCsv'),
             ]);
         }
 
@@ -546,8 +546,8 @@ class ProvVoipEnvia extends \BaseModel
             if ($this->api_version_greater_or_equal('2.2')) {
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.customerGetContracts'),
-                    'url' => $base.'customer_get_contracts'.$origin.'&amp;contract_id='.$contract_id.$really,
-                    'help' => trans('provvoipenvia::help.api.customerGetContracts'),
+                    'url'      => $base.'customer_get_contracts'.$origin.'&amp;contract_id='.$contract_id.$really,
+                    'help'     => trans('provvoipenvia::help.api.customerGetContracts'),
                 ]);
             }
 
@@ -555,23 +555,23 @@ class ProvVoipEnvia extends \BaseModel
             if ($this->at_least_one_contract_available) {
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.customerGetReference'),
-                    'url' => $base.'customer_get_reference'.$origin.'&amp;contract_id='.$contract_id.$really,
-                    'help' => trans('provvoipenvia::help.api.customerGetReference'),
+                    'url'      => $base.'customer_get_reference'.$origin.'&amp;contract_id='.$contract_id.$really,
+                    'help'     => trans('provvoipenvia::help.api.customerGetReference'),
                 ]);
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.customerGetReferenceLegacy'),
-                    'url' => $base.'customer_get_reference_by_legacy_number'.$origin.'&amp;contract_id='.$contract_id.$really,
-                    'help' => trans('provvoipenvia::help.api.customerGetReferenceLegacy'),
+                    'url'      => $base.'customer_get_reference_by_legacy_number'.$origin.'&amp;contract_id='.$contract_id.$really,
+                    'help'     => trans('provvoipenvia::help.api.customerGetReferenceLegacy'),
                 ]);
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.customerUpdate'),
-                    'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id,
-                    'help' => trans('provvoipenvia::help.api.customerUpdate'),
+                    'url'      => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id,
+                    'help'     => trans('provvoipenvia::help.api.customerUpdate'),
                 ]);
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.customerUpdateNumber'),
-                    'url' => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id.'&amp;customer_update=number',
-                    'help' => trans('provvoipenvia::help.api.customerUpdateNumber'),
+                    'url'      => $base.'customer_update'.$origin.'&amp;contract_id='.$contract_id.'&amp;customer_update=number',
+                    'help'     => trans('provvoipenvia::help.api.customerUpdateNumber'),
                 ]);
             }
         }
@@ -586,18 +586,18 @@ class ProvVoipEnvia extends \BaseModel
                 // can get reference if phonenumber exists at envia TEL
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.contractGetReference'),
-                    'url' => $base.'contract_get_reference'.$origin.'&amp;phonenumber_id='.$phonenumber_id.$really,
-                    'help' => trans('provvoipenvia::help.api.contractGetReference'),
+                    'url'      => $base.'contract_get_reference'.$origin.'&amp;phonenumber_id='.$phonenumber_id.$really,
+                    'help'     => trans('provvoipenvia::help.api.contractGetReference'),
                 ]);
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.contractGetTariff'),
-                    'url' => $base.'contract_get_tariff'.$origin.'&amp;phonenumber_id='.$phonenumber_id.$really,
-                    'help' => trans('provvoipenvia::help.api.contractGetTariff'),
+                    'url'      => $base.'contract_get_tariff'.$origin.'&amp;phonenumber_id='.$phonenumber_id.$really,
+                    'help'     => trans('provvoipenvia::help.api.contractGetTariff'),
                 ]);
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.contractGetVariation'),
-                    'url' => $base.'contract_get_variation'.$origin.'&amp;phonenumber_id='.$phonenumber_id.$really,
-                    'help' => trans('provvoipenvia::help.api.contractGetVariation'),
+                    'url'      => $base.'contract_get_variation'.$origin.'&amp;phonenumber_id='.$phonenumber_id.$really,
+                    'help'     => trans('provvoipenvia::help.api.contractGetVariation'),
                 ]);
             }
             // “normal“ jobs
@@ -605,8 +605,8 @@ class ProvVoipEnvia extends \BaseModel
             if (! $this->contract_available) {
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.contractCreate'),
-                    'url' => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id.$phonenumbers_to_create,
-                    'help' => trans('provvoipenvia::help.api.contractCreate'),
+                    'url'      => $base.'contract_create'.$origin.'&amp;modem_id='.$modem_id.$phonenumbers_to_create,
+                    'help'     => trans('provvoipenvia::help.api.contractCreate'),
                 ]);
             }
 
@@ -615,8 +615,8 @@ class ProvVoipEnvia extends \BaseModel
                 if ($this->api_version_greater_or_equal('1.4')) {
                     array_push($ret, [
                         'linktext' => trans('provvoipenvia::view.api.contractRelocate'),
-                        'url' => $base.'contract_relocate'.$origin.'&amp;modem_id='.$modem_id,
-                        'help' => trans('provvoipenvia::help.api.contractRelocate'),
+                        'url'      => $base.'contract_relocate'.$origin.'&amp;modem_id='.$modem_id,
+                        'help'     => trans('provvoipenvia::help.api.contractRelocate'),
                     ]);
                 }
             }
@@ -640,8 +640,8 @@ class ProvVoipEnvia extends \BaseModel
                 }
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.contractGetVoiceData'),
-                    'url' => $base.'contract_get_voice_data'.$origin.'&amp;'.$id.$really,
-                    'help' => trans('provvoipenvia::help.api.contractGetVoiceData'),
+                    'url'      => $base.'contract_get_voice_data'.$origin.'&amp;'.$id.$really,
+                    'help'     => trans('provvoipenvia::help.api.contractGetVoiceData'),
                 ]);
             }
 
@@ -653,8 +653,8 @@ class ProvVoipEnvia extends \BaseModel
                     if ($this->contract->voip_id != $this->contract->next_voip_id) {
                         array_push($ret, [
                             'linktext' => trans('provvoipenvia::view.api.contractChangeTariff'),
-                            'url' => $base.'contract_change_tariff'.$origin.'&amp;modem_id='.$modem_id,
-                            'help' => trans('provvoipenvia::help.api.contractChangeTariff'),
+                            'url'      => $base.'contract_change_tariff'.$origin.'&amp;modem_id='.$modem_id,
+                            'help'     => trans('provvoipenvia::help.api.contractChangeTariff'),
                         ]);
                     }
                 }
@@ -694,8 +694,8 @@ class ProvVoipEnvia extends \BaseModel
                     if ($this->contract->purchase_tariff != $this->contract->next_purchase_tariff) {
                         array_push($ret, [
                             'linktext' => trans('provvoipenvia::view.api.contractChangeVariation'),
-                            'url' => $base.'contract_change_variation'.$origin.'&amp;modem_id='.$modem_id,
-                            'help' => trans('provvoipenvia::help.api.contractChangeVariation'),
+                            'url'      => $base.'contract_change_variation'.$origin.'&amp;modem_id='.$modem_id,
+                            'help'     => trans('provvoipenvia::help.api.contractChangeVariation'),
                         ]);
                     }
                 }
@@ -711,32 +711,32 @@ class ProvVoipEnvia extends \BaseModel
             if (! $this->voipaccount_created && $this->contract_available) {
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.voipAccountCreate'),
-                    'url' => $base.'voip_account_create'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
-                    'help' => trans('provvoipenvia::help.api.voipAccountCreate'),
+                    'url'      => $base.'voip_account_create'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
+                    'help'     => trans('provvoipenvia::help.api.voipAccountCreate'),
                 ]);
             }
 
             if ($this->voipaccount_available) {
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.voipAccountTerminate'),
-                    'url' => $base.'voip_account_terminate'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
-                    'help' => trans('provvoipenvia::help.api.voipAccountTerminate'),
+                    'url'      => $base.'voip_account_terminate'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
+                    'help'     => trans('provvoipenvia::help.api.voipAccountTerminate'),
                 ]);
             }
 
             if ($this->voipaccount_available) {
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.voipAccountUpdate'),
-                    'url' => $base.'voip_account_update'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
-                    'help' => trans('provvoipenvia::help.api.voipAccountUpdate'),
+                    'url'      => $base.'voip_account_update'.$origin.'&amp;phonenumber_id='.$phonenumber_id,
+                    'help'     => trans('provvoipenvia::help.api.voipAccountUpdate'),
                 ]);
             }
 
             if ($this->voipaccount_available) {
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.clearEnviaContractReference'),
-                    'url' => \Request::getRequestUri().'?clear_envia_reference=1',
-                    'help' => trans('provvoipenvia::help.api.clearEnviaContractReference'),
+                    'url'      => \Request::getRequestUri().'?clear_envia_reference=1',
+                    'help'     => trans('provvoipenvia::help.api.clearEnviaContractReference'),
                 ]);
             }
         }
@@ -750,23 +750,23 @@ class ProvVoipEnvia extends \BaseModel
             if ($this->voipaccount_available) {
                 array_push($ret, [
                     'linktext' => trans('provvoipenvia::view.api.phonebookEntryGet'),
-                    'url' => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id.$really,
-                    'help' => trans('provvoipenvia::help.api.phonebookEntryGet'),
+                    'url'      => $base.'phonebookentry_get'.$origin.'&amp;phonenumbermanagement_id='.$phonenumbermanagement_id.$really,
+                    'help'     => trans('provvoipenvia::help.api.phonebookEntryGet'),
                 ]);
 
                 if ($view_level == 'phonebookentry') {
                     array_push($ret, [
                         'linktext' => trans('provvoipenvia::view.api.phonebookEntryCreate'),
-                        'url' => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
-                        'help' => trans('provvoipenvia::help.api.phonebookEntryCreate'),
+                        'url'      => $base.'phonebookentry_create'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
+                        'help'     => trans('provvoipenvia::help.api.phonebookEntryCreate'),
                     ]);
                 }
 
                 if ($view_level == 'phonebookentry') {
                     array_push($ret, [
                         'linktext' => trans('provvoipenvia::view.api.phonebookEntryDelete'),
-                        'url' => $base.'phonebookentry_delete'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
-                        'help' => trans('provvoipenvia::help.api.phonebookEntryDelete'),
+                        'url'      => $base.'phonebookentry_delete'.$origin.'&amp;phonebookentry_id='.$phonebookentry_id,
+                        'help'     => trans('provvoipenvia::help.api.phonebookEntryDelete'),
                     ]);
                 }
             }
@@ -824,8 +824,8 @@ class ProvVoipEnvia extends \BaseModel
                         }
                         array_push($ret, [
                             'linktext' => $linktext,
-                            'url' => $url,
-                            'help' => $help,
+                            'url'      => $url,
+                            'help'     => $help,
                         ]);
                     }
                 }
@@ -1092,7 +1092,7 @@ class ProvVoipEnvia extends \BaseModel
             || ($xml->getName() == 'nested_error')
         ) {
             $error = [
-                'status' => (string) $xml->status ? ((string) $xml->status) : 'n/a',
+                'status'  => (string) $xml->status ? ((string) $xml->status) : 'n/a',
                 'message' => (string) $xml->message ? ((string) $xml->message) : 'n/a',
             ];
             array_push($errors, $error);
@@ -1101,7 +1101,7 @@ class ProvVoipEnvia extends \BaseModel
         // Workaround for malformed error xml (<hash><[status|error]></hash>)
         if ($xml->getName() == 'hash') {
             $error = [
-                'status' => (string) $xml->status ? ((string) $xml->status) : 'n/a',
+                'status'  => (string) $xml->status ? ((string) $xml->status) : 'n/a',
                 'message' => '',
             ];
             if ($xml->message) {
@@ -1158,7 +1158,7 @@ class ProvVoipEnvia extends \BaseModel
         $key_new_number = 'New number';
 
         $phonenumbers_on_modem = [
-            $key_no_mgmt => [],
+            $key_no_mgmt    => [],
             $key_new_number => [],
         ];
 
@@ -1257,8 +1257,8 @@ class ProvVoipEnvia extends \BaseModel
         $defaults = [
             'contract_data' => [
                 // set phonebookentry to no by default ⇒ this later can be overwritten by excplicitely creating a phonebookentry
-                'phonebookentry_phone' => 0,
-                'phonebookentry_fax' => 0,
+                'phonebookentry_phone'          => 0,
+                'phonebookentry_fax'            => 0,
                 'phonebookentry_reverse_search' => 0,
             ],
         ];
@@ -1681,15 +1681,15 @@ class ProvVoipEnvia extends \BaseModel
         // mapping xml to database
         $fields = [
             'salutation' => 'salutation',
-            'firstname' => 'firstname',
-            'lastname' => 'lastname',
-            'street' => 'street',
-            'houseno' => 'house_number',
-            'zipcode' => 'zip',
-            'city' => 'city',
-            'district' => 'district',
-            'birthday' => 'birthday',
-            'company' => 'company',
+            'firstname'  => 'firstname',
+            'lastname'   => 'lastname',
+            'street'     => 'street',
+            'houseno'    => 'house_number',
+            'zipcode'    => 'zip',
+            'city'       => 'city',
+            'district'   => 'district',
+            'birthday'   => 'birthday',
+            'company'    => 'company',
             'department' => 'department',
         ];
         if ($to_update == 'number') {
@@ -1710,10 +1710,10 @@ class ProvVoipEnvia extends \BaseModel
 
         // mapping xml to database
         $fields = [
-            'street' => 'street',
-            'houseno' => 'house_number',
-            'zipcode' => 'zip',
-            'city' => 'city',
+            'street'   => 'street',
+            'houseno'  => 'house_number',
+            'zipcode'  => 'zip',
+            'city'     => 'city',
             'district' => 'district',
         ];
 
@@ -1737,15 +1737,15 @@ class ProvVoipEnvia extends \BaseModel
         // mapping xml to database
         $fields = [
             'salutation' => 'salutation',
-            'firstname' => 'firstname',
-            'lastname' => 'lastname',
-            'street' => 'street',
-            'houseno' => 'house_number',
-            'zipcode' => 'zip',
-            'city' => 'city',
-            'district' => 'district',
-            'birthday' => 'birthday',
-            'company' => 'company',
+            'firstname'  => 'firstname',
+            'lastname'   => 'lastname',
+            'street'     => 'street',
+            'houseno'    => 'house_number',
+            'zipcode'    => 'zip',
+            'city'       => 'city',
+            'district'   => 'district',
+            'birthday'   => 'birthday',
+            'company'    => 'company',
             'department' => 'department',
         ];
 
@@ -1977,7 +1977,7 @@ class ProvVoipEnvia extends \BaseModel
             $callnumber_id_xml = $callnumber_xml->addChild('callnumber_identifier');
             $fields = [
                 'localareacode' => 'prefix_number',
-                'baseno' => 'number',
+                'baseno'        => 'number',
             ];
             $this->_add_fields($callnumber_id_xml, $fields, $phonenumber);
 
@@ -2062,16 +2062,16 @@ class ProvVoipEnvia extends \BaseModel
 
         // mapping xml to database
         $fields_subscriber = [
-            'company' => 'subscriber_company',
+            'company'    => 'subscriber_company',
             'department' => 'subscriber_department',
             'salutation' => 'subscriber_salutation',
-            'firstname' => 'subscriber_firstname',
-            'lastname' => 'subscriber_lastname',
-            'street' => 'subscriber_street',
-            'houseno' => 'subscriber_house_number',
-            'zipcode' => 'subscriber_zip',
-            'city' => 'subscriber_city',
-            'district' => 'subscriber_district',
+            'firstname'  => 'subscriber_firstname',
+            'lastname'   => 'subscriber_lastname',
+            'street'     => 'subscriber_street',
+            'houseno'    => 'subscriber_house_number',
+            'zipcode'    => 'subscriber_zip',
+            'city'       => 'subscriber_city',
+            'district'   => 'subscriber_district',
         ];
 
         $this->_add_fields($inner_xml, $fields_subscriber, $phonenumbermanagement);
@@ -2136,7 +2136,7 @@ class ProvVoipEnvia extends \BaseModel
 
         $fields = [
             'localareacode' => 'prefix_number',
-            'baseno' => 'number',
+            'baseno'        => 'number',
         ];
 
         $this->_add_fields($inner_xml, $fields, $phonenumber);
@@ -2175,7 +2175,7 @@ class ProvVoipEnvia extends \BaseModel
 
         $fields = [
             'localareacode' => 'prefix_number',
-            'baseno' => 'number',
+            'baseno'        => 'number',
         ];
 
         $this->_add_fields($inner_xml, $fields, $this->phonenumber);
@@ -2236,7 +2236,7 @@ class ProvVoipEnvia extends \BaseModel
 
         $fields = [
             'localareacode' => 'prefix_number',
-            'baseno' => 'number',
+            'baseno'        => 'number',
         ];
 
         $this->_add_fields($inner_xml, $fields, $this->phonenumber);
@@ -2460,27 +2460,27 @@ class ProvVoipEnvia extends \BaseModel
         $inner_xml = $this->xml->addChild('phonebookentry_data');
 
         $fields = [
-            'salutation' => 'salutation',
-            'lastname' => 'lastname',
-            'firstname' => 'firstname',
-            'company' => 'company',
-            'noble_rank' => 'noble_rank',
-            'nobiliary_particle' => 'nobiliary_particle',
-            'academic_degree' => 'academic_degree',
-            'other_name_suffix' => 'other_name_suffix',
-            'business' => 'business',
-            'street' => 'street',
-            'houseno' => 'houseno',
-            'zipcode' => 'zipcode',
-            'city' => 'city',
-            'urban_district' => 'urban_district',
-            'usage' => 'usage',
-            'publish_in_print_media' => 'publish_in_print_media',
+            'salutation'                  => 'salutation',
+            'lastname'                    => 'lastname',
+            'firstname'                   => 'firstname',
+            'company'                     => 'company',
+            'noble_rank'                  => 'noble_rank',
+            'nobiliary_particle'          => 'nobiliary_particle',
+            'academic_degree'             => 'academic_degree',
+            'other_name_suffix'           => 'other_name_suffix',
+            'business'                    => 'business',
+            'street'                      => 'street',
+            'houseno'                     => 'houseno',
+            'zipcode'                     => 'zipcode',
+            'city'                        => 'city',
+            'urban_district'              => 'urban_district',
+            'usage'                       => 'usage',
+            'publish_in_print_media'      => 'publish_in_print_media',
             'publish_in_electronic_media' => 'publish_in_electronic_media',
-            'directory_assistance' => 'directory_assistance',
-            'entry_type' => 'entry_type',
-            'reverse_search' => 'reverse_search',
-            'publish_address' => 'publish_address',
+            'directory_assistance'        => 'directory_assistance',
+            'entry_type'                  => 'entry_type',
+            'reverse_search'              => 'reverse_search',
+            'publish_address'             => 'publish_address',
         ];
 
         $this->_add_fields($inner_xml, $fields, $this->phonebookentry);
@@ -2985,11 +2985,11 @@ class ProvVoipEnvia extends \BaseModel
 
         // create enviacontract
         $enviacontract_data = [
-            'external_creation_date' => date('Y-m-d H:i:s'),
+            'external_creation_date'   => date('Y-m-d H:i:s'),
             'envia_customer_reference' => $xml->customerreference,
             'envia_contract_reference' => $xml->contractreference,
-            'contract_id' => $this->contract->id,
-            'modem_id' => $this->modem->id,
+            'contract_id'              => $this->contract->id,
+            'modem_id'                 => $this->modem->id,
         ];
         $enviacontract = EnviaContract::create($enviacontract_data);
 
@@ -4007,8 +4007,8 @@ class ProvVoipEnvia extends \BaseModel
             $data = [
                 'envia_customer_reference' => $result['customerreference'],
                 'envia_contract_reference' => $result['contractreference'],
-                'modem_id' => $result['modem_id'],
-                'contract_id' => $result['contract_id'],
+                'modem_id'                 => $result['modem_id'],
+                'contract_id'              => $result['contract_id'],
             ];
             $enviacontract = EnviaContract::create($data);
             $msg = trans('provvoipenvia::messages.createdEnviaContract', [$enviacontract->id]);
@@ -4443,18 +4443,18 @@ class ProvVoipEnvia extends \BaseModel
                         if (is_null($contract)) {
                             // number not found ⇒ use dummy data
                             $contracts[$r] = [
-                                'id' => null,
-                                'name' => 'n/a',
+                                'id'        => null,
+                                'name'      => 'n/a',
                                 'firstname' => 'n/a',
-                                'city' => 'n/a',
+                                'city'      => 'n/a',
                             ];
                         } else {
                             // fill cache with database data
                             $contracts[$r] = [
-                                'id' => $contract->id,
-                                'name' => $contract->lastname,
+                                'id'        => $contract->id,
+                                'name'      => $contract->lastname,
                                 'firstname' => $contract->firstname,
-                                'city' => $contract->city,
+                                'city'      => $contract->city,
                             ];
                         }
 

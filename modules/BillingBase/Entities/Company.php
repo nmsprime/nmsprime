@@ -15,11 +15,11 @@ class Company extends \BaseModel
     {
         return [
             // 'name' => 'required|unique:netgw,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)
-            'name' => 'required',
-            'street' => 'required',
-            'zip' => 'required',
-            'city' => 'required',
-            'logo_upload' => 'mimes:jpg,jpeg,bmp,png,pdf',
+            'name'                         => 'required',
+            'street'                       => 'required',
+            'zip'                          => 'required',
+            'city'                         => 'required',
+            'logo_upload'                  => 'mimes:jpg,jpeg,bmp,png,pdf',
             'conn_info_template_fn_upload' => 'mimetypes:text/x-tex,application/x-tex',
         ];
     }
@@ -46,11 +46,11 @@ class Company extends \BaseModel
     {
         $bsclass = $this->get_bsclass();
 
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => [$this->table.'.name', $this->table.'.city', $this->table.'.phone', $this->table.'.mail'],
-            'bsclass' => $bsclass,
-            'header' => $this->name,
-            'order_by' => ['0' => 'asc'], // columnindex => direction
+            'bsclass'      => $bsclass,
+            'header'       => $this->name,
+            'order_by'     => ['0' => 'asc'], // columnindex => direction
         ];
     }
 

@@ -26,12 +26,12 @@ class NetElement extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'name' => 'required|string',
-            'pos' => 'nullable|geopos',
-            'community_ro' => 'nullable|regex:/(^[A-Za-z0-9]+$)+/',
-            'community_rw' => 'nullable|regex:/(^[A-Za-z0-9]+$)+/',
+            'name'              => 'required|string',
+            'pos'               => 'nullable|geopos',
+            'community_ro'      => 'nullable|regex:/(^[A-Za-z0-9]+$)+/',
+            'community_rw'      => 'nullable|regex:/(^[A-Za-z0-9]+$)+/',
             'netelementtype_id' => 'required|exists:netelementtype,id,deleted_at,NULL|min:1',
-            'agc_offset' => 'nullable|numeric|between:-99.9,99.9',
+            'agc_offset'        => 'nullable|numeric|between:-99.9,99.9',
         ];
     }
 
@@ -88,13 +88,13 @@ class NetElement extends \BaseModel
     {
         $bsclass = $this->get_bsclass();
 
-        return ['table' => $this->table,
-            'index_header' => [$this->table.'.id', 'netelementtype.name', $this->table.'.name',  $this->table.'.ip', $this->table.'.pos', $this->table.'.options'],
-            'header' => $this->id.' - '.$this->name,
-            'bsclass' => $bsclass,
-            'order_by' => ['0' => 'asc'],
+        return ['table'     => $this->table,
+            'index_header'  => [$this->table.'.id', 'netelementtype.name', $this->table.'.name',  $this->table.'.ip', $this->table.'.pos', $this->table.'.options'],
+            'header'        => $this->id.' - '.$this->name,
+            'bsclass'       => $bsclass,
+            'order_by'      => ['0' => 'asc'],
             'eager_loading' => ['netelementtype'],
-            'edit' => ['netelementtype.name' => 'get_elementtype_name'], ];
+            'edit'          => ['netelementtype.name' => 'get_elementtype_name'], ];
     }
 
     public function get_bsclass()
@@ -347,8 +347,8 @@ class NetElement extends \BaseModel
             \Log::debug($debug);
 
             $netelement->update(['net' => $netelement->get_native_net(),
-                'cluster' => $netelement->get_native_cluster(),
-                'netgw' => $netelement->get_native_netgw(), ]);
+                'cluster'              => $netelement->get_native_cluster(),
+                'netgw'                => $netelement->get_native_netgw(), ]);
 
             if ($call_from_cmd == 1) {
                 echo "$debug\r";
@@ -411,11 +411,11 @@ class NetElement extends \BaseModel
     {
         if ($this->get_base_netelementtype() == 2) { // cluster
             return [
-                '0' => '8x4', // default
-                '81' => '8x1',
-                '82' => '8x2',
-                '84' => '8x4',
-                '88' => '8x8',
+                '0'   => '8x4', // default
+                '81'  => '8x1',
+                '82'  => '8x2',
+                '84'  => '8x4',
+                '88'  => '8x8',
                 '124' => '12x4',
                 '128' => '12x8',
                 '164' => '16x4',

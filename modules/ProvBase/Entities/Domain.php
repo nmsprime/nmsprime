@@ -34,11 +34,11 @@ class Domain extends \BaseModel
     {
         $bsclass = $this->get_bsclass();
 
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => [$this->table.'.name', $this->table.'.type', $this->table.'.alias'],
-            'header' => 'Domain: '.$this->name.' (Type: '.$this->type.')',
-            'bsclass' => $bsclass,
-            'order_by' => ['0' => 'asc'], ];
+            'header'       => 'Domain: '.$this->name.' (Type: '.$this->type.')',
+            'bsclass'      => $bsclass,
+            'order_by'     => ['0' => 'asc'], ];
     }
 
     public function get_bsclass()

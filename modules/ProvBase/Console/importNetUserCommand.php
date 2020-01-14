@@ -353,9 +353,9 @@ class importNetUserCommand extends Command
 
             // Create QoS and assign new
             $qos = Qos::create([
-                'name' => round($rates['ds'] / 1024000, 2).':'.round($rates['us'] / 1024000, 2),
-                'ds_rate_max' => $rates['ds'] / 1024000,
-                'us_rate_max' => $rates['us'] / 1024000,
+                'name'             => round($rates['ds'] / 1024000, 2).':'.round($rates['us'] / 1024000, 2),
+                'ds_rate_max'      => $rates['ds'] / 1024000,
+                'us_rate_max'      => $rates['us'] / 1024000,
                 'ds_rate_max_help' => $rates['ds'],
                 'us_rate_max_help' => $rates['us'],
             ]);
@@ -452,13 +452,13 @@ class importNetUserCommand extends Command
         $conditions = [
             'ds' => [
                 'MaxRateSustained' => '/DsServiceFlow(.*?)}/ms',
-                'MaxRateDown' => '/ClassOfService(.*?)}/ms',
-                'max_down_rate =' => '/cos {(.*?)}/ms',
+                'MaxRateDown'      => '/ClassOfService(.*?)}/ms',
+                'max_down_rate ='  => '/cos {(.*?)}/ms',
             ],
             'us' => [
                 'MaxRateSustained' => '/UsServiceFlow(.*?)}/ms',
-                'MaxRateUp' => '/ClassOfService(.*?)}/ms',
-                'max_up_rate =' => '/cos {(.*?)}/ms',
+                'MaxRateUp'        => '/ClassOfService(.*?)}/ms',
+                'max_up_rate ='    => '/cos {(.*?)}/ms',
             ],
         ];
 
@@ -553,8 +553,8 @@ class importNetUserCommand extends Command
         $types = [
             // Thomson
             'SnmpMibObject iso.3.6.1.4.1.2863' => [
-                'username' => 'iso.3.6.1.4.1.2863.78.3.4.1.1.3',
-                'password' => 'iso.3.6.1.4.1.2863.78.3.4.1.1.4',
+                'username'  => 'iso.3.6.1.4.1.2863.78.3.4.1.1.3',
+                'password'  => 'iso.3.6.1.4.1.2863.78.3.4.1.1.4',
                 'sipdomain' => 'iso.3.6.1.4.1.2863.78.3.4.1.1.6',
             ],
             // Arris

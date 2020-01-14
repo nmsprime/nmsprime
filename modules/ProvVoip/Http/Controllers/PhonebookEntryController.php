@@ -37,16 +37,16 @@ class PhonebookEntryController extends \BaseController
             $contract = $phonenumbermanagement->phonenumber->mta->modem->contract;
 
             $init_values = [
-                'company' => $contract->company,
-                'salutation' => $contract->salutation,
+                'company'         => $contract->company,
+                'salutation'      => $contract->salutation,
                 'academic_degree' => $contract->academic_degree,
-                'firstname' => $contract->firstname,
-                'lastname' => $contract->lastname,
-                'street' => $contract->street,
-                'houseno' => $contract->house_number,
-                'zipcode' => $contract->zip,
-                'city' => $contract->city,
-                'urban_district' => $contract->district,
+                'firstname'       => $contract->firstname,
+                'lastname'        => $contract->lastname,
+                'street'          => $contract->street,
+                'houseno'         => $contract->house_number,
+                'zipcode'         => $contract->zip,
+                'city'            => $contract->city,
+                'urban_district'  => $contract->district,
             ];
         }
         // edit

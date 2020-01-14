@@ -144,16 +144,16 @@ trait Geocoding
             // see https://wiki.openstreetmap.org/wiki/DE:Nominatim#Parameter for details
             // we are using the structured format (faster, saves server ressources – but marked experimental)
             $params = [
-                'street' => "$housenumber_prepared $this->street",
-                'postalcode' => $this->zip,
-                'city' => $this->city,
-                'country' => $country_code,
-                'email' => env('OSM_NOMINATIM_EMAIL'),	// has to be set (https://operations.osmfoundation.org/policies/nominatim); else 403 Forbidden
-                'format' => 'json',			// return format
-                'dedupe' => '1',			// only one geolocation (even if address is split to multiple places)?
-                'polygon' => '0',			// include surrounding polygons?
+                'street'         => "$housenumber_prepared $this->street",
+                'postalcode'     => $this->zip,
+                'city'           => $this->city,
+                'country'        => $country_code,
+                'email'          => env('OSM_NOMINATIM_EMAIL'),	// has to be set (https://operations.osmfoundation.org/policies/nominatim); else 403 Forbidden
+                'format'         => 'json',			// return format
+                'dedupe'         => '1',			// only one geolocation (even if address is split to multiple places)?
+                'polygon'        => '0',			// include surrounding polygons?
                 'addressdetails' => '0',	// not available using API
-                'limit' => '1',				// only request one result
+                'limit'          => '1',				// only request one result
             ];
 
             $url = $base_url.'?';
@@ -185,9 +185,9 @@ trait Geocoding
                     foreach ($housenumber_variants as $variant) {
                         if (\Str::contains(strtolower($display_name), $variant)) {	// don't check for startswith; sometimes a company name is added before the house number
                             $geodata = [
-                                'latitude' => $lat,
+                                'latitude'  => $lat,
                                 'longitude' => $lon,
-                                'source' => 'OSM Nominatim',
+                                'source'    => 'OSM Nominatim',
                             ];
                             break;
                         }
@@ -289,9 +289,9 @@ trait Geocoding
                 $lati && $longi && $formatted_address && ! $partial_match && in_array($location_type, $matches)
             ) {
                 $geodata = [
-                    'latitude' => $lati,
+                    'latitude'  => $lati,
                     'longitude' => $longi,
-                    'source' => 'Google Geocoding API',
+                    'source'    => 'Google Geocoding API',
                 ];
 
                 return $geodata;
@@ -302,9 +302,9 @@ trait Geocoding
                 $lati && $longi && $formatted_address && $partial_match && in_array($location_type, $interpolated_matches)
             ) {
                 $geodata = [
-                    'latitude' => $lati,
+                    'latitude'  => $lati,
                     'longitude' => $longi,
-                    'source' => 'Google Geocoding API (interpolated)',
+                    'source'    => 'Google Geocoding API (interpolated)',
                 ];
 
                 return $geodata;

@@ -1,6 +1,6 @@
 <?php
 
 return [
-    'name' => 'ProvMon',
+    'name'      => 'ProvMon',
     'MenuItems' => [],
 ];

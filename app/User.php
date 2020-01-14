@@ -88,9 +88,9 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
     public static function rules($id = null)
     {
         return [
-            'email' => 'nullable|email',
-            'login_name' => 'required|unique:users,login_name,'.$id.',id,deleted_at,NULL',
-            'password' => 'sometimes|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/|confirmed',
+            'email'                 => 'nullable|email',
+            'login_name'            => 'required|unique:users,login_name,'.$id.',id,deleted_at,NULL',
+            'password'              => 'sometimes|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/|confirmed',
             'password_confirmation' => 'min:8|required_with:password|same:password',
         ];
     }
@@ -124,9 +124,9 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
      */
     public function view_index_label()
     {
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => [$this->table.'.login_name', $this->table.'.first_name', $this->table.'.last_name'],
-            'header' => $this->first_name.' '.$this->last_name,
+            'header'       => $this->first_name.' '.$this->last_name,
         ];
     }
 

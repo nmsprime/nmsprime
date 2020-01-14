@@ -13,7 +13,7 @@ class RoleController extends BaseController
     protected $edit_right_md_size = 8;
     protected $many_to_many = [
         [
-            'field' => 'users_ids',
+            'field'   => 'users_ids',
             'classes' => [User::class, Role::class],
         ],
     ];
@@ -26,15 +26,15 @@ class RoleController extends BaseController
             ['form_type' => 'text', 'name' => 'description', 'description' => 'Description'],
             ['form_type' => 'text', 'name' => 'rank', 'description' => 'Rank', 'help' => trans('helper.assign_rank')],
             [
-                'form_type' => 'select',
-                'name' => 'users_ids[]',
+                'form_type'   => 'select',
+                'name'        => 'users_ids[]',
                 'description' => 'Assign Users',
-                'value' => $model->html_list(User::all(), 'login_name'),
-                'options' => [
+                'value'       => $model->html_list(User::all(), 'login_name'),
+                'options'     => [
                     'multiple' => 'multiple',
                     (Bouncer::can('update', User::class) && Bouncer::can('update', Role::class)) ? '' : 'disabled',
                 ],
-                'help' => trans('helper.assign_users'),
+                'help'     => trans('helper.assign_users'),
                 'selected' => $model->html_list($model->users, 'name'),
             ],
         ];

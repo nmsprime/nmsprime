@@ -3,11 +3,11 @@
 namespace Modules\NmsMail\Entities;
 
 return [
-    'name' => 'Mail',
+    'name'      => 'Mail',
     'MenuItems' => [
         'E-Mail' => [
-            'link' => 'Email.index',
-            'icon' => 'fa-envelope-o',
+            'link'  => 'Email.index',
+            'icon'  => 'fa-envelope-o',
             'class' => Email::class,
         ],
     ],

@@ -28,13 +28,13 @@ class Product extends \BaseModel
             'name' => 'required|unique:product,name,'.$id.',id,deleted_at,NULL',
             'type' => 'required|not_null',
             // 'type' => "required|not_null|unique:product,type,$id,id,type,Credit,deleted_at,NULL",	// if credit shall exist only once
-            'voip_sales_tariff_id' => 'required_if:type,Voip',
+            'voip_sales_tariff_id'    => 'required_if:type,Voip',
             'voip_purchase_tariff_id' => 'required_if:type,Voip',
-            'qos_id' => 'required_if:type,Internet',
-            'price' => 'required_if:type,Internet,Voip,TV,Other,Device,Mixed',
-            'maturity_min' => 'nullable|regex:/^\d+[dDmMyY]$/',
-            'maturity' => 'nullable|regex:/^\d+[dDmMyY]$/',
-            'period_of_notice' => 'nullable|regex:/^\d+[dDmMyY]$/',
+            'qos_id'                  => 'required_if:type,Internet',
+            'price'                   => 'required_if:type,Internet,Voip,TV,Other,Device,Mixed',
+            'maturity_min'            => 'nullable|regex:/^\d+[dDmMyY]$/',
+            'maturity'                => 'nullable|regex:/^\d+[dDmMyY]$/',
+            'period_of_notice'        => 'nullable|regex:/^\d+[dDmMyY]$/',
         ];
     }
 
@@ -60,13 +60,13 @@ class Product extends \BaseModel
     {
         $bsclass = $this->get_bsclass();
 
-        return ['table' => $this->table,
-            'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price', 'costcenter.name', $this->table.'.proportional'],
-            'header' => $this->type.' - '.$this->name.' | '.$this->price.' €',
-            'bsclass' => $bsclass,
+        return ['table'     => $this->table,
+            'index_header'  => [$this->table.'.type', $this->table.'.name',  $this->table.'.price', 'costcenter.name', $this->table.'.proportional'],
+            'header'        => $this->type.' - '.$this->name.' | '.$this->price.' €',
+            'bsclass'       => $bsclass,
             'eager_loading' => ['costcenter'],
-            'edit' => ['costcenter.name' => 'getCostcenterName'],
-            'order_by' => ['0' => 'asc'], ];  // columnindex => direction
+            'edit'          => ['costcenter.name' => 'getCostcenterName'],
+            'order_by'      => ['0' => 'asc'], ];  // columnindex => direction
     }
 
     public function get_bsclass()

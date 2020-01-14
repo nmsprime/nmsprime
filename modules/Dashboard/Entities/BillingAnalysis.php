@@ -248,8 +248,8 @@ class BillingAnalysis
     public static function saveContractsToJson()
     {
         $queries = [
-            'Internet_only' => ['Internet', 'not', 'Voip'],
-            'Voip_only' => ['Voip', 'not', 'Internet'],
+            'Internet_only'     => ['Internet', 'not', 'Voip'],
+            'Voip_only'         => ['Voip', 'not', 'Internet'],
             'Internet_and_Voip' => ['Internet', '', 'Voip'],
         ];
 

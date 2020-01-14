@@ -33,10 +33,10 @@ class PhonenumberController extends \BaseController
         // TODO: should this be the case or do we want to need a management in each case?
         if (is_null($model->phonenumbermanagement)) {
             $active_checkbox = [
-                'form_type' => 'checkbox',
-                'name' => 'active',
+                'form_type'   => 'checkbox',
+                'name'        => 'active',
                 'description' => 'Active',
-                'help' => 'If you create a PhonenumberManagement this checkbox will be set depending on its (de)activation date.',
+                'help'        => 'If you create a PhonenumberManagement this checkbox will be set depending on its (de)activation date.',
             ];
         }
         // otherwise: store value in hidden form field and show symbol to indicate the current state instead
@@ -54,7 +54,7 @@ class PhonenumberController extends \BaseController
             }
 
             $active_checkbox = ['form_type' => 'html', 'name' => 'active', 'description' => 'Active',
-                'html' => '<div class="col-md-7">
+                'html'                      => '<div class="col-md-7">
                         <input name="active" type="hidden" id="active" value="'.$active_state.'">'.$active_symbol.'
                     </div>',
                 'help' => 'Automatically set by (de)activation date in phonenumber management',
@@ -76,38 +76,38 @@ class PhonenumberController extends \BaseController
         // label has to be the same like column in sql table
         $ret = [
             [
-                'form_type' => 'select',
-                'name' => 'mta_id',
+                'form_type'   => 'select',
+                'name'        => 'mta_id',
                 'description' => 'MTA',
-                'value' => $mta_list,
-                'hidden' => 'C',
-                'help' => $reassign_help,
+                'value'       => $mta_list,
+                'hidden'      => 'C',
+                'help'        => $reassign_help,
             ],
             [
-                'form_type' => 'text',
-                'name' => 'port',
+                'form_type'   => 'text',
+                'name'        => 'port',
                 'description' => 'Port',
-                'space' => 1,
+                'space'       => 1,
             ],
             [
-                'form_type' => 'text',
-                'name' => 'country_code',
-                'description' => 'International prefix',
-                'help' => 'Usually, 4 digit number required for international calls.',
+                'form_type'    => 'text',
+                'name'         => 'country_code',
+                'description'  => 'International prefix',
+                'help'         => 'Usually, 4 digit number required for international calls.',
                 'autocomplete' => [],
             ],
             [
-                'form_type' => 'text',
-                'name' => 'prefix_number',
+                'form_type'   => 'text',
+                'name'        => 'prefix_number',
                 'description' => 'Prefix Number',
-                'help' => 'Has to be available on modem address.',
+                'help'        => 'Has to be available on modem address.',
             ],
             [
-                'form_type' => 'text',
-                'name' => 'number',
+                'form_type'   => 'text',
+                'name'        => 'number',
                 'description' => 'Number',
-                'help' => 'The phonenumber to port or a free number given by your provider.',
-                'space' => 1,
+                'help'        => 'The phonenumber to port or a free number given by your provider.',
+                'space'       => 1,
             ],
         ];
 
@@ -121,8 +121,8 @@ class PhonenumberController extends \BaseController
             }
         }
         $username = [
-            'form_type' => 'text',
-            'name' => 'username',
+            'form_type'   => 'text',
+            'name'        => 'username',
             'description' => 'Username',
         ];
         if ($options) {
@@ -135,10 +135,10 @@ class PhonenumberController extends \BaseController
             $options = ['placeholder' => 'Autofilled if empty.'];
         }
         $password = [
-            'form_type' => 'text',
-            'name' => 'password',
+            'form_type'   => 'text',
+            'name'        => 'password',
             'description' => 'Password',
-            'space' => 1,
+            'space'       => 1,
         ];
         if ($options) {
             $password['options'] = $options;
@@ -154,9 +154,9 @@ class PhonenumberController extends \BaseController
             }
         }
         $sipdomain = [
-            'form_type' => 'text',
-            'name' => 'sipdomain',
-            'description' => trans('messages.SIP domain'),
+            'form_type'    => 'text',
+            'name'         => 'sipdomain',
+            'description'  => trans('messages.SIP domain'),
             'autocomplete' => [],
         ];
         if ($options) {

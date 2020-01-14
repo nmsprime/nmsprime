@@ -96,17 +96,17 @@ function escape_latex_special_chars($string)
     // NOTE: "\\" has to be on top as it otherwise would replace all replacements in following loop
     $map = [
         '\\' => '\\textbackslash',
-        '#' => '\\#',
-        '$' => '\$',
-        '%' => '\\%',
-        '&' => '\\&',
-        '{' => '\\{',
-        '}' => '\\}',
-        '_' => '\\_',
-        '~' => '\\~{}',
-        '^' => '\\^{}',
-        '€' => '\\euro',   // there could be products containing “€”
-        '´' => '\'',
+        '#'  => '\\#',
+        '$'  => '\$',
+        '%'  => '\\%',
+        '&'  => '\\&',
+        '{'  => '\\{',
+        '}'  => '\\}',
+        '_'  => '\\_',
+        '~'  => '\\~{}',
+        '^'  => '\\^{}',
+        '€'  => '\\euro',   // there could be products containing “€”
+        '´'  => '\'',
     ];
 
     return strtr($string, $map);

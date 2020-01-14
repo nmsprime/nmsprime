@@ -70,7 +70,7 @@ class HfcBaseController extends BaseController
             return $tree->kml_file != '';
         })->map(function ($tree) {
             return [
-                'file' => route('HfcBase.get_file', ['type' => 'kml_static', 'filename' => basename($tree->kml_file)]),
+                'file'  => route('HfcBase.get_file', ['type' => 'kml_static', 'filename' => basename($tree->kml_file)]),
                 'descr' => $tree->kml_file,
             ];
         });

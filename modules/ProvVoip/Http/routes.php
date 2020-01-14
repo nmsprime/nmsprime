@@ -10,8 +10,8 @@ BaseRoute::group([], function () {
 
     Route::group(['prefix' => 'api/v{ver}'], function () {
         Route::get('Mta/{Mta}/restart', [
-            'as' => 'Mta.api_restart',
-            'uses' => 'Modules\ProvVoip\Http\Controllers\MtaController@api_restart',
+            'as'         => 'Mta.api_restart',
+            'uses'       => 'Modules\ProvVoip\Http\Controllers\MtaController@api_restart',
             'middleware' => ['api', 'auth.basic', 'can:update,Modules\ProvVoip\Entities\Mta'],
         ]);
     });

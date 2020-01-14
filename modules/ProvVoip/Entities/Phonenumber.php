@@ -14,11 +14,11 @@ class Phonenumber extends \BaseModel
     public static function rules($id = null)
     {
         $ret = [
-            'country_code' => 'required|numeric',
+            'country_code'  => 'required|numeric',
             'prefix_number' => 'required|numeric',
-            'number' => 'required|numeric',
-            'mta_id' => 'required|exists:mta,id,deleted_at,NULL|min:1',
-            'port' => 'required|numeric|min:1',
+            'number'        => 'required|numeric',
+            'mta_id'        => 'required|exists:mta,id,deleted_at,NULL|min:1',
+            'port'          => 'required|numeric|min:1',
             /* 'active' => 'required|boolean', */
             // TODO: check if password is secure and matches needs of external APIs (e.g. envia TEL)
         ];
@@ -47,14 +47,14 @@ class Phonenumber extends \BaseModel
     {
         $bsclass = $this->get_bsclass();
 
-        return ['table' => $this->table,
-            'index_header' => [$this->table.'.number', 'phonenumbermanagement.activation_date', 'phonenumbermanagement.deactivation_date', 'phonenr_state', 'modem_city', 'sipdomain'],
-            'header' => 'Port '.$this->port.': '.$this->prefix_number.'/'.$this->number,
-            'bsclass' => $bsclass,
-            'edit' => ['phonenumbermanagement.activation_date' => 'get_act', 'phonenumbermanagement.deactivation_date' => 'get_deact', 'phonenr_state' => 'get_state', 'number' => 'build_number', 'modem_city' => 'modem_city'],
-            'eager_loading' => ['phonenumbermanagement', 'mta.modem'],
+        return ['table'          => $this->table,
+            'index_header'       => [$this->table.'.number', 'phonenumbermanagement.activation_date', 'phonenumbermanagement.deactivation_date', 'phonenr_state', 'modem_city', 'sipdomain'],
+            'header'             => 'Port '.$this->port.': '.$this->prefix_number.'/'.$this->number,
+            'bsclass'            => $bsclass,
+            'edit'               => ['phonenumbermanagement.activation_date' => 'get_act', 'phonenumbermanagement.deactivation_date' => 'get_deact', 'phonenr_state' => 'get_state', 'number' => 'build_number', 'modem_city' => 'modem_city'],
+            'eager_loading'      => ['phonenumbermanagement', 'mta.modem'],
             'disable_sortsearch' => ['phonenr_state' => 'false', 'modem_city' => 'false'],
-            'filter' => ['phonenumber.number' => $this->number_query()], ];
+            'filter'             => ['phonenumber.number' => $this->number_query()], ];
     }
 
     public function number_query()
@@ -862,8 +862,8 @@ class PhonenumberObserver
             // inform the user that he has to change the data at envia TEL, too
             // TODO: check if this data can be changed automagically at envia TEL!
             $parameters = [
-                'job' => 'voip_account_update',
-                'origin' => urlencode(\URL::previous()),
+                'job'            => 'voip_account_update',
+                'origin'         => urlencode(\URL::previous()),
                 'phonenumber_id' => $phonenumber->id,
             ];
 

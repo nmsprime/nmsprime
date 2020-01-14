@@ -47,10 +47,10 @@ class Role extends BaseModel
     public function view_index_label()
     {
         return [
-            'table' => $this->table,
+            'table'        => $this->table,
             'index_header' => [$this->table.'.title', $this->table.'.rank', $this->table.'.description'],
-            'header' => $this->name,
-            'order_by' => ['1' => 'desc'],
+            'header'       => $this->name,
+            'order_by'     => ['1' => 'desc'],
         ];
     }
 

@@ -17,8 +17,8 @@ class Apartment extends \BaseModel
     {
         return [
             'realty_id' => 'required',
-            'number' => 'required',
-            'floor' => 'required',
+            'number'    => 'required',
+            'floor'     => 'required',
         ];
     }
 
@@ -43,13 +43,13 @@ class Apartment extends \BaseModel
     {
         $bsclass = 'success';
 
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => ['realty.street', 'realty.house_nr', 'realty.zip', 'realty.city', 'realty.district',
                 "$this->table.number", 'floor',
                 "$this->table.connected", "$this->table.occupied", 'connection_type',
             ],
-            'header' => "$this->number - $this->floor",
-            'bsclass' => $bsclass,
+            'header'        => "$this->number - $this->floor",
+            'bsclass'       => $bsclass,
             'eager_loading' => ['realty'],
         ];
     }

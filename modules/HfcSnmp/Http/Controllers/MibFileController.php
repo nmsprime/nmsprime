@@ -120,9 +120,9 @@ class MibFileController extends \BaseController
 
         // Set Input Default Values
         \Request::merge([
-            'name' => $name,
-            'filename' => $filename,
-            'version' => $version,
+            'name'        => $name,
+            'filename'    => $filename,
+            'version'     => $version,
             'description' => $description,
         ]);
 

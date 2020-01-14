@@ -32,10 +32,10 @@ class EnviaOrderDocument extends \BaseModel
         $mimestring = implode(',', $mimes_short);
 
         return [
-            'document_type' => 'required',
+            'document_type'   => 'required',
             'document_upload' => 'required|mimes:'.$mimestring.'|max:'.self::$allowed_max_upload_filesize,
-            'enviaorder_id' => 'required|exists:enviaorder,id,deleted_at,NULL',
-            'mime_type' => 'required',
+            'enviaorder_id'   => 'required|exists:enviaorder,id,deleted_at,NULL',
+            'mime_type'       => 'required',
         ];
     }
 
@@ -59,10 +59,10 @@ class EnviaOrderDocument extends \BaseModel
     {
         $bsclass = 'success';
 
-        return ['index' => [$this->id],
+        return ['index'    => [$this->id],
             'index_header' => ['ID'],
-            'bsclass' => $bsclass,
-            'header' => $this->created_at.': '.$this->document_type.' ('.$this->upload_order_id.')', ];
+            'bsclass'      => $bsclass,
+            'header'       => $this->created_at.': '.$this->document_type.' ('.$this->upload_order_id.')', ];
     }
 
     // belongs to a modem - see BaseModel for explanation

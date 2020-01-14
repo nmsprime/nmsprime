@@ -17,13 +17,13 @@ class AccountingRecord extends \BaseModel
         // $count = $item->count ? $item->count : 1;
 
         $data = [
-            'contract_id' => $item->contract->id,
-            'name' => $item->product->name,
-            'product_id' => $item->product->id,
-            'ratio' => $item->ratio,
-            'count' => $item->count,
-            'charge' => $item->charge,
-            'invoice_nr' => $acc->invoice_nr,
+            'contract_id'    => $item->contract->id,
+            'name'           => $item->product->name,
+            'product_id'     => $item->product->id,
+            'ratio'          => $item->ratio,
+            'count'          => $item->count,
+            'charge'         => $item->charge,
+            'invoice_nr'     => $acc->invoice_nr,
             'sepaaccount_id' => $acc->id,
         ];
 
@@ -36,13 +36,13 @@ class AccountingRecord extends \BaseModel
     public function add_cdr($contract, $acc, $charge, $count)
     {
         $data = [
-            'contract_id' => $contract->id,
-            'name' => 'Telefone Calls',
-            'product_id' => 0,
-            'ratio' => 1,
-            'count' => $count,
-            'charge' => $charge,
-            'invoice_nr' => $acc->invoice_nr,
+            'contract_id'    => $contract->id,
+            'name'           => 'Telefone Calls',
+            'product_id'     => 0,
+            'ratio'          => 1,
+            'count'          => $count,
+            'charge'         => $charge,
+            'invoice_nr'     => $acc->invoice_nr,
             'sepaaccount_id' => $acc->id,
         ];
 

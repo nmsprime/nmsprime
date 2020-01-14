@@ -15,13 +15,13 @@ class Realty extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'node_id' => 'required',
-            'street' => 'required',
-            'house_nr' => 'required',
-            'zip' => 'required',
-            'city' => 'required',
-            'agreement_from' => 'nullable|date',
-            'agreement_to' => 'nullable|date',
+            'node_id'             => 'required',
+            'street'              => 'required',
+            'house_nr'            => 'required',
+            'zip'                 => 'required',
+            'city'                => 'required',
+            'agreement_from'      => 'nullable|date',
+            'agreement_to'        => 'nullable|date',
             'last_restoration_on' => 'nullable|date',
         ];
     }
@@ -64,30 +64,30 @@ class Realty extends \BaseModel
 
         $label = self::labelFromData($this);
 
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => ['id', "$this->table.name", 'number', 'street', 'house_nr', 'zip', 'city',
                 "$this->table.contact_id", "$this->table.contact_local_id",
                 'expansion_degree', "$this->table.concession_agreement",
                 "$this->table.agreement_from", "$this->table.agreement_to", "$this->table.last_restoration_on",
                 "$this->table.apartmentCountConnected", "$this->table.apartmentCount",
             ],
-            'header' => $label,
-            'bsclass' => $bsclass,
+            'header'        => $label,
+            'bsclass'       => $bsclass,
             'eager_loading' => ['apartments'],
-            'edit' => [
-                'apartmentCount' => 'getApartmentCount',
+            'edit'          => [
+                'apartmentCount'          => 'getApartmentCount',
                 'apartmentCountConnected' => 'getConnectedApartmentCount',
-                'contact_id' => 'getContactName',
-                'contact_local_id' => 'getLocalContactName',
+                'contact_id'              => 'getContactName',
+                'contact_local_id'        => 'getLocalContactName',
             ],
             'disable_sortsearch' => [
-                "$this->table.apartmentCount" => 'false',
+                "$this->table.apartmentCount"          => 'false',
                 "$this->table.apartmentCountConnected" => 'false',
             ],
             'filter' => [
                 // "$this->table.apartmentCount" => $this->apartmentCountQuery(),
                 // "$this->table.apartmentCountConnected" => ,
-                "$this->table.contact_id" => $this->contactFilterQuery(),
+                "$this->table.contact_id"       => $this->contactFilterQuery(),
                 "$this->table.contact_local_id" => $this->localContactFilterQuery(),
             ],
         ];

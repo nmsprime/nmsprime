@@ -41,10 +41,10 @@ class GuiLogController extends BaseController
             $route = route($model->model.'.edit', ['id' => $model->model_id]);
 
             $fields[] = [
-                'form_type' => 'html',
-                'name' => 'link',
+                'form_type'   => 'html',
+                'name'        => 'link',
                 'description' => 'Link',
-                'html' => '<div class="col-md-7">
+                'html'        => '<div class="col-md-7">
                         <a class="btn btn-default btn-block" href="'.$route.'">'.$model->model.' '.$model->model_id.'</a>
                     </div>',
             ];
@@ -55,10 +55,10 @@ class GuiLogController extends BaseController
             $route = route('Guilog.restore', ['id' => $model->id]);
 
             $fields[] = [
-                'form_type' => 'html',
-                'name' => 'deleted_at',
+                'form_type'   => 'html',
+                'name'        => 'deleted_at',
                 'description' => 'Restore',
-                'html' => '<div class="col-md-7">
+                'html'        => '<div class="col-md-7">
                         <a class="btn btn-default btn-block" href="'.$route.'"> Restore '.$model->model.'</a>
                     </div>',
             ];

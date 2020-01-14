@@ -26,8 +26,8 @@ class MprGeopos extends \BaseModel
     {
         return [
             'name' => 'required|string',
-            'x' => 'required|numeric',
-            'y' => 'required|numeric',
+            'x'    => 'required|numeric',
+            'y'    => 'required|numeric',
         ];
     }
 

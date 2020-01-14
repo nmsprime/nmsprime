@@ -65,18 +65,18 @@ class MprController extends \BaseController
             if (count($pos) == 4) {
                 // First Point (not ordered x/y)
                 MprGeopos::create([
-                    'name' => 'P1',
+                    'name'   => 'P1',
                     'mpr_id' => $mpr_id,
-                    'x' => $pos[0],
-                    'y' => $pos[2],
+                    'x'      => $pos[0],
+                    'y'      => $pos[2],
                 ]);
 
                 // Second Point (not ordered x/y)
                 MprGeopos::create([
-                    'name' => 'P2',
+                    'name'   => 'P2',
                     'mpr_id' => $mpr_id,
-                    'x' => $pos[1],
-                    'y' => $pos[3],
+                    'x'      => $pos[1],
+                    'y'      => $pos[3],
                 ]);
             } elseif (count($pos) > 4 && ! (count($pos) % 2)) {
                 for ($i = 0; $i < count($pos) / 2; $i++) {

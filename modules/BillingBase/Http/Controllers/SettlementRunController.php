@@ -316,9 +316,9 @@ class SettlementRunController extends \BaseController
             }
 
             $arr = [
-                'color' => $bsclass,
-                'time' => $timestamp,
-                'type' => $type,
+                'color'   => $bsclass,
+                'time'    => $timestamp,
+                'type'    => $type,
                 'message' => substr($string, strpos($string, ': ') + 2),
             ];
 

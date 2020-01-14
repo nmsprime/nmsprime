@@ -36,15 +36,15 @@ class EnviaContract extends \BaseModel
         $envia_contract_reference = $this->get_envia_contract_reference();
         $bsclass = $this->get_bsclass();
 
-        return ['table' => $this->table,
-            'index_header' => [$this->table.'.envia_contract_reference', $this->table.'.state', $this->table.'.start_date', $this->table.'.end_date', 'contract.id', 'modem.id'],
-            'bsclass' => $bsclass,
+        return ['table'     => $this->table,
+            'index_header'  => [$this->table.'.envia_contract_reference', $this->table.'.state', $this->table.'.start_date', $this->table.'.end_date', 'contract.id', 'modem.id'],
+            'bsclass'       => $bsclass,
             'eager_loading' => ['contract', 'modem'],
-            'edit' => ['envia_contract_reference' => 'get_envia_contract_reference', 'state' => 'get_state', 'start_date' => 'get_start_date', 'end_date' => 'get_end_date', 'contract.id' => 'get_contract_data', 'modem.id' => 'get_modem_data'],
-            'header' => $envia_contract_reference,
-            'filter' => [
+            'edit'          => ['envia_contract_reference' => 'get_envia_contract_reference', 'state' => 'get_state', 'start_date' => 'get_start_date', 'end_date' => 'get_end_date', 'contract.id' => 'get_contract_data', 'modem.id' => 'get_modem_data'],
+            'header'        => $envia_contract_reference,
+            'filter'        => [
                 'contract.id' => $this->get_contract_filtercolumn_query(),
-                'modem.id' => $this->get_modem_filtercolumn_query(),
+                'modem.id'    => $this->get_modem_filtercolumn_query(),
             ],
             'raw_columns' => ['contract.id', 'modem.id'],
         ];

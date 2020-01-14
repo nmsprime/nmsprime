@@ -27,8 +27,8 @@ class AbilityController extends Controller
     public static function getCrudActions()
     {
         return collect([
-            '*' => ['name' => 'manage', 'icon' => 'fa-star', 'bsclass' => 'success'],
-            'view' => ['name' => 'view', 'icon' => 'fa-eye', 'bsclass' => 'info'],
+            '*'      => ['name' => 'manage', 'icon' => 'fa-star', 'bsclass' => 'success'],
+            'view'   => ['name' => 'view', 'icon' => 'fa-eye', 'bsclass' => 'info'],
             'create' => ['name' => 'create', 'icon' => 'fa-plus', 'bsclass' => 'primary'],
             'update' => ['name' => 'update', 'icon' => 'fa-pencil', 'bsclass' => 'warning'],
             'delete' => ['name' => 'delete', 'icon' => 'fa-trash', 'bsclass' => 'danger'],
@@ -56,8 +56,8 @@ class AbilityController extends Controller
         $this->registerCustomAbility($requestData, $role->name, $abilities);
 
         return collect([
-            'id' => intval($requestData->id) ? $requestData->id : $changedIds,
-            'roleAbilities' => self::mapCustomAbilities($role->getAbilities()),
+            'id'                     => intval($requestData->id) ? $requestData->id : $changedIds,
+            'roleAbilities'          => self::mapCustomAbilities($role->getAbilities()),
             'roleForbiddenAbilities' => self::mapCustomAbilities($role->getForbiddenAbilities()),
         ])->toJson();
     }
@@ -202,7 +202,7 @@ class AbilityController extends Controller
             ->pluck('title', 'id')
             ->map(function ($title) {
                 return collect([
-                    'title' => $title,
+                    'title'      => $title,
                     'localTitle' => BaseViewController::translate_label($title),
                     'helperText' => trans('helper.'.$title),
                 ]);
@@ -375,8 +375,8 @@ class AbilityController extends Controller
             return ! self::isCustom($ability);
         })
                 ->map(function ($ability) {
-                    return ['id' => $ability->id,
-                        'name' => $ability->name,
+                    return ['id'      => $ability->id,
+                        'name'        => $ability->name,
                         'entity_type' => $ability->entity_type,
                     ];
                 })

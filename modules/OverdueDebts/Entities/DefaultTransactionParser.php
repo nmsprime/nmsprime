@@ -47,7 +47,7 @@ class DefaultTransactionParser
     public static $designators = [
         'ABWA+' => '',              // Abweichender SEPA Auftraggeber
         'ABWE+' => '',              // Abweichender SEPA Empfänger
-        'BIC+' => '',               // SEPA BIC Auftraggeber
+        'BIC+'  => '',               // SEPA BIC Auftraggeber
         'BREF+' => '',              // Bankreferenz, Instruction ID
         'COAM+' => 'bank_fee',      // Zinskompensationsbetrag
         'CRED+' => '',              // SEPA Creditor Identifier
@@ -104,12 +104,12 @@ class DefaultTransactionParser
         }
 
         $this->logMsg = trans('overduedebts::messages.transaction.default.debit', [
-            'holder' => $this->holder,
+            'holder'    => $this->holder,
             'invoiceNr' => $this->invoiceNr,
             // TODO: 'number' => $invoice->number if invoiceNr is given
-            'mref' => $this->mref,
-            'price' => number_format_lang($this->transaction->getPrice()),
-            'iban' => $this->iban,
+            'mref'   => $this->mref,
+            'price'  => number_format_lang($this->transaction->getPrice()),
+            'iban'   => $this->iban,
             'reason' => $this->description,
         ]);
 
@@ -205,8 +205,8 @@ class DefaultTransactionParser
 
         $this->logMsg = trans('overduedebts::messages.transaction.default.credit', [
             'holder' => $this->holder,
-            'price' => number_format_lang($this->transaction->getPrice()),
-            'iban' => $this->iban,
+            'price'  => number_format_lang($this->transaction->getPrice()),
+            'iban'   => $this->iban,
             'reason' => $this->description,
         ]);
 
@@ -349,11 +349,11 @@ class DefaultTransactionParser
         $data = [
             // Type cast to string so that data in addDebtButton() is encoded same way as
             // done during ajax request when debt shall be added - see DebtController@quickAdd
-            'amount' => (string) $this->debt->amount,
+            'amount'      => (string) $this->debt->amount,
             'contract_id' => (string) $contract_id,
-            'date' => $this->debt->date,
+            'date'        => $this->debt->date,
             'description' => $this->debt->description,
-            'voucher_nr' => $this->debt->voucher_nr,
+            'voucher_nr'  => $this->debt->voucher_nr,
         ];
 
         return Mt940Parser::addDebtButton($data);
@@ -374,9 +374,9 @@ class DefaultTransactionParser
         $billingConf = BillingBase::first();
 
         $this->conf = [
-            'fee' => $debtConf->fee,
+            'fee'   => $debtConf->fee,
             'total' => $debtConf->total,
-            'tax' => $billingConf->tax,
+            'tax'   => $billingConf->tax,
         ];
     }
 
@@ -417,8 +417,8 @@ class DefaultTransactionParser
 
         return [
             'contractNr' => $contractNr,
-            'invoiceNr' => $this->invoiceNr,
-            'exclude' => $exclude,
+            'invoiceNr'  => $this->invoiceNr,
+            'exclude'    => $exclude,
         ];
     }
 

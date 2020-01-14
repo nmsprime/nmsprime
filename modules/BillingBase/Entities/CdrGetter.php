@@ -207,9 +207,9 @@ class CdrGetter
             foreach ($pns as $p => $type) {
                 // NOTE: type actually can be missing or mismatch
                 ChannelLog::warning('billing', trans("messages.phonenumber_$type", [
-                    'provider' => $provider,
+                    'provider'   => $provider,
                     'contractnr' => $contract_nr,
-                    'phonenr' => $p,
+                    'phonenr'    => $p,
                 ]));
             }
         }
@@ -228,10 +228,10 @@ class CdrGetter
 
                 ChannelLog::warning('billing', trans('messages.cdr_discarded_calls', [
                     'contractnr' => $customer_nr,
-                    'count' => $arr['count'],
-                    'phonenr' => $p,
-                    'price' => $price,
-                    'currency' => BillingConf::currency(),
+                    'count'      => $arr['count'],
+                    'phonenr'    => $p,
+                    'price'      => $price,
+                    'currency'   => BillingConf::currency(),
                 ]));
             }
         }

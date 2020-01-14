@@ -39,7 +39,7 @@ class Ticket extends \BaseModel
         $bsclass = $this->get_bsclass();
 
         return [
-            'table' => $this->table,
+            'table'        => $this->table,
             'index_header' => [
                 $this->table.'.id',
                 $this->table.'.name',
@@ -50,14 +50,14 @@ class Ticket extends \BaseModel
                 $this->table.'.created_at',
                 'assigned_users',
             ],
-            'header' => "$this->id - $this->name ($this->created_at)",
-            'bsclass' => $bsclass,
-            'order_by' => ['0' => 'desc'],
+            'header'        => "$this->id - $this->name ($this->created_at)",
+            'bsclass'       => $bsclass,
+            'order_by'      => ['0' => 'desc'],
             'eager_loading' => ['tickettypes'],
-            'edit' => ['assigned_users' => 'get_assigned_users',
-                'tickettypes.name' => 'index_types',
-                'user_id' => 'username', ],
-            'filter' => ['tickettypes.name' => $this->tickettype_names_query()],
+            'edit'          => ['assigned_users' => 'get_assigned_users',
+                'tickettypes.name'               => 'index_types',
+                'user_id'                        => 'username', ],
+            'filter'             => ['tickettypes.name' => $this->tickettype_names_query()],
             'disable_sortsearch' => ['assigned_users' => 'false'],
         ];
     }

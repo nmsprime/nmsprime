@@ -14,11 +14,11 @@ class ChannelWriter
      */
     protected $channels = [
         'billing' => [
-            'path' => 'logs/billing.log',
+            'path'  => 'logs/billing.log',
             'level' => Logger::DEBUG,
         ],
         'overduedebts' => [
-            'path' => 'logs/bank-transactions.log',
+            'path'  => 'logs/bank-transactions.log',
             'level' => Logger::DEBUG,
         ],
     ];
@@ -29,13 +29,13 @@ class ChannelWriter
      * @var array
      */
     protected $levels = [
-        'debug' => Logger::DEBUG,
-        'info' => Logger::INFO,
-        'notice' => Logger::NOTICE,
-        'warning' => Logger::WARNING,
-        'error' => Logger::ERROR,
-        'critical' => Logger::CRITICAL,
-        'alert' => Logger::ALERT,
+        'debug'     => Logger::DEBUG,
+        'info'      => Logger::INFO,
+        'notice'    => Logger::NOTICE,
+        'warning'   => Logger::WARNING,
+        'error'     => Logger::ERROR,
+        'critical'  => Logger::CRITICAL,
+        'alert'     => Logger::ALERT,
         'emergency' => Logger::EMERGENCY,
     ];
 

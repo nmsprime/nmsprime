@@ -14,26 +14,26 @@ BaseRoute::group([], function () {
     BaseRoute::resource('SettlementRun', 'Modules\BillingBase\Http\Controllers\SettlementRunController');
 
     BaseRoute::get('SettlementRun/download/{id}/{sepaacc}/{key}', [
-        'as' => 'SettlementRun.download',
-        'uses' => 'Modules\BillingBase\Http\Controllers\SettlementRunController@download',
+        'as'         => 'SettlementRun.download',
+        'uses'       => 'Modules\BillingBase\Http\Controllers\SettlementRunController@download',
         'middleware' => ['can:download,Modules\BillingBase\Entities\SettlementRun'],
     ]);
 
     BaseRoute::get('SettlementRun/check_state/stream', [
-        'as' => 'SettlementRun.check_state',
-        'uses' => 'Modules\BillingBase\Http\Controllers\SettlementRunController@check_state',
+        'as'         => 'SettlementRun.check_state',
+        'uses'       => 'Modules\BillingBase\Http\Controllers\SettlementRunController@check_state',
         'middleware' => ['can:view,Modules\BillingBase\Entities\SettlementRun'],
     ]);
 
     BaseRoute::get('SettlementRun/log_dl/{id}', [
-        'as' => 'SettlementRun.log_dl',
-        'uses' => 'Modules\BillingBase\Http\Controllers\SettlementRunController@download_logs',
+        'as'         => 'SettlementRun.log_dl',
+        'uses'       => 'Modules\BillingBase\Http\Controllers\SettlementRunController@download_logs',
         'middleware' => ['can:download,Modules\BillingBase\Entities\SettlementRun'],
     ]);
 
     BaseRoute::put('SettlementRun/create_post_invoices_pdf/{id}', [
-        'as' => 'SettlementRun.create_post_invoices_pdf',
-        'uses' => 'Modules\BillingBase\Http\Controllers\SettlementRunController@create_post_invoices_pdf',
+        'as'         => 'SettlementRun.create_post_invoices_pdf',
+        'uses'       => 'Modules\BillingBase\Http\Controllers\SettlementRunController@create_post_invoices_pdf',
         'middleware' => ['can:download,Modules\BillingBase\Entities\SettlementRun'],
     ]);
 });

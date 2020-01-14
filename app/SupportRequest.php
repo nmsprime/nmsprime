@@ -100,9 +100,9 @@ class SupportRequestObserver
 
         // Mail is sent internally and triggered via http post
         $data_arr = [
-            'destination' => $destination,
+            'destination'    => $destination,
             'supportrequest' => $supportrequest->getDirty(),
-            'system_status' => SupportRequest::system_status(),
+            'system_status'  => SupportRequest::system_status(),
         ];
 
         $data = http_build_query($data_arr);

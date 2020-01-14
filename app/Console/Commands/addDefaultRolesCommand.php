@@ -127,15 +127,15 @@ class addDefaultRolesCommand extends Command
     {
         return [
             [
-                'id' => 4,
-                'name' => 'technican',
-                'rank' => 40,
+                'id'          => 4,
+                'name'        => 'technican',
+                'rank'        => 40,
                 'description' => 'Allow only technical aspects',
             ],
             [
-                'id' => 5,
-                'name' => 'accounting',
-                'rank' => 40,
+                'id'          => 5,
+                'name'        => 'accounting',
+                'rank'        => 40,
                 'description' => 'Only accounting relevant stuff',
             ], ];
     }
@@ -151,62 +151,62 @@ class addDefaultRolesCommand extends Command
         // technican
         $role[4] = [
             'modules' => [
-                'Dashboard' => ['view'],
-                'HfcBase' => ['view'],
-                'HfcCustomer' => ['view'],
-                'HfcReq' => ['view'],
+                'Dashboard'     => ['view'],
+                'HfcBase'       => ['view'],
+                'HfcCustomer'   => ['view'],
+                'HfcReq'        => ['view'],
                 'ProvVoipEnvia' => ['view'],
             ],
             'models' => [
-                'Role' => ['view'],
-                'User' => ['view'],
+                'Role'         => ['view'],
+                'User'         => ['view'],
                 'GlobalConfig' => ['view'],
 
                 'Item' => ['view'],
 
                 'User' => ['view'],
 
-                'Cdr' => ['view'],
+                'Cdr'    => ['view'],
                 'GuiLog' => ['view'],
                 'Ticket' => ['view'],
 
-                'NetGw' => ['view'],
+                'NetGw'    => ['view'],
                 'Contract' => ['view'],
-                'Modem' => ['view'],
+                'Modem'    => ['view'],
                 'ProvBase' => ['view'],
 
-                'Mta' => ['view'],
-                'PhonebookEntry' => ['view'],
-                'Phonenumber' => ['view'],
+                'Mta'                   => ['view'],
+                'PhonebookEntry'        => ['view'],
+                'Phonenumber'           => ['view'],
                 'PhonenumberManagement' => ['view'],
-                'ProvVoip' => ['view'],
+                'ProvVoip'              => ['view'],
 
-                'EnviaOrderDocument' => ['view'],
-                'ProvVoipEnvia' => ['view'],
+                'EnviaOrderDocument'   => ['view'],
+                'ProvVoipEnvia'        => ['view'],
                 'ProvVoipEnviaHelpers' => ['view'],
 
                 'Parameter' => ['view'],
-                'Oid' => ['view'],
+                'Oid'       => ['view'],
                 'SnmpValue' => ['view'],
             ], ];
 
         // accounting
         $role[5] = [
             'modules' => [
-                'BillingBase' => ['view'],
-                'Dashboard' => ['view'],
+                'BillingBase'  => ['view'],
+                'Dashboard'    => ['view'],
                 'Ticketsystem' => ['view'],
             ],
             'models' => [
-                'Contract' => ['manage'],
-                'GlobalConfig' => ['manage'],
-                'GuiLog' => ['view'],
-                'Modem' => ['manage'],
-                'Mta' => ['manage'],
-                'Phonenumber' => ['view'],
+                'Contract'              => ['manage'],
+                'GlobalConfig'          => ['manage'],
+                'GuiLog'                => ['view'],
+                'Modem'                 => ['manage'],
+                'Mta'                   => ['manage'],
+                'Phonenumber'           => ['view'],
                 'PhonenumberManagement' => ['manage'],
-                'PhoneTariff' => ['view'],
-                'ProvBase' => ['view'],
+                'PhoneTariff'           => ['view'],
+                'ProvBase'              => ['view'],
             ], ];
 
         return $role;

@@ -11,11 +11,11 @@ class Contact extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'firstname1' => 'required',
-            'lastname1' => 'required',
-            'email1' => 'nullable|email',
-            'email2' => 'nullable|email',
-            'tel' => 'nullable|numeric',
+            'firstname1'  => 'required',
+            'lastname1'   => 'required',
+            'email1'      => 'nullable|email',
+            'email2'      => 'nullable|email',
+            'tel'         => 'nullable|numeric',
             'tel_private' => 'nullable|numeric',
         ];
     }
@@ -45,13 +45,13 @@ class Contact extends \BaseModel
             $bsclass = 'info';
         }
 
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => ["$this->table.firstname1", 'lastname1', 'firstname2', 'lastname2', 'company',
                 'tel', 'tel_private', 'email1', 'email2',
                 "$this->table.administration",
                 'street', 'house_nr', 'zip', 'city', 'district',
             ],
-            'header' => $this->label(),
+            'header'  => $this->label(),
             'bsclass' => $bsclass,
         ];
     }

@@ -29,11 +29,11 @@ class Modem extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'mac' => 'required|mac|unique:modem,mac,'.$id.',id,deleted_at,NULL',
-            'ppp_username' => 'nullable|unique:modem,ppp_username,'.$id.',id,deleted_at,NULL',
-            'birthday' => 'nullable|date',
-            'country_code' => 'regex:/^[A-Z]{2}$/',
-            'contract_id' => 'required|exists:contract,id,deleted_at,NULL',
+            'mac'           => 'required|mac|unique:modem,mac,'.$id.',id,deleted_at,NULL',
+            'ppp_username'  => 'nullable|unique:modem,ppp_username,'.$id.',id,deleted_at,NULL',
+            'birthday'      => 'nullable|date',
+            'country_code'  => 'regex:/^[A-Z]{2}$/',
+            'contract_id'   => 'required|exists:contract,id,deleted_at,NULL',
             'configfile_id' => 'required|exists:configfile,id,deleted_at,NULL,public,yes',
             // Note: realty_id and apartment_id validations are done in ModemController@prepare_rules
             // 'realty_id' => 'nullable|empty_with:apartment_id',
@@ -68,16 +68,16 @@ class Modem extends \BaseModel
             \Session::forget('modem_show_filter');
         }
 
-        $ret = ['table' => $this->table,
-            'index_header' => [$this->table.'.id', $this->table.'.mac', 'configfile.name', $this->table.'.model', $this->table.'.sw_rev', $this->table.'.name', $this->table.'.firstname', $this->table.'.lastname', $this->table.'.city', $this->table.'.district', $this->table.'.street', $this->table.'.house_number', $this->table.'.us_pwr', $this->table.'.geocode_source', $this->table.'.inventar_num', 'contract_valid'],
-            'bsclass' => $bsclass,
-            'header' => $this->label(),
-            'edit' => ['us_pwr' => 'get_us_pwr', 'contract_valid' => 'get_contract_valid'],
-            'eager_loading' => ['configfile', 'contract'],
+        $ret = ['table'          => $this->table,
+            'index_header'       => [$this->table.'.id', $this->table.'.mac', 'configfile.name', $this->table.'.model', $this->table.'.sw_rev', $this->table.'.name', $this->table.'.firstname', $this->table.'.lastname', $this->table.'.city', $this->table.'.district', $this->table.'.street', $this->table.'.house_number', $this->table.'.us_pwr', $this->table.'.geocode_source', $this->table.'.inventar_num', 'contract_valid'],
+            'bsclass'            => $bsclass,
+            'header'             => $this->label(),
+            'edit'               => ['us_pwr' => 'get_us_pwr', 'contract_valid' => 'get_contract_valid'],
+            'eager_loading'      => ['configfile', 'contract'],
             'disable_sortsearch' => ['contract_valid' => 'false'],
-            'help' => [$this->table.'.model' => 'modem_update_frequency', $this->table.'.sw_rev' => 'modem_update_frequency'],
-            'order_by' => ['0' => 'desc'],
-            'where_clauses' => self::_get_where_clause(),
+            'help'               => [$this->table.'.model' => 'modem_update_frequency', $this->table.'.sw_rev' => 'modem_update_frequency'],
+            'order_by'           => ['0' => 'desc'],
+            'where_clauses'      => self::_get_where_clause(),
         ];
 
         if (Sla::first()->valid()) {
@@ -789,7 +789,7 @@ class Modem extends \BaseModel
         $this->createGenieAcsProvisions($text);
 
         $preset = [
-            'weight' => 0,
+            'weight'       => 0,
             'precondition' => json_encode([
                 '_deviceId._SerialNumber' => $this->serial_num,
             ]),
@@ -934,11 +934,11 @@ class Modem extends \BaseModel
         $ch = curl_init();
 
         curl_setopt_array($ch, [
-            CURLOPT_URL => "http://localhost:7557/$route",
+            CURLOPT_URL            => "http://localhost:7557/$route",
             CURLOPT_RETURNTRANSFER => $customRequest == 'GET' ? true : false,
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_CUSTOMREQUEST => $customRequest,
-            CURLOPT_POSTFIELDS => $data,
+            CURLOPT_CUSTOMREQUEST  => $customRequest,
+            CURLOPT_POSTFIELDS     => $data,
         ]);
 
         $result = curl_exec($ch);
@@ -1463,11 +1463,11 @@ class Modem extends \BaseModel
         }
 
         self::whereIn('id', $ids ?: [$this->id])->update([
-            'street' => $realty->street,
+            'street'       => $realty->street,
             'house_number' => $realty->house_nr,
-            'zip' => $realty->zip,
-            'city' => $realty->city,
-            'district' => $realty->district,
+            'zip'          => $realty->zip,
+            'city'         => $realty->city,
+            'district'     => $realty->district,
         ]);
     }
 

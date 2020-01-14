@@ -18,8 +18,8 @@ class ProvVoipEnviaHelpers
     {
         $replace_func = function ($data) {
             $placeholders = [
-                'placeholder_yes' => '<span class="text-success centerblock">&#10004;</span>',
-                'placeholder_no' => '<span class="text-danger centerblock">&#10008;</span>',
+                'placeholder_yes'   => '<span class="text-success centerblock">&#10004;</span>',
+                'placeholder_no'    => '<span class="text-danger centerblock">&#10008;</span>',
                 'placeholder_unset' => '–',
             ];
             foreach ($placeholders as $placeholder => $replacement) {

@@ -54,13 +54,13 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
-        'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
-        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-        'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        'can' => \Illuminate\Auth\Middleware\Authorize::class,
-        'owns' => \App\Http\Middleware\AuthorizeOwns::class,
-        'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        'auth'          => \Illuminate\Auth\Middleware\Authenticate::class,
+        'auth.basic'    => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        'bindings'      => \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        'can'           => \Illuminate\Auth\Middleware\Authorize::class,
+        'owns'          => \App\Http\Middleware\AuthorizeOwns::class,
+        'throttle'      => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'adminRedirect' => \App\Http\Middleware\RedirectIfAuthenticated::class,
-        'cccRedirect' => \Modules\Ccc\Http\Middleware\CccRedirectIfAuthenticated::class,
+        'cccRedirect'   => \Modules\Ccc\Http\Middleware\CccRedirectIfAuthenticated::class,
     ];
 }

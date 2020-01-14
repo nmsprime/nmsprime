@@ -64,10 +64,10 @@ class StorageCleaner extends Command
         if (\Module::collections()->has('ProvVoipEnvia')) {
             // defaults
             $envia_api_xml_thresholds = [
-                'path' => storage_path().'/app/data/provvoipenvia/XML', // the base path holding the date subdirs
+                'path'     => storage_path().'/app/data/provvoipenvia/XML', // the base path holding the date subdirs
                 'function' => '_monthly_folders', // function to call
                 'compress' => '6M', // age threshold for compressing the subdirs
-                'delete' => '24M', // age threshold for deleting .tar.bz2 files
+                'delete'   => '24M', // age threshold for deleting .tar.bz2 files
             ];
 
             // if compression behavior is also set in .env: overwrite

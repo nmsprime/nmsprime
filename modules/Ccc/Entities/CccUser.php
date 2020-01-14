@@ -88,11 +88,11 @@ class CccUser extends \BaseModel implements AuthenticatableContract, Authorizabl
 
             $data = [
                 'contract_id' => $this->contract_id,
-                'login_name' => $contract->number,
-                'password' => \Hash::make($psw),
-                'first_name' => $contract->firstname,
-                'last_name' => $contract->lastname,
-                'email' => $contract->email,
+                'login_name'  => $contract->number,
+                'password'    => \Hash::make($psw),
+                'first_name'  => $contract->firstname,
+                'last_name'   => $contract->lastname,
+                'email'       => $contract->email,
                 // 'active' 	  => 1 // TODO: deactivate non active customers for login
                 'active' => $contract->isValid('Now') ? 1 : 0,
             ];

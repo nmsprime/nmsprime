@@ -1219,12 +1219,12 @@ class BaseObserver
         }
 
         $data = [
-            'user_id' => $user ? $user->id : 0,
+            'user_id'  => $user ? $user->id : 0,
             'username' => $user ? $user->first_name.' '.$user->last_name : 'cronjob',
-            'method' => $action,
-            'model' => $model_name,
+            'method'   => $action,
+            'model'    => $model_name,
             'model_id' => $model->id,
-            'text' => $text,
+            'text'     => $text,
         ];
 
         GuiLog::log_changes($data);

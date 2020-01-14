@@ -24,7 +24,7 @@ class CutoffList extends \BaseModel
     public function view_index_label()
     {
         return [
-            'table' => '',
+            'table'        => '',
             'index_header' => [
                 'street', 'house_nr', 'zip', 'city', 'district',
                 'number', 'floor',

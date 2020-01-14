@@ -149,15 +149,15 @@ class DebtImport
 
         $debt = Debt::create([
             'contract_id' => $contract->id,
-            'voucher_nr' => $line[self::VOUCHER_NR],
+            'voucher_nr'  => $line[self::VOUCHER_NR],
             // TODO
             // 'number' => $line[self::INVOICE_NR],
-            'amount' => str_replace(',', '.', $line[self::AMOUNT]),
+            'amount'         => str_replace(',', '.', $line[self::AMOUNT]),
             'missing_amount' => str_replace(',', '.', $line[self::MISSING_AMOUNT]),
-            'date' => date('Y-m-d', strtotime($line[self::DATE])),
-            'dunning_date' => $line[self::DUN_DATE] ? date('Y-m-d', strtotime($line[self::DUN_DATE])) : null,
-            'description' => $line[self::DESC],
-            'indicator' => $indicator,
+            'date'           => date('Y-m-d', strtotime($line[self::DATE])),
+            'dunning_date'   => $line[self::DUN_DATE] ? date('Y-m-d', strtotime($line[self::DUN_DATE])) : null,
+            'description'    => $line[self::DESC],
+            'indicator'      => $indicator,
             // 'total_fee' => $fee,
         ]);
 

@@ -63,105 +63,105 @@ class BaseRoute
 
         // Index
         Route::get($name, [
-            'as' => $name.'.index',
-            'uses' => $controller.'@index',
+            'as'         => $name.'.index',
+            'uses'       => $controller.'@index',
             'middleware' => ['web', 'can:view,'.$models[$name]],
             $options,
         ]);
 
         // Index DataTable via Ajax
         Route::get("$name/datatables", [
-            'as' => $name.'.data',
-            'uses' => $controller.'@index_datatables_ajax',
+            'as'         => $name.'.data',
+            'uses'       => $controller.'@index_datatables_ajax',
             'middleware' => ['web', 'can:view,'.$models[$name]],
             $options,
         ]);
 
         // Store
         Route::post($name, [
-            'as' => $name.'.store',
-            'uses' => $controller.'@store',
+            'as'         => $name.'.store',
+            'uses'       => $controller.'@store',
             'middleware' => ['web', 'can:create,'.$models[$name]],
             $options,
         ]);
 
         // Create
         Route::get("$name/create", [
-            'as' => $name.'.create',
-            'uses' => $controller.'@create',
+            'as'         => $name.'.create',
+            'uses'       => $controller.'@create',
             'middleware' => ['web', 'can:create,'.$models[$name]],
             $options,
         ]);
 
         Route::post("$name/create", [
-            'as' => $name.'.create',
-            'uses' => $controller.'@create',
+            'as'         => $name.'.create',
+            'uses'       => $controller.'@create',
             'middleware' => ['web', 'can:create,'.$models[$name]],
             $options,
         ]);
 
         // Import
         Route::get("$name/import", [
-            'as' => $name.'.import',
-            'uses' => $controller.'@import',
+            'as'         => $name.'.import',
+            'uses'       => $controller.'@import',
             'middleware' => ['web', 'can:create,'.$models[$name]],
             $options,
         ]);
 
         Route::post("$name/import_parse", [
-            'as' => $name.'.import_parse',
-            'uses' => $controller.'@import_parse',
+            'as'         => $name.'.import_parse',
+            'uses'       => $controller.'@import_parse',
             'middleware' => ['web', 'can:create,'.$models[$name]],
             $options,
         ]);
 
         Route::post("$name/import_process", [
-            'as' => $name.'.import_process',
-            'uses' => $controller.'@import_process',
+            'as'         => $name.'.import_process',
+            'uses'       => $controller.'@import_process',
             'middleware' => ['web', 'can:create,'.$models[$name]],
             $options,
         ]);
 
         // edit
         Route::get("$name/{{$name}}", [
-            'as' => $name.'.edit',
-            'uses' => $controller.'@edit',
+            'as'         => $name.'.edit',
+            'uses'       => $controller.'@edit',
             'middleware' => ['web', 'can:view,'.$models[$name]],
             $options,
         ]);
 
         Route::get("$name/{{$name}}/log", [
-            'as' => $name.'.guilog',
-            'uses' => '\App\Http\Controllers\GuiLogController@filter',
+            'as'         => $name.'.guilog',
+            'uses'       => '\App\Http\Controllers\GuiLogController@filter',
             'middleware' => ['web', 'can:view,'.$models[$name]],
         ]);
 
         Route::get("$name/autocomplete/{column}", [
-            'as' => $name.'.autocomplete',
-            'uses' => $controller.'@autocomplete_ajax',
+            'as'         => $name.'.autocomplete',
+            'uses'       => $controller.'@autocomplete_ajax',
             'middleware' => ['web', 'can:view,'.$models[$name]],
             $options,
         ]);
 
         // update
         Route::patch("$name/{{$name}}", [
-            'as' => $name.'.update',
-            'uses' => $controller.'@update',
+            'as'         => $name.'.update',
+            'uses'       => $controller.'@update',
             'middleware' => ['web', 'can:update,'.$models[$name]],
             $options,
         ]);
 
         Route::put("$name/{{$name}}", [
-            'as' => $name.'.update',
-            'uses' => $controller.'@update',
+            'as'         => $name.'.update',
+            'uses'       => $controller.'@update',
             'middleware' => ['web', 'can:update,'.$models[$name]],
             $options,
         ]);
 
         // delete
         Route::delete("$name/{{$name}}", [
-            'as' => $name.'.destroy',
-            'uses' => $controller.'@destroy',
+            'as'         => $name.'.destroy',
+            'uses'       => $controller.'@destroy',
             'middleware' => ['web', 'can:delete,'.$models[$name]],
             $options,
         ]);
@@ -173,64 +173,64 @@ class BaseRoute
          */
         Route::group(['prefix' => 'api/v{ver}'], function () use ($name, $controller, $options, $models) {
             Route::get("$name", [
-                'as' => $name.'.api_index',
-                'uses' => $controller.'@api_index',
+                'as'         => $name.'.api_index',
+                'uses'       => $controller.'@api_index',
                 'middleware' => ['api', 'auth.basic', 'can:view,'.$models[$name]],
                 $options,
             ]);
 
             Route::post("$name", [
-                'as' => $name.'.api_store',
-                'uses' => $controller.'@api_store',
+                'as'         => $name.'.api_store',
+                'uses'       => $controller.'@api_store',
                 'middleware' => ['api', 'auth.basic', 'can:create,'.$models[$name]],
                 $options,
             ]);
 
             Route::get("$name/create", [
-                'as' => $name.'.api_create',
-                'uses' => $controller.'@api_create',
+                'as'         => $name.'.api_create',
+                'uses'       => $controller.'@api_create',
                 'middleware' => ['api', 'auth.basic', 'can:create,'.$models[$name]],
                 $options,
             ]);
 
             Route::post("$name/create", [
-                'as' => $name.'.api_create',
-                'uses' => $controller.'@api_create',
+                'as'         => $name.'.api_create',
+                'uses'       => $controller.'@api_create',
                 'middleware' => ['api', 'auth.basic', 'can:create,'.$models[$name]],
                 $options,
             ]);
 
             Route::get("$name/{{$name}}", [
-                'as' => $name.'.api_get',
-                'uses' => $controller.'@api_get',
+                'as'         => $name.'.api_get',
+                'uses'       => $controller.'@api_get',
                 'middleware' => ['api', 'auth.basic', 'can:view,'.$models[$name]],
                 $options,
             ]);
 
             Route::get("$name/{{$name}}/status", [
-                'as' => $name.'.api_status',
-                'uses' => $controller.'@api_status',
+                'as'         => $name.'.api_status',
+                'uses'       => $controller.'@api_status',
                 'middleware' => ['api', 'auth.basic', 'can:view,'.$models[$name]],
                 $options,
             ]);
 
             Route::patch("$name/{{$name}}", [
-                'as' => $name.'.api_update',
-                'uses' => $controller.'@api_update',
+                'as'         => $name.'.api_update',
+                'uses'       => $controller.'@api_update',
                 'middleware' => ['api', 'auth.basic', 'can:update,'.$models[$name]],
                 $options,
             ]);
 
             Route::put("$name/{{$name}}", [
-                'as' => $name.'.api_update',
-                'uses' => $controller.'@api_update',
+                'as'         => $name.'.api_update',
+                'uses'       => $controller.'@api_update',
                 'middleware' => ['api', 'auth.basic', 'can:update,'.$models[$name]],
                 $options,
             ]);
 
             Route::delete("$name/{{$name}}", [
-                'as' => $name.'.api_destroy',
-                'uses' => $controller.'@api_destroy',
+                'as'         => $name.'.api_destroy',
+                'uses'       => $controller.'@api_destroy',
                 'middleware' => ['api', 'auth.basic', 'can:delete,'.$models[$name]],
                 $options,
             ]);

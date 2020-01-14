@@ -14,8 +14,8 @@ class PhoneTariff extends \BaseModel
 
         return [
             'external_identifier' => 'required',
-            'name' => 'required|unique:phonetariff,name,'.$id.',id,deleted_at,NULL',
-            'usable' => 'required|boolean',
+            'name'                => 'required|unique:phonetariff,name,'.$id.',id,deleted_at,NULL',
+            'usable'              => 'required|boolean',
         ];
     }
 
@@ -40,10 +40,10 @@ class PhoneTariff extends \BaseModel
             $bsclass = 'danger';
         }
 
-        return ['table' => $this->table,
+        return ['table'    => $this->table,
             'index_header' => [$this->table.'.name', $this->table.'.type', $this->table.'.description', $this->table.'.voip_protocol', $this->table.'.usable'],
-            'bsclass' => $bsclass,
-            'header' => $this->name.' ('.$this->type.')', ];
+            'bsclass'      => $bsclass,
+            'header'       => $this->name.' ('.$this->type.')', ];
     }
 
     // Name of View

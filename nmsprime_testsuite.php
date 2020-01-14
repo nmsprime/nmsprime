@@ -27,8 +27,8 @@ class UnitTestStarter
     // each circuits holds an array with modules to disable
     protected $circuits = [
         'all_modules_enabled' => [],
-        'no_envia' => ['ProvVoipEnvia'],
-        'no_voip' => ['ProvVoip', 'ProvVoipEnvia', 'VoipMon'],
+        'no_envia'            => ['ProvVoipEnvia'],
+        'no_voip'             => ['ProvVoip', 'ProvVoipEnvia', 'VoipMon'],
     ];
 
     /**

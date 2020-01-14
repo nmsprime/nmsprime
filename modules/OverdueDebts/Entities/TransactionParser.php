@@ -73,7 +73,7 @@ class TransactionParser
             \ChannelLog::debug('overduedebts', trans('overduedebts::messages.transaction.exists', [
                 'debitCredit' => trans("view.$debitCredit"),
                 'description' => $transaction->getDescription(),
-                'price' => $transaction->getPrice(),
+                'price'       => $transaction->getPrice(),
             ]));
 
             return true;

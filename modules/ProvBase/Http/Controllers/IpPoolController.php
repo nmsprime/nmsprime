@@ -21,10 +21,10 @@ class IpPoolController extends \BaseController
         }
 
         $types = BaseviewController::translateArray([
-            'CM' => 'Cable Modem',
+            'CM'      => 'Cable Modem',
             'CPEPriv' => 'CPE Private',
-            'CPEPub' => 'CPE Public',
-            'MTA' => 'MTA',
+            'CPEPub'  => 'CPE Public',
+            'MTA'     => 'MTA',
         ]);
 
         // create context: calc next free ip pool
@@ -71,12 +71,12 @@ class IpPoolController extends \BaseController
             $sub = new \IPv4\SubnetCalculator($next_net, $size);
 
             $init_values += [
-                'net' => $sub->getNetworkPortion(),
-                'netmask' => $sub->getSubnetMask(),
+                'net'           => $sub->getNetworkPortion(),
+                'netmask'       => $sub->getSubnetMask(),
                 'ip_pool_start' => long2ip(ip2long($sub->getIPAddressRange()[0]) + 1), // first ip + 1
-                'ip_pool_end' => long2ip(ip2long($sub->getIPAddressRange()[1]) - 2), // last ip -2
-                'router_ip' => long2ip(ip2long($sub->getIPAddressRange()[1]) - 1), // last ip -1
-                'broadcast_ip' => $sub->getBroadcastAddress(),
+                'ip_pool_end'   => long2ip(ip2long($sub->getIPAddressRange()[1]) - 2), // last ip -2
+                'router_ip'     => long2ip(ip2long($sub->getIPAddressRange()[1]) - 1), // last ip -1
+                'broadcast_ip'  => $sub->getBroadcastAddress(),
             ];
         }
 

@@ -94,8 +94,8 @@ class LoginController extends Controller
             $request->session()->flash('GlobalNotification', [
                 'shouldChangePassword' => [
                     'message' => 'shouldChangePassword',
-                    'level' => 'danger',
-                    'reason' => $user->isPasswordExpired() ? 'PasswordExpired' : 'newUser',
+                    'level'   => 'danger',
+                    'reason'  => $user->isPasswordExpired() ? 'PasswordExpired' : 'newUser',
                 ],
             ]);
         }
@@ -116,22 +116,22 @@ class LoginController extends Controller
         if ($conf->alert1) {
             $alerts['alert1'] = [
                 'message' => $conf->alert1,
-                'level' => 'info',
-                'reason' => '', ];
+                'level'   => 'info',
+                'reason'  => '', ];
         }
 
         if ($conf->alert2) {
             $alerts['alert2'] = [
                 'message' => $conf->alert2,
-                'level' => 'warning',
-                'reason' => '', ];
+                'level'   => 'warning',
+                'reason'  => '', ];
         }
 
         if ($conf->alert3) {
             $alerts['alert3'] = [
                 'message' => $conf->alert3,
-                'level' => 'danger',
-                'reason' => '', ];
+                'level'   => 'danger',
+                'reason'  => '', ];
         }
 
         \Session::flash('DashboardNotification', $alerts);

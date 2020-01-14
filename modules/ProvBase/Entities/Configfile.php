@@ -20,7 +20,7 @@ class Configfile extends \BaseModel
         return [
             'name' => 'required_without:import|unique:configfile,name,'.$id.',id,deleted_at,NULL',
             'text' => 'docsis',
-            'cvc' => 'required_with:firmware',
+            'cvc'  => 'required_with:firmware',
         ];
     }
 

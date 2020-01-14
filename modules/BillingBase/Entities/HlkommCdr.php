@@ -136,11 +136,11 @@ class HlkommCdr extends CdrGetter
 
             $data = [
                 'calling_nr' => $phonenr1,
-                'date' => $line[0],
-                'starttime' => $line[1],
-                'duration' => $line[10],
-                'called_nr' => $phonenr2,
-                'price' => str_replace(',', '.', $line[13]),
+                'date'       => $line[0],
+                'starttime'  => $line[1],
+                'duration'   => $line[10],
+                'called_nr'  => $phonenr2,
+                'price'      => str_replace(',', '.', $line[13]),
             ];
 
             // calculate price with hlkomms distance zone

@@ -13,15 +13,15 @@ class IpPool extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'net' => 'required|ip',
-            'netmask' => 'required|ip|netmask',     // netmask must not be in first place!
+            'net'           => 'required|ip',
+            'netmask'       => 'required|ip|netmask',     // netmask must not be in first place!
             'ip_pool_start' => 'required|ip|ip_in_range:net,netmask|ip_larger:net',   // own validation - see in classes: ExtendedValidator and IpPoolController
-            'ip_pool_end' => 'required|ip|ip_in_range:net,netmask|ip_larger:ip_pool_start',
-            'router_ip' => 'required|ip|ip_in_range:net,netmask',
-            'broadcast_ip' => 'nullable|ip|ip_in_range:net,netmask|ip_larger:ip_pool_end',
-            'dns1_ip' => 'nullable|ip',
-            'dns2_ip' => 'nullable|ip',
-            'dns3_ip' => 'nullable|ip',
+            'ip_pool_end'   => 'required|ip|ip_in_range:net,netmask|ip_larger:ip_pool_start',
+            'router_ip'     => 'required|ip|ip_in_range:net,netmask',
+            'broadcast_ip'  => 'nullable|ip|ip_in_range:net,netmask|ip_larger:ip_pool_end',
+            'dns1_ip'       => 'nullable|ip',
+            'dns2_ip'       => 'nullable|ip',
+            'dns3_ip'       => 'nullable|ip',
         ];
     }
 
@@ -43,10 +43,10 @@ class IpPool extends \BaseModel
     {
         $bsclass = $this->get_bsclass();
 
-        return ['table' => $this->table,
-            'index_header' => [$this->table.'.id', 'netgw.hostname', $this->table.'.type', $this->table.'.net', $this->table.'.netmask', $this->table.'.router_ip', $this->table.'.description'],
-            'header' => $this->type.': '.$this->net.' / '.$this->netmask,
-            'bsclass' => $bsclass,
+        return ['table'     => $this->table,
+            'index_header'  => [$this->table.'.id', 'netgw.hostname', $this->table.'.type', $this->table.'.net', $this->table.'.netmask', $this->table.'.router_ip', $this->table.'.description'],
+            'header'        => $this->type.': '.$this->net.' / '.$this->netmask,
+            'bsclass'       => $bsclass,
             'eager_loading' => ['netgw'], ];
     }
 

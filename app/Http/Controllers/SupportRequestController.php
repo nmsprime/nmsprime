@@ -10,16 +10,16 @@ class SupportRequestController extends BaseController
     public function view_form_fields($model = null)
     {
         $categories = [
-            'Network Outage' => 'Network Outage',
-            'Service Problems' => 'Service Problems',
-            'General Questions' => 'General Questions',
+            'Network Outage'          => 'Network Outage',
+            'Service Problems'        => 'Service Problems',
+            'General Questions'       => 'General Questions',
             'NetGw/CMTS or CM Issues' => 'NetGw/CMTS or CM Issues',
-            'Others' => 'Others',
+            'Others'                  => 'Others',
         ];
         $priorities = [
             'Critical' => 'Critical',
-            'Major' => 'Major',
-            'Minor' => 'Minor',
+            'Major'    => 'Major',
+            'Minor'    => 'Minor',
         ];
 
         // label has to be the same like column in sql table

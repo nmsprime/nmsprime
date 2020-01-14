@@ -5,53 +5,53 @@ BaseRoute::group([], function () {
     BaseRoute::resource('Ccc', 'Modules\Ccc\Http\Controllers\CccController');
 
     BaseRoute::get('contract/conn_info/{id}', [
-        'as' => 'Contract.ConnInfo',
-        'uses' => 'Modules\Ccc\Http\Controllers\CccUserController@connection_info_download',
+        'as'         => 'Contract.ConnInfo',
+        'uses'       => 'Modules\Ccc\Http\Controllers\CccUserController@connection_info_download',
         'middleware' => ['can:view,Modules\ProvBase\Entities\Contract'],
     ]);
 });
 
 Route::group(['middleware' => ['web'], 'prefix' => 'customer'], function () {
     Route::get('login', [
-        'as' => 'customerLogin',
+        'as'   => 'customerLogin',
         'uses' => 'Modules\Ccc\Http\Controllers\LoginController@showLoginForm',
     ]);
 
     Route::post('login', [
-        'as' => 'customerLogin.post',
+        'as'   => 'customerLogin.post',
         'uses' => 'Modules\Ccc\Http\Controllers\LoginController@login',
     ]);
 
     Route::post('logout', [
-        'as' => 'customerLogout.post',
+        'as'   => 'customerLogout.post',
         'uses' => 'Modules\Ccc\Http\Controllers\LoginController@logout',
     ]);
 });
 
 Route::group(['middleware' => ['web', 'auth:ccc'], 'prefix' => 'customer'], function () {
     Route::get('', [
-        'as' => 'HomeCcc',
+        'as'   => 'HomeCcc',
         'uses' => 'Modules\Ccc\Http\Controllers\CccUserController@show',
     ]);
 
     Route::get('password', [
-        'as' => 'CustomerPsw',
+        'as'   => 'CustomerPsw',
         'uses' => 'Modules\Ccc\Http\Controllers\CccUserController@psw_update',
     ]);
 
     Route::post('password', [
-        'as' => 'CustomerPsw',
+        'as'   => 'CustomerPsw',
         'uses' => 'Modules\Ccc\Http\Controllers\CccUserController@psw_update',
     ]);
 
     Route::get('home/download/{invoice}', [
-        'as' => 'Customer.Download',
+        'as'   => 'Customer.Download',
         'uses' => 'Modules\Ccc\Http\Controllers\CccUserController@download',
     ]);
 });
 
     Route::get('customer/speedtest/garbage', [
-        'as' => 'Customer.Garbage',
-        'uses' => 'Modules\Ccc\Http\Controllers\SpeedtestController@garbage',
+        'as'         => 'Customer.Garbage',
+        'uses'       => 'Modules\Ccc\Http\Controllers\SpeedtestController@garbage',
         'middleware' => 'web',
     ]);
