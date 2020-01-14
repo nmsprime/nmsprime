@@ -18,7 +18,7 @@ class SalesmanTableSeeder extends \BaseSeeder
             'lastname' => 'Vertreter',
             'commission' => 10,
             'products' => 'Internet, Voip, Device',
-            ]);
+        ]);
 
         $sm_id = Salesman::orderBy('id', 'desc')->select('id')->first()->id;
 

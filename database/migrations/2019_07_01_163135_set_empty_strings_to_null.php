@@ -1,14 +1,25 @@
 <?php
 
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
 class SetEmptyStringsToNull extends Migration
 {
+    protected $path;
+
+    protected const TABLES = [
+        'global_config',
+        'sla',
+        'supportrequest',
+        'users',
+    ];
+
     public function __construct()
     {
+        $this->path = dirname((new ReflectionClass(get_called_class()))->getFileName());
         DB::getDoctrineSchemaManager()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
         Schema::defaultStringLength(191);
     }
@@ -24,7 +35,8 @@ class SetEmptyStringsToNull extends Migration
         $models = collect(\App\BaseModel::get_models())->mapWithKeys(function ($namespace, $modelName) {
             return [strtolower($modelName) => $namespace];
         });
-        $tables = collect(Schema::getConnection()->getDoctrineSchemaManager()->listTableNames());
+        $tables = collect(Schema::getConnection()->getDoctrineSchemaManager()->listTableNames())
+            ->intersect($this->getModuletables());
 
         // tables of Laravel, Bouncer Package, programmatic filled models and "n to m"-Relationships
         $skipped = [
@@ -74,6 +86,8 @@ class SetEmptyStringsToNull extends Migration
                 $nullable[$field] = empty(array_intersect($required, explode('|', $rule))) ? true : false;
             }
 
+            echo "Set empty strings to null in {$tableName} table.\n";
+
             // get all column names
             $tableColumns = $this->getTableColumns($tableName);
             foreach (DB::getSchemaBuilder()->getColumnListing($tableName) as $column) {
@@ -87,7 +101,11 @@ class SetEmptyStringsToNull extends Migration
                 $type = DB::connection()->getDoctrineColumn($tableName, $column)->getType()->getName();
 
                 // exceptions: id, booleans and foreign keys
-                if ($column === 'id' || $type === 'boolean' || ($type == 'integer' && Str::endsWith($column, '_id'))) {
+                if (
+                    $column === 'id' ||
+                    $type === 'boolean' ||
+                    ($column !== 'parent_id' && $type == 'integer' && Str::endsWith($column, '_id'))
+                ) {
                     continue;
                 }
 
@@ -152,5 +170,17 @@ class SetEmptyStringsToNull extends Migration
         }
 
         return $columns->toArray();
+    }
+
+    public function getModuleTables()
+    {
+        if (Str::contains($this->path, base_path('modules'))) {
+            return collect(File::files($this->path.'/../../Entities'))
+                ->map(function ($file) {
+                    return Str::replaceFirst('.php', '', Str::lower($file->getFileName()));
+                });
+        }
+
+        return self::TABLES;
     }
 }

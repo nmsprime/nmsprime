@@ -180,7 +180,7 @@ class EnviaOrderDocumentController extends \BaseController
      * @return void
      * @author Christian Schramm
      */
-    public function checkForPermission() : void
+    public function checkForPermission(): void
     {
         if (Bouncer::cannot('view', ProvVoipEnvia::class)) {
             throw new AuthenticationException(trans('auth.EnviaOrderDocument'));

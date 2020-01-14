@@ -24,7 +24,7 @@ class ProvVoipEnviaServiceProvider extends ServiceProvider
         '\Modules\ProvVoipEnvia\Console\EnviaOrderUpdaterCommand',
         '\Modules\ProvVoipEnvia\Console\EnviaOrderProcessorCommand',
         '\Modules\ProvVoipEnvia\Console\VoiceDataUpdaterCommand',
-        ];
+    ];
 
     /**
      * Boot the application events.

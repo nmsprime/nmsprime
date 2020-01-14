@@ -36,7 +36,7 @@ class SepaAccount extends \BaseModel
             'bic'       => 'bic',
             'template_invoice_upload' => 'mimetypes:text/x-tex,application/x-tex',
             'template_cdr_upload'     => 'mimetypes:text/x-tex,application/x-tex',
-            ];
+        ];
     }
 
     /**
@@ -58,10 +58,12 @@ class SepaAccount extends \BaseModel
     // generates datatable content and classes for model
     public function view_index_label()
     {
-        return ['table' => $this->table,
-                'index_header' => ['id', $this->table.'.name', $this->table.'.institute', $this->table.'.iban', $this->table.'.template_invoice'],
-                'order_by' => ['0' => 'asc'],  // columnindex => direction
-                'header' =>  $this->name, ];
+        return [
+            'table' => $this->table,
+            'index_header' => ['id', $this->table.'.name', $this->table.'.institute', $this->table.'.iban', $this->table.'.template_invoice'],
+            'order_by' => ['0' => 'asc'],  // columnindex => direction
+            'header' =>  $this->name,
+        ];
     }
 
     // View Relation.
@@ -267,7 +269,7 @@ class SepaAccount extends \BaseModel
             'Zip'           => $contract->zip,
             'City'          => $contract->city,
             'District'      => $contract->district,
-            ];
+        ];
 
         // Set Contact
         if (\Module::collections()->has('PropertyManagement')) {
@@ -316,7 +318,7 @@ class SepaAccount extends \BaseModel
             'Street'        => $contract->street,
             'Zip'           => $contract->zip,
             'City'          => $contract->city,
-            ];
+        ];
     }
 
     public function add_invoice_item($item, $settlementrun_id)
@@ -461,6 +463,11 @@ class SepaAccount extends \BaseModel
                 $this->_log("$key1 $key records", $fn);
             }
         }
+
+        $dir = $this->absoluteAccountingDirectoryPath;
+        if (is_dir($dir)) {
+            system('chown -R apache '.$dir);
+        }
     }
 
     /*
@@ -481,6 +488,11 @@ class SepaAccount extends \BaseModel
     public function get_relative_accounting_dir_path()
     {
         return SettlementRun::get_relative_accounting_dir_path().'/'.sanitize_filename($this->name);
+    }
+
+    public function getAbsoluteAccountingDirectoryPathAttribute()
+    {
+        return storage_path('app/'.self::get_relative_accounting_dir_path());
     }
 
     /**
@@ -586,6 +598,11 @@ class SepaAccount extends \BaseModel
 
         if ($this->sepa_xml['credits']) {
             $this->make_credit_file();
+        }
+
+        $dir = $this->absoluteAccountingDirectoryPath;
+        if (is_dir($dir)) {
+            system('chown -R apache '.$dir);
         }
     }
 

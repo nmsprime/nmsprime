@@ -61,12 +61,12 @@ class Product extends \BaseModel
         $bsclass = $this->get_bsclass();
 
         return ['table' => $this->table,
-                'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price', 'costcenter.name', $this->table.'.proportional'],
-                'header' =>  $this->type.' - '.$this->name.' | '.$this->price.' €',
-                'bsclass' => $bsclass,
-                'eager_loading' => ['costcenter'],
-                'edit' => ['costcenter.name' => 'getCostcenterName'],
-                'order_by' => ['0' => 'asc'], ];  // columnindex => direction
+            'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price', 'costcenter.name', $this->table.'.proportional'],
+            'header' =>  $this->type.' - '.$this->name.' | '.$this->price.' €',
+            'bsclass' => $bsclass,
+            'eager_loading' => ['costcenter'],
+            'edit' => ['costcenter.name' => 'getCostcenterName'],
+            'order_by' => ['0' => 'asc'], ];  // columnindex => direction
     }
 
     public function get_bsclass()

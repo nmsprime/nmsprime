@@ -31,7 +31,7 @@ class CccController extends \BaseController
             $b = [
                 ['form_type' => 'select', 'name' => 'template_filename', 'description' => 'Connection Info Template', 'value' => $files, 'help' => 'Tex Template used to Create Connection Information on the Contract Page for a Customer'],
                 ['form_type' => 'file', 'name' => 'template_filename_upload', 'description' => 'Upload Template'],
-                ];
+            ];
         }
 
         return array_merge($a, $b);

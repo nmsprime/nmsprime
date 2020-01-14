@@ -51,7 +51,7 @@ class CompanyController extends \BaseController
             $b = [
                 ['form_type' => 'select', 'name' => 'conn_info_template_fn', 'description' => 'Connection Info Template', 'value' => $files, 'help' => trans('helper.conn_info_template')],
                 ['form_type' => 'file', 'name' => 'conn_info_template_fn_upload', 'description' => 'Upload Template', 'help' => trans('helper.tex_template')],
-                ];
+            ];
         }
 
         return array_merge($a, $b);

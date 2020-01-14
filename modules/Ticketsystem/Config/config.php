@@ -6,12 +6,12 @@ return [
     'name' => 'Ticket',
     'link' => 'Ticket.dashboard',
     'MenuItems' => [
-    'Tickets' => [
-      'link' => 'Ticket.index',
+        'Tickets' => [
+            'link' => 'Ticket.index',
             'icon'	=> 'fa-ticket',
             'class' => Ticket::class,
         ],
-      'TicketTypes' => [
+        'TicketTypes' => [
             'link' => 'TicketType.index',
             'icon'	=> 'fa-ticket',
             'class' => TicketType::class,

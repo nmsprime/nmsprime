@@ -31,7 +31,7 @@ class HfcBaseController extends BaseController
         return [
             ['form_type' => 'text', 'name' => 'ro_community', 'description' => 'SNMP Read Only Community'],
             ['form_type' => 'text', 'name' => 'rw_community', 'description' => 'SNMP Read Write Community'],
-            ];
+        ];
     }
 
     /**
