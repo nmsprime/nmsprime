@@ -158,11 +158,22 @@ class NumberRange extends \BaseModel
                 $contract_nrs = \Modules\ProvBase\Entities\Contract::where('costcenter_id', '!=', $costcenter_id)
                     ->whereBetween($wherebetween, [$range->start, $range->end])
                     ->select('number')
-                    ->orderBy('number')->get()->pluck('number')->all();
+                    ->orderBy('number')->pluck('number')->all();
 
                 if ($contract_nrs) {
-                    \Session::push('tmp_error_above_form', trans('messages.contract_nr_mismatch', ['nrs' => implode(', ', $contract_nrs)]));
                     // session(['alert.warning' => trans('messages.contract_nr_mismatch', ['nrs' => implode(', ', $contract_nrs)])]);
+                    \Session::push('tmp_error_above_form', trans('messages.contract_nr_mismatch', ['nrs' => implode(', ', $contract_nrs)]));
+                } else {
+                    // Check for deleted contracts with number to costcenter_id mismatch as this could lead to null as return value of the query too
+                    $contract_nrs_trashed = \Modules\ProvBase\Entities\Contract::where('costcenter_id', '!=', $costcenter_id)
+                        ->withTrashed()
+                        ->whereBetween($wherebetween, [$range->start, $range->end])
+                        ->select('number')
+                        ->orderBy('number')->pluck('number')->all();
+
+                    if ($contract_nrs_trashed) {
+                        Log::error('NumberRange - Get next contract number failes because there are deleted contracts ('.implode(', ', $contract_nrs_trashed).') with a wrong costcenter_id - their contract number must originally have belong to another costcenter and number range');
+                    }
                 }
 
                 continue;
