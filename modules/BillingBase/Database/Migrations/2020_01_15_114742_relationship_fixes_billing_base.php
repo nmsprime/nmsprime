@@ -58,7 +58,7 @@ class RelationshipFixesBillingBase extends BaseMigration
         // set 0 to NULL for contract
         Schema::table('contract', function (Blueprint $table) {
             $column = 'salesman_id';
-            $table->unsignedInteger($column)->change();
+            $table->unsignedInteger($column)->nullable()->change();
             DB::statement("UPDATE `contract` SET `$column`=NULL WHERE `$column`=0");
         });
     }
