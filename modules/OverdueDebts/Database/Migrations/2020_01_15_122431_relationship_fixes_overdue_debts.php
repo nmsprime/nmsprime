@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
-class RelationshipFixesOverdueDebts extends BaseMigration
+class RelationshipFixesOverdueDebts extends RelationshipFixes
 {
     /**
      * Run the migrations.
@@ -12,12 +12,7 @@ class RelationshipFixesOverdueDebts extends BaseMigration
      */
     public function up()
     {
-        // set 0 to NULL for debt
-        Schema::table('debt', function (Blueprint $table) {
-            $column = 'contract_id';
-            $table->unsignedInteger($column)->nullable()->change();
-            DB::statement("UPDATE debt SET `$column`=NULL WHERE `$column`=0");
-        });
+        $this->upFixRelationshipTables('debt', ['contract_id']);
     }
 
     /**
@@ -27,11 +22,6 @@ class RelationshipFixesOverdueDebts extends BaseMigration
      */
     public function down()
     {
-        // set 0 to NULL for debt
-        Schema::table('debt', function (Blueprint $table) {
-            $column = 'contract_id';
-            $table->unsignedInteger($column)->change();
-            DB::statement("UPDATE debt SET `$column`=0 WHERE `$column` IS NULL");
-        });
+        $this->downFixRelationshipTables('debt', ['contract_id']);
     }
 }

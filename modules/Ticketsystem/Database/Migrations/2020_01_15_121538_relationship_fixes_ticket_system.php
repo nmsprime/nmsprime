@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
-class RelationshipFixesTicketSystem extends BaseMigration
+class RelationshipFixesTicketSystem extends RelationshipFixes
 {
     /**
      * Run the migrations.
@@ -12,12 +12,7 @@ class RelationshipFixesTicketSystem extends BaseMigration
      */
     public function up()
     {
-        // set 0 to NULL for ticket
-        Schema::table('ticket', function (Blueprint $table) {
-            $column = 'contract_id';
-            $table->unsignedInteger($column)->nullable()->change();
-            DB::statement("UPDATE ticket SET `$column`=NULL WHERE `$column`=0");
-        });
+        $this->upFixRelationshipTables('ticket', ['contract_id']);
     }
 
     /**
@@ -27,11 +22,6 @@ class RelationshipFixesTicketSystem extends BaseMigration
      */
     public function down()
     {
-        // set 0 to NULL for ticket
-        Schema::table('ticket', function (Blueprint $table) {
-            $column = 'contract_id';
-            $table->unsignedInteger($column)->change();
-            DB::statement("UPDATE ticket SET `$column`=0 WHERE `$column` IS NULL");
-        });
+        $this->downFixRelationshipTables('ticket', ['contract_id']);
     }
 }
