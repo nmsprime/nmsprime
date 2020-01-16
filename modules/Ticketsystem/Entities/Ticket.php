@@ -165,6 +165,21 @@ class Ticket extends \BaseModel
         return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class);
     }
 
+    public function contact()
+    {
+        return $this->belongsTo(\Modules\PropertyManagement\Entities\Contact::class, 'contact_id');
+    }
+
+    public function apartment()
+    {
+        return $this->belongsTo(\Modules\PropertyManagement\Entities\Apartment::class, 'apartment_id');
+    }
+
+    public function realty()
+    {
+        return $this->belongsTo(\Modules\PropertyManagement\Entities\Realty::class, 'realty_id');
+    }
+
     public function tickettypes()
     {
         return $this->belongsToMany(TicketType::class, 'tickettype_ticket', 'ticket_id', 'tickettype_id');

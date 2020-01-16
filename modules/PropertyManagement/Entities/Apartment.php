@@ -63,6 +63,11 @@ class Apartment extends \BaseModel
             $ret['Edit']['Contract']['relation'] = $this->contracts;
         }
 
+        if (\Module::collections()->has('Ticketsystem')) {
+            $ret['Edit']['Ticket']['class'] = 'Ticket';
+            $ret['Edit']['Ticket']['relation'] = $this->tickets;
+        }
+
         return $ret;
     }
 
@@ -82,6 +87,11 @@ class Apartment extends \BaseModel
     public function modems()
     {
         return $this->hasMany(\Modules\ProvBase\Entities\Modem::class);
+    }
+
+    public function tickets()
+    {
+        return $this->hasMany(\Modules\Ticketsystem\Entities\Ticket::class);
     }
 
     public function realty()
