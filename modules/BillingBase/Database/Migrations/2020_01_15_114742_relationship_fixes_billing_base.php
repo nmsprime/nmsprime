@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
-
 class RelationshipFixesBillingBase extends RelationshipFixes
 {
     /**
