@@ -34,7 +34,7 @@ class TicketController extends \BaseController
             $model = new Ticket;
         }
 
-        return [
+        $top = [
             ['form_type' => 'text', 'name' => 'name', 'description' => 'Title'],
             ['form_type' => 'text', 'name' => 'duedate', 'description' => 'Due Date', 'space' => 1],
             ['form_type' => 'select', 'name' => 'state', 'description' => 'State', 'value' => Ticket::getPossibleEnumValues('state')],
@@ -44,6 +44,18 @@ class TicketController extends \BaseController
                 'options' => ['multiple' => 'multiple'],
                 'selected' => $model->html_list($model->tickettypes, 'name'), 'space' => 1, ],
             ['form_type' => 'select', 'name' => 'contract_id', 'description' => 'Contract', 'value' => $model->html_list(\DB::table('contract')->get(), ['number', 'firstname', 'lastname'], true, ' - ')],
+        ];
+
+        $mid = [];
+        if (\Module::collections()->has('PropertyManagement')) {
+            $mid = [
+                ['form_type' => 'select', 'name' => 'contact_id', 'description' => 'Contact', 'value' => $model->html_list(\DB::table('contact')->get(), ['firstname1', 'lastname1', 'company'], true, ' - ')],
+                ['form_type' => 'select', 'name' => 'apartment_id', 'description' => 'Apartment', 'value' => $model->html_list(\DB::table('apartment')->get(), ['realty_id', 'number', 'floor'], true, ' - ')],
+                ['form_type' => 'select', 'name' => 'realty_id', 'description' => 'Realty', 'value' => $model->html_list(\DB::table('realty')->get(), ['name', 'city', 'street', 'house_nr'], true, ' - ')],
+            ];
+        }
+
+        $bot = [
             ['form_type' => 'textarea', 'name' => 'description', 'description' => 'Description'],
             ['form_type' => 'text', 'name' => 'user_id', 'description' => 'Current user', 'value' => \Auth::user()->id, 'hidden' => 1],
             ['form_type' => 'select', 'name' => 'users_ids[]', 'description' => 'Assigned users',
@@ -52,5 +64,7 @@ class TicketController extends \BaseController
                 'help' => trans('helper.assign_user'),
                 'selected' => $model->html_list($model->users, ['last_name', 'first_name'], false, ', '), ],
         ];
+
+        return array_merge($top, $mid, $bot);
     }
 }
