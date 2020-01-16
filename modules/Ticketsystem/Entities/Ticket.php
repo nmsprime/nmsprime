@@ -262,7 +262,7 @@ class Ticket extends \BaseModel
                 continue;
             }
 
-            \Mail::raw(trans('messages.deletedTicketUsersMessage', ['id' => $this->id]),
+            \Mail::send('ticketsystem::emails.deletedFromTicket', ['id' => $this->id],
                 function ($message) use ($user, $subject, $settings) {
                     $message->from($settings['noReplyMail'], $settings['noReplyName'])
                             ->to($user->email, $user->last_name.', '.$user->first_name)
