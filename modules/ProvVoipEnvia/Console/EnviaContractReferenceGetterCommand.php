@@ -166,7 +166,7 @@ class EnviaContractReferenceGetterCommand extends Command
                 $url = $this->base_url.$url_suffix;
 
                 $this->_perform_curl_request($url);
-            } catch (Exception $ex) {
+            } catch (\Exception $ex) {
                 Log::error('Exception getting envia TEL contract reference for phonenumber '.$log_number.'): '.$ex->getMessage().' => '.$ex->getTraceAsString());
             }
         }
