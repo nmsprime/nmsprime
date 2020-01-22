@@ -16,7 +16,7 @@ class CreateCdrTable extends BaseMigration
     {
         $dump = base_path('modules/VoipMon/Console/voipmonitor/voipmonitor.cdr-16.0.2.sql');
         // we always import the dump, so we don't need to rely on a local voipmonitor
-        \DB::unprepared(file_get_contents($dump));
+        \DB::connection('mysql-root')->unprepared(file_get_contents($dump));
 
         // start local voipmonitor, it will update the imported schema if necessary
         $this->_voipmonitor_cmd_local('start');
