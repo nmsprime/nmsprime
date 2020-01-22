@@ -166,7 +166,7 @@ class BillingAnalysis
 
         // manipulate dates array for charge calculation for coming month (not last one)
         $conf = \Modules\BillingBase\Entities\BillingBase::first();
-        $dates = \Modules\BillingBase\Console\SettlementRunCommand::create_dates_array();
+        $dates = \Modules\BillingBase\Providers\SettlementRunData::getDate();
 
         $dates['lastm_Y'] = date('Y-m');
         $dates['lastm_01'] = date('Y-m-01');
