@@ -132,6 +132,8 @@ class Ticket extends \BaseModel
         $ret['Edit']['Comment']['class'] = 'Comment';
         $ret['Edit']['Comment']['relation'] = $this->comments;
 
+        $ret['Edit']['Information']['html'] = $this->provideContractInformation();
+
         return $ret;
     }
 
@@ -320,6 +322,31 @@ class Ticket extends \BaseModel
         }
 
         return ['noReplyName' => $config->noReplyName, 'noReplyMail' => $config->noReplyMail];
+    }
+
+    private function provideContractInformation()
+    {
+        $contract = $this->contract;
+        $id = $contract->id;
+        $info = "<table class='table table-bordered table-hover'>
+                    <thead>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Number</td>
+                            <td>".link_to_route('Contract.edit', $id, ['id' => $id]).'</td>
+                        </tr>';
+
+        foreach (['company', 'firstname', 'lastname', 'city', 'district', 'street', 'house_number', 'phone', 'email'] as $value) {
+            $info .= '<tr>
+                        <td>'.\App\Http\Controllers\BaseViewController::translate_label(ucfirst($value)).'</td>
+                        <td>'.$contract->$value.'</td>
+                    </tr>';
+        }
+
+        $info .= '</tbody></table>';
+
+        return $info;
     }
 }
 
