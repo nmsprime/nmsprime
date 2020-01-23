@@ -76,7 +76,8 @@ class TreeErdController extends HfcBaseController
         }
 
         // Generate SVG file
-        $file = $this->graph_generate(NetElement::whereRaw($s));
+        $file = $this->graph_generate(NetElement::withActiveModems($field, $operator, $search)->get());
+
         if (! $file) {
             return \View::make('errors.generic', [
                 'error' => 422,
@@ -176,7 +177,7 @@ class TreeErdController extends HfcBaseController
      *
      * @author: Torsten Schmidt
      */
-    public function graph_generate($query)
+    public function graph_generate($netelements)
     {
         //
         // INIT
@@ -193,8 +194,6 @@ class TreeErdController extends HfcBaseController
 
         $n = 0;
         $p1 = '';
-
-        $netelements = NetElement::withActiveModems()->get();
 
         if (! $netelements->first()) {
             return;
