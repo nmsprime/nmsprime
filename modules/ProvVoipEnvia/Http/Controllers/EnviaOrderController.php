@@ -242,7 +242,7 @@ class EnviaOrderController extends \BaseController
             $model = EnviaOrder::findOrFail($id);
             $model->mark_as_solved();
         } else {
-            throw new AuthException('Not allowed to mark Envia Order as solved. Please ask your Administrator');
+            throw new \App\Exceptions\AuthException('Not allowed to mark Envia Order as solved. Please ask your Administrator');
         }
 
         return \Redirect::back();
@@ -315,7 +315,7 @@ class EnviaOrderController extends \BaseController
     {
         if (Bouncer::cannot('delete', EnviaOrder::class) &&
             Bouncer::cannot('view', 'Modules\ProvVoipEnvia\Entities\ProvVoipEnvia')) {
-            throw new AuthException('Access to model EnviaOrder not allowed for user '.Auth::user()->login_name.'.');
+            throw new \App\Exceptions\AuthException('Access to model EnviaOrder not allowed for user '.Auth::user()->login_name.'.');
         }
         // get all orders to be canceled
         $orders = [];
