@@ -43,8 +43,8 @@ class ClustersCommand extends Command
     {
         $ret = 'OK';
         $perf = '';
-        foreach (NetElement::where('id', '>', '2')->get() as $element) {
-            $state = ModemHelper::ms_state($element->id);
+        foreach (NetElement::withActiveModems()->get() as $netelement) {
+            $state = ModemHelper::ms_state($netelement);
             if ($state == -1) {
                 continue;
             }
@@ -55,10 +55,10 @@ class ClustersCommand extends Command
                 $ret = $state;
             }
 
-            $num = ModemHelper::ms_num($element->id);
-            $numa = ModemHelper::ms_num_all($element->id);
-            $cm_cri = ModemHelper::ms_cri($element->id);
-            $avg = ModemHelper::ms_avg($element->id);
+            $num = $netelement->ms_num;
+            $numa = $netelement->modems_count;
+            $cm_cri = $netelement->ms_cri;
+            $avg = $netelement->msAvg;
             $warn_per = ModemHelper::$avg_warning_percentage / 100 * $numa;
             $crit_per = ModemHelper::$avg_critical_percentage / 100 * $numa;
             $warn_us = ModemHelper::$avg_warning_us;
