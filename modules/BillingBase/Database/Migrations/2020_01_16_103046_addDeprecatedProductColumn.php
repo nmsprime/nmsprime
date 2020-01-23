@@ -14,7 +14,7 @@ class AddDeprecatedProductColumn extends BaseMigration
     public function up()
     {
         Schema::table($this->tablename, function (Blueprint $table) {
-            $table->boolean('deprecated')->default(NULL);
+            $table->boolean('deprecated');
         });
     }
 

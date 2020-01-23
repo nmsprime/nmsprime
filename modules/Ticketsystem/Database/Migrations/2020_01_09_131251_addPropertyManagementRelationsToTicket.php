@@ -32,7 +32,7 @@ class AddPropertyManagementRelationsToTicket extends BaseMigration
                 'contact_id',
                 'apartment_id',
                 'realty_id',
-                ]);
+            ]);
         });
     }
 }
