@@ -75,7 +75,10 @@ class TreeErdController extends HfcBaseController
             $search = 2;
 
             if (! NetElement::where($field, $operator, $search)->count()) {
-                return redirect()->back();
+                return \View::make('errors.generic', [
+                    'error' => 422,
+                    'message' => trans('messages.no_Netelements'),
+                ]);
             }
         }
 
@@ -83,7 +86,10 @@ class TreeErdController extends HfcBaseController
         $file = $this->graph_generate(NetElement::where($field, $operator, $search));
 
         if (! $file) {
-            return \View::make('errors.generic');
+            return \View::make('errors.generic', [
+                'error' => 422,
+                'message' => trans('messages.no_ERD_File'),
+            ]);
         }
 
         // Prepare and display SVG
