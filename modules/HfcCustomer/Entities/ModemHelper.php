@@ -52,15 +52,15 @@ class ModemHelper extends \BaseModel
         return 'OK';
     }
 
-    public static function ms_state($s)
+    public static function ms_state($netelem)
     {
-        $all = self::ms_num_all($s);
+        $all = $netelem->modems_count;
         if ($all == 0) {
             return -1;
         }
 
-        $onl = self::ms_num($s);
-        $avg = self::ms_avg($s);
+        $onl = $netelem->ms_num;
+        $avg = $netelem->msAvg;
 
         if ($onl / $all * 100 < self::$avg_critical_percentage || $avg > self::$avg_critical_us) {
             return 'CRITICAL';

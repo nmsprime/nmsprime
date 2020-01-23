@@ -194,9 +194,9 @@ class TreeErdController extends HfcBaseController
         $n = 0;
         $p1 = '';
 
-        $netelements = $query->where('id', '>', '2')->with('netelementtype', 'parent')->orderBy('pos')->get();
+        $netelements = NetElement::withActiveModems()->get();
 
-        if (! $netelements->count()) {
+        if (! $netelements->first()) {
             return;
         }
 
@@ -292,13 +292,13 @@ class TreeErdController extends HfcBaseController
                 $url = \BaseRoute::get_base_url()."/Customer/netelement_id/$idtree";
                 $n++;
 
-                $state = ModemHelper::ms_state($idtree);
+                $state = ModemHelper::ms_state($netelem);
                 if ($state != -1) {
                     $color = ModemHelper::ms_state_to_color($state);
-                    $num = ModemHelper::ms_num($idtree);
-                    $numa = ModemHelper::ms_num_all($idtree);
-                    $cri = ModemHelper::ms_cri($idtree);
-                    $avg = ModemHelper::ms_avg($idtree);
+                    $num = $netelem->ms_num;
+                    $numa = $netelem->modems_count;
+                    $cri = $netelem->ms_cri;
+                    $avg = $netelem->msAvg;
 
                     $file .= "\n node [label = \"$numa\\n$num/$cri\\n$avg\", shape = circle, style = filled, color=$color, URL=\"$url\", target=\"".$this->html_target.'"];';
                     $file .= " \"C$idtree\"";
