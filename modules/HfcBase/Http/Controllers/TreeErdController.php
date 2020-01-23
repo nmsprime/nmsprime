@@ -4,6 +4,7 @@ namespace Modules\HfcBase\Http\Controllers;
 
 use Acme\php\ArrayHelper;
 use Modules\HfcReq\Entities\NetElement;
+use Modules\HfcBase\Entities\IcingaObject;
 use App\Http\Controllers\BaseViewController;
 use Modules\HfcCustomer\Entities\ModemHelper;
 
@@ -75,8 +76,14 @@ class TreeErdController extends HfcBaseController
             ]);
         }
 
+        $netelements = NetElement::withActiveModems($field, $operator, $search);
+
+        if (IcingaObject::db_exists()) {
+            $netelements->with('icingaobject.icingahoststatus');
+        }
+
         // Generate SVG file
-        $file = $this->graph_generate(NetElement::withActiveModems($field, $operator, $search)->get());
+        $file = $this->graph_generate($netelements->get());
 
         if (! $file) {
             return \View::make('errors.generic', [
