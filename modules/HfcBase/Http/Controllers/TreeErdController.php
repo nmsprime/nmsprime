@@ -66,25 +66,10 @@ class TreeErdController extends HfcBaseController
      */
     public function show($field, $search)
     {
-        $operator = '=';
-
-        // prepare search query
-        if ($field == 'all') {
-            $field = 'id';
-            $operator = '>';
-            $search = 2;
-
-            if (! NetElement::where($field, $operator, $search)->count()) {
-                return \View::make('errors.generic', [
-                    'error' => 422,
-                    'message' => trans('messages.no_Netelements'),
-                ]);
-            }
-        }
+        $s = $field == 'all' ? 'id>2' : "$field='$search'";
 
         // Generate SVG file
-        $file = $this->graph_generate(NetElement::where($field, $operator, $search));
-
+        $file = $this->graph_generate(NetElement::whereRaw($s));
         if (! $file) {
             return \View::make('errors.generic', [
                 'error' => 422,
