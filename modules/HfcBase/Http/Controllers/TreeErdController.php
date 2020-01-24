@@ -68,6 +68,13 @@ class TreeErdController extends HfcBaseController
     {
         $s = $field == 'all' ? 'id>2' : "$field='$search'";
 
+        if (! NetElement::whereRaw($s)->count()) {
+            return \View::make('errors.generic', [
+                'error' => 422,
+                'message' => trans('messages.no_Netelements'),
+            ]);
+        }
+
         // Generate SVG file
         $file = $this->graph_generate(NetElement::whereRaw($s));
         if (! $file) {
