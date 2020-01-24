@@ -83,7 +83,8 @@ class TreeErdController extends HfcBaseController
             }
         }
 
-        $netelements = NetElement::withActiveModems($field, $operator, $search);
+        $netelements = NetElement::withActiveModems($field, $operator, $search)
+            ->with('modemsUpstreamAvg');
 
         if (IcingaObject::db_exists()) {
             $netelements->with('icingaobject.icingahoststatus');
