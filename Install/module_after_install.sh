@@ -3,6 +3,7 @@ source scl_source enable rh-php71
 env='/etc/nmsprime/env'
 
 cd '/var/www/nmsprime'
+rm -rf /var/www/nmsprime/bootstrap/cache/*
 /opt/rh/rh-php71/root/usr/bin/php artisan config:cache
 /opt/rh/rh-php71/root/usr/bin/php artisan module:publish
 /opt/rh/rh-php71/root/usr/bin/php artisan module:migrate
@@ -20,9 +21,7 @@ systemd-tmpfiles --create
 
 # make .env files readable for apache
 chgrp -R apache "$env"
-chmod 640 "$env"
+chmod 640 "$env"/*.env
 # only allow root to read/write mysql root credentials
 chown root:root "$env/root.env"
 chmod 600 "$env/root.env"
-
-chmod 644 /etc/cron.d/*

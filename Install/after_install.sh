@@ -86,6 +86,7 @@ cd "$dir"
 # L5 setup
 install -Dm640 -o apache -g root /dev/null /var/www/nmsprime/storage/logs/laravel.log
 chown apache /var/www/nmsprime/storage/logs/laravel.log
+rm -rf /var/www/nmsprime/bootstrap/cache/*
 /opt/rh/rh-php71/root/usr/bin/php artisan clear-compiled
 /opt/rh/rh-php71/root/usr/bin/php artisan optimize
 
@@ -107,7 +108,7 @@ chown -R apache storage bootstrap/cache
 
 # make .env files readable for apache
 chgrp -R apache "$env"
-chmod 640 "$env"
+chmod 640 "$env"/*.env
 # only allow root to read/write mysql root credentials
 chown root:root "$env/root.env"
 chmod 600 "$env/root.env"
@@ -116,5 +117,3 @@ chmod 600 "$env/root.env"
 chmod 644 /var/log/messages
 systemctl restart rsyslog
 systemd-tmpfiles --create
-
-chmod 644 /etc/cron.d/*

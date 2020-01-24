@@ -278,7 +278,7 @@ class ProvVoipEnviaController extends \BaseController
                 $data['status'] = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 $data['xml'] = $ret;
             }
-        } catch (Exception $ex) {
+        } catch (\Exception $ex) {
             $data['error'] = true;
             $data['error_type'] = 'Exception';
             $data['error_msg'] = $ex->getMessage();

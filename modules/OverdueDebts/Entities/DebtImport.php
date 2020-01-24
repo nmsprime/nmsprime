@@ -105,12 +105,6 @@ class DebtImport
             $this->block = false;
             $line = str_getcsv($line, ';');
 
-            if (count($line) != 16) {
-                $msg = trans('overduedebts::messages.import.columnCountError', ['number' => 16]);
-
-                $this->stopOnError($msg);
-            }
-
             $contract = Contract::where('number', $line[self::C_NR])->first();
 
             if (! $contract) {

@@ -89,7 +89,7 @@ class EnviaOrderUpdaterCommand extends Command
         // the result should be an array containing the orders – if not there has been a problem…
         try {
             $orders = unserialize($result);
-        } catch (Exception $ex) {
+        } catch (\Exception $ex) {
             Log::error('Exception deserializing expected envia TEL orders array created from CSV ('.$ex->getMessage().') – cannot proceed');
 
             return;
@@ -153,7 +153,7 @@ class EnviaOrderUpdaterCommand extends Command
                     if ($this->_updated($order_id)) {
                         Log::info('Updated Order id '.$order_id.'.');
                     }
-                } catch (Exception $ex) {
+                } catch (\Exception $ex) {
                     Log::error('Exception updating order '.$order_id.'): '.$ex->getMessage().' => '.$ex->getTraceAsString());
                 }
             }

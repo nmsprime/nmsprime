@@ -5,7 +5,6 @@ namespace Modules\ProvVoipEnvia\Http\Controllers;
 use Bouncer;
 use Request;
 use Storage;
-use Illuminate\Auth\AuthenticationException;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoipEnvia\Entities\ProvVoipEnvia;
 use Modules\ProvVoipEnvia\Entities\EnviaOrderDocument;
@@ -183,7 +182,7 @@ class EnviaOrderDocumentController extends \BaseController
     public function checkForPermission(): void
     {
         if (Bouncer::cannot('view', ProvVoipEnvia::class)) {
-            throw new AuthenticationException(trans('auth.EnviaOrderDocument'));
+            throw new \Illuminate\Auth\AuthenticationException(trans('auth.EnviaOrderDocument'));
         }
     }
 }
