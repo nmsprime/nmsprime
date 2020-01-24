@@ -9,9 +9,6 @@ use Modules\HfcBase\Entities\IcingaObject;
 
 class HfcBaseController extends BaseController
 {
-    // The Html Link Target
-    protected $html_target = '';
-
     public function index()
     {
         $title = 'Hfc Dashboard';
