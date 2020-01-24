@@ -6,7 +6,6 @@ use Acme\php\ArrayHelper;
 use Modules\HfcReq\Entities\NetElement;
 use Modules\HfcBase\Entities\IcingaObject;
 use App\Http\Controllers\BaseViewController;
-use Modules\HfcCustomer\Entities\ModemHelper;
 
 /*
  * Tree Erd (Entity Relation Diagram) Controller
@@ -291,7 +290,7 @@ class TreeErdController extends HfcBaseController
         // TODO: Customer
         //
         if (\Module::collections()->has('HfcCustomer')) {
-            $n = 0;
+            $ModemHelper = \Modules\HfcCustomer\Entities\ModemHelper::class;
             foreach ($netelements as $netelem) {
                 $idtree = $netelem->id;
                 $id = $netelem->id;
@@ -301,7 +300,7 @@ class TreeErdController extends HfcBaseController
 
                 $state = $ModemHelper::ms_state($netelem);
                 if ($state != -1) {
-                    $color = ModemHelper::ms_state_to_color($state);
+                    $color = $ModemHelper::ms_state_to_color($state);
                     $num = $netelem->ms_num;
                     $numa = $netelem->modems_count;
                     $cri = $netelem->modems_critical_count;
