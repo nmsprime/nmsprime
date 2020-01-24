@@ -304,8 +304,8 @@ class TreeErdController extends HfcBaseController
                     $color = ModemHelper::ms_state_to_color($state);
                     $num = $netelem->ms_num;
                     $numa = $netelem->modems_count;
-                    $cri = $netelem->ms_cri;
-                    $avg = $netelem->msAvg;
+                    $cri = $netelem->modems_critical_count;
+                    $avg = $netelem->modemsUsPwrAvg;
 
                     $file .= "\n node [label = \"$numa\\n$num/$cri\\n$avg\", shape = circle, style = filled, color=$color, URL=\"$url\", target=\"".$this->html_target.'"];';
                     $file .= " \"C$idtree\"";

@@ -204,7 +204,7 @@ class TreeTopographyController extends HfcBaseController
                 $id = $netelement->id;
                 $name = $netelement->name;
                 $pos_tree = $netelement->pos;
-                $pos = $netelement->msAvgWithPos;
+                $pos = $netelement->modemsUsPwrPosAvgs;
 
                 if (isset($pos->x_avg)) {
                     $xavg = round($pos->x_avg, 4);
@@ -235,11 +235,11 @@ class TreeTopographyController extends HfcBaseController
                         <name></name>
                         <description><![CDATA[';
 
-                    $num = $netelement->ms_num;
+                    $num = $netelement->modems_online_count;
                     $numa = $netelement->modems_count;
                     $pro = $numa ? round(100 * $num / $numa, 0) : 0;
-                    $cri = $netelement->ms_cri;
-                    $avg = $netelement->msAvg;
+                    $cri = $netelement->modems_critical_count;
+                    $avg = $netelement->modemsUsPwrAvg;
                     $url = \BaseRoute::get_base_url()."/Customer/netelement_id/$id";
 
                     $file .= "Amp/Node: $name<br><br>Number All CM: $numa<br>Number Online CM: $num ($pro %)<br>Number Critical CM: $cri<br>US Level Average: $avg<br><br><a href=\"$url\" target=\"".$this->html_target.'" alt="">Show all Customers</a>';
