@@ -59,8 +59,8 @@ class ModemHelper extends \BaseModel
             return -1;
         }
 
-        $onl = $netelem->ms_num;
-        $avg = $netelem->msAvg;
+        $onl = $netelem->modems_online_count;
+        $avg = $netelem->modemsUsPwrAvg;
 
         if ($onl / $all * 100 < self::$avg_critical_percentage || $avg > self::$avg_critical_us) {
             return 'CRITICAL';
