@@ -50,24 +50,28 @@ class TreeTopographyController extends HfcBaseController
      */
     public function show($field, $search)
     {
-        // prepare search
-        $s = "$field='$search'";
-        if ($field == 'all') {
-            $s = 'id>2';
+        $operator = '=';
+
+        if ($field == 'all' || ($field == 'id' && $search == 2)) {
+            $field = 'id';
+            $operator = '>';
+            $search = 2;
         }
 
-        $netelements = NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' ')
-            ->orderBy('pos')->with('parent')->get();
+        $netelements = NetElement::withActiveModems($field, $operator, $search)
+            ->whereNotNull('pos')
+            ->where('pos', '!=', ' ')
+            ->with('mprs.mprgeopos', 'modemsUpstreamAndPositionAvg')->get();
 
         // Generate KML file
         $file = $this->kml_generate($netelements);
 
         if (! $file) {
-            return \View::make('errors.generic')->with('message', 'No NetElements with Positions available!');
+            return \View::make('errors.generic', [
+                'error' => 422,
+                'message' => trans('messages.no_Netelements'),
+            ]);
         }
-
-        // Prepare and Topography Map
-        $target = $this->html_target;
 
         $route_name = 'Tree';
         $view_header = 'Topography';
@@ -76,7 +80,7 @@ class TreeTopographyController extends HfcBaseController
         $tabs = TreeErdController::getTabs($field, $search);
 
         // MPS: get all Modem Positioning Rules
-        $mpr = $this->mpr(NetElement::whereRaw($s));
+        $mpr = $this->mpr($netelements);
 
         // NetElements: generate kml_file upload array
         $kmls = $this->kml_file_array($netelements);
@@ -103,7 +107,7 @@ class TreeTopographyController extends HfcBaseController
             return $ret;
         }
 
-        foreach ($trees->get() as $tree) {
+        foreach ($trees as $tree) {
             foreach ($tree->mprs as $mpr) {
                 $rect = [];
                 foreach ($mpr->mprgeopos as $pos) {
@@ -194,19 +198,18 @@ class TreeTopographyController extends HfcBaseController
         // Customer
         //
         if (\Module::collections()->has('HfcCustomer')) {
-            $modem_helper = 'Modules\HfcCustomer\Entities\ModemHelper';
+            $ModemHelper = \Modules\HfcCustomer\Entities\ModemHelper::class;
 
-            $n = 0;
             foreach ($netelements as $netelement) {
                 $id = $netelement->id;
                 $name = $netelement->name;
                 $pos_tree = $netelement->pos;
+                $pos = $netelement->msAvgWithPos;
 
-                $pos = $modem_helper::ms_avg_pos($netelement->id);
-                if ($pos['x']) {
-                    $xavg = $pos['x'];
-                    $yavg = $pos['y'];
-                    $icon = $modem_helper::ms_state_to_color($modem_helper::ms_state($id));
+                if (isset($pos->x_avg)) {
+                    $xavg = round($pos->x_avg, 4);
+                    $yavg = round($pos->y_avg, 4);
+                    $icon = $ModemHelper::ms_state_to_color($ModemHelper::ms_state($netelement));
                     $icon .= '-CUS';
 
                     // Draw Line - Customer - Amp
@@ -232,11 +235,11 @@ class TreeTopographyController extends HfcBaseController
                         <name></name>
                         <description><![CDATA[';
 
-                    $num = $modem_helper::ms_num($id);
-                    $numa = $modem_helper::ms_num_all($id);
+                    $num = $netelement->ms_num;
+                    $numa = $netelement->modems_count;
                     $pro = $numa ? round(100 * $num / $numa, 0) : 0;
-                    $cri = $modem_helper::ms_cri($id);
-                    $avg = $modem_helper::ms_avg($id);
+                    $cri = $netelement->ms_cri;
+                    $avg = $netelement->msAvg;
                     $url = \BaseRoute::get_base_url()."/Customer/netelement_id/$id";
 
                     $file .= "Amp/Node: $name<br><br>Number All CM: $numa<br>Number Online CM: $num ($pro %)<br>Number Critical CM: $cri<br>US Level Average: $avg<br><br><a href=\"$url\" target=\"".$this->html_target.'" alt="">Show all Customers</a>';

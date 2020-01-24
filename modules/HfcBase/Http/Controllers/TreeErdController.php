@@ -69,7 +69,6 @@ class TreeErdController extends HfcBaseController
     {
         $operator = '=';
 
-        // prepare search query
         if ($field == 'all' || ($field == 'id' && $search == 2)) {
             $field = 'id';
             $operator = '>';
