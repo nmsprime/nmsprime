@@ -82,8 +82,7 @@ class TreeErdController extends HfcBaseController
             $netelements->with('icingaobject.icingahoststatus');
         }
 
-        // Generate SVG file
-        $file = $this->graph_generate($netelements->get());
+        $file = $this->generateSVG($netelements->get());
 
         if (! $file) {
             return \View::make('errors.generic', [
@@ -92,64 +91,17 @@ class TreeErdController extends HfcBaseController
             ]);
         }
 
-        // Prepare and display SVG
-        $is_pos = $this->_is_valid_geopos($search);
-        $gid = $this->graph_id;
-        $target = $this->html_target;
-
-        // Generate Usemap
-        // Usemap is required for ERD right/left click function
-        // NOTE: Do not load from url via asset() with file_get_contents().
-        //       file_get_contents() does not work with port forwarding or any kind of port option.
-        //       Also curl with port setting and ssl verify disabled does not work on port forwarding. Tested about 2 hours.
-
-        // file -> html link area
-        $usemap = str_replace('alt', 'onContextMenu="return getEl(this.id)" alt', \Storage::get($this->file.'.map'));
-        // add Popover
-        // $usemap = str_replace('title=', 'target="_blank" class="erd-popover" data-html="true" data-toggle="popover" data-container="body" data-trigger="hover" data-placement="auto right" data-content=', $usemap);
-
-        // generate Array to manipulate string
-        $usemap = explode(PHP_EOL, $usemap);
-
-        foreach ($usemap as $element => $html) {
-            if (str_contains($html, 'shape="circle"')) {
-                // $usemap[$element] = explode('\n', $html);
-
-                // Make title of circle more descriptive
-                preg_match('/title="(.*?)"/', $html, $matches);
-
-                if ($matches) {
-                    $numbers = explode('\n', $matches[1]);
-
-                    $title = [];
-                    $title['numModems'] = BaseViewController::translate_label('Total Number of Modems').': '.$numbers[0];
-                    $title['criticalModems'] = BaseViewController::translate_label('Number of Online').' Modems / ';
-                    $title['criticalModems'] .= BaseViewController::translate_label('Number of Critical').' Modems : '.$numbers[1];
-                    $title['power'] = BaseViewController::translate_label('Avg. Upstream Power: ').$numbers[2];
-                    $title = implode('&#013;', $title);
-
-                    $usemap[$element] = preg_replace('/title="(.*?)"/', "title=\"$title\"", $html);
-                }
-
-                // $usemap[$element][0] = str_replace('data-content="', 'title="'.BaseViewController::translate_label('Modem Summary').'" data-content="'.BaseViewController::translate_label('Total Number of Modems').': ', $usemap[$element][0]);
-                // $usemap[$element][1] = BaseViewController::translate_label('Number of Online').' Modems / '.BaseViewController::translate_label('Number of Critical').' Modems : '.$usemap[$element][1];
-                // $usemap[$element][2] = BaseViewController::translate_label('Avg. Upstream Power: ').$usemap[$element][2];
-                // $usemap[$element] = implode('<br>', $usemap[$element]);
-            }
-        }
-
-        $usemap = implode(PHP_EOL, $usemap);
-
         $view_header = 'Entity Relation Diagram';
-        $route_name = 'Tree';
+        $gid = $this->graph_id;
 
-        $preselect_field = $field;
-        $preselect_value = $search;
+        $usemap = $this->generateUsemap();
         $tabs = self::getTabs($field, $search);
-
+        $is_pos = $this->_is_valid_geopos($search);
         $file = route('HfcBase.get_file', ['type' => 'erd', 'filename' => basename($file)]);
 
-        return \View::make('HfcBase::Tree.erd', $this->compact_prep_view(compact('route_name', 'file', 'target', 'is_pos', 'gid', 'usemap', 'preselect_field', 'view_header', 'tabs', 'view_var', 'preselect_value', 'field', 'search')));
+        return \View::make('HfcBase::Tree.erd', $this->compact_prep_view(
+            compact('field', 'search', 'tabs', 'file', 'is_pos', 'gid', 'usemap', 'view_header')
+        ));
     }
 
     /**
@@ -168,11 +120,53 @@ class TreeErdController extends HfcBaseController
             ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => $id],
         ];
 
-        if (strtolower($netelementtype) == 'net') {
+        if (in_array(strtolower($netelementtype), ['net', 'all', 'id'])) {
             unset($tabs[3]);
         }
 
         return $tabs;
+    }
+
+    /**
+     * Usemap is required for ERD right/left click function
+     * NOTE: Do not load from url via asset() with file_get_contents().
+     * file_get_contents() does not work with port forwarding or any kind of port option.
+     * Also curl with port setting and ssl verify disabled does not work on port forwarding.
+     *
+     * @return string
+     */
+    protected function generateUsemap()
+    {
+        // file -> html link area
+        $usemap = str_replace('alt', 'onContextMenu="return getEl(this.id)" alt', \Storage::get($this->file.'.map'));
+        // add Popover
+        // $usemap = str_replace('title=', 'target="_blank" class="erd-popover" data-html="true" data-toggle="popover" data-container="body" data-trigger="hover" data-placement="auto right" data-content=', $usemap);
+
+        // generate Array to manipulate string
+        $usemap = explode(PHP_EOL, $usemap);
+
+        foreach ($usemap as $element => $html) {
+            if (str_contains($html, 'shape="circle"')) {
+
+                // Make title of circle more descriptive
+                preg_match('/title="(.*?)"/', $html, $matches);
+
+                if ($matches) {
+                    $numbers = explode('\n', $matches[1]);
+
+                    $title = [];
+                    $title['numModems'] = BaseViewController::translate_label('Total Number of Modems').': '.$numbers[0];
+                    $title['criticalModems'] = BaseViewController::translate_label('Number of Online').' Modems / ';
+                    $title['criticalModems'] .= BaseViewController::translate_label('Number of Critical').' Modems : '.$numbers[1];
+                    $title['power'] = BaseViewController::translate_label('Avg. Upstream Power: ').$numbers[2];
+                    $title = implode('&#013;', $title);
+
+                    $usemap[$element] = preg_replace('/title="(.*?)"/', "title=\"$title\"", $html);
+                }
+            }
+        }
+
+        return implode(PHP_EOL, $usemap);
     }
 
     /**
@@ -184,7 +178,7 @@ class TreeErdController extends HfcBaseController
      *
      * @author: Torsten Schmidt
      */
-    public function graph_generate($netelements)
+    public function generateSVG($netelements)
     {
         //
         // INIT
@@ -240,15 +234,15 @@ class TreeErdController extends HfcBaseController
             }
 
             if ($type == 'Net') {
-                $file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=lightblue, color=black URL=\"$url\", target=\"".$this->html_target.'"];';
+                $file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=lightblue, color=black URL=\"$url\", target=\"\"];";
             } elseif ($type == 'Cluster') {
-                $file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=white, color=$color, URL=\"$url\", target=\"".$this->html_target.'"];';
+                $file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=white, color=$color, URL=\"$url\", target=\"\"];";
             } elseif ($type == 'C') {
-                $file .= "\n node [id = \"$id\" label = \"NetGw\\n$name\", shape = hexagon, style = filled, fillcolor=grey, color=$color, URL=\"$url\", target=\"".$this->html_target.'"];';
+                $file .= "\n node [id = \"$id\" label = \"NetGw\\n$name\", shape = hexagon, style = filled, fillcolor=grey, color=$color, URL=\"$url\", target=\"\"];";
             } elseif ($type == 'DATA') {
-                $file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=$color, color=darkgrey, URL=\"$url\", target=\"".$this->html_target.'"];';
+                $file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=$color, color=darkgrey, URL=\"$url\", target=\"\"];";
             } else {
-                $file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=$color, color=$color, URL=\"$url\", target=\"".$this->html_target.'"];';
+                $file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=$color, color=$color, URL=\"$url\", target=\"\"];";
             }
 
             $file .= " \"$id\"";
@@ -298,7 +292,7 @@ class TreeErdController extends HfcBaseController
                 $url = \BaseRoute::get_base_url()."/Customer/netelement_id/$idtree";
                 $n++;
 
-                $state = ModemHelper::ms_state($netelem);
+                $state = $ModemHelper::ms_state($netelem);
                 if ($state != -1) {
                     $color = ModemHelper::ms_state_to_color($state);
                     $num = $netelem->ms_num;
