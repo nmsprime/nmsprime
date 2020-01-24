@@ -275,7 +275,7 @@ class TreeErdController extends HfcBaseController
                     $cri = $netelem->modems_critical_count;
                     $avg = $netelem->modemsUsPwrAvg;
 
-                    $file .= "\n node [label = \"$numa\\n$num/$cri\\n$avg\", shape = circle, style = filled, color=$color, URL=\"$url\", target=\"".$this->html_target.'"];';
+                    $file .= "\n node [label = \"$numa\\n$num/$cri\\n$avg\", shape = circle, style = filled, color=$color, URL=\"$url\", target=\"\"];";
                     $file .= " \"C$idtree\"";
                     $file .= "\n \"$id\" -> C$idtree [color = green]";
                 }

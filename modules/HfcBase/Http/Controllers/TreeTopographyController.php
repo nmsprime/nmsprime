@@ -239,7 +239,7 @@ class TreeTopographyController extends HfcBaseController
                     $avg = $netelement->modemsUsPwrAvg;
                     $url = \BaseRoute::get_base_url()."/Customer/netelement_id/$id";
 
-                    $file .= "Amp/Node: $name<br><br>Number All CM: $numa<br>Number Online CM: $num ($pro %)<br>Number Critical CM: $cri<br>US Level Average: $avg<br><br><a href=\"$url\" target=\"".$this->html_target.'" alt="">Show all Customers</a>';
+                    $file .= "Amp/Node: $name<br><br>Number All CM: $numa<br>Number Online CM: $num ($pro %)<br>Number Critical CM: $cri<br>US Level Average: $avg<br><br><a href=\"$url\" target=\"\" alt=\"\">Show all Customers</a>";
 
                     $file .= "]]></description>
                             <styleUrl>#$icon</styleUrl>
