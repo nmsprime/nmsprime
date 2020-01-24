@@ -47,6 +47,7 @@
 				@endif
 			</div>
 		</div>
+		@if (! isset($field))
 		<ul class="nav nav-pills align-self-end ml-auto mr-5">
 			<?php
 				$par = array_merge(Route::getCurrentRoute()->parameters(), \Request::all());
@@ -58,6 +59,7 @@
 				}
 			?>
 		</ul>
+		@endif
 	</div>
 	<div class="container-fluid m-t-20 m-b-20">
 		<div class="col-md-12 d-flex" id="map" style="height:75vh"></div>
