@@ -71,6 +71,7 @@ class DebtImport
     private function addDebts()
     {
         $arr = file($this->path);
+        $contracts = [];
 
         // Remove headline if exists
         if (! preg_match('/\d/', $arr[0][0])) {
@@ -105,7 +106,8 @@ class DebtImport
             $this->block = false;
             $line = str_getcsv($line, ';');
 
-            $contract = Contract::where('number', $line[self::C_NR])->first();
+            $contractNr = $line[self::C_NR];
+            $contract = $contracts[$contractNr] ?? Contract::where('number', $contractNr)->first();
 
             if (! $contract) {
                 $this->notFound[] = $line[self::C_NR];
@@ -113,7 +115,9 @@ class DebtImport
                 continue;
             }
 
-            $debt = $this->addDebt($line, $contract);
+            $this->addDebt($line, $contract);
+
+            $contracts[$contract->number] = $contract;
         }
 
         if ($this->output) {
@@ -141,13 +145,32 @@ class DebtImport
             $indicator = 3;
         }
 
+        $amount = str_replace(',', '.', $line[self::AMOUNT]);
+        $voucher_nr = $line[self::VOUCHER_NR];
+        $missing_amount = str_replace(',', '.', $line[self::MISSING_AMOUNT]);
+
+        if (! $amount) {
+            // DATEV: Add zero amount only once as 'Haben' is already cummulated in exported CSV
+            if ($contract->relationLoaded('debts') && $contract->debts->where('voucher_nr', $voucher_nr)->first()) {
+                return;
+            }
+
+            $amount = (-1) * $missing_amount;
+            // Set missing amount to zero - avoid to set missing amount to amount by observer by setting missing amount to amount rounded to zero
+            $missing_amount = 0.000000000001;
+        } else {
+            if ($contract->relationLoaded('debts') && $contract->debts->where('voucher_nr', $voucher_nr)->isNotEmpty()) {
+                return;
+            }
+        }
+
         $debt = Debt::create([
             'contract_id' => $contract->id,
-            'voucher_nr' => $line[self::VOUCHER_NR],
+            'voucher_nr' => $voucher_nr,
             // TODO
             // 'number' => $line[self::INVOICE_NR],
-            'amount' => str_replace(',', '.', $line[self::AMOUNT]),
-            'missing_amount' => str_replace(',', '.', $line[self::MISSING_AMOUNT]),
+            'amount' => $amount,
+            'missing_amount' => $missing_amount,
             'date' => date('Y-m-d', strtotime($line[self::DATE])),
             'dunning_date' => $line[self::DUN_DATE] ? date('Y-m-d', strtotime($line[self::DUN_DATE])) : null,
             'description' => $line[self::DESC],
@@ -155,7 +178,11 @@ class DebtImport
             // 'total_fee' => $fee,
         ]);
 
-        return $debt;
+        if (! $contract->relationLoaded('debts')) {
+            $contract->setRelation('debts', new \Illuminate\Database\Eloquent\Collection());
+        }
+
+        $contract->debts->add($debt);
     }
 
     /**
