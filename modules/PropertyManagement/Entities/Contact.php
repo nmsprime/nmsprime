@@ -11,8 +11,8 @@ class Contact extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'firstname1' => 'required',
-            'lastname1' => 'required',
+            // 'firstname1' => 'required',
+            // 'lastname1' => 'required',
             'email1' => 'nullable|email',
             'email2' => 'nullable|email',
             'tel' => 'nullable|numeric',
