@@ -29,6 +29,13 @@ class TreeErdController extends HfcBaseController
     // SVG image size setting
     private $graph_size = '(*,*)';
 
+    private $colors = [
+        'success' => 'green',
+        'info'    => 'blue',
+        'warning' => 'yellow',
+        'danger'  => 'red',
+    ];
+
     /*
      * check if $s is a valid geoposition
      */
@@ -82,6 +89,7 @@ class TreeErdController extends HfcBaseController
         }
 
         $netelements = NetElement::withActiveModems($field, $operator, $search)
+            ->with('netelementtype:id,name')
             ->with('modemsUpstreamAvg');
 
         if (IcingaObject::db_exists()) {
@@ -98,8 +106,8 @@ class TreeErdController extends HfcBaseController
         }
 
         $view_header = 'Entity Relation Diagram';
-        $gid = $this->graph_id;
 
+        $gid = $this->graph_id;
         $usemap = $this->generateUsemap();
         $tabs = self::getTabs($field, $search);
         $is_pos = $this->_is_valid_geopos($search);
@@ -186,92 +194,53 @@ class TreeErdController extends HfcBaseController
      */
     public function generateSVG($netelements)
     {
-        //
-        // INIT
-        //
-        $gid = $this->graph_id;
-
-        $file = "digraph tree$gid {
-
-	size=\"$this->graph_size\"
-
-
-	{
-		";
+        if (! $netelements->first()) {
+            return false;
+        }
 
         $n = 0;
         $p1 = '';
+        $file = "digraph tree{$this->graph_id} { size=\"{$this->graph_size}\" {";
 
-        if (! $netelements->first()) {
-            return;
-        }
-
-        //
-        // Node
-        //
+        // Nodes
         foreach ($netelements as $netelem) {
-            $id = $netelem->id;
-            $name = $netelem->name;
-            $type = $netelem->netelementtype->name;
-            $state = $netelem->get_bsclass();
-            $ip = $netelem->ip;
-            $p2 = $netelem->pos;
-            $parent = $netelem->parent;
             $n++;
+            $id = $netelem->id;
+            $p2 = $netelem->pos;
+            $name = $netelem->name;
+            $color = $this->colors[$netelem->get_bsclass()];
+            $type = $netelem->netelementtype->name;
+            $url = $netelem->link ?: route('NetElement.controlling_edit', [$netelem->id, 0, 0]);
 
             if ($p1 != $p2) {
                 $file .= "\n}\nsubgraph cluster_$n {\n style=filled;color=lightgrey;fillcolor=lightgrey;";
             }
 
-            $url = $netelem->link ?: route('NetElement.controlling_edit', [$netelem->id, 0, 0]);
-
-            //
-            // Amplifier - what?? - all types are considered here
-            //
-            $color = 'green';
-            if ($state == 'warning') {
-                $color = 'yellow';
-            }
-            if ($state == 'danger') {
-                $color = 'red';
-            }
-            if ($state == 'info') {
-                $color = 'blue';
-            }
-
             if ($type == 'Net') {
                 $file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=lightblue, color=black URL=\"$url\", target=\"\"];";
             } elseif ($type == 'Cluster') {
-                $file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=white, color=$color, URL=\"$url\", target=\"\"];";
+                $file .= "\n node [id = \"$id\" label = \"$name\", shape = Mdiamond, style = filled, fillcolor=white, color=\"$color\", URL=\"$url\", target=\"\"];";
             } elseif ($type == 'C') {
-                $file .= "\n node [id = \"$id\" label = \"NetGw\\n$name\", shape = hexagon, style = filled, fillcolor=grey, color=$color, URL=\"$url\", target=\"\"];";
+                $file .= "\n node [id = \"$id\" label = \"NetGw\\n$name\", shape = hexagon, style = filled, fillcolor=grey, color=\"$color\", URL=\"$url\", target=\"\"];";
             } elseif ($type == 'DATA') {
-                $file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=$color, color=darkgrey, URL=\"$url\", target=\"\"];";
+                $file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=\"$color\", color=darkgrey, URL=\"$url\", target=\"\"];";
             } else {
-                $file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=$color, color=$color, URL=\"$url\", target=\"\"];";
+                $file .= "\n node [id = \"$id\" label = \"$name\", shape = rectangle, style = filled, fillcolor=\"$color\", color=\"$color\", URL=\"$url\", target=\"\"];";
             }
 
             $file .= " \"$id\"";
 
             $p1 = $p2;
         }
-        $file .= "\n}";
+        $file .= "\n}\n\n node [shape = diamond];";
 
-        $file .= "\n\n node [shape = diamond];";
-        //
-        // Parent - Child Relations
-        //
+        //parent-Child-Relations
         foreach ($netelements as $netelem) {
-            $_parent = $netelem->parent;
-            $parent = 0;
-            if ($_parent) {
-                $parent = $_parent->id;
-            }
-
-            $type = $netelem->netelementtype->name;
-            $tp = $netelem->tp;
             $color = 'black';
             $style = 'style=bold';
+            $tp = $netelem->tp;
+            $type = $netelem->netelementtype->name;
+
             if ($type == 'NODE') {
                 $color = 'blue';
                 $style = '';
@@ -281,8 +250,8 @@ class TreeErdController extends HfcBaseController
                 $style = '';
             }
 
-            if ($parent > 2 && ArrayHelper::objArraySearch($netelements, 'id', $parent)) {
-                $file .= "\n  \"$parent\" -> \"$netelem->id\" [color = $color,$style]";
+            if ($netelem->parent_id > 2 && ArrayHelper::objArraySearch($netelements, 'id', $netelem->parent_id)) {
+                $file .= "\n  \"$netelem->parent_id\" -> \"$netelem->id\" [color = $color,$style]";
             }
         }
 
