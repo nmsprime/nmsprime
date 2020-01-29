@@ -61,7 +61,7 @@ class TreeTopographyController extends HfcBaseController
         $netelements = NetElement::withActiveModems($field, $operator, $search)
             ->whereNotNull('pos')
             ->where('pos', '!=', ' ')
-            ->with('mprs.mprgeopos', 'modemsUpstreamAndPositionAvg')->get();
+            ->with('parent', 'mprs.mprgeopos', 'modemsUpstreamAndPositionAvg')->get();
 
         // Generate KML file
         $file = $this->kml_generate($netelements);
@@ -272,8 +272,7 @@ class TreeTopographyController extends HfcBaseController
             }
 
             $type = $netelement->type;
-            $parent = $netelement->parent ? $netelement->parent->id : null;
-            $state = $netelement->get_bsclass();
+            $parent = $netelement->parent ? $netelement->parent_id : null;
 
             if ($netelement->state == 'warning') {
                 $ystate += 1;
