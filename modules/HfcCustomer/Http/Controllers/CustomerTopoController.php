@@ -269,7 +269,7 @@ class CustomerTopoController extends NetElementController
     {
         return DB::table('modem')
             ->join('contract', 'contract.id', '=', 'modem.contract_id')
-            ->join('netelement', 'modem.netelement_id', 'netelement.id')
+            ->leftJoin('netelement', 'modem.netelement_id', 'netelement.id')
             ->whereNull('modem.deleted_at')
             ->whereNull('contract.deleted_at')
             ->where(function ($query) {
