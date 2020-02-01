@@ -3,6 +3,7 @@
   "camelcase": true,
   "curly": true,
   "es3": true,
+  "esversion": 6,
   "eqnull": true,
   "freeze": true,
   "globals": {
