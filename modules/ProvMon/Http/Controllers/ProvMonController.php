@@ -471,7 +471,7 @@ class ProvMonController extends \BaseController
         $modem->help = 'cpe_analysis';
 
         // Lease
-        $lease['text'] = $this->search_lease('billing subclass', $modem_mac);
+        $lease['text'] = $this->search_lease('cm_mac', $modem_mac);
         $lease = $this->validate_lease($lease, $type);
 
         $ep = $modem->endpoints()->first();
