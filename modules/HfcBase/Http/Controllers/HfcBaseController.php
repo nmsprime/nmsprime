@@ -144,8 +144,9 @@ class HfcBaseController extends BaseController
 
             $link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/service/show?host='.$service->name1.'&service='.$service->name2, $tmp ? $tmp->name : $service->name1);
             // add additional controlling link if available
-            if (is_numeric($service->name1)) {
-                $link .= '<br>'.link_to_route('NetElement.controlling_edit', '(Controlling)', [$service->name1, 0, 0]);
+            $id = explode('_', $service->name1)[0];
+            if (is_numeric($id)) {
+                $link .= '<br>'.link_to_route('NetElement.controlling_edit', '(Controlling)', [$id, 0, 0]);
             }
 
             $ret['clr'][] = $clr[$service->last_hard_state];
