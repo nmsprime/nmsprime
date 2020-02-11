@@ -147,7 +147,7 @@ class ProvMonController extends \BaseController
         $search = $ip ? "$mac|$modem->hostname[^0-9]|$ip " : "$mac|$modem->hostname[^0-9]";
 
         $log = $this->_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
-        $lease['text'] = $this->search_lease('hardware ethernet '.$mac);
+        $lease['text'] = $this->searchLease("hardware ethernet $mac");
         $lease = $this->validate_lease($lease);
         $host_id = $this->monitoring_get_host_id($modem);
         $flood_ping = $this->flood_ping($hostname);
@@ -471,7 +471,7 @@ class ProvMonController extends \BaseController
         $modem->help = 'cpe_analysis';
 
         // Lease
-        $lease['text'] = $this->search_lease('cm_mac', $modem_mac);
+        $lease['text'] = $this->searchLease("set cm_mac = \"$modem_mac\";");
         $lease = $this->validate_lease($lease, $type);
 
         $ep = $modem->endpoints()->first();
@@ -575,7 +575,7 @@ class ProvMonController extends \BaseController
         }
 
         // lease
-        $lease['text'] = $this->search_lease('mta-'.$mta->id);
+        $lease['text'] = $this->searchLease("mta-$mta->id");
         $lease = $this->validate_lease($lease, $type);
 
         // configfile
@@ -961,28 +961,16 @@ class ProvMonController extends \BaseController
     }
 
     /**
-     * Returns the lease entry that contains 1 or 2 strings specified in the function arguments
+     * Returns the lease entry that contains the search parameter
      *
      * TODO: make a seperate class for dhcpd
      * lease stuff (search, replace, ..)
      *
-     * @return array 	of lease entry strings
+     * @return array	of lease entry strings
      */
-    public function search_lease()
+    private function searchLease(string $search): array
     {
         $ret = [];
-
-        if (func_num_args() <= 0) {
-            \Log::error('No argument specified in '.__CLASS__.'::'.__FUNCTION__);
-
-            return $ret;
-        }
-
-        $search = func_get_arg(0);
-
-        if (func_num_args() == 2) {
-            $search2 = func_get_arg(1);
-        }
 
         // parse dhcpd.lease file
         $file = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
@@ -992,10 +980,6 @@ class ProvMonController extends \BaseController
         // fetch all lines matching hw mac
         foreach (array_unique($section[0]) as $s) {
             if (strpos($s, $search)) {
-                if (isset($search2) && ! strpos($s, $search2)) {
-                    continue;
-                }
-
                 $s = str_replace('  ', '&nbsp;&nbsp;', $s);
 
                 // push matching results
