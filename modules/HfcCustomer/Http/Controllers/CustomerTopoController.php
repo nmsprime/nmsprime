@@ -30,6 +30,8 @@ use Modules\HfcReq\Http\Controllers\NetElementController;
  */
 class CustomerTopoController extends NetElementController
 {
+    protected $html_target = '';
+
     /*
      * Local tmp folder required for generating the images
      * (relative to /storage/app)
