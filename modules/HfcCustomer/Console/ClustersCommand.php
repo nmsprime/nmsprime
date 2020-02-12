@@ -48,24 +48,22 @@ class ClustersCommand extends Command
             if ($state == -1) {
                 continue;
             }
-            if ($state == 'WARNING' && $ret == 'OK') {
-                $ret = $state;
-            }
-            if ($state == 'CRITICAL') {
+
+            if ($state == 'CRITICAL' || ($state == 'WARNING' && $ret == 'OK')) {
                 $ret = $state;
             }
 
-            $num = $netelement->ms_num;
+            $num = $netelement->modems_online_count;
             $numa = $netelement->modems_count;
-            $cm_cri = $netelement->ms_cri;
-            $avg = $netelement->msAvg;
+            $cm_cri = $netelement->modems_critical_count;
+            $avg = $netelement->modemsUsPwrAvg;
             $warn_per = ModemHelper::$avg_warning_percentage / 100 * $numa;
             $crit_per = ModemHelper::$avg_critical_percentage / 100 * $numa;
             $warn_us = ModemHelper::$avg_warning_us;
             $crit_us = ModemHelper::$avg_critical_us;
 
-            $perf .= "'$element->name'=$num;$warn_per;$crit_per;0;$numa ";
-            $perf .= "'$element->name ($avg dBuV, #crit:$cm_cri)'=$avg;$warn_us;$crit_us ";
+            $perf .= "'$netelement->name'=$num;$warn_per;$crit_per;0;$numa ";
+            $perf .= "'$netelement->name ($avg dBuV, #crit:$cm_cri)'=$avg;$warn_us;$crit_us ";
         }
         echo $ret.' | '.$perf;
 

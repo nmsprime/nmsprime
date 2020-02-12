@@ -270,7 +270,7 @@ class TreeErdController extends HfcBaseController
                 $state = $ModemHelper::ms_state($netelem);
                 if ($state != -1) {
                     $color = $ModemHelper::ms_state_to_color($state);
-                    $num = $netelem->ms_num;
+                    $num = $netelem->modems_online_count;
                     $numa = $netelem->modems_count;
                     $cri = $netelem->modems_critical_count;
                     $avg = $netelem->modemsUsPwrAvg;
