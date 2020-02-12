@@ -44,7 +44,7 @@ return [
     'Menu_MainMenu'             => 'Menú Principal',
     'Menu_Node'                 => 'Nodos',
     'Menu_Config Page'          => 'Configuración global',
-    'Menu_Logging'              => 'Registro',
+    'Menu_Log'                  => 'Log',
     'Menu_Product List'         => 'Lista de productos',
     'Menu_SEPA Accounts'        => 'Cuenta de SEPA',
     'Menu_Settlement Run'       => 'Procesos de liquidacion',
