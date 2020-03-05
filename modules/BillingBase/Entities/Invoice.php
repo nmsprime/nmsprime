@@ -557,7 +557,7 @@ class Invoice extends \BaseModel
 
     public function setRcd($rcd)
     {
-        $this->data['rcd'] = $rcd;
+        $this->data['rcd'] = langDateFormat($rcd);
     }
 
     /**

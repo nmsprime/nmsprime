@@ -254,8 +254,8 @@ class SepaAccount extends \BaseModel
         $data = [
             'Contractnr'    => $contract->number,
             'Invoicenr'     => $this->_get_invoice_nr_formatted(),
-            'Date'          => $german ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
-            'RCD'           => $rcd,
+            'Date'          => langDateFormat(strtotime('last day of last month')),
+            'RCD'           => langDateFormat($rcd),
             'Cost Center'   => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
             'Description'   => '',
             'Net'           => $german ? number_format($net, 2, ',', '.') : number_format($net, 2, '.', ','),
