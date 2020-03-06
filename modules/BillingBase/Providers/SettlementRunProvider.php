@@ -10,6 +10,8 @@ use Modules\BillingBase\Entities\SepaAccount;
 /**
  * Preprocess all data from SepaAccount and it's related Company necessary to create an Invoice
  * and store in Laravels Service Container for better Performance while creating Invoices
+ *
+ * Call functions via SettlementRunData::getDate('Y')
  */
 class SettlementRunProvider
 {
