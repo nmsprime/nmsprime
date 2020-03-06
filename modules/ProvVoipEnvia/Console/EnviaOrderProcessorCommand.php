@@ -4,7 +4,6 @@ namespace Modules\ProvVoipEnvia\Console;
 
 use Log;
 use Illuminate\Console\Command;
-use Modules\ProvBase\Entities\Modem;
 use Modules\ProvVoipEnvia\Entities\EnviaOrder;
 use Modules\ProvVoipEnvia\Entities\EnviaContract;
 
