@@ -463,28 +463,37 @@ class SettlementRun extends \BaseModel
         }
     }
 
+    /**
+     * Reset payed_month of appropriate items to zero
+     */
     private function resetItemPayedMonth()
     {
         $lastMonth = intval(SettlementRunData::getDate('lastm'));
 
-        // TODO: Remove when cronjob is tested
-        if ($lastMonth == 1) {
-            // Senseless where statement is necessary because update can not be called directly
-            // only for contracts that are still valid / not canceled
-            Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
-            ChannelLog::info('billing', 'Reset all items payed_month flag (to 0)');
-        }
-
-        // Update SepaAccount specific items in case item was charged in first run, but sth changed during
+        // Reset SepaAccount specific items in case item was charged in first run, but sth changed during
         // time to second run and item must be charged later
         if ($this->specificSepaAcc) {
             $query = self::getSepaAccSpecificContractsBaseQuery();
 
             $query->where('p.billing_cycle', 'Yearly')->where('payed_month', $lastMonth)->toBase()->update(['i.payed_month' => '0']);
-        } else {
-            Item::where('payed_month', $lastMonth)->update(['payed_month' => '0']);
-            ChannelLog::info('billing', "Reset items with payed_month flag of $lastMonth (to 0)");
+            ChannelLog::info('billing', "Reset payed_month flag of items related to SepaAccount {$this->specificSepaAcc->name} ({$this->specificSepaAcc->id}) (set to 0)");
+
+            return;
         }
+
+        // Reset all yearly charged items in january
+        // NOTE keep the order of the if statements
+        // TODO ?: Remove this part when cronjob is tested or better leave it here as cronjob could e.g. be interrupted or sth like that
+        if ($lastMonth == 1) {
+            // Senseless where statement is necessary because update can not be called directly
+            Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
+            ChannelLog::info('billing', 'Reset all items payed_month flag (to 0)');
+
+            return;
+        }
+
+        Item::where('payed_month', $lastMonth)->update(['payed_month' => '0']);
+        ChannelLog::info('billing', "Reset items with payed_month flag of $lastMonth (to 0)");
     }
 
     /**
