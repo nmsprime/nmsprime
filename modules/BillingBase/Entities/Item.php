@@ -595,6 +595,11 @@ class Item extends \BaseModel
             $maturity = $this->product->maturity ?: Product::$maturity;
             do {
                 $endDate = self::add_period($endDate, $maturity);
+
+                if (! $this->product->maturity) {
+                    $endDate->lastOfMonth();
+                }
+
                 $firstPonDate = self::sub_period(clone $endDate, $pon);
             } while ($invoiceDate->gte($firstPonDate));
         }
