@@ -153,9 +153,10 @@ class ProvMonController extends \BaseController
         $flood_ping = $this->flood_ping($hostname);
 
         $tabs = $this->analysisPages($id);
+        $picture = $this->modemPicture($modem);
 
         return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
-                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device')));
+                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device', 'picture')));
     }
 
     /**
@@ -211,6 +212,26 @@ class ProvMonController extends \BaseController
         exec('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
 
         return ['ip' => $ip, 'online' => $ret ? false : true];
+    }
+
+    /**
+     * Find matching picture of modem.model.
+     *
+     * @author  Roy Schneider
+     * @param Modules\ProvBase\Entities\Modem
+     * @return  string
+     */
+    private function modemPicture($modem)
+    {
+        foreach (\File::allFiles(public_path('images/modems')) as $file) {
+            preg_match('/(?<=\d-)(.*)(?=\.\w+)/', $file->getFilename(), $filename);
+
+            if (isset($filename[0]) && str_contains(strtoupper($modem->model), strtoupper($filename[0]))) {
+                return 'images/modems/'.$file->getFilename();
+            }
+        }
+
+        return 'images/modems/default.svg';
     }
 
     /**
