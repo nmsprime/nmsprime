@@ -12,7 +12,7 @@ class AccountingRecord extends \BaseModel
     /**
      * Stores a Record in the database - TODO: move to controller!
      */
-    public function store_item($item, $acc)
+    public function store_item($item, $acc, $settlementrun_id)
     {
         // $count = $item->count ? $item->count : 1;
 
@@ -25,6 +25,7 @@ class AccountingRecord extends \BaseModel
             'charge'		=> $item->charge,
             'invoice_nr'	=> $acc->invoice_nr,
             'sepaaccount_id' => $acc->id,
+            'settlementrun_id' => $settlementrun_id,
         ];
 
         $this->create($data);
@@ -33,7 +34,7 @@ class AccountingRecord extends \BaseModel
     /**
      * Add a Call Data Record in the database - TODO: move to controller!
      */
-    public function add_cdr($contract, $acc, $charge, $count)
+    public function add_cdr($contract, $acc, $charge, $count, $settlementrun_id)
     {
         $data = [
             'contract_id' 	=> $contract->id,
@@ -44,6 +45,7 @@ class AccountingRecord extends \BaseModel
             'charge'		=> $charge,
             'invoice_nr'	=> $acc->invoice_nr,
             'sepaaccount_id' => $acc->id,
+            'settlementrun_id' => $settlementrun_id,
         ];
 
         $this->create($data);

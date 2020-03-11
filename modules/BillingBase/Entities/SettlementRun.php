@@ -292,7 +292,7 @@ class SettlementRun extends \BaseModel
 
                 // save to accounting table (as backup for future) - NOTE: invoice nr counters are set initially from that table
                 $rec = new AccountingRecord;
-                $rec->store_item($item, $acc);
+                $rec->store_item($item, $acc, $this->id);
 
                 // add item to accounting records of account, invoice and salesman
                 $acc->add_accounting_record($item);
@@ -753,7 +753,7 @@ class SettlementRun extends \BaseModel
 
         // accounting record
         $rec = new AccountingRecord;
-        $rec->add_cdr($c, $acc, $charge, $calls);
+        $rec->add_cdr($c, $acc, $charge, $calls, $this->id);
         $acc->add_cdr_accounting_record($c, $charge, $calls);
 
         // invoice
