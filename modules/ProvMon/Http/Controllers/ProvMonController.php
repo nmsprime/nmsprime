@@ -20,6 +20,7 @@ use Modules\ProvBase\Entities\Configfile;
  */
 class ProvMonController extends \BaseController
 {
+    const PATH = 'images/modems';
     protected $domain_name = '';
     protected $modem = null;
     protected $edit_left_md_size = 12;
@@ -223,15 +224,17 @@ class ProvMonController extends \BaseController
      */
     private function modemPicture($modem)
     {
-        foreach (\File::allFiles(public_path('images/modems')) as $file) {
-            preg_match('/(?<=\d-)(.*)(?=\.\w+)/', $file->getFilename(), $filename);
+        foreach (collect(\File::allFiles(public_path(self::PATH)))->sortBy(function ($file) {
+            return $file->getFilename();
+        }) as $file) {
+            preg_match('/\d+-(.+)\..+/', $file->getFilename(), $filename);
 
-            if (isset($filename[0]) && str_contains(strtoupper($modem->model), strtoupper($filename[0]))) {
-                return 'images/modems/'.$file->getFilename();
+            if (isset($filename[0]) && str_contains(strtoupper($modem->model), strtoupper($filename[1]))) {
+                return self::PATH.'/'.$file->getFilename();
             }
         }
 
-        return 'images/modems/default.svg';
+        return self::PATH.'/default.svg';
     }
 
     /**
