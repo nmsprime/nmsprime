@@ -193,7 +193,7 @@ class SepaAccount extends \BaseModel
             return;
         }
 
-        $nr = Invoice::where('sepaaccount_id', '=', $this->id)
+        $nr = Invoice::where('sepaaccount_id', $this->id)
             ->where('year', date('Y', $timeLastMonth))
             ->where('type', 'Invoice')
             ->orderByRaw('CONVERT(SUBSTRING_INDEX(number, "/", -1), UNSIGNED INTEGER) desc')
