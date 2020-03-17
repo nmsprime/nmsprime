@@ -259,10 +259,13 @@
 			</table>
 				<div style="clear: both;"></div>
 			@endif
-	@endforeach
+		@endforeach
 	@else
 		<font color="red">{{trans('messages.modem_offline')}}</font>
-		<img style="max-height: 500px; max-width: 500px; margin-left: auto; margin-right: auto; display: block;" src="{{ url($picture) }}"></img>
+		<img style="max-height: 300px; max-width: 300px; margin-left: auto; margin-right: auto; display: block;" src="{{ url($picture) }}"></img>
+	@endif
+	@if ($picture == 'images/modems/default.webp')
+			<p style="color:red;">{{ trans('messages.default_modem_picture') }}</p>
 	@endif
 @stop
 
