@@ -49,7 +49,7 @@ return [
     'product' => [
         'bundle'                => 'En tarifas agrupadas el tiempo mínimo de funcionamiento del contrato es determinado únicamente por la tarifa de Internet. De otra forma la última tarifa inicial valida (VoIP o Internet) dictamina esta fecha.',
         'maturity_min'          => 'Período mínimo de tarifa/tiempo de ejecución/término. Ejem. 14D (14 días), 3M (3 meses), 1Y (1 Año)',
-        'maturity'              => 'Período de tarifa/duración/duración de ejecución después de la duración mínima. Se añadirá automáticamente cuando la tarifa no se canceló antes del período de notificación. Por defecto 1 mes. Por ejemplo, 14D (14 días), 3M (tres meses), 1Y (un año)',
+        'maturity'              => 'Tariff period/runtime/term extension after the minimum runtime. <br> Will be automatically added when tariff was not canceled before period of notice. Default 1 month. If no maturity is given the end of term of the item is always set to the last day of the month. <br><br> E.g. 14D (14 days), 3M (three months), 1Y (one year)',
         'Name'                  => 'Para créditos es posible asignar un Tipo añadiendo el nombre del tipo al Nombre del Crédito. Ejem.: "Dispositivo de crédito"',
         'pod'                   => 'Por ejemplo 14D (14 días), 3M (tres meses), 1Y (un año)',
         'proportional'          => 'Activa esta casilla cuando los elementos que empiecen durante la ejecución actual de la liquidación se cargarán proporcionalmente. Por ejemplo, si un artículo de pago mensual comienza a mediados del mes, el cliente se cobrará sólo la mitad del precio completo en esta operación de liquidación.',
