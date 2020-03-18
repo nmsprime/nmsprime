@@ -728,6 +728,7 @@ class SettlementRun extends \BaseModel
             $id = $c->number;
         }
 
+        // No CDRs existing for this contract
         if (! $id) {
             return;
         }

@@ -82,6 +82,8 @@ class Debt extends \BaseModel
 
         if ($this->cleared) {
             $bsclass = 'active';
+        } elseif (date('Y-m-d') > $this->due_date) {
+            $bsclass = 'danger';
         } elseif ($this->missing_amount > 0) {
             $bsclass = 'warning';
         }

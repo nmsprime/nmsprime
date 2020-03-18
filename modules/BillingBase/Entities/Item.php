@@ -175,7 +175,7 @@ class Item extends \BaseModel
 
     public function view_belongs_to()
     {
-        return $this->contract;
+        return collect([$this->contract, $this->product]);
     }
 
     /**

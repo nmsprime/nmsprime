@@ -54,6 +54,11 @@ class Product extends \BaseModel
         return '<i class="fa fa-th-list"></i>';
     }
 
+    public function view_belongs_to()
+    {
+        return $this->costcenter_id ? $this->costcenter : null;
+    }
+
     // AJAX Index list function
     // generates datatable content and classes for model
     public function view_index_label()
