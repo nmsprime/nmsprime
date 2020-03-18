@@ -292,7 +292,7 @@ class Item extends \BaseModel
      * @return 	null if no costs incurred, true otherwise - NOTE: Amount to Charge is currently stored in Item Models temp variable ($charge)
      * @author 	Nino Ryschawy
      */
-    public function calculate_price_and_span($return_array = false, $update = true)
+    public function calculate_price_and_span($return_array = false, $update = true, $log = true)
     {
         $ratio = 0;
         $text = '';			// dates of invoice text
@@ -321,7 +321,9 @@ class Item extends \BaseModel
 
         // skip invalid items
         if (! $this->isValid($billing_cycle, null, [$start, $end])) {
-            ChannelLog::debug('billing', 'Item '.$this->product->name." ($this->id) is outdated", [$this->contract->id]);
+            if ($log) {
+                ChannelLog::debug('billing', 'Item '.$this->product->name." ($this->id) is outdated", [$this->contract->id]);
+            }
 
             return;
         }
@@ -593,6 +595,11 @@ class Item extends \BaseModel
             $maturity = $this->product->maturity ?: Product::$maturity;
             do {
                 $endDate = self::add_period($endDate, $maturity);
+
+                if (! $this->product->maturity) {
+                    $endDate->lastOfMonth();
+                }
+
                 $firstPonDate = self::sub_period(clone $endDate, $pon);
             } while ($invoiceDate->gte($firstPonDate));
         }

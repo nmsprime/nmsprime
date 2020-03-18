@@ -151,10 +151,6 @@ class TreeTopographyController extends HfcBaseController
             $parent = $netelement->parent;
             $pos1 = $netelement->pos;
             $pos2 = $parent ? $parent->pos : null;
-            $name = $netelement->id;
-            // Type is stored in relation, tp doesnt exist
-            $type = $netelement->type;
-            $tp = $netelement->tp;
 
             // skip empty pos and lines to elements not in search string
             if ($pos2 == null ||
@@ -164,13 +160,13 @@ class TreeTopographyController extends HfcBaseController
                 continue;
             }
 
-            // Line Color - Style
+            // Line Color - Style - See NetElementType::undeletables for id
             $style = '#BLACKLINE';
-            if ($type == 'AMP' || $tp == 'FOSTRA') {
+            if ($netelement->netelementtype_id == 4) {
                 $style = '#REDLINE';
             }
 
-            if ($type == 'NODE') {
+            if ($netelement->netelementtype_id == 5) {
                 $style = '#BLUELINE';
             }
 
@@ -260,10 +256,7 @@ class TreeTopographyController extends HfcBaseController
             $p2 = $netelement->pos;
 
             if ($p1 != $p2) {
-                $rstate = 0;
-                $ystate = 0;
-                $router = 0;
-                $fiber = 0;
+                $fiber = $router = $rstate = $ystate = 0;
 
                 $file .= '
                     <Placemark>
@@ -271,7 +264,7 @@ class TreeTopographyController extends HfcBaseController
                     <description><![CDATA[';
             }
 
-            $type = $netelement->type;
+            $type = $netelement->netelementtype_id;
             $parent = $netelement->parent ? $netelement->parent_id : null;
 
             if ($netelement->state == 'warning') {
@@ -282,11 +275,12 @@ class TreeTopographyController extends HfcBaseController
                 $rstate += 1;
             }
 
-            if (($type == 'NETGW') || ($type == 'CLUSTER') || ($type == 'DATA') || ($type == 'NET')) {
+            // See NetElementType::undeletables for id
+            if (in_array($type, [1, 2, 3, 6])) {
                 $router += 1;
             }
 
-            if ($type == 'NODE') {
+            if ($type == 5) {
                 $fiber += 1;
             }
 

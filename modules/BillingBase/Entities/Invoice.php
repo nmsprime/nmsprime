@@ -324,6 +324,7 @@ class Invoice extends \BaseModel
     {
         $class = strtolower(class_basename(get_class($model)));
 
+        // contract_address and modem_address
         $this->data[$class.'_firstname'] = escape_latex_special_chars($model->firstname);
         $this->data[$class.'_lastname'] = escape_latex_special_chars($model->lastname);
         $this->data[$class.'_company'] = escape_latex_special_chars($model->company);
@@ -556,7 +557,7 @@ class Invoice extends \BaseModel
 
     public function setRcd($rcd)
     {
-        $this->data['rcd'] = $rcd;
+        $this->data['rcd'] = langDateFormat($rcd);
     }
 
     /**

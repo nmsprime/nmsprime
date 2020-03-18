@@ -182,8 +182,10 @@ class SepaAccount extends \BaseModel
      */
     private function _set_invoice_nr_counters()
     {
+        $timeLastMonth = strtotime('first day of last month');
+
         // restart counter every year
-        if (date('m', strtotime('first day of last month')) == '01') {
+        if (date('m', $timeLastMonth) == '01') {
             if ($this->invoice_nr_start) {
                 $this->invoice_nr = $this->invoice_nr_start - 1;
             }
@@ -191,9 +193,14 @@ class SepaAccount extends \BaseModel
             return;
         }
 
-        $nr = AccountingRecord::where('sepaaccount_id', '=', $this->id)->orderBy('invoice_nr', 'desc')->select('invoice_nr')->first();
+        $nr = Invoice::where('sepaaccount_id', $this->id)
+            ->where('year', date('Y', $timeLastMonth))
+            ->where('type', 'Invoice')
+            ->orderByRaw('CONVERT(SUBSTRING_INDEX(number, "/", -1), UNSIGNED INTEGER) desc')
+            ->selectRaw('CONVERT(SUBSTRING_INDEX(number, "/", -1), UNSIGNED INTEGER) as inv_nr')
+            ->first();
 
-        $this->invoice_nr = is_object($nr) ? $nr->invoice_nr : $this->invoice_nr_start - 1;
+        $this->invoice_nr = $nr ? intval($nr->inv_nr) : $this->invoice_nr_start - 1;
     }
 
     /**
@@ -254,8 +261,8 @@ class SepaAccount extends \BaseModel
         $data = [
             'Contractnr'    => $contract->number,
             'Invoicenr'     => $this->_get_invoice_nr_formatted(),
-            'Date'          => $german ? date('d.m.Y', strtotime('last day of last month')) : date('Y-m-d', strtotime('last day of last month')),
-            'RCD'           => $rcd,
+            'Date'          => langDateFormat(strtotime('last day of last month')),
+            'RCD'           => langDateFormat($rcd),
             'Cost Center'   => isset($contract->costcenter->name) ? $contract->costcenter->name : '',
             'Description'   => '',
             'Net'           => $german ? number_format($net, 2, ',', '.') : number_format($net, 2, '.', ','),
