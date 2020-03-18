@@ -155,7 +155,7 @@ class CccUserController extends \BaseController
         // }
 
         if ($msg_key) {
-            $msg = trans('messages.conninfo.error').trans("messages.conninfo.$msg_key", $msg_var ? ['var' => $msg_var] : null);
+            $msg = trans('messages.conninfo.error').trans("messages.conninfo.$msg_key", $msg_var ? ['var' => $msg_var] : []);
 
             Log::error($msg);
             \Session::flash('download_error', $msg);
