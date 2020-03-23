@@ -63,6 +63,15 @@ class Apartment extends \BaseModel
             $ret['Edit']['Contract']['relation'] = $this->contracts;
         }
 
+        if (\Module::collections()->has('HfcReq')) {
+            $ret['Edit']['tap']['class'] = 'NetElement';
+            $ret['Edit']['tap']['relation'] = $this->netelement ? collect([$this->netelement]) : null;
+
+            if ($this->netelement) {
+                $ret['Edit']['tap']['options']['hide_create_button'] = true;
+            }
+        }
+
         if (\Module::collections()->has('Ticketsystem')) {
             $ret['Edit']['Ticket']['class'] = 'Ticket';
             $ret['Edit']['Ticket']['relation'] = $this->tickets;
@@ -97,6 +106,11 @@ class Apartment extends \BaseModel
     public function realty()
     {
         return $this->belongsTo(Realty::class);
+    }
+
+    public function netelement()
+    {
+        return $this->hasOne(\Modules\HfcReq\Entities\NetElement::class);
     }
 
     public static function labelFromData($apartment)
