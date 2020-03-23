@@ -144,8 +144,12 @@ class TreeErdController extends HfcBaseController
             ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => $id],
         ];
 
-        if (in_array(strtolower($netelementtype), ['net', 'all', 'id'])) {
+        if (in_array(strtolower($netelementtype), ['net', 'all', 'id', 'parent_id'])) {
             unset($tabs[3]);
+        }
+
+        if (in_array(strtolower($netelementtype), ['parent_id'])) {
+            unset($tabs[4]);
         }
 
         return $tabs;
@@ -220,7 +224,17 @@ class TreeErdController extends HfcBaseController
             $name = $netelem->name;
             $color = $this->colors[$netelem->get_bsclass()];
             $type = $netelem->netelementtype->name;
-            $url = $netelem->link ?: route('NetElement.controlling_edit', [$netelem->id, 0, 0]);
+
+            $url = '';
+            if ($netelem->link) {
+                $url = $netelem->link;
+            } elseif ($netelem->netelementtype_id == 8) {
+                $url = route('TreeErd.show', ['parent_id', $netelem->id]);
+            } elseif ($netelem->netelementtype_id == 9) {
+                $url = route('NetElement.tapControlling', $netelem->id);
+            } else {
+                $url = route('NetElement.controlling_edit', [$netelem->id, 0, 0]);
+            }
 
             if ($p1 != $p2) {
                 $file .= "\n}\nsubgraph cluster_$n {\n style=filled;color=lightgrey;fillcolor=lightgrey;";

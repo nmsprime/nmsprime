@@ -1377,15 +1377,21 @@ class ProvMonController extends \BaseController
 
         $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $model->id]];
 
-        if ($type <= 2) {
+        if (in_array($type, [1, 2, 8])) {
+            $sqlCol = $type == 8 ? 'parent_id' : $model->netelementtype->name;
+
             array_push($tabs,
-                ['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$model->netelementtype->name, $model->id]],
-                ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$model->netelementtype->name, $model->id]]
+                ['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$sqlCol, $model->id]],
+                ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$sqlCol, $model->id]]
             );
         }
 
-        if ($type != 1) {
+        if (! in_array($type, [1, 8, 9])) {
             array_push($tabs, ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$model->id, 0, 0]]);
+        }
+
+        if ($type == 9) {
+            array_push($tabs, ['name' => 'Controlling', 'route' => 'NetElement.tapControlling', 'link' => [$model->id]]);
         }
 
         if ($type == 4 || $type == 5 && \Bouncer::can('view_analysis_pages_of', Modem::class)) {
@@ -1393,7 +1399,7 @@ class ProvMonController extends \BaseController
             array_push($tabs, ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $provmon->createAnalysisTab($model->ip)]);
         }
 
-        if ($type != 4 && $type != 5) {
+        if (! in_array($type, [4, 5, 8, 9])) {
             array_push($tabs, ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => [$model->id]]);
         }
 
