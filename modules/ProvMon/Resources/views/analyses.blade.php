@@ -242,7 +242,7 @@
 				</table>
 			</div>
 			@else
-			<table class="table">
+			<table class="table" style="width: auto;">
 			@foreach ($table as $rowname => $row)
 				<tr>
 					<th width="15%">
@@ -255,14 +255,19 @@
 					@endforeach
 				</tr>
 			@endforeach
+				<img style="float: right; max-height: 150px; max-width: 200px; margin-top: 50px; margin-bottom: 50px; display: block;" src="{{ url($picture) }}"></img>
 			</table>
+				<div style="clear: both;"></div>
 			@endif
-	@endforeach
+		@endforeach
 	@else
 		<font color="red">{{trans('messages.modem_offline')}}</font>
+		<img style="max-height: 300px; max-width: 300px; margin-left: auto; margin-right: auto; display: block;" src="{{ url($picture) }}"></img>
+	@endif
+	@if ($picture == 'images/modems/default.webp')
+			<p style="color:red;">{{ trans('messages.default_modem_picture') }}</p>
 	@endif
 @stop
-
 
 @section ('javascript')
 
