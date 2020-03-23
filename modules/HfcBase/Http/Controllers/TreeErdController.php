@@ -89,6 +89,16 @@ class TreeErdController extends HfcBaseController
         }
 
         $netelements = NetElement::withActiveModems($field, $operator, $search)
+            ->where('netelementtype_id', '!=', 9)
+            ->orWhere(function($query) use ($field, $search) {
+                if ($field != 'parent_id') {
+                    return;
+                }
+
+                $query
+                    ->where('id', $search)
+                    ->orWhere('parent_id', $search);
+            })
             ->with('netelementtype:id,name')
             ->with('modemsUpstreamAvg');
 
