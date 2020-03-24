@@ -232,17 +232,22 @@
 					@endforeach
 				</tr>
 			@endforeach
-				<img style="float: right; max-height: 150px; max-width: 200px; margin-top: 50px; margin-bottom: 50px; display: block;" src="{{ url($picture) }}"></img>
+				<div style="float: right;">
+					<img style="max-height: 150px; max-width: 200px; margin-top: 50px; display: block;" src="{{ url($picture) }}"></img>
+					@if ($picture == 'images/modems/default.webp')
+						<p style="color:red; max-width: 200px;">{{ trans('messages.default_modem_picture') }}</p>
+					@endif
+				</div>
 			</table>
-				<div style="clear: both;"></div>
 			@endif
 		@endforeach
 	@else
 		<font color="red">{{trans('messages.modem_offline')}}</font>
-		<img style="max-height: 300px; max-width: 300px; margin-left: auto; margin-right: auto; display: block;" src="{{ url($picture) }}"></img>
-	@endif
-	@if ($picture == 'images/modems/default.webp')
-			<p style="color:red;">{{ trans('messages.default_modem_picture') }}</p>
+		<img style="max-height: 300px; max-width: 300px; margin-left: auto; margin-right: auto; display: block;" src="{{ url($picture) }}">
+			@if ($picture == 'images/modems/default.webp')
+				<p style="color:red;">{{ trans('messages.default_modem_picture') }}</p>
+			@endif
+		</img>
 	@endif
 @stop
 
