@@ -335,6 +335,11 @@ class Ticket extends \BaseModel
     private function provideContractInformation()
     {
         $contract = $this->contract;
+
+        if (! isset($contract)) {
+            return;
+        }
+
         $id = $contract->id;
         $info = "<table class='table table-bordered table-hover'>
                     <thead>
