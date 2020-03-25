@@ -495,7 +495,14 @@ class ProvMonController extends \BaseController
         $modem->help = 'cpe_analysis';
 
         // Lease
-        $lease['text'] = $this->searchLease("set cm_mac = \"$modem_mac\";");
+        $dhcpd_mac = implode(':', array_map(function ($byte) {
+            if ($byte == '00') {
+                return '0';
+            }
+
+            return ltrim($byte, '0');
+        }, explode(':', $modem_mac)));
+        $lease['text'] = $this->searchLease("billing subclass \"Client\" \"$dhcpd_mac\";");
         $lease = $this->validate_lease($lease, $type);
 
         $ep = $modem->endpoints()->first();
