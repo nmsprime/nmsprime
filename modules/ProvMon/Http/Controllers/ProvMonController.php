@@ -808,7 +808,7 @@ class ProvMonController extends \BaseController
             $sys['NetGw'] = [$netgw->hostname];
             $ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
             $us['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2'), 1000000);
-            $us['Modulation Profile'] = $this->_docsis_modulation($netgw->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
+            //$us['Modulation Profile'] = $this->_docsis_modulation($netgw->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
         }
 
         // Downstream
