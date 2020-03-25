@@ -136,7 +136,7 @@ class ProvMonController extends \BaseController
                     $eventlog = $modem->get_eventlog();
                 }
             }
-            $realtime['forecast'] = 'TODO';
+            $realtime['forecast'] = '';
         }
 
         $device = \Modules\ProvBase\Entities\Configfile::where('id', $modem->configfile_id)->first()->device;
@@ -640,7 +640,7 @@ class ProvMonController extends \BaseController
         // Realtime Measure
         if (count($ping) == 10) { // only fetch realtime values if all pings are successfull
             $realtime['measure'] = $this->realtime_netgw($netgw, $netgw->get_ro_community());
-            $realtime['forecast'] = 'TODO';
+            $realtime['forecast'] = '';
         }
 
         $host_id = $this->monitoring_get_host_id($netgw);
