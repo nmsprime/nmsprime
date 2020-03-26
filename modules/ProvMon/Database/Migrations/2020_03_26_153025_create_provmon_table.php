@@ -7,6 +7,7 @@ use Illuminate\Database\Migrations\Migration;
 class CreateProvmonTable extends Migration
 {
     protected $tablename = 'provmon';
+
     /**
      * Run the migrations.
      *
