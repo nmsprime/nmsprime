@@ -193,7 +193,7 @@
 		<h4>{{preg_replace('/^DT_/', '', $tablename)}}</h4>
 			@if (Str::startsWith($tablename, 'DT_'))
 			<div class="table-responsive">
-				<table class="table streamtable table-bordered" width="100%">
+				<table class="table streamtable table-bordered" width="auto">
 					<thead>
 						<tr class="active">
 							<th/>
@@ -233,9 +233,14 @@
 				</tr>
 			@endforeach
 				<div style="float: right;">
-					<img style="max-height: 150px; max-width: 200px; margin-top: 50px; display: block;" src="{{ url($picture) }}"></img>
 					@if ($picture == 'images/modems/default.webp')
-						<p style="color:red; max-width: 200px;">{{ trans('messages.default_modem_picture') }}</p>
+						<a href="https://github.com/nmsprime/nmsprime/issues/882">
+							<img style="max-height: 150px; max-width: 200px; margin-top: 50px; display: block;" src="{{ url($picture) }}"></img>
+						</a>
+						<i style="float: right;" class="fa fa-2x p-t-5 fa-question-circle text-info" title="{{ trans('messages.contribute_modem_picture') }}"></i>
+						<p style="color:red;">{{ trans('messages.no_modem_picture') }}</p>
+					@else
+						<img style="max-height: 150px; max-width: 200px; margin-top: 50px; display: block;" src="{{ url($picture) }}"></img>
 					@endif
 				</div>
 			</table>
@@ -243,11 +248,17 @@
 		@endforeach
 	@else
 		<font color="red">{{trans('messages.modem_offline')}}</font>
-		<img style="max-height: 300px; max-width: 300px; margin-left: auto; margin-right: auto; display: block;" src="{{ url($picture) }}">
-			@if ($picture == 'images/modems/default.webp')
-				<p style="color:red;">{{ trans('messages.default_modem_picture') }}</p>
-			@endif
-		</img>
+		@if ($picture == 'images/modems/default.webp')
+			<div style="text-align: center">
+				<a href="https://github.com/nmsprime/nmsprime/issues/882" style="vertical-align: middle;">
+					<img style="max-height: 300px; max-width: 300px; margin: auto; display: inline;" src="{{ url($picture) }}"></img>
+				</a>
+			</div>
+			<i style="float: right;" class="fa fa-2x p-t-5 fa-question-circle text-info" title="{{ trans('messages.contribute_modem_picture') }}"></i>
+			<p style="color:red; margin-left: auto; margin-right: auto;">{{ trans('messages.no_modem_picture') }}</p>
+		@else
+			<img style="max-height: 300px; max-width: 300px; margin: auto; display: block;" src="{{ url($picture) }}"></img>
+		@endif
 	@endif
 @stop
 
