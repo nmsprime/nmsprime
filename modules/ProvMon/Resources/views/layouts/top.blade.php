@@ -19,6 +19,10 @@
 			$s = "<li>".HTML::decode(HTML::linkRoute($view.'.edit', $icon.$label, $parent->id)).'</li>'.$s;
 
 			$parent = $parent->view_belongs_to();
+
+			if ($parent instanceof \Illuminate\Support\Collection) {
+                $parent = $parent->first();
+            }
 		}
 
 		// Show link to actual site. This depends on if we are in Modem Analyses or CPE Analyses context
