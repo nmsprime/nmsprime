@@ -109,8 +109,8 @@ class Ticket extends \BaseModel
 
     public function tickettype_names_query()
     {
-        return 'id in (SELECT t.id FROM tickettype tt JOIN tickettype_ticket ttt on tt.id=ttt.tickettype_id JOIN ticket t on t.id=ttt.ticket_id
-            WHERE tt.deleted_at is null and t.deleted_at is null and tt.name like ?)';
+        return 'ticket.id in (SELECT ticket.id FROM ticket, ticket_type, ticket_type_ticket WHERE ticket_type.id=ticket_type_ticket.ticket_type_id AND ticket.id=ticket_type_ticket.ticket_id
+            AND ticket_type.deleted_at is null and ticket.deleted_at is null and ticket_type.name like ?)';
     }
 
     public function get_bsclass()
@@ -192,7 +192,7 @@ class Ticket extends \BaseModel
 
     public function tickettypes()
     {
-        return $this->belongsToMany(TicketType::class, 'tickettype_ticket', 'ticket_id', 'tickettype_id');
+        return $this->belongsToMany(TicketType::class, 'ticket_type_ticket', 'ticket_id', 'ticket_type_id');
     }
 
     /**
