@@ -14,4 +14,5 @@ require('./bootstrap');
 
 Vue.component('example', require('./components/Example.vue'));
 Vue.component('test', require('./components/Test.vue'));
+Vue.component('ticket-message', require('./components/TicketPanel.vue'));
 
