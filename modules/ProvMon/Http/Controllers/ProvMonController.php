@@ -931,6 +931,10 @@ class ProvMonController extends \BaseController
         // System
         $sys['SysDescr'] = [snmpget($netgw->ip, $com, '.1.3.6.1.2.1.1.1.0')];
         $sys['Uptime'] = [$this->_secondsToTime(snmpget($netgw->ip, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
+        if ($netgw->type != 'cmts') {
+            return ['System' => $sys];
+        }
+
         $sys['DOCSIS'] = [$this->_docsis_mode($docsis)];
 
         $freq = snmprealwalk($netgw->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
