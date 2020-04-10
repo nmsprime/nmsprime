@@ -233,14 +233,16 @@
 				</tr>
 			@endforeach
 				<div style="float: right;">
-					@if ($picture == 'images/modems/default.webp')
-						<a href="https://github.com/nmsprime/nmsprime/issues/882">
+					@if ($tablename == array_keys($realtime['measure'])[0])
+						@if ($picture == 'images/modems/default.webp')
+							<a href="https://github.com/nmsprime/nmsprime/issues/882">
+								<img style="max-height: 150px; max-width: 200px; margin-top: 50px; display: block;" src="{{ url($picture) }}"></img>
+							</a>
+							<i style="float: right;" class="fa fa-2x p-t-5 fa-question-circle text-info" title="{{ trans('messages.contribute_modem_picture') }}"></i>
+							<p style="color:red;">{{ trans('messages.no_modem_picture') }}</p>
+						@else
 							<img style="max-height: 150px; max-width: 200px; margin-top: 50px; display: block;" src="{{ url($picture) }}"></img>
-						</a>
-						<i style="float: right;" class="fa fa-2x p-t-5 fa-question-circle text-info" title="{{ trans('messages.contribute_modem_picture') }}"></i>
-						<p style="color:red;">{{ trans('messages.no_modem_picture') }}</p>
-					@else
-						<img style="max-height: 150px; max-width: 200px; margin-top: 50px; display: block;" src="{{ url($picture) }}"></img>
+						@endif
 					@endif
 				</div>
 			</table>
