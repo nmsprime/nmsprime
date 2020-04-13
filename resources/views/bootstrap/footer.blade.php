@@ -36,6 +36,8 @@
 
 <script src="{{asset('components/assets-admin/js/apps.js')}}"></script>
 <script src="{{asset('components/nmsprime.js')}}"></script>
+<script src="{{asset('js/app.js')}}"></script>
+
 <!-- ================== END PAGE LEVEL JS ================== -->
 
 <script language="javascript">
