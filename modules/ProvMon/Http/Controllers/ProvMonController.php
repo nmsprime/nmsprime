@@ -136,7 +136,7 @@ class ProvMonController extends \BaseController
                     $eventlog = $modem->get_eventlog();
                 }
             }
-            $realtime['forecast'] = 'TODO';
+            $realtime['forecast'] = '';
         }
 
         $device = \Modules\ProvBase\Entities\Configfile::where('id', $modem->configfile_id)->first()->device;
@@ -495,7 +495,14 @@ class ProvMonController extends \BaseController
         $modem->help = 'cpe_analysis';
 
         // Lease
-        $lease['text'] = $this->searchLease("set cm_mac = \"$modem_mac\";");
+        $dhcpd_mac = implode(':', array_map(function ($byte) {
+            if ($byte == '00') {
+                return '0';
+            }
+
+            return ltrim($byte, '0');
+        }, explode(':', $modem_mac)));
+        $lease['text'] = $this->searchLease("billing subclass \"Client\" \"$dhcpd_mac\";");
         $lease = $this->validate_lease($lease, $type);
 
         $ep = $modem->endpoints()->first();
@@ -640,7 +647,7 @@ class ProvMonController extends \BaseController
         // Realtime Measure
         if (count($ping) == 10) { // only fetch realtime values if all pings are successfull
             $realtime['measure'] = $this->realtime_netgw($netgw, $netgw->get_ro_community());
-            $realtime['forecast'] = 'TODO';
+            $realtime['forecast'] = '';
         }
 
         $host_id = $this->monitoring_get_host_id($netgw);
@@ -808,7 +815,7 @@ class ProvMonController extends \BaseController
             $sys['NetGw'] = [$netgw->hostname];
             $ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
             $us['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2'), 1000000);
-            $us['Modulation Profile'] = $this->_docsis_modulation($netgw->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
+            //$us['Modulation Profile'] = $this->_docsis_modulation($netgw->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
         }
 
         // Downstream
@@ -924,6 +931,10 @@ class ProvMonController extends \BaseController
         // System
         $sys['SysDescr'] = [snmpget($netgw->ip, $com, '.1.3.6.1.2.1.1.1.0')];
         $sys['Uptime'] = [$this->_secondsToTime(snmpget($netgw->ip, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
+        if ($netgw->type != 'cmts') {
+            return ['System' => $sys];
+        }
+
         $sys['DOCSIS'] = [$this->_docsis_mode($docsis)];
 
         $freq = snmprealwalk($netgw->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
