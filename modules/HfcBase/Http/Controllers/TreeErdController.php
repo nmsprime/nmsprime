@@ -88,19 +88,22 @@ class TreeErdController extends HfcBaseController
             }
         }
 
-        $netelements = NetElement::withActiveModems($field, $operator, $search)
-            ->where('netelementtype_id', '!=', 9)
-            ->orWhere(function ($query) use ($field, $search) {
-                if ($field != 'parent_id') {
-                    return;
-                }
+        // Currently parent_id is only requested for Tap-Ports and it's Tap
+        if ($field == 'parent_id') {
+            // Only show Tap and it's Tap-Ports when top element is a Tap
+            $netelements = NetElement::where('id', $search)
+                ->orWhere(function ($query) use ($field, $search) {
+                    $query
+                    ->where('netelementtype_id', 9)
+                    ->where($field, $search);
+                });
+        } else {
+            $netelements = NetElement::withActiveModems($field, $operator, $search)
+                ->where('netelementtype_id', '!=', 9)
+                ->with('modemsUpstreamAvg');
+        }
 
-                $query
-                    ->where('id', $search)
-                    ->orWhere('parent_id', $search);
-            })
-            ->with('netelementtype:id,name')
-            ->with('modemsUpstreamAvg');
+        $netelements->with('netelementtype:id,name');
 
         if (IcingaObject::db_exists()) {
             $netelements->with('icingaobject.icingahoststatus');
