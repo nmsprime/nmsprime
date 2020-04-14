@@ -126,16 +126,20 @@ class ProvMonController extends \BaseController
             }
 
             if ($modem->isTR069()) {
-                $realtime['measure'] = $this->realtimeTR069($modem, false);
+                $measure = $this->realtimeTR069($modem, false);
+                if (! $measure && $modem->isPPP()) {
+                    $measure = $this->realtimePPP($modem);
+                }
             } else {
                 // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
-                $realtime['measure'] = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
+                $measure = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
 
                 // get eventlog table
-                if (! array_key_exists('SNMP-Server not reachable', $realtime['measure'])) {
+                if (! array_key_exists('SNMP-Server not reachable', $measure)) {
                     $eventlog = $modem->get_eventlog();
                 }
             }
+            $realtime['measure'] = $measure;
             $realtime['forecast'] = '';
         }
 
@@ -861,7 +865,7 @@ class ProvMonController extends \BaseController
      *
      * @param modem: modem object
      * @param refresh: bool refresh values from device instead of using cached ones
-     * @return array[section][Fieldname][Values]
+     * @return mixed
      *
      * @author Ole Ernst
      */
@@ -869,7 +873,7 @@ class ProvMonController extends \BaseController
     {
         $mon = $modem->configfile->getMonitoringConfig();
         if (! $mon) {
-            return ['SNMP-Server not reachable' => ['' => ['']]];
+            return false;
         }
 
         if ($refresh) {
@@ -889,6 +893,83 @@ class ProvMonController extends \BaseController
         }
 
         return $mon;
+    }
+
+    /**
+     * Fetch realtime values via FreeRADIUS database
+     *
+     * @param modem: modem object
+     * @return array[section][Fieldname][Values]
+     *
+     * @author Ole Ernst
+     */
+    public function realtimePPP($modem)
+    {
+        $ret = [];
+        $noop = function ($item) {
+            return $item;
+        };
+
+        // Current
+        $cur = $modem->radacct()->latest('radacctid')->first();
+        $ret['Current']['Start'] = [$cur->acctstarttime];
+        $ret['Current']['Update'] = [$cur->acctupdatetime];
+        $ret['Current']['Stop'] = $cur->acctstoptime ? [$cur->acctstoptime] : ['open'];
+
+        // Sessions
+        $sessionItems = [
+            ['nasipaddress', 'NAS', $noop],
+            ['acctstarttime', 'Start', $noop],
+            ['acctupdatetime', 'Update', $noop],
+            ['acctstoptime', 'Stop', $noop],
+            ['acctsessiontime', 'Time', function ($item) {
+                return \Carbon\CarbonInterval::seconds($item)->cascade()->forHumans();
+            }],
+            ['connectinfo_stop', 'Info', $noop],
+            ['acctinputoctets', 'In', function ($item) {
+                return humanFilesize($item);
+            }],
+            ['acctoutputoctets', 'Out', function ($item) {
+                return humanFilesize($item);
+            }],
+            ['nasporttype', 'PortInfo', $noop],
+            ['callingstationid', 'Client', $noop],
+            ['framedipaddress', 'IP', $noop],
+        ];
+        $sessions = $modem->radacct()
+            ->latest('radacctid')
+            ->limit(10)
+            ->get(array_map(function ($a) {
+                return $a[0];
+            }, $sessionItems));
+
+        foreach ($sessionItems as $item) {
+            $ret['Sessions'][$item[1]] = array_map($item[2], $sessions->pluck($item[0])->toArray());
+        }
+
+        // Replies
+        $replyItems = ['attribute', 'op', 'value'];
+        $replies = $modem->radusergroups()
+            ->join('radgroupreply', 'radusergroup.groupname', 'radgroupreply.groupname')
+            ->get($replyItems);
+
+        foreach ($replyItems as $item) {
+            $ret['Replies'][$item] = $replies->pluck($item)->toArray();
+        }
+        // add sequence number for proper sorting
+        $ret['Replies'] = array_merge(['#' => array_keys(reset($ret['Replies']))], $ret['Replies']);
+
+        // Authentications
+        $authItems = ['authdate', 'reply'];
+        $auths = $modem->radpostauth()
+            ->latest('id')
+            ->limit(10);
+
+        foreach ($authItems as $item) {
+            $ret['Authentications'][$item] = $auths->pluck($item)->toArray();
+        }
+
+        return $ret;
     }
 
     /**
