@@ -69,6 +69,20 @@ class CostCenter extends \BaseModel
         return $ret;
     }
 
+    public function set_index_delete()
+    {
+        $hasContracts = $this->contracts()->whereNull('contract.deleted_at')
+            ->where(whereLaterOrEqual('contract.contract_end', date('Y-m-d', strtotime('last day of sep last year'))))
+            ->count();
+
+        return $this->index_delete_disabled = $hasContracts >= 0;
+    }
+
+    public static function setIndexDeleteTitle()
+    {
+        return trans('messages.indexDeleteDisabledTitle', ['relation' => trans('messages.Contract')]);
+    }
+
     /**
      * Relationships:
      */
@@ -85,6 +99,11 @@ class CostCenter extends \BaseModel
     public function numberranges()
     {
         return $this->hasMany(NumberRange::class, 'costcenter_id');
+    }
+
+    public function contracts()
+    {
+        return $this->hasMany(\Modules\ProvBase\Entities\Contract::class, 'costcenter_id');
     }
 
     /**
