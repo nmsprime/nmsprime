@@ -173,21 +173,9 @@ class ProvMonController extends \BaseController
         $ip = gethostbyname($hostname);
         $ip = ($ip == $hostname) ? null : $ip;
 
-        if ($modem->isTR069()) {
-            foreach (['Device', 'InternetGatewayDevice'] as $dev) {
-                $model = $modem->getGenieAcsModel("$dev.ManagementServer.ConnectionRequestURL");
-
-                if (! $model) {
-                    continue;
-                }
-
-                if (preg_match('/https?:\/\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $model->_value, $match) != 1) {
-                    continue;
-                }
-
-                $ip = $hostname = $match[1];
-
-                break;
+        if ($modem->isPPP()) {
+            if ($acct = $modem->radacct()->latest('radacctid')->first()) {
+                $ip = $hostname = $acct->framedipaddress;
             }
 
             // workaround for tr069 devices, which block ICMP requests,
