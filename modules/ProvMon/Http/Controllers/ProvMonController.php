@@ -924,9 +924,9 @@ class ProvMonController extends \BaseController
 
         // Current
         $cur = $modem->radacct()->latest('radacctid')->first();
-        $ret['Current']['Start'] = [$cur->acctstarttime];
-        $ret['Current']['Update'] = [$cur->acctupdatetime];
-        $ret['Current']['Stop'] = $cur->acctstoptime ? [$cur->acctstoptime] : ['open'];
+        $ret['Current Session']['Start'] = [$cur->acctstarttime];
+        $ret['Current Session']['Update'] = [$cur->acctupdatetime];
+        $ret['Current Session']['Stop'] = $cur->acctstoptime ? [$cur->acctstoptime] : ['open'];
 
         // Sessions
         $sessionItems = [
@@ -957,7 +957,7 @@ class ProvMonController extends \BaseController
 
         foreach ($sessionItems as $item) {
             $values = $sessions->pluck($item[0])->toArray();
-            $ret['DT_Sessions'][$item[1]] = $item[2] ? array_map($item[2], $values) : $values;
+            $ret['DT_Last Sessions'][$item[1]] = $item[2] ? array_map($item[2], $values) : $values;
         }
 
         // Replies
