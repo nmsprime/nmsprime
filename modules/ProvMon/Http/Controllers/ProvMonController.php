@@ -132,6 +132,10 @@ class ProvMonController extends \BaseController
 
         $realtime = $eventlog = null;
 
+        if (\Request::has('offline')) {
+            $online = false;
+        }
+
         if ($online) {
             if ($modemConfigfileStatus = $this->modemConfigfileStatus($modem)) {
                 $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
