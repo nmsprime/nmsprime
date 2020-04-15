@@ -54,6 +54,7 @@ return [
         'pod'                   => 'Por ejemplo 14D (14 días), 3M (tres meses), 1Y (un año)',
         'proportional'          => 'Activa esta casilla cuando los elementos que empiecen durante la ejecución actual de la liquidación se cargarán proporcionalmente. Por ejemplo, si un artículo de pago mensual comienza a mediados del mes, el cliente se cobrará sólo la mitad del precio completo en esta operación de liquidación.',
         'Type'                  => '¡Todos los campos además del ciclo de facturación deben ser limpiados antes de un cambio de tipo! De lo contrario, en la mayoría de los casos los productos no pueden ser guardados',
+        'deprecated'            => 'Activate this checkbox if this product shall not be shown in the product select list when creating/editing items.',
     ],
     'Product_Number_of_Cycles'      => 'Ten cuidado!: para todos los productos pagados repetidos, el precio aplica para cada deuda, para productos pagados de una, el Precio es dividido por el numero de ciclos',
 
