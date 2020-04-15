@@ -856,14 +856,14 @@ class ProvMonController extends \BaseController
         // colorize downstream
         foreach (['Power dBmV', 'MER dB', 'Microreflection -dBc'] as $item) {
             foreach ($ds[$item] as $key => &$value) {
-                $value = [$value, BaseViewController::getQualityColor('Downstream', $ds['Modulation'][$key], $item, $value)];
+                $value = [$value, BaseViewController::getQualityColor('ds', $ds['Modulation'][$key], $item, $value)];
             }
         }
 
         // colorize upstream
         foreach (['Power dBmV', 'SNR dB'] as $item) {
             foreach ($us[$item] as $key => &$value) {
-                $value = [$value, BaseViewController::getQualityColor('Upstream', '64QAM', $item, $value)];
+                $value = [$value, BaseViewController::getQualityColor('us', 'QAM64', $item, $value)];
             }
         }
 
@@ -1060,7 +1060,7 @@ class ProvMonController extends \BaseController
         // colorize upstream
         foreach (['SNR dB', 'Avg Utilization %', 'Rx Power dBmV'] as $item) {
             foreach ($us[$item] as $key => &$value) {
-                $value = [$value, BaseViewController::getQualityColor('Upstream', '64QAM', $item, $value)];
+                $value = [$value, BaseViewController::getQualityColor('us', 'QAM64', $item, $value)];
             }
         }
 
