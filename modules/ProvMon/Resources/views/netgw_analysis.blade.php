@@ -54,44 +54,22 @@
 				<table class="table streamtable table-bordered" width="100%">
 					<thead>
 						<tr class="active">
-							<th> </th>
-							<th>#</th>
+							<th/>
 							@foreach (array_keys($table) as $colheader)
-								@if ($colheader == "Modulation Profile")
-									<th class="text-center">Modulation</th>
-								@else
-									<th class="text-center">{{$colheader}}</th>
-								@endif
+								<th class="text-center">{{$colheader}}</th>
 							@endforeach
 						</tr>
 					</thead>
 					<tbody>
 						@foreach(current($table) as $i => $dummy)
 						<tr>
-							<td width="20"></td>
-							<td width="20"> {{$i}}</td>
+							<td width="20"/>
 							@foreach ($table as $colheader => $colarray)
-								<?php
-//TODO Christian, please clean up
-									if(!isset($colarray[$i]))
-										continue;
-
-									// NOTE: Colorization is done by assuming Modulation 64 QAM - Make it dependent of Modulation Profile ??
-									switch (\App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), '64qam', Str::lower($colheader),htmlspecialchars($colarray[$i])) ){
-										case 0:
-												$color = "success";
-												break;
-										case 1:
-												$color = "warning";
-												break;
-										case 2:
-												$color = "danger";
-												break;
-										default:
-												$color = "";
-									}
-								?>
-							<td class="text-center {{ $color }}"> <font color="grey"> {{ htmlspecialchars( $colarray[$i] ) }} </font> </td>
+								@if (is_array($colarray[$i]))
+								<td class="text-center {{$colarray[$i][1]}}"><font color="grey">{{$colarray[$i][0]}}</font> </td>
+								@else
+								<td class="text-center"><font color="grey">{{$colarray[$i]}}</font></td>
+								@endif
 							@endforeach
 						</tr>
 						@endforeach

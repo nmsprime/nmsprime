@@ -190,51 +190,28 @@
 	@if ($realtime)
 		<font color="green"><b>{{$realtime['forecast']}}</b></font><br>
 		@foreach ($realtime['measure'] as $tablename => $table)
-		<h4>{{$tablename}}</h4>
-			@if ($tablename == "Downstream" || $tablename == "Upstream" )
+		<h4>{{preg_replace('/^DT_/', '', $tablename)}}</h4>
+			@if (Str::startsWith($tablename, 'DT_'))
 			<div class="table-responsive">
 				<table class="table streamtable table-bordered" width="100%">
 					<thead>
 						<tr class="active">
-							<th> </th>
-							<th>#</th>
+							<th/>
 							@foreach ($table as $colheader => $colarray)
-								@if ($colheader == "Modulation Profile")
-									<th class="text-center">Modulation</th>
-								@endif
-								@if ($colheader != "Modulation Profile")
-									<th class="text-center">{{$colheader}}</th>
-								@endif
+								<th class="text-center">{{$colheader}}</th>
 							@endforeach
 						</tr>
 					</thead>
 					<tbody>
 						@foreach(current($table) as $i => $dummy)
 						<tr>
-							<td width="20"> </td>
-							<td width="20"> {{ $i }}</td>
+							<td width="20"/>
 							@foreach ($table as $colheader => $colarray)
-								<?php
-									if (!isset($colarray[$i]))
-										$colarray[$i] = 'n/a';
-									$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "SNR dB";
-									if (!isset($table[$mod][$i]))
-										$table[$mod][$i] = 'n/a';
-									switch (\App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), '64qam', Str::lower($colheader),htmlspecialchars($colarray[$i]))) {
-									case 0:
-											$color = "success";
-											break;
-									case 1:
-											$color = "warning";
-											break;
-									case 2:
-											$color = "danger";
-											break;
-									default:
-											$color = "";
-									}
-								?>
-									<td class="text-center {{ $color }}"> <font color="grey"> {{ $colarray[$i] }} </font> </td>
+								@if (is_array($colarray[$i]))
+								<td class="text-center {{$colarray[$i][1]}}"><font color="grey">{{$colarray[$i][0]}}</font></td>
+								@else
+								<td class="text-center"><font color="grey">{{$colarray[$i]}}</font></td>
+								@endif
 							@endforeach
 						</tr>
 						@endforeach

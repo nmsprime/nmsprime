@@ -10,6 +10,7 @@ use Modules\ProvBase\Entities\NetGw;
 use Modules\HfcReq\Entities\NetElement;
 use Modules\ProvBase\Entities\ProvBase;
 use Modules\ProvBase\Entities\Configfile;
+use App\Http\Controllers\BaseViewController;
 
 /**
  * This is the Basic Stuff for Modem Analyses Page
@@ -638,7 +639,7 @@ class ProvMonController extends \BaseController
 
         // Realtime Measure
         if (count($ping) == 10) { // only fetch realtime values if all pings are successfull
-            $realtime['measure'] = $this->realtime_netgw($netgw, $netgw->get_ro_community());
+            $realtime['measure'] = $this->realtimeNetgw($netgw, $netgw->get_ro_community());
             $realtime['forecast'] = '';
         }
 
@@ -807,7 +808,7 @@ class ProvMonController extends \BaseController
             $sys['NetGw'] = [$netgw->hostname];
             $ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
             $us['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2'), 1000000);
-            //$us['Modulation Profile'] = $this->_docsis_modulation($netgw->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
+            //$us['Modulation'] = $this->_docsis_modulation($netgw->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
         }
 
         // Downstream
@@ -852,10 +853,24 @@ class ProvMonController extends \BaseController
             }
         }
 
+        // colorize downstream
+        foreach (['Power dBmV', 'MER dB', 'Microreflection -dBc'] as $item) {
+            foreach ($ds[$item] as $key => &$value) {
+                $value = [$value, BaseViewController::getQualityColor('Downstream', $ds['Modulation'][$key], $item, $value)];
+            }
+        }
+
+        // colorize upstream
+        foreach (['Power dBmV', 'SNR dB'] as $item) {
+            foreach ($us[$item] as $key => &$value) {
+                $value = [$value, BaseViewController::getQualityColor('Upstream', '64QAM', $item, $value)];
+            }
+        }
+
         // Put Sections together
         $ret['System'] = $sys;
-        $ret['Downstream'] = $ds;
-        $ret['Upstream'] = $us;
+        $ret['DT_Downstream'] = array_merge(['#' => array_keys(reset($ds))], $ds);
+        $ret['DT_Upstream'] = array_merge(['#' => array_keys(reset($us))], $us);
 
         return $ret;
     }
@@ -944,7 +959,7 @@ class ProvMonController extends \BaseController
             }, $sessionItems));
 
         foreach ($sessionItems as $item) {
-            $ret['Sessions'][$item[1]] = array_map($item[2], $sessions->pluck($item[0])->toArray());
+            $ret['DT_Sessions'][$item[1]] = array_map($item[2], $sessions->pluck($item[0])->toArray());
         }
 
         // Replies
@@ -954,10 +969,10 @@ class ProvMonController extends \BaseController
             ->get($replyItems);
 
         foreach ($replyItems as $item) {
-            $ret['Replies'][$item] = $replies->pluck($item)->toArray();
+            $ret['DT_Replies'][$item] = $replies->pluck($item)->toArray();
         }
         // add sequence number for proper sorting
-        $ret['Replies'] = array_merge(['#' => array_keys(reset($ret['Replies']))], $ret['Replies']);
+        $ret['DT_Replies'] = array_merge(['#' => array_keys(reset($ret['DT_Replies']))], $ret['DT_Replies']);
 
         // Authentications
         $authItems = ['authdate', 'reply'];
@@ -966,7 +981,7 @@ class ProvMonController extends \BaseController
             ->limit(10);
 
         foreach ($authItems as $item) {
-            $ret['Authentications'][$item] = $auths->pluck($item)->toArray();
+            $ret['DT_Authentications'][$item] = $auths->pluck($item)->toArray();
         }
 
         return $ret;
@@ -981,7 +996,7 @@ class ProvMonController extends \BaseController
      * @param ctrl: shall the RX power be controlled?
      * @return: array[section][Fieldname][Values]
      */
-    public function realtime_netgw($netgw, $com)
+    public function realtimeNetgw($netgw, $com)
     {
         // Copy from SnmpController
         $this->snmp_def_mode();
@@ -1042,8 +1057,16 @@ class ProvMonController extends \BaseController
             }
         }
 
+        // colorize upstream
+        foreach (['SNR dB', 'Avg Utilization %', 'Rx Power dBmV'] as $item) {
+            foreach ($us[$item] as $key => &$value) {
+                $value = [$value, BaseViewController::getQualityColor('Upstream', '64QAM', $item, $value)];
+            }
+        }
+
         $ret['System'] = $sys;
-        $ret['Upstream'] = $us;
+        $keys = array_keys(reset($us));
+        $ret['Upstream'] = array_merge(['#' => array_combine($keys, $keys)], $us);
 
         return $ret;
     }

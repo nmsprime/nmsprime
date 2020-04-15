@@ -505,7 +505,7 @@ class CustomerTopoController extends NetElementController
             }
 
             if ($modem->us_pwr != 0) {
-                $cur_clr = BaseViewController::get_quality_color_orig(explode('_', $row)[0], explode('_', $row)[1], [$row_val])[0];
+                $cur_clr = BaseViewController::getQualityColorOrig(explode('_', $row)[0], explode('_', $row)[1], [$row_val])[0];
             } else {
                 $cur_clr = -1;
             }
