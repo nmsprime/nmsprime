@@ -128,8 +128,8 @@ class ProvMonController extends \BaseController
 
             if ($modem->isTR069()) {
                 $measure = $this->realtimeTR069($modem, false);
-                if (! $measure && $modem->isPPP()) {
-                    $measure = $this->realtimePPP($modem);
+                if ($modem->isPPP()) {
+                    $measure = array_merge($measure, $this->realtimePPP($modem));
                 }
             } else {
                 // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
@@ -888,7 +888,7 @@ class ProvMonController extends \BaseController
     {
         $mon = $modem->configfile->getMonitoringConfig();
         if (! $mon) {
-            return false;
+            return [];
         }
 
         if ($refresh) {
