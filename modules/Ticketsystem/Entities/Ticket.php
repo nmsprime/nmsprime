@@ -140,7 +140,8 @@ class Ticket extends \BaseModel
         $ret['Edit']['Comment']['class'] = 'Comment';
         $ret['Edit']['Comment']['relation'] = $this->comments;
 
-        $ret['Edit']['Information']['html'] = $this->provideContractInformation();
+        $ret['Edit']['Information']['view']['view'] = 'ticketsystem::Ticket.infos';
+        $ret['Edit']['Information']['view']['vars']['infos'] = $this->contractInformations();
 
         return $ret;
     }
@@ -332,34 +333,29 @@ class Ticket extends \BaseModel
         return ['noReplyName' => $config->noReplyName, 'noReplyMail' => $config->noReplyMail];
     }
 
-    private function provideContractInformation()
+    /**
+     * Get selected informations of related contract for infos.blade
+     *
+     * @return array
+     */
+    private function contractInformations()
     {
-        $contract = $this->contract;
-
-        if (! isset($contract)) {
-            return;
+        if (! $this->contract) {
+            return [];
         }
 
-        $id = $contract->id;
-        $info = "<table class='table table-bordered table-hover'>
-                    <thead>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Number</td>
-                            <td>".link_to_route('Contract.edit', $id, ['id' => $id]).'</td>
-                        </tr>';
+        $infos = [];
+        foreach (['number', 'company', 'firstname', 'lastname', 'city', 'district', 'street', 'house_number', 'phone', 'email'] as $attribute) {
+            $info = $this->contract->$attribute;
 
-        foreach (['company', 'firstname', 'lastname', 'city', 'district', 'street', 'house_number', 'phone', 'email'] as $value) {
-            $info .= '<tr>
-                        <td>'.\App\Http\Controllers\BaseViewController::translate_label(ucfirst($value)).'</td>
-                        <td>'.$contract->$value.'</td>
-                    </tr>';
+            if ($attribute == 'number') {
+                $info = link_to_route('Contract.edit', $this->contract->id, ['id' => $this->contract->id]);
+            }
+
+            $infos[\App\Http\Controllers\BaseViewController::translate_label(ucfirst($attribute))] = $info;
         }
 
-        $info .= '</tbody></table>';
-
-        return $info;
+        return $infos;
     }
 }
 
