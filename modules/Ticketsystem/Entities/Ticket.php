@@ -49,11 +49,19 @@ class Ticket extends \BaseModel
                 $this->table.'.user_id',
                 $this->table.'.created_at',
                 'assigned_users',
+                'contract.number',
+                'contract.firstname',
+                'contract.lastname',
+                'contract.street',
+                'contract.house_number',
+                'contract.zip',
+                'contract.city',
+                'contract.district',
             ],
             'header' => "$this->id - $this->name ($this->created_at)",
             'bsclass' => $bsclass,
             'order_by' => ['0' => 'desc'],
-            'eager_loading' => ['tickettypes', 'user', 'users'],
+            'eager_loading' => ['contract', 'tickettypes', 'user', 'users'],
             'edit' => ['assigned_users' => 'get_assigned_users',
                 'tickettypes.name' => 'index_types',
                 'user_id' => 'username', ],
@@ -101,8 +109,8 @@ class Ticket extends \BaseModel
 
     public function tickettype_names_query()
     {
-        return 'id in (SELECT t.id FROM tickettype tt JOIN tickettype_ticket ttt on tt.id=ttt.tickettype_id JOIN ticket t on t.id=ttt.ticket_id
-            WHERE tt.deleted_at is null and t.deleted_at is null and tt.name like ?)';
+        return 'ticket.id in (SELECT ticket.id FROM ticket, ticket_type, ticket_type_ticket WHERE ticket_type.id=ticket_type_ticket.ticket_type_id AND ticket.id=ticket_type_ticket.ticket_id
+            AND ticket_type.deleted_at is null and ticket.deleted_at is null and ticket_type.name like ?)';
     }
 
     public function get_bsclass()
@@ -131,6 +139,9 @@ class Ticket extends \BaseModel
 
         $ret['Edit']['Comment']['class'] = 'Comment';
         $ret['Edit']['Comment']['relation'] = $this->comments;
+
+        $ret['Edit']['Information']['view']['view'] = 'ticketsystem::Ticket.infos';
+        $ret['Edit']['Information']['view']['vars']['infos'] = $this->contractInformations();
 
         return $ret;
     }
@@ -165,9 +176,24 @@ class Ticket extends \BaseModel
         return $this->belongsTo(\Modules\ProvBase\Entities\Contract::class);
     }
 
+    public function contact()
+    {
+        return $this->belongsTo(\Modules\PropertyManagement\Entities\Contact::class, 'contact_id');
+    }
+
+    public function apartment()
+    {
+        return $this->belongsTo(\Modules\PropertyManagement\Entities\Apartment::class, 'apartment_id');
+    }
+
+    public function realty()
+    {
+        return $this->belongsTo(\Modules\PropertyManagement\Entities\Realty::class, 'realty_id');
+    }
+
     public function tickettypes()
     {
-        return $this->belongsToMany(TicketType::class, 'tickettype_ticket', 'ticket_id', 'tickettype_id');
+        return $this->belongsToMany(TicketType::class, 'ticket_type_ticket', 'ticket_id', 'ticket_type_id');
     }
 
     /**
@@ -247,7 +273,7 @@ class Ticket extends \BaseModel
                 continue;
             }
 
-            \Mail::raw(trans('messages.deletedTicketUsersMessage', ['id' => $this->id]),
+            \Mail::send('ticketsystem::emails.deletedFromTicket', ['id' => $this->id],
                 function ($message) use ($user, $subject, $settings) {
                     $message->from($settings['noReplyMail'], $settings['noReplyName'])
                             ->to($user->email, $user->last_name.', '.$user->first_name)
@@ -305,6 +331,31 @@ class Ticket extends \BaseModel
         }
 
         return ['noReplyName' => $config->noReplyName, 'noReplyMail' => $config->noReplyMail];
+    }
+
+    /**
+     * Get selected informations of related contract for infos.blade
+     *
+     * @return array
+     */
+    private function contractInformations()
+    {
+        if (! $this->contract) {
+            return [];
+        }
+
+        $infos = [];
+        foreach (['number', 'company', 'firstname', 'lastname', 'city', 'district', 'street', 'house_number', 'phone', 'email'] as $attribute) {
+            $info = $this->contract->$attribute;
+
+            if ($attribute == 'number') {
+                $info = link_to_route('Contract.edit', $this->contract->id, ['id' => $this->contract->id]);
+            }
+
+            $infos[\App\Http\Controllers\BaseViewController::translate_label(ucfirst($attribute))] = $info;
+        }
+
+        return $infos;
     }
 }
 

@@ -46,6 +46,7 @@ class ProductController extends \BaseController
             ['form_type' => 'text', 'name' => 'email_count', 'description' => 'No. of email addresses', 'select' => 'Internet', 'hidden' => 1],
             ['form_type' => 'checkbox', 'name' => 'bundled_with_voip', 'description' => 'Bundled with VoIP product?', 'select' => 'Internet', 'help' => trans('helper.product.bundle')],
             ['form_type' => 'checkbox', 'name' => 'proportional', 'description' => 'Calculate proportionately', 'checked' => 1, 'help' => trans('helper.product.proportional')],
+            ['form_type' => 'checkbox', 'name' => 'deprecated', 'description' => 'Deprecated', 'help' => trans('helper.product.deprecated')],
         ];
     }
 

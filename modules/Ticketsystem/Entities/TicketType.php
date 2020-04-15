@@ -4,7 +4,7 @@ namespace Modules\Ticketsystem\Entities;
 
 class TicketType extends \BaseModel
 {
-    public $table = 'tickettype';
+    public $table = 'ticket_type';
 
     public static function rules($id = null)
     {
@@ -36,7 +36,7 @@ class TicketType extends \BaseModel
      */
     public function tickets()
     {
-        return $this->belongsToMany(Ticket::class, 'tickettype_ticket', 'ticket_id', 'tickettype_id');
+        return $this->belongsToMany(Ticket::class, 'ticket_type_ticket', 'ticket_id', 'ticket_type_id');
     }
 
     public function children()

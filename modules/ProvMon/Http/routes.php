@@ -1,6 +1,8 @@
 <?php
 
 BaseRoute::group([], function () {
+    BaseRoute::resource('ProvMon', 'Modules\ProvMon\Http\Controllers\ProvMonController');
+
     BaseRoute::get('provmon/{id}', [
         'as' => 'ProvMon.index',
         'uses' => 'Modules\ProvMon\Http\Controllers\ProvMonController@analyses',

@@ -66,7 +66,8 @@ class Product extends \BaseModel
         $bsclass = $this->get_bsclass();
 
         return ['table' => $this->table,
-            'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price', 'costcenter.name', $this->table.'.proportional'],
+            'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price',
+                'costcenter.name', $this->table.'.proportional', 'deprecated', ],
             'header' =>  $this->type.' - '.$this->name.' | '.$this->price.' €',
             'bsclass' => $bsclass,
             'eager_loading' => ['costcenter'],

@@ -32,6 +32,18 @@ class ProvMonController extends \BaseController
     }
 
     /**
+     * defines the formular fields for the edit and create view
+     */
+    public function view_form_fields($model = null)
+    {
+        return [
+            ['form_type' => 'text', 'name' => 'start_frequency', 'description' => trans('messages.start_frequency_spectrum')],
+            ['form_type' => 'text', 'name' => 'stop_frequency', 'description' => trans('messages.stop_frequency_spectrum')],
+            ['form_type' => 'text', 'name' => 'span', 'description' => trans('messages.span_spectrum')],
+        ];
+    }
+
+    /**
      * Creates tabs to analysis pages.
      *
      * @author Roy Schneider
@@ -1459,6 +1471,7 @@ class ProvMonController extends \BaseController
      */
     public function getSpectrumData($id)
     {
+        $provmon = \Modules\ProvMon\Entities\ProvMon::first();
         $provbase = ProvBase::first();
         $modem = Modem::find($id);
         $hostname = $modem->hostname;
@@ -1474,10 +1487,9 @@ class ProvMonController extends \BaseController
             // NOTE: It's actually possible that these OIDs can be set even if the modem doesn't support spectrum measurement
             // NOTE: NO RESPONSE leads to exception and message that spectrum can not be created for this modem, but it's currently [Jan 2020]
             // quite common that the SNMP server stops to respond for some time when spectrum measurement is done
-            // Set frequency span from 150 to 862 MHz with 8 MHz intervals
-            $r1 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', 154000000);
-            $r2 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', 866000000);
-            $r3 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', 8000000);
+            $r1 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', $provmon->start_frequency);
+            $r2 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', $provmon->stop_frequency);
+            $r3 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', $provmon->span);
 
             if (! $r1 || ! $r2 || ! $r3) {
                 Log::error("Set Pwr Spectrum measurement values for modem $id failed");
