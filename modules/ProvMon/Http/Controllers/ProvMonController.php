@@ -1491,9 +1491,9 @@ class ProvMonController extends \BaseController
             // NOTE: It's actually possible that these OIDs can be set even if the modem doesn't support spectrum measurement
             // NOTE: NO RESPONSE leads to exception and message that spectrum can not be created for this modem, but it's currently [Jan 2020]
             // quite common that the SNMP server stops to respond for some time when spectrum measurement is done
-            $r1 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', $provmon->start_frequency);
-            $r2 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', $provmon->stop_frequency);
-            $r3 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', $provmon->span);
+            $r1 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', $provmon->start_frequency * 1e6);
+            $r2 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', $provmon->stop_frequency * 1e6);
+            $r3 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', $provmon->span * 1e6);
 
             if (! $r1 || ! $r2 || ! $r3) {
                 Log::error("Set Pwr Spectrum measurement values for modem $id failed");
