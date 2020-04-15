@@ -921,9 +921,6 @@ class ProvMonController extends \BaseController
     public function realtimePPP($modem)
     {
         $ret = [];
-        $noop = function ($item) {
-            return $item;
-        };
 
         // Current
         $cur = $modem->radacct()->latest('radacctid')->first();
@@ -933,23 +930,23 @@ class ProvMonController extends \BaseController
 
         // Sessions
         $sessionItems = [
-            ['nasipaddress', 'NAS', $noop],
-            ['acctstarttime', 'Start', $noop],
-            ['acctupdatetime', 'Update', $noop],
-            ['acctstoptime', 'Stop', $noop],
+            ['nasipaddress', 'NAS', null],
+            ['acctstarttime', 'Start', null],
+            ['acctupdatetime', 'Update', null],
+            ['acctstoptime', 'Stop', null],
             ['acctsessiontime', 'Time', function ($item) {
                 return \Carbon\CarbonInterval::seconds($item)->cascade()->forHumans();
             }],
-            ['connectinfo_stop', 'Info', $noop],
+            ['connectinfo_stop', 'Info', null],
             ['acctinputoctets', 'In', function ($item) {
                 return humanFilesize($item);
             }],
             ['acctoutputoctets', 'Out', function ($item) {
                 return humanFilesize($item);
             }],
-            ['nasporttype', 'PortInfo', $noop],
-            ['callingstationid', 'Client', $noop],
-            ['framedipaddress', 'IP', $noop],
+            ['nasporttype', 'PortInfo', null],
+            ['callingstationid', 'Client', null],
+            ['framedipaddress', 'IP', null],
         ];
         $sessions = $modem->radacct()
             ->latest('radacctid')
@@ -959,7 +956,8 @@ class ProvMonController extends \BaseController
             }, $sessionItems));
 
         foreach ($sessionItems as $item) {
-            $ret['DT_Sessions'][$item[1]] = array_map($item[2], $sessions->pluck($item[0])->toArray());
+            $values = $sessions->pluck($item[0])->toArray();
+            $ret['DT_Sessions'][$item[1]] = $item[2] ? array_map($item[2], $values) : $values;
         }
 
         // Replies
