@@ -935,7 +935,7 @@ class ProvMonController extends \BaseController
             ['acctupdatetime', 'Update', null],
             ['acctstoptime', 'Stop', null],
             ['acctsessiontime', 'Time', function ($item) {
-                return \Carbon\CarbonInterval::seconds($item)->cascade()->forHumans();
+                return \Carbon\CarbonInterval::seconds($item)->cascade()->format('%Hh %Im %Ss');
             }],
             ['connectinfo_stop', 'Info', null],
             ['acctinputoctets', 'In', function ($item) {
@@ -944,7 +944,7 @@ class ProvMonController extends \BaseController
             ['acctoutputoctets', 'Out', function ($item) {
                 return humanFilesize($item);
             }],
-            ['nasporttype', 'PortInfo', null],
+            ['nasporttype', 'Port-Info', null],
             ['callingstationid', 'Client', null],
             ['framedipaddress', 'IP', null],
         ];
@@ -961,25 +961,37 @@ class ProvMonController extends \BaseController
         }
 
         // Replies
-        $replyItems = ['attribute', 'op', 'value'];
+        $replyItems = [
+            ['attribute', 'Attribute'],
+            ['op', 'Operand'],
+            ['value', 'Value'],
+        ];
         $replies = $modem->radusergroups()
             ->join('radgroupreply', 'radusergroup.groupname', 'radgroupreply.groupname')
-            ->get($replyItems);
+            ->get(array_map(function ($a) {
+                return $a[0];
+            }, $replyItems));
 
         foreach ($replyItems as $item) {
-            $ret['DT_Replies'][$item] = $replies->pluck($item)->toArray();
+            $ret['DT_Replies'][$item[1]] = $replies->pluck($item[0])->toArray();
         }
         // add sequence number for proper sorting
         $ret['DT_Replies'] = array_merge(['#' => array_keys(reset($ret['DT_Replies']))], $ret['DT_Replies']);
 
         // Authentications
-        $authItems = ['authdate', 'reply'];
+        $authItems = [
+            ['authdate', 'Date'],
+            ['reply', 'Reply'],
+        ];
         $auths = $modem->radpostauth()
             ->latest('id')
-            ->limit(10);
+            ->limit(10)
+            ->get(array_map(function ($a) {
+                return $a[0];
+            }, $authItems));
 
         foreach ($authItems as $item) {
-            $ret['DT_Authentications'][$item] = $auths->pluck($item)->toArray();
+            $ret['DT_Authentications'][$item[1]] = $auths->pluck($item[0])->toArray();
         }
 
         return $ret;
