@@ -98,22 +98,10 @@ class cactiCommand extends Command
                 ->where('host_template.name', '=', 'cablemodem')
                 ->pluck('host_template_graph.graph_template_id');
 
-            $tree_id = \DB::connection($this->connection)->table('graph_tree')
-                ->where('name', '=', 'cablemodem')
-                ->select('id')->first()->id;
-
             exec("php -q $path/add_device.php --description=$name --ip=$hostname --template=$host_template_id --community=$community --avail=none --version=2", $out);
             preg_match('/^Success - new device-id: \(([0-9]+)\)$/', end($out), $matches);
             if (count($matches) != 2) {
                 continue;
-            }
-
-            // add host to cabelmodem tree
-            // exec("php -q $path/add_tree.php --type=node --node-type=host --tree-id=$tree_id --host-id=$matches[1]");
-
-            // create all graphs belonging to host template cablemodem
-            foreach ($graph_template_ids as $id) {
-                exec("php -q $path/add_graphs.php --host-id=$matches[1] --graph-type=cg --graph-template-id=$id");
             }
 
             // get first RRD belonging to newly created host
