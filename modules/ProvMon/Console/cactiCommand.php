@@ -94,13 +94,25 @@ class cactiCommand extends Command
                 ->select('id')->first()->id;
 
             $graph_template_ids = \DB::connection($this->connection)->table('host_template_graph')
-                ->join('host_template', 'host_template_graph.host_template_id', '=', 'host_template.id')
-                ->where('host_template.name', '=', 'cablemodem')
-                ->pluck('host_template_graph.graph_template_id');
+                ->join('host_template', 'host_template_graph.host_template_id', 'host_template.id')
+                ->join('graph_templates', 'host_template_graph.graph_template_id', 'graph_templates.id')
+                ->where('host_template.name', 'cablemodem');
 
             exec("php -q $path/add_device.php --description=$name --ip=$hostname --template=$host_template_id --community=$community --avail=none --version=2", $out);
             preg_match('/^Success - new device-id: \(([0-9]+)\)$/', end($out), $matches);
             if (count($matches) != 2) {
+                continue;
+            }
+
+            // graph only traffic for PPP devices
+            if ($modem->isPPP()) {
+                $graph_template_ids->where('graph_templates.name', 'like', '%traffic%');
+
+                exec("php -q $path/remove_graphs.php --host-id=$matches[1] --force");
+
+                foreach ($graph_template_ids->pluck('host_template_graph.graph_template_id') as $id) {
+                    exec("php -q $path/add_graphs.php --host-id=$matches[1] --graph-type=cg --graph-template-id=$id");
+                }
                 continue;
             }
 
