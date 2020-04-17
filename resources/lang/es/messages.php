@@ -94,6 +94,7 @@ return [
     'Headend'                   => 'Cabecera',
     'House number'              => 'Numero de la casa',
     'IBAN'                      => 'IBAN',
+    'indexDeleteDisabledTitle' => 'Can only be deleted when the object is not assigned to any :relation anymore.',
     'Internet Access'           => 'Acceso a Internet',
     'Inventar Number'           => 'Número de inventario',
     'Invoice'                   => 'Factura',
