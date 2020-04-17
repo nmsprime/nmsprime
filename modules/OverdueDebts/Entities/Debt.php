@@ -196,18 +196,14 @@ class DebtObserver
     {
         $dirty = $debt->getDirty();
 
-        // Adapt missing_amount when amount or fee was changed
-        if (isset($dirty['amount'])) {
-            $debt->missing_amount += $debt->amount - $debt->getOriginal('amount');
-        }
-
         if (isset($dirty['bank_fee'])) {
             $debt->total_fee += $debt->bank_fee - $debt->getOriginal('bank_fee');
             $dirty['total_fee'] = $debt->total_fee;
         }
 
-        if (isset($dirty['total_fee'])) {
-            $debt->missing_amount += $debt->total_fee - $debt->getOriginal('total_fee');
+        // Adapt missing_amount when amount or fee was changed
+        if (isset($dirty['amount']) || isset($dirty['total_fee'])) {
+            $debt->missing_amount = $debt->amount + $debt->total_fee;
         }
     }
 
