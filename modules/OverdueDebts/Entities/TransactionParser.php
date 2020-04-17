@@ -45,7 +45,7 @@ class TransactionParser
             return;
         }
 
-        $this->engine->parse($transaction, $debt);
+        $debt = $this->engine->parse($transaction, $debt);
 
         if ($this->debtExists($debt, $transaction)) {
             return;

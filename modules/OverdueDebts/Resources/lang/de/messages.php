@@ -42,8 +42,8 @@ return [
             'missSepaInvoice' => 'Weder das SEPA-Mandat, noch die Rechnungsnummer konnten in der Datenbank gefunden werden.',
         ],
         'default' => [
-            'debit' => 'Lastschrift-Transaktion von \':holder\' mit Rechnungsnr \':invoiceNr\', SEPA-Mandatsreferenz \':mref\', Betrag :price, IBAN \':iban\' und Verwendungszweck \':reason\'',
-            'credit' => 'Überweisung von \':holder\' mit Betrag :price, IBAN \':iban\' und Verwendungszweck \':reason\'',
+            'debit' => 'Lastschrift-Transaktion vom :date von \':holder\' mit Rechnungsnr \':invoiceNr\', SEPA-Mandatsreferenz \':mref\', Betrag :price, IBAN \':iban\' und Verwendungszweck \':reason\'',
+            'credit' => 'Überweisung vom :date von \':holder\' mit Betrag :price, IBAN \':iban\' und Verwendungszweck \':reason\'',
         ],
         'exists' => 'Ignoriere Transaktion. :debitCredit wurde bereits importiert. (Betrag :price; Beschreibung :description)',
     ],

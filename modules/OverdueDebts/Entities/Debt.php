@@ -82,10 +82,8 @@ class Debt extends \BaseModel
 
         if ($this->cleared) {
             $bsclass = 'active';
-        } elseif (date('Y-m-d') > $this->due_date) {
-            $bsclass = 'danger';
         } elseif ($this->missing_amount > 0) {
-            $bsclass = 'warning';
+            $bsclass = date('Y-m-d') > $this->due_date ? 'danger' : 'warning';
         }
 
         return $bsclass;
@@ -196,18 +194,14 @@ class DebtObserver
     {
         $dirty = $debt->getDirty();
 
-        // Adapt missing_amount when amount or fee was changed
-        if (isset($dirty['amount'])) {
-            $debt->missing_amount += $debt->amount - $debt->getOriginal('amount');
-        }
-
         if (isset($dirty['bank_fee'])) {
             $debt->total_fee += $debt->bank_fee - $debt->getOriginal('bank_fee');
             $dirty['total_fee'] = $debt->total_fee;
         }
 
-        if (isset($dirty['total_fee'])) {
-            $debt->missing_amount += $debt->total_fee - $debt->getOriginal('total_fee');
+        // Adapt missing_amount when amount or fee was changed
+        if (isset($dirty['amount']) || isset($dirty['total_fee'])) {
+            $debt->missing_amount = $debt->amount + $debt->total_fee;
         }
     }
 
@@ -215,6 +209,12 @@ class DebtObserver
     {
         if (! $debt->debtObserverEnabled) {
             return;
+        }
+
+        // Clear this debt when it has payments and any of the amounts was changed
+        $payments = $debt->children;
+        if ($debt->isDirty('missing_amount') && $payments->isNotEmpty()) {
+            $this->clearCorrespondingDebt($payments->first());
         }
 
         if ($debt->isDirty('parent_id') && ! $debt->parent_id) {
@@ -280,10 +280,9 @@ class DebtObserver
         }
 
         // Update cleared flag of all payments belonging to a debt
-        $open = $debtToClear->amount;
+        $open = $debtToClear->sum();
         foreach ($payments as $payment) {
             $payment->cleared = $debtToClear->cleared;
-
             if ($debtToClear->cleared) {
                 $payment->missing_amount = 0;
             } else {
