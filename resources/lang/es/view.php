@@ -168,7 +168,7 @@ return [
     //Contract
     'Header_Salesman'           => 'Vendedores',
     'Header_Contract'           => 'Contrato|Contratos',
-    'Header_ContractInfoApartments' => 'Contracts of realty (info)',
+    'Header_ContractInfoApartment' => 'Contracts of realty (info)',
     'Header_ContractInfoRealty' => 'Información: Contrato de módems',
     'Header_EditContract'       => 'Editar contrato',
     'Header_GroupContracts'      => 'Group Contracts',
@@ -243,6 +243,8 @@ return [
     'Header_DebtResult'         => 'Total de pagos pendientes',
     'Header_Node'               => 'Nodos',
     'Header_Realty'             => 'Bienes raices',
+    'Header_SubNetElement'      => 'Subordinated Netelements',
+    'Header_tap'                => 'Controllable tap port',
 
     //Header Relation
     // 'Assigned'               => 'Zugewiesene',
