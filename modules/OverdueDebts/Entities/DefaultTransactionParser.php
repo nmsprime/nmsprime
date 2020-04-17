@@ -82,14 +82,13 @@ class DefaultTransactionParser
 
         $this->debt->date = $this->transaction->getValueTimestamp('Y-m-d H:i:s');
         $this->debt->missing_amount = $this->debt->amount + $this->debt->total_fee;
-
         $action = $transaction->getDebitCredit() == 'D' ? 'parseDebit' : 'parseCredit';
 
         $this->$action();
 
         // TODO: Dont add log entry if debt already exists
 
-        return $debt = $this->debt;
+        return $this->debt;
     }
 
     /**
