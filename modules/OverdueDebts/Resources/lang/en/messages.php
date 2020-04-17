@@ -42,8 +42,8 @@ return [
             'missSepaInvoice' => 'Neither SepaMandate nor invoice nr could be found in the database',
         ],
         'default' => [
-            'debit' => 'Debit-Transaction of \':holder\' with invoice NR \':invoiceNr\', SepaMandate reference \':mref\', price :price IBAN :iban and transfer reason \':reason\'',
-            'credit' => 'Credit transfer of :holder with price :price, IBAN :iban and transfer reason :reason',
+            'debit' => 'Debit-Transaction of :date of \':holder\' with invoice NR \':invoiceNr\', SepaMandate reference \':mref\', price :price IBAN :iban and transfer reason \':reason\'',
+            'credit' => 'Credit transfer of :date of :holder with price :price, IBAN :iban and transfer reason :reason',
         ],
         'exists' => 'Ignore :debitCredit transaction as debt was already imported. (Price :price; Description :description)',
     ],
