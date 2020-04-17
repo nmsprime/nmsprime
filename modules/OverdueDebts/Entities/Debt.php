@@ -213,6 +213,12 @@ class DebtObserver
             return;
         }
 
+        // Clear this debt when it has payments and any of the amounts was changed
+        $payments = $debt->children;
+        if ($debt->isDirty('missing_amount') && $payments->isNotEmpty()) {
+            $this->clearCorrespondingDebt($payments->first());
+        }
+
         if ($debt->isDirty('parent_id') && ! $debt->parent_id) {
             $this->clearCorrespondingDebt($debt, false, true);
 
