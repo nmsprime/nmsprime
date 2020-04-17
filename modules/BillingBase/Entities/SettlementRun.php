@@ -706,6 +706,7 @@ class SettlementRun extends \BaseModel
             //     ->orWhereIn('number', [10106]);
             // })
             // TODO: make time we have to look back dependent of CDR offset in BillingBase config
+            // TODO: Change it in CostCenter set_index_delete as well
             ->where(whereLaterOrEqual('contract_end', date('Y-m-d', strtotime('last day of sep last year'))))
             ->get();
     }
