@@ -282,10 +282,9 @@ class DebtObserver
         }
 
         // Update cleared flag of all payments belonging to a debt
-        $open = $debtToClear->amount;
+        $open = $debtToClear->sum();
         foreach ($payments as $payment) {
             $payment->cleared = $debtToClear->cleared;
-
             if ($debtToClear->cleared) {
                 $payment->missing_amount = 0;
             } else {
