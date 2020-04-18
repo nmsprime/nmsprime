@@ -951,7 +951,7 @@ class ProvMonController extends \BaseController
             ['acctupdatetime', 'Update', null],
             ['acctstoptime', 'Stop', null],
             ['acctsessiontime', 'Time', function ($item) {
-                return \Carbon\CarbonInterval::seconds($item)->cascade()->format('%Hh %Im %Ss');
+                return \Carbon\CarbonInterval::seconds($item)->cascade()->format('%dd %hh %im %ss');
             }],
             ['connectinfo_stop', 'Info', null],
             ['acctinputoctets', 'In', function ($item) {
