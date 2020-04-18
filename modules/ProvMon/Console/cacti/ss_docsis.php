@@ -58,6 +58,11 @@ function ss_docsis_ppp($hostname)
     }
     $row = $result->fetch_assoc();
 
+    // ignore counter reset on PPP session reset leading to spikes in diagrams
+    if ($row == ['acctinputoctets' => 0, 'acctoutputoctets' => 0]) {
+        return $error;
+    }
+
     return $row;
 }
 
