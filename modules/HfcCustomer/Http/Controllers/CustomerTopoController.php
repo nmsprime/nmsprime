@@ -451,7 +451,7 @@ class CustomerTopoController extends NetElementController
         $x = $y = $num = 0;
         $clrs = [];
         $str = $descr = $city = $zip = $nr = '';
-        $states = [-1 => 'offline', 'success' => 'okay', 'warning' => 'impaired', 'danger' => 'critical'];
+        $states = [-1 => 'offline', 0 => 'okay', 1 => 'impaired', 2 => 'critical'];
         $file = $this->file_pre;
         $newTab = ProvBase::first()->modem_edit_page_new_tab;
         $baseUrl = \BaseRoute::get_base_url();
@@ -505,7 +505,7 @@ class CustomerTopoController extends NetElementController
             }
 
             if ($modem->us_pwr != 0) {
-                $cur_clr = BaseViewController::getQualityColor(explode('_', $row)[0], null, explode('_', $row)[1], [$row_val]);
+                $cur_clr = BaseViewController::getQualityColor(explode('_', $row)[0], null, explode('_', $row)[1], $row_val, false);
             } else {
                 $cur_clr = -1;
             }
