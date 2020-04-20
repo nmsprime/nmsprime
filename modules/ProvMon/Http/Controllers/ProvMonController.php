@@ -232,10 +232,10 @@ class ProvMonController extends \BaseController
      * @param mixed
      * @return  string
      */
-    private function modemPicture($modem, $sysdescr)
+    private function modemPicture($modem, $realtimeValues)
     {
-        if (isset($sysdescr) && array_key_exists('measure.System.SysDescr.0', array_dot($sysdescr))) {
-            $model = $sysdescr['measure']['System']['SysDescr']['0'];
+        if (isset($realtimeValues['measure']['System']['SysDescr']['0'])) {
+            $model = $realtimeValues['measure']['System']['SysDescr']['0'];
         } else {
             $model = $modem->model;
         }
