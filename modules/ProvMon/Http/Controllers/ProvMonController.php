@@ -879,21 +879,23 @@ class ProvMonController extends \BaseController
         // colorize downstream
         foreach (['Power dBmV', 'MER dB', 'Microreflection -dBc'] as $item) {
             foreach ($ds[$item] as $key => &$value) {
-                $value = [$value, BaseViewController::getQualityColor('ds', $ds['Modulation'][$key], $item, $value)];
+                $value = [$value, BaseViewController::getQualityColor('ds', $ds['Modulation'][$key], $item, $value, true)];
             }
         }
 
         // colorize upstream
         foreach (['Power dBmV', 'SNR dB'] as $item) {
             foreach ($us[$item] as $key => &$value) {
-                $value = [$value, BaseViewController::getQualityColor('us', 'QAM64', $item, $value)];
+                $value = [$value, BaseViewController::getQualityColor('us', 'QAM64', $item, $value, true)];
             }
         }
 
         // Put Sections together
         $ret['System'] = $sys;
-        $ret['DT_Downstream'] = array_merge(['#' => array_keys(reset($ds))], $ds);
-        $ret['DT_Upstream'] = array_merge(['#' => array_keys(reset($us))], $us);
+        $keys = array_keys(reset($ds));
+        $ret['DT_Downstream'] = array_merge(['#' => array_combine($keys, $keys)], $ds);
+        $keys = array_keys(reset($us));
+        $ret['DT_Upstream'] = array_merge(['#' => array_combine($keys, $keys)], $us);
 
         return $ret;
     }
@@ -1093,7 +1095,7 @@ class ProvMonController extends \BaseController
         // colorize upstream
         foreach (['SNR dB', 'Avg Utilization %', 'Rx Power dBmV'] as $item) {
             foreach ($us[$item] as $key => &$value) {
-                $value = [$value, BaseViewController::getQualityColor('us', 'QAM64', $item, $value)];
+                $value = [$value, BaseViewController::getQualityColor('us', 'QAM64', $item, $value, true)];
             }
         }
 
