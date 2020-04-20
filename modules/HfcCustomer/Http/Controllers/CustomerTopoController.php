@@ -123,7 +123,7 @@ class CustomerTopoController extends NetElementController
 
         $modemQuery = $this->filterModel($query);
 
-        return $this->show_topo($modemQuery['selectedModel'], Request::get('row'), $modemQuery['allModels']);
+        return $this->show_topo($modemQuery['selectedModel'], $modemQuery['allModels']);
     }
 
     /*
@@ -143,7 +143,7 @@ class CustomerTopoController extends NetElementController
 
         $modemQuery = $this->filterModel($query);
 
-        return $this->show_topo($modemQuery['selectedModel'], Request::get('row'), $modemQuery['allModels']);
+        return $this->show_topo($modemQuery['selectedModel'], $modemQuery['allModels']);
     }
 
     /**
@@ -174,7 +174,7 @@ class CustomerTopoController extends NetElementController
 
         $modems = $this->filterModel($query->whereIn('modem.id', $ids));
 
-        return $this->show_topo($modems['selectedModel'], null, $modems['allModels']);
+        return $this->show_topo($modems['selectedModel'], $modems['allModels']);
     }
 
     /**
@@ -186,7 +186,7 @@ class CustomerTopoController extends NetElementController
     {
         $modems = $this->filterModel(Modem::whereIn('id', Modem::find(Request::get('id'))->proximity_search(Request::get('radius'))));
 
-        return $this->show_topo($modems['selectedModel'], Request::get('row'), $modems['allModels']);
+        return $this->show_topo($modems['selectedModel'], $modems['allModels']);
     }
 
     /**
@@ -205,7 +205,7 @@ class CustomerTopoController extends NetElementController
 
         $modemQuery = $this->filterModel($query);
 
-        return $this->show_topo($modemQuery['selectedModel'], null, $modemQuery['allModels']);
+        return $this->show_topo($modemQuery['selectedModel'], $modemQuery['allModels']);
     }
 
     /*
@@ -218,7 +218,7 @@ class CustomerTopoController extends NetElementController
     *
     * @author: Torsten Schmidt
     */
-    public function show_topo($modemQuery, $row = null, $allModels = null)
+    private function show_topo($modemQuery, $allModels = null)
     {
         $models = $allModels ?: clone $modemQuery;
         $models = $models->whereNotNull('model')->groupBy('model')->get(['model'])->pluck('model')->all();
@@ -229,9 +229,7 @@ class CustomerTopoController extends NetElementController
             return \View::make('errors.generic')->with('message', 'No Modem Entry found');
         }
 
-        if (! $row) {
-            $row = 'us_pwr';
-        }
+        $row = Request::get('row') ?: 'us_pwr';
 
         $models = [];
         foreach ($allModels ? $allModels->get() : $modems as $modem) {
