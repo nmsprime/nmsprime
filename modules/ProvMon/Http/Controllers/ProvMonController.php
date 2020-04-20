@@ -892,8 +892,10 @@ class ProvMonController extends \BaseController
 
         // Put Sections together
         $ret['System'] = $sys;
-        $ret['DT_Downstream'] = array_merge(['#' => array_keys(reset($ds))], $ds);
-        $ret['DT_Upstream'] = array_merge(['#' => array_keys(reset($us))], $us);
+        $keys = array_keys(reset($ds));
+        $ret['DT_Downstream'] = array_merge(['#' => array_combine($keys, $keys)], $ds);
+        $keys = array_keys(reset($us));
+        $ret['DT_Upstream'] = array_merge(['#' => array_combine($keys, $keys)], $us);
 
         return $ret;
     }
