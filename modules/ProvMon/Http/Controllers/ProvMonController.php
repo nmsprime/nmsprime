@@ -175,7 +175,7 @@ class ProvMonController extends \BaseController
         $flood_ping = $this->flood_ping($hostname);
 
         $tabs = $this->analysisPages($id);
-        $picture = $this->modemPicture($modem);
+        $picture = $this->modemPicture($modem, $realtime);
 
         return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
                 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device', 'picture')));
@@ -229,16 +229,23 @@ class ProvMonController extends \BaseController
      *
      * @author  Roy Schneider
      * @param Modules\ProvBase\Entities\Modem
+     * @param mixed
      * @return  string
      */
-    private function modemPicture($modem)
+    private function modemPicture($modem, $realtimeValues)
     {
+        if (isset($realtimeValues['measure']['System']['SysDescr']['0'])) {
+            $model = $realtimeValues['measure']['System']['SysDescr']['0'];
+        } else {
+            $model = $modem->model;
+        }
+
         foreach (collect(\File::allFiles(public_path(self::MODEM_IMAGE_PATH)))->sortBy(function ($file) {
             return $file->getFilename();
         }) as $file) {
             preg_match('/\d+-(.+)\..+/', $file->getFilename(), $filename);
 
-            if (isset($filename[0]) && str_contains(strtoupper($modem->model), strtoupper($filename[1]))) {
+            if (isset($filename[0]) && str_contains(strtoupper($model), strtoupper($filename[1]))) {
                 return self::MODEM_IMAGE_PATH.'/'.$file->getFilename();
             }
         }
