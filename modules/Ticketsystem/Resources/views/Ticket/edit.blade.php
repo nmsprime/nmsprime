@@ -127,8 +127,6 @@
                 },
                 methods: {
                     save(ticket_id) {
-                        console.log('Save: '+ticket_id);
-                        console.log(this.new_comment);
                         let self = this;
                         axios({
                             method: 'post',

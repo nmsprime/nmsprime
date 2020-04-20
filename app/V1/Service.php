@@ -3,8 +3,6 @@
 
 namespace App\V1;
 
-use App\Http\Controllers\NamespaceController;
-use Faker\Guesser\Name;
 use Illuminate\Events\Dispatcher;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -60,8 +58,6 @@ class Service
 
     public function delete($id)
     {
-        $model = $this->getRequestedCitie($id);
-
         $this->repository->delete($id);
 
         //TODO: Fire event of the specific event class example: TicketWasDeleted on every module modules/Ticketsystem/Events/TicketWasDeleted
