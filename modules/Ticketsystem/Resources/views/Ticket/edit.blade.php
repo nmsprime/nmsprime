@@ -5,7 +5,7 @@
     {!! $headline !!}
 
 @stop
-
+@php($edit_left_md_size = 6)
 
 @section('content_left')
     @include ('Generic.logging')
@@ -28,7 +28,7 @@
 {{--@endsection--}}
 
 @section('content_right')
-    <div id="app" class="col-lg-4">
+    <div id="app" class="col-lg-6">
         <div class="tab-content">
             <div class="tab-pane active ui-sortable" id="Edit">
                 <div class="panel panel-inverse card-2" data-sort-id="Edit-Comment">
@@ -53,18 +53,16 @@
                         </div>
                     </div>
                     <div class="panel-body fader" style="overflow-y:auto; height:100%; ">
-                        <textarea v-model="new_comment" class="form-control" placeholder="write a comment..." rows="3"></textarea>
+                        <textarea v-model="new_comment" class="form-control" placeholder="write a comment..." rows="4" style="font-size: 16px"></textarea>
                         <br>
                         <button v-on:click="save(view_var.id)" type="button" class="btn btn-primary m-r-5 m-t-15 pull-right" style="simple" name="_save" value="1" title="">
                             <i class="fa fa-save fa-lg m-r-10" aria-hidden="true"></i>
                             Save</button>
                         <div class="clearfix"></div>
                         <hr>
-                        <ul class="media-list overflow-y-scroll" style="max-height: 400px">
+                        <ul class="media-list">
                             <li v-for="comment in comments" class="media">
-                                <a href="#" class="pull-left">
-                                    <img src="https://bootdey.com/img/Content/user_1.jpg" alt="" class="img-circle">
-                                </a>
+                                <img src="{{asset('images/support-avatar.png')}}" width="50" alt="" class="mr-3 rounded-circle">
                                 <div class="media-body">
                                 <span class="text-muted pull-right">
                                     <small class="text-muted">@{{comment.created_at}}</small>
