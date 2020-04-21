@@ -177,8 +177,17 @@ class ProvMonController extends \BaseController
         $tabs = $this->analysisPages($id);
         $picture = $this->modemPicture($modem, $realtime);
 
+        $pills = ['<ul class="nav nav-pills" id="loglease">'];
+        foreach (['log', 'lease', 'configfile', 'eventlog'] as $pill) {
+            if ($$pill) {
+                $pills[] = "<li role=\"presentation\"><a href=\"#$pill\" data-toggle=\"pill\">".ucfirst($pill).'</a></li>';
+            }
+        }
+        $pills[] = '</ul>';
+        $pills = implode('', $pills);
+
         return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
-                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device', 'picture')));
+                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device', 'picture', 'pills')));
     }
 
     /**

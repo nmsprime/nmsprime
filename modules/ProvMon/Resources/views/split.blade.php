@@ -26,13 +26,7 @@
                 <li role="presentation"><a href="#ping-test" data-toggle="pill">Default Ping</a></li>
                 <li role="presentation"><a href="#flood-ping" data-toggle="pill">Flood-Ping</a></li>
             </ul>', 'i' => 4))
-        @include ('bootstrap.panel', array ('content' => 'content_log', 'view_header' =>
-            '<ul class="nav nav-pills" id="loglease">
-                <li role="presentation"><a href="#log" data-toggle="pill">Log</a></li>
-                <li role="presentation"><a href="#lease" data-toggle="pill">Lease</a></li>
-                <li role="presentation"><a href="#configfile" data-toggle="pill">Configfile</a></li>
-                <li role="presentation"><a href="#eventlog" data-toggle="pill">Eventlog</a></li>
-            </ul>', 'i' => 5))
+        @include ('bootstrap.panel', array ('content' => 'content_log', 'view_header' => $pills, 'i' => 5))
         @if (\Module::collections()->has('HfcCustomer'))
             @include ('bootstrap.panel', array ('content' => 'content_proximity_search', 'view_header' => trans('messages.proximity'), 'i' => 6))
         @endif
