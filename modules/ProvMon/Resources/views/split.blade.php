@@ -38,9 +38,11 @@
         @endif
     </div>
 
-    <div class="col-md-12 ui-sortable">
-        @include ('bootstrap.panel', array ('content' => 'spectrum-analysis', 'view_header' => trans('messages.spectrum'),  'i' => '7'))
-    </div>
+    @if (! $modem->isPPP())
+        <div class="col-md-12 ui-sortable">
+            @include ('bootstrap.panel', array ('content' => 'spectrum-analysis', 'view_header' => trans('messages.spectrum'),  'i' => '7'))
+        </div>
+    @endif
 
 </div>
 
