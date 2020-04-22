@@ -156,9 +156,9 @@ class ProvMonController extends \BaseController
                     $eventlog = $modem->get_eventlog();
                 }
             }
-            $realtime['measure'] = $measure;
-            $realtime['forecast'] = '';
         }
+        $realtime['measure'] = $measure;
+        $realtime['forecast'] = '';
 
         $device = \Modules\ProvBase\Entities\Configfile::where('id', $modem->configfile_id)->first()->device;
         // time of this function should be observed - can take a huge time as well
@@ -204,8 +204,9 @@ class ProvMonController extends \BaseController
         $ip = ($ip == $hostname) ? null : $ip;
 
         if ($modem->isPPP()) {
-            if ($acct = $modem->radacct()->latest('radacctid')->first()) {
-                $ip = $hostname = $acct->framedipaddress;
+            $cur = $modem->radacct()->latest('radacctid')->first();
+            if ($cur && ! $cur->acctstoptime) {
+                $ip = $hostname = $cur->framedipaddress;
             }
 
             // workaround for tr069 devices, which block ICMP requests,
