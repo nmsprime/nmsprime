@@ -962,30 +962,28 @@ class ProvMonController extends \BaseController
 
         // Current
         $cur = $modem->radacct()->latest('radacctid')->first();
-        if ($cur) {
+        if ($cur && ! $cur->acctstoptime) {
             $ret['DT_Current Session']['Start'] = [$cur->acctstarttime];
-            $ret['DT_Current Session']['Update'] = [$cur->acctupdatetime];
-            $ret['DT_Current Session']['Stop'] = $cur->acctstoptime ? [$cur->acctstoptime] : ['ongoing'];
+            $ret['DT_Current Session']['Last Update'] = [$cur->acctupdatetime];
+            $ret['DT_Current Session']['BRAS IP'] = [$cur->nasipaddress];
         }
 
         // Sessions
         $sessionItems = [
-            ['nasipaddress', 'NAS', null],
             ['acctstarttime', 'Start', null],
-            ['acctupdatetime', 'Update', null],
             ['acctstoptime', 'Stop', null],
-            ['acctsessiontime', 'Time', function ($item) {
-                return \Carbon\CarbonInterval::seconds($item)->cascade()->format('%dd %hh %im %ss');
+            ['acctsessiontime', 'Duration', function ($item) {
+                return \Carbon\CarbonInterval::seconds($item)->cascade()->format('%dd %Hh %Im %Ss');
             }],
-            ['connectinfo_stop', 'Info', null],
+            ['acctterminatecause', 'Stop Info', null],
             ['acctinputoctets', 'In', function ($item) {
                 return humanFilesize($item);
             }],
             ['acctoutputoctets', 'Out', function ($item) {
                 return humanFilesize($item);
             }],
-            ['nasporttype', 'Port-Info', null],
-            ['callingstationid', 'Client', null],
+            ['nasportid', 'Port', null],
+            ['callingstationid', 'MAC', null],
             ['framedipaddress', 'IP', null],
         ];
         $sessions = $modem->radacct()
