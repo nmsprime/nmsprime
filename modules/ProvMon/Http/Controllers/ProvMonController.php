@@ -963,9 +963,9 @@ class ProvMonController extends \BaseController
         // Current
         $cur = $modem->radacct()->latest('radacctid')->first();
         if ($cur) {
-            $ret['Current Session']['Start'] = [$cur->acctstarttime];
-            $ret['Current Session']['Update'] = [$cur->acctupdatetime];
-            $ret['Current Session']['Stop'] = $cur->acctstoptime ? [$cur->acctstoptime] : ['open'];
+            $ret['DT_Current Session']['Start'] = [$cur->acctstarttime];
+            $ret['DT_Current Session']['Update'] = [$cur->acctupdatetime];
+            $ret['DT_Current Session']['Stop'] = $cur->acctstoptime ? [$cur->acctstoptime] : ['ongoing'];
         }
 
         // Sessions
