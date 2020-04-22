@@ -316,7 +316,6 @@
 			paging: false,
 			info: false,
 			searching: false,
-			order: [[ 1, 'desc' ]],
 			aoColumnDefs: [ {
 	            className: 'control',
 	            orderable: false,
