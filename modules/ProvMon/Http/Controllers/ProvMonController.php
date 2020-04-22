@@ -137,19 +137,19 @@ class ProvMonController extends \BaseController
             $online = false;
         }
 
+        // this can be done irrespective of device online state
+        $measure = $this->realtimePPP($modem);
+
         if ($online) {
             if ($modemConfigfileStatus = $this->modemConfigfileStatus($modem)) {
                 $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
             }
 
             if ($modem->isTR069()) {
-                $measure = $this->realtimeTR069($modem, false);
-                if ($modem->isPPP()) {
-                    $measure = array_merge($measure, $this->realtimePPP($modem));
-                }
+                $measure = array_merge($this->realtimeTR069($modem, false), $measure);
             } else {
                 // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
-                $measure = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
+                $measure = array_merge($this->realtime($hostname, ProvBase::first()->ro_community, $ip, false), $measure);
 
                 // get eventlog table
                 if (! array_key_exists('SNMP-Server not reachable', $measure)) {
@@ -952,15 +952,21 @@ class ProvMonController extends \BaseController
      *
      * @author Ole Ernst
      */
-    public function realtimePPP($modem)
+    private function realtimePPP($modem)
     {
         $ret = [];
 
+        if (! $modem->isPPP()) {
+            return $ret;
+        }
+
         // Current
         $cur = $modem->radacct()->latest('radacctid')->first();
-        $ret['Current Session']['Start'] = [$cur->acctstarttime];
-        $ret['Current Session']['Update'] = [$cur->acctupdatetime];
-        $ret['Current Session']['Stop'] = $cur->acctstoptime ? [$cur->acctstoptime] : ['open'];
+        if ($cur) {
+            $ret['Current Session']['Start'] = [$cur->acctstarttime];
+            $ret['Current Session']['Update'] = [$cur->acctupdatetime];
+            $ret['Current Session']['Stop'] = $cur->acctstoptime ? [$cur->acctstoptime] : ['open'];
+        }
 
         // Sessions
         $sessionItems = [
