@@ -137,28 +137,28 @@ class ProvMonController extends \BaseController
             $online = false;
         }
 
+        // this can be done irrespective of device online state
+        $measure = $this->realtimePPP($modem);
+
         if ($online) {
             if ($modemConfigfileStatus = $this->modemConfigfileStatus($modem)) {
                 $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
             }
 
             if ($modem->isTR069()) {
-                $measure = $this->realtimeTR069($modem, false);
-                if ($modem->isPPP()) {
-                    $measure = array_merge($measure, $this->realtimePPP($modem));
-                }
+                $measure = array_merge($this->realtimeTR069($modem, false), $measure);
             } else {
                 // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
-                $measure = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
+                $measure = array_merge($this->realtime($hostname, ProvBase::first()->ro_community, $ip, false), $measure);
 
                 // get eventlog table
                 if (! array_key_exists('SNMP-Server not reachable', $measure)) {
                     $eventlog = $modem->get_eventlog();
                 }
             }
-            $realtime['measure'] = $measure;
-            $realtime['forecast'] = '';
         }
+        $realtime['measure'] = $measure;
+        $realtime['forecast'] = '';
 
         $device = \Modules\ProvBase\Entities\Configfile::where('id', $modem->configfile_id)->first()->device;
         // time of this function should be observed - can take a huge time as well
@@ -177,8 +177,17 @@ class ProvMonController extends \BaseController
         $tabs = $this->analysisPages($id);
         $picture = $this->modemPicture($modem, $realtime);
 
+        $pills = ['<ul class="nav nav-pills" id="loglease">'];
+        foreach (['log', 'lease', 'configfile', 'eventlog'] as $pill) {
+            if ($$pill) {
+                $pills[] = "<li role=\"presentation\"><a href=\"#$pill\" data-toggle=\"pill\">".ucfirst($pill).'</a></li>';
+            }
+        }
+        $pills[] = '</ul>';
+        $pills = implode('', $pills);
+
         return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
-                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device', 'picture')));
+                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device', 'picture', 'pills')));
     }
 
     /**
@@ -195,8 +204,9 @@ class ProvMonController extends \BaseController
         $ip = ($ip == $hostname) ? null : $ip;
 
         if ($modem->isPPP()) {
-            if ($acct = $modem->radacct()->latest('radacctid')->first()) {
-                $ip = $hostname = $acct->framedipaddress;
+            $cur = $modem->radacct()->latest('radacctid')->first();
+            if ($cur && ! $cur->acctstoptime) {
+                $ip = $hostname = $cur->framedipaddress;
             }
 
             // workaround for tr069 devices, which block ICMP requests,
@@ -943,34 +953,38 @@ class ProvMonController extends \BaseController
      *
      * @author Ole Ernst
      */
-    public function realtimePPP($modem)
+    private function realtimePPP($modem)
     {
         $ret = [];
 
+        if (! $modem->isPPP()) {
+            return $ret;
+        }
+
         // Current
         $cur = $modem->radacct()->latest('radacctid')->first();
-        $ret['Current Session']['Start'] = [$cur->acctstarttime];
-        $ret['Current Session']['Update'] = [$cur->acctupdatetime];
-        $ret['Current Session']['Stop'] = $cur->acctstoptime ? [$cur->acctstoptime] : ['open'];
+        if ($cur && ! $cur->acctstoptime) {
+            $ret['DT_Current Session']['Start'] = [$cur->acctstarttime];
+            $ret['DT_Current Session']['Last Update'] = [$cur->acctupdatetime];
+            $ret['DT_Current Session']['BRAS IP'] = [$cur->nasipaddress];
+        }
 
         // Sessions
         $sessionItems = [
-            ['nasipaddress', 'NAS', null],
             ['acctstarttime', 'Start', null],
-            ['acctupdatetime', 'Update', null],
             ['acctstoptime', 'Stop', null],
-            ['acctsessiontime', 'Time', function ($item) {
-                return \Carbon\CarbonInterval::seconds($item)->cascade()->format('%dd %hh %im %ss');
+            ['acctsessiontime', 'Duration', function ($item) {
+                return \Carbon\CarbonInterval::seconds($item)->cascade()->format('%dd %Hh %Im %Ss');
             }],
-            ['connectinfo_stop', 'Info', null],
+            ['acctterminatecause', 'Stop Info', null],
             ['acctinputoctets', 'In', function ($item) {
                 return humanFilesize($item);
             }],
             ['acctoutputoctets', 'Out', function ($item) {
                 return humanFilesize($item);
             }],
-            ['nasporttype', 'Port-Info', null],
-            ['callingstationid', 'Client', null],
+            ['nasportid', 'Port', null],
+            ['callingstationid', 'MAC', null],
             ['framedipaddress', 'IP', null],
         ];
         $sessions = $modem->radacct()
