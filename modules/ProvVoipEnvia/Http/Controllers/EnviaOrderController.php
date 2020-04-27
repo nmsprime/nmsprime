@@ -217,7 +217,7 @@ class EnviaOrderController extends \BaseController
      *
      * @author Patrick Reichel
      */
-    protected function _get_additional_data_for_edit_view($model)
+    protected function getAdditionalDataForEditView($model)
     {
         $additional_data = [
             'user_actions' => $model->get_user_action_information(),
