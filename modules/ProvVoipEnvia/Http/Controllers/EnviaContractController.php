@@ -77,7 +77,7 @@ class EnviaContractController extends \BaseController
      *
      * @author Patrick Reichel
      */
-    protected function _get_additional_data_for_edit_view($model)
+    protected function getAdditionalDataForEditView($model)
     {
         $additional_data = [
             'relations' => $model->get_relation_information(),
