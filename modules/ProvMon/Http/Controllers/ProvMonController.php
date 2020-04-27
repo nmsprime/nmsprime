@@ -107,8 +107,7 @@ class ProvMonController extends \BaseController
 
         $modem = $this->modem ?? Modem::find($id);
         $mac = strtolower($modem->mac);
-        $hostname = $modem->hostname.'.'.$this->domain_name;
-        $onlineStatus = $this->modemOnlineStatus($modem, $hostname);
+        $onlineStatus = $this->modemOnlineStatus($modem);
 
         $modem->help = 'modem_analysis';
         $view_var = $modem;
@@ -149,7 +148,7 @@ class ProvMonController extends \BaseController
                 $measure = array_merge($this->realtimeTR069($modem, false), $measure);
             } else {
                 // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
-                $measure = array_merge($this->realtime($hostname, ProvBase::first()->ro_community, $ip, false), $measure);
+                $measure = array_merge($this->realtime($ip, ProvBase::first()->ro_community), $measure);
 
                 // get eventlog table
                 if (! array_key_exists('SNMP-Server not reachable', $measure)) {
@@ -172,7 +171,7 @@ class ProvMonController extends \BaseController
         $lease['text'] = $this->searchLease("hardware ethernet $mac");
         $lease = $this->validate_lease($lease);
         $host_id = $this->monitoring_get_host_id($modem);
-        $flood_ping = $this->flood_ping($hostname);
+        $flood_ping = $this->flood_ping($ip);
 
         $tabs = $this->analysisPages($id);
         $picture = $this->modemPicture($modem, $realtime);
@@ -198,8 +197,9 @@ class ProvMonController extends \BaseController
      * @param   hostname    string
      * @return  array
      */
-    public function modemOnlineStatus($modem, $hostname)
+    private function modemOnlineStatus($modem)
     {
+        $hostname = $modem->hostname.'.'.$this->domain_name;
         $ip = gethostbyname($hostname);
         $ip = ($ip == $hostname) ? null : $ip;
 
@@ -806,20 +806,18 @@ class ProvMonController extends \BaseController
      * - add units like (dBmV, MHz, ..)
      * - speed-up: use SNMP::get with multiple gets in one request. Test if this speeds up stuff (?)
      *
-     * @param host:  The Modem hostname like cm-xyz.abc.de
+     * @param ip:    IP address of modem
      * @param com:   SNMP RO community
-     * @param ip: 	 IP address of modem
-     * @param cacti: Is function called by cacti?
      * @return: array[section][Fieldname][Values]
      */
-    public function realtime($host, $com, $ip, $cacti)
+    private function realtime($ip, $com)
     {
         // Copy from SnmpController
         $this->snmp_def_mode();
 
         try {
             // First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
-            $docsis = snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
+            $docsis = snmpget($ip, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
         } catch (\Exception $e) {
             if (strpos($e->getMessage(), 'php_network_getaddresses: getaddrinfo failed: Name or service not known') !== false ||
                 strpos($e->getMessage(), 'No response from') !== false) {
@@ -831,35 +829,33 @@ class ProvMonController extends \BaseController
 
         $netgw = Modem::get_netgw($ip);
         $sys = [];
-        // these values are not important for cacti, so only retrieve them on the analysis page
-        if (! $cacti) {
-            $sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')];
-            $sys['Firmware'] = [snmpget($host, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
-            $sys['Uptime'] = [$this->_secondsToTime(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
-            $sys['Status Code'] = [snmpget($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.2.2')];
-            $sys['DOCSIS'] = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
-            $sys['NetGw'] = [$netgw->hostname];
-            $ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
-            $us['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2'), 1000000);
-            //$us['Modulation'] = $this->_docsis_modulation($netgw->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
-        }
+
+        $sys['SysDescr'] = [snmpget($ip, $com, '.1.3.6.1.2.1.1.1.0')];
+        $sys['Firmware'] = [snmpget($ip, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
+        $sys['Uptime'] = [$this->_secondsToTime(snmpget($ip, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
+        $sys['Status Code'] = [snmpget($ip, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.2.2')];
+        $sys['DOCSIS'] = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
+        $sys['NetGw'] = [$netgw->hostname];
+        $ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
+        $us['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2'), 1000000);
+        //$us['Modulation'] = $this->_docsis_modulation($netgw->get_us_mods(snmpwalk($ip, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
 
         // Downstream
-        $ds['Modulation'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
-        $ds['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));
+        $ds['Modulation'] = $this->_docsis_modulation(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
+        $ds['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));
         try {
-            $ds['MER dB'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.24.1.1'));
+            $ds['MER dB'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.24.1.1'));
         } catch (\Exception $e) {
-            $ds['MER dB'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
+            $ds['MER dB'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
         }
-        $ds['Microreflection -dBc'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6');
+        $ds['Microreflection -dBc'] = snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6');
 
         // Upstream
-        $us['Width MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'), 1000000);
+        $us['Width MHz'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'), 1000000);
         if ($docsis >= 4) {
-            $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
+            $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
         } else {
-            $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
+            $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
         }
 
         $snrs = $netgw->get_us_snr($ip);
@@ -877,7 +873,7 @@ class ProvMonController extends \BaseController
         }
 
         if ($docsis >= 4) {
-            foreach (snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9') as $key => $val) {
+            foreach (snmpwalk($ip, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9') as $key => $val) {
                 if ($val != 4) {
                     foreach ($us as $entry => $arr) {
                         unset($us[$entry][$key]);
