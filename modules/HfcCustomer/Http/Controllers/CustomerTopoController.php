@@ -346,7 +346,7 @@ class CustomerTopoController extends NetElementController
         $monitoring = [];
         $provmon = new \Modules\ProvMon\Http\Controllers\ProvMonController;
         $before = microtime(true);
-        $types = ['ds_pwr', 'ds_snr', 'us_snr', 'us_pwr'];
+        $types = array_sort(array_keys(config('hfcreq.hfParameters')));
 
         $modems = $modemQuery->orderBy('city')->orderBy('street')->orderBy('house_number')->get();
 
