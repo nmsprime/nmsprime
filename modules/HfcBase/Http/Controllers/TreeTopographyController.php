@@ -331,7 +331,7 @@ class TreeTopographyController extends HfcBaseController
     {
         return "
 
-        <kml xmlns=\"http://earth.google.com/kml/2.2\">
+        <kml xmlns=\"https://www.opengis.net/kml/2.2\">
         <Document>
             <name>mbg - amplifier</name>
 
