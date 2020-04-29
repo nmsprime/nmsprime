@@ -10,6 +10,7 @@ use Modules\ProvBase\Entities\NetGw;
 use Modules\HfcReq\Entities\NetElement;
 use Modules\ProvBase\Entities\ProvBase;
 use Modules\ProvBase\Entities\Configfile;
+use App\Http\Controllers\BaseViewController;
 
 /**
  * This is the Basic Stuff for Modem Analyses Page
@@ -20,6 +21,7 @@ use Modules\ProvBase\Entities\Configfile;
  */
 class ProvMonController extends \BaseController
 {
+    const MODEM_IMAGE_PATH = 'images/modems';
     protected $domain_name = '';
     protected $modem = null;
     protected $edit_left_md_size = 12;
@@ -28,6 +30,18 @@ class ProvMonController extends \BaseController
     {
         $this->domain_name = ProvBase::first()->domain_name;
         parent::__construct();
+    }
+
+    /**
+     * defines the formular fields for the edit and create view
+     */
+    public function view_form_fields($model = null)
+    {
+        return [
+            ['form_type' => 'text', 'name' => 'start_frequency', 'description' => trans('messages.start_frequency_spectrum')],
+            ['form_type' => 'text', 'name' => 'stop_frequency', 'description' => trans('messages.stop_frequency_spectrum')],
+            ['form_type' => 'text', 'name' => 'span', 'description' => trans('messages.span_spectrum')],
+        ];
     }
 
     /**
@@ -93,8 +107,7 @@ class ProvMonController extends \BaseController
 
         $modem = $this->modem ?? Modem::find($id);
         $mac = strtolower($modem->mac);
-        $hostname = $modem->hostname.'.'.$this->domain_name;
-        $onlineStatus = $this->modemOnlineStatus($modem, $hostname);
+        $onlineStatus = $this->modemOnlineStatus($modem);
 
         $modem->help = 'modem_analysis';
         $view_var = $modem;
@@ -119,24 +132,32 @@ class ProvMonController extends \BaseController
 
         $realtime = $eventlog = null;
 
+        if (\Request::has('offline')) {
+            $online = false;
+        }
+
+        // this can be done irrespective of device online state
+        $measure = $this->realtimePPP($modem);
+
         if ($online) {
             if ($modemConfigfileStatus = $this->modemConfigfileStatus($modem)) {
                 $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
             }
 
             if ($modem->isTR069()) {
-                $realtime['measure'] = $this->realtimeTR069($modem, false);
+                $measure = array_merge($this->realtimeTR069($modem, false), $measure);
             } else {
                 // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
-                $realtime['measure'] = $this->realtime($hostname, ProvBase::first()->ro_community, $ip, false);
+                $measure = array_merge($this->realtime($ip, ProvBase::first()->ro_community), $measure);
 
                 // get eventlog table
-                if (! array_key_exists('SNMP-Server not reachable', $realtime['measure'])) {
+                if (! array_key_exists('SNMP-Server not reachable', $measure)) {
                     $eventlog = $modem->get_eventlog();
                 }
             }
-            $realtime['forecast'] = 'TODO';
         }
+        $realtime['measure'] = $measure;
+        $realtime['forecast'] = '';
 
         $device = \Modules\ProvBase\Entities\Configfile::where('id', $modem->configfile_id)->first()->device;
         // time of this function should be observed - can take a huge time as well
@@ -147,15 +168,25 @@ class ProvMonController extends \BaseController
         $search = $ip ? "$mac|$modem->hostname[^0-9]|$ip " : "$mac|$modem->hostname[^0-9]";
 
         $log = $this->_get_syslog_entries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
-        $lease['text'] = $this->search_lease('hardware ethernet '.$mac);
+        $lease['text'] = $this->searchLease("hardware ethernet $mac");
         $lease = $this->validate_lease($lease);
         $host_id = $this->monitoring_get_host_id($modem);
-        $flood_ping = $this->flood_ping($hostname);
+        $flood_ping = $this->flood_ping($ip);
 
         $tabs = $this->analysisPages($id);
+        $picture = $this->modemPicture($modem, $realtime);
+
+        $pills = ['<ul class="nav nav-pills" id="loglease">'];
+        foreach (['log', 'lease', 'configfile', 'eventlog'] as $pill) {
+            if ($$pill) {
+                $pills[] = "<li role=\"presentation\"><a href=\"#$pill\" data-toggle=\"pill\">".ucfirst($pill).'</a></li>';
+            }
+        }
+        $pills[] = '</ul>';
+        $pills = implode('', $pills);
 
         return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile',
-                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device')));
+                'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'data', 'id', 'device', 'picture', 'pills')));
     }
 
     /**
@@ -166,26 +197,16 @@ class ProvMonController extends \BaseController
      * @param   hostname    string
      * @return  array
      */
-    public function modemOnlineStatus($modem, $hostname)
+    private function modemOnlineStatus($modem)
     {
+        $hostname = $modem->hostname.'.'.$this->domain_name;
         $ip = gethostbyname($hostname);
         $ip = ($ip == $hostname) ? null : $ip;
 
-        if ($modem->isTR069()) {
-            foreach (['Device', 'InternetGatewayDevice'] as $dev) {
-                $model = $modem->getGenieAcsModel("$dev.ManagementServer.ConnectionRequestURL");
-
-                if (! $model) {
-                    continue;
-                }
-
-                if (preg_match('/https?:\/\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $model->_value, $match) != 1) {
-                    continue;
-                }
-
-                $ip = $hostname = $match[1];
-
-                break;
+        if ($modem->isPPP()) {
+            $cur = $modem->radacct()->latest('radacctid')->first();
+            if ($cur && ! $cur->acctstoptime) {
+                $ip = $hostname = $cur->framedipaddress;
             }
 
             // workaround for tr069 devices, which block ICMP requests,
@@ -211,6 +232,35 @@ class ProvMonController extends \BaseController
         exec('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
 
         return ['ip' => $ip, 'online' => $ret ? false : true];
+    }
+
+    /**
+     * Find matching picture of modem.model.
+     *
+     * @author  Roy Schneider
+     * @param Modules\ProvBase\Entities\Modem
+     * @param mixed
+     * @return  string
+     */
+    private function modemPicture($modem, $realtimeValues)
+    {
+        if (isset($realtimeValues['measure']['System']['SysDescr']['0'])) {
+            $model = $realtimeValues['measure']['System']['SysDescr']['0'];
+        } else {
+            $model = $modem->model;
+        }
+
+        foreach (collect(\File::allFiles(public_path(self::MODEM_IMAGE_PATH)))->sortBy(function ($file) {
+            return $file->getFilename();
+        }) as $file) {
+            preg_match('/\d+-(.+)\..+/', $file->getFilename(), $filename);
+
+            if (isset($filename[0]) && str_contains(strtoupper($model), strtoupper($filename[1]))) {
+                return self::MODEM_IMAGE_PATH.'/'.$file->getFilename();
+            }
+        }
+
+        return self::MODEM_IMAGE_PATH.'/default.webp';
     }
 
     /**
@@ -471,7 +521,14 @@ class ProvMonController extends \BaseController
         $modem->help = 'cpe_analysis';
 
         // Lease
-        $lease['text'] = $this->search_lease('billing subclass', $modem_mac);
+        $dhcpd_mac = implode(':', array_map(function ($byte) {
+            if ($byte == '00') {
+                return '0';
+            }
+
+            return ltrim($byte, '0');
+        }, explode(':', $modem_mac)));
+        $lease['text'] = $this->searchLease("billing subclass \"Client\" \"$dhcpd_mac\";");
         $lease = $this->validate_lease($lease, $type);
 
         $ep = $modem->endpoints()->first();
@@ -575,7 +632,7 @@ class ProvMonController extends \BaseController
         }
 
         // lease
-        $lease['text'] = $this->search_lease('mta-'.$mta->id);
+        $lease['text'] = $this->searchLease("mta-$mta->id");
         $lease = $this->validate_lease($lease, $type);
 
         // configfile
@@ -615,8 +672,8 @@ class ProvMonController extends \BaseController
 
         // Realtime Measure
         if (count($ping) == 10) { // only fetch realtime values if all pings are successfull
-            $realtime['measure'] = $this->realtime_netgw($netgw, $netgw->get_ro_community());
-            $realtime['forecast'] = 'TODO';
+            $realtime['measure'] = $this->realtimeNetgw($netgw, $netgw->get_ro_community());
+            $realtime['forecast'] = '';
         }
 
         $host_id = $this->monitoring_get_host_id($netgw);
@@ -749,20 +806,18 @@ class ProvMonController extends \BaseController
      * - add units like (dBmV, MHz, ..)
      * - speed-up: use SNMP::get with multiple gets in one request. Test if this speeds up stuff (?)
      *
-     * @param host:  The Modem hostname like cm-xyz.abc.de
+     * @param ip:    IP address of modem
      * @param com:   SNMP RO community
-     * @param ip: 	 IP address of modem
-     * @param cacti: Is function called by cacti?
      * @return: array[section][Fieldname][Values]
      */
-    public function realtime($host, $com, $ip, $cacti)
+    private function realtime($ip, $com)
     {
         // Copy from SnmpController
         $this->snmp_def_mode();
 
         try {
             // First: get docsis mode, some MIBs depend on special DOCSIS version so we better check it first
-            $docsis = snmpget($host, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
+            $docsis = snmpget($ip, $com, '1.3.6.1.2.1.10.127.1.1.5.0'); // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
         } catch (\Exception $e) {
             if (strpos($e->getMessage(), 'php_network_getaddresses: getaddrinfo failed: Name or service not known') !== false ||
                 strpos($e->getMessage(), 'No response from') !== false) {
@@ -774,35 +829,33 @@ class ProvMonController extends \BaseController
 
         $netgw = Modem::get_netgw($ip);
         $sys = [];
-        // these values are not important for cacti, so only retrieve them on the analysis page
-        if (! $cacti) {
-            $sys['SysDescr'] = [snmpget($host, $com, '.1.3.6.1.2.1.1.1.0')];
-            $sys['Firmware'] = [snmpget($host, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
-            $sys['Uptime'] = [$this->_secondsToTime(snmpget($host, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
-            $sys['Status Code'] = [snmpget($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.2.2')];
-            $sys['DOCSIS'] = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
-            $sys['NetGw'] = [$netgw->hostname];
-            $ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
-            $us['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2'), 1000000);
-            $us['Modulation Profile'] = $this->_docsis_modulation($netgw->get_us_mods(snmpwalk($host, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
-        }
+
+        $sys['SysDescr'] = [snmpget($ip, $com, '.1.3.6.1.2.1.1.1.0')];
+        $sys['Firmware'] = [snmpget($ip, $com, '.1.3.6.1.2.1.69.1.3.5.0')];
+        $sys['Uptime'] = [$this->_secondsToTime(snmpget($ip, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
+        $sys['Status Code'] = [snmpget($ip, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.2.2')];
+        $sys['DOCSIS'] = [$this->_docsis_mode($docsis)]; // TODO: translate to DOCSIS version
+        $sys['NetGw'] = [$netgw->hostname];
+        $ds['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.2'), 1000000);
+        $us['Frequency MHz'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2'), 1000000);
+        //$us['Modulation'] = $this->_docsis_modulation($netgw->get_us_mods(snmpwalk($ip, $com, '1.3.6.1.2.1.10.127.1.1.2.1.1')), 'us');
 
         // Downstream
-        $ds['Modulation'] = $this->_docsis_modulation(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
-        $ds['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));
+        $ds['Modulation'] = $this->_docsis_modulation(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.4'), 'ds');
+        $ds['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.1.1.6'));
         try {
-            $ds['MER dB'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.24.1.1'));
+            $ds['MER dB'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.24.1.1'));
         } catch (\Exception $e) {
-            $ds['MER dB'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
+            $ds['MER dB'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.5'));
         }
-        $ds['Microreflection -dBc'] = snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6');
+        $ds['Microreflection -dBc'] = snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.4.1.6');
 
         // Upstream
-        $us['Width MHz'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'), 1000000);
+        $us['Width MHz'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.3'), 1000000);
         if ($docsis >= 4) {
-            $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
+            $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1'));
         } else {
-            $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($host, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
+            $us['Power dBmV'] = ArrayHelper::ArrayDiv(snmpwalk($ip, $com, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2'));
         }
 
         $snrs = $netgw->get_us_snr($ip);
@@ -820,7 +873,7 @@ class ProvMonController extends \BaseController
         }
 
         if ($docsis >= 4) {
-            foreach (snmpwalk($host, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9') as $key => $val) {
+            foreach (snmpwalk($ip, $com, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9') as $key => $val) {
                 if ($val != 4) {
                     foreach ($us as $entry => $arr) {
                         unset($us[$entry][$key]);
@@ -829,10 +882,26 @@ class ProvMonController extends \BaseController
             }
         }
 
+        // colorize downstream
+        foreach (['Power dBmV', 'MER dB', 'Microreflection -dBc'] as $item) {
+            foreach ($ds[$item] as $key => &$value) {
+                $value = [$value, BaseViewController::getQualityColor('ds', $ds['Modulation'][$key], $item, $value, true)];
+            }
+        }
+
+        // colorize upstream
+        foreach (['Power dBmV', 'SNR dB'] as $item) {
+            foreach ($us[$item] as $key => &$value) {
+                $value = [$value, BaseViewController::getQualityColor('us', 'QAM64', $item, $value, true)];
+            }
+        }
+
         // Put Sections together
         $ret['System'] = $sys;
-        $ret['Downstream'] = $ds;
-        $ret['Upstream'] = $us;
+        $keys = array_keys(reset($ds));
+        $ret['DT_Downstream'] = array_merge(['#' => array_combine($keys, $keys)], $ds);
+        $keys = array_keys(reset($us));
+        $ret['DT_Upstream'] = array_merge(['#' => array_combine($keys, $keys)], $us);
 
         return $ret;
     }
@@ -842,7 +911,7 @@ class ProvMonController extends \BaseController
      *
      * @param modem: modem object
      * @param refresh: bool refresh values from device instead of using cached ones
-     * @return array[section][Fieldname][Values]
+     * @return mixed
      *
      * @author Ole Ernst
      */
@@ -850,7 +919,7 @@ class ProvMonController extends \BaseController
     {
         $mon = $modem->configfile->getMonitoringConfig();
         if (! $mon) {
-            return ['SNMP-Server not reachable' => ['' => ['']]];
+            return [];
         }
 
         if ($refresh) {
@@ -873,6 +942,97 @@ class ProvMonController extends \BaseController
     }
 
     /**
+     * Fetch realtime values via FreeRADIUS database
+     *
+     * @param modem: modem object
+     * @return array[section][Fieldname][Values]
+     *
+     * @author Ole Ernst
+     */
+    private function realtimePPP($modem)
+    {
+        $ret = [];
+
+        if (! $modem->isPPP()) {
+            return $ret;
+        }
+
+        // Current
+        $cur = $modem->radacct()->latest('radacctid')->first();
+        if ($cur && ! $cur->acctstoptime) {
+            $ret['DT_Current Session']['Start'] = [$cur->acctstarttime];
+            $ret['DT_Current Session']['Last Update'] = [$cur->acctupdatetime];
+            $ret['DT_Current Session']['BRAS IP'] = [$cur->nasipaddress];
+        }
+
+        // Sessions
+        $sessionItems = [
+            ['acctstarttime', 'Start', null],
+            ['acctstoptime', 'Stop', null],
+            ['acctsessiontime', 'Duration', function ($item) {
+                return \Carbon\CarbonInterval::seconds($item)->cascade()->format('%dd %Hh %Im %Ss');
+            }],
+            ['acctterminatecause', 'Stop Info', null],
+            ['acctinputoctets', 'In', function ($item) {
+                return humanFilesize($item);
+            }],
+            ['acctoutputoctets', 'Out', function ($item) {
+                return humanFilesize($item);
+            }],
+            ['nasportid', 'Port', null],
+            ['callingstationid', 'MAC', null],
+            ['framedipaddress', 'IP', null],
+        ];
+        $sessions = $modem->radacct()
+            ->latest('radacctid')
+            ->limit(10)
+            ->get(array_map(function ($a) {
+                return $a[0];
+            }, $sessionItems));
+
+        foreach ($sessionItems as $item) {
+            $values = $sessions->pluck($item[0])->toArray();
+            $ret['DT_Last Sessions'][$item[1]] = $item[2] ? array_map($item[2], $values) : $values;
+        }
+
+        // Replies
+        $replyItems = [
+            ['attribute', 'Attribute'],
+            ['op', 'Operand'],
+            ['value', 'Value'],
+        ];
+        $replies = $modem->radusergroups()
+            ->join('radgroupreply', 'radusergroup.groupname', 'radgroupreply.groupname')
+            ->get(array_map(function ($a) {
+                return $a[0];
+            }, $replyItems));
+
+        foreach ($replyItems as $item) {
+            $ret['DT_Replies'][$item[1]] = $replies->pluck($item[0])->toArray();
+        }
+        // add sequence number for proper sorting
+        $ret['DT_Replies'] = array_merge(['#' => array_keys(reset($ret['DT_Replies']))], $ret['DT_Replies']);
+
+        // Authentications
+        $authItems = [
+            ['authdate', 'Date'],
+            ['reply', 'Reply'],
+        ];
+        $auths = $modem->radpostauth()
+            ->latest('id')
+            ->limit(10)
+            ->get(array_map(function ($a) {
+                return $a[0];
+            }, $authItems));
+
+        foreach ($authItems as $item) {
+            $ret['DT_Authentications'][$item[1]] = $auths->pluck($item[0])->toArray();
+        }
+
+        return $ret;
+    }
+
+    /**
      * The NETGW Realtime Measurement Function
      * Fetches all realtime values from NETGW with SNMP
      *
@@ -881,7 +1041,7 @@ class ProvMonController extends \BaseController
      * @param ctrl: shall the RX power be controlled?
      * @return: array[section][Fieldname][Values]
      */
-    public function realtime_netgw($netgw, $com)
+    public function realtimeNetgw($netgw, $com)
     {
         // Copy from SnmpController
         $this->snmp_def_mode();
@@ -900,6 +1060,10 @@ class ProvMonController extends \BaseController
         // System
         $sys['SysDescr'] = [snmpget($netgw->ip, $com, '.1.3.6.1.2.1.1.1.0')];
         $sys['Uptime'] = [$this->_secondsToTime(snmpget($netgw->ip, $com, '.1.3.6.1.2.1.1.3.0') / 100)];
+        if ($netgw->type != 'cmts') {
+            return ['System' => $sys];
+        }
+
         $sys['DOCSIS'] = [$this->_docsis_mode($docsis)];
 
         $freq = snmprealwalk($netgw->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2');
@@ -938,8 +1102,16 @@ class ProvMonController extends \BaseController
             }
         }
 
+        // colorize upstream
+        foreach (['SNR dB', 'Avg Utilization %', 'Rx Power dBmV'] as $item) {
+            foreach ($us[$item] as $key => &$value) {
+                $value = [$value, BaseViewController::getQualityColor('us', 'QAM64', $item, $value, true)];
+            }
+        }
+
         $ret['System'] = $sys;
-        $ret['Upstream'] = $us;
+        $keys = array_keys(reset($us));
+        $ret['Upstream'] = array_merge(['#' => array_combine($keys, $keys)], $us);
 
         return $ret;
     }
@@ -961,28 +1133,16 @@ class ProvMonController extends \BaseController
     }
 
     /**
-     * Returns the lease entry that contains 1 or 2 strings specified in the function arguments
+     * Returns the lease entry that contains the search parameter
      *
      * TODO: make a seperate class for dhcpd
      * lease stuff (search, replace, ..)
      *
-     * @return array 	of lease entry strings
+     * @return array	of lease entry strings
      */
-    public function search_lease()
+    private function searchLease(string $search): array
     {
         $ret = [];
-
-        if (func_num_args() <= 0) {
-            \Log::error('No argument specified in '.__CLASS__.'::'.__FUNCTION__);
-
-            return $ret;
-        }
-
-        $search = func_get_arg(0);
-
-        if (func_num_args() == 2) {
-            $search2 = func_get_arg(1);
-        }
 
         // parse dhcpd.lease file
         $file = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
@@ -992,10 +1152,6 @@ class ProvMonController extends \BaseController
         // fetch all lines matching hw mac
         foreach (array_unique($section[0]) as $s) {
             if (strpos($s, $search)) {
-                if (isset($search2) && ! strpos($s, $search2)) {
-                    continue;
-                }
-
                 $s = str_replace('  ', '&nbsp;&nbsp;', $s);
 
                 // push matching results
@@ -1346,15 +1502,21 @@ class ProvMonController extends \BaseController
 
         $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $model->id]];
 
-        if ($type <= 2) {
+        if (in_array($type, [1, 2, 8])) {
+            $sqlCol = $type == 8 ? 'parent_id' : $model->netelementtype->name;
+
             array_push($tabs,
-                ['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$model->netelementtype->name, $model->id]],
-                ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$model->netelementtype->name, $model->id]]
+                ['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$sqlCol, $model->id]],
+                ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$sqlCol, $model->id]]
             );
         }
 
-        if ($type != 1) {
+        if (! in_array($type, [1, 8, 9])) {
             array_push($tabs, ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$model->id, 0, 0]]);
+        }
+
+        if ($type == 9) {
+            array_push($tabs, ['name' => 'Controlling', 'route' => 'NetElement.tapControlling', 'link' => [$model->id]]);
         }
 
         if ($type == 4 || $type == 5 && \Bouncer::can('view_analysis_pages_of', Modem::class)) {
@@ -1362,7 +1524,7 @@ class ProvMonController extends \BaseController
             array_push($tabs, ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $provmon->createAnalysisTab($model->ip)]);
         }
 
-        if ($type != 4 && $type != 5) {
+        if (! in_array($type, [4, 5, 8, 9])) {
             array_push($tabs, ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => [$model->id]]);
         }
 
@@ -1440,6 +1602,7 @@ class ProvMonController extends \BaseController
      */
     public function getSpectrumData($id)
     {
+        $provmon = \Modules\ProvMon\Entities\ProvMon::first();
         $provbase = ProvBase::first();
         $modem = Modem::find($id);
         $hostname = $modem->hostname;
@@ -1455,10 +1618,9 @@ class ProvMonController extends \BaseController
             // NOTE: It's actually possible that these OIDs can be set even if the modem doesn't support spectrum measurement
             // NOTE: NO RESPONSE leads to exception and message that spectrum can not be created for this modem, but it's currently [Jan 2020]
             // quite common that the SNMP server stops to respond for some time when spectrum measurement is done
-            // Set frequency span from 150 to 862 MHz with 8 MHz intervals
-            $r1 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', 154000000);
-            $r2 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', 866000000);
-            $r3 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', 8000000);
+            $r1 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.3.0', 'u', $provmon->start_frequency * 1e6);
+            $r2 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.4.0', 'u', $provmon->stop_frequency * 1e6);
+            $r3 = snmp2_set($hostname, $rwCommunity, '.1.3.6.1.4.1.4491.2.1.20.1.34.5.0', 'u', $provmon->span * 1e6);
 
             if (! $r1 || ! $r2 || ! $r3) {
                 Log::error("Set Pwr Spectrum measurement values for modem $id failed");

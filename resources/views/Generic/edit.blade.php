@@ -61,13 +61,13 @@
                                                 @include ($relation['view'])
                                             @endif
                                             @if (is_array($relation['view']))
-                                                @include ($relation['view']['view'], isset($relation['view']['vars']) ? $relation['view']['vars'] : [])
-                                                <?php $md_size = isset($relation['view']['vars']['md_size']) ? $relation['view']['vars']['md_size'] : null; ?>
+                                                @include ($relation['view']['view'], $relation['view']['vars'] ?? [])
+                                                <?php $md_size = isset($relation['view']['vars']['md_size']) ?? null; ?>
                                             @endif
                                         @endif
 
                                         {{-- include a relational class/object/table, like Contract->Modem --}}
-                                        @if (isset($relation['class']) && isset($relation['relation']))
+                                        @if (isset($relation['class']) && array_key_exists('relation', $relation))
                                             @include('Generic.relation', [
                                                 'relation' => $relation['relation'],
                                                 'class' => $relation['class'],

@@ -11,8 +11,8 @@ class Contact extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'firstname1' => 'required',
-            'lastname1' => 'required',
+            // 'firstname1' => 'required',
+            // 'lastname1' => 'required',
             'email1' => 'nullable|email',
             'email2' => 'nullable|email',
             'tel' => 'nullable|numeric',
@@ -69,6 +69,11 @@ class Contact extends \BaseModel
         $ret['Edit']['GroupContracts']['class'] = 'Contract';
         $ret['Edit']['GroupContracts']['relation'] = $this->contracts;
 
+        if (\Module::collections()->has('Ticketsystem')) {
+            $ret['Edit']['Ticket']['class'] = 'Ticket';
+            $ret['Edit']['Ticket']['relation'] = $this->tickets;
+        }
+
         return $ret;
     }
 
@@ -83,6 +88,11 @@ class Contact extends \BaseModel
     public function contracts()
     {
         return $this->hasMany(\Modules\ProvBase\Entities\Contract::class);
+    }
+
+    public function tickets()
+    {
+        return $this->hasMany(\Modules\Ticketsystem\Entities\Ticket::class);
     }
 
     public static function labelFromData($contact = null)

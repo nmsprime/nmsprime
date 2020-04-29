@@ -106,6 +106,11 @@ class Realty extends \BaseModel
             $ret['Edit']['ContractInfoApartment']['options']['hide_delete_button'] = 1;
         }
 
+        if (\Module::collections()->has('Ticketsystem')) {
+            $ret['Edit']['Ticket']['class'] = 'Ticket';
+            $ret['Edit']['Ticket']['relation'] = $this->tickets;
+        }
+
         return $ret;
     }
 
@@ -150,6 +155,11 @@ class Realty extends \BaseModel
     public function apartments()
     {
         return $this->hasMany(Apartment::class);
+    }
+
+    public function tickets()
+    {
+        return $this->hasMany(\Modules\Ticketsystem\Entities\Ticket::class);
     }
 
     public function contract()

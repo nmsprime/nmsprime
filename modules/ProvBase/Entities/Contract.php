@@ -44,13 +44,19 @@ class Contract extends \BaseModel
             'city' => 'required_without_all:realty_id,apartment_id',
             'phone' => 'required',
             'email' => 'nullable|email',
-            'birthday' => 'required_if:salutation,placeholder_salutations_person|nullable|date',
+            'birthday' => 'nullable|date',
             'contract_start' => 'date',
             'contract_end' => 'nullable|date', // |after:now -> implies we can not change stuff in an out-dated contract
         ];
 
         if (Module::collections()->has('BillingBase')) {
             $rules['costcenter_id'] = 'required|numeric|min:1';
+        } else {
+            $rules['number'] .= '|nullable';
+        }
+
+        if (Module::collections()->has('BillingBase') || Module::collections()->has('ProvVoipEnvia')) {
+            $rules['birthday'] .= '|required_if:salutation,placeholder_salutations_person';
         }
 
         return $rules;
@@ -1316,7 +1322,7 @@ class Contract extends \BaseModel
         $tariffs = $this->items()
             ->join('product as p', 'item.product_id', '=', 'p.id')
             ->select('item.*', 'p.type', 'p.bundled_with_voip', 'p.name')
-            ->whereIn('type', ['Internet', 'Voip'])
+            ->whereIn('type', ['Internet', 'Voip', 'TV'])
             ->where(function ($query) use ($date) {
                 $query
                 ->where('item.valid_to', '>=', $date)
@@ -1340,15 +1346,19 @@ class Contract extends \BaseModel
             }
         }
 
+        // Only take TV tariff if no inet and no voip tariff are valid
+        if (! $tariff) {
+            $tariff = $tariffs->where('type', 'TV')->first();
+        }
+
         if (! $tariff) {
             return $ret;
         }
 
         // return end_of_term, last cancelation_day, tariff
-        $ret = array_merge($ret, $tariff->getNextCancelationDate($date));
         $ret['tariff'] = $tariff;
 
-        return $ret;
+        return array_merge($ret, $tariff->getNextCancelationDate($date));
     }
 
     /**

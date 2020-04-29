@@ -329,6 +329,19 @@ class BaseController extends Controller
         // place filename as chosen value in Input field
         Request::merge([$base_field => $filename]);
 
+        if (\Module::collections()->has('ProvBase') && $base_field == 'firmware' && Request::get('device') == 'tr069') {
+            // file upload using curl_file_create and method PUT adds headers
+            // Content-Disposition, Content-Type and boundaries, which corrupts
+            // the file to be uploaded, thus call curl from command line
+            /*
+            \Modules\ProvBase\Entities\Modem::callGenieAcsApi("files/$filename", 'PUT',
+                ['file' => curl_file_create("/tftpboot/fw/$filename")],
+                ['Content-Type: application/x-www-form-urlencoded']
+            );
+            */
+            exec("curl -i \"http://localhost:7557/files/$filename\" -X PUT --data-binary @\"/tftpboot/fw/$filename\"");
+        }
+
         return $filename;
     }
 
@@ -376,7 +389,7 @@ class BaseController extends Controller
         if (! isset($a['networks'])) {
             $a['networks'] = [];
             if (\Module::collections()->has('HfcReq') && Bouncer::can('view', \Modules\HfcBase\Entities\TreeErd::class)) {
-                $a['networks'] = \Modules\HfcReq\Entities\NetElement::get_all_net();
+                $a['networks'] = \Modules\HfcReq\Entities\NetElement::getNetsWithClusters();
             }
         }
 
@@ -511,7 +524,7 @@ class BaseController extends Controller
      *
      * @return data to be injected; should be an array
      */
-    protected function _get_additional_data_for_edit_view($model)
+    protected function getAdditionalDataForEditView($model)
     {
         return [];
     }
@@ -775,8 +788,8 @@ class BaseController extends Controller
         $tabs = $this->prepare_tabs($relations, $this->editTabs($view_var));
 
         // check if there is additional data to be passed to blade template
-        // on demand overwrite base method _get_additional_data_for_edit_view($model)
-        $additional_data = $this->_get_additional_data_for_edit_view($view_var);
+        // on demand overwrite base method getAdditionalDataForEditView($model)
+        $additional_data = $this->getAdditionalDataForEditView($view_var);
 
         $view_path = 'Generic.edit';
         $form_path = 'Generic.form';
@@ -1488,111 +1501,16 @@ class BaseController extends Controller
         }
 
         $DT->setRowClass(function ($model) {
-            $bsclass = isset($model->view_index_label()['bsclass']) ? $model->view_index_label()['bsclass'] : 'info';
+            if (method_exists($model, 'get_bsclass')) {
+                return $model->get_bsclass() ?: 'info';
+            }
 
-            return $bsclass;
+            return $model->view_index_label()['bsclass'] ?? 'info';
         });
 
         array_unshift($raw_columns, 'checkbox', $first_column); // add everywhere used raw columns
 
         return $DT->rawColumns($raw_columns)->make();
-    }
-
-    // NOTE: Import is a fast-forward-copy from https://github.com/LaravelDaily/Laravel-Import-CSV-Demo
-
-    /**
-     * Import: show the import view
-     *
-     * @author Torsten Schmidt
-     *
-     * @return view
-     */
-    public function import()
-    {
-        return View::make('Generic.import', $this->compact_prep_view(null));
-    }
-
-    /**
-     * Import Parse: upload the file in CsvData model and allow the user to
-     *               parse the *.csv file fields
-     *
-     * @author Torsten Schmidt
-     *
-     * @return view
-     */
-    public function import_parse(\App\Http\Requests\CsvImportRequest $request)
-    {
-        $path = $request->file('csv_file')->getRealPath();
-
-        // if ($request->has('header')) {
-        //     $data = \Maatwebsite\Excel\Facades\Excel::load($path, function ($reader) {
-        //     })->get()->toArray();
-        // }
-
-        $data = file($path);
-
-        if (! count($data)) {
-            return redirect()->back();
-        }
-
-        foreach ($data as $key => $line) {
-            $data[$key] = str_getcsv($line, ';');
-        }
-
-        $csv_header_fields = $request->has('header') ? $data[0] : [];
-        $offset = $request->has('header') ? 1 : 0;
-
-        $csv_data = array_slice($data, $offset, $offset + 2);
-
-        $csv_data_file = \App\CsvData::create([
-            'csv_filename' => $request->file('csv_file')->getClientOriginalName(),
-            'csv_header' => $request->has('header'),
-            'csv_data' => json_encode($data),
-        ]);
-
-        $db_fields = \Schema::getColumnListing(static::get_model_obj()->getTable());
-
-        return View::make('Generic.import_fields', $this->compact_prep_view(compact('csv_header_fields', 'csv_data', 'csv_data_file', 'db_fields')));
-    }
-
-    /**
-     * Import Process: Do the import
-     *
-     * @author Torsten Schmidt
-     *
-     * @return view
-     */
-    public function import_process()
-    {
-        $data = \App\CsvData::find($_POST['csv_data_file_id']);
-        $csv_data = json_decode($data->csv_data, true);
-
-        foreach ($csv_data as $row) {
-            $obj = static::get_model_obj();
-            foreach (\Schema::getColumnListing(static::get_model_obj()->getTable()) as $index => $field) {
-                if ($data->csv_header) {
-                    $obj->$field = $row[$_POST['fields'][$field]];
-                } else {
-                    $obj->$field = $row[$_POST['fields'][$index]];
-                }
-            }
-
-            if ($obj->deleted_at == 0) {
-                $obj->deleted_at = null;
-            }
-
-            // Disable & Detach all observers for speed up
-            if (! $data->observer) {
-                $obj->observer_enabled = false;
-                $obj->getEventDispatcher()->forget('eloquent.created: '.\NamespaceController::get_model_name());
-                $obj->getEventDispatcher()->forget('eloquent.creating: '.\NamespaceController::get_model_name());
-                //d( $obj->getEventDispatcher() );
-            }
-
-            $obj->save();
-        }
-
-        return View::make('Generic.import_success', $this->compact_prep_view(null));
     }
 
     /**

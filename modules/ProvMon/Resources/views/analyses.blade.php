@@ -190,51 +190,28 @@
 	@if ($realtime)
 		<font color="green"><b>{{$realtime['forecast']}}</b></font><br>
 		@foreach ($realtime['measure'] as $tablename => $table)
-		<h4>{{$tablename}}</h4>
-			@if ($tablename == "Downstream" || $tablename == "Upstream" )
+		<h4>{{preg_replace('/^DT_/', '', $tablename)}}</h4>
+			@if (Str::startsWith($tablename, 'DT_'))
 			<div class="table-responsive">
-				<table class="table streamtable table-bordered" width="100%">
+				<table class="table streamtable table-bordered" width="auto">
 					<thead>
 						<tr class="active">
-							<th> </th>
-							<th>#</th>
+							<th/>
 							@foreach ($table as $colheader => $colarray)
-								@if ($colheader == "Modulation Profile")
-									<th class="text-center">Modulation</th>
-								@endif
-								@if ($colheader != "Modulation Profile")
-									<th class="text-center">{{$colheader}}</th>
-								@endif
+								<th class="text-center">{{$colheader}}</th>
 							@endforeach
 						</tr>
 					</thead>
 					<tbody>
 						@foreach(current($table) as $i => $dummy)
 						<tr>
-							<td width="20"> </td>
-							<td width="20"> {{ $i }}</td>
+							<td width="20"/>
 							@foreach ($table as $colheader => $colarray)
-								<?php
-									if (!isset($colarray[$i]))
-										$colarray[$i] = 'n/a';
-									$mod = ($tablename == "Downstream") ? $mod = "Modulation" :	$mod = "SNR dB";
-									if (!isset($table[$mod][$i]))
-										$table[$mod][$i] = 'n/a';
-									switch (\App\Http\Controllers\BaseViewController::get_quality_color(Str::lower($tablename), '64qam', Str::lower($colheader),htmlspecialchars($colarray[$i]))) {
-									case 0:
-											$color = "success";
-											break;
-									case 1:
-											$color = "warning";
-											break;
-									case 2:
-											$color = "danger";
-											break;
-									default:
-											$color = "";
-									}
-								?>
-									<td class="text-center {{ $color }}"> <font color="grey"> {{ $colarray[$i] }} </font> </td>
+								@if (is_array($colarray[$i]))
+								<td class="text-center {{$colarray[$i][1]}}"><font color="grey">{{$colarray[$i][0]}}</font></td>
+								@else
+								<td class="text-center"><font color="grey">{{$colarray[$i]}}</font></td>
+								@endif
 							@endforeach
 						</tr>
 						@endforeach
@@ -242,7 +219,7 @@
 				</table>
 			</div>
 			@else
-			<table class="table">
+			<table class="table" style="width: auto;">
 			@foreach ($table as $rowname => $row)
 				<tr>
 					<th width="15%">
@@ -255,14 +232,37 @@
 					@endforeach
 				</tr>
 			@endforeach
+				<div style="float: right;">
+					@if ($tablename == array_keys($realtime['measure'])[0])
+						@if ($picture == 'images/modems/default.webp')
+							<a href="https://github.com/nmsprime/nmsprime/issues/882">
+								<img style="max-height: 150px; max-width: 200px; margin-top: 50px; display: block;" src="{{ url($picture) }}"></img>
+							</a>
+							<i style="float: right;" class="fa fa-2x p-t-5 fa-question-circle text-info" title="{{ trans('messages.contribute_modem_picture') }}"></i>
+							<p style="color:red;">{{ trans('messages.no_modem_picture') }}</p>
+						@else
+							<img style="max-height: 150px; max-width: 200px; margin-top: 50px; display: block;" src="{{ url($picture) }}"></img>
+						@endif
+					@endif
+				</div>
 			</table>
 			@endif
-	@endforeach
+		@endforeach
 	@else
 		<font color="red">{{trans('messages.modem_offline')}}</font>
+		@if ($picture == 'images/modems/default.webp')
+			<div style="text-align: center">
+				<a href="https://github.com/nmsprime/nmsprime/issues/882" style="vertical-align: middle;">
+					<img style="max-height: 300px; max-width: 300px; margin: auto; display: inline;" src="{{ url($picture) }}"></img>
+				</a>
+			</div>
+			<i style="float: right;" class="fa fa-2x p-t-5 fa-question-circle text-info" title="{{ trans('messages.contribute_modem_picture') }}"></i>
+			<p style="color:red; margin-left: auto; margin-right: auto;">{{ trans('messages.no_modem_picture') }}</p>
+		@else
+			<img style="max-height: 300px; max-width: 300px; margin: auto; display: block;" src="{{ url($picture) }}"></img>
+		@endif
 	@endif
 @stop
-
 
 @section ('javascript')
 
@@ -316,7 +316,6 @@
 			paging: false,
 			info: false,
 			searching: false,
-			order: [[ 1, "asc" ]],
 			aoColumnDefs: [ {
 	            className: 'control',
 	            orderable: false,

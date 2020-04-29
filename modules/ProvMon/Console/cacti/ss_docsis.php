@@ -25,8 +25,60 @@ foreach (glob('/var/www/nmsprime/storage/app/data/provmon/us_snr/*.json') as $fi
 }
 $GLOBALS['snrs'] = $snrs;
 
+function ss_docsis_ppp($hostname)
+{
+    $error = ['acctinputoctets' => 'NaN', 'acctoutputoctets' => 'NaN'];
+    $conf = file_get_contents('/etc/nmsprime/env/global.env');
+
+    $login = [
+        'HOST' => 'localhost',
+        'USERNAME' => 'nmsprime',
+        'PASSWORD' => '',
+        'DATABASE' => 'nmsprime',
+    ];
+
+    foreach ($login as $idx => &$value) {
+        if (preg_match("/^DB_$idx\s*=\s*(\S*)/m", $conf, $match) == 1) {
+            $value = $match[1];
+        }
+    }
+
+    $conn = new mysqli($login['HOST'], $login['USERNAME'], $login['PASSWORD'], $login['DATABASE']);
+    if ($conn->connect_error) {
+        return $error;
+    }
+
+    $query = 'SELECT acctinputoctets, acctoutputoctets FROM radacct JOIN modem '.
+        'ON radacct.username = modem.ppp_username WHERE '.
+        "modem.hostname = '$hostname' ORDER BY radacctid DESC LIMIT 1";
+    $result = $conn->query($query);
+
+    if ($result->num_rows != 1) {
+        return $error;
+    }
+    $row = $result->fetch_assoc();
+
+    // ignore counter reset on PPP session reset leading to spikes in diagrams
+    if ($row == ['acctinputoctets' => 0, 'acctoutputoctets' => 0]) {
+        return $error;
+    }
+
+    return $row;
+}
+
 function ss_docsis($hostname, $snmp_community)
 {
+    if (substr($hostname, 0, 4) === 'ppp-') {
+        $bytes = ss_docsis_ppp(explode('.', $hostname)[0]);
+
+        return 'T3Timeout:NaN T4Timeout:NaN Corrected:NaN Uncorrectable:NaN '.
+        'minDsPow:NaN avgDsPow:NaN maxDsPow:NaN minDsSNR:NaN avgDsSNR:NaN '.
+        'maxDsSNR:NaN minMuRef:NaN avgMuRef:NaN maxMuRef:NaN minUsPow:NaN '.
+        'avgUsPow:NaN maxUsPow:NaN minUsSNR:NaN avgUsSNR:NaN maxUsSNR:NaN '.
+        "ifHCInOctets:{$bytes['acctinputoctets']} ".
+        "ifHCOutOctets:{$bytes['acctoutputoctets']}";
+    }
+
     $reps = [
         'DsPow' => '.1.3.6.1.2.1.10.127.1.1.1.1.6',
         'DsSNR' => '.1.3.6.1.4.1.4491.2.1.20.1.24.1.1',

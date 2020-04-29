@@ -463,7 +463,7 @@ class ProvVoipEnviaController extends \BaseController
                 return false;
             }
 
-            if ($this->model->contract->voip_id == $this->model->contract->next_purchase_tariff) {
+            if ($this->model->contract->purchase_tariff == $this->model->contract->next_purchase_tariff) {
                 return false;
             }
 

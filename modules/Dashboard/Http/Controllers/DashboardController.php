@@ -2,6 +2,7 @@
 
 namespace Modules\Dashboard\Http\Controllers;
 
+use Log;
 use View;
 use Storage;
 use App\GuiLog;

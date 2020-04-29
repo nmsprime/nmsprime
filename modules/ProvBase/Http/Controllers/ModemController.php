@@ -24,7 +24,7 @@ class ModemController extends \BaseController
     protected $second_button_name = 'Restart via NetGw';
     protected $second_button_title_key = 'modem_force_restart_button_title';
 
-    public function __construct()
+    public function edit($id)
     {
         if (ProvBase::first()->additional_modem_reset) {
             $this->edit_view_third_button = true;
@@ -32,7 +32,7 @@ class ModemController extends \BaseController
             $this->third_button_title_key = 'modem_reset_button_title';
         }
 
-        parent::__construct();
+        return parent::edit($id);
     }
 
     /**
@@ -387,17 +387,6 @@ class ModemController extends \BaseController
         }
 
         return parent::prepare_rules($rules, $data);
-    }
-
-    public function store($redirect = true)
-    {
-        if (Request::get('ppp_username') && ! \Modules\ProvBase\Entities\IpPool::findNextUnusedBrasIPAddress(Request::get('public'))) {
-            \Session::push('tmp_error_above_form', trans('messages.ippool_exhausted'));
-
-            return \Redirect::back()->withInput();
-        }
-
-        return parent::store();
     }
 
     /**

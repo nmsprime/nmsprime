@@ -1,7 +1,11 @@
 # import/update all cacti host templates
 cd /usr/share/cacti/cli
-for file in /var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_*.xml;
-  do su -s /bin/bash -c "php import_template.php --filename=$file" apache
+for file in /var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_*.xml; do
+	su -s /bin/bash -c "php import_template.php --filename=$file" apache
+done
+
+for id in $(php host_update_template.php --list-host-templates | grep -o '^[[:digit:]]\+' | sed '/^0$/d'); do
+	su -s /bin/bash -c "php host_update_template.php --host-id=all --host-template=$id" apache
 done
 
 # link git files to the correct location, this way they are automatically updated

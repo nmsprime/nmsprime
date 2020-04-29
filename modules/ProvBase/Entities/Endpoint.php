@@ -12,7 +12,7 @@ class Endpoint extends \BaseModel
         return [
             'mac' => 'required|mac|unique:endpoint,mac,'.$id.',id,deleted_at,NULL',
             'hostname' => 'required|regex:/^(?!cm-)(?!mta-)[0-9A-Za-z\-]+$/|unique:endpoint,hostname,'.$id.',id,deleted_at,NULL',
-            'ip' => 'required|ip|unique:endpoint,ip,'.$id.',id,deleted_at,NULL',
+            'ip' => 'nullable|required_if:fixed_ip,1|ip|unique:endpoint,ip,'.$id.',id,deleted_at,NULL',
         ];
     }
 
@@ -156,6 +156,8 @@ class EndpointObserver
 
     public function created($endpoint)
     {
+        self::reserveAddress($endpoint);
+
         $endpoint->make_dhcp();
         NetGw::make_dhcp_conf_all();
         $endpoint->nsupdate();
@@ -171,6 +173,8 @@ class EndpointObserver
 
     public function updated($endpoint)
     {
+        self::reserveAddress($endpoint);
+
         $endpoint->make_dhcp();
         NetGw::make_dhcp_conf_all();
         $endpoint->nsupdate();
@@ -178,8 +182,42 @@ class EndpointObserver
 
     public function deleted($endpoint)
     {
+        self::reserveAddress($endpoint);
+
         $endpoint->make_dhcp();
         NetGw::make_dhcp_conf_all();
         $endpoint->nsupdate(true);
+    }
+
+    /**
+     * Handle changes of reserved ip addresses based on endpoints
+     * This is called on created/updated/deleted in Endpoint observer
+     *
+     * @author Ole Ernst
+     */
+    private static function reserveAddress($endpoint)
+    {
+        // delete radreply containing Framed-IP-Address
+        $endpoint->modem->radreply()->delete();
+
+        // reset state of original ip address
+        RadIpPool::where('framedipaddress', $endpoint->getOriginal('ip'))
+            ->update(['expiry_time' => null]);
+
+        if ($endpoint->deleted_at || ! $endpoint->ip || ! $endpoint->modem->isPPP()) {
+            return;
+        }
+
+        // add new radreply
+        $reply = new RadReply;
+        $reply->username = $endpoint->modem->ppp_username;
+        $reply->attribute = 'Framed-IP-Address';
+        $reply->op = ':=';
+        $reply->value = $endpoint->ip;
+        $reply->save();
+
+        // set expiry_time to 'infinity' for reserved ip addresses
+        RadIpPool::where('framedipaddress', $endpoint->ip)
+            ->update(['expiry_time' => '9999-12-31 23:59:59']);
     }
 }

@@ -47,17 +47,19 @@
 				@endif
 			</div>
 		</div>
+		@if (! isset($field))
 		<ul class="nav nav-pills align-self-end ml-auto mr-5">
 			<?php
 				$par = array_merge(Route::getCurrentRoute()->parameters(), \Request::all());
 				$cur_row = Request::input('row', 'us_pwr');
-				foreach (['us_pwr' => 'US Power', 'us_snr' => 'US SNR', 'ds_pwr' => 'DS Power', 'ds_snr' => 'DS SNR', 'ds_us' => 'DS/US Power'] as $key => $val) {
+				foreach (array_merge(config('hfcreq.hfParameters'), ['ds_us' => 'DS/US Power']) as $key => $val) {
 					$par['row'] = $key;
 					$class = ($cur_row === $key) ? 'active' : '';
 					echo("<li role=\"presentation\" class=\"$class\">".link_to_route(Route::getCurrentRoute()->getName(), $val, $par).'</li>');
 				}
 			?>
 		</ul>
+		@endif
 	</div>
 	<div class="container-fluid m-t-20 m-b-20">
 		<div class="col-md-12 d-flex" id="map" style="height:75vh"></div>

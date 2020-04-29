@@ -3,15 +3,13 @@
 namespace Modules\HfcBase\Http\Controllers;
 
 use View;
+use Module;
 use Modules\HfcReq\Entities\NetElement;
 use App\Http\Controllers\BaseController;
 use Modules\HfcBase\Entities\IcingaObject;
 
 class HfcBaseController extends BaseController
 {
-    // The Html Link Target
-    protected $html_target = '';
-
     public function index()
     {
         $title = 'Hfc Dashboard';
@@ -28,10 +26,27 @@ class HfcBaseController extends BaseController
     public function view_form_fields($model = null)
     {
         // label has to be the same like column in sql table
-        return [
+        $a = [
             ['form_type' => 'text', 'name' => 'ro_community', 'description' => 'SNMP Read Only Community'],
-            ['form_type' => 'text', 'name' => 'rw_community', 'description' => 'SNMP Read Write Community'],
+            ['form_type' => 'text', 'name' => 'rw_community', 'description' => 'SNMP Read Write Community', 'space' => 1],
         ];
+
+        $b = [];
+        if (Module::collections()->has('HfcSnmp')) {
+            $b = [
+                ['form_type' => 'text', 'name' => 'rkm_server', 'description' => 'RKM Server '.trans('messages.Address'), 'help' => trans('hfcsnmp::help.rkmServerAddress'), 'options' => ['placeholder' => '172.20.0.10:1700']],
+                ['form_type' => 'text', 'name' => 'rkm_server_username', 'description' => 'RKM Server '.trans('messages.Username')],
+                ['form_type' => 'text', 'name' => 'rkm_server_password', 'description' => 'RKM Server '.trans('messages.Password'), 'space' => 1],
+
+                ['form_type' => 'text', 'name' => 'video_controller', 'description' => 'Video Controlling Server '.trans('messages.Address'), 'options' => ['placeholder' => '172.20.0.11:1701']],
+                ['form_type' => 'text', 'name' => 'video_controller_username', 'description' => 'RKM Server '.trans('messages.Username')],
+                ['form_type' => 'text', 'name' => 'video_controller_password', 'description' => 'RKM Server '.trans('messages.Password'), 'space' => 1],
+
+                ['form_type' => 'text', 'name' => 'video_encoder', 'description' => 'Video Encoding Server '.trans('messages.Address'), 'options' => ['placeholder' => '172.20.0.12:1702']],
+            ];
+        }
+
+        return array_merge($a, $b);
     }
 
     /**
@@ -144,8 +159,9 @@ class HfcBaseController extends BaseController
 
             $link = link_to('https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/service/show?host='.$service->name1.'&service='.$service->name2, $tmp ? $tmp->name : $service->name1);
             // add additional controlling link if available
-            if (is_numeric($service->name1)) {
-                $link .= '<br>'.link_to_route('NetElement.controlling_edit', '(Controlling)', [$service->name1, 0, 0]);
+            $id = explode('_', $service->name1)[0];
+            if (is_numeric($id)) {
+                $link .= '<br>'.link_to_route('NetElement.controlling_edit', '(Controlling)', [$id, 0, 0]);
             }
 
             $ret['clr'][] = $clr[$service->last_hard_state];

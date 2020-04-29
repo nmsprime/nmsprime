@@ -324,6 +324,7 @@ class Invoice extends \BaseModel
     {
         $class = strtolower(class_basename(get_class($model)));
 
+        // contract_address and modem_address
         $this->data[$class.'_firstname'] = escape_latex_special_chars($model->firstname);
         $this->data[$class.'_lastname'] = escape_latex_special_chars($model->lastname);
         $this->data[$class.'_company'] = escape_latex_special_chars($model->company);
@@ -556,7 +557,7 @@ class Invoice extends \BaseModel
 
     public function setRcd($rcd)
     {
-        $this->data['rcd'] = $rcd;
+        $this->data['rcd'] = langDateFormat($rcd);
     }
 
     /**
@@ -570,6 +571,8 @@ class Invoice extends \BaseModel
         // $this->time_cdr = $time_cdr = strtotime($cdrs[0][1]);
         $this->time_cdr = $time_cdr = $offset ? strtotime('-'.($offset + 1).' month') : strtotime('first day of last month');
         $this->data['cdr_month'] = date('m/Y', $time_cdr);
+        $start = langDateFormat(date('Y-m-01', $time_cdr));
+        $end = langDateFormat(strtotime('last day of this month', $time_cdr));
 
         // TODO: customer can request to show his tel nrs cut by the 3 last nrs (TKG §99 (1))
         // TODO: dont show target nrs that have to stay anonym (church, mental consultation, ...) (TKG §99 (2))
@@ -577,6 +580,7 @@ class Invoice extends \BaseModel
         $sum = $count = 0;
         foreach ($cdrs as $entry) {
             $line = date('d.m.Y', strtotime($entry['date'])).' '.$entry['starttime'].' & '.$entry['duration'];
+
             if (is_string($entry['called_nr'])) {
                 $called_number = $entry['called_nr'];
             } elseif (is_array($entry['called_nr'])) {
@@ -605,7 +609,9 @@ class Invoice extends \BaseModel
         $sum = \App::getLocale() == 'de' ? number_format($sum, 2, ',', '.') : number_format($sum, 2);
         $this->data['cdr_table_positions'] .= '\\hline ~ & ~ & ~ & \textbf{Summe} & \textbf{'.$sum.'}\\\\';
         $plural = $count > 1 ? 'en' : '';
-        $this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural.' & '.$sum.BillingConf::currencyLatex().' & '.$sum.BillingConf::currencyLatex().'\\\\';
+
+        $this->data['item_table_positions'] .= "1 & $count Telefonverbindung".$plural." $start - $end & ".
+            $sum.BillingConf::currencyLatex().' & '.$sum.BillingConf::currencyLatex().'\\\\';
 
         $this->filename_cdr = date('Y_m', $time_cdr).'_cdr';
     }

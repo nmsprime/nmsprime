@@ -7,6 +7,6 @@
 {{ trans('messages.title') }}: {{ $ticket->name }} <br />
 @endif
 @if (isset($ticket->description))
-{{ trans('messages.description') }}: {{ $ticket->description }} <br />
+{{ trans('messages.description') }}: {!! nl2br($ticket->description) !!} <br />
 @endif
 

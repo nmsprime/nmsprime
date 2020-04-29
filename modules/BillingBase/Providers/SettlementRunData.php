@@ -5,7 +5,7 @@ namespace Modules\BillingBase\Providers;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @see \Illuminate\Log\Writer
+ * @see Modules\BillingBase\Providers\SettlementRunProvider
  * See: https://stackoverflow.com/questions/37809989/laravel-5-2-custom-log-file-for-different-tasks
  */
 class SettlementRunData extends Facade

@@ -141,10 +141,14 @@ class Kernel extends ConsoleKernel
                 foreach (\Modules\ProvBase\Entities\NetGw::where('type', 'cmts')->get() as $cmts) {
                     $cmts->store_us_snrs();
                 }
+
+                foreach (\Modules\ProvBase\Entities\NetGw::where('type', 'olt')->where('ssh_auto_prov', '1')->get() as $olt) {
+                    $olt->runSshAutoProv();
+                }
             })->everyFiveMinutes();
 
-            // refresh the online state of all TR069 device
-            $schedule->call('\Modules\ProvBase\Entities\Modem@refreshTR069')->everyFiveMinutes();
+            // refresh the online state of all PPP device
+            $schedule->call('\Modules\ProvBase\Entities\Modem@refreshPPP')->everyFiveMinutes();
 
             // update firmware version + model strings of all modems once a day
             $schedule->call('\Modules\ProvBase\Entities\Modem@update_model_firmware')->daily();
@@ -193,8 +197,9 @@ class Kernel extends ConsoleKernel
             $schedule->call('\Modules\BillingBase\Entities\Invoice@cleanup')->monthly();
             // Reset payed_month column for yearly charged items for january settlementrun (in february)
             $schedule->call(function () {
-                \Modules\BillingBase\Entities\Item::where('payed_month', '!=', '0')->update(['payed_month' => '0']);
+                \Modules\BillingBase\Entities\Item::where('payed_month', '!=', '0')->update(['payed_month' => '0', 'updated_at' => date('Y-m-d H:i:s')]);
                 \Log::info('Reset all items payed_month flag to 0');
+                // TODO: Remove last * for Laravel version > 5.6
             })->cron('10 0 1 2 * *');
 
             // wrapping into a check if table billingbase exists (if not that crashes on every “php artisan” command – e.g. on migrations

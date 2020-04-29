@@ -38,6 +38,11 @@ class NetGwController extends \BaseController
             ];
         }
 
+        $nas_secret = '';
+        if ($model->type == 'bras' && $model->nas) {
+            $nas_secret = $model->nas->secret;
+        }
+
         // NETGW series selection based on NETGW company
         if (\Request::filled('company')) { // for auto reload
             $company = \Request::get('company');
@@ -50,24 +55,22 @@ class NetGwController extends \BaseController
             $company = 'Cisco';
         }
 
-        // The NETGW company and series Array
-        foreach (config('provbase.netgw') as $vendor => $__series) {
-            $company_array[$vendor] = $vendor;
-        }
-
-        $series = config('provbase.netgw.'.$company);
         $types = array_map('strtoupper', (array_combine(NetGw::TYPES, NetGw::TYPES)));
 
         // TODO: series should be jquery based select depending on the company
         // TODO: (For BRAS) Make company and series field nullable and add empty field to company_array
         $ret_tmp = [
+            ['form_type' => 'select', 'name' => 'company', 'description' => 'Company', 'value' => $this->getSelectFromConfig()],
+            ['form_type' => 'select', 'name' => 'series', 'description' => 'Series', 'value' => $this->getSelectFromConfig($company)],
             ['form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => $types, 'select' => $types],
-            ['form_type' => 'select', 'name' => 'company', 'description' => 'Company', 'value' => $company_array, 'select' => 'CMTS'],
-            ['form_type' => 'select', 'name' => 'series', 'description' => 'Series', 'value' => $series, 'select' => 'CMTS'],
             ['form_type' => 'text', 'name' => 'hostname', 'description' => 'Hostname'],
             ['form_type' => 'ip', 'name' => 'ip', 'description' => 'IP', 'help' => 'Online'],
             ['form_type' => 'text', 'name' => 'community_rw', 'description' => 'SNMP Private Community String'],
             ['form_type' => 'text', 'name' => 'community_ro', 'description' => 'SNMP Public Community String'],
+            ['form_type' => 'text', 'name' => 'nas_secret', 'description' => 'RADIUS Client secret', 'select' => 'BRAS', 'init_value' => $nas_secret],
+            ['form_type' => 'checkbox', 'name' => 'ssh_auto_prov', 'description' => 'Auto-Provisioning via SSH', 'value' => '1', 'select' => 'OLT', 'help' => trans('helper.ssh_auto_prov')],
+            ['form_type' => 'text', 'name' => 'username', 'description' => 'SSH username', 'checkbox' => 'show_on_ssh_auto_prov'],
+            ['form_type' => 'text', 'name' => 'password', 'description' => 'SSH password', 'checkbox' => 'show_on_ssh_auto_prov'],
             // The following fields are currently not used
             // ['form_type' => 'text', 'name' => 'state', 'description' => 'State', 'hidden' => 1],
             // ['form_type' => 'text', 'name' => 'monitoring', 'description' => 'Monitoring', 'hidden' => 1],
@@ -92,6 +95,40 @@ class NetGwController extends \BaseController
         }
 
         return $ret;
+    }
+
+    private function getSelectFromConfig($key = null)
+    {
+        $config = config('provbase.netgw'.($key ? ".$key" : ''));
+        $config['Other'] = 'Other';
+
+        if (! $key) {
+            $config = array_keys($config);
+        }
+
+        return array_combine($config, $config);
+    }
+
+    protected function prepare_input($data)
+    {
+        $data = parent::prepare_input($data);
+
+        // delete possibly existing ssh credentials
+        if ($data['ssh_auto_prov'] == 0) {
+            $data['username'] = null;
+            $data['password'] = null;
+        }
+
+        return $data;
+    }
+
+    public function prepare_rules($rules, $data)
+    {
+        if ($data['type'] == 'bras') {
+            $rules['nas_secret'] = 'required';
+        }
+
+        return parent::prepare_rules($rules, $data);
     }
 
     /**

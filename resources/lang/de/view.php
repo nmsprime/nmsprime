@@ -32,7 +32,6 @@ return [
     'jQuery_colvisRestore'      => 'Wiederherstellen',
     'jQuery_colvisReset'        => 'Zurücksetzen',
     'jQuery_ExportTo'           => 'Exportieren als',
-    'jQuery_ImportCsv'              => 'CSV importieren',
     //MENU
     //Main Menu
     'Menu_Apartment'            => 'Wohnungen',
@@ -44,7 +43,7 @@ return [
     'Menu_MainMenu'             => 'Hauptmenü',
     'Menu_Node'                 => 'Übergabepunkte',
     'Menu_Config Page'          => 'Systemkonfiguration',
-    'Menu_Logging'              => 'Logs',
+    'Menu_Log'                  => 'Log',
     'Menu_Product List'         => 'Produktangebot',
     'Menu_SEPA Accounts'        => 'SEPA-Konten',
     'Menu_Settlement Run'       => 'Abrechnungslauf',
@@ -243,6 +242,8 @@ return [
     'Header_DebtResult'         => 'Offene Posten gesamt',
     'Header_Node'               => 'Übergabepunkte',
     'Header_Realty'             => 'Liegenschaften',
+    'Header_SubNetElement'      => 'Untergeordnete Netzelemente',
+    'Header_tap'                => 'Steuerbarer Abzweiger-Port',
 
     //Header Relation
     // 'Assigned'               => 'Zugewiesene',
@@ -340,8 +341,8 @@ return [
     'Button_Create QoS'             => 'QoS-Regel erstellen',
     'Button_Create Qos'             => 'QOS-Regel erstellen',
     // //NetGws
-    'Button_Create NetGws'          => 'NetGw anlegen',
-    'Button_Create Netgws'          => 'NetGw anlegen',
+    'Button_Create NetGw'          => 'NetGw anlegen',
+    'Button_Create NetGw'          => 'NetGw anlegen',
     // //IpPool
     'Button_Create IpPool'          => 'IpPool anlegen', //workaround
     'Button_Create IP-Pools'        => 'IpPool anlegen',

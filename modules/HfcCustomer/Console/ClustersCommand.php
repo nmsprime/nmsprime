@@ -43,29 +43,27 @@ class ClustersCommand extends Command
     {
         $ret = 'OK';
         $perf = '';
-        foreach (NetElement::where('id', '>', '2')->get() as $element) {
-            $state = ModemHelper::ms_state($element->id);
+        foreach (NetElement::withActiveModems()->get() as $netelement) {
+            $state = ModemHelper::ms_state($netelement);
             if ($state == -1) {
                 continue;
             }
-            if ($state == 'WARNING' && $ret == 'OK') {
-                $ret = $state;
-            }
-            if ($state == 'CRITICAL') {
+
+            if ($state == 'CRITICAL' || ($state == 'WARNING' && $ret == 'OK')) {
                 $ret = $state;
             }
 
-            $num = ModemHelper::ms_num($element->id);
-            $numa = ModemHelper::ms_num_all($element->id);
-            $cm_cri = ModemHelper::ms_cri($element->id);
-            $avg = ModemHelper::ms_avg($element->id);
+            $num = $netelement->modems_online_count;
+            $numa = $netelement->modems_count;
+            $cm_cri = $netelement->modems_critical_count;
+            $avg = $netelement->modemsUsPwrAvg;
             $warn_per = ModemHelper::$avg_warning_percentage / 100 * $numa;
             $crit_per = ModemHelper::$avg_critical_percentage / 100 * $numa;
             $warn_us = ModemHelper::$avg_warning_us;
             $crit_us = ModemHelper::$avg_critical_us;
 
-            $perf .= "'$element->name'=$num;$warn_per;$crit_per;0;$numa ";
-            $perf .= "'$element->name ($avg dBuV, #crit:$cm_cri)'=$avg;$warn_us;$crit_us ";
+            $perf .= "'$netelement->name'=$num;$warn_per;$crit_per;0;$numa ";
+            $perf .= "'$netelement->name ($avg dBuV, #crit:$cm_cri)'=$avg;$warn_us;$crit_us ";
         }
         echo $ret.' | '.$perf;
 

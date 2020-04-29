@@ -187,7 +187,7 @@ class BillingAnalysis
                     continue;
                 }
 
-                $item->calculate_price_and_span($dates, false, false);
+                $item->calculate_price_and_span(false, false, false);
                 $cycle = $item->get_billing_cycle();
 
                 $total += $item->charge;

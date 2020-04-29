@@ -36,16 +36,17 @@ class ProductController extends \BaseController
             ['form_type' => 'select', 'name' => 'voip_sales_tariff_id', 'description' => 'Phone Sales Tariff', 'value' => $sales_tariffs, 'select' => 'Voip'],
             ['form_type' => 'select', 'name' => 'voip_purchase_tariff_id', 'description' => 'Phone Purchase Tariff', 'value' => $purchase_tariffs, 'select' => 'Voip'],
             ['form_type' => 'select', 'name' => 'billing_cycle', 'description' => 'Billing Cycle', 'value' => Product::getPossibleEnumValues('billing_cycle'), 'options' => ['translate' => true]],
-            ['form_type' => 'text', 'name' => 'maturity_min', 'description' => 'Minimum Maturity', 'select' => 'Internet Voip', 'help' => trans('helper.product.maturity_min')],         // Laufzeit, tarif life time
-            ['form_type' => 'text', 'name' => 'maturity', 'description' => 'Maturity', 'select' => 'Internet Voip', 'help' => trans('helper.product.maturity')],         // Laufzeit, tarif life time
-            ['form_type' => 'text', 'name' => 'period_of_notice', 'description' => 'Period of Notice', 'select' => 'Internet Voip', 'help' => trans('helper.product.pod')], 		// Kündigungsfrist
-            ['form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs],
+            ['form_type' => 'text', 'name' => 'maturity_min', 'description' => 'Minimum Maturity', 'select' => 'Internet Voip TV', 'help' => trans('helper.product.maturity_min')],         // Laufzeit, tarif life time
+            ['form_type' => 'text', 'name' => 'maturity', 'description' => 'Maturity', 'select' => 'Internet Voip TV', 'help' => trans('helper.product.maturity')],         // Laufzeit, tarif life time
+            ['form_type' => 'text', 'name' => 'period_of_notice', 'description' => 'Period of Notice', 'select' => 'Internet Voip TV', 'help' => trans('helper.product.pod')], 		// Kündigungsfrist
+            ['form_type' => 'select', 'name' => 'costcenter_id', 'description' => 'Cost Center (optional)', 'value' => $ccs, 'hidden' => 0],
             ['form_type' => 'text', 'name' => 'price', 'description' => 'Price (Net)'],
             ['form_type' => 'checkbox', 'name' => 'record_monthly', 'description' => trans('billingbase::view.product.recordMonthly'), 'help' => trans('billingbase::help.product.recordMonthly')],
             array_merge(['form_type' => 'checkbox', 'name' => 'tax', 'description' => 'with Tax calculation ?', 'select' => 'TV Credit'], $model->tax === null ? ['checked' => true, 'value' => 1] : []),
             ['form_type' => 'text', 'name' => 'email_count', 'description' => 'No. of email addresses', 'select' => 'Internet', 'hidden' => 1],
             ['form_type' => 'checkbox', 'name' => 'bundled_with_voip', 'description' => 'Bundled with VoIP product?', 'select' => 'Internet', 'help' => trans('helper.product.bundle')],
             ['form_type' => 'checkbox', 'name' => 'proportional', 'description' => 'Calculate proportionately', 'checked' => 1, 'help' => trans('helper.product.proportional')],
+            ['form_type' => 'checkbox', 'name' => 'deprecated', 'description' => 'Deprecated', 'help' => trans('helper.product.deprecated')],
         ];
     }
 
