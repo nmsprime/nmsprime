@@ -39,67 +39,6 @@ class CustomerTopoController extends NetElementController
     public static $path_rel = 'data/hfccustomer/kml/';
 
     /*
-     * File Specific Stuff
-     */
-    private $file_pre = "<?xml version='1.0' encoding='UTF-8'?>
-		<kml xmlns='http://earth.google.com/kml/2.2'>
-		<Document>
-		  <name>mbg - Kunden</name>
-		  <description><![CDATA[]]></description>
-
-
-		  <Style id='style-1'>
-			<IconStyle>
-			  <Icon>
-				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/red-dot.png</href>
-			  </Icon>
-			</IconStyle>
-		  </Style>
-		  <Style id='style0'>
-			<IconStyle>
-			  <Icon>
-				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/green-dot.png</href>
-			  </Icon>
-			</IconStyle>
-		  </Style>
-
-		  <Style id='style1'>
-			<IconStyle>
-			  <Icon>
-				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/yellow-dot.png</href>
-			  </Icon>
-			</IconStyle>
-		  </Style>
-
-		  <Style id='style2'>
-			<IconStyle>
-			  <Icon>
-				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/orange-dot.png</href>
-			  </Icon>
-			</IconStyle>
-		  </Style>
-
-		  <Style id='styleunknown'>
-			<IconStyle>
-			  <Icon>
-				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/blue-dot.png</href>
-			  </Icon>
-			</IconStyle>
-		  </Style>
-
-		  <Style id=\"YELLOWLINE\">
-		    <LineStyle>
-	      		<color>55000000</color>
-	     	 <width>1</width>
-	    	</LineStyle>
-		  </Style>
-
-
-		";
-
-    private $file_end = '</Document></kml>';
-
-    /*
      * Constructor: Set local vars
      */
     public function __construct()
@@ -450,7 +389,7 @@ class CustomerTopoController extends NetElementController
         $clrs = [];
         $str = $descr = $city = $zip = $nr = '';
         $states = [-1 => 'offline', 0 => 'okay', 1 => 'impaired', 2 => 'critical'];
-        $file = $this->file_pre;
+        $file = $this->file_pre(asset(\Modules\HfcBase\Http\Controllers\TreeTopographyController::$path_images));
         $newTab = ProvBase::first()->modem_edit_page_new_tab;
         $baseUrl = \BaseRoute::get_base_url();
 
@@ -562,7 +501,7 @@ class CustomerTopoController extends NetElementController
         }
 
         // Write Files ..
-        $file .= $this->file_end;
+        $file .= '</Document></kml>';
         \Storage::put($this->file, $file);
 
         return str_replace(storage_path(), '', \Storage::getAdapter()->applyPathPrefix($this->file));
@@ -585,5 +524,61 @@ class CustomerTopoController extends NetElementController
         } else {
             return \App::abort(404);
         }
+    }
+
+    private function file_pre($p)
+    {
+        return "<?xml version='1.0' encoding='UTF-8'?>
+        <kml xmlns='https://www.opengis.net/kml/2.2'>
+        <Document>
+          <name>mbg - Kunden</name>
+          <description><![CDATA[]]></description>
+
+          <Style id='style-1'>
+            <IconStyle>
+              <Icon>
+                <href>$p/red-dot.png</href>
+              </Icon>
+            </IconStyle>
+          </Style>
+          <Style id='style0'>
+            <IconStyle>
+              <Icon>
+                <href>$p/green-dot.png</href>
+              </Icon>
+            </IconStyle>
+          </Style>
+
+          <Style id='style1'>
+            <IconStyle>
+              <Icon>
+                <href>$p/yellow-dot.png</href>
+              </Icon>
+            </IconStyle>
+          </Style>
+
+          <Style id='style2'>
+            <IconStyle>
+              <Icon>
+                <href>$p/orange-dot.png</href>
+              </Icon>
+            </IconStyle>
+          </Style>
+
+          <Style id='styleunknown'>
+            <IconStyle>
+              <Icon>
+                <href>$p/blue-dot.png</href>
+              </Icon>
+            </IconStyle>
+          </Style>
+
+          <Style id=\"YELLOWLINE\">
+            <LineStyle>
+                <color>55000000</color>
+             <width>1</width>
+            </LineStyle>
+          </Style>
+        ";
     }
 }

@@ -26,7 +26,7 @@ class TreeTopographyController extends HfcBaseController
      * Public folder, where our assets are stored (*.png used by kml)
      * (relative to /public)
      */
-    private $path_images = 'modules/hfcbase/kml/';
+    public static $path_images = 'modules/hfcbase/kml/';
 
     /*
      * Constructor: Set local vars
@@ -131,7 +131,7 @@ class TreeTopographyController extends HfcBaseController
      */
     public function kml_generate($netelements)
     {
-        $file = $this->file_pre(asset($this->path_images));
+        $file = $this->file_pre(asset(self::$path_images));
         //
         // Note: OpenLayer draws kml file in parse order,
         // this requires to build kml files in the following order:
