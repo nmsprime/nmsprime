@@ -199,7 +199,7 @@ class TreeTopographyController extends HfcBaseController
                 $pos_tree = $netelement->pos;
                 $pos = $netelement->modemsUsPwrPosAvgs;
 
-                if (isset($pos->x_avg)) {
+                if ($pos->x_avg != null && $pos->y_avg != null) {
                     $xavg = round($pos->x_avg, 4);
                     $yavg = round($pos->y_avg, 4);
                     $icon = $ModemHelper::ms_state_to_color($ModemHelper::ms_state($netelement));
