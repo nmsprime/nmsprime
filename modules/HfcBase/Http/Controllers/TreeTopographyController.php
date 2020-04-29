@@ -26,7 +26,7 @@ class TreeTopographyController extends HfcBaseController
      * Public folder, where our assets are stored (*.png used by kml)
      * (relative to /public)
      */
-    private $path_images = 'modules/hfcbase/kml/';
+    public static $path_images = 'modules/hfcbase/kml/';
 
     /*
      * Constructor: Set local vars
@@ -131,7 +131,7 @@ class TreeTopographyController extends HfcBaseController
      */
     public function kml_generate($netelements)
     {
-        $file = $this->file_pre(asset($this->path_images));
+        $file = $this->file_pre(asset(self::$path_images));
         //
         // Note: OpenLayer draws kml file in parse order,
         // this requires to build kml files in the following order:
@@ -199,7 +199,7 @@ class TreeTopographyController extends HfcBaseController
                 $pos_tree = $netelement->pos;
                 $pos = $netelement->modemsUsPwrPosAvgs;
 
-                if (isset($pos->x_avg)) {
+                if ($pos->x_avg != null && $pos->y_avg != null) {
                     $xavg = round($pos->x_avg, 4);
                     $yavg = round($pos->y_avg, 4);
                     $icon = $ModemHelper::ms_state_to_color($ModemHelper::ms_state($netelement));
@@ -331,7 +331,7 @@ class TreeTopographyController extends HfcBaseController
     {
         return "
 
-        <kml xmlns=\"http://earth.google.com/kml/2.2\">
+        <kml xmlns=\"https://www.opengis.net/kml/2.2\">
         <Document>
             <name>mbg - amplifier</name>
 

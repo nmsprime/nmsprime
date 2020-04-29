@@ -52,7 +52,7 @@
 			<?php
 				$par = array_merge(Route::getCurrentRoute()->parameters(), \Request::all());
 				$cur_row = Request::input('row', 'us_pwr');
-				foreach (['us_pwr' => 'US Power', 'us_snr' => 'US SNR', 'ds_pwr' => 'DS Power', 'ds_snr' => 'DS SNR', 'ds_us' => 'DS/US Power'] as $key => $val) {
+				foreach (array_merge(config('hfcreq.hfParameters'), ['ds_us' => 'DS/US Power']) as $key => $val) {
 					$par['row'] = $key;
 					$class = ($cur_row === $key) ? 'active' : '';
 					echo("<li role=\"presentation\" class=\"$class\">".link_to_route(Route::getCurrentRoute()->getName(), $val, $par).'</li>');

@@ -39,67 +39,6 @@ class CustomerTopoController extends NetElementController
     public static $path_rel = 'data/hfccustomer/kml/';
 
     /*
-     * File Specific Stuff
-     */
-    private $file_pre = "<?xml version='1.0' encoding='UTF-8'?>
-		<kml xmlns='http://earth.google.com/kml/2.2'>
-		<Document>
-		  <name>mbg - Kunden</name>
-		  <description><![CDATA[]]></description>
-
-
-		  <Style id='style-1'>
-			<IconStyle>
-			  <Icon>
-				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/red-dot.png</href>
-			  </Icon>
-			</IconStyle>
-		  </Style>
-		  <Style id='style0'>
-			<IconStyle>
-			  <Icon>
-				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/green-dot.png</href>
-			  </Icon>
-			</IconStyle>
-		  </Style>
-
-		  <Style id='style1'>
-			<IconStyle>
-			  <Icon>
-				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/yellow-dot.png</href>
-			  </Icon>
-			</IconStyle>
-		  </Style>
-
-		  <Style id='style2'>
-			<IconStyle>
-			  <Icon>
-				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/orange-dot.png</href>
-			  </Icon>
-			</IconStyle>
-		  </Style>
-
-		  <Style id='styleunknown'>
-			<IconStyle>
-			  <Icon>
-				<href>http://maps.gstatic.com/intl/de_de/mapfiles/ms/micons/blue-dot.png</href>
-			  </Icon>
-			</IconStyle>
-		  </Style>
-
-		  <Style id=\"YELLOWLINE\">
-		    <LineStyle>
-	      		<color>55000000</color>
-	     	 <width>1</width>
-	    	</LineStyle>
-		  </Style>
-
-
-		";
-
-    private $file_end = '</Document></kml>';
-
-    /*
      * Constructor: Set local vars
      */
     public function __construct()
@@ -346,7 +285,7 @@ class CustomerTopoController extends NetElementController
         $monitoring = [];
         $provmon = new \Modules\ProvMon\Http\Controllers\ProvMonController;
         $before = microtime(true);
-        $types = ['ds_pwr', 'ds_snr', 'us_snr', 'us_pwr'];
+        $types = array_sort(array_keys(config('hfcreq.hfParameters')));
 
         $modems = $modemQuery->orderBy('city')->orderBy('street')->orderBy('house_number')->get();
 
@@ -450,7 +389,7 @@ class CustomerTopoController extends NetElementController
         $clrs = [];
         $str = $descr = $city = $zip = $nr = '';
         $states = [-1 => 'offline', 0 => 'okay', 1 => 'impaired', 2 => 'critical'];
-        $file = $this->file_pre;
+        $file = $this->file_pre(asset(\Modules\HfcBase\Http\Controllers\TreeTopographyController::$path_images));
         $newTab = ProvBase::first()->modem_edit_page_new_tab;
         $baseUrl = \BaseRoute::get_base_url();
 
@@ -480,7 +419,7 @@ class CustomerTopoController extends NetElementController
 
                 if ($x) {                  // ignore (0,0)
                     $file .= "\n <Placemark><name>1</name>
-						 <description><![CDATA[$descr]]></description>
+						 <description><![CDATA[{$descr}</tbody></table>]]></description>
 						 <styleUrl>$style</styleUrl>
 						 <Point><coordinates>$pos</coordinates></Point></Placemark>";
                     $file .= "\n <Placemark><name>$num</name>
@@ -489,7 +428,7 @@ class CustomerTopoController extends NetElementController
 
                 // Reset Var's
                 $state = 3;      // unknown
-                $descr = '<br>'; // new line for descr
+                $descr = '<table><thead><tr><th>MAC</th><th>Contract</th><th>Name</th><th>US<br>PWR</th><th>US<br>SNR</th><th>DS<br>PWR</th><th>DS<br>SNR</th></tr></thead><tbody>';
                 $x = $modem->x;  // get next GPS pos ..
                 $y = $modem->y;
                 $num = 0;
@@ -523,7 +462,18 @@ class CustomerTopoController extends NetElementController
             }
 
             // add descr line
-            $descr .= '<a target="'.$this->html_target."\" href='".$baseUrl."/Modem/$modem->id'>$modem->mac</a>, $modem->contract_id, $modem->lastname, $states[$cur_clr] ($row_val)<br>";
+            $descr .= '<tr>'.
+                "<td style='text-align: center;'><a target='{$this->html_target}' href='$baseUrl/Modem/$modem->id'>$modem->mac</a></td>".
+                "<td style='text-align: center;'>$modem->contract_id</td>".
+                "<td style='text-align: center;'>$modem->lastname</td>";
+
+            $lut = ['green', 'yellow', 'orange', ''];
+            foreach (array_keys(config('hfcreq.hfParameters')) as $r) {
+                $descrColor = $modem->us_pwr ? $lut[BaseViewController::getQualityColor(explode('_', $r)[0], null, explode('_', $r)[1], $modem->{$r}, false)] : 'red';
+                $descr .= "<td style='text-align: center;'><mark style='background-color: $descrColor;'>{$modem->{$r}}</mark></td>";
+            }
+            $descr .= '</tr>';
+
             $num += 1;
         }
 
@@ -543,7 +493,7 @@ class CustomerTopoController extends NetElementController
         $pos = "$x, $y, 0.000000";
         if ($x) {
             $file .= "\n <Placemark><name></name>
-				 <description><![CDATA[$descr]]></description>
+				 <description><![CDATA[{$descr}</tbody></table>]]></description>
 				 <styleUrl>$style</styleUrl>
 				 <Point><coordinates>$pos</coordinates></Point></Placemark>";
             $file .= "\n <Placemark><name>$num</name>
@@ -551,7 +501,7 @@ class CustomerTopoController extends NetElementController
         }
 
         // Write Files ..
-        $file .= $this->file_end;
+        $file .= '</Document></kml>';
         \Storage::put($this->file, $file);
 
         return str_replace(storage_path(), '', \Storage::getAdapter()->applyPathPrefix($this->file));
@@ -574,5 +524,61 @@ class CustomerTopoController extends NetElementController
         } else {
             return \App::abort(404);
         }
+    }
+
+    private function file_pre($p)
+    {
+        return "<?xml version='1.0' encoding='UTF-8'?>
+        <kml xmlns='https://www.opengis.net/kml/2.2'>
+        <Document>
+          <name>mbg - Kunden</name>
+          <description><![CDATA[]]></description>
+
+          <Style id='style-1'>
+            <IconStyle>
+              <Icon>
+                <href>$p/red-dot.png</href>
+              </Icon>
+            </IconStyle>
+          </Style>
+          <Style id='style0'>
+            <IconStyle>
+              <Icon>
+                <href>$p/green-dot.png</href>
+              </Icon>
+            </IconStyle>
+          </Style>
+
+          <Style id='style1'>
+            <IconStyle>
+              <Icon>
+                <href>$p/yellow-dot.png</href>
+              </Icon>
+            </IconStyle>
+          </Style>
+
+          <Style id='style2'>
+            <IconStyle>
+              <Icon>
+                <href>$p/orange-dot.png</href>
+              </Icon>
+            </IconStyle>
+          </Style>
+
+          <Style id='styleunknown'>
+            <IconStyle>
+              <Icon>
+                <href>$p/blue-dot.png</href>
+              </Icon>
+            </IconStyle>
+          </Style>
+
+          <Style id=\"YELLOWLINE\">
+            <LineStyle>
+                <color>55000000</color>
+             <width>1</width>
+            </LineStyle>
+          </Style>
+        ";
     }
 }
