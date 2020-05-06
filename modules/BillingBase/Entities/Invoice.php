@@ -586,7 +586,7 @@ class Invoice extends \BaseModel
             } elseif (is_array($entry['called_nr'])) {
                 if ($entry['called_nr'][0] == 'enviaCDR') {
                     $_ = $entry['called_nr'];
-                    $called_number = iconv('CP1252', 'UTF-8', '\\emph{anderer Anbieter:}\\newline- \textbf{'.$_[1].'}\\newline- '.$_[2].'\\newline- '.$_[3].'\\newline- '.$_[4]);
+                    $called_number = iconv('CP1252', 'UTF-8', '\\emph{anderer Anbieter:}\\newline- \textbf{'.escape_latex_special_chars($_[1]).'}\\newline- '.escape_latex_special_chars($_[2]).'\\newline- '.escape_latex_special_chars($_[3]).'\\newline- '.escape_latex_special_chars($_[4]));
                 } else {
                     // throw Exception instead of just logging the problem: logic error in code creating the CDR data
                     throw new \UnexpectedValueException('Invalid first value in array provided for CDR called number: '.$entry['called_nr'][0]);
