@@ -25,6 +25,13 @@ class ClustersCommand extends Command
     protected $description = 'Get modem summary of all clusters';
 
     /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'nms:clusters {--o|output=all : What information should be returned. Available options are online|power|all}';
+
+    /**
      * Create a new command instance.
      *
      * @return void
@@ -42,7 +49,8 @@ class ClustersCommand extends Command
     public function handle()
     {
         $ret = 'OK';
-        $perf = '';
+        $output = '';
+
         foreach (NetElement::withActiveModems()->get() as $netelement) {
             $state = ModemHelper::ms_state($netelement);
             if ($state == -1) {
@@ -53,19 +61,21 @@ class ClustersCommand extends Command
                 $ret = $state;
             }
 
-            $num = $netelement->modems_online_count;
-            $numa = $netelement->modems_count;
-            $cm_cri = $netelement->modems_critical_count;
-            $avg = $netelement->modemsUsPwrAvg;
-            $warn_per = ModemHelper::$avg_warning_percentage / 100 * $numa;
-            $crit_per = ModemHelper::$avg_critical_percentage / 100 * $numa;
+            $warn_per = ModemHelper::$avg_warning_percentage / 100 * $netelement->modems_count;
+            $crit_per = ModemHelper::$avg_critical_percentage / 100 * $netelement->modems_count;
             $warn_us = ModemHelper::$avg_warning_us;
             $crit_us = ModemHelper::$avg_critical_us;
 
-            $perf .= "'$netelement->name'=$num;$warn_per;$crit_per;0;$numa ";
-            $perf .= "'$netelement->name ($avg dBuV, #crit:$cm_cri)'=$avg;$warn_us;$crit_us ";
+            if ($this->option('output') === 'online' || $this->option('output') === 'all') {
+                $output .= "'$netelement->name'=$netelement->modems_online_count;$warn_per;$crit_per;0;$netelement->modems_count ";
+            }
+
+            if ($this->option('output') === 'power' || $this->option('output') === 'all') {
+                $output .= "'$netelement->name ($netelement->modemsUsPwrAvg dBuV, #crit:$netelement->modems_critical_count)'=$netelement->modemsUsPwrAvg;$warn_us;$crit_us ";
+            }
         }
-        echo $ret.' | '.$perf;
+
+        $this->line("$ret | $output");
 
         if ($ret == 'CRITICAL') {
             return 2;
