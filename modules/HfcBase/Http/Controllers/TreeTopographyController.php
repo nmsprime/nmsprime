@@ -191,18 +191,22 @@ class TreeTopographyController extends HfcBaseController
         // Customer
         //
         if (\Module::collections()->has('HfcCustomer')) {
-            $ModemHelper = \Modules\HfcCustomer\Entities\ModemHelper::class;
-
             foreach ($netelements as $netelement) {
                 $id = $netelement->id;
                 $name = $netelement->name;
                 $pos_tree = $netelement->pos;
                 $pos = $netelement->modemsUsPwrPosAvgs;
 
+                $onlineModems = $netelement->modems_online_count;
+                $allModems = $netelement->modems_count;
+                $modemUsPwrAvg = $netelement->modemsUsPwrAvg;
+                $modemStateAnalysis = new \Modules\HfcCustomer\Entities\Utility\ModemStateAnalysis(
+                    $onlineModems, $allModems, $modemUsPwrAvg);
+
                 if ($pos->x_avg != null && $pos->y_avg != null) {
                     $xavg = round($pos->x_avg, 4);
                     $yavg = round($pos->y_avg, 4);
-                    $icon = $ModemHelper::ms_state_to_color($ModemHelper::ms_state($netelement));
+                    $icon = $modemStateAnalysis->toColor();
                     $icon .= '-CUS';
 
                     // Draw Line - Customer - Amp

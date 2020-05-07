@@ -286,22 +286,20 @@ class TreeErdController extends HfcBaseController
         // TODO: Customer
         //
         if (\Module::collections()->has('HfcCustomer')) {
-            $ModemHelper = \Modules\HfcCustomer\Entities\ModemHelper::class;
             foreach ($netelements as $netelem) {
                 $idtree = $netelem->id;
                 $id = $netelem->id;
                 $type = $netelem->type;
                 $url = \BaseRoute::get_base_url()."/Customer/netelement_id/$idtree";
-                $n++;
 
-                $state = $ModemHelper::ms_state($netelem);
-                if ($state != -1) {
-                    $color = $ModemHelper::ms_state_to_color($state);
-                    $num = $netelem->modems_online_count;
-                    $numa = $netelem->modems_count;
-                    $cri = $netelem->modems_critical_count;
-                    $avg = $netelem->modemsUsPwrAvg;
+                $num = $netelem->modems_online_count;
+                $numa = $netelem->modems_count;
+                $cri = $netelem->modems_critical_count;
+                $avg = $netelem->modemsUsPwrAvg;
+                $modemStateAnalysis = new \Modules\HfcCustomer\Entities\Utility\ModemStateAnalysis($num, $numa, $avg);
 
+                if ($modemStateAnalysis->get()) {
+                    $color = $modemStateAnalysis->toColor();
                     $file .= "\n node [label = \"$numa\\n$num/$cri\\n$avg\", shape = circle, style = filled, color=$color, URL=\"$url\", target=\"\"];";
                     $file .= " \"C$idtree\"";
                     $file .= "\n \"$id\" -> C$idtree [color = green]";

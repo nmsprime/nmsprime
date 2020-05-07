@@ -9,7 +9,6 @@ use App\GuiLog;
 use Illuminate\Support\Facades\Auth;
 use Modules\ProvBase\Entities\Modem;
 use App\Http\Controllers\BaseController;
-use Modules\HfcCustomer\Entities\ModemHelper;
 use Modules\HfcBase\Http\Controllers\HfcBaseController;
 
 class DashboardController extends BaseController
@@ -41,10 +40,7 @@ class DashboardController extends BaseController
      */
     public static function save_modem_statistics()
     {
-        $avg_critical_us = 52;
-        if (\Module::collections()->has('HfcCustomer')) {
-            $avg_critical_us = ModemHelper::$avg_warning_us;
-        }
+        $avg_critical_us = config('hfccustomer.threshhold.avg.us.critical', 52);
 
         // Get only modems from valid contracts
         $query = Modem::join('contract as c', 'c.id', '=', 'modem.contract_id')
@@ -81,10 +77,12 @@ class DashboardController extends BaseController
         }
 
         $a = json_decode(Storage::disk('chart-data')->get('modems.json'));
+        $modemStateAnalysis = new Modules\HfcCustomer\Entities\Utility\ModemStateAnalysis($a->online, $a->all);
 
         $a->text = 'Modems<br>'.$a->online.' / '.$a->all;
 
-        $a->state = ModemHelper::_ms_state($a->online, $a->all, 40);
+        $a->state = $modemStateAnalysis->get() ?? 'OK';
+
         switch ($a->state) {
             case 'OK':			$a->fa = 'fa fa-thumbs-up'; $a->style = 'success'; break;
             case 'WARNING':		$a->fa = 'fa fa-meh-o'; $a->style = 'warning'; break;
