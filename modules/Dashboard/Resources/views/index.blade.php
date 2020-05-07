@@ -34,7 +34,7 @@
                 @stop
                 @include ('bootstrap.panel', [
                     'content' => "ticket_table",
-                    'view_header' => trans('messages.dashbrd_ticket'),
+                    'view_header' => trans('messages.dashboard_ticket'),
                     'md' => 12, 'height' => 'auto', 'i' => '1',
                 ])
             @endif
