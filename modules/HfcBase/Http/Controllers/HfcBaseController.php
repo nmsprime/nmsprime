@@ -166,7 +166,7 @@ class HfcBaseController extends BaseController
 
             $ret['clr'][] = $clr[$service->last_hard_state];
             $ret['row'][] = [$link, $service->name2, preg_replace('/[<>]/m', '', $service->output), $service->last_time_ok];
-            $ret['perf'][] = self::_get_impaired_services_perfdata($service->perfdata);
+            $ret['perf'][] = self::deserializePerfdata($service->perfdata);
         }
 
         if ($ret) {
@@ -179,44 +179,40 @@ class HfcBaseController extends BaseController
     /**
      * Return formatted impaired performance data for a given perfdata string
      *
-     * @author Ole Ernst
+     * @author Ole Ernst, Christian Schramm
+     * @param string $perf
      * @return array
      */
-    private static function _get_impaired_services_perfdata($perf)
+    private static function deserializePerfdata(string $perf): array
     {
         $ret = [];
         preg_match_all("/('.+?'|[^ ]+)=([^ ]+)/", $perf, $matches, PREG_SET_ORDER);
-        foreach ($matches as $idx => $val) {
-            $ret[$idx]['text'] = $val[1];
-            $p = explode(';', rtrim($val[2], ';'));
-            // we are dealing with percentages
-            if (substr($p[0], -1) == '%') {
-                $p[3] = 0;
-                $p[4] = 100;
-            }
-            $ret[$idx]['val'] = $p[0];
-            // remove unit of measurement, such as percent
-            $p[0] = preg_replace('/[^0-9.]/', '', $p[0]);
 
-            // set the colour according to the current $p[0], warning $p[1] and critical $p[2] value
-            $cls = null;
-            if (isset($p[1]) && isset($p[2])) {
-                $cls = self::_get_perfdata_class($p[0], $p[1], $p[2]);
-                // don't show non-impaired perf data
-                if ($cls == 'success') {
+        foreach ($matches as $idx => $match) {
+            $data = explode(';', rtrim($match[2], ';'));
+            [$value, $warningThreshhold, $criticalThreshhold] = $data;
+            $unifiedValue = preg_replace('/[^0-9.]/', '', $value); // remove unit of measurement, such as percent
+
+            if (substr($value, -1) == '%' || (isset($data[3]) && isset($data[4]))) { // we are dealing with percentages
+                $min = $data[3] ?? 0;
+                $max = $data[4] ?? 100;
+                $percentage = ($max - $min) ? (($unifiedValue - $min) / ($max - $min) * 100) : null;
+                $percentageText = sprintf(' (%.1f%%)', $percentage);
+            }
+
+            if (isset($warningThreshhold) && isset($criticalThreshhold)) { // set the html color
+                $htmlClass = self::getPerfDataHtmlClass($unifiedValue, $warningThreshhold, $criticalThreshhold);
+
+                if ($htmlClass === 'success') { // don't show non-impaired perf data
                     unset($ret[$idx]);
                     continue;
                 }
             }
-            $ret[$idx]['cls'] = $cls;
 
-            // set the percentage according to the current $p[0], minimum $p[3] and maximum $p[4] value
-            $per = null;
-            if (isset($p[3]) && isset($p[4]) && ($p[4] - $p[3])) {
-                $per = ($p[0] - $p[3]) / ($p[4] - $p[3]) * 100;
-                $ret[$idx]['text'] .= sprintf(' (%.1f%%)', $per);
-            }
-            $ret[$idx]['per'] = $per;
+            $ret[$idx]['val'] = $value;
+            $ret[$idx]['text'] = $match[1].($percentageText ?? null);
+            $ret[$idx]['cls'] = $htmlClass ?? null;
+            $ret[$idx]['per'] = $percentage ?? null;
         }
 
         return $ret;
@@ -225,33 +221,27 @@ class HfcBaseController extends BaseController
     /**
      * Return performance data colour class according to given limits
      *
-     * @author Ole Ernst
+     * @author Ole Ernst, Christian Schramm
+     * @param int $value
+     * @param int $warningThreshhold
+     * @param int $criticalThreshhold
      * @return string
      */
-    private static function _get_perfdata_class($cur, $warn, $crit)
+    private static function getPerfDataHtmlClass(int $value, int $warningThreshhold, int $criticalThreshhold): string
     {
-        if ($crit > $warn) {
-            if ($cur < $warn) {
-                return 'success';
-            }
-            if ($cur < $crit) {
-                return 'warning';
-            }
-            if ($cur > $crit) {
-                return 'danger';
-            }
-        } elseif ($crit < $warn) {
-            if ($cur > $warn) {
-                return 'success';
-            }
-            if ($cur > $crit) {
-                return 'warning';
-            }
-            if ($cur < $crit) {
-                return 'danger';
-            }
-        } else {
+        if ($criticalThreshhold > $warningThreshhold) { // i.e. for upstream power
+            [$value, $warningThreshhold,$criticalThreshhold] =
+                negate($value, $warningThreshhold, $criticalThreshhold);
+        }
+
+        if ($value > $warningThreshhold) {
+            return 'success';
+        }
+
+        if ($value > $criticalThreshhold) {
             return 'warning';
         }
+
+        return 'danger';
     }
 }
