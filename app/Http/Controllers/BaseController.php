@@ -848,6 +848,7 @@ class BaseController extends Controller
 
         // Prepare and Validate Input
         $data = $controller->prepare_input(Request::all());
+        $data['id'] = $id;
         $rules = $controller->prepare_rules($obj::rules($id), $data);
         $validator = Validator::make($data, $rules);
 
