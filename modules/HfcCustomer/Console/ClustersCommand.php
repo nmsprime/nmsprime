@@ -30,24 +30,6 @@ class ClustersCommand extends Command
     protected $signature = 'nms:clusters {--o|output=all : What information should be returned. Available options are online|power|all}';
 
     /**
-     * All netelements with active modems as childrem in their tree
-     *
-     * @var Illuminate\Database\Eloquent\Collection
-     */
-    protected $netelements;
-
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->netelements = NetElement::withActiveModems()->get();
-        parent::__construct();
-    }
-
-    /**
      * Execute the console command.
      *
      * @return mixed
@@ -62,7 +44,7 @@ class ClustersCommand extends Command
             'CRITICAL' => 2,
         ];
 
-        foreach ($this->netelements as $netelement) {
+        foreach (NetElement::withActiveModems()->get() as $netelement) {
             if ($netelement->modems_count == 0) {
                 continue;
             }
@@ -75,20 +57,14 @@ class ClustersCommand extends Command
             $crit_us = config('hfccustomer.threshhold.avg.us.critical');
 
             if ($this->option('output') === 'online' || $this->option('output') === 'all') {
-                if (
-                    $modemPercentage < config('hfccustomer.threshhold.avg.percentage.critical') ||
-                    ($modemPercentage < config('hfccustomer.threshhold.avg.percentage.warning') && $status == 'OK')
-                ) {
+                if ($this->isPercentageWarningOrCritical($modemPercentage, $status)) {
                     $status = $modemStateAnalysis->get();
                 }
                 $output .= "'$netelement->name'=$netelement->modems_online_count;$warn_per;$crit_per;0;$netelement->modems_count ";
             }
 
             if ($this->option('output') === 'power' || $this->option('output') === 'all') {
-                if (
-                    $netelement->modemsUsPwrAvg > $crit_us ||
-                    ($netelement->modemsUsPwrAvg > $warn_us && $status == 'OK')
-                ) {
+                if ($this->isPowerWarningOrCritical($netelement->modemsUsPwrAvg, $status)) {
                     $status = $modemStateAnalysis->get();
                 }
 
@@ -99,5 +75,35 @@ class ClustersCommand extends Command
         $this->line("$status | $output");
 
         return $lookup[$status];
+    }
+
+    /**
+     * Determine if state needs to change. State can always be 'CRITICAL', but
+     * 'WARNING' can only occur when state was 'OK'. This is for the case when
+     * the critical threshhold is higher than the warning threshhold.
+     *
+     * @param [type] $percentage
+     * @param [type] $status
+     * @return boolean
+     */
+    protected function isPercentageWarningOrCritical($percentage, $status)
+    {
+        return $percentage <= config('hfccustomer.threshhold.avg.percentage.critical') ||
+            ($percentage < config('hfccustomer.threshhold.avg.percentage.warning') && $status == 'OK');
+    }
+
+    /**
+     * Determine if state needs to change. State can always be 'CRITICAL', but
+     * 'WARNING' can only occur when state was 'OK'. This is for the case when
+     * the warning threshhold is higher than the critical threshhold. (UsPwr)
+     *
+     * @param [type] $usPowerAvg
+     * @param [type] $status
+     * @return boolean
+     */
+    protected function isPowerWarningOrCritical($usPowerAvg, $status)
+    {
+        return $usPowerAvg >= config('hfccustomer.threshhold.avg.us.critical') ||
+            ($usPowerAvg > config('hfccustomer.threshhold.avg.us.warning') && $status == 'OK');
     }
 }
