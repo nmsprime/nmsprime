@@ -219,7 +219,7 @@ class DebtObserver
         }
 
         if ($debt->isDirty('parent_id') && ! $debt->parent_id) {
-            $this->clearCorrespondingDebt($debt, false, true);
+            $this->clearCorrespondingDebt($debt, true);
 
             $debt->missing_amount = $debt->amount;
             $debt->debtObserverEnabled = false;
@@ -234,7 +234,7 @@ class DebtObserver
     public function deleted($debt)
     {
         if ($debt->debtObserverEnabled) {
-            $this->clearCorrespondingDebt($debt, true);
+            $this->clearCorrespondingDebt($debt);
         }
 
         Debt::where('id', $debt->id)->update(['missing_amount' => $debt->amount, 'cleared' => 0]);
@@ -243,7 +243,7 @@ class DebtObserver
     /**
      * Determine debt to clear and adapt missing_amount and cleared flag of it and it's payments depending on the cumulated amounts
      */
-    public function clearCorrespondingDebt($debt, $deleted = false, $original = false)
+    public function clearCorrespondingDebt($debt, $original = false)
     {
         if (! $debt->invoice_id && ! $debt->parent_id && ! $original) {
             return;
