@@ -329,12 +329,13 @@ class DebtObserver
         }
 
         // Manual bank transfer from customer with invoice number
-        if ($debt->invoice_id) {
-            $comparator = $debt->amount > 0 ? '<' : '>';
+        // Edit 2020-05-12: Debt will only get cleared when parent_id is set - during Mt940 import it's now set by DefaultTransactionParser
+        // if ($debt->invoice_id) {
+        //     $comparator = $debt->amount > 0 ? '<' : '>';
 
-            return Debt::where('invoice_id', $debt->invoice_id)
-                ->where('cleared', 0)->where('amount', $comparator, 0)->where('id', '!=', $debt->id)
-                ->orderBy('id')->first();
-        }
+        //     return Debt::where('invoice_id', $debt->invoice_id)
+        //         ->where('cleared', 0)->where('amount', $comparator, 0)->where('id', '!=', $debt->id)
+        //         ->orderBy('id')->first();
+        // }
     }
 }
