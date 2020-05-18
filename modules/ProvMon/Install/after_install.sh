@@ -46,9 +46,11 @@ systemctl reload httpd.service
 cd /usr/share/cacti/cli
 su -s /bin/bash -c "php add_tree.php --type=tree --name='Cablemodem' --sort-method=natural" apache
 su -s /bin/bash -c "php add_tree.php --type=tree --name='CMTS' --sort-method=natural" apache
-su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_cablemodem.xml" apache
-su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_casa_cmts.xml" apache
-su -s /bin/bash -c "php import_template.php --filename=/var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_cisco_cmts.xml" apache
+
+# import all cacti host templates
+for template in /var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_*.xml; do
+	su -s /bin/bash -c "php import_template.php --filename=$template" apache
+done
 #su -s /bin/bash -c "php install_cacti.php --install --accept-eula" apache
 
 # add our css rules to cacti, if they haven't been added yet (see after_upgrade.sh as well)
