@@ -1290,12 +1290,7 @@ class ProvMonController extends \BaseController
         if (! $host_id) {
             return collect();
         }
-        /*
-        $vendor = $netelem->netelementtype->vendor;
-        $graph_template_id = self::monitoring_get_graph_template_id("$vendor NETGW Overview");
-        if (! $graph_template_id)
-            return;
-        */
+
         $idxs = $netelem
             ->indices
             ->pluck('indices')
@@ -1442,18 +1437,12 @@ class ProvMonController extends \BaseController
      *
      * @author: Ole Ernst
      */
-    public static function monitoring_get_graph_template_id($name)
+    public static function monitoringGetGraphTemplateId($name)
     {
-        // Connect to Cacti DB
-        $cacti = \DB::connection('mysql-cacti');
-
-        // Get Cacti Host ID to $modem
-        $template = $cacti->table('graph_templates')->where('name', '=', $name)->select('id')->first();
-        if (! isset($template)) {
-            return;
-        }
-
-        return $template->id;
+        return \DB::connection('mysql-cacti')
+            ->table('graph_templates')
+            ->where('name', 'like', $name)
+            ->pluck('id');
     }
 
     /**
