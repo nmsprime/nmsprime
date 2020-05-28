@@ -22,7 +22,7 @@ class TroubleDashboardController
         $impairedData = $hosts->concat($services)
             ->sortByDesc(function ($element) use ($netelements) {
                 return [
-                    $element->current_state,
+                    $element->last_hard_state,
                     $element->affectedModemsCount($netelements),
                 ];
             });

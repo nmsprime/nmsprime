@@ -17,6 +17,17 @@ class IcingaHostStatus extends Model implements ImpairedContract
     public $additionalData = [];
     public $affectedModems;
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::retrieved(function ($model) {
+            if ($model->last_hard_state != 0) {
+                $model->last_hard_state = 2; // interpret all Hosts that are not OK as Critical
+            }
+        });
+    }
+
     public function icingaObject()
     {
         return $this->belongsTo(IcingaObject::class, 'host_object_id', 'object_id')

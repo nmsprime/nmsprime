@@ -54,7 +54,7 @@
                                 <div style="width: 50%;">
                             @endif
                                 <div class="d-flex m-b-5 align-items-center">
-                                    <i class="fa fa-circle text-{{ $colors[$host->current_state] }} m-r-5"></i>
+                                    <i class="fa fa-circle text-{{ $colors[$host->last_hard_state] }} m-r-5"></i>
                                     {{ isset(explode('_',$host->icingaObject->name1)[1]) ? $netelements[explode('_',$host->icingaObject->name1)[0]]->name : $host->icingaObject->name1 }}
                                 </div>
                             @if($loop->index % 6 === 5 || $loop->last)
@@ -83,7 +83,7 @@
                                 <div style="width: 50%;">
                             @endif
                                 <div class="d-flex m-b-5 align-items-center">
-                                    <i class="fa fa-circle text-{{ $colors[$service->current_state] }} m-r-5"></i>
+                                    <i class="fa fa-circle text-{{ $colors[$service->last_hard_state] }} m-r-5"></i>
                                     {{ $service->icingaObject->name2 }}
                                 </div>
                             @if($loop->index % 6 === 5 || $loop->last)
@@ -113,8 +113,8 @@
                 </thead>
                 <tbody>
                 @foreach ($impairedData['impairedData'] as $i => $service)
-                @if ($service->current_state > 0 || $service->last_hard_state > 0)
-                <tr v-if="showMuted || !{{ $service->problem_has_been_acknowledged }}" class="{{ $colors[$service->current_state] }}">
+                @if ($service->last_hard_state > 0 )
+                <tr v-if="showMuted || !{{ $service->problem_has_been_acknowledged }}" class="{{ $colors[$service->last_hard_state] }}">
                         @if ($service->hasAdditionalData())
                             <td class="clickable" data-toggle="collapse" data-target=".{{$i}}collapsedservice">
                                 <i class="fa fa-plus"></i>

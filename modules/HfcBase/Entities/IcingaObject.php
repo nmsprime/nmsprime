@@ -40,7 +40,7 @@ class IcingaObject extends Model
     public function servicestatus()
     {
         return $this->hasOne(IcingaServiceStatus::class, 'service_object_id', 'object_id')
-            ->orderBy('current_state', 'desc')
+            ->orderBy('last_hard_state', 'desc')
             ->orderBy('last_time_ok', 'desc');
     }
 

@@ -37,7 +37,7 @@ class IcingaServiceStatus extends Model implements ImpairedContract
 
     public function scopeForTroubleDashboard($query)
     {
-        return $query->orderBy('current_state', 'desc')
+        return $query->orderBy('last_hard_state', 'desc')
             ->orderBy('last_time_ok', 'desc')
             ->with(['icingaObject.netelement'])
             ->whereHas('icingaObject');
