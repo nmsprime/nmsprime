@@ -15,23 +15,23 @@
                     </div>
                 </div>
                 <div id="collapseModems" class="m-t-20 panel-collapse collapse">
-                    <div class="d-flex flex-wrap">
-                            <div class="d-flex m-b-5 align-items-center">
-                                <i class="fa fa-circle text-success m-r-5"></i>
-                                {{ $modem_statistics->online - $modem_statistics->warning - $modem_statistics->critical }} Modems with good signal
-                            </div>
-                            <div class="d-flex m-b-5 align-items-center">
-                                <i class="fa fa-circle text-warning m-r-5"></i>
-                                {{ $modem_statistics->warning }} Modems warning
-                            </div>
-                            <div class="d-flex m-b-5 align-items-center">
-                                <i class="fa fa-circle text-danger m-r-5"></i>
-                                {{ $modem_statistics->critical }} Modems critical
-                            </div>
-                            <div class="d-flex m-b-5 align-items-center">
-                                <i class="fa fa-circle text-gray m-r-5"></i>
-                                {{ $modem_statistics->all -$modem_statistics->online }} Modems offline
-                            </div>
+                    <div class="d-flex flex-column">
+                        <div class="d-flex m-b-5 align-items-center">
+                            <i class="fa fa-circle text-success m-r-5"></i>
+                            {{ $modem_statistics->online - $modem_statistics->warning - $modem_statistics->critical }} Modems with good signal
+                        </div>
+                        <div class="d-flex m-b-5 align-items-center">
+                            <i class="fa fa-circle text-warning m-r-5"></i>
+                            {{ $modem_statistics->warning }} Modems have warning state
+                        </div>
+                        <div class="d-flex m-b-5 align-items-center">
+                            <i class="fa fa-circle text-danger m-r-5"></i>
+                            {{ $modem_statistics->critical }} Modems have critical state
+                        </div>
+                        <div class="d-flex m-b-5 align-items-center">
+                            <i class="fa fa-circle text-gray m-r-5"></i>
+                            {{ $modem_statistics->all -$modem_statistics->online }} Modems offline
+                        </div>
                     </div>
                 </div>
             </div>
@@ -48,19 +48,21 @@
                     </div>
                 </div>
                 <div id="collapseNetelements" class="m-t-20 panel-collapse collapse">
-                    <div class="d-flex flex-wrap">
-                        @foreach ($hosts as $host)
-                            @if($loop->index % 6 == 0)
-                                <div style="width: 50%;">
-                            @endif
-                                <div class="d-flex m-b-5 align-items-center">
-                                    <i class="fa fa-circle text-{{ $colors[$host->last_hard_state] }} m-r-5"></i>
-                                    {{ isset(explode('_',$host->icingaObject->name1)[1]) ? $netelements[explode('_',$host->icingaObject->name1)[0]]->name : $host->icingaObject->name1 }}
-                                </div>
-                            @if($loop->index % 6 === 5 || $loop->last)
-                                </div>
-                            @endif
-                        @endforeach
+                    <div class="d-flex flex-column">
+                        @php
+                            $hostsCritical = $hosts->filter(function ($host) {
+                                return $host->last_hard_state == 2;
+                            })->count();
+                            $hostsOk = $hosts->count() - $hostsCritical;
+                        @endphp
+                        <div class="d-flex m-b-5 align-items-center">
+                            <i class="fa fa-circle text-success m-r-5"></i>
+                            {{ $hostsOk }} Netelements are online
+                        </div>
+                        <div class="d-flex m-b-5 align-items-center">
+                            <i class="fa fa-circle text-danger m-r-5"></i>
+                            {{ $hostsCritical }} Netelements are in critical state
+                        </div>
                     </div>
                 </div>
             </div>
@@ -77,19 +79,28 @@
                     </div>
                 </div>
                 <div id="collapseServices" class="m-t-20 panel-collapse collapse">
-                    <div class="d-flex flex-wrap">
-                        @foreach ($services as $service)
-                            @if($loop->index % 6 == 0)
-                                <div style="width: 50%;">
-                            @endif
-                                <div class="d-flex m-b-5 align-items-center">
-                                    <i class="fa fa-circle text-{{ $colors[$service->last_hard_state] }} m-r-5"></i>
-                                    {{ $service->icingaObject->name2 }}
-                                </div>
-                            @if($loop->index % 6 === 5 || $loop->last)
-                                </div>
-                            @endif
-                        @endforeach
+                    <div class="d-flex flex-column">
+                        @php
+                            $servicesCritical = $services->filter(function ($service) {
+                                    return $service->last_hard_state == 2;
+                                })->count();
+                            $servicesWarning = $services->filter(function ($service) {
+                                    return $service->last_hard_state == 1;
+                                })->count();
+                            $servicesOk = $services->count() - $servicesCritical - $servicesWarning;
+                        @endphp
+                        <div class="d-flex m-b-5 align-items-center">
+                            <i class="fa fa-circle text-success m-r-5"></i>
+                            {{ $servicesOk }} Services online
+                        </div>
+                        <div class="d-flex m-b-5 align-items-center">
+                            <i class="fa fa-circle text-warning m-r-5"></i>
+                            {{ $servicesWarning }} Services are in warning state
+                        </div>
+                        <div class="d-flex m-b-5 align-items-center">
+                            <i class="fa fa-circle text-danger m-r-5"></i>
+                            {{ $servicesCritical }} Services are in critical state
+                        </div>
                     </div>
                 </div>
             </div>
@@ -113,7 +124,7 @@
                 </thead>
                 <tbody>
                 @foreach ($impairedData['impairedData'] as $i => $service)
-                @if ($service->last_hard_state > 0 )
+                @if ($service->last_hard_state > 0)
                 <tr v-if="showMuted || !{{ $service->problem_has_been_acknowledged }}" class="{{ $colors[$service->last_hard_state] }}">
                         @if ($service->hasAdditionalData())
                             <td class="clickable" data-toggle="collapse" data-target=".{{$i}}collapsedservice">
