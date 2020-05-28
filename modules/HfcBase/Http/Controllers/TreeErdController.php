@@ -296,7 +296,7 @@ class TreeErdController extends HfcBaseController
                 $numa = $netelem->modems_count;
                 $cri = $netelem->modems_critical_count;
                 $avg = $netelem->modemsUsPwrAvg;
-                $modemStateAnalysis = new \Modules\HfcCustomer\Entities\Utility\ModemStateAnalysis($num, $numa, $avg);
+                $modemStateAnalysis = new \Modules\HfcCustomer\Helpers\ModemStateAnalysis($num, $numa, $avg);
 
                 if ($modemStateAnalysis->get()) {
                     $color = $modemStateAnalysis->toColor();

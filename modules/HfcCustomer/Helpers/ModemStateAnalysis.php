@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\HfcCustomer\Entities\Utility;
+namespace Modules\HfcCustomer\Helpers;
 
 class ModemStateAnalysis
 {

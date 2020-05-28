@@ -4,7 +4,7 @@ namespace Modules\HfcCustomer\Console;
 
 use Illuminate\Console\Command;
 use Modules\HfcReq\Entities\NetElement;
-use Modules\HfcCustomer\Entities\Utility\ModemStateAnalysis;
+use Modules\HfcCustomer\Helpers\ModemStateAnalysis;
 
 class ClustersCommand extends Command
 {

@@ -200,7 +200,7 @@ class TreeTopographyController extends HfcBaseController
                 $onlineModems = $netelement->modems_online_count;
                 $allModems = $netelement->modems_count;
                 $modemUsPwrAvg = $netelement->modemsUsPwrAvg;
-                $modemStateAnalysis = new \Modules\HfcCustomer\Entities\Utility\ModemStateAnalysis(
+                $modemStateAnalysis = new \Modules\HfcCustomer\Helpers\ModemStateAnalysis(
                     $onlineModems, $allModems, $modemUsPwrAvg);
 
                 if ($pos->x_avg != null && $pos->y_avg != null) {

@@ -82,7 +82,7 @@ class DashboardController extends BaseController
 
         $a = json_decode(Storage::disk('chart-data')->get('modems.json'));
         $a->text = 'Modems<br>'.$a->online.' / '.$a->all;
-        $a->state = (new \Modules\HfcCustomer\Entities\Utility\ModemStateAnalysis($a->online, $a->all,20))->get() ?? 'OK';
+        $a->state = (new \Modules\HfcCustomer\Helpers\ModemStateAnalysis($a->online, $a->all,20))->get() ?? 'OK';
 
         switch ($a->state) {
             case 'OK':			$a->fa = 'fa fa-thumbs-up'; $a->style = 'success'; break;
