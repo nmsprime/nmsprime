@@ -134,3 +134,7 @@
 @endif
 </div>
 @stop
+
+@section('javascript')
+@include('HfcBase::troubledashboard.javascript')
+@stop

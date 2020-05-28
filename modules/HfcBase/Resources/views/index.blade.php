@@ -14,45 +14,30 @@
         {{--Quickstart--}}
 
         <div class="row">
-            @DivOpen(7)
+            @DivOpen(8)
                 @include('Generic.quickstart')
             @DivClose()
-            @DivOpen(2)
-            @DivClose()
-            @DivOpen(3)
-            @include ('bootstrap.widget',
-                array (
-                    'content' => 'date',
-                    'widget_icon' => 'calendar',
-                    'widget_bg_color' => 'purple',
-                )
-            )
-            @DivClose()
-        </div>
-        <div class="row">
-            @DivOpen(3)
+            @DivOpen(4)
                 @include('HfcBase::widgets.hfc')
             @DivClose()
-
+            @if($services)
+                @section ('impaired_services')
+                    @include('HfcBase::troubledashboard.panel')
+                @stop
+                @include ('bootstrap.panel', [
+                    'content' => "impaired_services",
+                    'view_header' => 'Trouble Dashboard',
+                    'height' => 'auto',
+                    'i' => '2'
+                ])
+            @endif
             @DivOpen(5)
                 @include('HfcBase::widgets.documentation')
             @DivClose()
         </div>
-
-        <div class="row">
-            @if($services)
-                @section ('impaired_services')
-                    @include('HfcBase::panels.impaired_services')
-                @stop
-                @include ('bootstrap.panel', array ('content' => "impaired_services", 'view_header' => 'Impaired Services', 'md' => 6, 'height' => 'auto', 'i' => '2'))
-            @endif
-
-            @if($netelements)
-                @section ('impaired_netelements')
-                    @include('HfcBase::panels.impaired_netelements')
-                @stop
-                @include ('bootstrap.panel', array ('content' => "impaired_netelements", 'view_header' => 'Impaired Netelements', 'md' => 6, 'height' => 'auto', 'i' => '1'))
-            @endif
-        </div>
     </div>
+@stop
+
+@section('javascript')
+@include('HfcBase::troubledashboard.javascript')
 @stop
