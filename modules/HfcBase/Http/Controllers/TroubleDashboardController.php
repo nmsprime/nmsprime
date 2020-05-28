@@ -32,7 +32,7 @@ class TroubleDashboardController
 
     public function muteProblem($type, $id, $mute)
     {
-        if ($type === 'hoststatus') {
+        if ($type === 'host') {
             $model = IcingaHostStatus::findorFail($id);
         } else {
             $model = IcingaServiceStatus::findorFail($id);

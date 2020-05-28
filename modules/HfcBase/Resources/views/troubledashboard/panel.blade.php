@@ -150,15 +150,23 @@
                                     </svg>
                                 </a>
                                 @if ($service instanceof Modules\HfcBase\Entities\IcingaServiceStatus)
-                                <form method="POST" action="{{ route('TroubleDashboard.mute', ['service', $service->servicestatus_id, 1]) }}">
+                                <form method="POST" action="{{ route('TroubleDashboard.mute', ['service', $service->servicestatus_id, !$service->problem_has_been_acknowledged]) }}">
                                     {{ csrf_field() }}
-                                    <button type="submit" class="btn btn-light p-5 m-l-10"><i class="fa fa-lg fa-bell-slash-o"></i></button>
+                                    @if ($service->problem_has_been_acknowledged)
+                                        <button type="submit" class="btn btn-light p-5 m-l-10"><i class="fa fa-lg fa-bell-o"></i></button>
+                                    @else
+                                        <button type="submit" class="btn btn-light p-5 m-l-10"><i class="fa fa-lg fa-bell-slash-o"></i></button>
+                                    @endif
                                 </form>
                                 @endif
                                 @if ($service instanceof Modules\HfcBase\Entities\IcingaHostStatus)
-                                <form method="POST" action="{{ route('TroubleDashboard.mute', ['host', $service->hoststatus_id, 1]) }}">
+                                <form method="POST" action="{{ route('TroubleDashboard.mute', ['host', $service->hoststatus_id, !$service->problem_has_been_acknowledged]) }}">
                                     {{ csrf_field() }}
-                                    <button type="submit" class="btn btn-light p-5 m-l-10"><i class="fa fa-lg fa-bell-slash-o"></i></button>
+                                    @if ($service->problem_has_been_acknowledged)
+                                        <button type="submit" class="btn btn-light p-5 m-l-10"><i class="fa fa-lg fa-bell-o"></i></button>
+                                    @else
+                                        <button type="submit" class="btn btn-light p-5 m-l-10"><i class="fa fa-lg fa-bell-slash-o"></i></button>
+                                    @endif
                                 </form>
                                 @endif
                                 <a href="{{ $service->toMap() }}" target="_blank" class="btn btn-light p-5 m-l-10"><i class="fa fa-lg fa-map"></i></a>

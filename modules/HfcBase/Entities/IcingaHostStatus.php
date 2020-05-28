@@ -10,7 +10,8 @@ class IcingaHostStatus extends Model implements ImpairedContract
     // SQL connection
     protected $connection = 'mysql-icinga2';
 
-    protected $primaryKey = 'servicestatus_id';
+    protected $primaryKey = 'hoststatus_id';
+
     // The associated SQL table for this Model
     public $table = 'icinga_hoststatus';
 
