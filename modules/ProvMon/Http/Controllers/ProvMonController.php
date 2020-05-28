@@ -55,14 +55,14 @@ class ProvMonController extends \BaseController
     {
         $modem = $this->modem ?: Modem::findOrFail($id);
 
-        $tabs = [['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $id],
-            ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => $id],
+        $tabs = [['name' => 'Analyses', 'icon' => 'area-chart', 'route' => 'ProvMon.index', 'link' => $id],
+            ['name' => 'CPE-Analysis', 'icon' => 'area-chart', 'route' => 'ProvMon.cpe', 'link' => $id],
         ];
 
         array_unshift($tabs, $this->defineEditRoute($id));
 
         if (isset($modem->mtas[0])) {
-            array_push($tabs, ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => $id]);
+            array_push($tabs, ['name' => 'MTA-Analysis', 'icon' => 'area-chart', 'route' => 'ProvMon.mta', 'link' => $id]);
         }
 
         return $tabs;
@@ -679,8 +679,8 @@ class ProvMonController extends \BaseController
         $host_id = $this->monitoring_get_host_id($netgw);
 
         $tabs = [
-            ['name' => 'Edit', 'route' => 'NetGw.edit', 'link' => $id],
-            ['name' => 'Analysis', 'route' => 'ProvMon.netgw', 'link' => $id],
+            ['name' => 'Edit', 'icon' => 'pencil', 'route' => 'NetGw.edit', 'link' => $id],
+            ['name' => 'Analysis', 'icon' => 'area-chart', 'route' => 'ProvMon.netgw', 'link' => $id],
         ];
 
         $view_header = 'Provmon-NetGw';
@@ -1500,32 +1500,32 @@ class ProvMonController extends \BaseController
         $type = $model->netelementtype->get_base_type();
         $provmon = new self;
 
-        $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $model->id]];
+        $tabs = [['name' => 'Edit', 'icon' => 'pencil', 'route' => 'NetElement.edit', 'link' => $model->id]];
 
         if (in_array($type, [1, 2, 8])) {
             $sqlCol = $type == 8 ? 'parent_id' : $model->netelementtype->name;
 
             array_push($tabs,
-                ['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$sqlCol, $model->id]],
-                ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$sqlCol, $model->id]]
+                ['name' => 'Entity Diagram', 'icon' => 'sitemap', 'route' => 'TreeErd.show', 'link' => [$sqlCol, $model->id]],
+                ['name' => 'Topography', 'icon' => 'map', 'route' => 'TreeTopo.show', 'link' => [$sqlCol, $model->id]]
             );
         }
 
         if (! in_array($type, [1, 8, 9])) {
-            array_push($tabs, ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$model->id, 0, 0]]);
+            array_push($tabs, ['name' => 'Controlling', 'icon' => 'wrench', 'route' => 'NetElement.controlling_edit', 'link' => [$model->id, 0, 0]]);
         }
 
         if ($type == 9) {
-            array_push($tabs, ['name' => 'Controlling', 'route' => 'NetElement.tapControlling', 'link' => [$model->id]]);
+            array_push($tabs, ['name' => 'Controlling', 'icon' => 'bar-chart fa-rotate-90', 'route' => 'NetElement.tapControlling', 'link' => [$model->id]]);
         }
 
         if ($type == 4 || $type == 5 && \Bouncer::can('view_analysis_pages_of', Modem::class)) {
             //create Analyses tab (for ORA/VGP) if IP address is no valid IP
-            array_push($tabs, ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $provmon->createAnalysisTab($model->ip)]);
+            array_push($tabs, ['name' => 'Analyses', 'icon' => 'area-chart', 'route' => 'ProvMon.index', 'link' => $provmon->createAnalysisTab($model->ip)]);
         }
 
         if (! in_array($type, [4, 5, 8, 9])) {
-            array_push($tabs, ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => [$model->id]]);
+            array_push($tabs, ['name' => 'Diagrams', 'icon' => 'area-chart', 'route' => 'ProvMon.diagram_edit', 'link' => [$model->id]]);
         }
 
         return $tabs;
