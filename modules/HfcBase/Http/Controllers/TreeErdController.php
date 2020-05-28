@@ -106,7 +106,7 @@ class TreeErdController extends HfcBaseController
         $netelements->with('netelementtype:id,name');
 
         if (IcingaObject::db_exists()) {
-            $netelements->with('icingaobject.icingahoststatus');
+            $netelements->with('icingaobject.hoststatus');
         }
 
         $file = $this->generateSVG($netelements->get());

@@ -9,7 +9,7 @@ use App\GuiLog;
 use Illuminate\Support\Facades\Auth;
 use Modules\ProvBase\Entities\Modem;
 use App\Http\Controllers\BaseController;
-use Modules\HfcBase\Http\Controllers\HfcBaseController;
+use Modules\HfcBase\Http\Controllers\TroubleDashboardController;
 
 class DashboardController extends BaseController
 {
@@ -27,11 +27,13 @@ class DashboardController extends BaseController
 
         $news = $this->news();
 
-        // This is the most timeconsuming task
-        $netelements = HfcBaseController::get_impaired_netelements();
-        $services = HfcBaseController::get_impaired_services();
+        $impairedData = TroubleDashboardController::impairedData();
+        $services = $impairedData['services'];
+        $hosts = $impairedData['hosts'];
+        $netelements = $impairedData['netelements'];
+        $colors = ['success', 'warning', 'danger'];
 
-        return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'logs', 'tickets', 'netelements', 'services', 'news')));
+        return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'logs', 'tickets', 'hosts', 'impairedData', 'services', 'colors', 'netelements', 'news')));
     }
 
     /**
@@ -40,8 +42,6 @@ class DashboardController extends BaseController
      */
     public static function save_modem_statistics()
     {
-        $avg_critical_us = config('hfccustomer.threshhold.avg.us.critical', 52);
-
         // Get only modems from valid contracts
         $query = Modem::join('contract as c', 'c.id', '=', 'modem.contract_id')
             ->where('c.contract_start', '<=', date('Y-m-d'))
@@ -55,7 +55,11 @@ class DashboardController extends BaseController
         $modems = [
             'all' => $query->where('modem.id', '>', '0')->count(),
             'online' => $query->where('modem.us_pwr', '>', '0')->count(),
-            'critical' => $query->where('modem.us_pwr', '>', $avg_critical_us)->count(),
+            'warning' => $query
+                ->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.avg.us.warning', 45))
+                ->where('modem.us_pwr', '<', config('hfccustomer.threshhold.avg.us.critical', 52))
+                ->count(),
+            'critical' => $query->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.avg.us.critical', 52))->count(),
         ];
 
         Storage::disk('chart-data')->put('modems.json', json_encode($modems));
@@ -77,11 +81,8 @@ class DashboardController extends BaseController
         }
 
         $a = json_decode(Storage::disk('chart-data')->get('modems.json'));
-        $modemStateAnalysis = new Modules\HfcCustomer\Entities\Utility\ModemStateAnalysis($a->online, $a->all);
-
         $a->text = 'Modems<br>'.$a->online.' / '.$a->all;
-
-        $a->state = $modemStateAnalysis->get() ?? 'OK';
+        $a->state = (new \Modules\HfcCustomer\Entities\Utility\ModemStateAnalysis($a->online, $a->all,20))->get() ?? 'OK';
 
         switch ($a->state) {
             case 'OK':			$a->fa = 'fa fa-thumbs-up'; $a->style = 'success'; break;

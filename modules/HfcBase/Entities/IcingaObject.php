@@ -2,7 +2,10 @@
 
 namespace Modules\HfcBase\Entities;
 
-class IcingaObject extends \BaseModel
+use Illuminate\Database\Eloquent\Model;
+use Modules\HfcReq\Entities\NetElement;
+
+class IcingaObject extends Model
 {
     // SQL connection
     protected $connection = 'mysql-icinga2';
@@ -20,8 +23,45 @@ class IcingaObject extends \BaseModel
         return $ret;
     }
 
-    public function icingahoststatus()
+    public function hoststatus()
     {
         return $this->hasOne(IcingaHostStatus::class, 'host_object_id', 'object_id');
+    }
+
+    public function netelement()
+    {
+        return $this->belongsTo(NetElement::class, 'name1', 'id_name')
+            ->where('id', '>', '2')
+            ->where('netelementtype_id', '>', '2')
+            ->without('netelementtype')
+            ->withActiveModems();
+    }
+
+    public function servicestatus()
+    {
+        return $this->hasOne(IcingaServiceStatus::class, 'service_object_id', 'object_id')
+            ->orderBy('current_state', 'desc')
+            ->orderBy('last_time_ok', 'desc');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', '=', '1');
+    }
+
+    public function scopeWithHostStatus($query)
+    {
+        return $query->active()
+            ->where('objecttype_id', '1')
+            ->with(['netelement', 'hoststatus']);
+    }
+
+    public function scopeWithServices($query)
+    {
+        return $query->active()
+            ->with(['servicestatus', 'netelement'])
+            ->where('name2', '<>', 'ping4')
+            ->whereHas('servicestatus')
+            ->orderByRaw("name2 like 'clusters%' desc");
     }
 }
