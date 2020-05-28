@@ -4,20 +4,26 @@ namespace Modules\HfcBase\Http\Controllers;
 
 use View;
 use Module;
-use Modules\HfcReq\Entities\NetElement;
 use App\Http\Controllers\BaseController;
-use Modules\HfcBase\Entities\IcingaObject;
+use Modules\Dashboard\Http\Controllers\DashboardController;
 
 class HfcBaseController extends BaseController
 {
     public function index()
     {
         $title = 'Hfc Dashboard';
+        $netelements = [];
+        $services = [];
 
-        $netelements = $this->get_impaired_netelements();
-        $services = $this->get_impaired_services();
+        // This is the most timeconsuming task
+        $impairedData = TroubleDashboardController::impairedData();
+        $services = $impairedData['services'];
+        $hosts = $impairedData['hosts'];
+        $netelements = $impairedData['netelements'];
+        $colors = ['success', 'warning', 'danger', 'info'];
+        $modem_statistics = DashboardController::get_modem_statistics();
 
-        return View::make('HfcBase::index', $this->compact_prep_view(compact('title', 'netelements', 'services')));
+        return View::make('HfcBase::index', $this->compact_prep_view(compact('title', 'impairedData', 'netelements', 'services', 'hosts', 'colors', 'modem_statistics')));
     }
 
     /**
