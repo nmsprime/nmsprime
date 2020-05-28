@@ -60,7 +60,7 @@ class ClustersCommand extends Command
                 if ($this->isPercentageWarningOrCritical($modemPercentage, $status)) {
                     $status = $modemStateAnalysis->get();
                 }
-                $output .= "'$netelement->name'=$netelement->modems_online_count;$warn_per;$crit_per;0;$netelement->modems_count ";
+                $output .= "'{$netelement->id}_{$netelement->name}'={$netelement->modems_online_count};{$warn_per};{$crit_per};0;{$netelement->modems_count} ";
             }
 
             if ($this->option('output') === 'power' || $this->option('output') === 'all') {
@@ -68,7 +68,7 @@ class ClustersCommand extends Command
                     $status = $modemStateAnalysis->get();
                 }
 
-                $output .= "'$netelement->name ($netelement->modemsUsPwrAvg dBuV, #crit:$netelement->modems_critical_count)'=$netelement->modemsUsPwrAvg;$warn_us;$crit_us ";
+                $output .= "'{$netelement->id}_{$netelement->name} ({$netelement->modemsUsPwrAvg} dBuV, #crit:{$netelement->modems_critical_count})'={$netelement->modemsUsPwrAvg};{$warn_us};{$crit_us} ";
             }
         }
 
