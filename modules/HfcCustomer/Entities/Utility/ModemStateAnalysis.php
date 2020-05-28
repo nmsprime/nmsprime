@@ -58,8 +58,8 @@ class ModemStateAnalysis
 
         foreach (['critical', 'warning'] as $state) {
             if (
-                $this->modemOnlinePercentage() < config("hfccustomer.threshhold.avg.percentage.{$state}") ||
-                $this->usPwrAvg > config("hfccustomer.threshhold.avg.us.{$state}")
+                $this->modemOnlinePercentage() <= config("hfccustomer.threshhold.avg.percentage.{$state}") ||
+                $this->usPwrAvg >= config("hfccustomer.threshhold.avg.us.{$state}")
             ) {
                 return $this->state = strtoupper($state);
             }

@@ -82,14 +82,14 @@ class ClustersCommand extends Command
      * 'WARNING' can only occur when state was 'OK'. This is for the case when
      * the critical threshhold is higher than the warning threshhold.
      *
-     * @param [type] $percentage
-     * @param [type] $status
-     * @return boolean
+     * @param int $percentage
+     * @param string $status
+     * @return bool
      */
-    protected function isPercentageWarningOrCritical($percentage, $status)
+    protected function isPercentageWarningOrCritical(int $percentage, string $status): bool
     {
         return $percentage <= config('hfccustomer.threshhold.avg.percentage.critical') ||
-            ($percentage < config('hfccustomer.threshhold.avg.percentage.warning') && $status == 'OK');
+            ($percentage <= config('hfccustomer.threshhold.avg.percentage.warning') && $status == 'OK');
     }
 
     /**
@@ -97,13 +97,13 @@ class ClustersCommand extends Command
      * 'WARNING' can only occur when state was 'OK'. This is for the case when
      * the warning threshhold is higher than the critical threshhold. (UsPwr)
      *
-     * @param [type] $usPowerAvg
-     * @param [type] $status
-     * @return boolean
+     * @param int $usPowerAvg
+     * @param string $status
+     * @return bool
      */
-    protected function isPowerWarningOrCritical($usPowerAvg, $status)
+    protected function isPowerWarningOrCritical(int $usPowerAvg, string $status): bool
     {
         return $usPowerAvg >= config('hfccustomer.threshhold.avg.us.critical') ||
-            ($usPowerAvg > config('hfccustomer.threshhold.avg.us.warning') && $status == 'OK');
+            ($usPowerAvg >= config('hfccustomer.threshhold.avg.us.warning') && $status == 'OK');
     }
 }
