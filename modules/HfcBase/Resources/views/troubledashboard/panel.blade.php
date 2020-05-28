@@ -126,8 +126,8 @@
                 @foreach ($impairedData['impairedData'] as $i => $service)
                 @if ($service->last_hard_state > 0)
                 <tr v-if="showMuted || !{{ $service->problem_has_been_acknowledged }}" class="{{ $colors[$service->last_hard_state] }}">
-                        @if ($service->hasAdditionalData())
-                            <td class="clickable" data-toggle="collapse" data-target=".{{$i}}collapsedservice">
+                        @if ($hasAdditionalData = $service->hasAdditionalData())
+                            <td style="cursor: pointer;" data-toggle="collapse" data-target=".{{$i}}collapsedservice">
                                 <i class="fa fa-plus"></i>
                             </td>
                         @else
@@ -135,12 +135,12 @@
                                 <i class="fa fa-info"></i>
                             </td>
                         @endif
-                            <td class='f-s-13'>{{ $service->netelement ? $service->netelement->name : $service->icingaObject->name1 }}</td>
-                            <td class='f-s-13'>{{ $service->icingaObject->name2 ?? 'Netelement'}}</td>
-                            <td class='f-s-13'>{{ preg_replace('/[<>]/m', '', $service->output) }}</td>
-                            <td class='f-s-13'>{{ $service->last_hard_state_change }}</td>
-                            <td class='f-s-13'>{{ $service->last_time_ok }}</td>
-                            <td class='f-s-13'>{{ $service->affectedModems }}</td>
+                            <td class='f-s-13' style="{{ $hasAdditionalData ? 'cursor: pointer;' : '' }}" data-toggle="collapse" data-target=".{{$i}}collapsedservice">{{ $service->netelement ? $service->netelement->name : $service->icingaObject->name1 }}</td>
+                            <td class='f-s-13' style="{{ $hasAdditionalData ? 'cursor: pointer;' : '' }}" data-toggle="collapse" data-target=".{{$i}}collapsedservice">{{ $service->icingaObject->name2 ?? 'Netelement'}}</td>
+                            <td class='f-s-13' style="{{ $hasAdditionalData ? 'cursor: pointer;' : '' }}" data-toggle="collapse" data-target=".{{$i}}collapsedservice">{{ preg_replace('/[<>]/m', '', $service->output) }}</td>
+                            <td class='f-s-13' style="{{ $hasAdditionalData ? 'cursor: pointer;' : '' }}" data-toggle="collapse" data-target=".{{$i}}collapsedservice">{{ $service->last_hard_state_change }}</td>
+                            <td class='f-s-13' style="{{ $hasAdditionalData ? 'cursor: pointer;' : '' }}" data-toggle="collapse" data-target=".{{$i}}collapsedservice">{{ $service->last_time_ok }}</td>
+                            <td class='f-s-13' style="{{ $hasAdditionalData ? 'cursor: pointer;' : '' }}" data-toggle="collapse" data-target=".{{$i}}collapsedservice">{{ $service->affectedModems }}</td>
                         <td>
                             <div class="d-flex align-items-center">
                                 <a href="{{ $service->toIcingaWeb() }}" target="_blank" class="btn btn-light p-5 m-l-10">
@@ -180,7 +180,7 @@
                                 @if($perf['per'] !== null)
                                         <div class="d-flex align-items-center progress progress-striped m-b-0">
                                             <div class="progress-bar progress-bar-{{ $perf['cls'] ?? $colors[$service->last_hard_state] }}" style="width: {{$perf['per']}}%">
-                                                <span class='text-inverse' style="width:auto;left:40%;">{{$perf['text']}}</span>
+                                                <span class='text-inverse' style="width:auto;left:40px;">{{$perf['text']}}</span>
                                             </div>
                                         </div>
                                 @else
