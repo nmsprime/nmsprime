@@ -25,6 +25,19 @@ class TroubleDashboardController
                     $element->last_hard_state,
                     $element->affectedModemsCount($netelements),
                 ];
+            })
+            ->map(function ($impaired) use ($netelements) {
+                if (isset($impaired->additionalData) && ! is_array($impaired->additionalData)) {
+                    $impaired->additionalData = $impaired->additionalData
+                        ->sortByDesc(function ($element) use ($netelements) {
+                            return [
+                                // $element['state'],
+                                ((isset($netelements[$element['id']])) ? $netelements[$element['id']]->modems_count : 0),
+                            ];
+                        });
+                }
+
+                return $impaired;
             });
 
         return collect(compact('hosts', 'impairedData', 'netelements', 'services'));

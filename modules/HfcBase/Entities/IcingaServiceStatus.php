@@ -159,10 +159,17 @@ class IcingaServiceStatus extends Model implements ImpairedContract
                 $id = null;
             }
 
+            $colorToState = [
+                'danger' => 2,
+                'warning' => 1,
+                'success' => 0,
+            ];
+
             $ret[$idx]['id'] = $id;
             $ret[$idx]['val'] = $value;
             $ret[$idx]['text'] = $text.($percentageText ?? null);
             $ret[$idx]['cls'] = $htmlClass ?? null;
+            $ret[$idx]['state'] = isset($htmlClass) ? $colorToState[$htmlClass] : null;
             $ret[$idx]['per'] = $percentage ?? null;
         }
 
