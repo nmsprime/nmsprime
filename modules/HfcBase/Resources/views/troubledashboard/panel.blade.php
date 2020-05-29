@@ -1,20 +1,13 @@
 <div id="troubleDash">
     <div>
         <h2 class="m-b-25">Summary</h2>
-        <div class="row d-flex justify-content-between m-b-25">
-            <div class="d-flex flex-column border p-15 col-3">
-                <div class="d-flex align-items-center">
-                    <div style="padding: 0px; display: block; width: 100px; height: 100px;">
-                        <canvas id="modem-chart" width="100" height="100"></canvas>
-                    </div>
-                    <div class="m-l-15">
-                        <div class="f-s-20">Modems</div>
-                        <a data-toggle="collapse" href="#collapseModems" role="button" aria-expanded="false" aria-controls="collapseExample">
-                            show Details...
-                        </a>
-                    </div>
+        <div class="row d-flex flex-wrap justify-content-between m-b-25">
+            <div class="d-flex border p-15 col-4">
+                <div style="padding: 0px; display: block; width: 150px; height: 150px;">
+                    <canvas id="modem-chart" width="150px" height="150px"></canvas>
                 </div>
-                <div id="collapseModems" class="m-t-20 panel-collapse collapse">
+                <div class="m-l-15">
+                    <div class="f-s-20 m-b-10">Modems</div>
                     <div class="d-flex flex-column">
                         <div class="d-flex m-b-5 align-items-center">
                             <i class="fa fa-circle text-success m-r-5"></i>
@@ -35,19 +28,12 @@
                     </div>
                 </div>
             </div>
-            <div class="d-flex flex-column border p-15 col-3">
-                <div class="d-flex align-items-center">
-                    <div style="padding: 0px; display: block; width: 100px; height: 100px;">
-                        <canvas id="netelement-chart" width="100" height="100"></canvas>
-                    </div>
-                    <div class="m-l-15">
-                        <div class="f-s-20">Netelements</div>
-                        <a data-toggle="collapse" href="#collapseNetelements" role="button" aria-expanded="false" aria-controls="collapseExample">
-                            show Details...
-                        </a>
-                    </div>
+            <div class="d-flex border p-15 col-4">
+                <div style="padding: 0px; display: block; width: 150px; height: 150px;">
+                    <canvas id="netelement-chart" width="150px" height="150px"></canvas>
                 </div>
-                <div id="collapseNetelements" class="m-t-20 panel-collapse collapse">
+                <div class="m-l-15">
+                    <div class="f-s-20 m-b-10">Netelements</div>
                     <div class="d-flex flex-column">
                         @php
                             $hostsCritical = $hosts->filter(function ($host) {
@@ -66,19 +52,12 @@
                     </div>
                 </div>
             </div>
-            <div class="d-flex flex-column border p-15 col-5">
-                <div class="d-flex align-items-center">
-                    <div style="padding: 0px; display: block; width: 100px; height: 100px;">
-                        <canvas id="service-chart" width="100" height="100"></canvas>
-                    </div>
-                    <div class="m-l-15">
-                        <div class="f-s-20">Services</div>
-                        <a data-toggle="collapse" href="#collapseServices" role="button" aria-expanded="false" aria-controls="collapseExample">
-                            show Details...
-                        </a>
-                    </div>
+            <div class="d-flex border p-15 col-4">
+                <div style="padding: 0px; display: block; width: 150px; height: 150px;">
+                    <canvas id="service-chart" width="150px" height="150px"></canvas>
                 </div>
-                <div id="collapseServices" class="m-t-20 panel-collapse collapse">
+                <div class="m-l-15">
+                    <div class="f-s-20 m-b-10">Services</div>
                     <div class="d-flex flex-column">
                         @php
                             $servicesCritical = $services->filter(function ($service) {
