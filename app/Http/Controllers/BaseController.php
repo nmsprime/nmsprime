@@ -2,9 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\V1\Repository;
-use App\V1\Service;
-use App\V1\V1Trait;
 use Log;
 use Str;
 use Auth;
@@ -17,7 +14,10 @@ use Redirect;
 use BaseModel;
 use Validator;
 use GlobalConfig;
+use App\V1\Service;
+use App\V1\V1Trait;
 use Monolog\Logger;
+use App\V1\Repository;
 use Yajra\DataTables\DataTables;
 
 /*
@@ -765,11 +765,12 @@ class BaseController extends Controller
             self::_set_many_to_many_relations($obj, $data);
 
             return response()->json(['ret' => 'success', 'id' => $obj->id]);
-        }elseif ($ver === '1'){
+        } elseif ($ver === '1') {
             $data = Request::all();
             $model = (new Service(new Repository(static::get_model_obj())))->create($data);
-            return $this->response($model,200);
-        }else{
+
+            return $this->response($model, 200);
+        } else {
             return response()->json(['ret' => "Version $ver not supported"]);
         }
     }
@@ -916,12 +917,12 @@ class BaseController extends Controller
             self::_set_many_to_many_relations($obj, $data);
 
             return response()->json(['ret' => 'success']);
-        }elseif ($ver === '1'){
+        } elseif ($ver === '1') {
             $data = Request::all();
             $model = (new Service(new Repository(static::get_model_obj())))->update($id, $data);
-            return $this->response($model,200);
 
-        }else{
+            return $this->response($model, 200);
+        } else {
             return response()->json(['ret' => "Version $ver not supported"]);
         }
     }
@@ -1114,15 +1115,14 @@ class BaseController extends Controller
             }
 
             return response()->json(['ret' => $ret]);
-        }elseif ($ver === '1'){
+        } elseif ($ver === '1') {
             $service = new Service(new Repository(static::get_model_obj()));
             $data = $service->delete($id);
+
             return $this->response([]);
-        }else{
+        } else {
             return response()->json(['ret' => "Version $ver not supported"]);
         }
-
-
     }
 
     /**
@@ -1157,13 +1157,13 @@ class BaseController extends Controller
     {
         if ($ver === '0') {
             return static::get_model_obj()->findOrFail($id);
-        }elseif ($ver === '1'){
-                $resourceOptions = $this->parseResourceOptions();
-                $service = new Service(new Repository(static::get_model_obj()));
-                $data = $service->getById($id, $resourceOptions);
-                $parsedData = $this->parseData($data, $resourceOptions);
+        } elseif ($ver === '1') {
+            $resourceOptions = $this->parseResourceOptions();
+            $service = new Service(new Repository(static::get_model_obj()));
+            $data = $service->getById($id, $resourceOptions);
+            $parsedData = $this->parseData($data, $resourceOptions);
 
-                return $this->response($parsedData);
+            return $this->response($parsedData);
         } else {
             return response()->json(['ret' => "Version $ver not supported"]);
         }
@@ -1205,17 +1205,16 @@ class BaseController extends Controller
             } catch (\Exception $e) {
                 return response()->json(['ret' => $e]);
             }
-        }elseif ($ver === '1'){
+        } elseif ($ver === '1') {
             $resourceOptions = $this->parseResourceOptions();
             $service = new Service(new Repository(static::get_model_obj()));
             $data = $service->getAll($resourceOptions);
             $parsedData = $this->parseData($data, $resourceOptions);
 
             return $this->response($parsedData);
-        }else{
+        } else {
             return response()->json(['ret' => "Version $ver not supported"]);
         }
-
     }
 
     // Deprecated:

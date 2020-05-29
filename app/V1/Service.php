@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\V1;
 
 use Illuminate\Events\Dispatcher;
@@ -14,8 +13,7 @@ class Service
 
     public function __construct(
         Repository $repository
-    )
-    {
+    ) {
         $this->repository = $repository;
     }
 
