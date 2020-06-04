@@ -2,22 +2,53 @@
 
 namespace Modules\HfcBase\Entities;
 
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 use Modules\HfcBase\Contracts\ImpairedContract;
 
 class IcingaServiceStatus extends Model implements ImpairedContract
 {
-    // SQL connection
+    /**
+     * The connection name for the model.
+     *
+     * @var string
+     */
     protected $connection = 'mysql-icinga2';
 
-    protected $primaryKey = 'servicestatus_id';
-
-    // The associated SQL table for this Model
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
     public $table = 'icinga_servicestatus';
 
+    /**
+     * The primary key for the model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'servicestatus_id';
+
+    /**
+     * Contains more detailed for Subservices, deserialized from perfdata field.
+     *
+     * @var \Illuminate\Support\Collection
+     */
     public $additionalData;
+
+    /**
+     * The amount of modems affected by this Service.
+     *
+     * @var int
+     */
     public $affectedModems;
 
+    /**
+     * The "booting" method of the model. For every retrieved Service, try to
+     * deserialize the perfdata property.
+     *
+     * @return void
+     */
     protected static function boot()
     {
         parent::boot();
@@ -27,6 +58,11 @@ class IcingaServiceStatus extends Model implements ImpairedContract
         });
     }
 
+    /**
+     * Relation to IcingaObject.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function icingaObject()
     {
         return $this->belongsTo(IcingaObject::class, 'service_object_id', 'object_id')
@@ -35,6 +71,12 @@ class IcingaServiceStatus extends Model implements ImpairedContract
             ->orderByRaw("name2 like 'clusters%' desc");
     }
 
+    /**
+     * Scope to get all necessary informations for the trouble Dashboard.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function scopeForTroubleDashboard($query)
     {
         return $query->orderBy('last_hard_state', 'desc')
@@ -43,27 +85,54 @@ class IcingaServiceStatus extends Model implements ImpairedContract
             ->whereHas('icingaObject');
     }
 
+    /**
+     * Laravel magic method to quickly access the netelement.
+     *
+     * @return void
+     */
     public function getNetelementAttribute()
     {
         return $this->icingaObject->netelement;
     }
 
+    /**
+     * Checks whether the deserialization of the perfdata property contained
+     * additional Data.
+     *
+     * @return bool
+     */
     public function hasAdditionalData()
     {
         return count($this->additionalData);
     }
 
+    /**
+     * Link for this service in IcingaWeb2
+     *
+     * @return string
+     */
     public function toIcingaWeb()
     {
-        return 'https://'.\Request::server('HTTP_HOST').'/icingaweb2/monitoring/service/show?host='.
+        return 'https://'.request()->server('HTTP_HOST').'/icingaweb2/monitoring/service/show?host='.
             $this->icingaObject->name1.'&service='.$this->icingaObject->name2;
     }
 
+    /**
+     * Link to Controlling page in NMS Prime. For Services there is currently
+     * no such page.
+     *
+     * @return void
+     */
     public function toControlling()
     {
-        return false;
     }
 
+    /**
+     * Link to Topo overview. Depending of the information available the
+     * netelement or all netelements are displayed.
+     *
+     * @return string
+     */
     public function toMap()
     {
         if ($this->netelement) {
@@ -77,6 +146,11 @@ class IcingaServiceStatus extends Model implements ImpairedContract
         return route('TreeTopo.show', ['field' => 'id', 'search' => 2]);
     }
 
+    /**
+     * Link to Ticket creation form already prefilled.
+     *
+     * @return string
+     */
     public function toTicket()
     {
         $state = preg_replace('/[<>]/m', '', $this->output);
@@ -87,6 +161,13 @@ class IcingaServiceStatus extends Model implements ImpairedContract
         ]);
     }
 
+    /**
+     * For the rows in additional data a ticket can be created.
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $netelements
+     * @param array $perf the Deserialized Perfdata
+     * @return string
+     */
     public function toSubTicket($netelements, $perf)
     {
         if (! $perf['id']) {
@@ -102,6 +183,14 @@ class IcingaServiceStatus extends Model implements ImpairedContract
         ]);
     }
 
+    /**
+     * Sums the modem count of each affected cluster if this service monitors
+     * clusters otherwise it tries to get the amount of affected modems of
+     * the related NetElement.
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $netelements
+     * @return int
+     */
     public function affectedModemsCount($netelements)
     {
         if (\Str::contains($this->icingaObject->name2, 'cluster')) {

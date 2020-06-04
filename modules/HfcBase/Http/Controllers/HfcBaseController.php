@@ -9,6 +9,11 @@ use Modules\Dashboard\Http\Controllers\DashboardController;
 
 class HfcBaseController extends BaseController
 {
+    /**
+     * Compose HFC Base Dashboard
+     *
+     * @return Illuminate\View\View
+     */
     public function index()
     {
         $title = 'Hfc Dashboard';

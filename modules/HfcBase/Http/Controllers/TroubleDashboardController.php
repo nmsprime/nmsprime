@@ -9,6 +9,11 @@ use Modules\HfcBase\Entities\IcingaServiceStatus;
 
 class TroubleDashboardController
 {
+    /**
+     * Collect all necessary information for the trouble dashboard.
+     *
+     * @return \Illuminate\Support\Collection
+     */
     public static function impairedData()
     {
         if (! IcingaObject::db_exists()) {
@@ -48,7 +53,7 @@ class TroubleDashboardController
      *
      * @param string $type
      * @param int $id
-     * @param boolean $mute
+     * @param bool $mute
      * @return \Illuminate\Http\Response
      */
     public function muteProblem($type, $id, $mute)
