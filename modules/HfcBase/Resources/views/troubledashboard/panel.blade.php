@@ -70,11 +70,11 @@
                 <div class="d-flex m-b-5 align-items-baseline">
                     <i class="fa fa-circle text-warning m-r-5"></i>
                     @if($servicesWarningCount > 0)
-                        <a href="#javascript;" data-toggle="collapse" data-target="#services-critical">
-                            {{ $servicesWarningCount }} Services are in critical state
+                        <a href="#javascript;" data-toggle="collapse" data-target="#services-warning">
+                            {{ $servicesWarningCount }} Services are in warning state
                         </a>
                     @else
-                        {{ $servicesWarningCount }} Services are in critical state
+                        {{ $servicesWarningCount }} Services are in warning state
                     @endif
                 </div>
                 <div class="d-flex m-b-5 align-items-baseline">
@@ -194,9 +194,9 @@
                             <td class="d-lg-none" colspan="2" class="p-20">{{$perf['text']}}</td>
                             <td class="d-none d-lg-table-cell d-wide-none" colspan="4" class="p-20">
                                 @if($perf['per'] !== null)
-                                        <div class=" d-flex-md align-items-center progress progress-striped m-b-0">
+                                        <div class=" d-flex-md align-items-center progress progress-striped m-b-0" style="position:relative;">
                                             <div class="progress-bar progress-bar-{{ $perf['cls'] ?? $colors[$impaired->last_hard_state] }}" style="width: {{$perf['per']}}%">
-                                                <span class='text-inverse' style="width:auto;left:40px;">{{$perf['text']}}</span>
+                                                <div class='text-inverse' style="position:absolute;width:auto;left:40px;">{{$perf['text']}}</div>
                                             </div>
                                         </div>
                                 @else
@@ -205,9 +205,9 @@
                             </td>
                             <td class="d-none d-wide-table-cell" colspan="6" class="p-20">
                                 @if($perf['per'] !== null)
-                                        <div class=" d-flex-md align-items-center progress progress-striped m-b-0">
+                                        <div class=" d-flex-md align-items-center progress progress-striped m-b-0" style="position:relative;">
                                             <div class="progress-bar progress-bar-{{ $perf['cls'] ?? $colors[$impaired->last_hard_state] }}" style="width: {{$perf['per']}}%">
-                                                <span class='text-inverse' style="width:auto;left:40px;">{{$perf['text']}}</span>
+                                                <div class='text-inverse' style="position:absolute;width:auto;left:40px;">{{$perf['text']}}</div>
                                             </div>
                                         </div>
                                 @else
@@ -215,7 +215,7 @@
                                 @endif
                             </td>
                             <td>
-                                {{ ($perf['id'] && $netelements[$perf['id']]) ? $netelements[$perf['id']]->modems_count : 0 }}
+                                {{ (isset($perf['id']) && isset($netelements[$perf['id']])) ? $netelements[$perf['id']]->modems_count : 0 }}
                             </td>
                             <td class="d-none d-sm-table-cell">
                                 <div class="d-flex align-items-center">

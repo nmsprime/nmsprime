@@ -46,7 +46,7 @@ class IcingaApi
      * @param string $filter Icinga2 API filter (see Icinga2 API doc)
      * @param array $options Additional options for Icinga2 API
      */
-    public function __construct(string $type,string $filter,array $options = [])
+    public function __construct(string $type, string $filter, array $options = [])
     {
         $defaultOptions = collect(['sticky' => false, 'notify' => true, 'pretty' => false]);
 
@@ -67,7 +67,7 @@ class IcingaApi
     {
         $this->payload = $this->payload->merge([
             'author' => auth()->user()->first_name.' '.auth()->user()->last_name,
-            'comment' => 'Acknowledged by NMS Prime via Trouble Dashboard.'
+            'comment' => 'Acknowledged by NMS Prime via Trouble Dashboard.',
         ]);
         $this->url = $this->baseUrl.'actions/acknowledge-problem';
         $this->curlRequest();
@@ -100,7 +100,7 @@ class IcingaApi
         curl_setopt_array($curl, [
             CURLOPT_CUSTOMREQUEST => 'POST',
             CURLOPT_URL => $this->url,
-            CURLOPT_USERPWD => $this->icingaApiUser.":".$this->icingaApiPassword,
+            CURLOPT_USERPWD => $this->icingaApiUser.':'.$this->icingaApiPassword,
             CURLOPT_POSTFIELDS => $this->payload->toJson(),
             CURLOPT_HTTPHEADER => ['Accept: application/json'],
             CURLOPT_RETURNTRANSFER => true,

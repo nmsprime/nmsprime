@@ -91,13 +91,13 @@ class TroubleDashboardController
         }
 
         if ($type === 'Host') {
-           return "host.name == \"{$icingaObject->netelement->id_name}\"";
+            return "host.name == \"{$icingaObject->netelement->id_name}\"";
         }
 
-        return response(["results" => [
-                "error" => 400,
-                "status" => "Bad Request. Your Type Parameter is not matching our database.",
-                ]
-            ], 400);
+        return response(['results' => [
+            'error' => 400,
+            'status' => 'Bad Request. Your Type Parameter is not matching our database.',
+        ],
+        ], 400);
     }
 }

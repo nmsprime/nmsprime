@@ -170,7 +170,7 @@ class IcingaServiceStatus extends Model implements ImpairedContract
      */
     public function toSubTicket($netelements, $perf)
     {
-        if (! $perf['id']) {
+        if (! $perf['id'] || ! isset($netelements[$perf['id']])) {
             return route('Ticket.create', [
                 'name' => "{$perf['text']}",
                 'description' => "{$perf['text']}\nSince {$this->last_hard_state_change}",
@@ -193,14 +193,14 @@ class IcingaServiceStatus extends Model implements ImpairedContract
      */
     public function affectedModemsCount($netelements)
     {
-        if (\Str::contains($this->icingaObject->name2, 'cluster')) {
+        if (Str::contains($this->icingaObject->name2, 'cluster')) {
             return $this->affectedModems = $this->additionalData->map(function ($element) use ($netelements) {
-                if (isset($element['id'])) {
-                    $element['id'] = $netelements[$element['id']]->modems_count;
+                if (isset($element['id']) && isset($netelements[$element['id']])) {
+                    $element['modems'] = $netelements[$element['id']]->modems_count;
                 }
 
                 return $element;
-            })->sum('id');
+            })->sum('modems');
         }
 
         return $this->affectedModems = optional($this->netelement)->modems_count;
