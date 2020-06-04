@@ -159,10 +159,10 @@ new Vue({
                         {{ $modem_statistics->all -$modem_statistics->online }}
                     ],
                     backgroundColor: [
-                        'green',
-                        'orange',
-                        'red',
-                        'gray'
+                        '#7fb433',
+                        '#f59c1a',
+                        '#cc4946',
+                        '#b6c2c9'
                     ],
                 }
             ],
@@ -185,9 +185,9 @@ new Vue({
                     {{ $serviceState['2'] ?? '' }},
                 ],
                 backgroundColor: [
-                    'green',
-                    'orange',
-                    'red',
+                    '#7fb433',
+                    '#f59c1a',
+                    '#cc4946',
                 ]
             }],
             labels: ['online', 'warning', 'critical'],
@@ -208,9 +208,9 @@ new Vue({
                     {{ $serviceState['2'] ?? '' }},
                 ],
                 backgroundColor: [
-                    'green',
-                    'orange',
-                    'red',
+                    '#7fb433',
+                    '#f59c1a',
+                    '#cc4946',
                 ]
             }],
             labels: ['online', 'warning', 'critical'],
