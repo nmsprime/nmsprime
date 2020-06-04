@@ -51,13 +51,13 @@ class DashboardController extends BaseController
             });
 
         $modems = [
-            'all' => $query->where('modem.id', '>', '0')->count(),
-            'online' => $query->where('modem.us_pwr', '>', '0')->count(),
-            'warning' => $query
+            'all' => with(clone $query)->where('modem.id', '>', '0')->count(),
+            'online' => with(clone $query)->where('modem.us_pwr', '>', '0')->count(),
+            'warning' => with(clone $query)
                 ->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.avg.us.warning', 45))
                 ->where('modem.us_pwr', '<', config('hfccustomer.threshhold.avg.us.critical', 52))
                 ->count(),
-            'critical' => $query->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.avg.us.critical', 52))->count(),
+            'critical' => with(clone $query)->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.avg.us.critical', 52))->count(),
         ];
 
         Storage::disk('chart-data')->put('modems.json', json_encode($modems));
