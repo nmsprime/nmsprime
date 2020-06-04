@@ -1,4 +1,55 @@
 <script src="{{asset('components/assets-admin/plugins/chart/Chart.min.js')}}"></script>
+<script src="{{asset('components/assets-admin/plugins/Abilities/es6-promise.auto.min.js')}}"></script>
+<script src="{{asset('components/assets-admin/plugins/vue/dist/vue.min.js')}}"></script>
+{{-- When in Development use this Version
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    --}}
+<script src="{{asset('components/assets-admin/plugins/Abilities/lodash.core.min.js')}}"></script>
+<script src="{{asset('components/assets-admin/plugins/Abilities/axios.min.js')}}"></script>
+
+<script type="text/javascript">
+
+new Vue({
+    el: '#troubleDash',
+    data() {
+        return {
+            showMuted: false,
+            loading: {},
+            acknowledged: {!! $impairedData['ackState'] !!}
+        }
+    },
+    methods: {
+        mute: function(event) {
+            let self = this
+            let requestId = event.target.getAttribute('object-id')
+            this.loading[requestId] = true
+            this.loading = _.clone(this.loading)
+
+            axios({
+                method: 'post',
+                url: event.target.getAttribute('action'),
+                headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'},
+                contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+                data: {}
+            })
+            .then(function (response) {
+                if (requestId != response.data.id) {
+                    throw "Invalid Id Error";
+                }
+
+                self.acknowledged[response.data.id] = !!! self.acknowledged[response.data.id]
+                self.loading[response.data.id] = false
+                self.loading = _.clone(self.loading)
+
+            })
+            .catch(function (error) {
+                console.log(error)
+                self.loading = {}
+            })
+        }
+    }
+})
+</script>
 <script language="javascript">
     var chart_data_contracts = '{}';
     $(window).on('localstorage-position-loaded load', function () {
