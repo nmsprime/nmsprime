@@ -216,7 +216,7 @@
                                 @endif
                             </td>
                             <td>
-                                {{ (isset($perf['id']) && isset($netelements[$perf['id']])) ? $netelements[$perf['id']]->modems_count : 0 }}
+                                {{ (isset($perf['id']) && isset($impairedData['affectedModemsCount'][$perf['id']])) ? $impairedData['affectedModemsCount'][$perf['id']] : 0 }}
                             </td>
                             <td class="d-none d-sm-table-cell">
                                 <div class="d-flex align-items-center">

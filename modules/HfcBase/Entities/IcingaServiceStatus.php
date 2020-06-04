@@ -196,14 +196,18 @@ class IcingaServiceStatus extends Model implements ImpairedContract
         if (Str::contains($this->icingaObject->name2, 'cluster')) {
             return $this->affectedModems = $this->additionalData->map(function ($element) use ($netelements) {
                 if (isset($element['id']) && isset($netelements[$element['id']])) {
-                    $element['modems'] = $netelements[$element['id']]->modems_count;
+                    $element['modems'] = $netelements[$element['id']];
                 }
 
                 return $element;
             })->sum('modems');
         }
 
-        return $this->affectedModems = optional($this->netelement)->modems_count;
+        if ($this->netelement) {
+            return $this->affectedModems = $netelements[$this->netelement->id] ?? 0;
+        }
+
+        return 0;
     }
 
     /**

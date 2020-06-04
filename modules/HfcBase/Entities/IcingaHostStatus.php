@@ -172,7 +172,11 @@ class IcingaHostStatus extends Model implements ImpairedContract
      */
     public function affectedModemsCount($netelements)
     {
-        return $this->affectedModems = optional($this->netelement)->modems_count;
+        if ($this->netelement) {
+            return $this->affectedModems = $netelements[$this->netelement->id] ?? 0;
+        }
+
+        return 0;
     }
 
     /**
