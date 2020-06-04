@@ -6,6 +6,7 @@
     --}}
 <script src="{{asset('components/assets-admin/plugins/Abilities/lodash.core.min.js')}}"></script>
 <script src="{{asset('components/assets-admin/plugins/Abilities/axios.min.js')}}"></script>
+<script src="{{asset('components/assets-admin/plugins/vue-snotify/snotify.min.js')}}"></script>
 
 <script type="text/javascript">
 
@@ -41,10 +42,15 @@ new Vue({
                 self.loading[response.data.id] = false
                 self.loading = _.clone(self.loading)
 
+                self.$snotify.success(response.data.results[0].status, 'Success')
             })
             .catch(function (error) {
                 console.log(error)
                 self.loading = {}
+                self.$snotify.error(
+                    'Did you configure Icinga2 correctly? Are API username and password set correctly in NMS Prime? Statuscode: ' + error.status,
+                    'There was an Error processing your request!'
+                )
             })
         }
     }

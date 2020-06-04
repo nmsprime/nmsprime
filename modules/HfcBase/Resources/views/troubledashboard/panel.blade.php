@@ -1,4 +1,5 @@
 <div id="troubleDash">
+    <vue-snotify></vue-snotify>
     <div>
         <h2 class="m-b-25">Summary</h2>
         <div class="d-flex flex-column flex-lg-row justify-content-center m-b-25 p-r-15 p-l-15">
