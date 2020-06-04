@@ -17,7 +17,7 @@ class TroubleDashboardController
     public static function impairedData()
     {
         if (! IcingaObject::db_exists()) {
-            return collect(['netelements' => [], 'services' => []]);
+            return collect(['impairedData' => [], 'netelements' => [], 'services' => [], 'hosts' => []]);
         }
 
         $hosts = IcingaHostStatus::forTroubleDashboard()->get();
@@ -45,7 +45,11 @@ class TroubleDashboardController
                 return $impaired;
             });
 
-        return collect(compact('hosts', 'impairedData', 'netelements', 'services'));
+        $ackState = $impairedData->mapWithKeys(function ($impaired) {
+            return [$impaired->icingaObject->object_id => $impaired->problem_has_been_acknowledged];
+        })->toJson();
+
+        return collect(compact('ackState', 'hosts', 'impairedData', 'netelements', 'services', 'ackstate'));
     }
 
     /**

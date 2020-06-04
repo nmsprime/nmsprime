@@ -22,8 +22,6 @@ class HfcBaseController extends BaseController
 
         // This is the most timeconsuming task
         $impairedData = TroubleDashboardController::impairedData();
-        $services = $impairedData['services'];
-        $hosts = $impairedData['hosts'];
         $netelements = $impairedData['netelements'];
         $colors = ['success', 'warning', 'danger', 'info'];
         $modem_statistics = DashboardController::get_modem_statistics();

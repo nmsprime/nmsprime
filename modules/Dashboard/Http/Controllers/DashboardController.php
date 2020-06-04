@@ -28,8 +28,6 @@ class DashboardController extends BaseController
         $news = $this->news();
 
         $impairedData = TroubleDashboardController::impairedData();
-        $services = $impairedData['services'];
-        $hosts = $impairedData['hosts'];
         $netelements = $impairedData['netelements'];
         $colors = ['success', 'warning', 'danger', 'info'];
 

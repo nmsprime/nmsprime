@@ -86,7 +86,6 @@
                 tooltipEl.style.backgroundColor = 'rgba(0,0,0,0.9)';
                 tooltipEl.style.color = 'rgb(255,255,255)';
                 tooltipEl.style.borderRadius = '5px';
-                console.log(tooltipEl, tooltipModel)
             }
         }
     };
@@ -121,7 +120,7 @@
         data: {
             datasets: [{
                 @php
-                    $serviceState = array_count_values($services->pluck('last_hard_state')->toArray());
+                    $serviceState = array_count_values($impairedData['services']->pluck('last_hard_state')->toArray());
                 @endphp
                 data: [
                     {{ $serviceState['0'] ?? '' }},
@@ -144,7 +143,7 @@
         data: {
             datasets: [{
                 @php
-                    $serviceState = array_count_values($hosts->pluck('last_hard_state')->toArray());
+                    $serviceState = array_count_values($impairedData['hosts']->pluck('last_hard_state')->toArray());
                 @endphp
                 data: [
                     {{ $serviceState['0'] ?? '' }},

@@ -20,7 +20,7 @@
             @DivOpen(4)
                 @include('HfcBase::widgets.hfc')
             @DivClose()
-            @if($services)
+            @if(! empty($impairedData))
                 @section ('impaired_services')
                     @include('HfcBase::troubledashboard.panel')
                 @stop

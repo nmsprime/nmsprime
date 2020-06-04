@@ -1,92 +1,130 @@
 <div id="troubleDash">
     <div>
         <h2 class="m-b-25">Summary</h2>
-        <div class="row d-flex flex-wrap justify-content-between m-b-25">
-            <div class="d-flex border p-15 col-4">
-                <div style="padding: 0px; display: block; width: 150px; height: 150px;">
-                    <canvas id="modem-chart" width="150px" height="150px"></canvas>
+        <div class="d-flex flex-column flex-lg-row justify-content-center m-b-25 p-r-15 p-l-15">
+            @section('modem-chart')
+                <div class="d-flex m-b-5 align-items-baseline">
+                    <i class="fa fa-circle text-success m-r-5"></i>
+                    {{ $modem_statistics->online - $modem_statistics->warning - $modem_statistics->critical }} Modems with good signal
                 </div>
-                <div class="m-l-15">
-                    <div class="f-s-20 m-b-10">Modems</div>
-                    <div class="d-flex flex-column">
-                        <div class="d-flex m-b-5 align-items-center">
-                            <i class="fa fa-circle text-success m-r-5"></i>
-                            {{ $modem_statistics->online - $modem_statistics->warning - $modem_statistics->critical }} Modems with good signal
-                        </div>
-                        <div class="d-flex m-b-5 align-items-center">
-                            <i class="fa fa-circle text-warning m-r-5"></i>
-                            {{ $modem_statistics->warning }} Modems have warning state
-                        </div>
-                        <div class="d-flex m-b-5 align-items-center">
-                            <i class="fa fa-circle text-danger m-r-5"></i>
-                            {{ $modem_statistics->critical }} Modems have critical state
-                        </div>
-                        <div class="d-flex m-b-5 align-items-center">
-                            <i class="fa fa-circle text-gray m-r-5"></i>
-                            {{ $modem_statistics->all -$modem_statistics->online }} Modems offline
-                        </div>
-                    </div>
+                <div class="d-flex m-b-5 align-items-baseline">
+                    <i class="fa fa-circle text-warning m-r-5"></i>
+                    {{ $modem_statistics->warning }} Modems have warning state
                 </div>
-            </div>
-            <div class="d-flex border p-15 col-4">
-                <div style="padding: 0px; display: block; width: 150px; height: 150px;">
-                    <canvas id="netelement-chart" width="150px" height="150px"></canvas>
+                <div class="d-flex m-b-5 align-items-baseline">
+                    <i class="fa fa-circle text-danger m-r-5"></i>
+                    {{ $modem_statistics->critical }} Modems have critical state
                 </div>
-                <div class="m-l-15">
-                    <div class="f-s-20 m-b-10">Netelements</div>
-                    <div class="d-flex flex-column">
-                        @php
-                            $hostsCritical = $hosts->filter(function ($host) {
-                                return $host->last_hard_state == 2;
-                            })->count();
-                            $hostsOk = $hosts->count() - $hostsCritical;
-                        @endphp
-                        <div class="d-flex m-b-5 align-items-center">
-                            <i class="fa fa-circle text-success m-r-5"></i>
-                            {{ $hostsOk }} Netelements are online
-                        </div>
-                        <div class="d-flex m-b-5 align-items-center">
-                            <i class="fa fa-circle text-danger m-r-5"></i>
-                            {{ $hostsCritical }} Netelements are in critical state
-                        </div>
-                    </div>
+                <div class="d-flex m-b-5 align-items-baseline">
+                    <i class="fa fa-circle text-gray m-r-5"></i>
+                    {{ $modem_statistics->all -$modem_statistics->online }} Modems offline
                 </div>
-            </div>
-            <div class="d-flex border p-15 col-4">
-                <div style="padding: 0px; display: block; width: 150px; height: 150px;">
-                    <canvas id="service-chart" width="150px" height="150px"></canvas>
+            @endsection
+            @include ('HfcBase::troubledashboard.summarycard', [
+                'title' => 'Modems',
+                'content' => "modem-chart",
+                'canvas' => 'modem',
+            ])
+
+            @section('netelement-chart')
+                @php
+                $hostsCritical = $impairedData['hosts']->filter(function ($host) {
+                    return $host->last_hard_state == 2;
+                });
+                $hostsCriticalCount = $hostsCritical->count();
+                $hostsOk = $impairedData['hosts']->count() - $hostsCriticalCount;
+                @endphp
+                <div class="d-flex m-b-5 align-items-baseline">
+                    <i class="fa fa-circle text-success m-r-5"></i>
+                    {{ $hostsOk }} Netelements are online
                 </div>
-                <div class="m-l-15">
-                    <div class="f-s-20 m-b-10">Services</div>
-                    <div class="d-flex flex-column">
-                        @php
-                            $servicesCritical = $services->filter(function ($service) {
-                                    return $service->last_hard_state == 2;
-                                })->count();
-                            $servicesWarning = $services->filter(function ($service) {
-                                    return $service->last_hard_state == 1;
-                                })->count();
-                            $servicesOk = $services->count() - $servicesCritical - $servicesWarning;
-                        @endphp
-                        <div class="d-flex m-b-5 align-items-center">
-                            <i class="fa fa-circle text-success m-r-5"></i>
-                            {{ $servicesOk }} Services online
-                        </div>
-                        <div class="d-flex m-b-5 align-items-center">
-                            <i class="fa fa-circle text-warning m-r-5"></i>
-                            {{ $servicesWarning }} Services are in warning state
-                        </div>
-                        <div class="d-flex m-b-5 align-items-center">
-                            <i class="fa fa-circle text-danger m-r-5"></i>
-                            {{ $servicesCritical }} Services are in critical state
-                        </div>
-                    </div>
+                <div class="d-flex m-b-5 align-items-baseline">
+                    <i class="fa fa-circle text-danger m-r-5"></i>
+                    <a href="#javascript;" data-toggle="collapse" data-target="#hosts-critical">
+                        {{ $hostsCriticalCount }} Netelements are in critical state
+                    </a>
                 </div>
-            </div>
+            @endsection
+            @include ('HfcBase::troubledashboard.summarycard', [
+                'title' => 'Netelements',
+                'content' => "netelement-chart",
+                'canvas' => 'netelement',
+            ])
+
+            @section('service-chart')
+                @php
+                $servicesCritical = $impairedData['services']->filter(function ($service) {
+                        return $service->last_hard_state == 2;
+                    });
+                $servicesCriticalCount = $servicesCritical->count();
+                $servicesWarning = $impairedData['services']->filter(function ($service) {
+                        return $service->last_hard_state == 1;
+                    });
+                $servicesWarningCount = $servicesWarning->count();
+                $servicesOk = $impairedData['services']->count() - $servicesCriticalCount - $servicesWarningCount;
+                @endphp
+                <div class="d-flex m-b-5 align-items-baseline">
+                    <i class="fa fa-circle text-success m-r-5"></i>
+                    {{ $servicesOk }} Services online
+                </div>
+                <div class="d-flex m-b-5 align-items-baseline">
+                    <i class="fa fa-circle text-warning m-r-5"></i>
+                    @if($servicesWarningCount > 0)
+                        <a href="#javascript;" data-toggle="collapse" data-target="#services-critical">
+                            {{ $servicesWarningCount }} Services are in critical state
+                        </a>
+                    @else
+                        {{ $servicesWarningCount }} Services are in critical state
+                    @endif
+                </div>
+                <div class="d-flex m-b-5 align-items-baseline">
+                    <i class="fa fa-circle text-danger m-r-5"></i>
+                    @if($servicesCriticalCount > 0)
+                        <a href="#javascript;" data-toggle="collapse" data-target="#services-critical">
+                            {{ $servicesCriticalCount }} Services are in critical state
+                        </a>
+                    @else
+                        {{ $servicesCriticalCount }} Services are in critical state
+                    @endif
+                </div>
+            @endsection
+            @include ('HfcBase::troubledashboard.summarycard', [
+                'title' => 'Services',
+                'content' => "service-chart",
+                'canvas' => 'service',
+            ])
         </div>
-        <div class="d-flex justify-content-end m-b-15">
-            <div v-if="!showMuted" v-on:click="showMuted = !showMuted" class="m-r-10" title="show Muted"><i class="fa fa-2x fa-eye-slash"></i></div>
-            <div v-if="showMuted" v-on:click="showMuted = !showMuted" class="m-r-10" title="hide Muted"><i class="fa fa-2x fa-eye"></i></div>
+    </div>
+    <div id="hosts-critical" class="collapse">
+        <div class="d-flex justify-content-around justify-content-sm-between flex-wrap p-5 border m-b-25">
+            @foreach($hostsCritical as $service)
+                <div class="d-flex align-items-center p-5 m-5" style="width:280px;">
+                    <i class="fa fa-circle text-danger m-r-5"></i>
+                    <a class="p-5" href="{{ route('NetElement.controlling_edit', [$service->icingaObject->netelement->id, 0, 0]) }}" target="_blank" rel="noopener noreferrer">
+                        {{ $service->icingaObject->name1 }}
+                    </a>
+                </div>
+            @endforeach
+        </div>
+    </div>
+    <div id="services-warning" class="collapse">
+        <div class="d-flex justify-content-around justify-content-sm-between flex-wrap p-5 border m-b-25">
+            @foreach($servicesWarning as $service)
+                <div class="d-flex align-items-center p-5 m-5" style="width:140px;">
+                    <i class="fa fa-circle text-warning m-r-5"></i>
+                    <div>{{ $service->icingaObject->name2 }}</div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+    <div id="services-critical" class="collapse">
+        <div class="d-flex justify-content-around justify-content-sm-between flex-wrap p-5 border m-b-25">
+            @foreach($servicesCritical as $service)
+                <div class="d-flex align-items-center p-5 m-5" style="width:140px;">
+                    <i class="fa fa-circle text-danger m-r-5"></i>
+                    <div>{{ $service->icingaObject->name2 }}</div>
+                </div>
+            @endforeach
         </div>
     </div>
 

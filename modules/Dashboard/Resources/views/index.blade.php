@@ -83,7 +83,7 @@
 </div>
 <div class="row">
     <div class="col-xl-8 no-gutters ui-sortable">
-        @if($services)
+        @if($impairedData)
             @section ('trouble_dashboard')
                 @include('HfcBase::troubledashboard.panel')
             @stop
