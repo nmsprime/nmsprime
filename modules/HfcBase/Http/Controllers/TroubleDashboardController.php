@@ -43,17 +43,52 @@ class TroubleDashboardController
         return collect(compact('hosts', 'impairedData', 'netelements', 'services'));
     }
 
+    /**
+     * Call to Icinga2 API and acknowledge or remove acknowledgement for a Problem.
+     *
+     * @param string $type
+     * @param int $id
+     * @param boolean $mute
+     * @return \Illuminate\Http\Response
+     */
     public function muteProblem($type, $id, $mute)
     {
-        if ($type === 'host') {
-            $model = IcingaHostStatus::findorFail($id);
-        } else {
-            $model = IcingaServiceStatus::findorFail($id);
+        $filter = $this->composeFilter($type, $id = IcingaObject::find($id));
+        $icingaApi = new \Modules\HfcBase\Helpers\IcingaApi($type, $filter);
+        $results = $mute ? $icingaApi->acknowledgeProblem() : $icingaApi->removeAcknowledgement();
+
+        if (! $results) {
+            \Log::alert('An API request was sent to ICINGA2, but it is probably not runnig.');
+
+            return response(json_encode(['error' => 'ICINGA2 is not running.']), 400);
         }
 
-        $model->problem_has_been_acknowledged = $mute;
-        $model->save();
+        $results['id'] = $id->object_id;
 
-        return redirect()->back();
+        return response(json_encode($results), $results['error'] ?? 200);
+    }
+
+    /**
+     * Create the filter for Icinga2 API
+     *
+     * @param string $type
+     * @param IcingaObject $icingaObject
+     * @return string|\Illuminate\Http\Response
+     */
+    protected function composeFilter($type, $icingaObject)
+    {
+        if ($type === 'Service') {
+            return "host.name == \"{$icingaObject->name1}\" && service.name == \"{$icingaObject->name2}\"";
+        }
+
+        if ($type === 'Host') {
+           return "host.name == \"{$icingaObject->netelement->id_name}\"";
+        }
+
+        return response(["results" => [
+                "error" => 400,
+                "status" => "Bad Request. Your Type Parameter is not matching our database.",
+                ]
+            ], 400);
     }
 }
