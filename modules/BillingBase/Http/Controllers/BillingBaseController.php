@@ -49,7 +49,7 @@ class BillingBaseController extends \BaseController
 
         return [
             ['form_type' => 'select', 'name' => 'userlang', 'description' => 'Language for settlement run', 'value' => $languages],
-            ['form_type' => 'select', 'name' => 'currency', 'description' => 'Currency', 'value' => BillingBase::getPossibleEnumValues('currency')],
+            ['form_type' => 'text', 'name' => 'currency', 'description' => 'Currency'],
             ['form_type' => 'text', 'name' => 'tax', 'description' => 'Tax in %'],
             ['form_type' => 'select', 'name' => 'rcd', 'description' => 'Day of Requested Collection Date', 'value' => $days, 'help' => trans('billingbase::help.BillingBase.rcd')],
             ['form_type' => 'text', 'name' => 'mandate_ref_template', 'description' => 'Mandate Reference', 'help' => trans('billingbase::help.BillingBase.MandateRef').$cols, 'options' => ['placeholder' => \App\Http\Controllers\BaseViewController::translate_label('e.g.: String - {number}')]],
