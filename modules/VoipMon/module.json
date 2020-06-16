@@ -4,7 +4,7 @@
     "description": "",
     "keywords": [],
     "active": 0,
-    "order": 0,
+    "order": 50,
     "icon": "fa-signal",
     "providers": [
         "Modules\\VoipMon\\Providers\\VoipMonServiceProvider"

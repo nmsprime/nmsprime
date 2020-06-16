@@ -5,7 +5,7 @@
     "keywords": [],
     "active": 0,
     "icon": "fa-building",
-    "order": 40,
+    "order": 240,
     "providers": [
         "Modules\\PropertyManagement\\Providers\\PropertyManagementServiceProvider"
     ],
