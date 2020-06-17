@@ -7,7 +7,7 @@ return [
         'code' => 'Code',
     ],
     'cutoffList' => [
-        'headline' => 'Abschaltliste',
+        'headline' => 'Cut-off list',
     ],
     'groupContract' => 'Group contract',
     'menuName' => 'Property Management',
