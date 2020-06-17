@@ -85,6 +85,9 @@ class ProductController extends \BaseController
 
         $data = parent::prepare_input($data);
 
+        // replace comma by dot to avoid crashes for German users
+        $data['price'] = $this->normalizeNumericString($data['price']);
+
         // remove spaces and use upper case for content of these fields
         $fields = ['maturity', 'maturity_min', 'period_of_notice'];
 

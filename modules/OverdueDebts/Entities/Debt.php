@@ -18,7 +18,9 @@ class Debt extends \BaseModel
     public static function rules($id = null)
     {
         return [
-            'amount' => 'required',
+            'amount' => 'required|numeric',
+            'bank_fee' => 'nullable|numeric',
+            'total_fee' => 'nullable|numeric',
             'date' => 'required|date',
             'voucher_nr' => 'required',
             'due_date' => 'date|nullable',
