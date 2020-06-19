@@ -29,6 +29,8 @@ class SettlementRunController extends \BaseController
         if (\Module::collections()->has('OverdueDebts') && ! $this->jobQueued()) {
             if (config('overduedebts.debtMgmtType') == 'csv') {
                 $descKey = 'overduedebts::view.uploadCsv';
+
+                $ret2[] = ['form_type' => 'checkbox', 'name' => 'test', 'description' => trans('overduedebts::view.testCsvUpload'), 'help' => trans('overduedebts::help.testCsvUpload')];
             } else {
                 $descKey = 'overduedebts::view.uploadSta';
 

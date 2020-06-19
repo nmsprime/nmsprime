@@ -29,6 +29,8 @@ class DebtImport
      */
     private $notFound = [];
 
+    protected $runAsTest;
+
     /**
      * CSV column position definitions
      */
@@ -41,9 +43,10 @@ class DebtImport
     const DUN_DATE = 11;
     const INDICATOR = 12;
 
-    public function __construct($path, $output = null)
+    public function __construct($path, $runAsTest = false, $output = null)
     {
         $this->path = $path;
+        $this->runAsTest = $runAsTest;
         $this->output = $output;
     }
 
@@ -52,9 +55,12 @@ class DebtImport
      */
     public function run()
     {
+        if ($this->runAsTest) {
+            ChannelLog::info('overduedebts', trans('overduedebts::messages.import.runAsTest'));
+        }
+
         SettlementRun::orderBy('id', 'desc')->first()->update(['uploaded_at' => date('Y-m-d H:i:s')]);
         $this->conf = \Modules\OverdueDebts\Entities\OverdueDebts::first();
-
         $this->addDebts();
 
         $contracts = $this->getContracts();
@@ -249,6 +255,10 @@ class DebtImport
             if ($c->blockInetFromDebts()) {
                 $blocked[] = $c->number;
 
+                if ($this->runAsTest) {
+                    continue;
+                }
+
                 foreach ($c->modems as $modem) {
                     $modem->internet_access = 0;
                     // It's possible to only save when $modem->isDirty() is true
@@ -268,6 +278,9 @@ class DebtImport
         // Log contracts where internet access was blocked during import
         if ($blocked) {
             $msg = trans('overduedebts::messages.import.contractsBlocked', ['count' => count($blocked), 'numbers' => implode(', ', $blocked)]);
+            if ($this->runAsTest) {
+                $msg = trans('overduedebts::messages.import.contractsBlockedTest', ['count' => count($blocked), 'numbers' => implode(', ', $blocked)]);
+            }
             ChannelLog::info('overduedebts', $msg);
             if ($this->output) {
                 $this->output->note($msg);

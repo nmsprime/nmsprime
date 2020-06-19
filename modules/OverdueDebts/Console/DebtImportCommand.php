@@ -15,8 +15,11 @@ class DebtImportCommand extends Command
      * @var string
      */
     public $name = 'debt:import';
+
     protected $description = 'Import overdue debts from csv';
-    protected $signature = 'debt:import {file}';
+
+    protected $signature = 'debt:import {file}
+        {--test : Only run as test and don\'t actually block internet access of customers}';
 
     /**
      * Execute the console command
@@ -25,7 +28,9 @@ class DebtImportCommand extends Command
      */
     public function handle()
     {
-        $debtImport = new DebtImport($this->argument('file'), $this->output);
+        $runAsTest = $this->option('test') ? true : false;
+
+        $debtImport = new DebtImport($this->argument('file'), $runAsTest, $this->output);
 
         $debtImport->run();
     }
@@ -39,13 +44,6 @@ class DebtImportCommand extends Command
     {
         return [
             ['file', InputArgument::REQUIRED, 'Filepath of CSV with data to import'],
-        ];
-    }
-
-    protected function getOptions()
-    {
-        return [
-            // array('debug', null, InputOption::VALUE_OPTIONAL, 'Print Debug Output to Commandline (1 - Yes, 0 - No (Default))', 0),
         ];
     }
 }
