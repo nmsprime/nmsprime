@@ -226,8 +226,13 @@ class DebtImport
             }
 
             $debt->total_fee += $this->conf->{'dunning_charge'.$debt->indicator};
+            $debt->missing_amount += $debt->total_fee;
 
-            $debt->save();
+            // Dont use Observer as it would update missing_amount by sum of amount + total_fee
+            Debt::where('id', $debt->id)->update([
+                'missing_amount' => $debt->missing_amount,
+                'total_fee' => $debt->total_fee,
+            ]);
         }
     }
 
