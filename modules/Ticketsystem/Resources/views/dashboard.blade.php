@@ -49,7 +49,7 @@
                     'content' => 'tickets',
                     'widget_icon' => 'ticket',
                     'widget_bg_color' => 'orange',
-                    'link_target' => '#anchor-tickets',
+                    'link_target' => $tickets && $tickets['total'] ? '#anchor-tickets' : '#',
                 )
             )
             @DivClose()
