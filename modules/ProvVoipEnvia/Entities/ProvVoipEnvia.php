@@ -3187,7 +3187,7 @@ class ProvVoipEnvia extends \BaseModel
             } elseif ($type == 'callnumber_range_data') {
 
                 // TODO: not yet implemented
-                $msg .= 'TODO: handling of callnumber_range_data not yet implemented';
+                $msg = 'TODO: handling of callnumber_range_data not yet implemented';
                 $out .= "<b>$msg</b><br>";
                 Log::error($msg);
                 continue;
