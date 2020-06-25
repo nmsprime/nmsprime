@@ -4,9 +4,7 @@ namespace Modules\HfcCustomer\Console;
 
 use Illuminate\Console\Command;
 use Modules\HfcReq\Entities\NetElement;
-use Modules\HfcCustomer\Entities\ModemHelper;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
+use Modules\HfcCustomer\Helpers\ModemStateAnalysis;
 
 class ClustersCommand extends Command
 {
@@ -25,14 +23,11 @@ class ClustersCommand extends Command
     protected $description = 'Get modem summary of all clusters';
 
     /**
-     * Create a new command instance.
+     * The name and signature of the console command.
      *
-     * @return void
+     * @var string
      */
-    public function __construct()
-    {
-        parent::__construct();
-    }
+    protected $signature = 'nms:clusters {--o|output=all : What information should be returned. Available options are online|power|all}';
 
     /**
      * Execute the console command.
@@ -41,63 +36,74 @@ class ClustersCommand extends Command
      */
     public function handle()
     {
-        $ret = 'OK';
-        $perf = '';
+        $status = 'OK';
+        $output = '';
+        $lookup = [
+            'OK' => 0,
+            'WARNING' => 1,
+            'CRITICAL' => 2,
+        ];
+
         foreach (NetElement::withActiveModems()->get() as $netelement) {
-            $state = ModemHelper::ms_state($netelement);
-            if ($state == -1) {
+            if ($netelement->modems_count == 0) {
                 continue;
             }
 
-            if ($state == 'CRITICAL' || ($state == 'WARNING' && $ret == 'OK')) {
-                $ret = $state;
+            $modemStateAnalysis = new ModemStateAnalysis($netelement->modems_online_count, $netelement->modems_count, $netelement->modemsUsPwrAvg);
+            $modemPercentage = $netelement->modems_online_count / $netelement->modems_count * 100;
+            $warn_per = config('hfccustomer.threshhold.avg.percentage.warning') / 100 * $netelement->modems_count;
+            $crit_per = config('hfccustomer.threshhold.avg.percentage.critical') / 100 * $netelement->modems_count;
+            $warn_us = config('hfccustomer.threshhold.avg.us.warning');
+            $crit_us = config('hfccustomer.threshhold.avg.us.critical');
+
+            if ($this->option('output') === 'online' || $this->option('output') === 'all') {
+                if ($this->isPercentageWarningOrCritical($modemPercentage, $status)) {
+                    $status = $modemStateAnalysis->get();
+                }
+                $output .= "'{$netelement->id}_{$netelement->name}'={$netelement->modems_online_count};{$warn_per};{$crit_per};0;{$netelement->modems_count} ";
             }
 
-            $num = $netelement->modems_online_count;
-            $numa = $netelement->modems_count;
-            $cm_cri = $netelement->modems_critical_count;
-            $avg = $netelement->modemsUsPwrAvg;
-            $warn_per = ModemHelper::$avg_warning_percentage / 100 * $numa;
-            $crit_per = ModemHelper::$avg_critical_percentage / 100 * $numa;
-            $warn_us = ModemHelper::$avg_warning_us;
-            $crit_us = ModemHelper::$avg_critical_us;
+            if ($this->option('output') === 'power' || $this->option('output') === 'all') {
+                if ($this->isPowerWarningOrCritical($netelement->modemsUsPwrAvg, $status)) {
+                    $status = $modemStateAnalysis->get();
+                }
 
-            $perf .= "'$netelement->name'=$num;$warn_per;$crit_per;0;$numa ";
-            $perf .= "'$netelement->name ($avg dBuV, #crit:$cm_cri)'=$avg;$warn_us;$crit_us ";
-        }
-        echo $ret.' | '.$perf;
-
-        if ($ret == 'CRITICAL') {
-            return 2;
-        }
-        if ($ret == 'WARNING') {
-            return 1;
+                $output .= "'{$netelement->id}_{$netelement->name} ({$netelement->modemsUsPwrAvg} dBuV, #crit:{$netelement->modems_critical_count})'={$netelement->modemsUsPwrAvg};{$warn_us};{$crit_us} ";
+            }
         }
 
-        return 0;
+        $this->line("$status | $output");
+
+        return $lookup[$status];
     }
 
     /**
-     * Get the console command arguments.
+     * Determine if state needs to change. State can always be 'CRITICAL', but
+     * 'WARNING' can only occur when state was 'OK'. This is for the case when
+     * the critical threshhold is higher than the warning threshhold.
      *
-     * @return array
+     * @param int $percentage
+     * @param string $status
+     * @return bool
      */
-    protected function getArguments()
+    protected function isPercentageWarningOrCritical(int $percentage, string $status): bool
     {
-        return [
-            // ['example', InputArgument::REQUIRED, 'An example argument.'],
-        ];
+        return $percentage <= config('hfccustomer.threshhold.avg.percentage.critical') ||
+            ($percentage <= config('hfccustomer.threshhold.avg.percentage.warning') && $status == 'OK');
     }
 
     /**
-     * Get the console command options.
+     * Determine if state needs to change. State can always be 'CRITICAL', but
+     * 'WARNING' can only occur when state was 'OK'. This is for the case when
+     * the warning threshhold is higher than the critical threshhold. (UsPwr)
      *
-     * @return array
+     * @param int $usPowerAvg
+     * @param string $status
+     * @return bool
      */
-    protected function getOptions()
+    protected function isPowerWarningOrCritical(int $usPowerAvg, string $status): bool
     {
-        return [
-            // ['example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null],
-        ];
+        return $usPowerAvg >= config('hfccustomer.threshhold.avg.us.critical') ||
+            ($usPowerAvg >= config('hfccustomer.threshhold.avg.us.warning') && $status == 'OK');
     }
 }
