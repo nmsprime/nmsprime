@@ -16,6 +16,7 @@ return [
         'indicator' => 'Dunning indicator to block internet on debt import',
     ],
     'open' => 'open',
+    'testCsvUpload' => 'Test CSV Upload',
     'uploadCsv' => 'Upload debt csv from financial accounting software',
     'uploadSta' => 'Upload SWIFT/MT940 (.sta) banking file',
 ];

@@ -20,7 +20,7 @@ class SettlementRun extends \BaseModel
     public $table = 'settlementrun';
 
     // don't try to add theseRequest fields to Database of this model
-    public $guarded = ['rerun', 'sepaaccount', 'fullrun', 'banking_file_upload', 'voucher_nr'];
+    public $guarded = ['rerun', 'sepaaccount', 'fullrun', 'banking_file_upload', 'voucher_nr', 'test'];
 
     // Add your validation rules here
     public static function rules($id = null)
@@ -926,7 +926,9 @@ class SettlementRunObserver
             Request::file('banking_file_upload')->move($dir, $fn);
 
             if (config('overduedebts.debtMgmtType') == 'csv') {
-                \Session::put('srJobId', \Queue::push(new \Modules\OverdueDebts\Jobs\DebtImportJob("$dir/$fn")));
+                $runAsTest = Request::get('test') ? true : false;
+
+                \Session::put('srJobId', \Queue::push(new \Modules\OverdueDebts\Jobs\DebtImportJob("$dir/$fn", $runAsTest)));
             } else {
                 \Session::put('srJobId', \Queue::push(new \Modules\OverdueDebts\Jobs\ParseMt940("$dir/$fn", Request::get('voucher_nr'))));
             }
