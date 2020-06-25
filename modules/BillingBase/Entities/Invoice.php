@@ -656,6 +656,7 @@ class Invoice extends \BaseModel
     {
         // TODO: implement time of cdr as generic, variable way
         $time = $type ? strtotime('first day of last month') : $this->time_cdr; // strtotime('-2 month');
+        $charge = $type ? $this->data['table_sum_charge_net'] : $this->data['cdr_charge'];
 
         $data = [
             'contract_id' 	=> $this->data['contract_id'],
@@ -666,7 +667,8 @@ class Invoice extends \BaseModel
             'filename' 		=> $type ? $this->filename_invoice.'.pdf' : $this->filename_cdr.'.pdf',
             'type'  		=> $type ? 'Invoice' : 'CDR',
             'number' 		=> $this->data['invoice_nr'],
-            'charge' 		=> $type ? $this->data['table_sum_charge_net'] : $this->data['cdr_charge'],
+            'charge' 		=> $charge,
+            'charge_gross'  => round($charge * (1 + SettlementRunData::getConf('tax') / 100), 2),
         ];
 
         $ret = self::create($data);

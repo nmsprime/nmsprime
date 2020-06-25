@@ -3,6 +3,7 @@
 namespace Modules\BillingBase\Entities;
 
 use DB;
+use Modules\BillingBase\Providers\BillingConf;
 
 class Product extends \BaseModel
 {
@@ -68,7 +69,7 @@ class Product extends \BaseModel
         return ['table' => $this->table,
             'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price',
                 'costcenter.name', $this->table.'.proportional', 'deprecated', ],
-            'header' =>  $this->type.' - '.$this->name.' | '.$this->price.' €',
+            'header' =>  $this->type.' - '.$this->name.' | '.$this->price.' '.BillingConf::currency(),
             'bsclass' => $bsclass,
             'eager_loading' => ['costcenter'],
             'edit' => ['costcenter.name' => 'getCostcenterName'],

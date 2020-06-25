@@ -204,6 +204,7 @@ class DebtObserver
         // Adapt missing_amount when amount or fee was changed
         if (isset($dirty['amount']) || isset($dirty['total_fee'])) {
             $debt->missing_amount = $debt->amount + $debt->total_fee;
+            $debt->cleared = $debt->missing_amount ? 0 : 1;
         }
     }
 
@@ -220,7 +221,7 @@ class DebtObserver
         }
 
         if ($debt->isDirty('parent_id') && ! $debt->parent_id) {
-            $this->clearCorrespondingDebt($debt, false, true);
+            $this->clearCorrespondingDebt($debt, true);
 
             $debt->missing_amount = $debt->amount;
             $debt->debtObserverEnabled = false;
@@ -235,7 +236,7 @@ class DebtObserver
     public function deleted($debt)
     {
         if ($debt->debtObserverEnabled) {
-            $this->clearCorrespondingDebt($debt, true);
+            $this->clearCorrespondingDebt($debt);
         }
 
         Debt::where('id', $debt->id)->update(['missing_amount' => $debt->amount, 'cleared' => 0]);
@@ -244,7 +245,7 @@ class DebtObserver
     /**
      * Determine debt to clear and adapt missing_amount and cleared flag of it and it's payments depending on the cumulated amounts
      */
-    public function clearCorrespondingDebt($debt, $deleted = false, $original = false)
+    public function clearCorrespondingDebt($debt, $original = false)
     {
         if (! $debt->invoice_id && ! $debt->parent_id && ! $original) {
             return;
@@ -330,12 +331,13 @@ class DebtObserver
         }
 
         // Manual bank transfer from customer with invoice number
-        if ($debt->invoice_id) {
-            $comparator = $debt->amount > 0 ? '<' : '>';
+        // Edit 2020-05-12: Debt will only get cleared when parent_id is set - during Mt940 import it's now set by DefaultTransactionParser
+        // if ($debt->invoice_id) {
+        //     $comparator = $debt->amount > 0 ? '<' : '>';
 
-            return Debt::where('invoice_id', $debt->invoice_id)
-                ->where('cleared', 0)->where('amount', $comparator, 0)->where('id', '!=', $debt->id)
-                ->orderBy('id')->first();
-        }
+        //     return Debt::where('invoice_id', $debt->invoice_id)
+        //         ->where('cleared', 0)->where('amount', $comparator, 0)->where('id', '!=', $debt->id)
+        //         ->orderBy('id')->first();
+        // }
     }
 }
