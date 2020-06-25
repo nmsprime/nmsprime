@@ -53,7 +53,6 @@
         'content' => 'contracts_total',
             'widget_icon' => 'users',
             'widget_bg_color' => 'green',
-            'link_target' => '#anchor-contracts',
         ])
     </div>
     <div class="col-xs-12 col-sm-6 col-xl-3">
@@ -61,7 +60,6 @@
             'content' => 'income',
             'widget_icon' => 'euro',
             'widget_bg_color' => 'blue',
-            'link_target' => '#anchor-income',
         ])
     </div>
     <div class="col-xs-12 col-sm-6 col-xl-4">
@@ -69,7 +67,7 @@
             'content' => 'tickets',
             'widget_icon' => 'ticket',
             'widget_bg_color' => 'orange',
-            'link_target' => '#anchor-tickets',
+            'link_target' => $tickets && $tickets['total'] ? '#anchor-tickets' : '#',
         ])
     </div>
     <div class="col-xs-12 col-sm-6 col-xl-2">
@@ -97,6 +95,7 @@
     </div>
     <div class="col-xl-4 no-gutters ui-sortable">
         @include('dashboard::widgets.quickstart')
+
         @if ($tickets && $tickets['total'])
             @section ('ticket_table')
                 @include('ticketsystem::panels.ticket_table')
@@ -108,6 +107,7 @@
                 'i' => '1',
             ])
         @endif
+
         @section ('dashboard_logs')
             @include('dashboard::timeline.logs')
         @stop

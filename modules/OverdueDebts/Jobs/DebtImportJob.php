@@ -13,15 +13,17 @@ class DebtImportJob implements ShouldQueue
     use InteractsWithQueue, Queueable, SerializesModels;
 
     protected $path;
+    protected $runAsTest;
 
     /**
      * Create a new command instance.
      *
      * @return void
      */
-    public function __construct($path)
+    public function __construct($path, $runAsTest = false)
     {
         $this->path = $path;
+        $this->runAsTest = $runAsTest;
     }
 
     /**
@@ -31,11 +33,11 @@ class DebtImportJob implements ShouldQueue
      */
     public function handle()
     {
-        $debtImport = new DebtImport($this->path);
+        $debtImport = new DebtImport($this->path, $this->runAsTest);
 
         $debtImport->run();
 
-        unlink($this->path);
+        // unlink($this->path);
     }
 
     /**

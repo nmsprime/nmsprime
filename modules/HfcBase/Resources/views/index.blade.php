@@ -20,6 +20,7 @@
             @DivOpen(4)
                 @include('HfcBase::widgets.hfc')
             @DivClose()
+
             @if(! empty($impairedData))
                 @section ('impaired_services')
                     @include('HfcBase::troubledashboard.panel')
@@ -31,8 +32,13 @@
                     'i' => '2'
                 ])
             @endif
+
             @DivOpen(5)
-                @include('HfcBase::widgets.documentation')
+                @include('Generic.widgets.moduleDocu', [ 'urls' => [
+                    'documentation' => 'https://devel.roetzer-engineering.com/confluence/display/NMS/IT+Maintenance',
+                    'youtube' => 'https://www.youtube.com/playlist?list=PL07ZNkpZW6fyYWJ8xLHHhVLxoGQc72t2J',
+                    'forum' => 'https://devel.roetzer-engineering.com/confluence/pages/viewpage.action?pageId=22773888',
+                    ]])
             @DivClose()
         </div>
     </div>

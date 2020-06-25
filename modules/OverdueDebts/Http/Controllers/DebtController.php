@@ -60,6 +60,24 @@ class DebtController extends \BaseController
         return array_merge($fields1, $fields2);
     }
 
+    public function prepare_input($data)
+    {
+        $numeric_fields_to_normalize = [
+            'amount',
+            'bank_fee',
+            'total_fee',
+        ];
+
+        $data = parent::prepare_input($data);
+
+        // replace comma by dot to avoid crashes for German users
+        foreach ($numeric_fields_to_normalize as $field) {
+            $data[$field] = $this->normalizeNumericString($data[$field]);
+        }
+
+        return $data;
+    }
+
     /**
      * Separate index page for the resulting outstanding payments of each customer
      *

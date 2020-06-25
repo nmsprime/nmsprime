@@ -4,7 +4,7 @@
     "description": "envia TEL API",
     "keywords": [],
     "active": 0,
-    "order": 22,
+    "order": 40,
     "priority": 0,
     "icon": "fa-volume-control-phone",
     "providers": [
