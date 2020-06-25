@@ -1,7 +1,7 @@
 # import/update all cacti host templates
 cd /usr/share/cacti/cli
-for file in /var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_*.xml; do
-	su -s /bin/bash -c "php import_template.php --filename=$file" apache
+for template in /var/www/nmsprime/modules/ProvMon/Console/cacti/cacti_host_template_*.xml; do
+	su -s /bin/bash -c "php import_template.php --filename=$template" apache
 done
 
 for id in $(php host_update_template.php --list-host-templates | grep -o '^[[:digit:]]\+' | sed '/^0$/d'); do
