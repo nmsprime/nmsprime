@@ -7,6 +7,7 @@ return [
     'connected' => 'Conectado',
     'connection_type' => 'Tipo de conexión',
     'deprecated' => 'Desaprobado',
+    'district' => 'District',
     'email' => 'Correo electrónico',
     'expansion_degree' => 'Grado de expansión',
     'floor' => 'Piso',
