@@ -4,7 +4,7 @@
     "description": "Ticket System",
     "keywords": [],
     "active": 1,
-    "order": 0,
+    "order": 60,
     "icon": "fa-ticket",
     "providers": [
         "Modules\\Ticketsystem\\Providers\\TicketsystemServiceProvider"

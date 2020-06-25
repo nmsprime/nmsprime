@@ -1,11 +1,71 @@
-@extends('ticketsystem::layouts.master')
+@extends ('Layout.default')
+
+@section ('tickets')
+    <h4>{{ \App\Http\Controllers\BaseViewController::translate_view('Tickets', 'Dashboard') }}</h4>
+    <p>
+        @if ($tickets['total'])
+            {{ $tickets['total'] }}
+        @else
+            {{ \App\Http\Controllers\BaseViewController::translate_view('NoTickets', 'Dashboard') }}
+        @endif
+    </p>
+@stop
+
+@section ('date')
+    <h4>{{ \App\Http\Controllers\BaseViewController::translate_view('Date', 'Dashboard') }}</h4>
+    <p>{{ date('d.m.Y') }}</p>
+@stop
 
 @section('content')
-	
-	<h1>Hello World</h1>
-	
-	<p>
-		This view is loaded from module: {!! config('ticketsystem.name') !!}
-	</p>
+
+    <div class="col-md-12">
+
+        <h1 class="page-header">{{ $title }}</h1>
+
+        {{--Quickstart--}}
+
+        <div class="row">
+            <div class="col-md-4">
+                @include('Generic.quickstart')
+            </div>
+            <div class="col-md-5">
+                @include('Generic.widgets.moduleDocu', [ 'urls' => [
+                        'documentation' => 'https://devel.roetzer-engineering.com/confluence/display/NMS/NMS+PRIME',
+                        'youtube' => 'https://www.youtube.com/channel/UCpFaWPpJLQQQLpTVeZnq_qA',
+                        'forum' => 'https://devel.roetzer-engineering.com/confluence/display/nmsprimeforum/Welcome',
+                    ]])
+            </div>
+            @DivOpen(3)
+                @include ('bootstrap.widget',
+                    array (
+                        'content' => 'date',
+                        'widget_icon' => 'calendar',
+                        'widget_bg_color' => 'purple',
+                    )
+                )
+            @DivClose()
+        </div>
+
+        <div class="row">
+            @DivOpen(3)
+            @include ('bootstrap.widget',
+                array (
+                    'content' => 'tickets',
+                    'widget_icon' => 'ticket',
+                    'widget_bg_color' => 'orange',
+                    'link_target' => $tickets && $tickets['total'] ? '#anchor-tickets' : '#',
+                )
+            )
+            @DivClose()
+        </div>
+        <div class="row">
+            @if ($tickets && $tickets['total'])
+                @section ('ticket_table')
+                    @include('ticketsystem::panels.ticket_table')
+                @stop
+                @include ('bootstrap.panel', array ('content' => "ticket_table", 'view_header' => trans('messages.dashbrd_ticket'), 'md' => 7, 'height' => 'auto', 'i' => '5'))
+            @endif
+        </div>
+    </div>
 
 @stop

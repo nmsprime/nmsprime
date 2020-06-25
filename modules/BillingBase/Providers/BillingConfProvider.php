@@ -39,7 +39,7 @@ class BillingConfProvider
     {
         $conf = BillingBase::first();
 
-        $this->currency = self::$labels[strtoupper($conf->currency)] ?? '$';
+        $this->currency = self::$labels[strtoupper($conf->currency)] ?? $conf->currency;
         $this->tax = $conf->tax / 100;
     }
 

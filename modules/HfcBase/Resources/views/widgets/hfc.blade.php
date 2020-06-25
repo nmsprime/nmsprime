@@ -1,12 +1,6 @@
-<style>
-    a:hover {
-        text-decoration: none;
-    }
-</style>
-
 <div class="widget widget-stats bg-blue">
     {{-- info/data --}}
-    <div class="stats-info d-flex">
+    <div class="stats-info text-center">
 
       {!! HTML::decode (HTML::link('https://'.\Request::server('HTTP_HOST').'/cacti',
   			'<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
@@ -24,5 +18,5 @@
 
     </div>
     {{-- reference link --}}
-    <div class="stats-link"><a href="#">{{trans('view.Dashboard_External')}}</a></div>
+    <div class="stats-link noHover"><a href="#">{{trans('view.Dashboard_External')}}</a></div>
 </div>

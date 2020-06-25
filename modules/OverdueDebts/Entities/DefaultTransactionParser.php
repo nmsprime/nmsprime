@@ -240,16 +240,39 @@ class DefaultTransactionParser
     private function setCreditDebtRelations($numbers)
     {
         $this->logMsg = trans('view.Discard')." $this->logMsg.";
+        // Give hints to what contract the transaction could be assigned
         $hint = '';
+        $hintContractId = 0;
 
         if ($this->invoiceNr) {
-            $invoice = Invoice::where('number', $this->invoiceNr)->where('type', 'Invoice')->first();
+            // check for existing debt to clear
+            $debt = Debt::join('invoice', 'invoice.id', 'debt.invoice_id')
+                ->where('invoice.number', $this->invoiceNr)
+                ->where('type', 'Invoice')
+                ->where('debt.cleared', 0)
+                ->where('debt.amount', '>', 0)
+                ->select('invoice.*', 'debt.id as debtId')
+                ->first();
+
+            // Found - transaction matches open/uncleared debt
+            if ($debt) {
+                $this->debt->contract_id = $debt->contract_id;
+                $this->debt->invoice_id = $debt->id;
+                $this->debt->parent_id = $debt->debtId;
+                $this->debt->number = $debt->number;
+
+                return true;
+            }
+
+            // Check if at least Invoice can be found and we can give a hint
+            $invoice = Invoice::where('number', $this->invoiceNr)->where('type', 'Invoice')->with('contract')->first();
 
             if ($invoice) {
                 $this->debt->contract_id = $invoice->contract_id;
                 $this->debt->invoice_id = $invoice->id;
                 $this->debt->number = $invoice->number;
 
+                // Add debt but dont clear it automatically (parent_id is not set)
                 return true;
             }
 
@@ -258,9 +281,7 @@ class DefaultTransactionParser
 
         $this->logMsg .= ' '.trans('overduedebts::messages.transaction.credit.noInvoice.default');
 
-        // Give hints to what contract the transaction could be assigned
         // Or still add debt if it's almost secure that the transaction belongs to the customer and NMSPrime
-        $hintContractId = 0;
         if ($numbers['contractNr']) {
             $contracts = Contract::where('number', 'like', '%'.$numbers['contractNr'].'%')->get();
 
@@ -356,6 +377,10 @@ class DefaultTransactionParser
             'description' => $this->debt->description,
             'voucher_nr' => $this->debt->voucher_nr,
         ];
+
+        if (isset($this->debt->parent_id)) {
+            $data['parent_id'] = $this->debt->parent_id;
+        }
 
         return Mt940Parser::addDebtButton($data);
     }

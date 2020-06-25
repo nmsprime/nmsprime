@@ -3,6 +3,7 @@
 namespace Modules\BillingBase\Entities;
 
 use DB;
+use Modules\BillingBase\Providers\BillingConf;
 
 class Product extends \BaseModel
 {
@@ -31,7 +32,7 @@ class Product extends \BaseModel
             'voip_sales_tariff_id' => 'required_if:type,Voip',
             'voip_purchase_tariff_id' => 'required_if:type,Voip',
             'qos_id' => 'required_if:type,Internet',
-            'price'  => 'required_if:type,Internet,Voip,TV,Other,Device,Mixed',
+            'price'  => 'required_if:type,Internet,Voip,TV,Other,Device,Mixed|nullable|numeric',
             'maturity_min' => 'nullable|regex:/^\d+[dDmMyY]$/',
             'maturity' => 'nullable|regex:/^\d+[dDmMyY]$/',
             'period_of_notice' => 'nullable|regex:/^\d+[dDmMyY]$/',
@@ -68,7 +69,7 @@ class Product extends \BaseModel
         return ['table' => $this->table,
             'index_header' => [$this->table.'.type', $this->table.'.name',  $this->table.'.price',
                 'costcenter.name', $this->table.'.proportional', 'deprecated', ],
-            'header' =>  $this->type.' - '.$this->name.' | '.$this->price.' €',
+            'header' =>  $this->type.' - '.$this->name.' | '.$this->price.' '.BillingConf::currency(),
             'bsclass' => $bsclass,
             'eager_loading' => ['costcenter'],
             'edit' => ['costcenter.name' => 'getCostcenterName'],

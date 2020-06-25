@@ -4,7 +4,7 @@
     "description": "Overdue debts",
     "keywords": [],
     "active": 1,
-    "order": 30,
+    "order": 230,
     "icon": "fa-envelope",
     "providers": [
         "Modules\\OverdueDebts\\Providers\\OverdueDebtsServiceProvider"
