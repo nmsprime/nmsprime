@@ -934,7 +934,7 @@ class ProvMonController extends \BaseController
             $values = array_map(function ($value) use ($modem) {
                 $model = $modem->getGenieAcsModel($value);
 
-                return isset($model->_value) ? [$model->_value] : [];
+                return isset($model->_value) ? preg_split('/\r\n|\r|\n/', $model->_value) : [];
             }, $values);
         }
 
