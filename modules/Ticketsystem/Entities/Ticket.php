@@ -137,8 +137,7 @@ class Ticket extends \BaseModel
     {
         $ret = [];
 
-        $ret['Edit']['Comment']['class'] = 'Comment';
-        $ret['Edit']['Comment']['relation'] = $this->comments;
+        $ret['Edit']['Comment']['view']['view'] = 'ticketsystem::Ticket.comments';
 
         $ret['Edit']['Information']['view']['view'] = 'ticketsystem::Ticket.infos';
         $ret['Edit']['Information']['view']['vars']['infos'] = $this->contractInformations();
