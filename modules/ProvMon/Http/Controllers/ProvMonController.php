@@ -934,6 +934,11 @@ class ProvMonController extends \BaseController
             $values = array_map(function ($value) use ($modem) {
                 $model = $modem->getGenieAcsModel($value);
 
+                // _lastInform, _deviceId._SerialNumber etc. are strings, not objects
+                if (is_string($model)) {
+                    return preg_split('/\r\n|\r|\n/', $model);
+                }
+
                 return isset($model->_value) ? preg_split('/\r\n|\r|\n/', $model->_value) : [];
             }, $values);
         }
