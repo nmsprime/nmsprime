@@ -18,7 +18,7 @@ class TroubleDashboardController
     public static function impairedData()
     {
         if (! IcingaObject::db_exists()) {
-            return collect(['impairedData' => [], 'netelements' => [], 'services' => [], 'hosts' => []]);
+            return collect(['ackState' => [], 'impairedData' => [], 'netelements' => [], 'services' => [], 'hosts' => []]);
         }
 
         $hostCounts = IcingaHostStatus::countsForTroubleDashboard()->first();

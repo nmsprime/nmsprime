@@ -29,6 +29,15 @@ class IcingaHostStatus extends Model implements ImpairedContract
     protected $primaryKey = 'hoststatus_id';
 
     /**
+     * The attributes that should be mutated to dates.
+     *
+     * @var array
+     */
+    protected $dates = [
+        'last_hard_state_change',
+    ];
+
+    /**
      * Contains more detailed for Subservices, deserialized from perfdata field.
      *
      * @var \Illuminate\Support\Collection
