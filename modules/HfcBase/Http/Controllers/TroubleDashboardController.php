@@ -107,26 +107,37 @@ class TroubleDashboardController
     }
 
     /**
-     * Get the cummulated number of Modems for each NetElement
+     * Get the cummulated number of registered, online and critical Modems for
+     * each NetElement
      *
      * @param \Illuminate\Database\Eloquent\Collection $netelements
      * @return array
      */
-    public static function calculateModemCounts(\Illuminate\Database\Eloquent\Collection $netelements)
+    public static function calculateAllModemCounts(\Illuminate\Database\Eloquent\Collection $netelements)
     {
         $netelementIds = Modem::select('netelement_id')->distinct()->pluck('netelement_id')->filter();
+        $lookup = [
+            'modems_count' => 'all',
+            'modems_online_count' => 'online',
+            'modems_critical_count' =>  'critical',
+        ];
         $modemsPerNetelement = [];
 
         foreach ($netelementIds as $id) {
             $currentId = $id;
+            $branchModemCount = [];
+            $branchModemCount['all'] = 0;
+            $branchModemCount['online'] = 0;
+            $branchModemCount['critical'] = 0;
             $parentId = $netelements[$currentId]->parent_id;
-            $branchModemCount = 0;
 
             while ($parentId > 1) {
-                $branchModemCount = $branchModemCount +
-                    (! isset($modemsPerNetelement[$currentId]) ? $netelements[$currentId]->modems_count : 0);
+                foreach ($lookup as $property => $type) {
+                    $branchModemCount[$type] = $branchModemCount[$type] +
+                        (! isset($modemsPerNetelement[$currentId][$type]) ? $netelements[$currentId]->$property : 0);
 
-                $modemsPerNetelement[$currentId] = ($modemsPerNetelement[$currentId] ?? 0) + $branchModemCount;
+                    $modemsPerNetelement[$currentId][$type] = ($modemsPerNetelement[$currentId][$type] ?? 0) + $branchModemCount[$type];
+                }
 
                 $currentId = $parentId;
                 $parentId = $netelements[$currentId]->parent_id;
