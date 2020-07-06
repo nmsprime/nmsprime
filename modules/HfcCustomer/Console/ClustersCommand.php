@@ -3,11 +3,47 @@
 namespace Modules\HfcCustomer\Console;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
 use Modules\HfcReq\Entities\NetElement;
 use Modules\HfcCustomer\Helpers\ModemStateAnalysis;
 
 class ClustersCommand extends Command
 {
+    /**
+     * Warning upstream threshhold that is read out from config.
+     *
+     * @var int
+     */
+    public $warningUsThreshhold;
+
+    /**
+     * Critical upstream threshhold that is read out from config.
+     *
+     * @var int
+     */
+    public $criticalUsThreshhold;
+
+    /**
+     * Warning offline threshhold that is read out from config.
+     *
+     * @var int
+     */
+    public $warningPercentage;
+
+    /**
+     * critical offline threshhold that is read out from config.
+     *
+     * @var int
+     */
+    public $criticalPercentage;
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $perfData = [];
+
     /**
      * The console command name.
      *
@@ -27,7 +63,24 @@ class ClustersCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'nms:clusters {--o|output=all : What information should be returned. Available options are online|power|all}';
+    protected $signature = 'nms:clusters
+        {--o|output=all : What information should be returned. Available options are online|power|all}';
+
+    public $lookup = [
+        'OK' => 0,
+        'WARNING' => 1,
+        'CRITICAL' => 2,
+    ];
+
+    public function __construct()
+    {
+        $this->warningUsThreshhold = config('hfccustomer.threshhold.avg.us.warning');
+        $this->criticalUsThreshhold = config('hfccustomer.threshhold.avg.us.critical');
+        $this->warningPercentage = config('hfccustomer.threshhold.avg.percentage.warning');
+        $this->criticalPercentage = config('hfccustomer.threshhold.avg.percentage.critical');
+
+        parent::__construct();
+    }
 
     /**
      * Execute the console command.
@@ -36,74 +89,53 @@ class ClustersCommand extends Command
      */
     public function handle()
     {
-        $status = 'OK';
-        $output = '';
-        $lookup = [
-            'OK' => 0,
-            'WARNING' => 1,
-            'CRITICAL' => 2,
-        ];
-
         foreach (NetElement::withActiveModems()->get() as $netelement) {
             if ($netelement->modems_count == 0) {
                 continue;
             }
 
             $modemStateAnalysis = new ModemStateAnalysis($netelement->modems_online_count, $netelement->modems_count, $netelement->modemsUsPwrAvg);
-            $modemPercentage = $netelement->modems_online_count / $netelement->modems_count * 100;
-            $warn_per = config('hfccustomer.threshhold.avg.percentage.warning') / 100 * $netelement->modems_count;
-            $crit_per = config('hfccustomer.threshhold.avg.percentage.critical') / 100 * $netelement->modems_count;
-            $warn_us = config('hfccustomer.threshhold.avg.us.warning');
-            $crit_us = config('hfccustomer.threshhold.avg.us.critical');
 
             if ($this->option('output') === 'online' || $this->option('output') === 'all') {
-                if ($this->isPercentageWarningOrCritical($modemPercentage, $status)) {
-                    $status = $modemStateAnalysis->get();
-                }
-                $output .= "'{$netelement->id}_{$netelement->name}'={$netelement->modems_online_count};{$warn_per};{$crit_per};0;{$netelement->modems_count} ";
+                $warningThreshhold = $this->warningPercentage / 100 * $netelement->modems_count;
+                $criticalThreshhold = $this->criticalPercentage / 100 * $netelement->modems_count;
+                $modemPercentage = $netelement->modems_online_count / $netelement->modems_count * 100;
+                $status = $this->isPercentageWarningOrCritical($modemPercentage) ? $modemStateAnalysis->getOnline() : 'OK';
+
+                $perfData[] = "{$status}|'{$netelement->id}_{$netelement->name}'={$netelement->modems_online_count};{$warningThreshhold};{$criticalThreshhold};0;{$netelement->modems_count}\n";
             }
 
             if ($this->option('output') === 'power' || $this->option('output') === 'all') {
-                if ($this->isPowerWarningOrCritical($netelement->modemsUsPwrAvg, $status)) {
-                    $status = $modemStateAnalysis->get();
-                }
+                $status = $this->isPowerWarningOrCritical($netelement->modemsUsPwrAvg) ? $modemStateAnalysis->getPower() : 'OK';
 
-                $output .= "'{$netelement->id}_{$netelement->name} ({$netelement->modemsUsPwrAvg} dBuV, #crit:{$netelement->modems_critical_count})'={$netelement->modemsUsPwrAvg};{$warn_us};{$crit_us} ";
+                $perfData[] = "{$status}|'{$netelement->id}_{$netelement->name} ({$netelement->modemsUsPwrAvg} dBuV, #crit:{$netelement->modems_critical_count})'={$netelement->modemsUsPwrAvg};{$this->warningUsThreshhold};{$this->criticalUsThreshhold}\n";
             }
         }
 
-        $this->line("$status | $output");
-
-        return $lookup[$status];
+        Storage::disk('tempfs')->put("icinga2/clusters_{$this->option('output')}.csv", $perfData);
     }
 
     /**
-     * Determine if state needs to change. State can always be 'CRITICAL', but
-     * 'WARNING' can only occur when state was 'OK'. This is for the case when
-     * the critical threshhold is higher than the warning threshhold.
+     * Determine the state of the cluster/bubble. To save some resources the
+     * check should only run, when Percentage is lower than warning.
      *
      * @param int $percentage
-     * @param string $status
      * @return bool
      */
-    protected function isPercentageWarningOrCritical(int $percentage, string $status): bool
+    protected function isPercentageWarningOrCritical(int $percentage): bool
     {
-        return $percentage <= config('hfccustomer.threshhold.avg.percentage.critical') ||
-            ($percentage <= config('hfccustomer.threshhold.avg.percentage.warning') && $status == 'OK');
+        return $percentage <= $this->warningPercentage;
     }
 
     /**
-     * Determine if state needs to change. State can always be 'CRITICAL', but
-     * 'WARNING' can only occur when state was 'OK'. This is for the case when
-     * the warning threshhold is higher than the critical threshhold. (UsPwr)
+     * Determine the state of the cluster/bubble. To save some resources the
+     * check should only run, when UsPwr is higher than warning.
      *
      * @param int $usPowerAvg
-     * @param string $status
      * @return bool
      */
-    protected function isPowerWarningOrCritical(int $usPowerAvg, string $status): bool
+    protected function isPowerWarningOrCritical(int $usPowerAvg): bool
     {
-        return $usPowerAvg >= config('hfccustomer.threshhold.avg.us.critical') ||
-            ($usPowerAvg >= config('hfccustomer.threshhold.avg.us.warning') && $status == 'OK');
+        return $usPowerAvg >= $this->warningUsThreshhold;
     }
 }
