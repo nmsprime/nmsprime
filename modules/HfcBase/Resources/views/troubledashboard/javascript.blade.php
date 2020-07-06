@@ -1,15 +1,32 @@
 <script src="{{asset('components/assets-admin/plugins/chart/Chart.min.js')}}"></script>
 <script src="{{asset('components/assets-admin/plugins/Abilities/es6-promise.auto.min.js')}}"></script>
-<script src="{{asset('components/assets-admin/plugins/vue/dist/vue.min.js')}}"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 {{-- When in Development use this Version
-    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="{{asset('components/assets-admin/plugins/vue/dist/vue.min.js')}}"></script>
     --}}
 <script src="{{asset('components/assets-admin/plugins/Abilities/lodash.core.min.js')}}"></script>
 <script src="{{asset('components/assets-admin/plugins/Abilities/axios.min.js')}}"></script>
 <script src="{{asset('components/assets-admin/plugins/vue-snotify/snotify.min.js')}}"></script>
 
 <script type="text/javascript">
+function handlePanelPositionToPreventCrash() {
+    return new Promise(function(resolve, reject) {
+        let targetPage = window.location.href;
+            targetPage = targetPage.split('?');
+            targetPage = targetPage[0];
+        let panelPositionData = localStorage.getItem(targetPage) ? targetPage : "{!! isset($view_header) ? $view_header : 'undefined'!!}";
+        if (panelPositionData) {
+            localStorage.removeItem(panelPositionData)
+        }
 
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("troubleDashTable").style.display = "contents";
+        document.getElementById("troubleDashMute").style.display = "flex";
+        resolve();
+    });
+}
+
+handlePanelPositionToPreventCrash().then(function() {
 new Vue({
     el: '#troubleDash',
     data() {
@@ -55,6 +72,8 @@ new Vue({
         }
     }
 })
+})
+
 </script>
 <script language="javascript">
     var chart_data_contracts = '{}';
@@ -162,7 +181,7 @@ new Vue({
                         '#7fb433',
                         '#f59c1a',
                         '#cc4946',
-                        '#b6c2c9'
+                        '#b6c2c9',
                     ],
                 }
             ],
