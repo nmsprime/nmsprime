@@ -83,6 +83,19 @@ class IcingaHostStatus extends Model implements ImpairedContract
     }
 
     /**
+     * Scope to get all necessary informations for the trouble Dashboard.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeCountsForTroubleDashboard($query)
+    {
+        return $query->whereHas('icingaObject')
+            ->selectRaw('COUNT(CASE WHEN `last_hard_state` = 0 THEN 1 END) AS ok')
+            ->selectRaw('COUNT(CASE WHEN `last_hard_state` >= 1 THEN 1 END) AS critical');
+    }
+
+    /**
      * Laravel magic method to quickly access the netelement.
      *
      * @return void

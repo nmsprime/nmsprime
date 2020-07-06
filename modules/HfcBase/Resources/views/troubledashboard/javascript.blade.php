@@ -176,44 +176,38 @@ new Vue({
         type: 'doughnut',
         data: {
             datasets: [{
-                @php
-                    $serviceState = array_count_values($impairedData['services']->pluck('last_hard_state')->toArray());
-                @endphp
                 data: [
-                    {{ $serviceState['0'] ?? '' }},
-                    {{ $serviceState['1'] ?? '' }},
-                    {{ $serviceState['2'] ?? '' }},
+                    {{ $impairedData['serviceCounts']->ok }},
+                    {{ $impairedData['serviceCounts']->warning }},
+                    {{ $impairedData['serviceCounts']->critical }},
+                    {{ $impairedData['serviceCounts']->unknown }},
                 ],
                 backgroundColor: [
                     '#7fb433',
                     '#f59c1a',
                     '#cc4946',
+                    '#b6c2c9',
                 ]
             }],
-            labels: ['online', 'warning', 'critical'],
+            labels: ['online', 'warning', 'critical', 'unknown'],
         },
         options: canvasOptions
     });
 
-    var serviceChart = new Chart(netelementCanvas, {
+    var netelementChart = new Chart(netelementCanvas, {
         type: 'doughnut',
         data: {
             datasets: [{
-                @php
-                    $serviceState = array_count_values($impairedData['hosts']->pluck('last_hard_state')->toArray());
-                @endphp
                 data: [
-                    {{ $serviceState['0'] ?? '' }},
-                    {{ $serviceState['1'] ?? '' }},
-                    {{ $serviceState['2'] ?? '' }},
+                    {{ $impairedData['hostCounts']->ok }},
+                    {{ $impairedData['hostCounts']->critical }},
                 ],
                 backgroundColor: [
                     '#7fb433',
-                    '#f59c1a',
                     '#cc4946',
                 ]
             }],
-            labels: ['online', 'warning', 'critical'],
+            labels: ['online', 'critical'],
         },
         options: canvasOptions
     });

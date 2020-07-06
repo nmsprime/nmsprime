@@ -28,21 +28,14 @@
             ])
 
             @section('netelement-chart')
-                @php
-                $hostsCritical = $impairedData['hosts']->filter(function ($host) {
-                    return $host->last_hard_state == 2;
-                });
-                $hostsCriticalCount = $hostsCritical->count();
-                $hostsOk = $impairedData['hosts']->count() - $hostsCriticalCount;
-                @endphp
                 <div class="d-flex m-b-5 align-items-baseline">
                     <i class="fa fa-circle text-success m-r-5"></i>
-                    {{ $hostsOk }} Netelements are online
+                    {{ $impairedData['hostCounts']->ok }} Netelements are online
                 </div>
                 <div class="d-flex m-b-5 align-items-baseline">
                     <i class="fa fa-circle text-danger m-r-5"></i>
                     <a href="#javascript;" data-toggle="collapse" data-target="#hosts-critical">
-                        {{ $hostsCriticalCount }} Netelements are in critical state
+                        {{ $impairedData['hostCounts']->critical }} Netelements are in critical state
                     </a>
                 </div>
             @endsection
@@ -53,39 +46,38 @@
             ])
 
             @section('service-chart')
-                @php
-                $servicesCritical = $impairedData['services']->filter(function ($service) {
-                        return $service->last_hard_state == 2;
-                    });
-                $servicesCriticalCount = $servicesCritical->count();
-                $servicesWarning = $impairedData['services']->filter(function ($service) {
-                        return $service->last_hard_state == 1;
-                    });
-                $servicesWarningCount = $servicesWarning->count();
-                $servicesOk = $impairedData['services']->count() - $servicesCriticalCount - $servicesWarningCount;
-                @endphp
                 <div class="d-flex m-b-5 align-items-baseline">
                     <i class="fa fa-circle text-success m-r-5"></i>
-                    {{ $servicesOk }} Services online
+                    {{ $impairedData['serviceCounts']->ok }} Services online
                 </div>
                 <div class="d-flex m-b-5 align-items-baseline">
                     <i class="fa fa-circle text-warning m-r-5"></i>
-                    @if($servicesWarningCount > 0)
+                    @if($impairedData['serviceCounts']->warning > 0)
                         <a href="#javascript;" data-toggle="collapse" data-target="#services-warning">
-                            {{ $servicesWarningCount }} Services are in warning state
+                            {{ $impairedData['serviceCounts']->warning }} Services are in warning state
                         </a>
                     @else
-                        {{ $servicesWarningCount }} Services are in warning state
+                        {{ $impairedData['serviceCounts']->warning }} Services are in warning state
                     @endif
                 </div>
                 <div class="d-flex m-b-5 align-items-baseline">
                     <i class="fa fa-circle text-danger m-r-5"></i>
-                    @if($servicesCriticalCount > 0)
+                    @if($impairedData['serviceCounts']->critical > 0)
                         <a href="#javascript;" data-toggle="collapse" data-target="#services-critical">
-                            {{ $servicesCriticalCount }} Services are in critical state
+                            {{ $impairedData['serviceCounts']->critical }} Services are in critical state
                         </a>
                     @else
-                        {{ $servicesCriticalCount }} Services are in critical state
+                        {{ $impairedData['serviceCounts']->critical }} Services are in critical state
+                    @endif
+                </div>
+                <div class="d-flex m-b-5 align-items-baseline">
+                    <i class="fa fa-circle text-gray m-r-5"></i>
+                    @if($impairedData['serviceCounts']->critical > 0)
+                        <a href="#javascript;" data-toggle="collapse" data-target="#services-critical">
+                            {{ $impairedData['serviceCounts']->unknown }} Services are in a unknown state
+                        </a>
+                    @else
+                        {{ $impairedData['serviceCounts']->unknown }} Services are in a unknown state
                     @endif
                 </div>
             @endsection
