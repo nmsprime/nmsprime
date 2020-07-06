@@ -21,37 +21,89 @@ class TroubleDashboardController
             return collect(['impairedData' => [], 'netelements' => [], 'services' => [], 'hosts' => []]);
         }
 
-        $hosts = IcingaHostStatus::forTroubleDashboard()->get();
-        $services = IcingaServiceStatus::forTroubleDashboard()->get();
-        $netelements = NetElement::withActiveModems('id', '>', '0')->get()->keyBy('id');
-        $affectedModemsCount = self::calculateModemCounts($netelements);
+        $hostCounts = IcingaHostStatus::countsForTroubleDashboard()->first();
+        $serviceCounts = IcingaServiceStatus::countsForTroubleDashboard()->first();
+        $nodeObject = IcingaObject::where('is_active', 1)->where('name2', 'icinga')->first();
+        $nodeObject = IcingaObject::where('objecttype_id', 1)->where('name1', $nodeObject->name1)->first();
 
-        $impairedData = $hosts->concat($services)
-            ->sortByDesc(function ($element) use ($affectedModemsCount) {
-                return [
-                    $element->last_hard_state,
-                    $element->affectedModemsCount($affectedModemsCount),
-                ];
-            })
-            ->map(function ($impaired) use ($affectedModemsCount) {
-                if (isset($impaired->additionalData) && ! is_array($impaired->additionalData)) {
-                    $impaired->additionalData = $impaired->additionalData
-                        ->sortByDesc(function ($element) use ($affectedModemsCount) {
-                            return [
-                                // $element['state'],
-                                ((isset($affectedModemsCount[$element['id']])) ? $affectedModemsCount[$element['id']] : 0),
-                            ];
-                        });
-                }
+        $node = new NetElement();
+        $node->name = $nodeObject->name1;
+        $node->isProvisioningSystem = true;
+        $node->setRelation('icingaObject', $nodeObject);
+        $node->setRelation('hostStatus', $nodeObject->hostStatus);
+        $node->setRelation('icingaServices', $nodeObject->services()->with('icingaObject')->get());
 
-                return $impaired;
+        $netelements = NetElement::withActiveModems('id', '>', '1')
+            ->with(['icingaObject.hostStatus', 'icingaServices.icingaObject'])
+            ->without('netelementtype')
+            ->get()
+            ->keyBy('id');
+
+        $affectedModemsCount = self::calculateAllModemCounts($netelements);
+        $netelements[$nodeObject->name1] = $node;
+
+        $impairedData = $netelements->mapWithKeys(function ($netelement) use ($affectedModemsCount) {
+            if (! $netelement->icingaObject) {
+                return [];
+            }
+
+            if (isset($affectedModemsCount[$netelement->id])) {
+                $netelement->singleFail = false;
+                $netelement->allModems = $affectedModemsCount[$netelement->id]['all'];
+                $netelement->offlineModems = $netelement->allModems - $affectedModemsCount[$netelement->id]['online'];
+                $netelement->criticalModems = $affectedModemsCount[$netelement->id]['critical'];
+                $netelement->offlineModems = ($netelement->allModems > $netelement->modems_count) &&
+                    ($netelement->offlineModems >= ((config('hfccustomer.threshhold.avg.percentage.multipleClusters') / 100) * $netelement->allModems)) ?
+                    $netelement->offlineModems :
+                    (($netelement->allModems <= $netelement->modems_count &&
+                    ($netelement->modems_count - $netelement->modems_online_count) > (1 - (config('hfccustomer.threshhold.avg.percentage.warning') / 100)) * $netelement->modems_count) ?
+                    $netelement->modems_count - $netelement->modems_online_count :
+                    0);
+            }
+
+            $netelement->last_hard_state = $netelement->icingaServices
+                ->filter(function ($service) use ($netelement) {
+                    if ($service->problem_has_been_acknowledged == 0) {
+                        return true;
+                    }
+
+                    $netelement->hasMutedServices = true;
+
+                    return false;
+                })
+                ->pluck('last_hard_state')
+                ->push($netelement->icingaHostStatus->last_hard_state)
+                ->max();
+
+            $netelement->icingaServices = $netelement->icingaServices->sortByDesc(function ($service) {
+                return $service->last_hard_state;
             });
 
-        $ackState = $impairedData->mapWithKeys(function ($impaired) {
-            return [$impaired->icingaObject->object_id => $impaired->problem_has_been_acknowledged];
+            $netelement->status = [
+                'unknown' => $netelement->icingaServices->where('last_hard_state', 3)->count(),
+                'critical' => $netelement->icingaServices->where('last_hard_state', 2)->count(),
+                'warning' => $netelement->icingaServices->where('last_hard_state', 1)->count(),
+                'ok' => $netelement->icingaServices->where('last_hard_state', 0)->count(),
+            ];
+
+            return [$netelement->id => $netelement];
+        })->sortByDesc(function ($netelement) {
+            return [
+                $netelement->last_hard_state,
+                $netelement->isProvisioningSystem,
+                $netelement->offlineModems + $netelement->criticalModems,
+                $netelement->allModems,
+            ];
+        });
+
+        $ackState = $impairedData->mapWithKeys(function ($netelement) {
+            return $netelement->icingaServices->mapWithKeys(function ($service) {
+                return [$service->service_object_id => $service->problem_has_been_acknowledged];
+            })
+            ->put($netelement->icingaObject->object_id, $netelement->icingaHostStatus->problem_has_been_acknowledged);
         })->toJson();
 
-        return collect(compact('ackState', 'hosts', 'impairedData', 'netelements', 'services', 'ackstate', 'affectedModemsCount'));
+        return collect(compact('ackState', 'hostCounts', 'impairedData', 'netelements', 'serviceCounts', 'affectedModemsCount'));
     }
 
     /**
