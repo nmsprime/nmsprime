@@ -250,6 +250,21 @@ class ProvMonController extends \BaseController
             $model = $modem->model;
         }
 
+        if ($modem->isTR069()) {
+            foreach (['InternetGatewayDevice.DeviceInfo.ModelName', 'Device.DeviceInfo.ModelName'] as $parameter) {
+                $model = $modem->getGenieAcsModel($parameter);
+
+                if ($model && isset($model->_value)) {
+                    $model = $model->_value;
+                    break;
+                }
+            }
+        }
+
+        if (! is_string($model)) {
+            return self::MODEM_IMAGE_PATH.'/default.webp';
+        }
+
         foreach (collect(\File::allFiles(public_path(self::MODEM_IMAGE_PATH)))->sortBy(function ($file) {
             return $file->getFilename();
         }) as $file) {
