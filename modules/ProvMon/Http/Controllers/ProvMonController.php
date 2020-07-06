@@ -939,7 +939,7 @@ class ProvMonController extends \BaseController
                 $value = $modem->getGenieAcsModel($param[0]);
 
                 // _lastInform, _deviceId._SerialNumber etc. are strings, not objects
-                $value = isset($value->_value) ? $value->_value : $value;
+                $value = is_string($value) ? $value : (isset($value->_value) ? $value->_value : '');
 
                 if (isset($param[1])) {
                     $value = eval("return $value {$param[1][0]} {$param[1][1]};");
