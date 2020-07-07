@@ -43,7 +43,7 @@ class TicketController extends \BaseController
                 'value' => $model->html_list(TicketType::all(), 'name', true),
                 'options' => ['multiple' => 'multiple'],
                 'selected' => $model->html_list($model->tickettypes, 'name'), 'space' => 1, ],
-            ['form_type' => 'select', 'name' => 'contract_id', 'description' => 'Contract', 'value' => $model->html_list(\DB::table('contract')->get(), ['number', 'firstname', 'lastname'], true, ' - ')],
+            ['form_type' => 'select', 'name' => 'contract_id', 'description' => 'Contract', 'value' => $model->html_list(\DB::table('contract')->get(), ['number', 'firstname', 'lastname', 'company'], true, ' - ')],
         ];
 
         $mid = [];
