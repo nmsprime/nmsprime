@@ -61,10 +61,10 @@ class DashboardController extends BaseController
             'all' => with(clone $query)->where('modem.id', '>', '0')->count(),
             'online' => with(clone $query)->where('modem.us_pwr', '>', '0')->count(),
             'warning' => with(clone $query)
-                ->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.avg.us.warning', 45))
-                ->where('modem.us_pwr', '<', config('hfccustomer.threshhold.avg.us.critical', 52))
+                ->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.single.us.warning', 50))
+                ->where('modem.us_pwr', '<', config('hfccustomer.threshhold.single.us.critical', 55))
                 ->count(),
-            'critical' => with(clone $query)->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.avg.us.critical', 52))->count(),
+            'critical' => with(clone $query)->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.single.us.critical', 55))->count(),
         ];
 
         Storage::disk('chart-data')->put('modems.json', json_encode($modems));
