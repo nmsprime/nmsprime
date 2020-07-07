@@ -83,15 +83,15 @@ class TroubleDashboardController
                 'unknown' => $netelement->icingaServices->where('last_hard_state', 3)->count(),
                 'critical' => $netelement->icingaServices->where('last_hard_state', 2)->count(),
                 'warning' => $netelement->icingaServices->where('last_hard_state', 1)->count(),
-                'ok' => $netelement->icingaServices->where('last_hard_state', 0)->count(),
+                // 'ok' => $netelement->icingaServices->where('last_hard_state', 0)->count(),
             ];
 
             return [$netelement->id => $netelement];
         })->sortByDesc(function ($netelement) {
             return [
+                $netelement->offlineModems + $netelement->criticalModems,
                 $netelement->last_hard_state,
                 $netelement->isProvisioningSystem,
-                $netelement->offlineModems + $netelement->criticalModems,
                 $netelement->allModems,
             ];
         });
