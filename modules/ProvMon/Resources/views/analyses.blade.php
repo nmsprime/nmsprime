@@ -123,6 +123,16 @@
 				@if (isset($configfile['warn']))
 					<font color="red"><b>{{$configfile['warn']}}</b></font><br>
 				@endif
+			@else
+				<?php
+				    $blade_type = 'form';
+				?>
+				@include('Generic.above_infos')
+
+				{!! Form::open(array('route' => 'Modem.factoryReset', 'method' => 'GET')) !!}
+				{!! Form::hidden('id', $modem->id) !!}
+				<button class="btn btn-primary m-t-10" type="submit">{{trans('messages.factory_reset')}}</button>
+				{!! Form::close() !!}
 			@endif
 			@foreach ($configfile['text'] as $line)
 				<table>
