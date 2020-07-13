@@ -880,7 +880,7 @@ class ProvMonController extends \BaseController
 
         // remove all inactive channels (no range success)
         foreach ($ds['Power dBmV'] as $key => $val) {
-            if ($ds['Modulation'][$key] == '' && $ds['MER dB'][$key] == 0) {
+            if (! $ds['Modulation'][$key] && (! isset($ds['MER dB'][$key]) || $ds['MER dB'][$key] == 0)) {
                 foreach ($ds as $entry => $arr) {
                     unset($ds[$entry][$key]);
                 }
