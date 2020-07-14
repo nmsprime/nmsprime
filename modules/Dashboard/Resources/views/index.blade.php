@@ -81,15 +81,24 @@
 </div>
 <div class="row">
     <div class="col-xl-8 no-gutters ui-sortable">
-        @if($impairedData)
-            @section ('trouble_dashboard')
+        @if(! empty($impairedData))
+            @section ('impaired_summary')
+                @include('HfcBase::troubledashboard.summary')
+            @stop
+            @include ('bootstrap.panel', [
+                'content' => "impaired_summary",
+                'view_header' => 'System Summary',
+                'height' => 'auto',
+                'i' => '3'
+            ])
+            @section ('impaired_services')
                 @include('HfcBase::troubledashboard.panel')
             @stop
             @include ('bootstrap.panel', [
-                'content' => "trouble_dashboard",
+                'content' => "impaired_services",
                 'view_header' => 'Trouble Dashboard',
                 'height' => 'auto',
-                'i' => '5'
+                'i' => '4'
             ])
         @endif
     </div>

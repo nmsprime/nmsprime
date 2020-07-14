@@ -22,6 +22,15 @@
             @DivClose()
 
             @if(! empty($impairedData))
+                @section ('impaired_summary')
+                    @include('HfcBase::troubledashboard.summary')
+                @stop
+                @include ('bootstrap.panel', [
+                    'content' => "impaired_summary",
+                    'view_header' => 'System Summary',
+                    'height' => 'auto',
+                    'i' => '4'
+                ])
                 @section ('impaired_services')
                     @include('HfcBase::troubledashboard.panel')
                 @stop
