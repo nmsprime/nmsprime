@@ -145,7 +145,7 @@ class ProvMonController extends \BaseController
             }
 
             if ($modem->isTR069()) {
-                $measure = array_merge($this->realtimeTR069($modem, false), $measure);
+                $measure = array_merge(self::realtimeTR069($modem, false), $measure);
             } else {
                 // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
                 $measure = array_merge($this->realtime($ip, ProvBase::first()->ro_community), $measure);
@@ -915,7 +915,7 @@ class ProvMonController extends \BaseController
      *
      * @author Ole Ernst
      */
-    public function realtimeTR069($modem, $refresh)
+    public static function realtimeTR069($modem, $refresh)
     {
         $mon = $modem->configfile->getMonitoringConfig();
         if (! $mon) {
