@@ -21,7 +21,13 @@ class ItemController extends \BaseController
             $model = new Item;
         }
 
-        $products = Product::select('id', 'type', 'name')->where('deprecated', 0)->orderBy('type')->orderBy('name')->get()->all();
+        $productQuery = Product::select('id', 'type', 'name')->where('deprecated', 0)->orderBy('type')->orderBy('name');
+
+        if ($model->id) {
+            $productQuery->orWhere('id', $model->product_id);
+        }
+
+        $products = $productQuery->get();
 
         $prods[0] = '';
         foreach ($products as $p) {
