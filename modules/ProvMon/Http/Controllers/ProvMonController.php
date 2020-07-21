@@ -956,7 +956,7 @@ class ProvMonController extends \BaseController
                 // _lastInform, _deviceId._SerialNumber etc. are strings, not objects
                 $value = is_string($value) ? $value : (isset($value->_value) ? $value->_value : '');
 
-                if (isset($param[1])) {
+                if (isset($param[1]) && is_numeric($value)) {
                     $value = eval("return $value {$param[1][0]} {$param[1][1]};");
                 }
 
