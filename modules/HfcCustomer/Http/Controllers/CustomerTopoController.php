@@ -220,15 +220,8 @@ class CustomerTopoController extends NetElementController
             ->leftJoin('netelement', 'modem.netelement_id', 'netelement.id')
             ->whereNull('modem.deleted_at')
             ->whereNull('contract.deleted_at')
-            ->where(function ($query) {
-                $query
-                    ->where(function ($query) {
-                        $query
-                        ->where('contract_start', '>', date('Y-m-d'))
-                        ->where(whereLaterOrEqual('contract_end', date('Y-m-d')));
-                    })
-                    ->orWhere('us_pwr', '>', 0);
-            })
+            ->where('contract_start', '<=', date('Y-m-d'))
+            ->where(whereLaterOrEqual('contract_end', date('Y-m-d')))
             ->select(['modem.*', 'netelement.cluster']);
     }
 
