@@ -224,8 +224,8 @@ class CustomerTopoController extends NetElementController
                 $query
                     ->where(function ($query) {
                         $query
-                        ->where('contract_start', '>', 'CURRENT_DATE')
-                        ->where(whereLaterOrEqual('contract_end', 'CURRENT_DATE'));
+                        ->where('contract_start', '>', date('Y-m-d'))
+                        ->where(whereLaterOrEqual('contract_end', date('Y-m-d')));
                     })
                     ->orWhere('us_pwr', '>', 0);
             })
