@@ -133,13 +133,13 @@ class TroubleDashboardController
      */
     public static function calculateAllModemCounts(\Illuminate\Database\Eloquent\Collection $netelements)
     {
-        $netelementIds = Modem::select('netelement_id')->distinct()->pluck('netelement_id')->filter();
+        $modemsPerNetelement = [];
         $lookup = [
             'modems_count' => 'all',
             'modems_online_count' => 'online',
-            'modems_critical_count' =>  'critical',
+            'modems_critical_count' => 'critical',
         ];
-        $modemsPerNetelement = [];
+        $netelementIds = Modem::select('netelement_id')->distinct()->pluck('netelement_id')->filter();
 
         foreach ($netelementIds as $id) {
             $currentId = $id;
@@ -153,6 +153,12 @@ class TroubleDashboardController
                 foreach ($lookup as $property => $type) {
                     $branchModemCount[$type] = $branchModemCount[$type] +
                         (! isset($modemsPerNetelement[$currentId][$type]) ? $netelements[$currentId]->$property : 0);
+
+                    if ($type === 'online' && $netelements[$currentId]->geoPosModems->isNotEmpty()) {
+                        foreach ($netelements[$currentId]->geoPosModems as $geoPosModems) {
+                            $branchModemCount['online'] += $geoPosModems->count - $geoPosModems->online;
+                        }
+                    }
 
                     $modemsPerNetelement[$currentId][$type] = ($modemsPerNetelement[$currentId][$type] ?? 0) + $branchModemCount[$type];
                 }

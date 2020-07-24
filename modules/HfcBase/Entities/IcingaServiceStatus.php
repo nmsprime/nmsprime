@@ -30,13 +30,6 @@ class IcingaServiceStatus extends Model implements ImpairedContract
     protected $primaryKey = 'servicestatus_id';
 
     /**
-     * Contains more detailed for Subservices, deserialized from perfdata field.
-     *
-     * @var \Illuminate\Support\Collection
-     */
-    public $additionalData;
-
-    /**
      * The amount of modems affected by this Service.
      *
      * @var int
