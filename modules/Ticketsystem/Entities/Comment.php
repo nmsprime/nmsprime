@@ -38,7 +38,6 @@ class Comment extends \BaseModel
         return $this->belongsTo(Ticket::class, 'ticket_id');
     }
 
-
     /**
      * Relation user
      */
