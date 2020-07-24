@@ -285,26 +285,11 @@ class CustomerTopoController extends NetElementController
         $monitoring = [];
         $provmon = new \Modules\ProvMon\Http\Controllers\ProvMonController;
         $before = microtime(true);
-        $types = array_sort(array_keys(config('hfcreq.hfParameters')));
-
         $modems = $modemQuery->orderBy('city')->orderBy('street')->orderBy('house_number')->get();
 
         // foreach modem
         foreach ($modems as $modem) {
-            // load per modem diagrams
-            $dia_ids = [$provmon->monitoring_get_graph_template_id('DOCSIS Overview')];
-            if (! Request::filled('row')) {
-                $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS US PWR');
-            } elseif (in_array(Request::get('row'), $types)) {
-                $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS '.strtoupper(str_replace('_', ' ', Request::get('row'))));
-            } elseif (Request::get('row') == 'all') {
-                $dia_ids = [];
-                foreach ($types as $type) {
-                    $dia_ids[] = $provmon->monitoring_get_graph_template_id('DOCSIS '.strtoupper(str_replace('_', ' ', $type)));
-                }
-            }
-
-            $dia = $provmon->monitoring($modem, $dia_ids);
+            $dia = $provmon->monitoring($modem, $this->getGraphTemplateId(Request::get('row')));
 
             // valid diagram's ?
             if ($dia != false) {
@@ -327,6 +312,35 @@ class CustomerTopoController extends NetElementController
 
         // show view
         return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs')));
+    }
+
+    /**
+     * Get cacti graph template ids matching the search term
+     *
+     * @param search: search term or null
+     * @return: array of related cacti graph template ids
+     *
+     * @author: Ole Ernst
+     */
+    private function getGraphTemplateId(?string $search): array
+    {
+        if (! $search) {
+            $search = 'us_pwr';
+        }
+
+        $provmon = new \Modules\ProvMon\Http\Controllers\ProvMonController;
+
+        if ($search == 'all') {
+            return $provmon->monitoringGetGraphTemplateId('DOCSIS%')->toArray();
+        }
+
+        if (in_array($search, array_keys(config('hfcreq.hfParameters')))) {
+            $search = strtoupper(str_replace('_', ' ', $search));
+        }
+
+        return $provmon->monitoringGetGraphTemplateId('DOCSIS Overview')
+            ->merge($provmon->monitoringGetGraphTemplateId("DOCSIS $search%"))
+            ->toArray();
     }
 
     /*
@@ -370,9 +384,9 @@ class CustomerTopoController extends NetElementController
             $ids .= '+'.$modem->id;
         }
 
-        return [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $modem->netelement_id],
-            ['name' => 'Topography', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => Request::get('row')]],
-            ['name' => 'Diagramms', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => Request::get('row')]], ];
+        return [['name' => 'Edit', 'icon' => 'pencil', 'route' => 'NetElement.edit', 'link' => $modem->netelement_id],
+            ['name' => 'Topography', 'icon' => 'map', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => Request::get('row')]],
+            ['name' => 'Diagramms', 'icon' => 'area-chart', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => Request::get('row')]], ];
     }
 
     /**
@@ -393,7 +407,7 @@ class CustomerTopoController extends NetElementController
         $newTab = ProvBase::first()->modem_edit_page_new_tab;
         $baseUrl = \BaseRoute::get_base_url();
 
-        if (! $row) {
+        if (! $row || ! in_array($row, array_keys(config('hfcreq.hfParameters')))) {
             $row = 'us_pwr';
         }
 

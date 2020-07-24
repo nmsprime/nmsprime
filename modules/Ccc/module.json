@@ -4,7 +4,7 @@
     "description": "Customer Control Center",
     "keywords": [],
     "active": 1,
-    "order": 0,
+    "order": 220,
     "providers": [
         "Modules\\Ccc\\Providers\\CccServiceProvider"
     ],

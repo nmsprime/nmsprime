@@ -106,7 +106,7 @@ class TreeErdController extends HfcBaseController
         $netelements->with('netelementtype:id,name');
 
         if (IcingaObject::db_exists()) {
-            $netelements->with('icingaobject.icingahoststatus');
+            $netelements->with('icingaobject.hoststatus');
         }
 
         $file = $this->generateSVG($netelements->get());
@@ -140,11 +140,11 @@ class TreeErdController extends HfcBaseController
      */
     public static function getTabs($netelementtype, $id)
     {
-        $tabs = [['name' => 'Edit', 'route' => 'NetElement.edit', 'link' => $id],
-            ['name' => 'Entity Diagram', 'route' => 'TreeErd.show', 'link' => [$netelementtype, $id]],
-            ['name' => 'Topography', 'route' => 'TreeTopo.show', 'link' => [$netelementtype, $id]],
-            ['name' => 'Controlling', 'route' => 'NetElement.controlling_edit', 'link' => [$id, 0, 0]],
-            ['name' => 'Diagrams', 'route' => 'ProvMon.diagram_edit', 'link' => $id],
+        $tabs = [['name' => 'Edit', 'icon' => 'pencil', 'route' => 'NetElement.edit', 'link' => $id],
+            ['name' => 'Entity Diagram', 'icon' => 'sitemap', 'route' => 'TreeErd.show', 'link' => [$netelementtype, $id]],
+            ['name' => 'Topography', 'icon' => 'map', 'route' => 'TreeTopo.show', 'link' => [$netelementtype, $id]],
+            ['name' => 'Controlling', 'icon' => 'wrench', 'route' => 'NetElement.controlling_edit', 'link' => [$id, 0, 0]],
+            ['name' => 'Diagrams', 'icon' => 'area-chart', 'route' => 'ProvMon.diagram_edit', 'link' => $id],
         ];
 
         if (in_array(strtolower($netelementtype), ['net', 'all', 'id', 'parent_id'])) {
@@ -286,22 +286,20 @@ class TreeErdController extends HfcBaseController
         // TODO: Customer
         //
         if (\Module::collections()->has('HfcCustomer')) {
-            $ModemHelper = \Modules\HfcCustomer\Entities\ModemHelper::class;
             foreach ($netelements as $netelem) {
                 $idtree = $netelem->id;
                 $id = $netelem->id;
                 $type = $netelem->type;
                 $url = \BaseRoute::get_base_url()."/Customer/netelement_id/$idtree";
-                $n++;
 
-                $state = $ModemHelper::ms_state($netelem);
-                if ($state != -1) {
-                    $color = $ModemHelper::ms_state_to_color($state);
-                    $num = $netelem->modems_online_count;
-                    $numa = $netelem->modems_count;
-                    $cri = $netelem->modems_critical_count;
-                    $avg = $netelem->modemsUsPwrAvg;
+                $num = $netelem->modems_online_count;
+                $numa = $netelem->modems_count;
+                $cri = $netelem->modems_critical_count;
+                $avg = $netelem->modemsUsPwrAvg;
+                $modemStateAnalysis = new \Modules\HfcCustomer\Helpers\ModemStateAnalysis($num, $numa, $avg);
 
+                if ($modemStateAnalysis->get()) {
+                    $color = $modemStateAnalysis->toColor();
                     $file .= "\n node [label = \"$numa\\n$num/$cri\\n$avg\", shape = circle, style = filled, color=$color, URL=\"$url\", target=\"\"];";
                     $file .= " \"C$idtree\"";
                     $file .= "\n \"$id\" -> C$idtree [color = green]";

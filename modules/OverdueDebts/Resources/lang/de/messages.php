@@ -9,8 +9,10 @@ return [
         'block' => 'Blockiere Internetzugriff und füge Mahngebühren hinzu...',
         'columnCountError' => 'Die Anzahl der Spalten in der CSV ist fehlerhaft. Die Anzahl muss :number Spalten betragen.',
         'contractsBlocked' => 'Der Internetzugriff der Modems folgender :count Verträge wurde während des OP-Imports geblockt: :numbers.',
+        'contractsBlockedTest' => 'Der Internetzugriff der Modems folgender :count Verträge wäre während des OP-Imports geblockt worden: :numbers.',
         'contractsMissing' => 'Die folgenden Verträge konnten nicht im System gefunden werden, haben aber offene Posten gemäß der hochgeladenen Datei: :numbers.',
         'count' =>  'Importiere :number Offene Posten.',
+        'runAsTest' => 'Der OP-Import findet nur als Testlauf statt. Der Internetzugriff der Kunden wird nicht gesperrt.',
     ],
     'parse' => [
         'start' => 'Parse Banktransaktionsdatei',

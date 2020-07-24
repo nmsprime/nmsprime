@@ -20,4 +20,10 @@ BaseRoute::group([], function () {
         'uses' => 'Modules\HfcBase\Http\Controllers\HfcBaseController@get_file',
         'middleware' => ['can:view,Modules\HfcBase\Entities\TreeErd'],
     ]);
+
+    BaseRoute::post('troubledashboard/{type}/{id}/{mute}', [
+        'as' => 'TroubleDashboard.mute',
+        'uses' => 'Modules\HfcBase\Http\Controllers\TroubleDashboardController@muteProblem',
+        'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
+    ]);
 });

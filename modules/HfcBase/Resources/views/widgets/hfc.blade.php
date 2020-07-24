@@ -1,28 +1,25 @@
-<style>
-    a:hover {
-        text-decoration: none;
-    }
-</style>
-
 <div class="widget widget-stats bg-blue">
     {{-- info/data --}}
-    <div class="stats-info d-flex">
+    <div class="stats-info text-center">
 
-      {!! HTML::decode (HTML::link('https://'.\Request::server('HTTP_HOST').'/cacti',
-  			'<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
-  				<i style="font-size: 25px;" class="img-center fa fa-tachometer p-10"></i><br />
-  				<span class="username text-ellipsis text-center">Cacti System</span>
-  			</span>', ['target' => '_blank']))
-  		!!}
+    <a href="https://{{ Request::server('HTTP_HOST') }}/cacti" target="_blank">
+        <div class="btn btn-dark p-10 m-5 m-r-10 text-center">
+            <i style="font-size: 25px;" class="img-center fa fa-tachometer p-10"></i>
+            <div class="username text-ellipsis text-center">Cacti System</div>
+        </div>
+    </a>
 
-      {!! HTML::decode (HTML::link('https://'.\Request::server('HTTP_HOST').'/icingaweb2',
-  			'<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
-  				<i style="font-size: 25px;" class="img-center fa fa-info-circle p-10"></i><br />
-  				<span class="username text-ellipsis text-center">Icinga2 System</span>
-  			</span>', ['target' => '_blank']))
-  		!!}
+    <a href="https://{{ Request::server('HTTP_HOST') }}/icingaweb2" target="_blank">
+        <div class="btn btn-dark p-10 m-5 m-r-10 text-center">
+            <svg class="m-10" xmlns="http://www.w3.org/2000/svg" width="25" height="20" version="1.1" viewBox="-5 -5 105 105">
+                <path d="m 40.704846,40.305609 0,0 12.22301,-25.1583 m -20.21584,28.9132 0,0 -20.59136,-16.8982 m 26.61011,23.7512 0,0 14.00908,23.4685 m -14.95037,-24.5016 0,0 50.21059,-12.3916 m -50.21059,12.3916 0,0 -24.25801,34.7343" style="fill:none;stroke:#ffffff;stroke-width:1.2216469;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1" id="path3906"/>
+                <path d="m 26.601396,35.704509 0,0 c 7.05279,-5.7261 17.39572,-4.693 23.13121,2.3477 5.73549,7.0407 4.70145,17.3659 -2.35135,23.0933 -7.05154,5.6323 -17.39447,4.5991 -23.12996,-2.4416 -5.73549,-6.9468 -4.60744,-17.2721 2.3501,-22.9994 z m 23.13121,-33.2309002 0,0 c 3.6674,-2.91059997 9.02688,-2.34779997 12.035,1.2195 3.00938,3.661 2.44535,9.0119002 -1.22205,12.0163002 -3.6674,3.0044 -9.02688,2.4403 -12.035,-1.2208 -3.00938,-3.661 -2.44535,-9.0119002 1.22205,-12.0150002 z m 30.37077,34.6393002 0,0 c -0.28202,-3.6611 2.5381,-6.8531 6.2055,-7.1345 3.76141,-0.2815 6.95754,2.4403 7.23955,6.1026 0.28201,3.7548 -2.5381,6.9456 -6.2055,7.2283 -3.66741,0.2814 -6.95754,-2.4416 -7.23955,-6.1964 z m -72.4951504,-7.416 0,0 c -1.1283,-2.3464 -0.18801,-5.3508 2.25659,-6.4778 2.4447304,-1.2195 5.3596004,-0.1876 6.5816504,2.2539 1.22205,2.3465 0.18801,5.3509 -2.25609,6.4766 -2.44498,1.2208 -5.3598504,0.1876 -6.5821504,-2.2527 l 0,0 z m 41.7483704,44.9658 0,0 c 0.188,-1.8774 1.88007,-3.2858 3.76015,-3.0969 1.88133,0.2814 3.29139,1.9712 3.00938,3.8487 -0.18801,1.8774 -1.88008,3.192 -3.76141,3.0031 -1.88008,-0.1876 -3.29014,-1.8774 -3.00812,-3.7549 l 0,0 z m -48.7063704,11.6411 0,0 c -0.47013,-6.1026 4.04313,-11.3596 10.1548804,-11.8287 6.11138,-0.469 11.37685,4.1314 11.84687,10.1389 0.47127,6.1013 -4.04216,11.4527 -10.1543,11.922 -6.1117504,0.3755 -11.4713504,-4.1309 -11.8474504,-10.2322 z" style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" id="path4016"/>
+            </svg>
+            <div class="username text-ellipsis text-center">Icinga2 System</div>
+        </div>
+    </a>
 
     </div>
     {{-- reference link --}}
-    <div class="stats-link"><a href="#">{{trans('view.Dashboard_External')}}</a></div>
+    <div class="stats-link noHover"><a href="#">{{trans('view.Dashboard_External')}}</a></div>
 </div>

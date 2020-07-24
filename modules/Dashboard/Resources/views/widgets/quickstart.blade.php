@@ -1,28 +1,33 @@
-<style>
-    a:hover {
-        text-decoration: none;
-    }
-</style>
-
-<div class="widget widget-stats bg-grey" style="width: max-content">
+<div class="widget widget-stats bg-grey">
+    <div class="stats-icon"><i class="fa fa-link"></i></div>
     {{-- info/data --}}
     <div class="stats-info text-center">
-
-        {!! HTML::decode (HTML::linkRoute('Contract.index',
-            '<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
-                <i style="font-size: 25px;" class="img-center fa fa-address-book-o p-10"></i><br />
-                <span class="username text-ellipsis text-center">'.trans('view.dashboard.contractIndexPage').'</span>
-            </span>'))
-        !!}
-
-        {!! HTML::decode (HTML::linkRoute('Ticket.index',
-            '<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
-                <i style="font-size: 25px;" class="img-center fa fa-ticket p-10"></i><br />
-                <span class="username text-ellipsis text-center">'.trans('view.dashboard.ticketIndexPage').'</span>
-            </span>'))
-        !!}
+        @include('bootstrap.quickstartbutton', [
+            'route' => 'Contract.index',
+            'icon' => 'address-book-o',
+            'title' => trans('view.dashboard.contractIndexPage'),
+        ])
+        @include('bootstrap.quickstartbutton', [
+            'route' => 'Modem.index',
+            'icon' => 'hdd-o',
+            'title' => trans('view.dashboard.modemIndexPage'),
+        ])
+        @if(Module::collections()->has('HfcBase'))
+            @include('bootstrap.quickstartbutton', [
+                'route' => 'NetElement.index',
+                'icon' => 'object-ungroup',
+                'title' => trans('view.dashboard.netelementIndexPage'),
+            ])
+        @endif
+        @if(Module::collections()->has('Ticketsystem'))
+            @include('bootstrap.quickstartbutton', [
+                'route' => 'Ticket.index',
+                'icon' => 'ticket',
+                'title' => trans('view.dashboard.ticketIndexPage'),
+            ])
+        @endif
 
     </div>
     {{-- reference link --}}
-    <div class="stats-link"><a href="#">{{ trans('view.Dashboard_Quickstart') }}</a></div>
+    <div class="stats-link noHover"><a href="#">{{ trans('view.Dashboard_Quickstart') }}</a></div>
 </div>

@@ -28,7 +28,7 @@ class TicketController extends \BaseController
         $tickets['table'] = Auth::user()->tickets()->where('state', '=', 'New')->get();
         $tickets['total'] = count($tickets['table']);
 
-        return View::make('ticketsystem::dashboard', $this->compact_prep_view(compact('title', 'tickets')));
+        return View::make('ticketsystem::index', $this->compact_prep_view(compact('title', 'tickets')));
     }
 
     public function view_form_fields($model = null)

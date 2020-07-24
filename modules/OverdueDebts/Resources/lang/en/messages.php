@@ -9,8 +9,10 @@ return [
         'block' => 'Block internet access and add Dunning charges...',
         'columnCountError' => 'Wrong count of columns in the CSV. The count must be :number.',
         'contractsBlocked' => 'The internet access of the modems of the following :count contracts was blocked during import: :numbers',
+        'contractsBlockedTest' => 'The internet access of the modems of the following :count contracts would have been blocked during import: :numbers',
         'contractsMissing' => 'Could not find contract(s) with the following contract number(s) of the uploaded file: :numbers.',
         'count' => 'Import :number overdue debts.',
+        'runAsTest' => 'The debt import only runs as test. Internet access of the customers will not be blocked.',
     ],
     'parse' => [
         'start' => 'Parse bank transaction file',

@@ -586,7 +586,7 @@ class Invoice extends \BaseModel
             } elseif (is_array($entry['called_nr'])) {
                 if ($entry['called_nr'][0] == 'enviaCDR') {
                     $_ = $entry['called_nr'];
-                    $called_number = iconv('CP1252', 'UTF-8', '\\emph{anderer Anbieter:}\\newline- \textbf{'.$_[1].'}\\newline- '.$_[2].'\\newline- '.$_[3].'\\newline- '.$_[4]);
+                    $called_number = iconv('CP1252', 'UTF-8', '\\emph{anderer Anbieter:}\\newline- \textbf{'.escape_latex_special_chars($_[1]).'}\\newline- '.escape_latex_special_chars($_[2]).'\\newline- '.escape_latex_special_chars($_[3]).'\\newline- '.escape_latex_special_chars($_[4]));
                 } else {
                     // throw Exception instead of just logging the problem: logic error in code creating the CDR data
                     throw new \UnexpectedValueException('Invalid first value in array provided for CDR called number: '.$entry['called_nr'][0]);
@@ -656,6 +656,7 @@ class Invoice extends \BaseModel
     {
         // TODO: implement time of cdr as generic, variable way
         $time = $type ? strtotime('first day of last month') : $this->time_cdr; // strtotime('-2 month');
+        $charge = $type ? $this->data['table_sum_charge_net'] : $this->data['cdr_charge'];
 
         $data = [
             'contract_id' 	=> $this->data['contract_id'],
@@ -666,7 +667,8 @@ class Invoice extends \BaseModel
             'filename' 		=> $type ? $this->filename_invoice.'.pdf' : $this->filename_cdr.'.pdf',
             'type'  		=> $type ? 'Invoice' : 'CDR',
             'number' 		=> $this->data['invoice_nr'],
-            'charge' 		=> $type ? $this->data['table_sum_charge_net'] : $this->data['cdr_charge'],
+            'charge' 		=> $charge,
+            'charge_gross'  => round($charge * (1 + SettlementRunData::getConf('tax') / 100), 2),
         ];
 
         $ret = self::create($data);

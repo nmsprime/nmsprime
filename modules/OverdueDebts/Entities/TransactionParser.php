@@ -63,8 +63,14 @@ class TransactionParser
             return false;
         }
 
-        $exists = Debt::where('date', $debt->date)->where('description', $debt->description)->where('amount', $debt->amount)
-            ->where('bank_fee', $debt->bank_fee ?: 0)->where('contract_id', $debt->contract_id)
+        $exists = Debt::where('date', date('Y-m-d', strtotime($debt->date)))
+            ->where('description', $debt->description)->where('amount', $debt->amount)
+            ->where(function ($query) use ($debt) {
+                $query
+                ->where('bank_fee', $debt->bank_fee ?: 0)
+                ->orWhereNull('bank_fee');
+            })
+            ->where('contract_id', $debt->contract_id)
             ->count();
 
         if ($exists) {

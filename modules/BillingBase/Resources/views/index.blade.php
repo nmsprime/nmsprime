@@ -69,7 +69,12 @@
                 </div>
                 <div class="row">
                     <div class="col-md-12">
-                        @include('billingbase::widgets.documentation')
+                        @include('Generic.widgets.moduleDocu', [ 'urls' => [
+                                'documentation' => 'https://devel.roetzer-engineering.com/confluence/display/NMS/Billing',
+                                'youtube' => 'https://youtu.be/QDsxx6oe4mw',
+                                'forum' => 'https://devel.roetzer-engineering.com/confluence/display/nmsprimeforum/Billing',
+                            ]
+                        ])
                     </div>
                 </div>
                 <div class="row">
