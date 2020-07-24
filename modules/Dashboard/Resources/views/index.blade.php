@@ -91,15 +91,17 @@
                 'height' => 'auto',
                 'i' => '3'
             ])
+
             @section ('impaired_services')
-                @include('HfcBase::troubledashboard.panel')
+            @include('HfcBase::troubledashboard.panel')
             @stop
             @include ('bootstrap.panel', [
                 'content' => "impaired_services",
                 'view_header' => 'Trouble Dashboard',
                 'height' => 'auto',
                 'i' => '4'
-            ])
+                ])
+
         @endif
     </div>
     <div class="col-xl-4 no-gutters ui-sortable">
@@ -145,5 +147,6 @@
 @stop
 
 @section('javascript')
-@include('HfcBase::troubledashboard.javascript')
+    @include('HfcBase::troubledashboard.summaryjs')
+    @include('HfcBase::troubledashboard.tablejs')
 @stop

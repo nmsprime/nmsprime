@@ -2,7 +2,10 @@
 
 namespace Modules\HfcBase\Http\Controllers;
 
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Modules\ProvBase\Entities\Modem;
+use Modules\HfcBase\Entities\HfcBase;
 use Modules\HfcReq\Entities\NetElement;
 use Modules\HfcBase\Entities\IcingaObject;
 use Modules\HfcBase\Entities\IcingaHostStatus;
@@ -29,14 +32,17 @@ class TroubleDashboardController
         });
     }
 
+    public function data()
+    {
+        $node = $this->getProvisioningSystemData();
         $netelements = NetElement::withActiveModems('id', '>', '1')
-            ->with(['icingaObject.hostStatus', 'icingaServices.icingaObject'])
+            ->with(['icingaObject.hostStatus', 'icingaServices.icingaObject', 'geoPosModems'])
             ->without('netelementtype')
-            ->get()
+            ->get(['cluster', 'descr', 'id', 'name', 'parent_id', 'pos'])
             ->keyBy('id');
 
         $affectedModemsCount = self::calculateAllModemCounts($netelements);
-        $netelements[$nodeObject->name1] = $node;
+        $netelements[$node->name] = $node;
 
         $impairedData = $netelements->mapWithKeys(function ($netelement) use ($affectedModemsCount) {
             if (! $netelement->icingaObject) {
@@ -46,9 +52,10 @@ class TroubleDashboardController
             if (isset($affectedModemsCount[$netelement->id])) {
                 $netelement->singleFail = false;
                 $netelement->allModems = $affectedModemsCount[$netelement->id]['all'];
-                $netelement->offlineModems = $netelement->allModems - $affectedModemsCount[$netelement->id]['online'];
+                $netelement->offlineModems = $affectedModemsCount[$netelement->id]['all'] - $affectedModemsCount[$netelement->id]['online'];
                 $netelement->criticalModems = $affectedModemsCount[$netelement->id]['critical'];
-                $netelement->offlineModems = ($netelement->allModems > $netelement->modems_count) &&
+                $netelement->offlineModems =
+                    ($netelement->allModems > $netelement->modems_count) &&
                     ($netelement->offlineModems >= ((config('hfccustomer.threshhold.avg.percentage.multipleClusters') / 100) * $netelement->allModems)) ?
                     $netelement->offlineModems :
                     (($netelement->allModems <= $netelement->modems_count &&
@@ -57,49 +64,64 @@ class TroubleDashboardController
                     0);
             }
 
-            $netelement->last_hard_state = $netelement->icingaServices
-                ->filter(function ($service) use ($netelement) {
-                    if ($service->problem_has_been_acknowledged == 0) {
-                        return true;
+            switch (true) {
+                case ($netelement->offlineModems >= 100):
+                    $netelement->severity = 3;
+                    break;
+                case ($netelement->offlineModems >= 25):
+                    $netelement->severity = 2;
+                    break;
+                case ($netelement->offlineModems >= 5):
+                    $netelement->severity = 1;
+                    break;
+                default:
+                    $netelement->severity = 0;
+                    break;
+            }
+
+
+            $netelement->icingaServices = $netelement->icingaServices
+                ->map(function ($service) use ($netelement) {
+                    if ($service->problem_has_been_acknowledged) {
+                        $netelement->hasMutedServices = true;
                     }
 
-                    $netelement->hasMutedServices = true;
+                    if ($service->last_hard_state > 0) {
+                        $netelement->partiallyImpaired = true;
+                    }
 
-                    return false;
+                    $service->ticketLink = $service->toSubTicket($netelement);
+                    $service->icingaLink = $service->toIcingaWeb();
+                    $service->acknowledgeLink = route('TroubleDashboard.mute', ['Service', $service->service_object_id, $service->problem_has_been_acknowledged ? 0 : 1]);
+
+                    return $service;
                 })
-                ->pluck('last_hard_state')
-                ->push($netelement->icingaHostStatus->last_hard_state)
+                ->sortByDesc(function ($service) {
+                    return $service->last_hard_state;
+                });
+
+            $netelement->last_hard_state_change = $netelement->icingaServices
+                ->pluck('last_hard_state_change')
+                ->push($netelement->icingaHostStatus->last_hard_state_change)
                 ->max();
+            $netelement->last_hard_state_change = Carbon::parse($netelement->last_hard_state_change)->diffForHumans();
 
-            $netelement->icingaServices = $netelement->icingaServices->sortByDesc(function ($service) {
-                return $service->last_hard_state;
-            });
-
-            $netelement->status = [
-                'unknown' => $netelement->icingaServices->where('last_hard_state', 3)->count(),
-                'critical' => $netelement->icingaServices->where('last_hard_state', 2)->count(),
-                'warning' => $netelement->icingaServices->where('last_hard_state', 1)->count(),
-                // 'ok' => $netelement->icingaServices->where('last_hard_state', 0)->count(),
-            ];
+            $netelement->controllingLink = !$netelement->isProvisioningSystem ? route('NetElement.controlling_edit', [ $netelement->id , 0, 0]) : '';
+            $netelement->mapLink = $netelement->toMap();
+            $netelement->ticketLink = $netelement->toTicket();
+            $netelement->acknowledgeLink = route('TroubleDashboard.mute', [($netelement->isProvisioningSystem ? 'Node' : 'Host'), $netelement->icingaHostStatus->host_object_id, $netelement->icingaHostStatus->problem_has_been_acknowledged ? 0 : 1]);
 
             return [$netelement->id => $netelement];
         })->sortByDesc(function ($netelement) {
             return [
-                $netelement->offlineModems + $netelement->criticalModems,
-                $netelement->last_hard_state,
+                $netelement->offlineModems,
+                $netelement->severity,
                 $netelement->isProvisioningSystem,
                 $netelement->allModems,
             ];
         });
 
-        $ackState = $impairedData->mapWithKeys(function ($netelement) {
-            return $netelement->icingaServices->mapWithKeys(function ($service) {
-                return [$service->service_object_id => $service->problem_has_been_acknowledged];
-            })
-            ->put($netelement->icingaObject->object_id, $netelement->icingaHostStatus->problem_has_been_acknowledged);
-        })->toJson();
-
-        return collect(compact('ackState', 'hostCounts', 'impairedData', 'netelements', 'serviceCounts', 'affectedModemsCount'));
+        return $impairedData->values()->toJson();
     }
 
     /**
@@ -190,5 +212,20 @@ class TroubleDashboardController
             'status' => 'Bad Request. Your Type Parameter is not matching our database.',
         ],
         ], 400);
+    }
+
+    protected function getProvisioningSystemData() {
+        $nodeObject = IcingaObject::where('is_active', 1)->where('name2', 'icinga')->first();
+        $nodeObject = IcingaObject::where('objecttype_id', 1)->where('name1', $nodeObject->name1)->first();
+
+        $node = new NetElement();
+        $node->id = 0;
+        $node->name = $nodeObject->name1;
+        $node->isProvisioningSystem = true;
+        $node->setRelation('icingaObject', $nodeObject);
+        $node->setRelation('hostStatus', $nodeObject->hostStatus);
+        $node->setRelation('icingaServices', $nodeObject->services()->with('icingaObject')->get());
+
+        return $node;
     }
 }

@@ -21,7 +21,13 @@ BaseRoute::group([], function () {
         'middleware' => ['can:view,Modules\HfcBase\Entities\TreeErd'],
     ]);
 
-    BaseRoute::post('troubledashboard/{type}/{id}/{mute}', [
+    BaseRoute::get('TroubleDashboard', [
+        'as' => 'TroubleDashboard.data',
+        'uses' => 'Modules\HfcBase\Http\Controllers\TroubleDashboardController@data',
+        'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
+    ]);
+
+    BaseRoute::post('TroubleDashboard/{type}/{id}/{mute}', [
         'as' => 'TroubleDashboard.mute',
         'uses' => 'Modules\HfcBase\Http\Controllers\TroubleDashboardController@muteProblem',
         'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
