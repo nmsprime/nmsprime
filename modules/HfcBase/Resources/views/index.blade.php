@@ -14,33 +14,24 @@
         {{--Quickstart--}}
 
         <div class="row">
+            @DivOpen(12)
+                @section ('impaired_services')
+                @include('HfcBase::troubledashboard.panel')
+                @stop
+                @include ('bootstrap.panel', [
+                    'content' => "impaired_services",
+                    'view_header' => 'Trouble Dashboard',
+                    'height' => 'auto',
+                    'i' => '4'
+                    ])
+            @DivClose()
+
             @DivOpen(8)
                 @include('Generic.quickstart')
             @DivClose()
             @DivOpen(4)
                 @include('HfcBase::widgets.hfc')
             @DivClose()
-
-            @if(! empty($impairedData))
-                @section ('impaired_summary')
-                    @include('HfcBase::troubledashboard.summary')
-                @stop
-                @include ('bootstrap.panel', [
-                    'content' => "impaired_summary",
-                    'view_header' => 'System Summary',
-                    'height' => 'auto',
-                    'i' => '4'
-                ])
-                @section ('impaired_services')
-                    @include('HfcBase::troubledashboard.panel')
-                @stop
-                @include ('bootstrap.panel', [
-                    'content' => "impaired_services",
-                    'view_header' => 'Trouble Dashboard',
-                    'height' => 'auto',
-                    'i' => '2'
-                ])
-            @endif
 
             @DivOpen(5)
                 @include('Generic.widgets.moduleDocu', [ 'urls' => [
@@ -54,5 +45,5 @@
 @stop
 
 @section('javascript')
-@include('HfcBase::troubledashboard.javascript')
+@include('HfcBase::troubledashboard.tablejs')
 @stop
