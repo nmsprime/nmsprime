@@ -192,6 +192,7 @@ class TroubleDashboardController
         }
 
         $results['id'] = $id->object_id;
+        $results['icingaObject'] = $id;
 
         return response(json_encode($results), $results['error'] ?? 200);
     }
@@ -211,6 +212,10 @@ class TroubleDashboardController
 
         if ($type === 'Host') {
             return "host.name == \"{$icingaObject->netelement->id_name}\"";
+        }
+
+        if ($type === 'Node') {
+            return "host.name == nmsprime.nmsprime.test";
         }
 
         return response(['results' => [
