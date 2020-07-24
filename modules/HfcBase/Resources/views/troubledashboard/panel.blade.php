@@ -9,6 +9,7 @@
             <div v-if="filter == 0" v-on:click="filter = filter + 1" style="cursor: pointer;" class="badge badge-pill badge-dark m-r-5">show all</div>
             <div v-if="!showMuted" v-on:click="showMuted = !showMuted" style="cursor: pointer;" class="badge badge-pill badge-light m-r-10">with muted</div>
             <div v-if="showMuted" v-on:click="showMuted = !showMuted" style="cursor: pointer;" class="badge badge-pill badge-dark m-r-10">only muted</div>
+            <a href="{{ route('Config.index') }}#settings-hfc" class="m-r-15"><i class="fa fa-lg fa-cog" title="settings"></i></a>
         </div>
     </div>
 
