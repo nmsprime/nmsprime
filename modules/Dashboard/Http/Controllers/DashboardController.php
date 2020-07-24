@@ -34,9 +34,7 @@ class DashboardController extends BaseController
 
         $news = $this->news();
 
-        $impairedData = TroubleDashboardController::impairedData();
-        $netelements = $impairedData['netelements'];
-        $colors = ['success', 'warning', 'danger', 'danger'];
+        $impairedData = (new TroubleDashboardController())->summary();
 
         return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'logs', 'tickets', 'hosts', 'impairedData', 'services', 'colors', 'netelements', 'news')));
     }

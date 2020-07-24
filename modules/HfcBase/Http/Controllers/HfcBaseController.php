@@ -17,16 +17,11 @@ class HfcBaseController extends BaseController
     public function index()
     {
         $title = 'Hfc Dashboard';
-        $netelements = [];
-        $services = [];
 
         // This is the most timeconsuming task
-        $impairedData = TroubleDashboardController::impairedData();
-        $netelements = $impairedData['netelements'];
-        $colors = ['success', 'warning', 'danger', 'info'];
         $modem_statistics = DashboardController::get_modem_statistics();
 
-        return View::make('HfcBase::index', $this->compact_prep_view(compact('title', 'impairedData', 'netelements', 'services', 'hosts', 'colors', 'modem_statistics')));
+        return View::make('HfcBase::index', $this->compact_prep_view(compact('title', 'modem_statistics')));
     }
 
     /**

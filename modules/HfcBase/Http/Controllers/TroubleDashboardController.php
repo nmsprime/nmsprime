@@ -15,23 +15,19 @@ class TroubleDashboardController
      *
      * @return \Illuminate\Support\Collection
      */
-    public static function impairedData()
+    public function summary()
     {
-        if (! IcingaObject::db_exists()) {
-            return collect(['ackState' => [], 'impairedData' => [], 'netelements' => [], 'services' => [], 'hosts' => []]);
-        }
+        return \Cache::remember('TD:summary', 1, function () {
+            if (! IcingaObject::db_exists()) {
+                return collect(['hostCounts' => [], 'serviceCounts' => []]);
+            }
 
-        $hostCounts = IcingaHostStatus::countsForTroubleDashboard()->first();
-        $serviceCounts = IcingaServiceStatus::countsForTroubleDashboard()->first();
-        $nodeObject = IcingaObject::where('is_active', 1)->where('name2', 'icinga')->first();
-        $nodeObject = IcingaObject::where('objecttype_id', 1)->where('name1', $nodeObject->name1)->first();
+            $hostCounts = IcingaHostStatus::countsForTroubleDashboard()->first();
+            $serviceCounts = IcingaServiceStatus::countsForTroubleDashboard()->first();
 
-        $node = new NetElement();
-        $node->name = $nodeObject->name1;
-        $node->isProvisioningSystem = true;
-        $node->setRelation('icingaObject', $nodeObject);
-        $node->setRelation('hostStatus', $nodeObject->hostStatus);
-        $node->setRelation('icingaServices', $nodeObject->services()->with('icingaObject')->get());
+            return collect(compact('hostCounts', 'serviceCounts'));
+        });
+    }
 
         $netelements = NetElement::withActiveModems('id', '>', '1')
             ->with(['icingaObject.hostStatus', 'icingaServices.icingaObject'])
