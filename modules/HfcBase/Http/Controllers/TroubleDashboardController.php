@@ -3,9 +3,7 @@
 namespace Modules\HfcBase\Http\Controllers;
 
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Modules\ProvBase\Entities\Modem;
-use Modules\HfcBase\Entities\HfcBase;
 use Modules\HfcReq\Entities\NetElement;
 use Modules\HfcBase\Entities\IcingaObject;
 use Modules\HfcBase\Entities\IcingaHostStatus;
@@ -65,20 +63,19 @@ class TroubleDashboardController
             }
 
             switch (true) {
-                case ($netelement->offlineModems >= 100):
+                case $netelement->offlineModems >= 100:
                     $netelement->severity = 3;
                     break;
-                case ($netelement->offlineModems >= 25):
+                case $netelement->offlineModems >= 25:
                     $netelement->severity = 2;
                     break;
-                case ($netelement->offlineModems >= 5):
+                case $netelement->offlineModems >= 5:
                     $netelement->severity = 1;
                     break;
                 default:
                     $netelement->severity = 0;
                     break;
             }
-
 
             $netelement->icingaServices = $netelement->icingaServices
                 ->map(function ($service) use ($netelement) {
@@ -106,7 +103,7 @@ class TroubleDashboardController
                 ->max();
             $netelement->last_hard_state_change = Carbon::parse($netelement->last_hard_state_change)->diffForHumans();
 
-            $netelement->controllingLink = !$netelement->isProvisioningSystem ? route('NetElement.controlling_edit', [ $netelement->id , 0, 0]) : '';
+            $netelement->controllingLink = ! $netelement->isProvisioningSystem ? route('NetElement.controlling_edit', [$netelement->id, 0, 0]) : '';
             $netelement->mapLink = $netelement->toMap();
             $netelement->ticketLink = $netelement->toTicket();
             $netelement->acknowledgeLink = route('TroubleDashboard.mute', [($netelement->isProvisioningSystem ? 'Node' : 'Host'), $netelement->icingaHostStatus->host_object_id, $netelement->icingaHostStatus->problem_has_been_acknowledged ? 0 : 1]);
@@ -214,10 +211,6 @@ class TroubleDashboardController
             return "host.name == \"{$icingaObject->netelement->id_name}\"";
         }
 
-        if ($type === 'Node') {
-            return "host.name == nmsprime.nmsprime.test";
-        }
-
         return response(['results' => [
             'error' => 400,
             'status' => 'Bad Request. Your Type Parameter is not matching our database.',
@@ -225,7 +218,8 @@ class TroubleDashboardController
         ], 400);
     }
 
-    protected function getProvisioningSystemData() {
+    protected function getProvisioningSystemData()
+    {
         $nodeObject = IcingaObject::where('is_active', 1)->where('name2', 'icinga')->first();
         $nodeObject = IcingaObject::where('objecttype_id', 1)->where('name1', $nodeObject->name1)->first();
 

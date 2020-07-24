@@ -65,6 +65,7 @@ class HfcBaseController extends BaseController
                 ['form_type' => 'text', 'name' => 'online_percentage_critical', 'description' => 'Percentage Modem Offline Threshhold: Critical', 'options' => ['placeholder' => '81']],
             ];
         }
+
         return array_merge($a, $b, $c);
     }
 
