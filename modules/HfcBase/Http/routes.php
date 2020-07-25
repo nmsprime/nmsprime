@@ -26,4 +26,10 @@ BaseRoute::group([], function () {
         'uses' => 'Modules\HfcBase\Http\Controllers\TroubleDashboardController@muteProblem',
         'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
     ]);
+
+    BaseRoute::get('vicinity-graph/show}', [
+        'as' => 'VicinityGraph.showGraph',
+        'uses' => 'Modules\HfcBase\Http\Controllers\VicinityGraphController@showGraph',
+        'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
+    ]);
 });
