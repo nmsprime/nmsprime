@@ -27,7 +27,7 @@ BaseRoute::group([], function () {
         'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
     ]);
 
-    BaseRoute::get('vicinity-graph/show}', [
+    BaseRoute::get('vicinity-graph/show/{modemIds}', [
         'as' => 'VicinityGraph.show',
         'uses' => 'Modules\HfcBase\Http\Controllers\VicinityGraphController@show',
         'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
