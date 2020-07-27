@@ -10,6 +10,9 @@ use Modules\Ticketsystem\Entities\TicketType;
 
 class TicketController extends \BaseController
 {
+    protected $edit_left_md_size = 6;
+    protected $edit_right_md_size = 6;
+
     protected $many_to_many = [
         [
             'field' => 'users_ids',

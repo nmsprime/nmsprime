@@ -137,8 +137,7 @@ class Ticket extends \BaseModel
     {
         $ret = [];
 
-        $ret['Edit']['Comment']['class'] = 'Comment';
-        $ret['Edit']['Comment']['relation'] = $this->comments;
+        $ret['Edit']['Comment']['view']['view'] = 'ticketsystem::Ticket.comments';
 
         $ret['Edit']['Information']['view']['view'] = 'ticketsystem::Ticket.infos';
         $ret['Edit']['Information']['view']['vars']['infos'] = $this->contractInformations();
@@ -345,7 +344,7 @@ class Ticket extends \BaseModel
         }
 
         $infos = [];
-        foreach (['number', 'company', 'firstname', 'lastname', 'city', 'district', 'street', 'house_number', 'phone', 'email'] as $attribute) {
+        foreach (['number', 'company', 'firstname', 'lastname', 'zip', 'city', 'district', 'street', 'house_number', 'phone', 'email'] as $attribute) {
             $info = $this->contract->$attribute;
 
             if ($attribute == 'number') {

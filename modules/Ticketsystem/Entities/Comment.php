@@ -2,6 +2,8 @@
 
 namespace Modules\Ticketsystem\Entities;
 
+use App\User;
+
 class Comment extends \BaseModel
 {
     protected $table = 'comment';
@@ -34,5 +36,13 @@ class Comment extends \BaseModel
     public function ticket()
     {
         return $this->belongsTo(Ticket::class, 'ticket_id');
+    }
+
+    /**
+     * Relation user
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
