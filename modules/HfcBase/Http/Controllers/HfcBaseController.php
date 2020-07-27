@@ -4,8 +4,8 @@ namespace Modules\HfcBase\Http\Controllers;
 
 use View;
 use Module;
+use App\GuiLog;
 use App\Http\Controllers\BaseController;
-use Modules\Dashboard\Http\Controllers\DashboardController;
 
 class HfcBaseController extends BaseController
 {
@@ -19,9 +19,13 @@ class HfcBaseController extends BaseController
         $title = 'Hfc Dashboard';
 
         // This is the most timeconsuming task
-        $modem_statistics = DashboardController::get_modem_statistics();
+        $impairedData = (new TroubleDashboardController())->summary();
+        $logs = GuiLog::where([['username', '!=', 'cronjob'],['model', '!=', 'User']])
+            ->whereIn('model', ['NetElement', 'NetElementType', 'MibFile', 'Mpr'])
+            ->orderBy('updated_at', 'desc')->orderBy('user_id', 'asc')
+            ->limit(20)->get();
 
-        return View::make('HfcBase::index', $this->compact_prep_view(compact('title', 'modem_statistics')));
+        return View::make('HfcBase::index', $this->compact_prep_view(compact('title', 'impairedData', 'logs')));
     }
 
     /**
