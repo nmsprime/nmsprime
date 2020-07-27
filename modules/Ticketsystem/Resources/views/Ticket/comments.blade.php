@@ -18,7 +18,7 @@
                                     <small class="text-muted">@{{comment.created_at}}</small>
                                 </span>
                     <strong class="text-success">@{{ comment.user.first_name }} @{{ comment.user.last_name }}</strong>
-                    <p v-text="comment.comment">@{{ comment.comment }} <a href="#">#consecteturadipiscing </a>.
+                    <p class="mb-0" v-text="comment.comment">@{{ comment.comment }} <a href="#">#consecteturadipiscing </a>.
                     </p>
                 </div>
             </li>
