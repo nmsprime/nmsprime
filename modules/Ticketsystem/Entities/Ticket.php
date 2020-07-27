@@ -344,7 +344,7 @@ class Ticket extends \BaseModel
         }
 
         $infos = [];
-        foreach (['number', 'company', 'firstname', 'lastname', 'city', 'district', 'street', 'house_number', 'phone', 'email'] as $attribute) {
+        foreach (['number', 'company', 'firstname', 'lastname', 'zip', 'city', 'district', 'street', 'house_number', 'phone', 'email'] as $attribute) {
             $info = $this->contract->$attribute;
 
             if ($attribute == 'number') {
