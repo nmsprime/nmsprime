@@ -2,6 +2,7 @@
 
 namespace Modules\HfcBase\Http\Controllers;
 
+use DateInterval;
 use Carbon\Carbon;
 use Modules\ProvBase\Entities\Modem;
 use Modules\HfcReq\Entities\NetElement;
@@ -168,11 +169,15 @@ class TroubleDashboardController
      * @param bool $mute
      * @return \Illuminate\Http\Response
      */
-    public function muteProblem($type, $id, $mute)
+    public function muteProblem($type, $id, $mute, \Illuminate\Http\Request $request)
     {
+        if ($request->expiry) {
+            $expiry = now()->add(DateInterval::createFromDateString("{$request->duration} {$request->durationType}"));
+        }
+
         $filter = $this->composeFilter($type, $id = IcingaObject::find($id));
         $icingaApi = new \Modules\HfcBase\Helpers\IcingaApi($type, $filter);
-        $results = $mute ? $icingaApi->acknowledgeProblem() : $icingaApi->removeAcknowledgement();
+        $results = $mute ? $icingaApi->acknowledgeProblem($expiry ?? null) : $icingaApi->removeAcknowledgement();
 
         if (! $results) {
             \Log::alert('An API request was sent to ICINGA2, but it is probably not runnig.');

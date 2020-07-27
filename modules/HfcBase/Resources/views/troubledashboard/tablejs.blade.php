@@ -82,7 +82,11 @@ new Vue({
                 url: event.target.getAttribute('action'),
                 headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'},
                 contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-                data: {}
+                data: {
+                    expiry: self.durationType != 'inf',
+                    duration: self.duration,
+                    durationType: self.durationType,
+                }
             })
             .then(function (response) {
                 if (requestId != response.data.id) {
