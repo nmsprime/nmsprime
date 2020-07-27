@@ -52,14 +52,6 @@ class TroubleDashboardController
                 $netelement->allModems = $affectedModemsCount[$netelement->id]['all'];
                 $netelement->offlineModems = $affectedModemsCount[$netelement->id]['all'] - $affectedModemsCount[$netelement->id]['online'];
                 $netelement->criticalModems = $affectedModemsCount[$netelement->id]['critical'];
-                $netelement->offlineModems =
-                    ($netelement->allModems > $netelement->modems_count) &&
-                    ($netelement->offlineModems >= ((config('hfccustomer.threshhold.avg.percentage.multipleClusters') / 100) * $netelement->allModems)) ?
-                    $netelement->offlineModems :
-                    (($netelement->allModems <= $netelement->modems_count &&
-                    ($netelement->modems_count - $netelement->modems_online_count) > (1 - (config('hfccustomer.threshhold.avg.percentage.warning') / 100)) * $netelement->modems_count) ?
-                    $netelement->modems_count - $netelement->modems_online_count :
-                    0);
             }
 
             switch (true) {
@@ -104,7 +96,7 @@ class TroubleDashboardController
             $netelement->last_hard_state_change = Carbon::parse($netelement->last_hard_state_change)->diffForHumans();
 
             $netelement->controllingLink = ! $netelement->isProvisioningSystem ? route('NetElement.controlling_edit', [$netelement->id, 0, 0]) : '';
-            $netelement->mapLink = $netelement->toMap();
+            $netelement->ErdLink = $netelement->toErd();
             $netelement->ticketLink = $netelement->toTicket();
             $netelement->acknowledgeLink = route('TroubleDashboard.mute', [($netelement->isProvisioningSystem ? 'Node' : 'Host'), $netelement->icingaHostStatus->host_object_id, $netelement->icingaHostStatus->problem_has_been_acknowledged ? 0 : 1]);
 
@@ -152,8 +144,8 @@ class TroubleDashboardController
                         (! isset($modemsPerNetelement[$currentId][$type]) ? $netelements[$currentId]->$property : 0);
 
                     if ($type === 'online' && $netelements[$currentId]->geoPosModems->isNotEmpty()) {
-                        foreach ($netelements[$currentId]->geoPosModems as $geoPosModems) {
-                            $branchModemCount['online'] += $geoPosModems->count - $geoPosModems->online;
+                        foreach ($netelements[$currentId]->geoPosModems as $geoPosModem) {
+                            $branchModemCount['online'] += $geoPosModem->count - $geoPosModem->offline;
                         }
                     }
 
@@ -227,6 +219,7 @@ class TroubleDashboardController
         $node->id = 0;
         $node->name = $nodeObject->name1;
         $node->isProvisioningSystem = true;
+        $node->cluster = 2;
         $node->setRelation('icingaObject', $nodeObject);
         $node->setRelation('hostStatus', $nodeObject->hostStatus);
         $node->setRelation('icingaServices', $nodeObject->services()->with('icingaObject')->get());

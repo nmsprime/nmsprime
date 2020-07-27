@@ -31,9 +31,9 @@ new Vue({
             init: false,
             showMuted: false,
             showMuteForm: [],
-            duration: '',
-            durationType: '',
-            colors: ['success', 'info', 'warning', 'danger'],
+            duration: 1,
+            durationType: 'days',
+            colors: ['secondary', 'info', 'warning', 'danger'],
             serviceColors: ['success', 'warning', 'danger', 'danger'],
             collapsed: [],
             acknowledged: {},
@@ -41,12 +41,11 @@ new Vue({
             impaired: {},
             window: window,
             filter: 1,
-            duration: ''
         }
     },
     mounted() {
         let self = this;
-        this
+
         axios({
             method: 'get',
             url: "{{ route('TroubleDashboard.data') }}",

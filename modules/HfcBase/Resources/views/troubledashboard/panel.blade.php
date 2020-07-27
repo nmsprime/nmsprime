@@ -5,11 +5,11 @@
             <div>Filter:</div>
         </div>
         <div>
-            <div v-if="filter == 1" v-on:click="filter = filter - 1" style="cursor: pointer;" class="badge badge-pill badge-light m-r-5">show impaired Elements</div>
-            <div v-if="filter == 0" v-on:click="filter = filter + 1" style="cursor: pointer;" class="badge badge-pill badge-dark m-r-5">show all</div>
-            <div v-if="!showMuted" v-on:click="showMuted = !showMuted" style="cursor: pointer;" class="badge badge-pill badge-light m-r-10">with muted</div>
+            <div v-if="filter == 1" v-on:click="filter = filter - 1" style="cursor: pointer;" class="badge badge-pill badge-light m-r-5">impaired Elements</div>
+            <div v-if="filter == 0" v-on:click="filter = filter + 1" style="cursor: pointer;" class="badge badge-pill badge-dark m-r-5">all</div>
+            <div v-if="!showMuted" v-on:click="showMuted = !showMuted" style="cursor: pointer;" class="badge badge-pill badge-light m-r-10">muted hidden</div>
             <div v-if="showMuted" v-on:click="showMuted = !showMuted" style="cursor: pointer;" class="badge badge-pill badge-dark m-r-10">only muted</div>
-            <a href="{{ route('Config.index') }}#settings-hfc" class="m-r-15"><i class="fa fa-lg fa-cog" title="settings"></i></a>
+            <a href="{{ route('Config.index') }}#settings-hfc" class="text-secondary m-r-15"><i class="fa fa-2x fa-cog" title="settings"></i></a>
         </div>
     </div>
 
@@ -36,20 +36,23 @@
                         <td :class="colors[netelement.severity]"
                             class='f-s-13 d-none d-lg-table-cell'
                             style="cursor: pointer;"
-                            v-text="netelement.severity >= 3 ? 'CRITICAL' : (netelement.severity == 2 ? 'MAJOR' :(netelement.severity == 1 ? 'MINOR' : 'OK'))"
+                            v-text="netelement.severity >= 3 ? 'CRITICAL' : (netelement.severity == 2 ? 'MAJOR' :(netelement.severity == 1 ? 'MINOR' : 'INFO'))"
                             v-on:click="setCollapseState(netelement)"
                             >
                         </td>
                         <td style="cursor: pointer;"
                             v-on:click="setCollapseState(netelement)"
-                            v-text="netelement.criticalModems > netelement.offlineModems ? 'Proactive' : ((netelement.offlineModems) > 0 ? 'Outage' : '')"
+                            v-text="netelement.criticalModems > netelement.offlineModems ? 'Proactive' : ((netelement.offlineModems) > 0 ? 'Outage' : 'Proactive')"
                             >
                         </td>
                         <td style="cursor: pointer;"
                             v-on:click="setCollapseState(netelement)"
                             >
-                            <div v-if="(netelement.offlineModems + netelement.criticalModems) > 0">
-                                @{{ netelement.offlineModems + netelement.criticalModems }}/@{{ netelement.allModems }}
+                            <div v-if="(netelement.offlineModems + netelement.criticalModems) >= 0 && netelement.offlineModems >= netelement.criticalModems">
+                                @{{ netelement.offlineModems }}/@{{ netelement.allModems }}
+                            </div>
+                            <div v-else>
+                                @{{ netelement.criticalModems }}/@{{ netelement.allModems }}
                             </div>
                         </td>
                         <td class='f-s-13 breakAll'>
@@ -70,7 +73,7 @@
                         </td>
                         <td class="d-none d-sm-table-cell" max-width="180px" >
                             <div class="d-flex align-items-center justify-content-end">
-                                <a :href="netelement.mapLink" target="_blank" class="btn btn-light p-5 m-l-10"><i class="fa fa-lg fa-map"></i></a>
+                                <a :href="netelement.ErdLink" target="_blank" class="btn btn-light p-5 m-l-10"><i class="fa fa-lg fa-sitemap"></i></a>
                                 <a :href="netelement.ticketLink" target="_blank" class="btn btn-light p-5 m-l-10"><i class="fa fa-lg fa-ticket"></i></a>
                                 <form method="POST"
                                     style="position:relative;"
@@ -88,9 +91,8 @@
                                             class="d-flex card-2"
                                             style="position:absolute;right:20px;padding:10px;background-color:white;z-index:100;"
                                             >
-                                            <input class="m-r-5" style="width:50px;" v-model="duration" type="number" max=999 v-if="!durationType.includes('inf')"></input>
-                                            <select class="m-r-5" v-model="durationType">
-                                                <option disabled value="">Please select Duration</option>
+                                            <input class="m-r-5" style="width:50px;" v-model="duration" type="number" min=0 max=999 v-if="!durationType.includes('inf')"></input>
+                                            <select class="m-r-5" v-model="durationType" required>
                                                 <option value="minutes">Minutes</option>
                                                 <option value="hours">Hours</option>
                                                 <option value="days">Days</option>
@@ -130,7 +132,7 @@
                                         class=" d-flex-md align-items-center progress progress-striped m-b-0"
                                         style="position:relative;">
                                         <div class="progress-bar" :class="'progress-bar-' + serviceColors[(service.last_hard_state)]"
-                                            style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :style="'width:' + detail.per + '%;'">
+                                            style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :style="detail.per ? 'width:' + detail.per + '%;' : ''">
                                             <div class='text-inverse' style="position:absolute;width:auto;left:40px;" v-text="detail.text">
                                             </div>
                                         </div>
