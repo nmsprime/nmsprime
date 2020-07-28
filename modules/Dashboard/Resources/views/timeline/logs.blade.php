@@ -5,6 +5,8 @@
     'updated' => 'fa-pencil-square-o',
     'updated N:M' => 'fa-pencil-square-o',
 ];
+
+	$previewLength = 70;
 ?>
 
 <div data-scrollbar="true" style="    height: calc(100vh - 160px)">
@@ -39,14 +41,14 @@
                                 @endif
                                 @if(count($changes))
                                     @if($log->method === 'created')
-                                        @if(strlen($changes[0]) > 25)
-                                            <span>{{substr($changes[0], 0, 25)}}</span>
+                                        @if(strlen($changes[0]) > $previewLength)
+                                            <span style="margin-left: 10px">{{substr($changes[0], 0, $previewLength)}}</span>
                                             <button class="btn btn-xs btn-outline-secondary" type="button"
                                                     data-target="#details_{{$log->id}}"
                                                     data-toggle="collapse"> ...
                                             </button>
                                         @else
-                                        <span>{{$changes[0]}}</span>
+                                        <span style="margin-left: 10px">{{$changes[0]}}</span>
                                         @endif
                                     @else
                                         <button class="btn btn-xs btn-outline-secondary" type="button"
@@ -82,14 +84,14 @@
                                     @endif
                                     @if(count($changes))
                                         @if($log->method === 'created')
-                                            @if(strlen($changes[0]) > 25)
-                                                <span>{{substr($changes[0], 0, 25)}}</span>
+                                            @if(strlen($changes[0]) > $previewLength)
+                                                <span style="margin-left: 10px">{{substr($changes[0], 0, $previewLength)}}</span>
                                                 <button class="btn btn-xs btn-outline-secondary" type="button"
                                                         data-target="#details_{{$log->id}}"
                                                         data-toggle="collapse"> ...
                                                 </button>
                                             @else
-                                                <span>{{$changes[0]}}</span>
+                                                <span style="margin-left: 10px">{{$changes[0]}}</span>
                                             @endif
                                         @else
                                             <button class="btn btn-xs btn-outline-secondary" type="button"
