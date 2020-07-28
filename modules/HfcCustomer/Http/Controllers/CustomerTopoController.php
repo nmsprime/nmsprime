@@ -187,6 +187,15 @@ class CustomerTopoController extends NetElementController
             return \View::make('errors.generic')->with('message', 'Failed to generate SVG file');
         }
 
+        $breadcrumb = null;
+        if ($modems->count()) {
+            $netelement = NetElement::find($modem->netelement_id);
+            $cluster = $netelement->cluster ?: $netelement->net;
+            $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
+
+            $breadcrumb = route('TreeErd.show', [$cluster->netelementtype->name, $cluster->id]);
+        }
+
         // Prepare topography map
         $target = $this->html_target;
         $route_name = 'Tree';
@@ -196,7 +205,7 @@ class CustomerTopoController extends NetElementController
         $kmls = $this->__kml_to_modems($modems);
         $file = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
-        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'tabs', 'kmls', 'models')));
+        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'tabs', 'kmls', 'models', 'breadcrumb')));
     }
 
     /**
@@ -398,7 +407,6 @@ class CustomerTopoController extends NetElementController
 
             // TODO Add Change to PNM Heatmap
             $tabs[] = ['name' => 'PNM', 'icon' => 'globe', 'route' => 'TreeTopo.show', 'link' => [$cluster->netelementtype->name, $cluster->id]];
-            $tabs[] = ['name' => 'Entity Diagram', 'icon' => 'sitemap', 'route' => 'TreeErd.show', 'link' => [$cluster->netelementtype->name, $cluster->id]];
         }
 
         $tabs[] = ['name' => 'Diagramms', 'icon' => 'area-chart', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => Request::get('row')]];
