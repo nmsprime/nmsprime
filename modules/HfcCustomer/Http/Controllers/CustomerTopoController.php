@@ -393,12 +393,7 @@ class CustomerTopoController extends NetElementController
         // ERD of cluster
         if ($modems->count()) {
             $netelement = NetElement::find($modem->netelement_id);
-            $cluster = $netelement->get_native_cluster();
-
-            if (! $cluster) {
-                $cluster = $netelement->get_native_net();
-            }
-
+            $cluster = $netelement->cluster ?: $netelement->net;
             $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
 
             // TODO Add Change to PNM Heatmap
