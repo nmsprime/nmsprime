@@ -23,7 +23,7 @@ use Modules\HfcReq\Http\Controllers\NetElementController;
  *
  * Note: Right Panel for Switching between topography and diagrams does only use show_modem_ids().
  *       There is no seperate diagram function for show() and show_rect(). Instead show_topo and
- *       show_diagrams() call makeTabs() which generates topography and diagram links
+ *       show_diagrams() call tabs() which generates topography and diagram links
  *       to show_modem_ids().
  *
  * @author: Torsten Schmidt
@@ -192,7 +192,7 @@ class CustomerTopoController extends NetElementController
         $route_name = 'Tree';
         $view_header = 'Topography - Modems';
         $body_onload = 'init_for_map';
-        $tabs = $this->makeTabs($modems);
+        $tabs = $this->tabs($modems);
         $kmls = $this->__kml_to_modems($modems);
         $file = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
@@ -304,7 +304,7 @@ class CustomerTopoController extends NetElementController
         }
 
         // prepare/load panel right
-        $tabs = $this->makeTabs($modems);
+        $tabs = $this->tabs($modems);
 
         // Log: time measurement
         $after = microtime(true);
@@ -370,23 +370,40 @@ class CustomerTopoController extends NetElementController
     }
 
     /**
-     * Prepare $tabs vaiable for switching topography/diagrams mode
+     * Prepare $tabs variable for switching topography/diagrams mode
      *
      * @param Collection of Modems
-     * @return: prepared $tabs variable
+     * @return: array
      *
-     * @author: Torsten Schmidt
+     * @author: Torsten Schmidt, Nino Ryschawy
      */
-    private function makeTabs($modems)
+    public function tabs($modems)
     {
         $ids = '0';
         foreach ($modems as $modem) {
             $ids .= '+'.$modem->id;
         }
 
-        return [['name' => 'Edit', 'icon' => 'pencil', 'route' => 'NetElement.edit', 'link' => $modem->netelement_id],
+        $tabs = [
+            // ['name' => 'Edit', 'icon' => 'pencil', 'route' => 'NetElement.edit', 'link' => $modem->netelement_id],
+            ['name' => trans('hfccustomer::view.vicinityGraph'), 'icon' => 'fa-sitemap', 'route' => 'VicinityGraph.show', 'link' => $ids],
             ['name' => 'Topography', 'icon' => 'map', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => Request::get('row')]],
-            ['name' => 'Diagramms', 'icon' => 'area-chart', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => Request::get('row')]], ];
+        ];
+
+        // ERD of cluster
+        if ($modems->count()) {
+            $netelement = NetElement::find($modem->netelement_id);
+            $cluster = $netelement->cluster ?: $netelement->net;
+            $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
+
+            // TODO Add Change to PNM Heatmap
+            $tabs[] = ['name' => 'PNM', 'icon' => 'globe', 'route' => 'TreeTopo.show', 'link' => [$cluster->netelementtype->name, $cluster->id]];
+            $tabs[] = ['name' => 'Entity Diagram', 'icon' => 'sitemap', 'route' => 'TreeErd.show', 'link' => [$cluster->netelementtype->name, $cluster->id]];
+        }
+
+        $tabs[] = ['name' => 'Diagramms', 'icon' => 'area-chart', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => Request::get('row')]];
+
+        return $tabs;
     }
 
     /**

@@ -145,7 +145,6 @@ class TreeErdController extends HfcBaseController
             ['name' => 'Topography', 'icon' => 'map', 'route' => 'TreeTopo.show', 'link' => [$netelementtype, $id]],
             ['name' => 'Controlling', 'icon' => 'wrench', 'route' => 'NetElement.controlling_edit', 'link' => [$id, 0, 0]],
             ['name' => 'Diagrams', 'icon' => 'area-chart', 'route' => 'ProvMon.diagram_edit', 'link' => $id],
-            ['name' => 'Vicinity Graph', 'icon' => 'sliders', 'route' => 'VicinityGraph.show', 'link' => $id],
         ];
 
         if (in_array(strtolower($netelementtype), ['net', 'all', 'id', 'parent_id'])) {
