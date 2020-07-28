@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\HfcBase\Http\Controllers;
+namespace Modules\HfcCustomer\Http\Controllers;
 
 use View;
 use App\Http\Controllers\BaseController;
