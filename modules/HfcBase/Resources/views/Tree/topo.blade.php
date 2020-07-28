@@ -14,7 +14,22 @@
 
 
 @section('content_top')
-	<li><a href="">{{ trans("view.Header_Topography - Modems") }} </a></li>
+    <div class="col tab-overflow p-t-5">
+        <ul class="nav nav-pills p-t-5">
+          <!-- <li class="prev-button"><a href="javascript:;" data-click="prev-tab" class="m-t-10"><i class="fa fa-arrow-left"></i></a></li> -->
+            @if (isset($breadcrumb))
+                <li class="active">
+                    <a href="{{ $breadcrumb }}">
+                    <i class="sitemap"></i>Entity Diagram</a>
+                </li>
+            @endif
+          <!-- <li class="next-button"><a href="javascript:;" data-click="next-tab" class="m-t-10"><i class="fa fa-arrow-right"></i></a></li> -->
+            <li>
+                <a href="">{{ trans("view.Header_Topography - Modems") }} </a>
+            </li>
+        </ul>
+      </div>
+
 @stop
 
 @section('content_left')
