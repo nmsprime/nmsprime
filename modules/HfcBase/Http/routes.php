@@ -28,8 +28,8 @@ BaseRoute::group([], function () {
     ]);
 
     BaseRoute::get('vicinity-graph/show}', [
-        'as' => 'VicinityGraph.showGraph',
-        'uses' => 'Modules\HfcBase\Http\Controllers\VicinityGraphController@showGraph',
+        'as' => 'VicinityGraph.show',
+        'uses' => 'Modules\HfcBase\Http\Controllers\VicinityGraphController@show',
         'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
     ]);
 });

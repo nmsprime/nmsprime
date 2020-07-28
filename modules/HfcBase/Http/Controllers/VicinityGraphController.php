@@ -7,10 +7,15 @@ use App\Http\Controllers\BaseController;
 
 class VicinityGraphController extends BaseController
 {
-    public function showGraph()
+    public function show()
     {
         $title = 'Vicinity Graph';
+        //Static values, demo only
+        $field = 'id';
+        $search = 2;
 
-        return View::make('HfcBase::VicinityGraph.graph', $this->compact_prep_view(compact('title')));
+        $tabs = TreeErdController::getTabs($field, $search);
+
+        return View::make('HfcBase::VicinityGraph.graph', $this->compact_prep_view(compact('title', 'tabs')));
     }
 }
