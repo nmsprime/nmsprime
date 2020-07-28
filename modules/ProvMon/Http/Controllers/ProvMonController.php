@@ -1467,57 +1467,9 @@ class ProvMonController extends \BaseController
             }
         }
 
-        $tabs = self::checkNetelementtype($netelem);
+        $tabs = $netelem->tabs();
 
         return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs')));
-    }
-
-    /**
-     * Defines all tabs for the Netelementtypes.
-     * Note: 1 = Net, 2 = Cluster, 3 = NetGw, 4 = Amplifier, 5 = Node, 6 = Data, 7 = UPS
-     *
-     * @author Roy Schneider
-     * @param Modules\HfcReq\Entities\NetElement
-     * @return array
-     */
-    public static function checkNetelementtype($model)
-    {
-        if (! isset($model->netelementtype)) {
-            return [];
-        }
-
-        $type = $model->netelementtype->get_base_type();
-        $provmon = new self;
-
-        $tabs = [['name' => 'Edit', 'icon' => 'pencil', 'route' => 'NetElement.edit', 'link' => $model->id]];
-
-        if (in_array($type, [1, 2, 8])) {
-            $sqlCol = $type == 8 ? 'parent_id' : $model->netelementtype->name;
-
-            array_push($tabs,
-                ['name' => 'Entity Diagram', 'icon' => 'sitemap', 'route' => 'TreeErd.show', 'link' => [$sqlCol, $model->id]],
-                ['name' => 'Topography', 'icon' => 'map', 'route' => 'TreeTopo.show', 'link' => [$sqlCol, $model->id]]
-            );
-        }
-
-        if (! in_array($type, [1, 8, 9])) {
-            array_push($tabs, ['name' => 'Controlling', 'icon' => 'wrench', 'route' => 'NetElement.controlling_edit', 'link' => [$model->id, 0, 0]]);
-        }
-
-        if ($type == 9) {
-            array_push($tabs, ['name' => 'Controlling', 'icon' => 'bar-chart fa-rotate-90', 'route' => 'NetElement.tapControlling', 'link' => [$model->id]]);
-        }
-
-        if ($type == 4 || $type == 5 && \Bouncer::can('view_analysis_pages_of', Modem::class)) {
-            //create Analyses tab (for ORA/VGP) if IP address is no valid IP
-            array_push($tabs, ['name' => 'Analyses', 'icon' => 'area-chart', 'route' => 'ProvMon.index', 'link' => $provmon->createAnalysisTab($model->ip)]);
-        }
-
-        if (! in_array($type, [4, 5, 8, 9])) {
-            array_push($tabs, ['name' => 'Diagrams', 'icon' => 'area-chart', 'route' => 'ProvMon.diagram_edit', 'link' => [$model->id]]);
-        }
-
-        return $tabs;
     }
 
     /**

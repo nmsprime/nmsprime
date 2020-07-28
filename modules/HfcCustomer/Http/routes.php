@@ -51,4 +51,10 @@ BaseRoute::group([], function () {
         'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@get_file',
         'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
     ]);
+
+    BaseRoute::get('vicinity-graph/show/{modemIds}', [
+        'as' => 'VicinityGraph.show',
+        'uses' => 'Modules\HfcCustomer\Http\Controllers\VicinityGraphController@show',
+        'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
+    ]);
 });
