@@ -5,6 +5,8 @@
     'updated' => 'fa-pencil-square-o',
     'updated N:M' => 'fa-pencil-square-o',
 ];
+
+	$previewLength = 70;
 ?>
 
 <div data-scrollbar="true" style="    height: calc(100vh - 160px)">
@@ -32,11 +34,28 @@
                                 @php
                                     $changes = preg_split('@,@', $log->text, NULL, PREG_SPLIT_NO_EMPTY);
                                 @endphp
+                                @if($log->model === 'Comment' && $log->method === 'created')
+                                    @php
+                                        $changes[0] = \Modules\Ticketsystem\Entities\Comment::find($log->model_id)->comment;
+                                    @endphp
+                                @endif
                                 @if(count($changes))
-                                    <button class="btn btn-xs btn-outline-secondary" type="button"
-                                            data-target="#details_{{$log->id}}"
-                                            data-toggle="collapse"> {{ trans_choice('view.showChanges', count($changes), ['num' => count($changes)]) }}
-                                    </button>
+                                    @if($log->method === 'created')
+                                        @if(strlen($changes[0]) > $previewLength)
+                                            <span style="margin-left: 10px">{{substr($changes[0], 0, $previewLength)}}</span>
+                                            <button class="btn btn-xs btn-outline-secondary" type="button"
+                                                    data-target="#details_{{$log->id}}"
+                                                    data-toggle="collapse"> ...
+                                            </button>
+                                        @else
+                                        <span style="margin-left: 10px">{{$changes[0]}}</span>
+                                        @endif
+                                    @else
+                                        <button class="btn btn-xs btn-outline-secondary" type="button"
+                                                data-target="#details_{{$log->id}}"
+                                                data-toggle="collapse">{{ trans_choice('view.showChanges', count($changes), ['num' => count($changes)]) }}
+                                        </button>
+                                    @endif
                             </p>
                                 <div class="collapse p-3 ml-4 border rounded m-b-10" id="details_{{$log->id}}">
                                     <div class="p-2 text-monospace">
@@ -58,11 +77,28 @@
                                     @php
                                         $changes = preg_split('@,@', $log->text, NULL, PREG_SPLIT_NO_EMPTY);
                                     @endphp
+                                    @if($log->model === 'Comment' && $log->method === 'created')
+                                        @php
+                                            $changes[0] = \Modules\Ticketsystem\Entities\Comment::find($log->model_id)->comment;
+                                        @endphp
+                                    @endif
                                     @if(count($changes))
-                                        <button class="btn btn-xs btn-outline-secondary" type="button"
-                                                data-target="#details_{{$log->id}}"
-                                                data-toggle="collapse">{{ trans_choice('view.showChanges', count($changes), ['num' => count($changes)]) }}
-                                        </button>
+                                        @if($log->method === 'created')
+                                            @if(strlen($changes[0]) > $previewLength)
+                                                <span style="margin-left: 10px">{{substr($changes[0], 0, $previewLength)}}</span>
+                                                <button class="btn btn-xs btn-outline-secondary" type="button"
+                                                        data-target="#details_{{$log->id}}"
+                                                        data-toggle="collapse"> ...
+                                                </button>
+                                            @else
+                                                <span style="margin-left: 10px">{{$changes[0]}}</span>
+                                            @endif
+                                        @else
+                                            <button class="btn btn-xs btn-outline-secondary" type="button"
+                                                    data-target="#details_{{$log->id}}"
+                                                    data-toggle="collapse">{{ trans_choice('view.showChanges', count($changes), ['num' => count($changes)]) }}
+                                            </button>
+                                        @endif
                                 </p>
                                     <div class="collapse p-3 ml-4 border rounded m-b-10" id="details_{{$log->id}}">
                                         <div class="p-2 text-monospace">
