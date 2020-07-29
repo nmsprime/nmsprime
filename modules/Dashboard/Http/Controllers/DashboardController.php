@@ -19,9 +19,16 @@ class DashboardController extends BaseController
     public function index()
     {
         $title = 'Dashboard';
-        $logs = GuiLog::where([['username', '!=', 'cronjob'], ['model', '!=', 'User']])
+        $logs = GuiLog::leftJoin('comment', function ($query) {
+            $query
+                ->on('guilog.model_id', 'comment.id')
+                ->where('model', 'Comment');
+            })
+            ->where([['username', '!=', 'cronjob'], ['model', '!=', 'User']])
             ->orderBy('updated_at', 'desc')->orderBy('user_id', 'asc')
+            ->select(['guilog.*', 'comment.comment'])
             ->limit(50)->get();
+
         $tickets['table'] = Auth::user()->tickets()->where('state', '=', 'New')->get();
         $tickets['total'] = count($tickets['table']);
 
