@@ -56,9 +56,9 @@ class EnviaContract extends \BaseModel
 
         if (in_array($state, ['Aktiv'])) {
             $bsclass = 'success';
-        } elseif (in_array($state, ['Gekündigt'])) {
+        } elseif (in_array($state, ['Gekündigt', 'Nicht ermittelbar'])) {
             $bsclass = 'danger';
-        } elseif (in_array($state, ['In Realisierung'])) {
+        } elseif (in_array($state, ['In Realisierung', 'In Kündigung'])) {
             $bsclass = 'warning';
         } else {
             $bsclass = 'info';

@@ -3543,6 +3543,7 @@ class ProvVoipEnvia extends \BaseModel
     protected function _process_customer_get_contracts_response($xml, $data, $out)
     {
         $envia_contracts = $xml->contracts;
+        $ids = [];
         foreach ($envia_contracts->contract as $data) {
 
             // extract data
@@ -3576,6 +3577,22 @@ class ProvVoipEnvia extends \BaseModel
 
             $out .= "<br>$msg";
             $envia_contract->save();
+
+            $ids[] = $envia_contract->id;
+        }
+
+        // check for orphaned envia TEL contracts
+        foreach ($this->contract->enviacontracts as $envia_contract) {
+            if (
+                (! in_array($envia_contract->id, $ids))
+                &&
+                ($envia_contract->state != 'Gekündigt')
+            ) {
+                Log::warning("No information for envia TEL contract $envia_contract->id, changing state to “Nicht ermittelbar”");
+                $envia_contract->state = 'Nicht ermittelbar';
+                $envia_contract->end_date = '1900-01-01';
+                $envia_contract->save();
+            }
         }
 
         return $out;
