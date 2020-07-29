@@ -21,6 +21,7 @@
             }
         @endphp
 
+        <!-- next user -->
         @if ($last_log_user_id != $log->user_id)
             <div class="row">
                 <div class="col py-0">
@@ -33,6 +34,8 @@
                                 </h4>
                                 <div class="px-4">
         @endif
+
+        <!-- changes of the user -->
         <p class="card-text m-b-0">
             <i class="fa {{$bclasses[$log->method]}}" style="width: 13px"></i> {{ trans("messages.dashboard.log.$log->method") }}
             <a href="admin/{{$log->model}}/{{$log->model_id}}"> {{ \App\Http\Controllers\BaseViewController::translate_view($log->model, 'Header')}}</a>
@@ -74,6 +77,7 @@
             }
         @endphp
 
+        <!-- End of changes of current user -->
         @if( count($logs) == $key + 1 || $log->user_id != $logs[$key + 1]->user_id)
                         </div>
                     </div>
