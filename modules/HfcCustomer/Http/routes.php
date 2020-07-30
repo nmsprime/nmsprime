@@ -34,9 +34,15 @@ BaseRoute::group([], function () {
         'middleware' => ['can:view,Modules\HfcCustomer\Entities\MprGeopos'],
     ]);
 
-    BaseRoute::get('CustomerModem/{topo_dia}/{ids}', [
-        'as' => 'CustomerModem.show',
-        'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@show_modem_ids',
+    BaseRoute::get('CustomerModem/modems/{ids}', [
+        'as' => 'CustomerModem.showModems',
+        'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@showModems',
+        'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
+    ]);
+
+    BaseRoute::get('CustomerModem/diagrams/{ids}', [
+        'as' => 'CustomerModem.showDiagrams',
+        'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@showDiagrams',
         'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
     ]);
 

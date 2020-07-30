@@ -225,6 +225,22 @@ class CustomerTopoController extends NetElementController
     }
 
     /**
+     * Extend query by filtering specified modems by their ID
+     *
+     * @return obj Illuminate\Database\Query\Bilder
+     */
+    private function filterModems($query, $modem_ids)
+    {
+        $ids = [];
+
+        if (! is_array($modem_ids)) {
+            $ids = explode('+', $modem_ids);
+        }
+
+        return $query->whereIn('modem.id', $ids);
+    }
+
+    /**
      * Compose ERD breadcrumb route for customer map view
      * Note: Extend this function when more breadcrumbs will be used
      *
@@ -292,18 +308,33 @@ class CustomerTopoController extends NetElementController
         return $this->kml_file_array($netelements);
     }
 
-    /*
-    * Show Modems Diagrams
-    *
-    * TODO: - add cacti graph template id's to ENV
-    *
-    * @param modemQuery: QueryBuilder like Modem::where()
-    * @return view with modem diagrams
-    *
-    * @author: Torsten Schmidt
-    */
-    public function show_diagrams($modemQuery)
+    /**
+     * Show specific Modems on map
+     *
+     * @param string    modem IDs
+     * @return Illuminate\View\View
+     *
+     * @author Nino Ryschawy
+     */
+    public function showModems($ids)
     {
+        return $this->show_topo($this->filterModems($this->getModemBaseQuery(), $ids));
+    }
+
+    /**
+     * Show Modems Diagrams
+     *
+     * TODO: - add cacti graph template id's to ENV
+     *
+     * @param string
+     * @return view with modem diagrams
+     *
+     * @author: Torsten Schmidt
+     */
+    public function showDiagrams($modemIds)
+    {
+        $modemQuery = $this->filterModems($this->getModemBaseQuery(), $modemIds);
+
         // check if ProvMon is installed
         if (! \Module::collections()->has('ProvMon')) {
             return \View::make('errors.generic')->with('message', 'Module Provisioning Monitoring (ProvMon) not installed');
@@ -370,32 +401,6 @@ class CustomerTopoController extends NetElementController
             ->toArray();
     }
 
-    /*
-    * Show Modem Topography or Diagrams with param $ids
-    *
-    * @param topo: 'true' (string): show topography, other show diagrams
-    * @param modem: id's to show, plus (+) seperated string list, like '100000+100001+100002'
-    * @return: view with modem diagrams
-    *
-    * @author: Torsten Schmidt
-    */
-    public function show_modem_ids($topo, $_ids)
-    {
-        $ids = [];
-
-        if (! is_array($_ids)) {
-            $ids = explode('+', $_ids);
-        }
-
-        $modemQuery = $this->getModemBaseQuery()->whereIn('modem.id', $ids);
-
-        if ($topo == 'true') {
-            return $this->show_topo($modemQuery);
-        }
-
-        return $this->show_diagrams($modemQuery);
-    }
-
     /**
      * Prepare $tabs variable for switching topography/diagrams mode
      *
@@ -414,10 +419,10 @@ class CustomerTopoController extends NetElementController
         $tabs = [
             // ['name' => 'Edit', 'icon' => 'pencil', 'route' => 'NetElement.edit', 'link' => $modem->netelement_id],
             ['name' => trans('hfccustomer::view.vicinityGraph'), 'icon' => 'fa-sitemap', 'route' => 'VicinityGraph.show', 'link' => $ids],
-            ['name' => 'Topography', 'icon' => 'map', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => Request::get('row')]],
+            ['name' => 'Topography', 'icon' => 'map', 'route' => 'CustomerModem.showModems', 'link' => [$ids, 'row' => Request::get('row')]],
         ];
 
-        // ERD of cluster
+        // ERD of cluster - TODO: Remove when PNM is added
         if ($modems->count()) {
             $modem = $modems->where('netelement_id', '!=', null)->first();
             $netelement = $modem ? NetElement::find($modem->netelement_id) : null;
@@ -434,7 +439,7 @@ class CustomerTopoController extends NetElementController
             $tabs[] = ['name' => 'PNM', 'icon' => 'globe', 'route' => 'TreeTopo.show', 'link' => $params];
         }
 
-        $tabs[] = ['name' => 'Diagramms', 'icon' => 'area-chart', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => Request::get('row')]];
+        $tabs[] = ['name' => trans('view.Diagrams'), 'icon' => 'area-chart', 'route' => 'CustomerModem.showDiagrams', 'link' => [$ids, 'row' => Request::get('row')]];
 
         return $tabs;
     }
