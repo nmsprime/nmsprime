@@ -1,6 +1,6 @@
-<div class="d-flex flex-column align-items-center justify-content-start col-11
+<div class="d-flex flex-column align-items-center justify-content-start
             flex-sm-row align-items-sm-start justify-content-sm-center
-            flex-lg-column align-items-lg-center justify-content-lg-start  col-lg-4
+            flex-lg-column align-items-lg-center justify-content-lg-start
             flex-xl-row align-items-xl-start justify-content-xl-center
             flex-xl-wrap
             border m-10 p-5">

@@ -8,22 +8,6 @@
 <script src="{{asset('components/assets-admin/plugins/vue-snotify/snotify.min.js')}}"></script>
 
 <script type="text/javascript">
-function handlePanelPositionToPreventCrash() {
-    return new Promise(function(resolve, reject) {
-        let targetPage = window.location.href;
-            targetPage = targetPage.split('?');
-            targetPage = targetPage[0];
-        let panelPositionData = localStorage.getItem(targetPage) ? targetPage : "{!! isset($view_header) ? $view_header : 'undefined'!!}";
-
-        if (panelPositionData) {
-            localStorage.removeItem(panelPositionData)
-        }
-
-        resolve();
-    });
-}
-
-handlePanelPositionToPreventCrash().then(function() {
 new Vue({
     el: '#troubleDash',
     data() {
@@ -156,7 +140,6 @@ new Vue({
             this.showMuteForm.splice(index, 1)
         }
     }
-})
 })
 
 </script>

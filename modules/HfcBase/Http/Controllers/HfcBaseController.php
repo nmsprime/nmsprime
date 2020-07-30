@@ -4,8 +4,10 @@ namespace Modules\HfcBase\Http\Controllers;
 
 use View;
 use Module;
+use Bouncer;
 use App\GuiLog;
 use App\Http\Controllers\BaseController;
+use Modules\Ticketsystem\Http\Controllers\TicketsystemController;
 
 class HfcBaseController extends BaseController
 {
@@ -16,16 +18,37 @@ class HfcBaseController extends BaseController
      */
     public function index()
     {
-        $title = 'Hfc Dashboard';
+        $title = 'Detect Dashboard';
+        $permissions = $this->getViewPermissions();
 
-        // This is the most timeconsuming task
-        $impairedData = (new TroubleDashboardController())->summary();
-        $logs = GuiLog::where([['username', '!=', 'cronjob'],['model', '!=', 'User']])
+        $logs = GuiLog::where([['username', '!=', 'cronjob'], ['model', '!=', 'User']])
             ->whereIn('model', ['NetElement', 'NetElementType', 'MibFile', 'Mpr'])
             ->orderBy('updated_at', 'desc')->orderBy('user_id', 'asc')
             ->limit(20)->get();
 
-        return View::make('HfcBase::index', $this->compact_prep_view(compact('title', 'impairedData', 'logs')));
+        if ($permissions['detect']) {
+            $impairedData = (new TroubleDashboardController())->summary();
+        }
+
+        if ($permissions['tickets']) {
+            $tickets = TicketsystemController::dashboardData();
+        }
+
+        return View::make('HfcBase::index', $this->compact_prep_view(compact('title', 'impairedData', 'logs', 'tickets')));
+    }
+
+    /**
+     * Return Array of boolean values for different categories that shall (not)
+     * be shown on the Detect Dashboard (index blade)
+     */
+    private function getViewPermissions()
+    {
+        return [
+            'detect'        => (Module::collections()->has('HfcBase') &&
+                               Bouncer::can('view', \Modules\HfcBase\Entities\TreeErd::class)),
+            'tickets'       => (Module::collections()->has('Ticketsystem') &&
+                               Bouncer::can('view', \Modules\Ticketsystem\Entities\Ticket::class)),
+        ];
     }
 
     /**
