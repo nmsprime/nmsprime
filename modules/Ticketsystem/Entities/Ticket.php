@@ -38,6 +38,11 @@ class Ticket extends \BaseModel
     {
         $bsclass = $this->get_bsclass();
 
+        // get the current show filter
+        if (\Session::get('ticket_show_filter', 'all') != 'all') {
+            $where_clauses = [self::getWhereClauseNewTickets()];
+        }
+
         return [
             'table' => $this->table,
             'index_header' => [
@@ -66,6 +71,7 @@ class Ticket extends \BaseModel
                 'tickettypes.name' => 'index_types',
                 'user_id' => 'username', ],
             'filter' => ['tickettypes.name' => $this->tickettype_names_query()],
+            'where_clauses' => $where_clauses ?? [],
             'disable_sortsearch' => ['assigned_users' => 'false'],
         ];
     }
@@ -128,6 +134,35 @@ class Ticket extends \BaseModel
         }
 
         return $bs_class;
+    }
+
+    public static function getWhereClauseNewTickets()
+    {
+        return "state = 'New'";
+    }
+
+    /**
+     * Get the filter to use for index view (used to show only new Tickets).
+     * To make the filter available in datatables we use the session.
+     *
+     * @author Patrick Reichel, Christian Schramm
+     */
+    public static function storeIndexFilterIntoSession()
+    {
+        // array containing all implemented filters
+        // later used as whitelist for given show_filter param
+        $available_filters = [
+            'all', // default and fallback: show all orders
+            'newTickets', // show only orders needing user interaction
+        ];
+
+        // check if we have to filter the list of orders
+        $filter = \Request::get('show_filter', 'all');
+        if (! in_array($filter, $available_filters)) {
+            $filter = 'all';
+        }
+
+        \Session::put('ticket_show_filter', $filter);
     }
 
     /*
