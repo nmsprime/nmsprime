@@ -3,7 +3,7 @@
 @section ('income')
     <h4>{{ \App\Http\Controllers\BaseViewController::translate_view('Net Income', 'Dashboard') }} {{ date('m/Y') }}</h4>
     <p>
-        @if ($income_data['total'])
+        @if (isset($income_data['total']))
             {{ number_format($income_data['total'], 0, ',', '.') }}
         @else
             {{ number_format(0, 0, ',', '.') }}
@@ -38,25 +38,29 @@
                     @stop
                     @include ('bootstrap.panel', array ('content' => "contract_analytics", 'view_header' => trans('view.Dashboard_ContractAnalytics'), 'md' => 12, 'height' => 'auto', 'i' => '4'))
                 </div>
-                <div class="row">
-                    @section ('income_analytics')
-                        @include('billingbase::panels.income_analytics')
-                    @stop
-                    @include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => trans('view.Dashboard_IncomeAnalytics'), 'md' => 12, 'height' => 'auto', 'i' => '3'))
-                </div>
+                @can('see income chart')
+                    <div class="row">
+                        @section ('income_analytics')
+                            @include('billingbase::panels.income_analytics')
+                        @stop
+                        @include ('bootstrap.panel', array ('content' => "income_analytics", 'view_header' => trans('view.Dashboard_IncomeAnalytics'), 'md' => 12, 'height' => 'auto', 'i' => '3'))
+                    </div>
+                @endcan
             </div>
             <div class="col-md-5">
                 <div class="row">
-                    @DivOpen(6)
-                    @include ('bootstrap.widget',
-                        array (
-                            'content' => 'income',
-                            'widget_icon' => 'euro',
-                            'widget_bg_color' => 'blue',
-                            'link_target' => '#anchor-income',
+                    @can('see income chart')
+                        @DivOpen(6)
+                        @include ('bootstrap.widget',
+                            array (
+                                'content' => 'income',
+                                'widget_icon' => 'euro',
+                                'widget_bg_color' => 'blue',
+                                'link_target' => '#anchor-income',
+                            )
                         )
-                    )
-                    @DivClose()
+                        @DivClose()
+                    @endcan
                     @DivOpen(6)
                     @include ('bootstrap.widget',
                         array (
@@ -106,7 +110,7 @@
 
         $(window).on('localstorage-position-loaded load', function () {
             // bar chart income
-            var chart_data_income = {!! $income_data ? json_encode($income_data['chart']) : '{}' !!};
+            var chart_data_income = {!! isset($income_data) ? json_encode($income_data['chart']) : '{}' !!};
 
             if (Object.getOwnPropertyNames(chart_data_income).length != 0) {
 
