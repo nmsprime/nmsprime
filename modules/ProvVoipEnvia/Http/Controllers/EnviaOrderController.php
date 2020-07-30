@@ -133,6 +133,14 @@ class EnviaOrderController extends \BaseController
         return $ret;
     }
 
+    public function index()
+    {
+        // preserve show_filter Param from Request for later use in datatable calls
+        EnviaOrder::storeIndexFilterIntoSession();
+
+        return parent::index();
+    }
+
     public function create()
     {
         $phonenumbermanagement_id = Request::get('phonenumbermanagement_id', null);

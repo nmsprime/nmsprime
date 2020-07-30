@@ -264,19 +264,6 @@ class EnviaOrder extends \BaseModel
 
     ];
 
-    /**
-     * Constructor
-     *
-     * @author Patrick Reichel
-     */
-    public function __construct($attributes = [])
-    {
-        parent::__construct($attributes);
-
-        // preserve currently set show filter for later use in datatable calls
-        $this->store_index_show_filter_in_session();
-    }
-
     // Add your validation rules here
     public static function rules($id = null)
     {
@@ -607,12 +594,8 @@ class EnviaOrder extends \BaseModel
         }
 
         // get the current show filter
-        // as we called */EnviaOrder/datatables we have to get this information from session
-        $show_filter = \Session::get('enviaorder_show_filter', 'all');
-        if ($show_filter == 'all') {
-            $where_clauses = [];
-        } else {
-            $where_clauses = [self::get_user_interaction_needing_enviaorder_where_clause()];
+        if (\Session::get('enviaorder_show_filter', 'all') != 'all') {
+            $where_clauses = [self::getWhereClauseNeedingUserInteraction()];
         }
 
         return ['table' => $this->table,
@@ -622,7 +605,7 @@ class EnviaOrder extends \BaseModel
             'eager_loading' => ['contract', 'modem', 'enviacontract', 'phonenumbers'],
             'edit' => ['ordertype' => 'get_ordertype', 'orderstatus'  => 'get_orderstatus', 'modem.id' => 'get_modem_data', 'contract.id' => 'get_contract_data', 'enviacontract.envia_contract_reference' => 'get_enviacontract_ref', 'enviaorder_current' => 'get_user_interaction_necessary', 'phonenumber.number' => 'get_phonenumbers', 'escalation_level' => 'get_escalation_level'],
             'header' => $this->orderid.' – '.$this->ordertype.': '.$this->orderstatus,
-            'where_clauses' => $where_clauses,
+            'where_clauses' => $where_clauses ?? [],
             'filter' => [
                 'contract.id' => $this->get_contract_filtercolumn_query(),
                 'modem.id' => $this->get_modem_filtercolumn_query(),
@@ -747,15 +730,8 @@ class EnviaOrder extends \BaseModel
      *
      * @author Patrick Reichel
      */
-    public function store_index_show_filter_in_session()
+    public static function storeIndexFilterIntoSession()
     {
-
-        // first: check context
-        // if called by datatables: do nothing
-        if (\Str::contains(\URL::current(), '/EnviaOrder/datatables')) {
-            return;
-        }
-
         // array containing all implemented filters
         // later used as whitelist for given show_filter param
         $available_filters = [
@@ -961,11 +937,9 @@ class EnviaOrder extends \BaseModel
     /**
      * @author Patrick Reichel
      */
-    public static function get_user_interaction_needing_enviaorder_where_clause()
+    public static function getWhereClauseNeedingUserInteraction()
     {
-        $where_clause = '(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND ((orderstatus_id != 1000) OR ((orderstatus_id IS NULL) AND (orderstatus NOT LIKE "in Bearbeitung")))';
-
-        return $where_clause;
+        return '(last_user_interaction IS NULL OR last_user_interaction < updated_at) AND ((orderstatus_id != 1000) OR ((orderstatus_id IS NULL) AND (orderstatus NOT LIKE "in Bearbeitung")))';
     }
 
     /**
