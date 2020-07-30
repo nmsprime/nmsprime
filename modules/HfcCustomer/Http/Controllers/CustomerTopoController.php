@@ -187,21 +187,13 @@ class CustomerTopoController extends NetElementController
             return \View::make('errors.generic')->with('message', 'Failed to generate SVG file');
         }
 
-        $breadcrumb = null;
-        if ($modems->count()) {
-            $netelement = NetElement::find($modem->netelement_id);
-            $cluster = $netelement->cluster ?: $netelement->net;
-            $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
-
-            $breadcrumb = route('TreeErd.show', [$cluster->netelementtype->name, $cluster->id]);
-        }
-
-        // Prepare topography map
         $target = $this->html_target;
         $route_name = 'Tree';
         $view_header = 'Topography - Modems';
         $body_onload = 'init_for_map';
         $tabs = $this->tabs($modems);
+        $breadcrumb = self::breadcrumb($modems);
+
         $kmls = $this->__kml_to_modems($modems);
         $file = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
@@ -230,6 +222,32 @@ class CustomerTopoController extends NetElementController
                     ->orWhere('us_pwr', '>', 0);
             })
             ->select(['modem.*', 'netelement.cluster']);
+    }
+
+    /**
+     * Compose ERD breadcrumb route for customer map view
+     * Note: Extend this function when more breadcrumbs will be used
+     *
+     * @return string
+     * @author Nino Ryschawy
+     */
+    public static function breadcrumb($modems)
+    {
+        if (! $modems->count()) {
+            return;
+        }
+
+        $modem = $modems->where('netelement_id', '!=', null)->first();
+        $netelement = $modem ? NetElement::find($modem->netelement_id) : null;
+
+        if (! $netelement) {
+            return route('TreeErd.show', ['all', 1]);
+        }
+
+        $cluster = $netelement->cluster ?: $netelement->net;
+        $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
+
+        return route('TreeErd.show', [$cluster->netelementtype->name, $cluster->id]);
     }
 
     /**
@@ -312,15 +330,15 @@ class CustomerTopoController extends NetElementController
             }
         }
 
-        // prepare/load panel right
         $tabs = $this->tabs($modems);
+        $breadcrumb = self::breadcrumb($modems);
 
         // Log: time measurement
         $after = microtime(true);
         \Log::debug('DIA: load of entire set takes '.($after - $before).' s');
 
         // show view
-        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs')));
+        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs', 'breadcrumb')));
     }
 
     /**
@@ -401,12 +419,19 @@ class CustomerTopoController extends NetElementController
 
         // ERD of cluster
         if ($modems->count()) {
-            $netelement = NetElement::find($modem->netelement_id);
-            $cluster = $netelement->cluster ?: $netelement->net;
-            $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
+            $modem = $modems->where('netelement_id', '!=', null)->first();
+            $netelement = $modem ? NetElement::find($modem->netelement_id) : null;
+
+            $params = ['all', 1];
+            if ($netelement) {
+                $cluster = $netelement->cluster ?: $netelement->net;
+                $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
+
+                $params = [$cluster->netelementtype->name, $cluster->id];
+            }
 
             // TODO Add Change to PNM Heatmap
-            $tabs[] = ['name' => 'PNM', 'icon' => 'globe', 'route' => 'TreeTopo.show', 'link' => [$cluster->netelementtype->name, $cluster->id]];
+            $tabs[] = ['name' => 'PNM', 'icon' => 'globe', 'route' => 'TreeTopo.show', 'link' => $params];
         }
 
         $tabs[] = ['name' => 'Diagramms', 'icon' => 'area-chart', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => Request::get('row')]];

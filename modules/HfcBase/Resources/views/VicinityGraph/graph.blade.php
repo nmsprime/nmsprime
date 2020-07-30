@@ -63,7 +63,12 @@
     </div>
 @stop
 @section('content_top')
-    <li><a href="">{{ trans("view.Header_Topography - Modems") }} </a></li>
+    <li class="active">
+        <a href="{{ $breadcrumb }}">
+        <i class="sitemap"></i>Entity Diagram</a>
+    </li>
+
+    <li><a href="">{{ trans('hfccustomer::view.vicinityGraph') }} </a></li>
 @stop
 @section('content_left')
 

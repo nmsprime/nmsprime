@@ -7,7 +7,7 @@
 
 
 @section('content_top')
-	<li>{!! HTML::linkRoute('TreeErd.show', $view_header, [$field, $search]) !!}</li>
+	<li class="active">{!! HTML::linkRoute('TreeErd.show', $view_header, [$field, $search]) !!}</li>
 @stop
 
 @section('content_left')
