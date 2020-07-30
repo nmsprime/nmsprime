@@ -35,9 +35,15 @@ class TroubleDashboardController
     {
         $node = $this->getProvisioningSystemData();
         $netelements = NetElement::withActiveModems('id', '>', '1')
-            ->with(['icingaObject.hostStatus', 'icingaServices.icingaObject', 'geoPosModems'])
+            ->with([
+                'icingaObject:object_id,name1,name2,is_active',
+                'icingaObject.hostStatus:hoststatus_id,host_object_id,output,long_output,last_hard_state_change,last_hard_state,problem_has_been_acknowledged',
+                'icingaServices:servicestatus_id,service_object_id,name1,output,long_output,perfdata,check_command,last_hard_state_change,last_hard_state,problem_has_been_acknowledged',
+                'icingaServices.icingaObject:object_id,name1,name2,is_active',
+                'geoPosModems',
+            ])
             ->without('netelementtype')
-            ->get(['cluster', 'descr', 'id', 'name', 'parent_id', 'pos'])
+            ->get()
             ->keyBy('id');
 
         $affectedModemsCount = self::calculateAllModemCounts($netelements);
@@ -49,7 +55,6 @@ class TroubleDashboardController
             }
 
             if (isset($affectedModemsCount[$netelement->id])) {
-                $netelement->singleFail = false;
                 $netelement->allModems = $affectedModemsCount[$netelement->id]['all'];
                 $netelement->offlineModems = $affectedModemsCount[$netelement->id]['all'] - $affectedModemsCount[$netelement->id]['online'];
                 $netelement->criticalModems = $affectedModemsCount[$netelement->id]['critical'];
@@ -70,7 +75,7 @@ class TroubleDashboardController
                     break;
             }
 
-            $netelement->icingaServices = $netelement->icingaServices
+            $netelement->icinga_services = $netelement->icingaServices
                 ->map(function ($service) use ($netelement) {
                     if ($service->problem_has_been_acknowledged) {
                         $netelement->hasMutedServices = true;
@@ -90,7 +95,7 @@ class TroubleDashboardController
                     return $service->last_hard_state;
                 });
 
-            $netelement->last_hard_state_change = $netelement->icingaServices
+            $netelement->last_hard_state_change = $netelement->icinga_services
                 ->pluck('last_hard_state_change')
                 ->push($netelement->icingaHostStatus->last_hard_state_change)
                 ->max();
@@ -218,7 +223,10 @@ class TroubleDashboardController
     protected function getProvisioningSystemData()
     {
         $nodeObject = IcingaObject::where('is_active', 1)->where('name2', 'icinga')->first();
-        $nodeObject = IcingaObject::where('objecttype_id', 1)->where('name1', $nodeObject->name1)->first();
+        $nodeObject = IcingaObject::where('objecttype_id', 1)->where('name1', $nodeObject->name1)
+            ->select(['object_id', 'name1', 'is_active'])
+            ->with('hostStatus:hoststatus_id,host_object_id,output,long_output,last_hard_state_change,last_hard_state,problem_has_been_acknowledged')
+            ->first();
 
         $node = new NetElement();
         $node->id = 0;
@@ -227,7 +235,11 @@ class TroubleDashboardController
         $node->cluster = 2;
         $node->setRelation('icingaObject', $nodeObject);
         $node->setRelation('hostStatus', $nodeObject->hostStatus);
-        $node->setRelation('icingaServices', $nodeObject->services()->with('icingaObject')->get());
+        $node->setRelation('icinga_services',
+            $nodeObject->services()
+            ->select(['servicestatus_id', 'service_object_id', 'name1', 'output', 'long_output', 'perfdata', 'check_command', 'last_hard_state_change', 'last_hard_state', 'problem_has_been_acknowledged'])
+            ->with('icingaObject:object_id,name1,name2,is_active')
+            ->get());
 
         return $node;
     }

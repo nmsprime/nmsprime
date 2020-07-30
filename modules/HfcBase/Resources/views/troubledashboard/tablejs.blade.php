@@ -113,11 +113,11 @@ new Vue({
         hostAcknowledged: function(netelement) {
             if (this.acknowledged.hasOwnProperty(netelement.icinga_object.object_id)) {
                 return this.acknowledged[netelement.icinga_object.object_id] ||
-                (_.filter(netelement.icingaServices, (service) => { return this.acknowledged[service.service_object_id] }).length )
+                (_.filter(netelement.icinga_services, (service) => { return this.acknowledged[service.service_object_id] }).length )
             }
 
             if (netelement.icinga_object.host_status.problem_has_been_acknowledged ||
-                _.filter(netelement.icingaServices, (service) => { return service.problem_has_been_acknowledged }).length ) {
+                _.filter(netelement.icinga_services, (service) => { return service.problem_has_been_acknowledged }).length ) {
                 this.acknowledged[netelement.icinga_object.object_id] = true
             }
 

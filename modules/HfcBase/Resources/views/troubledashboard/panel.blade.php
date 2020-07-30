@@ -32,7 +32,7 @@
                     <tr :key="netelement.id"
                         v-show="(hostAcknowledged(netelement) && (netelement.severity >= filter && netelement.partiallyImpaired)) || (hostAcknowledged(netelement) && netelement.hasMutedServices)"
                         >
-                        <td style="cursor: pointer" v-on:click="setCollapseState(netelement)"><i class="fa" :class="'fa-' + (collapsed.includes(netelement.id) ? 'minus' : 'plus')"></i></td>
+                        <td style="cursor: pointer" v-on:click="setCollapseState(netelement)"><i class="fa" :class="netelement.partiallyImpaired ? (collapsed.includes(netelement.id) ? 'fa-minus' : 'fa-plus') : ''"></i></td>
                         <td :class="colors[netelement.severity]"
                             class='f-s-13 d-none d-lg-table-cell'
                             style="cursor: pointer;"
@@ -115,7 +115,7 @@
                             </div>
                         </td>
                     </tr>
-                    <tr v-for="(service, index) in netelement.icingaServices"
+                    <tr v-for="(service, index) in netelement.icinga_services"
                         :key="service.service_object_id"
                         v-show="serviceAcknowledged(service, netelement) && collapsed.includes(netelement.id) && service.last_hard_state >= serviceFilter"
                         >
