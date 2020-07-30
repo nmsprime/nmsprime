@@ -14,7 +14,7 @@ class VicinityGraphController extends BaseController
         $ids = explode('+', $modemIds);
         $modems = \Modules\ProvBase\Entities\Modem::whereIn('id', $ids)->get();
 
-        $tabs = (new \Modules\HfcCustomer\Http\Controllers\CustomerTopoController)->tabs($modems);
+        $tabs = CustomerTopoController::tabs($modems);
         $breadcrumb = CustomerTopoController::breadcrumb($modems);
 
         return View::make('HfcBase::VicinityGraph.graph', $this->compact_prep_view(compact('title', 'tabs', 'breadcrumb')));

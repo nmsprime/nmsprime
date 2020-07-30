@@ -11,7 +11,7 @@ use Modules\ProvBase\Entities\ProvBase;
 use App\Http\Controllers\BaseViewController;
 use Modules\HfcReq\Http\Controllers\NetElementController;
 
-/*
+/**
  * Show Customers (Modems) on Topography
  *
  * One Object Represents one Topography View - KML File
@@ -19,12 +19,11 @@ use Modules\HfcReq\Http\Controllers\NetElementController;
  * Workflow: See Confluence
  * - Route: Customer/{field}/{search} --> show($field, $search) --> show_topo($modems)
  * - Route: CustomerRect/{x1}/{x2}/{y1}/{y2} -> show_rect($x1, $x2, $y1, $y2) -> show_topo($modems)
- * - Route: CustomerModem/{topo_dia}/{ids} -> show_modem_ids() -> show_topo() or show_diagrams()
+ * - Route: CustomerModem/modems/{ids} -> showModems()
+ * - Route: CustomerModem/diagrams/{ids} -> showDiagrams()
  *
- * Note: Right Panel for Switching between topography and diagrams does only use show_modem_ids().
- *       There is no seperate diagram function for show() and show_rect(). Instead show_topo and
- *       show_diagrams() call tabs() which generates topography and diagram links
- *       to show_modem_ids().
+ * Note: There is no seperate diagram function for show() and show_rect(). Instead show_topo and
+ *       showDiagrams() call tabs() which generates topography and diagram links
  *
  * @author: Torsten Schmidt
  */
@@ -65,15 +64,15 @@ class CustomerTopoController extends NetElementController
         return $this->show_topo($modemQuery['selectedModel'], $modemQuery['allModels']);
     }
 
-    /*
-    * Show Customer in Rectangle
-    *
-    * @param field: search field name in tree table
-    * @param search: the search value to look in tree table $field
-    * @return view with SVG image
-    *
-    * @author: Torsten Schmidt
-    */
+    /**
+     * Show Customer in Rectangle
+     *
+     * @param field: search field name in tree table
+     * @param search: the search value to look in tree table $field
+     * @return view with SVG image
+     *
+     * @author: Torsten Schmidt
+     */
     public function show_rect($x1, $x2, $y1, $y2)
     {
         $query = $this->getModemBaseQuery()
@@ -191,9 +190,10 @@ class CustomerTopoController extends NetElementController
         $route_name = 'Tree';
         $view_header = 'Topography - Modems';
         $body_onload = 'init_for_map';
-        $tabs = $this->tabs($modems);
+        $tabs = self::tabs($modems);
         $breadcrumb = self::breadcrumb($modems);
 
+        // Prepare topography map
         $kmls = $this->__kml_to_modems($modems);
         $file = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
@@ -361,7 +361,7 @@ class CustomerTopoController extends NetElementController
             }
         }
 
-        $tabs = $this->tabs($modems);
+        $tabs = self::tabs($modems);
         $breadcrumb = self::breadcrumb($modems);
 
         // Log: time measurement
@@ -409,7 +409,7 @@ class CustomerTopoController extends NetElementController
      *
      * @author: Torsten Schmidt, Nino Ryschawy
      */
-    public function tabs($modems)
+    public static function tabs($modems)
     {
         $ids = '0';
         foreach ($modems as $modem) {
