@@ -1,7 +1,16 @@
 @extends ('Layout.split-nopanel')
 
 @section('content_top')
-  Diagrams - Modems
+    @if (isset($breadcrumb) && $breadcrumb)
+        <li class="active">
+            <a href="{{ $breadcrumb }}">
+            <i class="sitemap"></i>Entity Diagram</a>
+        </li>
+    @endif
+    <li>
+        <a href="">{{ 'Diagrams - Modems' }} </a>
+    </li>
+
 @stop
 
 {{ $view_header = 'Diagrams' }}

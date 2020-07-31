@@ -11,7 +11,7 @@ use Modules\ProvBase\Entities\ProvBase;
 use App\Http\Controllers\BaseViewController;
 use Modules\HfcReq\Http\Controllers\NetElementController;
 
-/*
+/**
  * Show Customers (Modems) on Topography
  *
  * One Object Represents one Topography View - KML File
@@ -19,12 +19,11 @@ use Modules\HfcReq\Http\Controllers\NetElementController;
  * Workflow: See Confluence
  * - Route: Customer/{field}/{search} --> show($field, $search) --> show_topo($modems)
  * - Route: CustomerRect/{x1}/{x2}/{y1}/{y2} -> show_rect($x1, $x2, $y1, $y2) -> show_topo($modems)
- * - Route: CustomerModem/{topo_dia}/{ids} -> show_modem_ids() -> show_topo() or show_diagrams()
+ * - Route: CustomerModem/modems/{ids} -> showModems()
+ * - Route: CustomerModem/diagrams/{ids} -> showDiagrams()
  *
- * Note: Right Panel for Switching between topography and diagrams does only use show_modem_ids().
- *       There is no seperate diagram function for show() and show_rect(). Instead show_topo and
- *       show_diagrams() call tabs() which generates topography and diagram links
- *       to show_modem_ids().
+ * Note: There is no seperate diagram function for show() and show_rect(). Instead show_topo and
+ *       showDiagrams() call tabs() which generates topography and diagram links
  *
  * @author: Torsten Schmidt
  */
@@ -65,15 +64,15 @@ class CustomerTopoController extends NetElementController
         return $this->show_topo($modemQuery['selectedModel'], $modemQuery['allModels']);
     }
 
-    /*
-    * Show Customer in Rectangle
-    *
-    * @param field: search field name in tree table
-    * @param search: the search value to look in tree table $field
-    * @return view with SVG image
-    *
-    * @author: Torsten Schmidt
-    */
+    /**
+     * Show Customer in Rectangle
+     *
+     * @param field: search field name in tree table
+     * @param search: the search value to look in tree table $field
+     * @return view with SVG image
+     *
+     * @author: Torsten Schmidt
+     */
     public function show_rect($x1, $x2, $y1, $y2)
     {
         $query = $this->getModemBaseQuery()
@@ -187,21 +186,14 @@ class CustomerTopoController extends NetElementController
             return \View::make('errors.generic')->with('message', 'Failed to generate SVG file');
         }
 
-        $breadcrumb = null;
-        if ($modems->count()) {
-            $netelement = NetElement::find($modem->netelement_id);
-            $cluster = $netelement->cluster ?: $netelement->net;
-            $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
-
-            $breadcrumb = route('TreeErd.show', [$cluster->netelementtype->name, $cluster->id]);
-        }
-
-        // Prepare topography map
         $target = $this->html_target;
         $route_name = 'Tree';
         $view_header = 'Topography - Modems';
         $body_onload = 'init_for_map';
-        $tabs = $this->tabs($modems);
+        $tabs = self::tabs($modems);
+        $breadcrumb = self::breadcrumb($modems);
+
+        // Prepare topography map
         $kmls = $this->__kml_to_modems($modems);
         $file = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
@@ -230,6 +222,48 @@ class CustomerTopoController extends NetElementController
                     ->orWhere('us_pwr', '>', 0);
             })
             ->select(['modem.*', 'netelement.cluster']);
+    }
+
+    /**
+     * Extend query by filtering specified modems by their ID
+     *
+     * @return obj Illuminate\Database\Query\Bilder
+     */
+    private function filterModems($query, $modem_ids)
+    {
+        $ids = [];
+
+        if (! is_array($modem_ids)) {
+            $ids = explode('+', $modem_ids);
+        }
+
+        return $query->whereIn('modem.id', $ids);
+    }
+
+    /**
+     * Compose ERD breadcrumb route for customer map view
+     * Note: Extend this function when more breadcrumbs will be used
+     *
+     * @return string
+     * @author Nino Ryschawy
+     */
+    public static function breadcrumb($modems)
+    {
+        if (! $modems->count()) {
+            return;
+        }
+
+        $modem = $modems->where('netelement_id', '!=', null)->first();
+        $netelement = $modem ? NetElement::find($modem->netelement_id) : null;
+
+        if (! $netelement) {
+            return route('TreeErd.show', ['all', 1]);
+        }
+
+        $cluster = $netelement->cluster ?: $netelement->net;
+        $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
+
+        return route('TreeErd.show', [$cluster->netelementtype->name, $cluster->id]);
     }
 
     /**
@@ -274,18 +308,33 @@ class CustomerTopoController extends NetElementController
         return $this->kml_file_array($netelements);
     }
 
-    /*
-    * Show Modems Diagrams
-    *
-    * TODO: - add cacti graph template id's to ENV
-    *
-    * @param modemQuery: QueryBuilder like Modem::where()
-    * @return view with modem diagrams
-    *
-    * @author: Torsten Schmidt
-    */
-    public function show_diagrams($modemQuery)
+    /**
+     * Show specific Modems on map
+     *
+     * @param string    modem IDs
+     * @return Illuminate\View\View
+     *
+     * @author Nino Ryschawy
+     */
+    public function showModems($ids)
     {
+        return $this->show_topo($this->filterModems($this->getModemBaseQuery(), $ids));
+    }
+
+    /**
+     * Show Modems Diagrams
+     *
+     * TODO: - add cacti graph template id's to ENV
+     *
+     * @param string
+     * @return view with modem diagrams
+     *
+     * @author: Torsten Schmidt
+     */
+    public function showDiagrams($modemIds)
+    {
+        $modemQuery = $this->filterModems($this->getModemBaseQuery(), $modemIds);
+
         // check if ProvMon is installed
         if (! \Module::collections()->has('ProvMon')) {
             return \View::make('errors.generic')->with('message', 'Module Provisioning Monitoring (ProvMon) not installed');
@@ -312,15 +361,15 @@ class CustomerTopoController extends NetElementController
             }
         }
 
-        // prepare/load panel right
-        $tabs = $this->tabs($modems);
+        $tabs = self::tabs($modems);
+        $breadcrumb = self::breadcrumb($modems);
 
         // Log: time measurement
         $after = microtime(true);
         \Log::debug('DIA: load of entire set takes '.($after - $before).' s');
 
         // show view
-        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs')));
+        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs', 'breadcrumb')));
     }
 
     /**
@@ -352,32 +401,6 @@ class CustomerTopoController extends NetElementController
             ->toArray();
     }
 
-    /*
-    * Show Modem Topography or Diagrams with param $ids
-    *
-    * @param topo: 'true' (string): show topography, other show diagrams
-    * @param modem: id's to show, plus (+) seperated string list, like '100000+100001+100002'
-    * @return: view with modem diagrams
-    *
-    * @author: Torsten Schmidt
-    */
-    public function show_modem_ids($topo, $_ids)
-    {
-        $ids = [];
-
-        if (! is_array($_ids)) {
-            $ids = explode('+', $_ids);
-        }
-
-        $modemQuery = $this->getModemBaseQuery()->whereIn('modem.id', $ids);
-
-        if ($topo == 'true') {
-            return $this->show_topo($modemQuery);
-        }
-
-        return $this->show_diagrams($modemQuery);
-    }
-
     /**
      * Prepare $tabs variable for switching topography/diagrams mode
      *
@@ -386,7 +409,7 @@ class CustomerTopoController extends NetElementController
      *
      * @author: Torsten Schmidt, Nino Ryschawy
      */
-    public function tabs($modems)
+    public static function tabs($modems)
     {
         $ids = '0';
         foreach ($modems as $modem) {
@@ -396,20 +419,27 @@ class CustomerTopoController extends NetElementController
         $tabs = [
             // ['name' => 'Edit', 'icon' => 'pencil', 'route' => 'NetElement.edit', 'link' => $modem->netelement_id],
             ['name' => trans('hfccustomer::view.vicinityGraph'), 'icon' => 'fa-sitemap', 'route' => 'VicinityGraph.show', 'link' => $ids],
-            ['name' => 'Topography', 'icon' => 'map', 'route' => 'CustomerModem.show', 'link' => ['true', $ids, 'row' => Request::get('row')]],
+            ['name' => 'Topography', 'icon' => 'map', 'route' => 'CustomerModem.showModems', 'link' => [$ids, 'row' => Request::get('row')]],
         ];
 
-        // ERD of cluster
+        // ERD of cluster - TODO: Remove when PNM is added
         if ($modems->count()) {
-            $netelement = NetElement::find($modem->netelement_id);
-            $cluster = $netelement->cluster ?: $netelement->net;
-            $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
+            $modem = $modems->where('netelement_id', '!=', null)->first();
+            $netelement = $modem ? NetElement::find($modem->netelement_id) : null;
+
+            $params = ['all', 1];
+            if ($netelement) {
+                $cluster = $netelement->cluster ?: $netelement->net;
+                $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
+
+                $params = [$cluster->netelementtype->name, $cluster->id];
+            }
 
             // TODO Add Change to PNM Heatmap
-            $tabs[] = ['name' => 'PNM', 'icon' => 'globe', 'route' => 'TreeTopo.show', 'link' => [$cluster->netelementtype->name, $cluster->id]];
+            $tabs[] = ['name' => 'PNM', 'icon' => 'globe', 'route' => 'TreeTopo.show', 'link' => $params];
         }
 
-        $tabs[] = ['name' => 'Diagramms', 'icon' => 'area-chart', 'route' => 'CustomerModem.show', 'link' => ['false', $ids, 'row' => Request::get('row')]];
+        $tabs[] = ['name' => trans('view.Diagrams'), 'icon' => 'area-chart', 'route' => 'CustomerModem.showDiagrams', 'link' => [$ids, 'row' => Request::get('row')]];
 
         return $tabs;
     }
