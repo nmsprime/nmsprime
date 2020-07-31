@@ -197,7 +197,7 @@ function ss_docsis($hostname, $snmp_community = null)
     // pre-equalization-related data
     $basepath = '/usr/share/cacti/rra';
     $deviceFile = "{$basepath}/{$hostname}.json";
-    $rates = ['+8 hours', '+4 hours', '+6 minutes'];
+    $rates = ['+8 hours', '+4 hours', '+4 minutes'];
     $deviceStats = json_decode(file_exists($deviceFile) ? file_get_contents($deviceFile) : '{"rate":2}', true);
 
     if (! isset($deviceStats['next']) || time() > $deviceStats['next']) {
@@ -248,7 +248,6 @@ function ss_docsis($hostname, $snmp_community = null)
         $preEquData['tdr'] = $tdr;
         $preEquData['max'] = $fft[1];
         $preEquData['fft'] = $fft[0];
-
         file_put_contents($deviceFile, json_encode(array_merge($deviceStats, $preEquData)));
     }
 
@@ -265,6 +264,10 @@ function ss_docsis($hostname, $snmp_community = null)
             round($cactiStats['avgDsSNR']),
             $match[1]
         );
+
+        if (isset($tdr) && isset($fft[1])) {
+            $content .= sprintf("UPDATE modem SET tdr = %f, fft_max = %f WHERE id = %d;\n", $tdr, $fft[1], $match[1]);
+        }
 
         file_put_contents("$path/update.sql", $content, FILE_APPEND | LOCK_EX);
     }
@@ -335,8 +338,8 @@ function nePwr($decimal, $maintap)
         foreach (array_chunk($decimal, 2) as $val) {
             $a1 = $val[0];
             $b1 = $val[1];
-            $pwr[] = ($a1 * $a2 - $b1 * $b2) / ($a2 ** 2 + $b2 ** 2);
-            $pwr[] = ($a2 * $b1 + $a1 * $b2) / ($a2 ** 2 + $b2 ** 2);
+            $pwr[] = ($a1 * $a2 - $b1 * $b2) / (pow($a2, 2) + pow($b2, 2));
+            $pwr[] = ($a2 * $b1 + $a1 * $b2) / (pow($a2, 2) + pow($b2, 2));
         }
     } else {
         for ($i = 0; $i < 48; $i++) {
@@ -412,7 +415,7 @@ function fft($pwr)
     }
 
     $answer = array_map(function ($v1, $v2) {
-        return 20 * log10(sqrt($v1 ** 2 + $v2 ** 2));
+        return 20 * log10(sqrt(pow($v1, 2) + pow($v2, 2)));
     }, $ans[0], $ans[1]);
 
     // stores the maximum amplitude value of the fft waveform
