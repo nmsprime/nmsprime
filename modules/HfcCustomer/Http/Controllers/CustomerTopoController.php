@@ -156,7 +156,7 @@ class CustomerTopoController extends NetElementController
     *
     * @author: Torsten Schmidt
     */
-    private function show_topo($modemQuery, $allModels = null)
+    private function show_topo($modemQuery, $allModels = null, $pnmMap = false)
     {
         $models = $allModels ?: clone $modemQuery;
         $models = $models->whereNotNull('model')->groupBy('model')->get(['model'])->pluck('model')->all();
@@ -186,6 +186,10 @@ class CustomerTopoController extends NetElementController
             return \View::make('errors.generic')->with('message', 'Failed to generate SVG file');
         }
 
+        if ($pnmMap) {
+            list($dim, $point) = $this->getHeatMapData($modems);
+        }
+
         $target = $this->html_target;
         $route_name = 'Tree';
         $view_header = 'Topography - Modems';
@@ -197,7 +201,41 @@ class CustomerTopoController extends NetElementController
         $kmls = $this->__kml_to_modems($modems);
         $file = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
-        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'tabs', 'kmls', 'models', 'breadcrumb')));
+        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'tabs', 'kmls', 'models', 'breadcrumb', 'dim', 'point')));
+    }
+
+    private function getHeatMapData($modems)
+    {
+        $dim = [];
+        $point = [];
+
+        $max = $modems->pluck('fft_max')->filter(function ($value) {
+            return $value > 0 && $value < 5;
+        })->max();
+
+        foreach ($modems as $modem) {
+            if (! $modem->tdr || $modem->fft_max < 0 || $modem->fft_max > 5) {
+                continue;
+            }
+
+            $x = floatval($modem->x);
+            $y = floatval($modem->y);
+
+            $point[] = $y;
+            $point[] = $x;
+            $point[] = $modem->tdr;
+
+            $temp = round($modem->tdr / 111111.1, 4);
+            $percent = \Request::get('percent') ?: 100;
+
+            for ($i = 0; $i <= 360; $i += 10) {
+                $dim[] = $temp * cos($i) + $y;
+                $dim[] = $temp * sin($i) + $x;
+                $dim[] = $modem->fft_max / $max * $percent / 100;
+            }
+        }
+
+        return [array_chunk($dim, 3), array_chunk($point, 3)];
     }
 
     /**
