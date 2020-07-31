@@ -40,6 +40,12 @@ BaseRoute::group([], function () {
         'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
     ]);
 
+    BaseRoute::get('CustomerModem/pnm/{ids}', [
+        'as' => 'CustomerModem.showPNM',
+        'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@showPNM',
+        'middleware' => ['can:view,Modules\HfcCustomer\Entities\Mpr'],
+    ]);
+
     BaseRoute::get('CustomerModem/diagrams/{ids}', [
         'as' => 'CustomerModem.showDiagrams',
         'uses' => 'Modules\HfcCustomer\Http\Controllers\CustomerTopoController@showDiagrams',

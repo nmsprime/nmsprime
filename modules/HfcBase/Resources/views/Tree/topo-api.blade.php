@@ -258,8 +258,6 @@ function load (id, link, name)
         map.addLayers([Layers[id]]);
         // auto zoom kml Layer
         Layers[0].events.register('loadend', Layers[0], function(evt){map.zoomToExtent(Layers[0].getDataExtent())});
-
-        heat_map();
 }
 
 
@@ -354,11 +352,15 @@ function map_init()
  */
 function init_for_map ()
 {
-	map_init();
-	map_kml_load();
-	map_mps_init();
-	clk_init_1();
-	clk_init_2();
+	@if (isset($dim) && isset($point))
+		heat_map();
+	@else
+		map_init();
+		map_kml_load();
+		map_mps_init();
+		clk_init_1();
+		clk_init_2();
+	@endif
 }
 
 function init_for_search()

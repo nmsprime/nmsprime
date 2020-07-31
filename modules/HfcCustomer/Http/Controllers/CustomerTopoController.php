@@ -359,6 +359,11 @@ class CustomerTopoController extends NetElementController
         return $this->show_topo($this->filterModems($this->getModemBaseQuery(), $ids));
     }
 
+    public function showPNM($ids)
+    {
+        return $this->show_topo($this->filterModems($this->getModemBaseQuery(), $ids), null, true);
+    }
+
     /**
      * Show Modems Diagrams
      *
@@ -458,26 +463,9 @@ class CustomerTopoController extends NetElementController
             // ['name' => 'Edit', 'icon' => 'pencil', 'route' => 'NetElement.edit', 'link' => $modem->netelement_id],
             ['name' => trans('hfccustomer::view.vicinityGraph'), 'icon' => 'fa-sitemap', 'route' => 'VicinityGraph.show', 'link' => $ids],
             ['name' => 'Topography', 'icon' => 'map', 'route' => 'CustomerModem.showModems', 'link' => [$ids, 'row' => Request::get('row')]],
+            ['name' => 'PNM', 'icon' => 'globe', 'route' => 'CustomerModem.showPNM', 'link' => [$ids, 'row' => Request::get('row')]],
+            ['name' => trans('view.Diagrams'), 'icon' => 'area-chart', 'route' => 'CustomerModem.showDiagrams', 'link' => [$ids, 'row' => Request::get('row')]],
         ];
-
-        // ERD of cluster - TODO: Remove when PNM is added
-        if ($modems->count()) {
-            $modem = $modems->where('netelement_id', '!=', null)->first();
-            $netelement = $modem ? NetElement::find($modem->netelement_id) : null;
-
-            $params = ['all', 1];
-            if ($netelement) {
-                $cluster = $netelement->cluster ?: $netelement->net;
-                $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
-
-                $params = [$cluster->netelementtype->name, $cluster->id];
-            }
-
-            // TODO Add Change to PNM Heatmap
-            $tabs[] = ['name' => 'PNM', 'icon' => 'globe', 'route' => 'TreeTopo.show', 'link' => $params];
-        }
-
-        $tabs[] = ['name' => trans('view.Diagrams'), 'icon' => 'area-chart', 'route' => 'CustomerModem.showDiagrams', 'link' => [$ids, 'row' => Request::get('row')]];
 
         return $tabs;
     }
