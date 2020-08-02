@@ -379,7 +379,13 @@ function init_for_customer ()
 
 function heat_map(){
 	var planes =  {{ isset($point) ? json_encode($point) : '[]'  }};
-	var mymap = L.map('mapid').setView([50.6504, 13.1623],13);
+	var mymap = L.map('mapid');
+
+	if (planes.length) {
+		mymap.setView([planes[0][0],planes[0][1]], 13);
+	} else {
+		mymap.setView([50.6504, 13.1623], 13);
+	}
 
 	var baseLayer = L.tileLayer(
 	  'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
