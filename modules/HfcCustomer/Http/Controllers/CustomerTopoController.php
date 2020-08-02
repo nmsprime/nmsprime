@@ -213,6 +213,10 @@ class CustomerTopoController extends NetElementController
             return $value > 0 && $value < 5;
         })->max();
 
+        if (! $max) {
+            $max = 1;
+        }
+
         foreach ($modems as $modem) {
             if (! $modem->tdr || $modem->fft_max < 0 || $modem->fft_max > 5) {
                 continue;
