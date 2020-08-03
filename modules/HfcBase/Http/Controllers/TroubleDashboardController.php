@@ -34,7 +34,7 @@ class TroubleDashboardController
     public function data()
     {
         $node = $this->getProvisioningSystemData();
-        $netelements = NetElement::withActiveModems('id', '>', '1')
+        $netelements = NetElement::withActiveModems('id', '>', '1', true)
             ->with([
                 'icingaObject:object_id,name1,name2,is_active',
                 'icingaObject.hostStatus:hoststatus_id,host_object_id,output,long_output,last_hard_state_change,last_hard_state,problem_has_been_acknowledged',
