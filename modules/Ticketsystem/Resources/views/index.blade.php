@@ -16,7 +16,7 @@
     <p>{{ date('d.m.Y') }}</p>
 @stop
 
-@section('content')
+@section ('content')
 
     <div class="col-md-12">
 
@@ -56,19 +56,18 @@
                 </div>
             @endif
             <div class="col-md-10 col-lg-8 col-xl-6">
-                @include('Generic.widgets.moduleDocu', [ 'urls' => [
+                @include ('Generic.widgets.moduleDocu', [ 'urls' => [
                         'documentation' => 'https://devel.roetzer-engineering.com/confluence/display/NMS/NMS+PRIME',
                         'youtube' => 'https://www.youtube.com/channel/UCpFaWPpJLQQQLpTVeZnq_qA',
                         'forum' => 'https://devel.roetzer-engineering.com/confluence/display/nmsprimeforum/Welcome',
                     ]])
             </div>
             <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
-                @include ('bootstrap.widget',
-                    array (
+                @include ('bootstrap.widget', [
                         'content' => 'date',
                         'widget_icon' => 'calendar',
                         'widget_bg_color' => 'purple',
-                    )
+                    ]
                 )
             </div>
         </div>
@@ -77,7 +76,7 @@
             @if (isset($tickets) && $tickets['own'])
                 <div class="col-12 col-xl-6">
                     @section ('ticket_table')
-                        @include('ticketsystem::panels.ticket_table')
+                        @include ('ticketsystem::panels.ticket_table')
                     @stop
                     @include ('bootstrap.panel', [
                         'content' => "ticket_table",

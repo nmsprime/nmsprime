@@ -5,7 +5,7 @@
     <p>{{ date('d.m.Y') }}</p>
 @stop
 
-@section('content')
+@section ('content')
 
     <div class="col-md-12">
 
@@ -15,7 +15,7 @@
             <div class="col-12 col-lg-8">
                 <div>
                     @section ('impaired_services')
-                    @include('HfcBase::troubledashboard.panel')
+                        @include ('HfcBase::troubledashboard.panel')
                     @stop
                     @include ('bootstrap.panel', [
                         'content' => "impaired_services",
@@ -27,7 +27,7 @@
                 <div class="row">
                     <div class="col">
                         @section ('dashboard_logs')
-                            @include('dashboard::timeline.logs')
+                            @include ('dashboard::timeline.logs')
                         @stop
                         @include ('bootstrap.panel', [
                             'content' => "dashboard_logs",
@@ -39,7 +39,7 @@
                     @if (isset($tickets) && $tickets['own'])
                         <div class="col-12 col-xl-6">
                             @section ('ticket_table')
-                                @include('ticketsystem::panels.ticket_table')
+                                @include ('ticketsystem::panels.ticket_table')
                             @stop
                             @include ('bootstrap.panel', [
                                 'content' => "ticket_table",
@@ -84,7 +84,7 @@
                 @endif
                 <div>
                     @section ('impaired_summary')
-                        @include('HfcBase::troubledashboard.summary', ['aside' => true])
+                        @include ('HfcBase::troubledashboard.summary', ['aside' => true])
                     @stop
                     @include ('bootstrap.panel', [
                         'content' => "impaired_summary",
@@ -93,14 +93,14 @@
                     ])
                 </div>
                 <div>
-                    @include('HfcBase::widgets.hfc')
+                    @include ('HfcBase::widgets.hfc')
                 </div>
             </div>
         </div>
     </div>
 @stop
 
-@section('javascript')
-@include('HfcBase::troubledashboard.tablejs')
-@include('HfcBase::troubledashboard.summaryjs')
+@section ('javascript')
+@include ('HfcBase::troubledashboard.tablejs')
+@include ('HfcBase::troubledashboard.summaryjs')
 @stop

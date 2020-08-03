@@ -10,7 +10,7 @@
     <div class="d-flex flex-column m-l-15 m-t-15 ">
         <div class="f-s-20 m-b-10">{{ $title }}</div>
         <div class="d-flex flex-column">
-            @yield($content)
+            @yield ($content)
         </div>
     </div>
 </div>

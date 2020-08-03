@@ -1,6 +1,6 @@
 @extends ('Layout.default')
 
-@section('content')
+@section ('content')
 <h1 class="page-header h1">{{ $title }}</h1>
 <div class="row">
     <div class="col-xs-12 col-sm-6 col-xl-3">
@@ -65,9 +65,9 @@
 </div>
 <div class="row">
     <div class="col-xl-8 no-gutters ui-sortable">
-        @if(! empty($impairedData))
+        @if (! empty($impairedData))
             @section ('impaired_summary')
-                @include('HfcBase::troubledashboard.summary', ['aside' => false])
+                @include ('HfcBase::troubledashboard.summary', ['aside' => false])
             @stop
             @include ('bootstrap.panel', [
                 'content' => "impaired_summary",
@@ -77,7 +77,7 @@
             ])
 
             @section ('impaired_services')
-            @include('HfcBase::troubledashboard.panel')
+            @include ('HfcBase::troubledashboard.panel')
             @stop
             @include ('bootstrap.panel', [
                 'content' => "impaired_services",
@@ -89,11 +89,11 @@
         @endif
     </div>
     <div class="col-xl-4 no-gutters ui-sortable">
-        @include('dashboard::widgets.quickstart')
+        @include ('dashboard::widgets.quickstart')
 
         @if (isset($tickets) && $tickets['own'])
             @section ('ticket_table')
-                @include('ticketsystem::panels.ticket_table')
+                @include ('ticketsystem::panels.ticket_table')
             @stop
             @include ('bootstrap.panel', [
                 'content' => "ticket_table",
@@ -104,7 +104,7 @@
         @endif
 
         @section ('dashboard_logs')
-            @include('dashboard::timeline.logs')
+            @include ('dashboard::timeline.logs')
         @stop
         @include ('bootstrap.panel', [
             'content' => "dashboard_logs",
@@ -117,7 +117,7 @@
 <div class="row">
 @if (isset($news) && $news)
     @section ('news')
-        @include('dashboard::panels.news')
+        @include ('dashboard::panels.news')
     @stop
     @include ('bootstrap.panel', [
         'content' => "news",
@@ -130,7 +130,7 @@
 </div>
 @stop
 
-@section('javascript')
-    @include('HfcBase::troubledashboard.summaryjs')
-    @include('HfcBase::troubledashboard.tablejs')
+@section ('javascript')
+    @include ('HfcBase::troubledashboard.summaryjs')
+    @include ('HfcBase::troubledashboard.tablejs')
 @stop
