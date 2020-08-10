@@ -252,7 +252,7 @@ class CustomerTopoController extends NetElementController
     private function getUserMapData()
     {
         return \App\User::whereNotNull('geopos_x')
-            ->where('geopos_updated_at', '>', date('Y-m-d H:i:s', time() - 60 * 60))
+            ->where('geopos_updated_at', '>', date('Y-m-d H:i:s', time() - 24 * 60 * 60))
             ->get()->toArray();
     }
 
