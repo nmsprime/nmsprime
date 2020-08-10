@@ -17,6 +17,8 @@ class VicinityGraphController extends BaseController
         $tabs = CustomerTopoController::tabs($modems);
         $breadcrumb = CustomerTopoController::breadcrumb($modems);
 
-        return View::make('HfcBase::VicinityGraph.graph', $this->compact_prep_view(compact('title', 'tabs', 'breadcrumb')));
+        $withHistory = $modems->groupBy('netelement_id')->map->count()->sort()->keys()->last();
+
+        return View::make('HfcBase::VicinityGraph.graph', $this->compact_prep_view(compact('title', 'tabs', 'breadcrumb', 'withHistory')));
     }
 }

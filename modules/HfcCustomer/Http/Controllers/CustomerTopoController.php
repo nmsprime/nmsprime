@@ -61,7 +61,7 @@ class CustomerTopoController extends NetElementController
 
         $modemQuery = $this->filterModel($query);
 
-        return $this->show_topo($modemQuery['selectedModel'], $modemQuery['allModels']);
+        return $this->show_topo($modemQuery['selectedModel'], $modemQuery['allModels'], null, $field == 'netelement_id' ? $search : false);
     }
 
     /**
@@ -156,7 +156,7 @@ class CustomerTopoController extends NetElementController
     *
     * @author: Torsten Schmidt
     */
-    private function show_topo($modemQuery, $allModels = null, $pnmMap = false)
+    private function show_topo($modemQuery, $allModels = null, $pnmMap = false, $withHistory = false)
     {
         $models = $allModels ?: clone $modemQuery;
         $models = $models->whereNotNull('model')->groupBy('model')->get(['model'])->pluck('model')->all();
@@ -201,7 +201,12 @@ class CustomerTopoController extends NetElementController
         $kmls = $this->__kml_to_modems($modems);
         $file = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
-        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'tabs', 'kmls', 'models', 'breadcrumb', 'dim', 'point')));
+        // History Table and Slider
+        if (! $withHistory) {
+            $withHistory = $modems->groupBy('netelement_id')->map->count()->sort()->keys()->last();
+        }
+
+        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'tabs', 'kmls', 'models', 'dim', 'point', 'breadcrumb', 'withHistory')));
     }
 
     private function getHeatMapData($modems)
@@ -391,6 +396,7 @@ class CustomerTopoController extends NetElementController
         $provmon = new \Modules\ProvMon\Http\Controllers\ProvMonController;
         $before = microtime(true);
         $modems = $modemQuery->orderBy('city')->orderBy('street')->orderBy('house_number')->get();
+        $withHistory = $modems->groupBy('netelement_id')->map->count()->sort()->keys()->last();
 
         // foreach modem
         foreach ($modems as $modem) {
@@ -416,7 +422,7 @@ class CustomerTopoController extends NetElementController
         \Log::debug('DIA: load of entire set takes '.($after - $before).' s');
 
         // show view
-        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs', 'breadcrumb')));
+        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs', 'breadcrumb', 'withHistory')));
     }
 
     /**
