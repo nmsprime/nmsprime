@@ -408,9 +408,7 @@ function heat_map(){
 
     // Add modems
     for (var i = 0; i < planes.length; i++) {
-        marker = new L.marker([planes[i][0],planes[i][1]])
-            .bindPopup(planes[i][2])
-            .addTo(mymap);
+        L.marker([planes[i][0], planes[i][1]]).bindPopup(String(planes[i][2])).addTo(mymap);
     }
 
     // Add users with name and time of last geopos update
