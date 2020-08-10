@@ -32,4 +32,11 @@ BaseRoute::group([], function () {
         'uses' => 'Modules\HfcBase\Http\Controllers\TroubleDashboardController@muteProblem',
         'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
     ]);
+
+
+    BaseRoute::get('StateHistory/{id}', [
+        'as' => 'IcingaStateHistory.table',
+        'uses' => 'Modules\HfcBase\Http\Controllers\IcingaStateHistoryController@table',
+        'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
+    ]);
 });
