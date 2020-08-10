@@ -379,6 +379,7 @@ function init_for_customer ()
 
 function heat_map(){
     var planes =  {{ isset($point) ? json_encode($point) : '[]'  }};
+    var users =  {!! isset($users) ? json_encode($users) : '[]'  !!};
     var mymap = L.map('mapid');
 
     if (planes.length) {
@@ -387,6 +388,16 @@ function heat_map(){
         mymap.setView([50.6504, 13.1623], 13);
     }
 
+    var userIconClass = L.Icon.extend({
+        options: {
+            // https://www.iconshock.com/stroke-icons/transportation-icons/car-sale-icon/   -> real vista - Car Related Icons
+            iconUrl: '{{ "/images/truckIcon.png" }}',
+            iconSize: [50, 50],
+        }
+    });
+
+    var userIcon = new userIconClass();
+
     var baseLayer = L.tileLayer(
       'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
         attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
@@ -394,11 +405,18 @@ function heat_map(){
         id: 'mapbox.streets',
         accessToken: 'your.mapbox.access.token'
       }).addTo(mymap);
-    //var marker = L.marker([50.6504, 13.1623]).addTo(mymap);
+
+    // Add modems
     for (var i = 0; i < planes.length; i++) {
-            marker = new L.marker([planes[i][0],planes[i][1]])
+        marker = new L.marker([planes[i][0],planes[i][1]])
             .bindPopup(planes[i][2])
             .addTo(mymap);
+    }
+
+    // Add users with name and time of last geopos update
+    for (var i = 0; i < users.length; i++) {
+        L.marker([users[i].geopos_y, users[i].geopos_x], {icon: userIcon}).addTo(mymap)
+            .bindPopup(users[i].first_name + ' ' + users[i].last_name + ' (' + users[i].geopos_updated_at.substring(11,16) + ')');
     }
 
     var heat =  L.heatLayer({{ isset($dim) ? json_encode($dim) : '[]' }}, {
