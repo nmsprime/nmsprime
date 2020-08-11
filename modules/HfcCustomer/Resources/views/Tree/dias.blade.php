@@ -19,7 +19,7 @@
   @if ($monitoring)
     @foreach ($monitoring as $mon)
 
-      @if ($mon === reset($monitoring))
+      @if ($loop->first)
         <form action="" method="GET">
           <div class="row">
             <div class="col-xs-3">From: {!!Form::input('text', 'from', $mon['from'], ['style' => 'simple'])!!}</div>
@@ -30,20 +30,20 @@
             <div class="col-xs-3">{!!Form::submit('Submit', ['style' => 'simple'])!!}</div>
           </div>
         </form>
-        <table style="width: inherit">
+      <div>
       @endif
 
       @if (isset($mon['descr']))
-        <tr><td><h4>{{$mon['descr']}}</h4></td></tr>
+        <div><h4>{{$mon['descr']}}</h4></div>
       @endif
-      <tr>
+      <div class="d-flex flex-wrap justify-content-center m-b-5">
       @foreach ($mon['graphs'] as $id => $graph)
-        <td><img height="230" src={{$graph}}></img></td>
+        <img class="m-b-5" height="230" src={{$graph}}></img>
       @endforeach
-      </tr>
+      </div>
 
     @endforeach
-    </table>
+    </div>
 
   @else
     <font color="red">No Diagrams available</font><br>
