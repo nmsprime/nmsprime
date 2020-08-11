@@ -315,6 +315,8 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'Cost Center (optional)'    => 'Centro de costo (opcional)',
     'Credit Amount'             => 'Importe de crédito',
     'modem_restart_success_direct' => 'Modem reiniciado directamente por SNMP/TR069',
+    'modem_disconnect_radius_success' => 'Disconnected Modem via RADIUS (Change of Authorization)',
+    'modem_disconnect_radius_warning' => 'Device cannot be restarted via RADIUS, due to one of the following reasons:<ul><li>NetGw of PPP session cannot be determined</li><li>NetGw has no NAS secret set</li><li>NetGw has no Change of Authorization port set.</li></ul>',
     'Item'                      => 'Artículo',
     'Items'                     => 'Artículos',
     'modem_save_button_title'   => 'Guarda datos cambiados. Determina una nueva geoposición cuando los datos de dirección han sido cambiados (y lo asigna a un nuevo MPR si es necesario). Reconstruye el archivo de configuración y reinicia el modem si por lo menos algo de lo siguiente ha sido cambiado: IP Publica, acceso a la red, archivo de configuración, QoS, direccion-MAC.',
@@ -695,4 +697,7 @@ desde el punto en que un módem estaba en línea. Si todos los diagramas no se m
     'span_spectrum'             => 'Frequency span of the spectrum in MHz',
     'contribute_modem_picture'  => 'Default device - Please contribute an image of your device to our GitHub page. Click the image to get redirected.',
     'no_modem_picture'          => 'There is currently no image available.',
+    'factory_reset'             => 'Factory Reset',
+    'Default SIP Registrar'     => 'Default SIP Registrar',
+    'Default Country Code'      => 'Default Country Code',
 ];
