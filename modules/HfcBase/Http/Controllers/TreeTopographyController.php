@@ -29,6 +29,16 @@ class TreeTopographyController extends HfcBaseController
     public static $path_images = 'modules/hfcbase/kml/';
 
     /*
+    @author: John Adebayo
+    Private property determines the range of intensity of the Heatmap, for the amplitude values
+    of the modem
+    $min_value is the minimum for the database query
+    $max_value is the max for the database query
+    */
+    private $min_value;
+    private $max_value;
+
+    /*
      * Constructor: Set local vars
      */
     public function __construct()
@@ -37,6 +47,24 @@ class TreeTopographyController extends HfcBaseController
         $this->file = self::$path_rel.sha1(uniqid(mt_rand(), true)).'.kml';
 
         return parent::__construct();
+    }
+
+    /*
+    @author: John Adebayo
+    This function sets the value of the display in percentage
+    e.g 100% = 5 i.e the variable max_value above
+    */
+    public function set_maxmin()
+    {
+        //\Input::all();
+        //$max = \Input::get('max');
+        //$percent = \Input::get('percent');
+        //$max = 5; $percent = 20;
+        //$min = $percent / 100 * $max;
+        $min = 0;
+        $max = 5;
+        $this->max_value = $max;
+        $this->min_value = $min;
     }
 
     /**
@@ -93,10 +121,9 @@ class TreeTopographyController extends HfcBaseController
      *   [ [mpr.id] => [0 => [0=>x,1=>y], 1 => [0=>x,1=>y], ..], .. ]
      * enable and see dd() for a more detailed view
      *
-     * @param trees: The Tree Objects to be displayed
-     * @return array of MPS rules and geopos for all $tree objects
-     *
      * @author: Torsten Schmidt
+     * @param Illuminate\Database\Eloquent\Builder $trees The Tree Objects to be displayed
+     * @return array MPS rules and geopos for all $tree objects
      */
     public function mpr($trees)
     {

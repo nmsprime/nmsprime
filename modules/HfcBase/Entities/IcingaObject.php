@@ -52,6 +52,29 @@ class IcingaObject extends Model
     }
 
     /**
+     * Relation to IcingaStateHistory.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function stateHistory()
+    {
+        return $this->hasMany(IcingaStateHistory::class, 'object_id', 'object_id');
+    }
+
+    /**
+     * Relation to IcingaStateHistory for the last 2 months.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function recentStateHistory()
+    {
+        return $this->stateHistory()
+            ->orderBy('state_time')
+            ->where('state_type', 1)
+            ->where('state_time', '>', now()->subMonth(2));
+    }
+
+    /**
      * Relation to get All Services.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne

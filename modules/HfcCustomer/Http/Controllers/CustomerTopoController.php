@@ -61,7 +61,7 @@ class CustomerTopoController extends NetElementController
 
         $modemQuery = $this->filterModel($query);
 
-        return $this->show_topo($modemQuery['selectedModel'], $modemQuery['allModels']);
+        return $this->show_topo($modemQuery['selectedModel'], $modemQuery['allModels'], false, $field == 'netelement_id' ? $search : false);
     }
 
     /**
@@ -156,7 +156,7 @@ class CustomerTopoController extends NetElementController
     *
     * @author: Torsten Schmidt
     */
-    private function show_topo($modemQuery, $allModels = null)
+    private function show_topo($modemQuery, $allModels = null, $pnmMap = false, $withHistory = null)
     {
         $models = $allModels ?: clone $modemQuery;
         $models = $models->whereNotNull('model')->groupBy('model')->get(['model'])->pluck('model')->all();
@@ -186,6 +186,11 @@ class CustomerTopoController extends NetElementController
             return \View::make('errors.generic')->with('message', 'Failed to generate SVG file');
         }
 
+        if ($pnmMap) {
+            [$dim, $point] = $this->getHeatMapData($modems);
+            $users = $this->getUserMapData();
+        }
+
         $target = $this->html_target;
         $route_name = 'Tree';
         $view_header = 'Topography - Modems';
@@ -197,7 +202,58 @@ class CustomerTopoController extends NetElementController
         $kmls = $this->__kml_to_modems($modems);
         $file = route('HfcCustomer.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
-        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'tabs', 'kmls', 'models', 'breadcrumb')));
+        // History Table and Slider
+        if (! $withHistory) {
+            $withHistory = $modems->groupBy('netelement_id')->map->count()->sort()->keys()->last();
+        }
+
+        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact(
+            'file', 'target', 'route_name', 'view_header', 'body_onload', 'tabs', 'kmls', 'models', 'breadcrumb', 'dim', 'point', 'withHistory', 'users')));
+    }
+
+    private function getHeatMapData($modems)
+    {
+        $dim = [];
+        $point = [];
+
+        $max = $modems->pluck('fft_max')->filter(function ($value) {
+            return $value > 0 && $value < 5;
+        })->max();
+
+        if (! $max) {
+            $max = 1;
+        }
+
+        foreach ($modems as $modem) {
+            if (! $modem->tdr || $modem->fft_max < 0 || $modem->fft_max > 5) {
+                continue;
+            }
+
+            $x = floatval($modem->x);
+            $y = floatval($modem->y);
+
+            $point[] = $y;
+            $point[] = $x;
+            $point[] = $modem->tdr;
+
+            $temp = round($modem->tdr / 111111.1, 4);
+            $percent = \Request::get('percent') ?: 100;
+
+            for ($i = 0; $i <= 360; $i += 10) {
+                $dim[] = $temp * cos($i) + $y;
+                $dim[] = $temp * sin($i) + $x;
+                $dim[] = $modem->fft_max / $max * $percent / 100;
+            }
+        }
+
+        return [array_chunk($dim, 3), array_chunk($point, 3)];
+    }
+
+    private function getUserMapData()
+    {
+        return \App\User::whereNotNull('geopos_x')
+            ->where('geopos_updated_at', '>', date('Y-m-d H:i:s', time() - 24 * 60 * 60))
+            ->get()->toArray();
     }
 
     /**
@@ -321,6 +377,11 @@ class CustomerTopoController extends NetElementController
         return $this->show_topo($this->filterModems($this->getModemBaseQuery(), $ids));
     }
 
+    public function showPNM($ids)
+    {
+        return $this->show_topo($this->filterModems($this->getModemBaseQuery(), $ids), null, true);
+    }
+
     /**
      * Show Modems Diagrams
      *
@@ -344,6 +405,7 @@ class CustomerTopoController extends NetElementController
         $provmon = new \Modules\ProvMon\Http\Controllers\ProvMonController;
         $before = microtime(true);
         $modems = $modemQuery->orderBy('city')->orderBy('street')->orderBy('house_number')->get();
+        $withHistory = $modems->groupBy('netelement_id')->map->count()->sort()->keys()->last();
 
         // foreach modem
         foreach ($modems as $modem) {
@@ -369,7 +431,7 @@ class CustomerTopoController extends NetElementController
         \Log::debug('DIA: load of entire set takes '.($after - $before).' s');
 
         // show view
-        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs', 'breadcrumb')));
+        return \View::make('HfcCustomer::Tree.dias', $this->compact_prep_view(compact('monitoring', 'tabs', 'breadcrumb', 'withHistory')));
     }
 
     /**
@@ -420,26 +482,9 @@ class CustomerTopoController extends NetElementController
             // ['name' => 'Edit', 'icon' => 'pencil', 'route' => 'NetElement.edit', 'link' => $modem->netelement_id],
             ['name' => trans('hfccustomer::view.vicinityGraph'), 'icon' => 'fa-sitemap', 'route' => 'VicinityGraph.show', 'link' => $ids],
             ['name' => 'Topography', 'icon' => 'map', 'route' => 'CustomerModem.showModems', 'link' => [$ids, 'row' => Request::get('row')]],
+            ['name' => 'PNM', 'icon' => 'globe', 'route' => 'CustomerModem.showPNM', 'link' => [$ids, 'row' => Request::get('row')]],
+            ['name' => trans('view.Diagrams'), 'icon' => 'area-chart', 'route' => 'CustomerModem.showDiagrams', 'link' => [$ids, 'row' => Request::get('row')]],
         ];
-
-        // ERD of cluster - TODO: Remove when PNM is added
-        if ($modems->count()) {
-            $modem = $modems->where('netelement_id', '!=', null)->first();
-            $netelement = $modem ? NetElement::find($modem->netelement_id) : null;
-
-            $params = ['all', 1];
-            if ($netelement) {
-                $cluster = $netelement->cluster ?: $netelement->net;
-                $cluster = $cluster == $netelement->id ? $netelement : NetElement::find($cluster);
-
-                $params = [$cluster->netelementtype->name, $cluster->id];
-            }
-
-            // TODO Add Change to PNM Heatmap
-            $tabs[] = ['name' => 'PNM', 'icon' => 'globe', 'route' => 'TreeTopo.show', 'link' => $params];
-        }
-
-        $tabs[] = ['name' => trans('view.Diagrams'), 'icon' => 'area-chart', 'route' => 'CustomerModem.showDiagrams', 'link' => [$ids, 'row' => Request::get('row')]];
 
         return $tabs;
     }

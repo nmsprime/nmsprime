@@ -79,7 +79,9 @@
             <button id="add-splitter">Add Splitter</button>
             <button id="add-house">Add House</button>
             <button id="add-line">Add Line</button>
-            <div class="diagram" id="paper">
+            <div id="graph-container" style="height:75vh;max-height:660px;overflow-y:auto;">
+                <div class="diagram" id="paper">
+            </div>
             </div>
             <div class="dialog" id="house_form">
                 <form>
@@ -109,6 +111,14 @@
     </div>
 
 @stop
+
+@section ('historyTable')
+    @include ('HfcBase::history.table')
+@endsection
+
+@section ('historySlider')
+    @include ('HfcBase::history.slider')
+@endsection
 
 @section('javascript')
     <script src="{{asset('components/assets-admin/plugins/joint-js/js/lodash.min.js')}}"></script>
@@ -342,4 +352,7 @@
         });
     </script>
 
+  @if (isset($withHistory))
+      @include ('HfcBase::history.javascript')
+  @endif
 @stop

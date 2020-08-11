@@ -168,6 +168,85 @@
 			<font color="red">{{ trans('messages.modem_eventlog_error')}}</font>
 		@endif
 	</div>
+
+	<div class="tab-pane fade in" id="preeq">
+		@if (array_key_exists('energy', $preeq))
+			<font color="green"><b>Pre-Equalization Data</b></font><br>
+			<div>
+				<font color="black"><b>TDR = </b><font color="blue">{{$preeq['tdr']}}</font><font color="black"><b> meters</b></font></font>
+			</div>
+			<div width="500px" height="400px" style="z-index: 9999;">
+				<canvas id="timeChart"></canvas>
+				<canvas id="fftChart"></canvas>
+			</div>
+
+			@section('mycharts')
+			<script>
+			window.onload = (function(){
+				setTimeout(function(_event){
+					var ctx = document.getElementById("timeChart").getContext('2d');
+					var ctx2 = document.getElementById("fftChart").getContext('2d');
+					var js_energy = [{!! implode(',', $preeq['energy'])	!!}];
+					var js_ene = 	[{!! implode(',', $preeq['fft']) 	!!}];
+					var js_chart = 	[{!! implode(',', $preeq['chart']) 	!!}];
+					var js_axis = 	[{!! implode(',', $preeq['axis']) 	!!}];
+					var myChart = new Chart(ctx,
+					{
+						type: 'bar',
+						data: {
+							labels: Array.apply(null, {length: 24}).map(function(val,index){return index + 1;}),
+							datasets: [{
+								label: '',
+								data: js_energy,
+								backgroundColor: "rgba(255, 255, 255, 1)",
+								borderColor: "rgba(255, 255, 255, 0)",
+								borderWidth: 0,
+								fillColor: "rgba(255, 255, 255,0)",
+								strokeColor: "rgba(255, 255, 255,0)",
+								highlightFill: "rgba(255, 255, 255,0)",
+								highlightStroke: "rgba(255, 255, 255,0)"
+							}, {
+								label: 'Tap Energy Distribution',
+								data: js_chart,
+								backgroundColor: "rgba(0, 0, 255, 1)",
+								borderColor: "rgba(255, 255, 255, 1)",
+								borderWidth: 2,
+								fillColor: "rgba(255, 255, 255, 0)",
+								strokeColor: "rgba(255, 255, 255, 0)",
+								highlightFill: "rgba(255, 255, 255, 0)",
+								highlightStroke: "rgba(255, 255, 255, 0)"
+							}]
+						},
+						options: { scales: {yAxes: [{display: true,scaleLabel: {display: true,labelString: 'Energy'},gridLines: {drawOnChartArea: false}}],
+											xAxes: [{stacked: true,display: true,scaleLabel: {display: true,labelString: 'Tap'},}]},
+											tooltips: {{{-- enabled: true --}}mode: 'index',intersect: false},{{-- events: [''] --}}}});
+
+					var myChart = new Chart(ctx2,
+					{
+						type: 'line',
+						data: {
+							labels: js_axis,
+							datasets: [{
+								label: 'FFT',
+								data: js_ene,
+								backgroundColor: "rgba(0, 0, 255, 1)",
+								borderColor: "rgba(0, 0, 255, 1)",
+								fill: false
+							}],
+						},
+						options: {scales: { yAxes: [{display: true,ticks: {suggestedMin: -5, steps: 6, stepValue: 2, max: 5},
+							scaleLabel: {display: true,labelString: 'Energy'},gridLines: {drawOnChartArea: false}}],
+											xAxes: [{display: true,scaleLabel: {display: true,labelString: 'Tap'},}]},}
+					});
+				},1000);
+			});
+			</script>
+			@stop
+		@else
+
+			<font color="red">{{ trans('messages.preeq_error') }}</font>
+		@endif
+	</div>
 </div>
 
 @stop
