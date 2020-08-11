@@ -46,9 +46,27 @@ class IcingaObject extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
-    public function hoststatus()
+    public function hostStatus()
     {
         return $this->hasOne(IcingaHostStatus::class, 'host_object_id', 'object_id');
+    }
+
+    /**
+     * Relation to get All Services.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function services()
+    {
+        return $this->hasManyThrough(
+            IcingaServiceStatus::class,
+            self::class,
+            'name1', // key on IcingaObject
+            'service_object_id', // key on IcingaServiceStatus
+            'name1',
+            'object_id')
+            ->where('objecttype_id', 2)
+            ->where('is_active', 1);
     }
 
     /**

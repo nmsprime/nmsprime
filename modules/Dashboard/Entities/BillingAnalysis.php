@@ -490,6 +490,10 @@ class BillingAnalysis
      */
     public static function getIncomeData()
     {
+        if (\Bouncer::cannot('see income chart')) {
+            return [];
+        }
+
         if (Storage::disk('chart-data')->has('income.json') === false) {
             $content = json_encode(\Config::get('dashboard.income'));
         } else {

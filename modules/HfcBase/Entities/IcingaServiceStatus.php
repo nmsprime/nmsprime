@@ -30,13 +30,6 @@ class IcingaServiceStatus extends Model implements ImpairedContract
     protected $primaryKey = 'servicestatus_id';
 
     /**
-     * Contains more detailed for Subservices, deserialized from perfdata field.
-     *
-     * @var \Illuminate\Support\Collection
-     */
-    public $additionalData;
-
-    /**
      * The amount of modems affected by this Service.
      *
      * @var int
@@ -66,9 +59,7 @@ class IcingaServiceStatus extends Model implements ImpairedContract
     public function icingaObject()
     {
         return $this->belongsTo(IcingaObject::class, 'service_object_id', 'object_id')
-            ->where('is_active', '=', '1')
-            ->where('name2', '<>', 'ping4')
-            ->orderByRaw("name2 like 'clusters%' desc");
+            ->where('is_active', '=', '1');
     }
 
     /**
@@ -83,6 +74,21 @@ class IcingaServiceStatus extends Model implements ImpairedContract
             ->orderBy('last_time_ok', 'desc')
             ->with(['icingaObject.netelement'])
             ->whereHas('icingaObject');
+    }
+
+    /**
+     * Scope to get all necessary informations for the trouble Dashboard.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeCountsForTroubleDashboard($query)
+    {
+        return $query->whereHas('icingaObject')
+            ->selectRaw('COUNT(CASE WHEN `last_hard_state` = 0 THEN 1 END) AS ok')
+            ->selectRaw('COUNT(CASE WHEN `last_hard_state` = 1 THEN 1 END) AS warning')
+            ->selectRaw('COUNT(CASE WHEN `last_hard_state` = 2 THEN 1 END) AS critical')
+            ->selectRaw('COUNT(CASE WHEN `last_hard_state` = 3 THEN 1 END) AS unknown');
     }
 
     /**
@@ -164,22 +170,21 @@ class IcingaServiceStatus extends Model implements ImpairedContract
     /**
      * For the rows in additional data a ticket can be created.
      *
-     * @param \Illuminate\Database\Eloquent\Collection $netelements
-     * @param array $perf the Deserialized Perfdata
+     * @param \Illuminate\Database\Eloquent\Collection $netelement
      * @return string
      */
-    public function toSubTicket($netelements, $perf)
+    public function toSubTicket($netelement)
     {
-        if (! $perf['id'] || ! isset($netelements[$perf['id']])) {
+        if (! isset($this->additionalData[0])) {
             return route('Ticket.create', [
-                'name' => "{$perf['text']}",
-                'description' => "{$perf['text']}\nSince {$this->last_hard_state_change}",
+                'name' => "{$this->check_command} on {$netelement->name}",
+                'description' => "{$this->output}\n{$this->long_output}\nSince {$this->last_hard_state_change}",
             ]);
         }
 
         return route('Ticket.create', [
-            'name' => "Netelement {$netelements[$perf['id']]->name}: ",
-            'description' => "{$perf['text']}\nSince {$this->last_hard_state_change}",
+            'name' => "{$this->check_command} on {$netelement->name}: ",
+            'description' => "{$this->additionalData[0]['text']}\n{$this->output}\n{$this->long_output}\nSince {$this->last_hard_state_change}",
         ]);
     }
 

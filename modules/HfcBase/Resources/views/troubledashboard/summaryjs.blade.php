@@ -1,61 +1,5 @@
 <script src="{{asset('components/assets-admin/plugins/chart/Chart.min.js')}}"></script>
-<script src="{{asset('components/assets-admin/plugins/Abilities/es6-promise.auto.min.js')}}"></script>
-<script src="{{asset('components/assets-admin/plugins/vue/dist/vue.min.js')}}"></script>
-{{-- When in Development use this Version
-    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-    --}}
-<script src="{{asset('components/assets-admin/plugins/Abilities/lodash.core.min.js')}}"></script>
-<script src="{{asset('components/assets-admin/plugins/Abilities/axios.min.js')}}"></script>
-<script src="{{asset('components/assets-admin/plugins/vue-snotify/snotify.min.js')}}"></script>
 
-<script type="text/javascript">
-
-new Vue({
-    el: '#troubleDash',
-    data() {
-        return {
-            showMuted: false,
-            loading: {},
-            acknowledged: {!! $impairedData['ackState'] !!}
-        }
-    },
-    methods: {
-        mute: function(event) {
-            let self = this
-            let requestId = event.target.getAttribute('object-id')
-            this.loading[requestId] = true
-            this.loading = _.clone(this.loading)
-
-            axios({
-                method: 'post',
-                url: event.target.getAttribute('action'),
-                headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'},
-                contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-                data: {}
-            })
-            .then(function (response) {
-                if (requestId != response.data.id) {
-                    throw "Invalid Id Error";
-                }
-
-                self.acknowledged[response.data.id] = !!! self.acknowledged[response.data.id]
-                self.loading[response.data.id] = false
-                self.loading = _.clone(self.loading)
-
-                self.$snotify.success(response.data.results[0].status, 'Success')
-            })
-            .catch(function (error) {
-                console.log(error)
-                self.loading = {}
-                self.$snotify.error(
-                    'Did you configure Icinga2 correctly? Are API username and password set correctly in NMS Prime? Statuscode: ' + error.status,
-                    'There was an Error processing your request!'
-                )
-            })
-        }
-    }
-})
-</script>
 <script language="javascript">
     var chart_data_contracts = '{}';
     $(window).on('localstorage-position-loaded load', function () {
@@ -162,7 +106,7 @@ new Vue({
                         '#7fb433',
                         '#f59c1a',
                         '#cc4946',
-                        '#b6c2c9'
+                        '#b6c2c9',
                     ],
                 }
             ],
@@ -176,44 +120,38 @@ new Vue({
         type: 'doughnut',
         data: {
             datasets: [{
-                @php
-                    $serviceState = array_count_values($impairedData['services']->pluck('last_hard_state')->toArray());
-                @endphp
                 data: [
-                    {{ $serviceState['0'] ?? '' }},
-                    {{ $serviceState['1'] ?? '' }},
-                    {{ $serviceState['2'] ?? '' }},
+                    {{ $impairedData['serviceCounts']->ok }},
+                    {{ $impairedData['serviceCounts']->warning }},
+                    {{ $impairedData['serviceCounts']->critical }},
+                    {{ $impairedData['serviceCounts']->unknown }},
                 ],
                 backgroundColor: [
                     '#7fb433',
                     '#f59c1a',
                     '#cc4946',
+                    '#b6c2c9',
                 ]
             }],
-            labels: ['online', 'warning', 'critical'],
+            labels: ['online', 'warning', 'critical', 'unknown'],
         },
         options: canvasOptions
     });
 
-    var serviceChart = new Chart(netelementCanvas, {
+    var netelementChart = new Chart(netelementCanvas, {
         type: 'doughnut',
         data: {
             datasets: [{
-                @php
-                    $serviceState = array_count_values($impairedData['hosts']->pluck('last_hard_state')->toArray());
-                @endphp
                 data: [
-                    {{ $serviceState['0'] ?? '' }},
-                    {{ $serviceState['1'] ?? '' }},
-                    {{ $serviceState['2'] ?? '' }},
+                    {{ $impairedData['hostCounts']->ok }},
+                    {{ $impairedData['hostCounts']->critical }},
                 ],
                 backgroundColor: [
                     '#7fb433',
-                    '#f59c1a',
                     '#cc4946',
                 ]
             }],
-            labels: ['online', 'warning', 'critical'],
+            labels: ['online', 'critical'],
         },
         options: canvasOptions
     });

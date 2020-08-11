@@ -3,7 +3,9 @@
 namespace Modules\BillingBase\Http\Controllers;
 
 use View;
+use Module;
 use Schema;
+use Bouncer;
 use Modules\ProvBase\Entities\Contract;
 use App\Http\Controllers\BaseViewController;
 use Modules\BillingBase\Entities\BillingBase;
@@ -17,10 +19,31 @@ class BillingBaseController extends \BaseController
     public function index()
     {
         $title = 'Billing Dashboard';
-        $income_data = BillingAnalysis::getIncomeData();
-        $contracts_data = BillingAnalysis::getContractData();
+        $permissions = $this->getViewPermissions();
+
+        if ($permissions['income']) {
+            $income_data = BillingAnalysis::getIncomeData();
+        }
+
+        if ($permissions['contracts']) {
+            $contracts_data = BillingAnalysis::getContractData();
+        }
 
         return View::make('billingbase::index', $this->compact_prep_view(compact('title', 'income_data', 'contracts_data')));
+    }
+
+    /**
+     * Return Array of boolean values for different categories that shall (not)
+     * be shown on the Billing Dashboard (index blade)
+     */
+    private function getViewPermissions()
+    {
+        return [
+            'income'        => (Module::collections()->has('BillingBase') &&
+                               Bouncer::can('see income chart')),
+            'contracts'     => (Module::collections()->has('ProvBase') &&
+                               Bouncer::can('view', \Modules\ProvBase\Entities\Contract::class)),
+        ];
     }
 
     public function view_form_fields($model = null)

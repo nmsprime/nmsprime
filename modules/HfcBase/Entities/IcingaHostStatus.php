@@ -29,6 +29,15 @@ class IcingaHostStatus extends Model implements ImpairedContract
     protected $primaryKey = 'hoststatus_id';
 
     /**
+     * The attributes that should be mutated to dates.
+     *
+     * @var array
+     */
+    protected $dates = [
+        'last_hard_state_change',
+    ];
+
+    /**
      * Contains more detailed for Subservices, deserialized from perfdata field.
      *
      * @var \Illuminate\Support\Collection
@@ -80,6 +89,19 @@ class IcingaHostStatus extends Model implements ImpairedContract
     public function scopeForTroubleDashboard($query)
     {
         return $query->with(['icingaObject.netelement'])->whereHas('icingaObject');
+    }
+
+    /**
+     * Scope to get all necessary informations for the trouble Dashboard.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeCountsForTroubleDashboard($query)
+    {
+        return $query->whereHas('icingaObject')
+            ->selectRaw('COUNT(CASE WHEN `last_hard_state` = 0 THEN 1 END) AS ok')
+            ->selectRaw('COUNT(CASE WHEN `last_hard_state` >= 1 THEN 1 END) AS critical');
     }
 
     /**

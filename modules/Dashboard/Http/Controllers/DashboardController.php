@@ -4,12 +4,15 @@ namespace Modules\Dashboard\Http\Controllers;
 
 use Log;
 use View;
+use Module;
+use Bouncer;
 use Storage;
 use App\GuiLog;
-use Illuminate\Support\Facades\Auth;
 use Modules\ProvBase\Entities\Modem;
 use App\Http\Controllers\BaseController;
+use Modules\Dashboard\Entities\BillingAnalysis;
 use Modules\HfcBase\Http\Controllers\TroubleDashboardController;
+use Modules\Ticketsystem\Http\Controllers\TicketsystemController;
 
 class DashboardController extends BaseController
 {
@@ -19,26 +22,50 @@ class DashboardController extends BaseController
     public function index()
     {
         $title = 'Dashboard';
-        $logs = GuiLog::leftJoin('comment', function ($query) {
-            $query
-                ->on('guilog.model_id', 'comment.id')
-                ->where('model', 'Comment');
+        $permissions = $this->getViewPermissions();
+
+        $logs = GuiLog::leftJoin('comment',
+            function ($query) {
+                $query
+                    ->on('guilog.model_id', 'comment.id')
+                    ->where('model', 'Comment');
             })
             ->where([['username', '!=', 'cronjob'], ['model', '!=', 'User']])
             ->orderBy('updated_at', 'desc')->orderBy('user_id', 'asc')
             ->select(['guilog.*', 'comment.comment'])
             ->limit(50)->get();
 
-        $tickets['table'] = Auth::user()->tickets()->where('state', '=', 'New')->get();
-        $tickets['total'] = count($tickets['table']);
+        if ($permissions['tickets']) {
+            $tickets = TicketsystemController::dashboardData();
+        }
+
+        if ($permissions['detect']) {
+            $impairedData = (new TroubleDashboardController())->summary();
+        }
+
+        if ($permissions['contracts']) {
+            $contracts_data = BillingAnalysis::getContractData();
+        }
 
         $news = $this->news();
 
-        $impairedData = TroubleDashboardController::impairedData();
-        $netelements = $impairedData['netelements'];
-        $colors = ['success', 'warning', 'danger', 'info'];
+        return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'logs', 'tickets', 'hosts', 'impairedData', 'services', 'colors', 'netelements', 'news', 'contracts_data')));
+    }
 
-        return View::make('dashboard::index', $this->compact_prep_view(compact('title', 'logs', 'tickets', 'hosts', 'impairedData', 'services', 'colors', 'netelements', 'news')));
+    /**
+     * Return Array of boolean values for different categories that shall (not)
+     * be shown on the Dashboard (index blade)
+     */
+    private function getViewPermissions()
+    {
+        return [
+            'detect'        => (Module::collections()->has('HfcBase') &&
+                               Bouncer::can('view', \Modules\HfcBase\Entities\TreeErd::class)),
+            'contracts'     => (Module::collections()->has('ProvBase') &&
+                               Bouncer::can('view', \Modules\ProvBase\Entities\Contract::class)),
+            'tickets'       => (Module::collections()->has('Ticketsystem') &&
+                               Bouncer::can('view', \Modules\Ticketsystem\Entities\Ticket::class)),
+        ];
     }
 
     /**
@@ -61,10 +88,10 @@ class DashboardController extends BaseController
             'all' => with(clone $query)->where('modem.id', '>', '0')->count(),
             'online' => with(clone $query)->where('modem.us_pwr', '>', '0')->count(),
             'warning' => with(clone $query)
-                ->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.avg.us.warning', 45))
-                ->where('modem.us_pwr', '<', config('hfccustomer.threshhold.avg.us.critical', 52))
+                ->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.single.us.warning', 50))
+                ->where('modem.us_pwr', '<', config('hfccustomer.threshhold.single.us.critical', 55))
                 ->count(),
-            'critical' => with(clone $query)->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.avg.us.critical', 52))->count(),
+            'critical' => with(clone $query)->where('modem.us_pwr', '>=', config('hfccustomer.threshhold.single.us.critical', 55))->count(),
         ];
 
         Storage::disk('chart-data')->put('modems.json', json_encode($modems));

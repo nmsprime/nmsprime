@@ -69,6 +69,38 @@ class ModemStateAnalysis
     }
 
     /**
+     * This runs the main analysis and returns the state of the cluster.
+     *
+     * @return string|bool
+     */
+    public function getOnline()
+    {
+        foreach (['critical', 'warning'] as $state) {
+            if ($this->modemOnlinePercentage() <= config("hfccustomer.threshhold.avg.percentage.{$state}")) {
+                return $this->state = strtoupper($state);
+            }
+        }
+
+        return $this->state = 'OK';
+    }
+
+    /**
+     * This runs the main analysis and returns the state of the cluster.
+     *
+     * @return string|bool
+     */
+    public function getPower()
+    {
+        foreach (['critical', 'warning'] as $state) {
+            if ($this->usPwrAvg >= config("hfccustomer.threshhold.avg.us.{$state}")) {
+                return $this->state = strtoupper($state);
+            }
+        }
+
+        return $this->state = 'OK';
+    }
+
+    /**
      * Determines the color code for the calculated state. This color is used
      * to color the Modem Bubbles in the tree erd view.
      *

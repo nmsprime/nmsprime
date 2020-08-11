@@ -2,9 +2,7 @@
 
 namespace Modules\Ticketsystem\Http\Controllers;
 
-use View;
 use App\User;
-use Illuminate\Support\Facades\Auth;
 use Modules\Ticketsystem\Entities\Ticket;
 use Modules\Ticketsystem\Entities\TicketType;
 
@@ -22,19 +20,10 @@ class TicketController extends \BaseController
         ],
     ];
 
-    public function dashboard()
-    {
-        $title = 'Tickets Dashboard';
-        $tickets['table'] = Auth::user()->tickets()->where('state', '=', 'New')->get();
-        $tickets['total'] = count($tickets['table']);
-
-        return View::make('ticketsystem::index', $this->compact_prep_view(compact('title', 'tickets')));
-    }
-
     public function view_form_fields($model = null)
     {
         if (! $model) {
-            $model = new Ticket;
+            $model = new Ticket();
         }
 
         $top = [
@@ -69,5 +58,12 @@ class TicketController extends \BaseController
         ];
 
         return array_merge($top, $mid, $bot);
+    }
+
+    public function index()
+    {
+        Ticket::storeIndexFilterIntoSession();
+
+        return parent::index();
     }
 }

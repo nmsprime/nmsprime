@@ -4,8 +4,10 @@ namespace Modules\HfcBase\Http\Controllers;
 
 use View;
 use Module;
+use Bouncer;
+use App\GuiLog;
 use App\Http\Controllers\BaseController;
-use Modules\Dashboard\Http\Controllers\DashboardController;
+use Modules\Ticketsystem\Http\Controllers\TicketsystemController;
 
 class HfcBaseController extends BaseController
 {
@@ -16,17 +18,37 @@ class HfcBaseController extends BaseController
      */
     public function index()
     {
-        $title = 'Hfc Dashboard';
-        $netelements = [];
-        $services = [];
+        $title = 'Detect Dashboard';
+        $permissions = $this->getViewPermissions();
 
-        // This is the most timeconsuming task
-        $impairedData = TroubleDashboardController::impairedData();
-        $netelements = $impairedData['netelements'];
-        $colors = ['success', 'warning', 'danger', 'info'];
-        $modem_statistics = DashboardController::get_modem_statistics();
+        $logs = GuiLog::where([['username', '!=', 'cronjob'], ['model', '!=', 'User']])
+            ->whereIn('model', ['NetElement', 'NetElementType', 'MibFile', 'Mpr'])
+            ->orderBy('updated_at', 'desc')->orderBy('user_id', 'asc')
+            ->limit(20)->get();
 
-        return View::make('HfcBase::index', $this->compact_prep_view(compact('title', 'impairedData', 'netelements', 'services', 'hosts', 'colors', 'modem_statistics')));
+        if ($permissions['detect']) {
+            $impairedData = (new TroubleDashboardController())->summary();
+        }
+
+        if ($permissions['tickets']) {
+            $tickets = TicketsystemController::dashboardData();
+        }
+
+        return View::make('HfcBase::index', $this->compact_prep_view(compact('title', 'impairedData', 'logs', 'tickets')));
+    }
+
+    /**
+     * Return Array of boolean values for different categories that shall (not)
+     * be shown on the Detect Dashboard (index blade)
+     */
+    private function getViewPermissions()
+    {
+        return [
+            'detect'        => (Module::collections()->has('HfcBase') &&
+                               Bouncer::can('view', \Modules\HfcBase\Entities\TreeErd::class)),
+            'tickets'       => (Module::collections()->has('Ticketsystem') &&
+                               Bouncer::can('view', \Modules\Ticketsystem\Entities\Ticket::class)),
+        ];
     }
 
     /**
@@ -51,11 +73,27 @@ class HfcBaseController extends BaseController
                 ['form_type' => 'text', 'name' => 'video_controller_username', 'description' => 'RKM Server '.trans('messages.Username')],
                 ['form_type' => 'text', 'name' => 'video_controller_password', 'description' => 'RKM Server '.trans('messages.Password'), 'space' => 1],
 
-                ['form_type' => 'text', 'name' => 'video_encoder', 'description' => 'Video Encoding Server '.trans('messages.Address'), 'options' => ['placeholder' => '172.20.0.12:1702']],
+                ['form_type' => 'text', 'name' => 'video_encoder', 'description' => 'Video Encoding Server '.trans('messages.Address'), 'options' => ['placeholder' => '172.20.0.12:1702'], 'space' => 1],
             ];
         }
 
-        return array_merge($a, $b);
+        $c = [];
+        if (Module::collections()->has('HfcCustomer')) {
+            $c = [
+                ['form_type' => 'text', 'name' => 'us_single_warning', 'description' => 'Upstream single warning threshhold', 'options' => ['placeholder' => '50']],
+                ['form_type' => 'text', 'name' => 'us_single_critical', 'description' => 'Upstream single critical threshhold', 'options' => ['placeholder' => '55']],
+                ['form_type' => 'text', 'name' => 'us_avg_warning', 'description' => 'Upstream average Warning Threshhold', 'options' => ['placeholder' => '45']],
+                ['form_type' => 'text', 'name' => 'us_avg_critical', 'description' => 'Upstream average critical Threshhold', 'options' => ['placeholder' => '52'], 'space' => 1],
+                ['form_type' => 'text', 'name' => 'online_absolute_minor', 'description' => 'Absolute Modem Offline Threshhold: Minor', 'options' => ['placeholder' => '5']],
+                ['form_type' => 'text', 'name' => 'online_absolute_major', 'description' => 'Absolute Modem Offline Threshhold: Major', 'options' => ['placeholder' => '25']],
+                ['form_type' => 'text', 'name' => 'online_absolute_critical', 'description' => 'Absolute Modem Offline Threshhold: Critical', 'options' => ['placeholder' => '100'], 'space' => 1],
+                ['form_type' => 'text', 'name' => 'online_percentage_minor', 'description' => 'Percentage Modem Offline Threshhold: Minor', 'options' => ['placeholder' => '34']],
+                ['form_type' => 'text', 'name' => 'online_percentage_major', 'description' => 'Percentage Modem Offline Threshhold: Major', 'options' => ['placeholder' => '51']],
+                ['form_type' => 'text', 'name' => 'online_percentage_critical', 'description' => 'Percentage Modem Offline Threshhold: Critical', 'options' => ['placeholder' => '81']],
+            ];
+        }
+
+        return array_merge($a, $b, $c);
     }
 
     /**

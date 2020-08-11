@@ -63,13 +63,19 @@ class IcingaApi
      *
      * @return array
      */
-    public function acknowledgeProblem()
+    public function acknowledgeProblem(\Carbon\Carbon $expiry = null)
     {
         $this->payload = $this->payload->merge([
             'author' => auth()->user()->first_name.' '.auth()->user()->last_name,
             'comment' => 'Acknowledged by NMS Prime via Trouble Dashboard.',
-        ]);
+        ])->when($expiry, function ($payload) use ($expiry) {
+            return $payload->merge([
+                'expiry' => $expiry->timestamp,
+            ]);
+        });
+
         $this->url = $this->baseUrl.'actions/acknowledge-problem';
+
         $this->curlRequest();
 
         return $this->results;
