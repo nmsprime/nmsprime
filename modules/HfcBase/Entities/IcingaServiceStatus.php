@@ -63,6 +63,29 @@ class IcingaServiceStatus extends Model implements ImpairedContract
     }
 
     /**
+     * Relation to IcingaStateHistory.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function stateHistory()
+    {
+        return $this->hasMany(IcingaStateHistory::class, 'object_id', 'service_object_id');
+    }
+
+    /**
+     * Relation to IcingaStateHistory for the last 2 months.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function recentStateHistory()
+    {
+        return $this->stateHistory()
+            ->orderBy('state_time')
+            ->where('state_type', 1)
+            ->where('state_time', '>', now()->subMonth(2));
+    }
+
+    /**
      * Scope to get all necessary informations for the trouble Dashboard.
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
