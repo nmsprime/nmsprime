@@ -252,6 +252,21 @@ class ProvMonController extends \BaseController
             $model = $modem->model;
         }
 
+        if ($modem->isTR069()) {
+            foreach (['InternetGatewayDevice.DeviceInfo.ModelName', 'Device.DeviceInfo.ModelName'] as $parameter) {
+                $model = $modem->getGenieAcsModel($parameter);
+
+                if ($model && isset($model->_value)) {
+                    $model = $model->_value;
+                    break;
+                }
+            }
+        }
+
+        if (! is_string($model)) {
+            return self::MODEM_IMAGE_PATH.'/default.webp';
+        }
+
         foreach (collect(\File::allFiles(public_path(self::MODEM_IMAGE_PATH)))->sortBy(function ($file) {
             return $file->getFilename();
         }) as $file) {
@@ -867,7 +882,7 @@ class ProvMonController extends \BaseController
 
         // remove all inactive channels (no range success)
         foreach ($ds['Power dBmV'] as $key => $val) {
-            if ($ds['Modulation'][$key] == '' && $ds['MER dB'][$key] == 0) {
+            if (! $ds['Modulation'][$key] && (! isset($ds['MER dB'][$key]) || $ds['MER dB'][$key] == 0)) {
                 foreach ($ds as $entry => $arr) {
                     unset($ds[$entry][$key]);
                 }
@@ -932,15 +947,53 @@ class ProvMonController extends \BaseController
             Modem::callGenieAcsApi("devices/$devId/tasks?timeout=3000&connection_request", 'POST', json_encode($request));
         }
 
-        foreach ($mon as $category => &$values) {
-            $values = array_map(function ($value) use ($modem) {
-                $model = $modem->getGenieAcsModel($value);
+        foreach ($mon as $category => &$params) {
+            $params = array_map(function ($param) use ($modem) {
+                if (! $param = $this->sanitizeParameter($param)) {
+                    return [];
+                }
 
-                return isset($model->_value) ? [$model->_value] : [];
-            }, $values);
+                $value = $modem->getGenieAcsModel($param[0]);
+
+                // _lastInform, _deviceId._SerialNumber etc. are strings, not objects
+                $value = is_string($value) ? $value : ($value->_value ?? '');
+
+                if (isset($param[1]) && is_numeric($value)) {
+                    $value = eval("return $value {$param[1][0]} {$param[1][1]};");
+                }
+
+                return preg_split('/\r\n|\r|\n/', $value);
+            }, $params);
         }
 
         return $mon;
+    }
+
+    /**
+     * Sanitize parameter from json monitoring string
+     *
+     * @return mixed
+     *
+     * @author Ole Ernst
+     */
+    private function sanitizeParameter($param)
+    {
+        if (is_string($param)) {
+            return [$param];
+        }
+
+        // not as expected -> ignore entry
+        if (! isset($param[0]) || ! is_string($param[0])) {
+            return;
+        }
+
+        // array not as expected -> don't perform evaluation
+        if (! isset($param[1][0]) || ! in_array($param[1][0], ['+', '-', '*', '/']) || ! isset($param[1][1]) || ! is_numeric($param[1][1])) {
+            return [$param[0]];
+        }
+
+        // perform evaluation
+        return $param;
     }
 
     /**
