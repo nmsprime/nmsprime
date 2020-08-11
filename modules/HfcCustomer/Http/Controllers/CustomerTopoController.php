@@ -61,7 +61,7 @@ class CustomerTopoController extends NetElementController
 
         $modemQuery = $this->filterModel($query);
 
-        return $this->show_topo($modemQuery['selectedModel'], $modemQuery['allModels'], null, $field == 'netelement_id' ? $search : false);
+        return $this->show_topo($modemQuery['selectedModel'], $modemQuery['allModels'], false, $field == 'netelement_id' ? $search : false);
     }
 
     /**
@@ -156,7 +156,7 @@ class CustomerTopoController extends NetElementController
     *
     * @author: Torsten Schmidt
     */
-    private function show_topo($modemQuery, $allModels = null, $pnmMap = false, $withHistory = false)
+    private function show_topo($modemQuery, $allModels = null, $pnmMap = false, $withHistory = null)
     {
         $models = $allModels ?: clone $modemQuery;
         $models = $models->whereNotNull('model')->groupBy('model')->get(['model'])->pluck('model')->all();

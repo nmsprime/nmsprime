@@ -9,7 +9,7 @@ class IcingaStateHistoryController
 {
     public function table($id)
     {
-        $now = now();
+        $now = now()->startOfDay();
         $netelement = NetElement::where('id', $id)
             ->select(['id', 'name', 'id_name'])
             ->without('netelementtype')
@@ -37,7 +37,7 @@ class IcingaStateHistoryController
 
             $lastState = 0;
             $finalState = [];
-            $moni = now()->subMonth(2);
+            $moni = now()->subMonth(2)->startOfDay();
 
             $daysWithFailures = $service->recentStateHistory->groupBy(function ($state) {
                 return Carbon::parse($state->state_time)->format('m-d');
@@ -47,8 +47,6 @@ class IcingaStateHistoryController
                 ->map(function ($state) use ($service, &$finalState, &$lastState, $moni, $daysWithFailures) {
                     while ($state->state_time->diffInDays($moni, false) <= 0) {
                         $highestState = $lastState;
-                        $moni->addDay();
-
                         if (isset($daysWithFailures[$moni->format('m-d')])) {
                             foreach ($daysWithFailures[$moni->format('m-d')]->pluck('state')->toArray() as $dayState) {
                                 if ($dayState > $highestState) {
@@ -60,6 +58,7 @@ class IcingaStateHistoryController
                         }
 
                         $finalState[$moni->format('m-d')] = $highestState; // only show worst state of the Day
+                        $moni->addDay();
                     }
 
                     $state->service = $service->name2;
@@ -69,7 +68,7 @@ class IcingaStateHistoryController
                 })
             );
 
-            while ($now->gte($moni)) {
+            while ($now->gt($moni)) {
                 $finalState[$moni->addDay()->format('m-d')] = $lastState;
             }
 

@@ -63,7 +63,7 @@ class IcingaServiceStatus extends Model implements ImpairedContract
     }
 
     /**
-     * Relation to IcingaHost.
+     * Relation to IcingaStateHistory.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
@@ -74,7 +74,7 @@ class IcingaServiceStatus extends Model implements ImpairedContract
 
 
     /**
-     * Relation to IcingaHost.
+     * Relation to IcingaStateHistory for the last 2 months.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */

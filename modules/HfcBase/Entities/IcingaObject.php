@@ -52,7 +52,7 @@ class IcingaObject extends Model
     }
 
     /**
-     * Relation to IcingaHost.
+     * Relation to IcingaStateHistory.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
@@ -62,13 +62,16 @@ class IcingaObject extends Model
     }
 
     /**
-     * Relation to IcingaHost.
+     * Relation to IcingaStateHistory for the last 2 months.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
     public function recentStateHistory()
     {
-        return $this->stateHistory()->orderBy('state_time')->where('state_time', '>', now()->subMonth(2));
+        return $this->stateHistory()
+            ->orderBy('state_time')
+            ->where('state_type', 1)
+            ->where('state_time', '>', now()->subMonth(2));
     }
 
     /**

@@ -1,12 +1,12 @@
 
 <script src="{{asset('components/assets-admin/plugins/Abilities/es6-promise.auto.min.js')}}"></script>
 <script src="{{asset('components/assets-admin/plugins/Abilities/lodash.core.min.js')}}"></script>
-<script src="{{asset('components/assets-admin/plugins/vue/dist/vue.js')}}"></script>
+<script src="{{asset('components/assets-admin/plugins/vue/dist/vue.min.js')}}"></script>
+{{-- When in Development use this Version
+    <script src="{{asset('components/assets-admin/plugins/vue/dist/vue.js')}}"></script>
+--}}
 <script src="{{asset('components/assets-admin/plugins/Abilities/axios.min.js')}}"></script>
 <script src="{{asset('components/assets-admin/plugins/vue-snotify/snotify.min.js')}}"></script>
-{{-- When in Development use this Version
-    <script src="{{asset('components/assets-admin/plugins/vue/dist/vue.min.js')}}"></script>
---}}
 
 <script type="text/javascript">
     let storage = Vue.observable({
