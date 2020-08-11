@@ -24,12 +24,12 @@ class DashboardController extends BaseController
         $title = 'Dashboard';
         $permissions = $this->getViewPermissions();
 
-        $logs = GuiLog::leftJoin('comment',
-            function ($query) {
-                $query
-                    ->on('guilog.model_id', 'comment.id')
-                    ->where('model', 'Comment');
-            })
+        // Style Ci wants this stupid syntax
+        $logs = GuiLog::leftJoin('comment', function ($query) {
+            $query
+                ->on('guilog.model_id', 'comment.id')
+                ->where('model', 'Comment');
+        })
             ->where([['username', '!=', 'cronjob'], ['model', '!=', 'User']])
             ->orderBy('updated_at', 'desc')->orderBy('user_id', 'asc')
             ->select(['guilog.*', 'comment.comment'])
