@@ -53,3 +53,17 @@
   @endif
 
 @stop
+
+@section ('historyTable')
+    @include ('HfcBase::history.table')
+@endsection
+
+@section ('historySlider')
+    @include ('HfcBase::history.slider')
+@endsection
+
+@section('javascript')
+  @if (isset($withHistory))
+      @include ('HfcBase::history.javascript')
+  @endif
+@stop

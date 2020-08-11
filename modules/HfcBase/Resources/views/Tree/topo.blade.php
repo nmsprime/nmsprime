@@ -14,6 +14,13 @@
     @include ('HfcBase::Tree.topo-api')
 @stop
 
+@section ('historyTable')
+    @include ('HfcBase::history.table')
+@endsection
+
+@section ('historySlider')
+    @include ('HfcBase::history.slider')
+@endsection
 
 @section('content_top')
     @if (isset($breadcrumb) && $breadcrumb)
@@ -74,9 +81,9 @@
     </div>
     <div class="container-fluid m-t-20 m-b-20">
         @if (isset($dim) && isset($point))
-            <div id="mapid" style="width: 100%; height: 75vh; position: relative; outline: none;"></div>
+            <div id="mapid" style="width: 100%; height: 75vh; max-height:575px; position: relative; outline: none;"></div>
         @else
-            <div class="col-md-12 d-flex" id="map" style="height:75vh"></div>
+            <div class="col-md-12 d-flex" id="map" style="height:75vh;max-height:575px"></div>
         @endif
     </div>
 
@@ -106,4 +113,8 @@ function redirect()
 }
 
 </script>
+
+@if (isset($withHistory))
+    @include ('HfcBase::history.javascript')
+@endif
 @stop
