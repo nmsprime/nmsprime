@@ -14,29 +14,29 @@ var global_url = '{{BaseRoute::get_base_url()}}/';
  */
 function map_google_init ()
 {
-    var gphy = new OpenLayers.Layer.Google( "Google Physical",	{type: google.maps.MapTypeId.TERRAIN});
-    var gmap = new OpenLayers.Layer.Google( "Google Streets",	{numZoomLevels: 20});
-    var ghyb = new OpenLayers.Layer.Google( "Google Hybrid",	{type: google.maps.MapTypeId.HYBRID, numZoomLevels: 20});
-    var gsat = new OpenLayers.Layer.Google( "Google Satellite",	{type: google.maps.MapTypeId.SATELLITE, numZoomLevels: 22});
+    var gphy = new OpenLayers.Layer.Google( "Google Physical",  {type: google.maps.MapTypeId.TERRAIN});
+    var gmap = new OpenLayers.Layer.Google( "Google Streets",   {numZoomLevels: 20});
+    var ghyb = new OpenLayers.Layer.Google( "Google Hybrid",    {type: google.maps.MapTypeId.HYBRID, numZoomLevels: 20});
+    var gsat = new OpenLayers.Layer.Google( "Google Satellite", {type: google.maps.MapTypeId.SATELLITE, numZoomLevels: 22});
 
-	vectors = new OpenLayers.Layer.Vector("Modem Positioning Rules", {projection: map.displayProjection});
+    vectors = new OpenLayers.Layer.Vector("Modem Positioning Rules", {projection: map.displayProjection});
 
-	map.addLayers([osm,gsat,gmap,gphy,ghyb,vectors]);
+    map.addLayers([osm,gsat,gmap,gphy,ghyb,vectors]);
 
-	vectors.events.on({ "afterfeaturemodified" : onAfterFeatureModified });
+    vectors.events.on({ "afterfeaturemodified" : onAfterFeatureModified });
 
-	drawControls = 	{ polygon 	: new OpenLayers.Control.DrawFeature(vectors, OpenLayers.Handler.Polygon,{ callbacks : { "done": savePolygonMPR} }),
-					  box		: new OpenLayers.Control.DrawFeature(vectors, OpenLayers.Handler.RegularPolygon, {
-									handlerOptions: { sides: 4, irregular: true },
-									callbacks : { "done": savePolygonMPR}
-									}),
-					  modify	: new OpenLayers.Control.ModifyFeature(vectors)
-					};
+    drawControls =  { polygon   : new OpenLayers.Control.DrawFeature(vectors, OpenLayers.Handler.Polygon,{ callbacks : { "done": savePolygonMPR} }),
+                      box       : new OpenLayers.Control.DrawFeature(vectors, OpenLayers.Handler.RegularPolygon, {
+                                    handlerOptions: { sides: 4, irregular: true },
+                                    callbacks : { "done": savePolygonMPR}
+                                    }),
+                      modify    : new OpenLayers.Control.ModifyFeature(vectors)
+                    };
 
-	for(var key in drawControls)
-		map.addControl(drawControls[key]);
+    for(var key in drawControls)
+        map.addControl(drawControls[key]);
 
-	document.getElementById('noneToggle').checked = true;
+    document.getElementById('noneToggle').checked = true;
 }
 
 /*
@@ -46,28 +46,28 @@ function map_google_init ()
 function map_mps_init()
 {
 @if(isset($mpr))
-	@foreach ($mpr as $id => $corners)
-		@if (count($corners) == 2)
-			bounds = new OpenLayers.Bounds();
+    @foreach ($mpr as $id => $corners)
+        @if (count($corners) == 2)
+            bounds = new OpenLayers.Bounds();
 
-			@foreach($corners as $coord)
-				bounds.extend(new OpenLayers.LonLat({{ $coord[0] }}, {{ $coord[1] }} ));
-			@endforeach
+            @foreach($corners as $coord)
+                bounds.extend(new OpenLayers.LonLat({{ $coord[0] }}, {{ $coord[1] }} ));
+            @endforeach
 
-			bounds.transform(new OpenLayers.Projection("EPSG:4326"),map.getProjectionObject());
-			vectors.addFeatures([new OpenLayers.Feature.Vector(bounds.toGeometry(), {id: {{ $id }} })]);
-		@elseif (count($corners) > 2)
-			vectors.addFeatures([
-			new OpenLayers.Feature.Vector(new OpenLayers.Geometry.Polygon([
-			new OpenLayers.Geometry.LinearRing([
+            bounds.transform(new OpenLayers.Projection("EPSG:4326"),map.getProjectionObject());
+            vectors.addFeatures([new OpenLayers.Feature.Vector(bounds.toGeometry(), {id: {{ $id }} })]);
+        @elseif (count($corners) > 2)
+            vectors.addFeatures([
+            new OpenLayers.Feature.Vector(new OpenLayers.Geometry.Polygon([
+            new OpenLayers.Geometry.LinearRing([
 
-			@foreach ($corners as $coord)
-				new OpenLayers.Geometry.Point({{ $coord[0] }}, {{ $coord[1] }} ),
-			@endforeach
+            @foreach ($corners as $coord)
+                new OpenLayers.Geometry.Point({{ $coord[0] }}, {{ $coord[1] }} ),
+            @endforeach
 
-			]).transform(new OpenLayers.Projection("EPSG:4326"), map.getProjectionObject())]), {id: {{ $id }} })]);
-		@endif
-	@endforeach
+            ]).transform(new OpenLayers.Projection("EPSG:4326"), map.getProjectionObject())]), {id: {{ $id }} })]);
+        @endif
+    @endforeach
 @endif
 }
 
@@ -87,101 +87,101 @@ function clk_init_1()
         map.addControl(select);
         select.activate();
 
-	function onFeatureSelect(event) {
-		var feature = event.feature;
-		var theDomEvent = select.handlers.feature.evt;
+    function onFeatureSelect(event) {
+        var feature = event.feature;
+        var theDomEvent = select.handlers.feature.evt;
 
-		// Since KML is user-generated, do naive protection against
-		// Javascript.
-		var descr = feature.attributes.description;
+        // Since KML is user-generated, do naive protection against
+        // Javascript.
+        var descr = feature.attributes.description;
 
-		if (theDomEvent.shiftKey == OpenLayers.Handler.MOD_SHIFT)
-		{
-			alert ("shift key: "+descr);
-			return;
-		}
+        if (theDomEvent.shiftKey == OpenLayers.Handler.MOD_SHIFT)
+        {
+            alert ("shift key: "+descr);
+            return;
+        }
 
-		var coord = /^-?\d+\.\d+,-?\d+\.\d+$/;
-		// descr matches a geo-coordinate (-)xx.xxx,(-)xx.xxx
-		if (coord.test(descr))
-			// window.open("mapdia.header.php?kml="+descr, "_blank",
-			// "directories=no, status= no, fullscreen=no, location=no, menubar=no, resizeable=yes, scrollbars=yes, status=no, titlebar=no, toolbar=no, left=50, top=50, width=300, height=300");
-			window.open(global_url + "Tree/erd/pos/"+descr, "_blank");
-		else
-		{
-			var lines = descr.split("<br>").length;
-			var height = 0;
+        var coord = /^-?\d+\.\d+,-?\d+\.\d+$/;
+        // descr matches a geo-coordinate (-)xx.xxx,(-)xx.xxx
+        if (coord.test(descr))
+            // window.open("mapdia.header.php?kml="+descr, "_blank",
+            // "directories=no, status= no, fullscreen=no, location=no, menubar=no, resizeable=yes, scrollbars=yes, status=no, titlebar=no, toolbar=no, left=50, top=50, width=300, height=300");
+            window.open(global_url + "Tree/erd/pos/"+descr, "_blank");
+        else
+        {
+            var lines = descr.split("<br>").length;
+            var height = 0;
 
-			if (lines > 15)
-				height = 400;
+            if (lines > 15)
+                height = 400;
 
-			alert ("Modem Positioning System", descr, {left:400, top:300, width:document.width-50, height:height>0?height:document.height-50});
-		}
-		select.unselectAll(); // Skip UnSelect option, allows multiple clicks to one element
-	}
+            alert ("Modem Positioning System", descr, {left:400, top:300, width:document.width-50, height:height>0?height:document.height-50});
+        }
+        select.unselectAll(); // Skip UnSelect option, allows multiple clicks to one element
+    }
 }
 
 function clk_init_2()
 {
 
-	/*
-	 * Disable Default right-click event:
-	 */
-	document.getElementById('map').oncontextmenu = function(e){
-		e = e?e:window.event;
-		if (e.preventDefault) e.preventDefault(); // For non-IE browsers.
-		else return false; // For IE browsers.
-	};
+    /*
+     * Disable Default right-click event:
+     */
+    document.getElementById('map').oncontextmenu = function(e){
+        e = e?e:window.event;
+        if (e.preventDefault) e.preventDefault(); // For non-IE browsers.
+        else return false; // For IE browsers.
+    };
 
 
-	/*
-	 * Control class for capturing card click events...
-	 */
-	OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
-		defaultHandlerOptions: {
-			'single': true,
-			'double': true,
-			'pixelTolerance': 0,
-			'stopSingle': false,
-			'stopDouble': false
-		},
-		handleRightClicks:true,
-		initialize: function(options) {
-			this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
-			OpenLayers.Control.prototype.initialize.apply(this, arguments);
-			this.handler = new OpenLayers.Handler.Click(this, this.eventMethods, this.handlerOptions );
-		},
-		CLASS_NAME: "OpenLayers.Control.Click"
-	});
+    /*
+     * Control class for capturing card click events...
+     */
+    OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
+        defaultHandlerOptions: {
+            'single': true,
+            'double': true,
+            'pixelTolerance': 0,
+            'stopSingle': false,
+            'stopDouble': false
+        },
+        handleRightClicks:true,
+        initialize: function(options) {
+            this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
+            OpenLayers.Control.prototype.initialize.apply(this, arguments);
+            this.handler = new OpenLayers.Handler.Click(this, this.eventMethods, this.handlerOptions );
+        },
+        CLASS_NAME: "OpenLayers.Control.Click"
+    });
 
-	// Add an instance of the Click control that listens to various click events:
-	var oClick = new OpenLayers.Control.Click({eventMethods:{
-		'rightclick': function(e) {
-			var ll = map.getLonLatFromPixel(e.xy);
-			ll.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
-			var lon = ll.lon.toFixed(6);
-			var lat = ll.lat.toFixed(6);
-			var tree = '<?php switch(\NamespaceController::get_route_name()) { case 'CustomerTopo': $r='Modem'; break; case 'TreeTopography': $r='NetElement'; break; } echo(route($r.'.create')) ?>';
-			var kml = '<?php $kml = isset ($_GET['kml']) ? $_GET['kml'] : ''; echo $kml ?>';
-			var pos = lon + ',' + lat;
-			// populate yor box/field with lat, lng
-			alert('Add Network Element',
-			  'Geoposition: ' + pos +
-			  '<br><br><a href="' + tree + '?pos=' + pos + '&kml=' + kml + '">Add Device</a>'
-			);
-		},
-		'click': function(e) {},
-		'dblclick': function(e) {},
-		'dblrightclick': function(e) {},
-	}});
-	map.addControl(oClick);
-	oClick.activate();
+    // Add an instance of the Click control that listens to various click events:
+    var oClick = new OpenLayers.Control.Click({eventMethods:{
+        'rightclick': function(e) {
+            var ll = map.getLonLatFromPixel(e.xy);
+            ll.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
+            var lon = ll.lon.toFixed(6);
+            var lat = ll.lat.toFixed(6);
+            var tree = '<?php switch(\NamespaceController::get_route_name()) { case 'CustomerTopo': $r='Modem'; break; case 'TreeTopography': $r='NetElement'; break; } echo(route($r.'.create')) ?>';
+            var kml = '<?php $kml = isset ($_GET['kml']) ? $_GET['kml'] : ''; echo $kml ?>';
+            var pos = lon + ',' + lat;
+            // populate yor box/field with lat, lng
+            alert('Add Network Element',
+              'Geoposition: ' + pos +
+              '<br><br><a href="' + tree + '?pos=' + pos + '&kml=' + kml + '">Add Device</a>'
+            );
+        },
+        'click': function(e) {},
+        'dblclick': function(e) {},
+        'dblrightclick': function(e) {},
+    }});
+    map.addControl(oClick);
+    oClick.activate();
 
 
-	/*
-	 * Rectangle
-	 */
-		var control = new OpenLayers.Control();
+    /*
+     * Rectangle
+     */
+        var control = new OpenLayers.Control();
         OpenLayers.Util.extend(control, {
             draw: function () {
                 // this Handler.Box will intercept the shift-mousedown
@@ -195,32 +195,32 @@ function clk_init_2()
             notice: function (bounds) {
                 var ll = map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.left, bounds.bottom));
                 var ur = map.getLonLatFromPixel(new OpenLayers.Pixel(bounds.right, bounds.top));
-				ll.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
-				ur.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
+                ll.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
+                ur.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
                 // var maxLat = ur.lat.toFixed(4);
 
-				var lat1 = ll.lat.toFixed(4);
-				var lat2 = ur.lat.toFixed(4);
-				var minLat = lat1<lat2?lat1:lat2;
-				var maxLat = lat1<lat2?lat2:lat1;
-				var lng1 = ll.lon.toFixed(4);
-				var lng2 = ur.lon.toFixed(4);
-				var minLng = lng1<lng2?lng1:lng2;
-				var maxLng = lng1<lng2?lng2:lng1;
-				var x1 = minLng;
-				var x2 = maxLng;
-				var y1 = minLat;
-				var y2 = maxLat;
+                var lat1 = ll.lat.toFixed(4);
+                var lat2 = ur.lat.toFixed(4);
+                var minLat = lat1<lat2?lat1:lat2;
+                var maxLat = lat1<lat2?lat2:lat1;
+                var lng1 = ll.lon.toFixed(4);
+                var lng2 = ur.lon.toFixed(4);
+                var minLng = lng1<lng2?lng1:lng2;
+                var maxLng = lng1<lng2?lng2:lng1;
+                var x1 = minLng;
+                var x2 = maxLng;
+                var y1 = minLat;
+                var y2 = maxLat;
 
-				alert('Modem Positioning System',
-				      'Lat: ' + minLat + ' to ' + maxLat+ '<br>Lng: ' + minLng + ' to ' + maxLng + '<br><br>' +
-				      '<li><a href="'+ global_url + 'CustomerRect/' + minLng + '/' + maxLng + '/' + minLat + '/' + maxLat + '">Show Customer in Rectangle</a><br>' +
-				      '</li><li><a href="' + global_url + 'Mpr/create?value=' + x1 + ';' + x2 + ';' + y1 + ';' +y2 + '">Add Modem Positioning Rule</a>' +
-				      '</li><br>(x > ' + x1 + ' AND x <  ' + x2 + ') AND (y > ' + y1 + ' AND y < ' + y2 + ')', {width:500} );
+                alert('Modem Positioning System',
+                      'Lat: ' + minLat + ' to ' + maxLat+ '<br>Lng: ' + minLng + ' to ' + maxLng + '<br><br>' +
+                      '<li><a href="'+ global_url + 'CustomerRect/' + minLng + '/' + maxLng + '/' + minLat + '/' + maxLat + '">Show Customer in Rectangle</a><br>' +
+                      '</li><li><a href="' + global_url + 'Mpr/create?value=' + x1 + ';' + x2 + ';' + y1 + ';' +y2 + '">Add Modem Positioning Rule</a>' +
+                      '</li><br>(x > ' + x1 + ' AND x <  ' + x2 + ') AND (y > ' + y1 + ' AND y < ' + y2 + ')', {width:500} );
 
             }
         });
-		map.addControl(control);
+        map.addControl(control);
 
 }
 
@@ -237,13 +237,13 @@ function load (id, link, name)
             fillColor: "#003399",
             fillOpacity: 0,
             label: "${name}",
-	    labelYOffset: 27,
+        labelYOffset: 27,
             fontSize: "25px",
-	    fontColor: 'grey'
+        fontColor: 'grey'
         });
 
         Layers[id] = new OpenLayers.Layer.Vector(name, {
-		styleMap: styleMap,
+        styleMap: styleMap,
                 projection: map.displayProjection,
                 strategies: [new OpenLayers.Strategy.Fixed()],
                 protocol: new OpenLayers.Protocol.HTTP({
@@ -263,53 +263,53 @@ function load (id, link, name)
 
 function map_kml_load ()
 {
-	load(0, "{{asset($file)}}", "Infrastructure");
+    load(0, "{{asset($file)}}", "Infrastructure");
 
-	@if (isset($kmls))
-		@foreach ($kmls as $id => $kml)
-			load({{$id+10}}, "{{asset($kml['file'])}}", "{{$kml['descr']}}");
-		@endforeach
-	@endif
+    @if (isset($kmls))
+        @foreach ($kmls as $id => $kml)
+            load({{$id+10}}, "{{asset($kml['file'])}}", "{{$kml['descr']}}");
+        @endforeach
+    @endif
 }
 
 function toggleControl(element) {
-	for(key in drawControls) {
-		var control = drawControls[key];
-		if(element.value == key && element.checked)
-			control.activate();
-		else
-			control.deactivate();
-	}
-	if(element.value == 'none')
-		select.activate();
-	else
-		select.deactivate();
+    for(key in drawControls) {
+        var control = drawControls[key];
+        if(element.value == key && element.checked)
+            control.activate();
+        else
+            control.deactivate();
+    }
+    if(element.value == 'none')
+        select.activate();
+    else
+        select.deactivate();
 }
 
 function getPolyStr(geo) {
-	var str = '';
-	var vertices = geo.transform(map.getProjectionObject(), new OpenLayers.Projection("EPSG:4326")).getVertices();
-	for (var i = 0; i < vertices.length; i++) {
-		if(i) str += ';';
-		str += vertices[i].x + ';' + vertices[i].y;
-	}
-	return str;
+    var str = '';
+    var vertices = geo.transform(map.getProjectionObject(), new OpenLayers.Projection("EPSG:4326")).getVertices();
+    for (var i = 0; i < vertices.length; i++) {
+        if(i) str += ';';
+        str += vertices[i].x + ';' + vertices[i].y;
+    }
+    return str;
 }
 
 function savePolygonMPR(geo) {
-	polystr = getPolyStr(geo);
-	str = '<li><a href="' + global_url + 'CustomerPoly/' + polystr + '">Show Customer in Polygon</a></li>';
-	str += '<li><a href="' + global_url + 'Mpr/create?value=' + polystr + '">Add Modem Positioning Rule</a></li>';
-	alert('Modem Positioning System', str, {width:500});
+    polystr = getPolyStr(geo);
+    str = '<li><a href="' + global_url + 'CustomerPoly/' + polystr + '">Show Customer in Polygon</a></li>';
+    str += '<li><a href="' + global_url + 'Mpr/create?value=' + polystr + '">Add Modem Positioning Rule</a></li>';
+    alert('Modem Positioning System', str, {width:500});
 }
 
 function onAfterFeatureModified(event) {
-	if (confirm ("Modify Polygon %id?".replace('%id', event.feature.attributes.id))) {
-		str = getPolyStr(event.feature.geometry);
-		<?php echo 'window.location = "' . route('Mpr.update_geopos', ['%id', '%str']) . "\".replace('%id', event.feature.attributes.id).replace('%str', str)"; ?>;
-	} else {
-		location.reload();
-	}
+    if (confirm ("Modify Polygon %id?".replace('%id', event.feature.attributes.id))) {
+        str = getPolyStr(event.feature.geometry);
+        <?php echo 'window.location = "' . route('Mpr.update_geopos', ['%id', '%str']) . "\".replace('%id', event.feature.attributes.id).replace('%str', str)"; ?>;
+    } else {
+        location.reload();
+    }
 }
 
 /*
@@ -317,33 +317,33 @@ function onAfterFeatureModified(event) {
  */
 function map_init()
 {
-	// MAP
-	map = new OpenLayers.Map('map',
-	{
-		    controls: [
-			new OpenLayers.Control.Navigation(),
-			new OpenLayers.Control.PanZoomBar(),
-			new OpenLayers.Control.LayerSwitcher(),
-		    ],
-	});
+    // MAP
+    map = new OpenLayers.Map('map',
+    {
+            controls: [
+            new OpenLayers.Control.Navigation(),
+            new OpenLayers.Control.PanZoomBar(),
+            new OpenLayers.Control.LayerSwitcher(),
+            ],
+    });
 
-	// Cards
-	osm = new OpenLayers.Layer.OSM("Open Street Map");
-	map_google_init();
+    // Cards
+    osm = new OpenLayers.Layer.OSM("Open Street Map");
+    map_google_init();
 
-	// Center / Zoom:
-	// TODO: use global define for default pos
-	map.setCenter(
-		new OpenLayers.LonLat(
-			13.17,50.65
-		).transform(
-			new OpenLayers.Projection("EPSG:4326"),
-			map.getProjectionObject()
-		), 12
-	);
+    // Center / Zoom:
+    // TODO: use global define for default pos
+    map.setCenter(
+        new OpenLayers.LonLat(
+            13.17,50.65
+        ).transform(
+            new OpenLayers.Projection("EPSG:4326"),
+            map.getProjectionObject()
+        ), 12
+    );
 
 
-	var bounds = new OpenLayers.Bounds();
+    var bounds = new OpenLayers.Bounds();
 }
 
 
@@ -352,79 +352,97 @@ function map_init()
  */
 function init_for_map ()
 {
-	@if (isset($dim) && isset($point))
-		heat_map();
-	@else
-		map_init();
-		map_kml_load();
-		map_mps_init();
-		clk_init_1();
-		clk_init_2();
-	@endif
+    @if (isset($dim) && isset($point))
+        heat_map();
+    @else
+        map_init();
+        map_kml_load();
+        map_mps_init();
+        clk_init_1();
+        clk_init_2();
+    @endif
 }
 
 function init_for_search()
 {
-	map_init();
-	clk_init_2();
+    map_init();
+    clk_init_2();
 }
 
 function init_for_customer ()
 {
-	map_init();
-	map_kml_customer_load();
-	clk_init_1();
-	clk_init_2();
+    map_init();
+    map_kml_customer_load();
+    clk_init_1();
+    clk_init_2();
 }
 
 function heat_map(){
-	var planes =  {{ isset($point) ? json_encode($point) : '[]'  }};
-	var mymap = L.map('mapid');
+    var planes =  {{ isset($point) ? json_encode($point) : '[]'  }};
+    var users =  {!! isset($users) ? json_encode($users) : '[]'  !!};
+    var mymap = L.map('mapid');
 
-	if (planes.length) {
-		mymap.setView([planes[0][0],planes[0][1]], 13);
-	} else {
-		mymap.setView([50.6504, 13.1623], 13);
-	}
+    if (planes.length) {
+        mymap.setView([planes[0][0],planes[0][1]], 13);
+    } else {
+        mymap.setView([50.6504, 13.1623], 13);
+    }
 
-	var baseLayer = L.tileLayer(
-	  'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-	    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
-	    maxZoom: 18,
-	    id: 'mapbox.streets',
-	    accessToken: 'your.mapbox.access.token'
-	  }).addTo(mymap);
-	//var marker = L.marker([50.6504, 13.1623]).addTo(mymap);
-	for (var i = 0; i < planes.length; i++) {
-			marker = new L.marker([planes[i][0],planes[i][1]])
-			.bindPopup(planes[i][2])
-			.addTo(mymap);
-		}
-		var heat = 	L.heatLayer({{ isset($dim) ? json_encode($dim) : '[]' }}, {
-				minOpacity:0, maxZoom:10, radius:14, blur:20, max:1.0,
-				gradient: {
-                0.00 :'rgba(0,0,238,1)',
-                0.05 :'rgba(255,0,0,0.5)',
-                0.10 :'rgba(255,0,0,0.5)',
-                0.15: 'rgba(255,0,0,0.2)',
-                0.20: 'rgba(255,0,0,0.2)',
-                0.25: 'rgba(238,18,137,0.2)',
-                0.30: 'rgba(205,0,205,0.2)',
-                0.35: 'rgba(178,58,238,0.1)',
-                0.40: 'rgba(154,50,205,0.1)',
-                0.45: 'rgba(240,255,255,0.1)',
-                0.50: 'rgba(240,255,255,0.1)',
-                0.55: 'rgba(240,255,255,0.1)',
-                0.60: 'rgba(0,255,0,0.1)',
-                0.65: 'rgba(0,255,0,0.1)',
-                0.70: 'rgba(0,255,0,0.2)',
-                0.75: 'rgba(255,255,0,0.2)',
-                0.85: 'rgba(255,255,0,0.2)',
-                0.90: 'rgba(255,255,0,0.5)',
-                0.95: 'rgba(255,0,0,0.5)',
-                1.00: 'rgba(255,0,0,1)'
-            }
-			}).addTo(mymap);
+    var userIconClass = L.Icon.extend({
+        options: {
+            // https://www.iconshock.com/stroke-icons/transportation-icons/car-sale-icon/   -> real vista - Car Related Icons
+            iconUrl: '{{ "/images/truckIcon.png" }}',
+            iconSize: [50, 50],
+        }
+    });
+
+    var userIcon = new userIconClass();
+
+    var baseLayer = L.tileLayer(
+      'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
+        maxZoom: 18,
+        id: 'mapbox.streets',
+        accessToken: 'your.mapbox.access.token'
+      }).addTo(mymap);
+
+    // Add modems
+    for (var i = 0; i < planes.length; i++) {
+        L.marker([planes[i][0], planes[i][1]]).bindPopup(String(planes[i][2])).addTo(mymap);
+    }
+
+    // Add users with name and time of last geopos update
+    for (var i = 0; i < users.length; i++) {
+        L.marker([users[i].geopos_y, users[i].geopos_x], {icon: userIcon}).addTo(mymap)
+            .bindPopup(users[i].first_name + ' ' + users[i].last_name + ' (' + users[i].geopos_updated_at.substring(11,16) + ')');
+    }
+
+    var heat =  L.heatLayer({{ isset($dim) ? json_encode($dim) : '[]' }}, {
+            minOpacity:0, maxZoom:10, radius:14, blur:20, max:1.0,
+            gradient: {
+            0.00 :'rgba(0,0,238,1)',
+            0.05 :'rgba(255,0,0,0.5)',
+            0.10 :'rgba(255,0,0,0.5)',
+            0.15: 'rgba(255,0,0,0.2)',
+            0.20: 'rgba(255,0,0,0.2)',
+            0.25: 'rgba(238,18,137,0.2)',
+            0.30: 'rgba(205,0,205,0.2)',
+            0.35: 'rgba(178,58,238,0.1)',
+            0.40: 'rgba(154,50,205,0.1)',
+            0.45: 'rgba(240,255,255,0.1)',
+            0.50: 'rgba(240,255,255,0.1)',
+            0.55: 'rgba(240,255,255,0.1)',
+            0.60: 'rgba(0,255,0,0.1)',
+            0.65: 'rgba(0,255,0,0.1)',
+            0.70: 'rgba(0,255,0,0.2)',
+            0.75: 'rgba(255,255,0,0.2)',
+            0.85: 'rgba(255,255,0,0.2)',
+            0.90: 'rgba(255,255,0,0.5)',
+            0.95: 'rgba(255,0,0,0.5)',
+            1.00: 'rgba(255,0,0,1)'
+        }
+        }).addTo(mymap);
+
 }
 
 </script>

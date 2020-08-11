@@ -187,7 +187,8 @@ class CustomerTopoController extends NetElementController
         }
 
         if ($pnmMap) {
-            list($dim, $point) = $this->getHeatMapData($modems);
+            [$dim, $point] = $this->getHeatMapData($modems);
+            $users = $this->getUserMapData();
         }
 
         $target = $this->html_target;
@@ -206,7 +207,8 @@ class CustomerTopoController extends NetElementController
             $withHistory = $modems->groupBy('netelement_id')->map->count()->sort()->keys()->last();
         }
 
-        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'body_onload', 'tabs', 'kmls', 'models', 'dim', 'point', 'breadcrumb', 'withHistory')));
+        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact(
+            'file', 'target', 'route_name', 'view_header', 'body_onload', 'tabs', 'kmls', 'models', 'breadcrumb', 'dim', 'point', 'withHistory', 'users')));
     }
 
     private function getHeatMapData($modems)
@@ -245,6 +247,13 @@ class CustomerTopoController extends NetElementController
         }
 
         return [array_chunk($dim, 3), array_chunk($point, 3)];
+    }
+
+    private function getUserMapData()
+    {
+        return \App\User::whereNotNull('geopos_x')
+            ->where('geopos_updated_at', '>', date('Y-m-d H:i:s', time() - 24 * 60 * 60))
+            ->get()->toArray();
     }
 
     /**

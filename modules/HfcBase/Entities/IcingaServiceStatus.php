@@ -72,7 +72,6 @@ class IcingaServiceStatus extends Model implements ImpairedContract
         return $this->hasMany(IcingaStateHistory::class, 'object_id', 'service_object_id');
     }
 
-
     /**
      * Relation to IcingaStateHistory for the last 2 months.
      *
