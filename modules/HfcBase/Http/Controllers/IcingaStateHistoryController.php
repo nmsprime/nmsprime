@@ -76,7 +76,7 @@ class IcingaStateHistoryController
         }
 
         return collect([
-            'table' => $history->sortByDesc('state_time_usec'),
+            'table' => $history,
             'slider_power' => $netelement->icingaServices->where('name2', 'clusters_power')->first()->stateArray,
             'slider_online' => $netelement->icingaServices->where('name2', 'clusters_online')->first()->stateArray,
         ]);

@@ -59,8 +59,9 @@
                     },
                     autoWidth: false, {{-- Option to ajust Table to Width of container --}}
                     dom: 'ltp', {{-- sets order and what to show  --}}
-                    stateSave: true, {{-- Save Search Filters and visible Columns --}}
-                    stateDuration: 0, // 60 * 60 * 24, {{-- Time the State is used - set to 24h --}}
+                    order: [
+                        [ 3, "desc" ]
+                    ],
                     lengthMenu:  [ [10, 25, 100, -1], [10, 25, 100, "{{ trans('view.jQuery_All') }}" ] ], {{-- Filter to List # Datasets --}}
                     columnDefs: [
                         { responsivePriority: 1, targets: 1 },
