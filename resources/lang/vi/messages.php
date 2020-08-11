@@ -549,8 +549,9 @@ return [
     'Yes'                       => 'Yes',
     'No'                        => 'No',
     'Has telephony'             => 'Has telephony',
+    'preeq_error'               => 'Preequalization data not found',
     'OID for PreConfiguration Setting' => 'OID for PreConfiguration Setting',
-    'PreConfiguration Value' => 'PreConfiguration Value',
+    'PreConfiguration Value'    => 'PreConfiguration Value',
     'PreConfiguration Time Offset' => 'PreConfiguration Time Offset',
     'Reload Time - Controlling View' => 'Reload Time - Controlling View',
     'Due Date'                  => 'Due Date',
@@ -637,6 +638,7 @@ return [
         'log' =>[
             'created'       => 'created',
             'deleted'       => 'deleted',
+            'restored'      => 'restored',
             'updated'       => 'updated',
             'updated N:M'   => 'updated',
         ],
