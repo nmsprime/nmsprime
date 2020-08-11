@@ -33,7 +33,6 @@ BaseRoute::group([], function () {
         'middleware' => ['can:view,Modules\HfcBase\Entities\HfcBase'],
     ]);
 
-
     BaseRoute::get('StateHistory/{id}', [
         'as' => 'IcingaStateHistory.table',
         'uses' => 'Modules\HfcBase\Http\Controllers\IcingaStateHistoryController@table',

@@ -40,8 +40,8 @@ class IcingaStateHistoryController
             $moni = now()->subMonth(2);
 
             $daysWithFailures = $service->recentStateHistory->groupBy(function ($state) {
-                    return Carbon::parse($state->state_time)->format('m-d');
-                });
+                return Carbon::parse($state->state_time)->format('m-d');
+            });
 
             $history = $history->concat($service->recentStateHistory
                 ->map(function ($state) use ($service, &$finalState, &$lastState, $moni, $daysWithFailures) {
@@ -60,11 +60,11 @@ class IcingaStateHistoryController
                         }
 
                         $finalState[$moni->format('m-d')] = $highestState; // only show worst state of the Day
-
                     }
 
                     $state->service = $service->name2;
                     $state->state_time = $state->state_time->toDateTimeString();
+
                     return $state;
                 })
             );

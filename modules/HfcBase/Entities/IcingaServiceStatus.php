@@ -84,7 +84,7 @@ class IcingaServiceStatus extends Model implements ImpairedContract
             ->orderBy('state_time')
             ->where('state_type', 1)
             ->where('state_time', '>', now()->subMonth(2));
-        }
+    }
 
     /**
      * Scope to get all necessary informations for the trouble Dashboard.

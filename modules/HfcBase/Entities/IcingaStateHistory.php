@@ -34,7 +34,7 @@ class IcingaStateHistory extends Model
      * @var array
      */
     protected $dates = [
-        'state_time'
+        'state_time',
     ];
 
     /**
