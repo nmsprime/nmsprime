@@ -103,12 +103,6 @@ function ss_docsis($hostname, $snmp_community = null)
         'ifHCOutOctets' =>  '.1.3.6.1.2.1.31.1.1.1.10',
     ];
 
-    $json = [
-        'PreEqu' =>     '.1.3.6.1.2.1.10.127.1.2.2.1.17',
-        'UsWidth' =>    '.1.3.6.1.2.1.10.127.1.1.2.1.3',
-        'SysDescr' =>   '.1.3.6.1.2.1.1.1',
-    ];
-
     $path = '/run/nmsprime/cacti';
     $filename = "$path/$hostname";
     if (! file_exists($filename)) {
@@ -197,58 +191,9 @@ function ss_docsis($hostname, $snmp_community = null)
     // pre-equalization-related data
     $basepath = '/usr/share/cacti/rra';
     $deviceFile = "{$basepath}/{$hostname}.json";
-    $rates = ['+8 hours', '+4 hours', '+4 minutes'];
-    $deviceStats = json_decode(file_exists($deviceFile) ? file_get_contents($deviceFile) : '{"rate":2}', true);
 
-    if (! isset($deviceStats['next']) || time() > $deviceStats['next']) {
-        $deviceStats['next'] = strtotime($rates[2]);
-
-        $cactiStatsJson = [];
-        foreach ($json as $name => $oid) {
-            preg_match_all("/^$oid\.(\d+) (.+)/m", $file, $match);
-            $cactiStatsJson[$name] = array_combine($match[1], $match[2]);
-        }
-
-        $deviceStats['preEqu'] = $cactiStatsJson['PreEqu'] ? preg_replace('/[^A-Fa-f0-9]/', '', reset($cactiStatsJson['PreEqu'])) : '';
-        // assume US bandwidth of 3.2MHz, if we can't get the actual value
-        $deviceStats['width'] = $cactiStatsJson['UsWidth'] ? reset($cactiStatsJson['UsWidth']) : 3200000;
-        $deviceStats['next'] = strtotime($rates[$deviceStats['rate']]);
-        $deviceStats['descr'] = isset($cactiStatsJson['SysDescr']) ? reset($cactiStatsJson['SysDescr']) : 'n/a';
-
-        /* pre-equalization calculations */
-        $freq = $deviceStats['width'];
-        $hexs = str_split($deviceStats['preEqu'], 8);
-        $or_hexs = array_shift($hexs);
-        $maintap = 2 * $or_hexs[1] - 2;
-        $energymain = $maintap / 2;
-        array_splice($hexs, 0, 0);
-        $hexs = implode('', $hexs);
-        $hexs = str_split($hexs, 4);
-        $hexcall = $hexs;
-        $counter = 0;
-
-        foreach ($hexs as $hex) {
-            $hsplit = str_split($hex, 1);
-            $counter++;
-            if (is_numeric($hsplit[0]) && $hsplit[0] == 0 && $counter >= 46) {
-                $decimal = threenibble($hexcall);
-                break;
-            } elseif (ctype_alpha($hsplit[0]) || $hsplit[0] != 0 && $counter >= 46) {
-                $decimal = fournibble($hexcall);
-                break;
-            }
-        }
-
-        $pwr = nePwr($decimal, $maintap);
-        $ene = energy($pwr);
-        $fft = fft($pwr);
-        $tdr = tdr($ene, $energymain, $freq);
-        $preEquData['power'] = $pwr;
-        $preEquData['energy'] = $ene;
-        $preEquData['tdr'] = $tdr;
-        $preEquData['max'] = $fft[1];
-        $preEquData['fft'] = $fft[0];
-        file_put_contents($deviceFile, json_encode(array_merge($deviceStats, $preEquData)));
+    if ($preEquData = ss_docsis_get_pnm($file)) {
+        file_put_contents($deviceFile, json_encode($preEquData));
     }
 
     if (isset($cactiStats['avgUsPow']) && is_numeric($cactiStats['avgUsPow']) &&
@@ -265,8 +210,8 @@ function ss_docsis($hostname, $snmp_community = null)
             $match[1]
         );
 
-        if (isset($tdr) && isset($fft[1])) {
-            $content .= sprintf("UPDATE modem SET tdr = %f, fft_max = %f WHERE id = %d;\n", $tdr, $fft[1], $match[1]);
+        if (isset($preEquData['tdr']) && isset($preEquData['max'])) {
+            $content .= sprintf("UPDATE modem SET tdr = %f, fft_max = %f WHERE id = %d;\n", $preEquData['tdr'], $preEquData['max'], $match[1]);
         }
 
         file_put_contents("$path/update.sql", $content, FILE_APPEND | LOCK_EX);
@@ -280,152 +225,20 @@ function ss_docsis($hostname, $snmp_community = null)
     return trim($cactiString);
 }
 
-function threenibble($hexcall)
+function ss_docsis_get_pnm($file)
 {
-    $ret = [];
-    $counter = 0;
+    $keep = ['descr', 'max', 'tdr', 'width'];
+    $explode = ['energy', 'fft', 'power'];
 
-    foreach ($hexcall as $hex) {
-        $counter++;
-        if ($counter < 49) {
-            $hex = str_split($hex, 1);
-            if (ctype_alpha($hex[1]) || $hex[1] > 7) {
-                $hex[0] = 'F';
-                $hex = implode('', $hex);
-                $hex = preg_replace('/[^0-9A-Fa-f]/', '', $hex);
-                $hex = strrev("$hex");
-                $dec = array_values(array_slice(unpack('s', pack('h*', "$hex")), -1))[0];
-                array_push($ret, $dec);
-            } else {
-                $hex[0] = 0;
-                $hex = implode('', $hex);
-                $hex = preg_replace('/[^0-9A-Fa-f]/', '', $hex);
-                $hex = strrev("$hex");
-                $dec = array_values(array_slice(unpack('s', pack('h*', "$hex")), -1))[0];
-                array_push($ret, $dec);
-            }
-        }
+    if (preg_match_all("/^([^\.].+?):(.+)/m", $file, $match) != count(array_merge($keep, $explode)) ||
+        array_diff(array_merge($keep, $explode), $match[1])) {
+        return [];
     }
 
-    return $ret;
-}
-
-function fournibble($hexcall)
-{
-    $ret = [];
-    $counter = 0;
-
-    foreach ($hexcall as $hex) {
-        $counter++;
-        if ($counter < 49) {
-            $hex = preg_replace('/[^0-9A-Fa-f]/', '', $hex);
-            $hex = strrev("$hex");
-            $dec = array_values(array_slice(unpack('s', pack('h*', "$hex")), -1))[0];
-            array_push($ret, $dec);
-        }
+    $preEquData = array_combine($match[1], $match[2]);
+    foreach ($explode as $explodeKeys) {
+        $preEquData[$explodeKeys] = explode(',', $preEquData[$explodeKeys]);
     }
 
-    return $ret;
-}
-
-function nePwr($decimal, $maintap)
-{
-    $pwr = [];
-    $ans = implode('', array_keys($decimal, max($decimal)));
-    if ($maintap == $ans) {
-        $a2 = $decimal[$maintap];
-        $b2 = $decimal[$maintap + 1];
-        foreach (array_chunk($decimal, 2) as $val) {
-            $a1 = $val[0];
-            $b1 = $val[1];
-            $pwr[] = ($a1 * $a2 - $b1 * $b2) / (pow($a2, 2) + pow($b2, 2));
-            $pwr[] = ($a2 * $b1 + $a1 * $b2) / (pow($a2, 2) + pow($b2, 2));
-        }
-    } else {
-        for ($i = 0; $i < 48; $i++) {
-            $pwr[] = 0;
-        }
-    }
-
-    return $pwr;
-}
-
-function energy($pwr)
-{
-    $ene_db = [];
-    //calculating the magnitude
-    $pwr = array_chunk($pwr, 2);
-    foreach ($pwr as $val) {
-        $temp = 10 * log10(pow($val[0], 2) + pow($val[1], 2));
-        if (! (is_finite($temp))) {
-            $temp = -100;
-        }
-        $ene_db[] = round($temp, 2);
-    }
-
-    return $ene_db;
-}
-
-function tdr($ene, $energymain, $freq)
-{
-    if ($ene[$energymain] == -100) {
-        $tdr = 0;
-    } else {
-        // propgagtion speed in cable networks (87% speed of light)
-        $v = 0.87 * 299792458;
-        unset($ene[$energymain]);
-        $highest = array_keys($ene, max($ene));
-        $highest = implode('', $highest);
-        $tap_diff = abs($energymain - $highest);
-        // 0.8 - Roll-off of filter; /2 -> round-trip (back and forth)
-        $tdr = $v * $tap_diff / (0.8 * $freq) / 2;
-        $tdr = round($tdr, 1);
-    }
-
-    return $tdr;
-}
-
-function fft($pwr)
-{
-    $rea = [];
-    $imag = [];
-    $pwr = array_chunk($pwr, 2);
-    foreach ($pwr as $val) {
-        $rea[] = $val[0];
-        $imag[] = $val[1];
-    }
-
-    for ($i = 0; $i < 104; $i++) {
-        array_push($rea, 0);
-        array_push($imag, 0);
-    }
-
-    for ($i = 0; $i < 248; $i++) {
-        array_push($rea, array_shift($rea));
-        array_push($imag, array_shift($imag));
-    }
-
-    require_once __DIR__.'/../../../../vendor/brokencube/fft/src/FFT.php';
-    $ans = Brokencube\FFT\FFT::run($rea, $imag);
-    ksort($ans[0]);
-    ksort($ans[1]);
-    for ($i = 0; $i < 64; $i++) {
-        array_push($ans[0], array_shift($ans[0]));
-        array_push($ans[1], array_shift($ans[1]));
-    }
-
-    $answer = array_map(function ($v1, $v2) {
-        return 20 * log10(sqrt(pow($v1, 2) + pow($v2, 2)));
-    }, $ans[0], $ans[1]);
-
-    // stores the maximum amplitude value of the fft waveform
-    $x = max($answer);
-    $y = abs(min($answer));
-    $maxamp = $x >= $y ? $x : $y;
-
-    if (! (is_finite($maxamp))) {
-        $maxamp = 0;
-    }
-
-    return [$answer, $maxamp];
+    return $preEquData;
 }
