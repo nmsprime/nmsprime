@@ -7,9 +7,9 @@
     <script async defer src="{{asset('/modules/hfcbase/OpenLayers-2.13.1/OpenLayers.js')}}"></script>
     <script async defer src="https://maps.google.com/maps/api/js?v=3.2&sensor=false&key={{config('app.googleApiKey')}}"></script>
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.0/dist/leaflet.css" integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ==" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.3.0/dist/leaflet.js" integrity="sha512-C7BBF9irt5R7hqbUm2uxtODlUVs+IsNu2UULGuZN7gM+k/mmeG4xvIEac01BtQa4YIkUpp23zZC4wIwuXaPMQA==" crossorigin=""></script>
-    <script src="{{asset('components/assets-admin/plugins/leaflet-heat.js')}}"></script>
+    <link rel="stylesheet" href="{{asset('components/assets-admin/plugins/leaflet/css/leaflet.css')}}"/>
+    <script src="{{asset('components/assets-admin/plugins/leaflet/js/leaflet.js')}}"></script>
+    <script src="{{asset('components/assets-admin/plugins/leaflet/js/leaflet-heat.js')}}"></script>
 
     @include ('HfcBase::Tree.topo-api')
 @stop
