@@ -19,7 +19,7 @@ class Item extends \BaseModel
     public $observer_dailyconversion = true;
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         // see ItemController@prepare_rules
 

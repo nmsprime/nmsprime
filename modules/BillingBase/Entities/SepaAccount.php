@@ -26,7 +26,7 @@ class SepaAccount extends \BaseModel
     public $guarded = ['template_invoice_upload', 'template_cdr_upload'];
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             'name'      => 'required',

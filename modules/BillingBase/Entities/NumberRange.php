@@ -10,7 +10,7 @@ class NumberRange extends \BaseModel
     public $table = 'numberrange';
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             'name'		=> 'required',

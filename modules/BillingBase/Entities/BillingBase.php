@@ -8,7 +8,7 @@ class BillingBase extends \BaseModel
     public $table = 'billingbase';
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             // 'rcd' 	=> 'numeric|between:1,28',

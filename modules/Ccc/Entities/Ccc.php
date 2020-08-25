@@ -10,7 +10,7 @@ class Ccc extends \BaseModel
     public $guarded = ['template_filename_upload'];
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
         ];

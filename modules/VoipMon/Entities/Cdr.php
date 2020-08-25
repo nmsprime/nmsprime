@@ -29,7 +29,7 @@ class Cdr extends \BaseModel
     }
 
     // There are no validation rules
-    public static function rules($id = null)
+    public function rules()
     {
         return [];
     }

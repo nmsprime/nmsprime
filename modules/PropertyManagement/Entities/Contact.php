@@ -8,7 +8,7 @@ class Contact extends \BaseModel
     public $table = 'contact';
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             // 'firstname1' => 'required',

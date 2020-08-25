@@ -265,7 +265,7 @@ class EnviaOrder extends \BaseModel
     ];
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             // Prevent users from creating orders (table enviaorder is only changable through envia TEL API!)

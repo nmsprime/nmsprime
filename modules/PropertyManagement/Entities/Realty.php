@@ -12,7 +12,7 @@ class Realty extends \BaseModel
     public $guarded = ['apartmentCount'];
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             'node_id' => 'required',

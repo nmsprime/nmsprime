@@ -8,7 +8,7 @@ class OverdueDebts extends \BaseModel
     public $table = 'overduedebts';
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             'fee' => 'nullable|numeric',
