@@ -321,11 +321,15 @@ class Ticket extends \BaseModel
      * Check if there are changes in name, state, priority, duedate, users_ids and description.
      *
      * @author Roy Schneider
-     * @return mixed values
+     * @return bool
      */
     public function importantChanges()
     {
         $changes = Request::all();
+
+        if (! $changes) {
+            return false;
+        }
 
         if ($changes['description'] == $this->getOriginal('description')
             && $changes['state'] == $this->getOriginal('state')
@@ -410,7 +414,7 @@ class TicketObserver
 
         // get assigned users and previously assigned users
         $ticketUsers = $ticket->users;
-        $input = Request::get('users_ids');
+        $input = Request::get('users_ids') ?: [];
 
         // create array with user ids
         $users = $ticketUsers->pluck('id', 'id')->toArray() ?? [];
