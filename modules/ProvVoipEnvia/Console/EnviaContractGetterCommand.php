@@ -93,7 +93,7 @@ class EnviaContractGetterCommand extends Command
     {
         Log::debug(__METHOD__.' started');
 
-        $contracts = Contract::whereNotNull('customer_external_id')->get();
+        $contracts = Contract::whereNotNull('customer_external_id')->with('modems.mtas.phonenumbers.phonenumbermanagement')->get();
         $msg = 'Found '.count($contracts).' with external_customer_id set.';
         Log::debug(__CLASS__.": $msg");
         $this->line($msg);
@@ -145,7 +145,7 @@ class EnviaContractGetterCommand extends Command
         $bar->finish();
 
         // handle enviacontracts for ended nms contracts
-        $enviacontracts = EnviaContract::where('state', 'NOT LIKE', 'Gekündigt')->where('state', 'NOT LIKE', 'Nicht ermittelbar')->get();
+        $enviacontracts = EnviaContract::whereNotIn('state', ['Gekündigt', 'Nicht ermittelbar'])->get();
         Log::debug(__CLASS__.": $msg");
 
         echo "\n\n";
