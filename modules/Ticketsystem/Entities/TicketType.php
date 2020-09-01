@@ -6,7 +6,7 @@ class TicketType extends \BaseModel
 {
     public $table = 'ticket_type';
 
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             'name' => 'required|string',

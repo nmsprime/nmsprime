@@ -15,7 +15,7 @@ class Debt extends \BaseModel
     public $debtObserverEnabled = true;
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             'amount' => 'required|numeric',

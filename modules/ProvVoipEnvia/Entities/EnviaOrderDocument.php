@@ -22,9 +22,8 @@ class EnviaOrderDocument extends \BaseModel
     public static $allowed_max_upload_filesize = 3072;
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
-
         // for validation rule we only need the concrete type (e.g. pdf instead of application/pdf)
         $mimes_short = [];
         foreach (self::$allowed_mimetypes as $mime) {

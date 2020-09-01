@@ -12,7 +12,7 @@ class Salesman extends \BaseModel
     public $table = 'salesman';
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             'firstname' 	=> 'required',

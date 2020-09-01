@@ -27,7 +27,7 @@ class Ticket extends \BaseModel
         return '<i class="fa fa-ticket"></i>';
     }
 
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             'users_ids' => 'required',

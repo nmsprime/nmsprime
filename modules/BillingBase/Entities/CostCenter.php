@@ -8,7 +8,7 @@ class CostCenter extends \BaseModel
     public $table = 'costcenter';
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         // this is to avoid missing customer payments when changing the billing month during the year
         // $m = date('m');

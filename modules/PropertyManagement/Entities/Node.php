@@ -21,7 +21,7 @@ class Node extends \BaseModel
     }
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             // 'name' => 'required',

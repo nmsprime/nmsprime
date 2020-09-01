@@ -19,7 +19,7 @@ class Mpr extends \BaseModel
     public $table = 'mpr';
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             'name' => 'required|string',

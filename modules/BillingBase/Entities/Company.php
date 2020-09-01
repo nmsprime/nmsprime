@@ -11,7 +11,7 @@ class Company extends \BaseModel
     public $guarded = ['logo_upload', 'conn_info_template_fn_upload'];
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             // 'name' => 'required|unique:netgw,hostname,'.$id.',id,deleted_at,NULL'  	// unique: table, column, exception , (where clause)

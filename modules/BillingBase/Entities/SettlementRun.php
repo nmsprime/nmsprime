@@ -23,7 +23,7 @@ class SettlementRun extends \BaseModel
     public $guarded = ['rerun', 'sepaaccount', 'fullrun', 'banking_file_upload', 'voucher_nr', 'test'];
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         // see SettlementRunController@prepare_rules
 

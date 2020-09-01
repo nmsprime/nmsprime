@@ -22,8 +22,10 @@ class Product extends \BaseModel
     public static $maturity = '1M';
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
+        $id = $this->id;
+
         // Pay attention to the prepare_rules()-function in Controller
         return [
             'name' 	=> 'required|unique:product,name,'.$id.',id,deleted_at,NULL',
