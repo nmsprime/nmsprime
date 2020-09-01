@@ -99,12 +99,12 @@ class EnviaContractGetterCommand extends Command
         $this->line($msg);
 
         $today = date('Y-m-d');
-        $one_year_back = date('Y-m-d', strtotime('-1 year'));
+        $oneYearBack = date('Y-m-d', strtotime('-1 year'));
 
         $bar = $this->output->createProgressBar(count($contracts));
 
-        $recently_ended = [];
-        $old_contracts = [];
+        $recentlyEnded = [];
+        $oldContracts = [];
         foreach ($contracts as $contract) {
             if (
                 (! boolval($contract->contract_end))
@@ -114,7 +114,7 @@ class EnviaContractGetterCommand extends Command
                 ($contract->contract_end > $today)
             ) {
                 // active contracts
-                $has_active_number = false;
+                $hasActiveNumber = false;
                 $phonenumbers = $contract->related_phonenumbers();
 
                 // check if there is any active number with existing phonenumbermanagement attached
@@ -124,21 +124,21 @@ class EnviaContractGetterCommand extends Command
                         &&
                         (! is_null($phonenumber->phonenumbermanagement))
                     ) {
-                        $has_active_number = true;
+                        $hasActiveNumber = true;
                         break;
                     }
                 }
 
-                if ($has_active_number) {
+                if ($hasActiveNumber) {
                     array_push($this->contracts_to_get_envia_contracts_for, $contract->id);
                 }
-            } elseif ($contract->contract_end > $one_year_back) {
+            } elseif ($contract->contract_end > $oneYearBack) {
                 // contract ended within the last 12 months
                 // needs special handling because of time shifted end of envia contracts
-                $recently_ended[] = $contract->id;
+                $recentlyEnded[] = $contract->id;
             } else {
                 // old contracts
-                $old_contracts[] = $contract->id;
+                $oldContracts[] = $contract->id;
             }
             $bar->advance();
         }
@@ -154,9 +154,9 @@ class EnviaContractGetterCommand extends Command
         $bar = $this->output->createProgressBar(count($enviacontracts));
 
         foreach ($enviacontracts as $enviacontract) {
-            if (in_array($enviacontract->contract_id, $recently_ended)) {
+            if (in_array($enviacontract->contract_id, $recentlyEnded)) {
                 $this->contracts_to_get_envia_contracts_for[] = $contract->id;
-            } elseif (in_array($enviacontract->contract_id, $old_contracts)) {
+            } elseif (in_array($enviacontract->contract_id, $oldContracts)) {
                 $this->enviacontracts_to_be_canceled[] = $enviacontract;
             }
             $bar->advance();
