@@ -11,8 +11,8 @@ class NetGw extends \BaseModel
     // don't put a trailing slash here!
     public const NETGW_INCLUDE_PATH = '/etc/dhcp-nmsprime/cmts_gws';
     protected const US_SNR_PATH = 'data/provmon/us_snr';
-    public static $dhcp6IncludeFile = '/etc/kea/gateways.conf';
-    public static $dhcp6IncludeDir = '/etc/kea/gateways';
+    protected const DHCP6_GATEWAYS_FILE = '/etc/kea/gateways6.conf';
+    protected const DHCP6_GATEWAYS_DIR = '/etc/kea/gateways6';
 
     // The associated SQL table for this Model
     public $table = 'netgw';
@@ -640,7 +640,7 @@ class NetGw extends \BaseModel
     {
         \Log::debug('Make DHCP6 conf');
 
-        $file = self::$dhcp6IncludeDir."/$this->id.conf";
+        $file = self::DHCP6_GATEWAYS_DIR."/$this->id.conf";
 
         if ($this->trashed()) {
             File::delete($file);
@@ -715,10 +715,10 @@ class NetGw extends \BaseModel
     {
         $incs = [];
         foreach (self::where('type', 'cmts')->get() as $cmts) {
-            $incs[] = '<?include "'.self::$dhcp6IncludeDir."/$cmts->id.conf\"?>";
+            $incs[] = '<?include "'.self::DHCP6_GATEWAYS_DIR."/$cmts->id.conf\"?>";
         }
 
-        File::put(self::$dhcp6IncludeFile, implode(",\n", $incs), true);
+        File::put(self::DHCP6_GATEWAYS_FILE, implode(",\n", $incs), true);
     }
 
     /**
