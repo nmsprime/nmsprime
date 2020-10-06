@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'Diagrams' => 'Diagrams',
     'false' => 'false',
     'true' => 'true',
     //SEARCH
@@ -54,7 +55,7 @@ return [
     'Menu_Devices'              => 'Devices',
     'Menu_DeviceTypes'          => 'Devicetypes',
     'Menu_Contracts'            => 'Contracts',
-    'Menu_HfcBase'              => 'HFC',
+    'Menu_HfcBase'              => 'Detect',
     'Menu_ProvBase'             => 'Provisioning',
     'Menu_Modems'               => 'Modems',
     'Menu_Endpoints'            => 'Endpoints',
@@ -77,6 +78,7 @@ return [
     'Menu_TicketTypes'          => 'TicketTypes',
     'Menu_Nets'                 => 'Nets',
     'Menu_allNets'              => 'All networks',
+    'Menu_VicinityGraph'        => 'Vicinity Graph',
 
     //User Settings
     'Menu_UserSettings'         => 'User Settings',
@@ -129,8 +131,8 @@ return [
     'Header_EditCcc Config'     => 'Edit Modul Configuration for Kundenkontrollzentrum',
     'Header_Prov Base'          => 'Modul Configuration for Provisioning',
     'Header_EditProv Base Config'=> 'Edit Modul Configuration for Provisioning',
-    'Header_HfcBase'            => 'Modul Configuration for HFC',
-    'Header_EditHfc Base Config'=> 'Edit Modul Configuration for HFC',
+    'Header_HfcBase'            => 'Modul Configuration for Detect',
+    'Header_EditHfc Base Config'=> 'Edit Modul Configuration for Detect',
     'Header_CostCenter'         => 'Cost Center|Cost Centers', //Workaround decide which one to use
     'Header_Cost Center'        => 'Cost Center|Cost Centers',
     'Header_EditCost Center'    => 'Edit Cost Center',
@@ -141,7 +143,7 @@ return [
     'Ability_GlobalConfig'      => 'GlobalConfig',
     'Ability_Ccc'               => 'Ccc',
     'Ability_BillingBase'       => 'BillingBase',
-    'Ability_HFC'               => 'HFC',
+    'Ability_HFC'               => 'Detect',
     'Ability_ProvBase'          => 'ProvBase',
     'Ability_ProvVoip'          => 'ProvVoip',
     'Ability_ProvVoipEnvia'     => 'ProvVoipEnvia',
@@ -341,8 +343,8 @@ return [
     'Button_Create QoS'             => 'Create QoS-Rule',
     'Button_Create Qos'             => 'Create QoS-Rule',
     // //NetGws
-    'Button_Create NetGws'          => 'Create NetGw',
-    'Button_Create Netgws'          => 'Create NetGw',
+    'Button_Create NetGw'          => 'Create NetGateway',
+    'Button_Create NetGws'          => 'Create NetGateways',
     // //IpPool
     'Button_Create IpPool'          => 'Create IpPool', //workaround
     'Button_Create IP-Pools'        => 'Create IpPools',
@@ -350,6 +352,8 @@ return [
     // DASHBOARD
     'dashboard' => [
         'contractIndexPage' => 'Contracts',
+        'modemIndexPage' => 'Modems',
+        'netelementIndexPage' => 'Netelements',
         'ticketIndexPage' => 'Tickets',
     ],
     'Dashboard_Contracts'           => 'ACTIVE CONTRACTS',
