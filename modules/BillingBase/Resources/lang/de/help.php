@@ -5,7 +5,7 @@ return [
         'adaptItemStart'    => 'Wenn aktiviert wird bei Änderung des Beginns eines Vertrags der Beginn aller zugehörigen Posten automatisch auf das Datum des Vertragsbeginns gesetzt.',
         'cdr_offset'        => "ACHTUNG: Eine Erhöhung der Differenz führt bei bereits vorhandenen Daten im nächsten Abrechnungslauf zu überschriebenen EVNs - Stellen Sie sicher, dass diese gesichert/umbenannt wurden!\n\n1 - wenn die Einzelverbindungsnachweise vom Juni zu den Rechnungen vom Juli gehören; 0 - wenn beide für den selben Monat abgerechnet werden; 2 - wenn die Einzelverbindungsnachweise vom Januar zu den Rechnungen vom März gehören.",
         'cdr_retention'     => 'Anzahl der Monate, die Einzelverbindungsnachweise gespeichert werden dürfen/müssen.',
-        'extra_charge'      => 'Aufschlag auf Einkaufspreis in %. Nur wenn nicht schon vom Provider berechnet!',
+        'extra_charge'      => 'Aufschlag auf Einkaufspreis in %. Aktuell nur in Kombination mit Provider HlKomm nutzbar!',
         'fluid_dates'       => 'Aktivieren Sie diese Checkbox wenn Sie Tarife mit ungewissem Start- und/oder Enddatum eintragen möchten. In dem Fall werden 2 weitere Checkboxen (Gültig ab fest, Gültig bis fest) auf der Posten-Seite angezeigt. Weitere Erklärungen finden Sie neben diesen Feldern!',
         'invoiceNrStart'    => 'Rechnungsnummer startet jedes neue Jahr mit dieser Nummer.',
         'ItemTermination'   => 'Erlaubt es Kunden gebuchte Produkte nur bis zum letzten Tag des Monats zu kündigen.',
