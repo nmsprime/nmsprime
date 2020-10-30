@@ -12,7 +12,7 @@ return [
         'MandateRef'        => "Eine Vorlage kann mit SQL-Spalten des Auftrags oder mit der Mandat-Tabelle erstellt werden - mögliche Felder: \n",
         'rcd'               => 'Globales Fälligkeits- und Buchungsdatum. Dieses kann auf Vertragsebene auch spezifisch für den Vertrag gesetzt werden.',
         'showAGs'           => 'Fügt eine Auswahlliste mit Ansprechpartnern von Antennengemeinschaften zur Vertragsseite hinzu. Die Liste muss als Textdatei im Storage hinterlegt werden. Siehe Quellcode!',
-        'SplitSEPA'         => 'SEPA-Überweisungen sind in unterschiedliche XML-Dateien aufgeteilt, abhängig von ihrem Übertragungstyp.',
+        'SplitSEPA'         => 'Bitte aktivieren, wenn die SEPA.xml in unterschiedliche XML-Dateien aufgeteilt werden soll, die dann jeweils nur einen SEPA-Mandatsstatus enthalten (FRST | RCUR | ...).',
     ],
     'product' => [
         'recordMonthly' => 'Bei Aktivieren der Checkbox wird der Posten monatlich auf der Rechnung aufgeführt. Der Einzelpreis wird automatisch berechnet.',
