@@ -711,7 +711,7 @@ class BaseModel extends Eloquent
 
                 return false;
             }
-            if (\Str::endsWith($prev_route_name, '.edit')) {
+            if (Str::endsWith($prev_route_name, '.edit')) {
                 $place = 'form';
             } else {
                 $place = 'index_list';
@@ -731,7 +731,7 @@ class BaseModel extends Eloquent
 
     public static function getUser()
     {
-        $user = \Auth::user();
+        $user = Auth::user();
 
         return $user ? $user->first_name.' '.$user->last_name : 'cronjob';
     }
