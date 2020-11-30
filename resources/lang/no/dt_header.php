@@ -2,6 +2,7 @@
 
 return [
     // Index DataTable Header
+    'active' => 'Active',
     'amount' => 'Amount',
     'city' => 'City',
     'connected' => 'Connected',
@@ -23,6 +24,7 @@ return [
     'sum' => 'Sum',
     'type' => 'Type',
     'zip' => 'ZIP',
+    'version' => 'Version',
     'apartment' => [
         'number' => 'Number',
         'connected' => 'Connected',
@@ -175,7 +177,7 @@ return [
     'contract.house_number' => 'Housenr',
     'contract.id' => 'Contract',
     'contract.lastname' => 'Surname',
-    'contract.number' => 'Number',
+    'contract.number' => 'Contract Number',
     'contract.street' => 'Street',
     'contract.zip' => 'ZIP',
     // Domain
@@ -299,14 +301,18 @@ return [
         'nasname' => 'Name',
     ],
     // Ticket
-    'ticket.id' => 'ID',
-    'ticket.name' => 'Title',
-    'ticket.type' => 'Type',
-    'ticket.priority' => 'Priority',
-    'ticket.state' => 'State',
-    'ticket.user_id' => 'Created by',
-    'ticket.created_at' => 'Created at',
-    'ticket.assigned_users' => 'Assigned Users',
+    'ticket' => [
+        'id' => 'ID',
+        'name' => 'Title',
+        'type' => 'Type',
+        'priority' => 'Priority',
+        'state' => 'State',
+        'user_id' => 'Created by',
+        'created_at' => 'Created at',
+        'assigned_users' => 'Assigned Users',
+        'ticketable_id' => 'Id',
+        'ticketable_type' => 'Type',
+    ],
     'assigned_users' => 'Assigned Users',
     'tickettypes.name' => 'Type',
 ];
