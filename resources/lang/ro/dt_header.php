@@ -2,11 +2,13 @@
 
 return [
     // Index DataTable Header
+    'active' => 'Active',
     'amount' => 'Amount',
     'city' => 'City',
     'connected' => 'Connected',
     'connection_type' => 'Connection type',
     'deprecated' => 'Deprecated',
+    'district' => 'District',
     'email' => 'Email',
     'expansion_degree' => 'Expansion degree',
     'floor' => 'Floor',
@@ -22,6 +24,7 @@ return [
     'sum' => 'Sum',
     'type' => 'Type',
     'zip' => 'ZIP',
+    'version' => 'Versiune',
     'apartment' => [
         'number' => 'Number',
         'connected' => 'Connected',
@@ -31,9 +34,12 @@ return [
         'administration' => 'Administration',
     ],
     // Auth
-    'users.login_name' => 'Login Name',
-    'users.first_name' => 'Given Name',
-    'users.last_name' => 'Family Name',
+    'users' => [
+        'login_name' => 'Login Name',
+        'first_name' => 'Given Name',
+        'last_name' => 'Family Name',
+        'geopos_updated_at' => 'Last geopos update',
+    ],
     'roles.title' => 'Nume',
     'roles.rank' => 'Rank',
     'roles.description' => 'Description',
@@ -171,7 +177,7 @@ return [
     'contract.house_number' => 'Housenr',
     'contract.id' => 'Contract',
     'contract.lastname' => 'Surname',
-    'contract.number' => 'Număr',
+    'contract.number' => 'Contract Number',
     'contract.street' => 'Stradă',
     'contract.zip' => 'Cod Poștal',
     // Domain
@@ -204,6 +210,7 @@ return [
     'modem.name' => 'Modem Name',
     'modem.street' => 'Street',
     'modem.sw_rev' => 'Firmware Version',
+    'modem.ppp_username' => 'PPP Username',
     'modem.us_pwr' => 'US level',
     'modem.support_state' => 'Suport State',
     'modem.formatted_support_state' => 'Support State',
@@ -294,14 +301,18 @@ return [
         'nasname' => 'Name',
     ],
     // Ticket
-    'ticket.id' => 'ID',
-    'ticket.name' => 'Title',
-    'ticket.type' => 'Type',
-    'ticket.priority' => 'Priority',
-    'ticket.state' => 'State',
-    'ticket.user_id' => 'Created by',
-    'ticket.created_at' => 'Created at',
-    'ticket.assigned_users' => 'Assigned Users',
+    'ticket' => [
+        'id' => 'ID',
+        'name' => 'Title',
+        'type' => 'Type',
+        'priority' => 'Priority',
+        'state' => 'Judet',
+        'user_id' => 'Created by',
+        'created_at' => 'Created at',
+        'assigned_users' => 'Assigned Users',
+        'ticketable_id' => 'Id',
+        'ticketable_type' => 'Type',
+    ],
     'assigned_users' => 'Assigned Users',
     'tickettypes.name' => 'Type',
 ];

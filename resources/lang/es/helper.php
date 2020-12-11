@@ -14,7 +14,7 @@ return [
     'Use api'                   => 'Esta capacidad permite o prohíbe el acceso a las rutas API con "Basic Auth" (el correo electrónico se usa como nombre de usuario).',
     'See income chart'          => 'Esta capacidad permite o prohíbe ver la tabla de ingresos en el panel de control.',
     'View analysis pages of modems' => 'Esta capacidad permite o prohíbe el acceso a las páginas de análisis de un módem.',
-    'View analysis pages of netgw' => 'This ability allows or forbids to access the analysis pages of a NetGw.',
+    'View analysis pages of netgw' => 'Esta habilidad permite o prohíbe el acceso a las páginas de análisis de un puerto de enlace de red.',
     'Download settlement runs'  => 'Esta capacidad permite o prohíbe la descarga de ejecuciones de liquidación. Esta capacidad no tiene ningún impacto si está prohibido administrar ejecuciones de liquidación.',
     /*
   * Index Page - Datatables
@@ -48,13 +48,14 @@ return [
     //ProductController
     'product' => [
         'bundle'                => 'En tarifas agrupadas el tiempo mínimo de funcionamiento del contrato es determinado únicamente por la tarifa de Internet. De otra forma la última tarifa inicial valida (VoIP o Internet) dictamina esta fecha.',
+        'markon'                => 'Additional charge to call data records. This percentual extra charge is currently only added to Opennumbers CDRs.',
         'maturity_min'          => 'Período mínimo de tarifa/tiempo de ejecución/término. Ejem. 14D (14 días), 3M (3 meses), 1Y (1 Año)',
         'maturity'              => 'Tariff period/runtime/term extension after the minimum runtime. <br> Will be automatically added when tariff was not canceled before period of notice. Default 1 month. If no maturity is given the end of term of the item is always set to the last day of the month. <br><br> E.g. 14D (14 days), 3M (three months), 1Y (one year)',
         'Name'                  => 'Para créditos es posible asignar un Tipo añadiendo el nombre del tipo al Nombre del Crédito. Ejem.: "Dispositivo de crédito"',
         'pod'                   => 'Por ejemplo 14D (14 días), 3M (tres meses), 1Y (un año)',
         'proportional'          => 'Activa esta casilla cuando los elementos que empiecen durante la ejecución actual de la liquidación se cargarán proporcionalmente. Por ejemplo, si un artículo de pago mensual comienza a mediados del mes, el cliente se cobrará sólo la mitad del precio completo en esta operación de liquidación.',
         'Type'                  => '¡Todos los campos además del ciclo de facturación deben ser limpiados antes de un cambio de tipo! De lo contrario, en la mayoría de los casos los productos no pueden ser guardados',
-        'deprecated'            => 'Activate this checkbox if this product shall not be shown in the product select list when creating/editing items.',
+        'deprecated'            => 'Activar esta casilla de verificación si este producto no debe ser mostrado en la lista de selección de producto al crear/editar elementos.',
     ],
     'Product_Number_of_Cycles'      => 'Ten cuidado!: para todos los productos pagados repetidos, el precio aplica para cada deuda, para productos pagados de una, el Precio es dividido por el numero de ciclos',
 
@@ -73,7 +74,7 @@ return [
   */
     'next'                          => 'Siguiente paso: ',
     'set_isp_name'                  => 'Configure el nombre del proveedor de servicio de red',
-    'create_netgw'                  => 'Create first NetGw/CMTS',
+    'create_netgw'                  => 'Crear el primer NetGw/CMTS',
     'create_cm_pool'                => 'Crear la primera pool de IP para los cable modem',
     'create_cpepriv_pool'           => 'Crear la primera pool privada de IP para CPE',
     'create_qos'                    => 'Crear el primer perfil QoS',
@@ -113,17 +114,18 @@ return [
         'valueDate' => 'Día del mes para una fecha específica del valor. Anula la fecha de colección solicitada de la configuración global para este contrato en el SEPA XML.',
     ],
     'rate_coefficient'              => 'La Maxima Tarifa Sostenida sera multiplicada por este valor para otorgar al usuario mas (> 1.0) rendimiento que el suscrito.',
-    'additional_modem_reset'        => 'Check if an additional button should be displayed, which resets the modem via SNMP without querying the NetGw.',
+    'additional_modem_reset'        => 'Compruebe si debe mostrarse un botón adicional, que reinicie el módem a través de SNMP sin consultar el NetGw.',
     'openning_new_tab_for_modem' => 'Marque la casilla para abrir la página de edición del módem en la nueva pestaña en vista topografía.',
+    'ppp_session_timeout'           => 'In seconds. PPP session will not be terminated when setting the value to zero.',
     //ModemController
     'Modem_InternetAccess'          => 'Acceso a Internet para los CPEs (los MTAs no se consideran y siempre se conectarán cuando todas las demás configuraciones sean correctas). Tenga cuidado: Con el Módulo de facturación esta casilla se sobrescribirá por chequeo diario si cambia la tarifa.',
     'Modem_InstallationAddressChangeDate'   => 'En caso de (físico) reubicación del modem: agregar fecha de inicio para la nueva dirección ahí. Si es solo lectura, hay una orden de cambio de dirección pendiente en envia TEL.',
     'Modem_GeocodeOrigin'           => 'De donde vienen los datos geocode? Si se establece a "n/a", la direccion no podra ser geocoded para cualquier API. Sera establecido a su nombre en cambios manuales de geodata.',
     'netGwSupportState' => [
-        'full-support' => 'More than 95% of netGw modules are listed as supported devices.',
-        'restricted' => 'Between 80%-95% of netGw modules are listed as supported devices.',
-        'not-supported' => 'Less than 80% of netGw modules are listed as supported devices.',
-        'verifying' => 'Less than 80% of netGw modules are listed as supported devices, but the netGw is still within the verification period of 6 weeks',
+        'full-support' => 'Más del 95% de los módulos del netGw están listados como dispositivos compatibles.',
+        'restricted' => 'Entre 80%-95% de módulos del netGw están listados como dispositivos compatibles.',
+        'not-supported' => 'Menos del 80% de los módulos del netGw están listados como dispositivos compatibles.',
+        'verifying' => 'Menos del 80% de los módulos del netGw están listados como dispositivos compatibles, pero el netGw todavía está dentro del período de verificación de 6 semanas',
     ],
     'contract_number'               => 'Atencion - Contrasena del Cliente es cambiado automaticamente cuando se cambia este campo!',
     'mac_formats'                   => "Formatos permitidos (case-insensitive):\n\n1) AA:BB:CC:DD:EE:FF\n2) AABB.CCDD.EEFF\n3) AABBCCDDEEFF",
@@ -139,7 +141,10 @@ return [
     'agc_offset'                    => 'Compensación del control automático de ganancia para el upstream en dB. (por defecto: 0.0)',
     'configfile_count'              => 'El número en paréntesis indica que tan seguido está siendo usado el archivo de configuración respectivo.',
     'has_telephony'                 => 'Activar si el cliente tendrá telefonía pero no tiene Internet. Esta bandera no puede ser utilizada para desactivar la telefonía en contratos con Internet. Por favor, elimine el MTA o desactive el número de teléfono para eso. Información: El ajuste influye en los parámetros de configuración NetworkAcess y MaxCPE de los módems - ver la pestaña de análisis de modems \'Configfile\'',
-    'ssh_auto_prov'                 => 'Periodically run a script tailored to the OLT in order to automatically bring ONTs online.',
+    'ssh_auto_prov'                 => 'Correr periódicamente un script a la medida del OLT para poner automáticamente en linea los ONTs.',
+    'modem' => [
+        'configfileSelect' => 'It\'s not possible to change the device type of a modem via configfile (e.g. from \'cm\' to \'tr-69\'). Therefore please delete the modem and create a new one!',
+    ],
 
     /*
   * MODULE: ProvVoip
@@ -181,6 +186,9 @@ return [
     'mail_env'    => 'Siguiente: Establece tu Host/Usuario/Contraseña en /etc/nmsprime/env/global.env para permitir recibir Emails en Tickets',
     'noReplyMail' => 'La dirección de correo electrónico que debe ser mostrada como remitente, al crear/editar tickets. Esta dirección no tiene que existir. Por ejemplo: ejemplo@ejemplo.com',
     'noReplyName' => 'El nombre que debe mostrarse como remitente, al crear/editar tickets. Por ejemplo: NMS Prime',
-    'ticket_settings' => 'Siguiente: Establecer nombre y dirección no responder en la página de configuración global.',
+    'ticket_settings' => 'Next: Set noreply name and address in Global Ticket Config Page.',
     'carrier_out'      => 'Código de operador del futuro socio contractual. Si se deja en blanco el número de teléfono se eliminará.',
+    'ticketDistance' => 'Multiplier for the auto ticket assignment. The higher the value, the more important the distance factor becomes. (default: 1)',
+    'ticketModemcount' => 'Multiplier for the auto ticket assignment. The higher the value, the more important the affected Modem count becomes. (default: 1)',
+    'ticketOpentickets' => 'Multiplier for the auto ticket assignment. The higher the value, the more important the number of new and open Tickets for technicians becomes. (default: 1)',
 ];
