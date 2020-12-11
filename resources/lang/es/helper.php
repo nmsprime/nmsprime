@@ -55,7 +55,7 @@ return [
         'pod'                   => 'Por ejemplo 14D (14 días), 3M (tres meses), 1Y (un año)',
         'proportional'          => 'Activa esta casilla cuando los elementos que empiecen durante la ejecución actual de la liquidación se cargarán proporcionalmente. Por ejemplo, si un artículo de pago mensual comienza a mediados del mes, el cliente se cobrará sólo la mitad del precio completo en esta operación de liquidación.',
         'Type'                  => '¡Todos los campos además del ciclo de facturación deben ser limpiados antes de un cambio de tipo! De lo contrario, en la mayoría de los casos los productos no pueden ser guardados',
-        'deprecated'            => 'Activate this checkbox if this product shall not be shown in the product select list when creating/editing items.',
+        'deprecated'            => 'Activar esta casilla de verificación si este producto no debe ser mostrado en la lista de selección de producto al crear/editar elementos.',
     ],
     'Product_Number_of_Cycles'      => 'Ten cuidado!: para todos los productos pagados repetidos, el precio aplica para cada deuda, para productos pagados de una, el Precio es dividido por el numero de ciclos',
 
@@ -74,7 +74,7 @@ return [
   */
     'next'                          => 'Siguiente paso: ',
     'set_isp_name'                  => 'Configure el nombre del proveedor de servicio de red',
-    'create_netgw'                  => 'Create first NetGw/CMTS',
+    'create_netgw'                  => 'Crear el primer NetGw/CMTS',
     'create_cm_pool'                => 'Crear la primera pool de IP para los cable modem',
     'create_cpepriv_pool'           => 'Crear la primera pool privada de IP para CPE',
     'create_qos'                    => 'Crear el primer perfil QoS',
@@ -114,7 +114,7 @@ return [
         'valueDate' => 'Día del mes para una fecha específica del valor. Anula la fecha de colección solicitada de la configuración global para este contrato en el SEPA XML.',
     ],
     'rate_coefficient'              => 'La Maxima Tarifa Sostenida sera multiplicada por este valor para otorgar al usuario mas (> 1.0) rendimiento que el suscrito.',
-    'additional_modem_reset'        => 'Check if an additional button should be displayed, which resets the modem via SNMP without querying the NetGw.',
+    'additional_modem_reset'        => 'Compruebe si debe mostrarse un botón adicional, que reinicie el módem a través de SNMP sin consultar el NetGw.',
     'openning_new_tab_for_modem' => 'Marque la casilla para abrir la página de edición del módem en la nueva pestaña en vista topografía.',
     'ppp_session_timeout'           => 'In seconds. PPP session will not be terminated when setting the value to zero.',
     //ModemController
@@ -122,10 +122,10 @@ return [
     'Modem_InstallationAddressChangeDate'   => 'En caso de (físico) reubicación del modem: agregar fecha de inicio para la nueva dirección ahí. Si es solo lectura, hay una orden de cambio de dirección pendiente en envia TEL.',
     'Modem_GeocodeOrigin'           => 'De donde vienen los datos geocode? Si se establece a "n/a", la direccion no podra ser geocoded para cualquier API. Sera establecido a su nombre en cambios manuales de geodata.',
     'netGwSupportState' => [
-        'full-support' => 'More than 95% of netGw modules are listed as supported devices.',
-        'restricted' => 'Between 80%-95% of netGw modules are listed as supported devices.',
-        'not-supported' => 'Less than 80% of netGw modules are listed as supported devices.',
-        'verifying' => 'Less than 80% of netGw modules are listed as supported devices, but the netGw is still within the verification period of 6 weeks',
+        'full-support' => 'Más del 95% de los módulos del netGw están listados como dispositivos compatibles.',
+        'restricted' => 'Entre 80%-95% de módulos del netGw están listados como dispositivos compatibles.',
+        'not-supported' => 'Menos del 80% de los módulos del netGw están listados como dispositivos compatibles.',
+        'verifying' => 'Menos del 80% de los módulos del netGw están listados como dispositivos compatibles, pero el netGw todavía está dentro del período de verificación de 6 semanas',
     ],
     'contract_number'               => 'Atencion - Contrasena del Cliente es cambiado automaticamente cuando se cambia este campo!',
     'mac_formats'                   => "Formatos permitidos (case-insensitive):\n\n1) AA:BB:CC:DD:EE:FF\n2) AABB.CCDD.EEFF\n3) AABBCCDDEEFF",
@@ -141,7 +141,7 @@ return [
     'agc_offset'                    => 'Compensación del control automático de ganancia para el upstream en dB. (por defecto: 0.0)',
     'configfile_count'              => 'El número en paréntesis indica que tan seguido está siendo usado el archivo de configuración respectivo.',
     'has_telephony'                 => 'Activar si el cliente tendrá telefonía pero no tiene Internet. Esta bandera no puede ser utilizada para desactivar la telefonía en contratos con Internet. Por favor, elimine el MTA o desactive el número de teléfono para eso. Información: El ajuste influye en los parámetros de configuración NetworkAcess y MaxCPE de los módems - ver la pestaña de análisis de modems \'Configfile\'',
-    'ssh_auto_prov'                 => 'Periodically run a script tailored to the OLT in order to automatically bring ONTs online.',
+    'ssh_auto_prov'                 => 'Correr periódicamente un script a la medida del OLT para poner automáticamente en linea los ONTs.',
     'modem' => [
         'configfileSelect' => 'It\'s not possible to change the device type of a modem via configfile (e.g. from \'cm\' to \'tr-69\'). Therefore please delete the modem and create a new one!',
     ],
