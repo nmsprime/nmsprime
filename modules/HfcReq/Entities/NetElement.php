@@ -908,6 +908,11 @@ class NetElement extends \BaseModel
         }
     }
 
+    /**
+     * Collect the necessary data for TicketReceiver and Notifications.
+     *
+     * @return array
+     */
     public function getTicketSummary()
     {
         if ($this->pos) {
@@ -942,6 +947,11 @@ class NetElement extends \BaseModel
         ];
     }
 
+    /**
+     * To reduce AJAX Payload, only this subset is loaded.
+     *
+     * @return array
+     */
     public function reducedFields()
     {
         return ['id', 'netelementtype', 'name', 'pos', 'cluster'];

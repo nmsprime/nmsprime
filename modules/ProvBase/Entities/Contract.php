@@ -1656,6 +1656,11 @@ class Contract extends \BaseModel
         return $objList;
     }
 
+    /**
+     * Collect the necessary data for TicketReceiver and Notifications.
+     *
+     * @return array
+     */
     public function getTicketSummary()
     {
         if ($this->x != 0 || $this->y != 0) {
@@ -1691,6 +1696,11 @@ class Contract extends \BaseModel
         ];
     }
 
+    /**
+     * To reduce AJAX Payload, only this subset is loaded.
+     *
+     * @return array
+     */
     public function reducedFields()
     {
         return [
