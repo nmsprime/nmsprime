@@ -1179,7 +1179,13 @@ class Contract extends \BaseModel
      */
     public function push_to_modems()
     {
+        $internetAccessChanged = false;
+
         foreach ($this->modems as $modem) {
+            if ($modem->internet_access != $this->internet_access) {
+                $internetAccessChanged = true;
+            }
+
             $modem->internet_access = $this->internet_access;
             $modem->qos_id = $this->qos_id;
             $modem->observer_enabled = false;
@@ -1187,6 +1193,10 @@ class Contract extends \BaseModel
             $modem->make_configfile();
             $modem->save();
             $modem->restart_modem();
+        }
+
+        if ($internetAccessChanged) {
+            Modem::createDhcpBlockedCpesFile();
         }
     }
 
