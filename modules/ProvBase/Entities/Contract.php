@@ -900,6 +900,7 @@ class Contract extends \BaseModel
 
         if ($contract_changed) {
             $this->save();
+            $this->push_to_modems();
         }
     }
 
