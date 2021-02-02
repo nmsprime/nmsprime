@@ -15,7 +15,7 @@ return [
         'SplitSEPA'         => 'Sepa Transfers are split to different XML-Files dependent of their transfer type',
     ],
     'product' => [
-        'recordMonthly' => 'With activated checkbox the corresponding items will be recorded monthly on the invoice. The unit price will be calculated automatically.',
+        'recordMonthly' => 'With activated checkbox the corresponding items will be recorded monthly on the invoice. The unit price will be calculated automatically. This is only relevant for yearly charged products.',
     ],
     'sepaAccount' => [
         'invoiceHeadline'   => 'Replaces Headline in Invoices created for this Costcenter',

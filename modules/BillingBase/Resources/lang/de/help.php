@@ -15,7 +15,7 @@ return [
         'SplitSEPA'         => 'Bitte aktivieren, wenn die SEPA.xml in unterschiedliche XML-Dateien aufgeteilt werden soll, die dann jeweils nur einen SEPA-Mandatsstatus enthalten (FRST | RCUR | ...).',
     ],
     'product' => [
-        'recordMonthly' => 'Bei Aktivieren der Checkbox wird der Posten monatlich auf der Rechnung aufgeführt. Der Einzelpreis wird automatisch berechnet.',
+        'recordMonthly' => 'Bei Aktivieren der Checkbox wird der Posten monatlich auf der Rechnung aufgeführt. Der Einzelpreis wird automatisch berechnet. Dies ist nur für jährlich abzurechnende Produkte relevant.',
     ],
     'sepaAccount' => [
         'invoiceHeadline'   => 'Ersetzt die Überschrift der Rechnung, die für diese Kostenstelle erstellt wird.',
