@@ -188,7 +188,9 @@ return [
     'Salutation'                => 'Salutation',
     'Save'                      => 'Salvează',
     'Save / Restart'            => 'Save / Restart',
-    'Serial Number'             => 'Serial Number',
+    'Serial Number / CWMP-ID'   => 'Serial Number / CWMP-ID',
+    'PPP Username'              => 'PPP Username',
+    'PPP Password'              => 'PPP Password',
     'Sign me in'                => 'Sign me in',
     'snmp' => [
         'errors_walk' => 'Querying the following OIDs failed: :oids.',
@@ -477,7 +479,6 @@ return [
     'Deactivation date'     => 'Deactivation date',
     'External deactivation date' => 'External deactivation date',
     'SIP domain'            => 'SIP domain',
-    'Created at'            => 'Created at',
     'Last status update'    => 'Last status update',
     'Last user interaction' => 'Last user interaction',
     'Method'                => 'Method',
@@ -664,9 +665,7 @@ return [
             'updated N:M'   => 'updated',
         ],
     ],
-    'modem' => [
-        'missingProvMon' => 'Prime Monitoring is missing.',
-    ],
+    'missingModule' => ':module is missing.',
     'Modem'                         => 'Modem',
     'PhonenumberManagement'         => 'Phonenumber Management',
     'PhonebookEntry_lastExternalUpdateTelekom' => 'Last update at Telekom',
@@ -724,5 +723,4 @@ return [
     'Default Country Code'      => 'Default Country Code',
     'mail_not_sent'             => 'Email could not be delivered - Missing email data in environment file!',
     'NoSnmpAccess'              => "Please set your community :ACCESS access for Netelement ':name'",
-    'SnmpAccessException'       => 'Snmp Access Declined',
 ];
