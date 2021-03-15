@@ -77,14 +77,19 @@ class SetEmptyStringsToNull extends Migration
 
         foreach ($tables as $tableName) {
             // call rules for model of table
-            $modelName = $tableName == 'users' ? 'user' : strtolower(studly_case($tableName));
-            $rules = $models->has($modelName) ? $models[$modelName]::rules() : [];
+            $modelName = $tableName == 'users' ? 'user' : Str::lower(Str::studly($tableName));
+            $instance = new $models[$modelName];
+            $rules = $models->has($modelName) ? $instance->rules() : [];
 
             // get rules for this table
             $nullable = [];
             $required = ['sometimes', 'required'];
             foreach ($rules as $field => $rule) {
-                $nullable[$field] = empty(array_intersect($required, explode('|', $rule))) ? true : false;
+                if (is_array($rule)) {
+                    $nullable[$field] = in_array('required', $rule) ? false : true;
+                } else {
+                    $nullable[$field] = empty(array_intersect($required, explode('|', $rule))) ? true : false;
+                }
             }
 
             echo "Set empty strings to null in {$tableName} table.\n";
@@ -107,6 +112,10 @@ class SetEmptyStringsToNull extends Migration
                     $type === 'boolean' ||
                     ($column !== 'parent_id' && $type == 'integer' && Str::endsWith($column, '_id'))
                 ) {
+                    continue;
+                }
+
+                if (in_array($column, ['id_name'])) {
                     continue;
                 }
 

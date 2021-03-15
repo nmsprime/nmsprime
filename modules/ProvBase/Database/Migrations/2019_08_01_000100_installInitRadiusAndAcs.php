@@ -23,7 +23,7 @@ class InstallInitRadiusAndAcs extends BaseMigration
         // use schema from git, since it adds the id column in radusergroup
         // centos8: reset to /etc/raddb/mods-config/sql/main/mysql/schema.sql
         \DB::unprepared(file_get_contents('https://raw.githubusercontent.com/FreeRADIUS/freeradius-server/b838f5178fe092598fb3459dedb5e1ea49b41340/raddb/mods-config/sql/main/mysql/schema.sql'));
-        Modules\ProvBase\Entities\RadGroupReply::repopulate();
+        \Artisan::call('nms:radgroupreply-repopulate');
 
         $config = DB::connection('mysql-radius')->getConfig();
 
@@ -55,34 +55,7 @@ class InstallInitRadiusAndAcs extends BaseMigration
         // we can't user php chrgp, since it always dereferences symbolic links
         exec("chgrp -h radiusd $link");
 
-        $filename = '/lib/node_modules/genieacs/config/config.json';
-        $conf = json_decode(file_get_contents($filename));
-        // firmware files are hosted on same machine as CWMP
-        unset($conf->FS_HOSTNAME);
-        // enable TLS for CWMP messages (ACS <-> CPE)
-        $conf->CWMP_SSL = true;
-        // northbound interface is localhost only, thus we don't need TLS
-        $conf->NBI_INTERFACE = 'localhost';
-        file_put_contents($filename, json_encode($conf));
-
-        $crt = glob('/var/lib/acme/certs/*.crt');
-        $link = [];
-        if (count($crt) == 1) {
-            $crt = reset($crt);
-            $link['crt'] = $crt;
-            $link['key'] = '/etc/pki/tls/private/'.basename($crt, '.crt').'.key';
-        } else {
-            $link['crt'] = '/etc/httpd/ssl/httpd.pem';
-            $link['key'] = '/etc/httpd/ssl/httpd.key';
-        }
-
-        foreach ($link as $ext => $target) {
-            exec("ln -srf $target /lib/node_modules/genieacs/config/cwmp.$ext");
-        }
-
-        chmod('/lib/node_modules/genieacs/config/cwmp.key', 0444);
-
-        foreach (['radiusd', 'mongod', 'genieacs-cwmp', 'genieacs-fs', 'genieacs-nbi'] as $service) {
+        foreach (['radiusd', 'mongod', 'genieacs-cwmp', 'genieacs-fs', 'genieacs-nbi', 'genieacs-ui'] as $service) {
             exec("systemctl enable $service.service");
             exec("systemctl start $service.service");
         }
@@ -95,5 +68,10 @@ class InstallInitRadiusAndAcs extends BaseMigration
      */
     public function down()
     {
+        $radiusTables = ['radacct', 'radcheck', 'radgroupcheck', 'radgroupreply', 'radreply', 'radusergroup', 'radpostauth', 'nas'];
+
+        foreach ($radiusTables as $table) {
+            Schema::drop($table);
+        }
     }
 }

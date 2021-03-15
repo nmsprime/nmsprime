@@ -34,52 +34,100 @@ var makeNavbarSearch = function() {
 /* Keep Sidebar open and Save State and Minify Status of Sidebar
 *  @author: Christian Schramm
 */
-if (typeof(Storage) !== "undefined") {
+if (typeof(Storage) !== "undefined" && $('#sidebar').length) {
     //save minified s_state
     var ministate = localStorage.getItem("minified-state");
     var sitem = localStorage.getItem("sidebar-item");
     var chitem = localStorage.getItem("clicked-item");
 
     if (ministate == "true") {
-    $('#page-container').addClass('page-sidebar-minified');
+      $('#page-container').addClass('page-sidebar-minified');
     } else {
-    $('#page-container').removeClass('page-sidebar-minified');
+      $('#page-container').removeClass('page-sidebar-minified');
     }
 
-    if (!$('#dashboardsidebar').hasClass('active')) {
-        $('#' + sitem).addClass("expand");
-        $('#' + sitem).addClass("active");
-        $('#' + sitem + ' .sub-menu ').css("display", "block");
-        $('#' + chitem).addClass("active");
-	}
-    $('#sidebar ul > li').click(function (event) {
-        localStorage.setItem("sidebar-item", $(this).attr('id'));
-        localStorage.setItem("clicked-item", $(this).attr('id'));
-    });
+    if (sitem !== 'undefined' && sitem !== null && chitem !== 'undefined' && chitem !== null) {
+      $('#' + sitem).addClass("expand");
+      $('#' + sitem).addClass("active");
+      $('#' + sitem).children('div').find('b.caret').removeClass("fa-rotate-270")
+      $('#' + sitem + '> .sub-menu ').css("display", "block");
+      $('#' + chitem).addClass("active");
+
+      if ($('#' + chitem).parent().length) {
+        $('#' + chitem).parent()[0].style.display = 'block'
+        $('#' + chitem).parent().siblings().find('b.caret').removeClass("fa-rotate-270")
+      }
+
+      if ($('#' + chitem).data('sidebar') == 'level2') {
+        $('#' + chitem).addClass("expand");
+        $('#' + chitem + '> div > a').css("color", "white");
+        $('#' + chitem + '> .sub-menu ').css("display", "block");
+        $('#' + chitem).find('b.caret').removeClass("fa-rotate-270")
+      }
+    }
 
     $('#sidebar ul > li > div > .caret-link').click(function (event) {
-        var li_item = $(this).closest('[data-sidebar=level1]');
-        if(li_item.hasClass('expand')){
+        var li_item = $(this).closest('[data-sidebar=level1],[data-sidebar=level2]');
+        if (li_item.hasClass('expand')){
             li_item.removeClass('expand');
+            li_item.children('div').find('b.caret').addClass("fa-rotate-270");
             li_item.children('.sub-menu').css('display', 'none');
-        }else {
+        } else {
             li_item.children('.sub-menu').css('display', 'block');
+            li_item.children('div').find('b.caret').removeClass("fa-rotate-270")
             li_item.addClass('expand');
         }
-		});
+    });
 
-    $('#sidebar .sub-menu  li').click(function (event) {
+
+    $('#sidebar ul > li').click(function (event) { //main menu click
+      if(!! $(this).attr('id')) {
+        localStorage.setItem("sidebar-item", $(this).attr('id'));
+        localStorage.setItem("clicked-item", $(this).attr('id'));
+      }
+    })
+
+    $('#sidebar .sub-menu li').click(function (event) { //submenu click
         event.stopPropagation();
         localStorage.setItem("sidebar-item", $(this).closest('[data-sidebar=level1]').attr('id'));
         localStorage.setItem("clicked-item", $(this).attr('id'));
-    });
+    })
 
 } else {
-  console.log("sorry, no Web Storage Support - Cant save State of Sidebar -please update your Browser")
+  console.log("Sorry, no Web Storage Support - Cant save State of Sidebar - please update your Browser")
 }
 
+$('.jsDateInterval').each(function () {
+  $(this.parentNode).addClass('d-flex')
+  $(this).addClass('h-100')
+  $(this).after(`
+    <div class="btn btn-secondary ml-2 jsToggle jsDate"><i class="fa mr-0 fa-calendar"></i></div>
+    <div class="btn jsToggle jsInterval"><i class="fa mr-0 fa-hourglass-o"></i></div>
+  `)
+})
 
+$('.jsToggle').click(function (event) {
+  let jqEl = $(this)
+  if (jqEl.hasClass('btn-secondary')) {
+    return
+  }
 
+  let jqInputgroup =  jqEl.siblings()
+  let input = jqInputgroup.closest('input')[0]
+  jqInputgroup.closest('.btn-secondary').removeClass('btn-secondary')
+
+  if (jqEl.hasClass('jsDate')) {
+    input.setAttribute('placeholder', '')
+    input.setAttribute('type', 'date')
+  }
+
+  if (jqEl.hasClass('jsInterval')) {
+    input.setAttribute('placeholder', '12M')
+    input.setAttribute('type', 'text')
+  }
+
+  jqEl.addClass('btn-secondary')
+})
 
 /* This bit can be used on the entire app over all pages and will work for both tabs and pills.
 * Also, make sure the tabs or pills are not active by default,
@@ -91,7 +139,7 @@ var saveTabPillState = function() {
   // Show tab from hash
   // Note: for an URL with hash the function above will not be initialised and therefore will not save the tab state
   if (window.location.hash) {
-    return $(window.location.hash + 'tab').tab('show');
+    return $("a[href='"+ window.location.hash + "']").click()
   }
 
   $(function() {
@@ -181,7 +229,10 @@ $('a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
 
 function rezizeTextareas() {
   $('textarea').each(function () {
-    this.setAttribute('style', 'height:' + (this.scrollHeight + 5) + 'px;max-height: 1080px;');
+      $(this).css({
+          "height": this.scrollHeight + 5 + "px",
+          "max-height": "1080px"
+      });
   }).on('input', function () {
     var scrollLeft = window.pageXOffset ||
       (document.documentElement || document.body.parentNode || document.body).scrollLeft;

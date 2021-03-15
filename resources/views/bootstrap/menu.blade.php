@@ -1,5 +1,5 @@
 {{-- begin Navbar --}}
-<nav id="header" class="header navbar navbar-expand navbar-default navbar-fixed-top">
+<nav id="header" class="header navbar navbar-expand navbar-default navbar-fixed-top d-print-none">
   {{-- only one row Navbar --}}
     <div class="row">
       {{-- begin mobile sidebar expand / collapse button --}}
@@ -11,13 +11,13 @@
 
         {{-- NMSPrime Logo with link to global dashboard --}}
         <span class="navbar-brand d-none d-sm-none d-md-block">
-          <a href="{{route('Dashboard.index')}}">
+          {!! '<a'.($nmsprimeLogoLink ? ' href="'.$nmsprimeLogoLink.'">' : '>') !!}
             <img src="{{asset('images/nmsprime-logo.png')}}" style="width:100%; margin-top:-10px; margin-left:5px" class="">
           </a>
         </span>
 
         {{-- end mobile sidebar expand / collapse button --}}
-      <div class="col tab-overflow p-t-5">
+      <div class="col tab-overflow p-t-5 m-l-5">
         <ul class="nav nav-pills p-t-5">
           <li class="prev-button"><a href="javascript:;" data-click="prev-tab" class="m-t-10"><i class="fa fa-arrow-left"></i></a></li>
           @yield('content_top')
@@ -62,12 +62,12 @@
           </div>
         </li>
 
-        @if (Module::collections()->has('Dashboard'))
+        @if (Module::collections()->has(['Dashboard', 'HfcBase']))
           {{-- Modem Statistics (Online/Offline) --}}
           <li  class='m-t-10' style='font-size: 2em; font-weight: bold'>
-            <a href="{{ route('CustomerTopo.show_impaired') }}" style="text-decoration: none;">
+            <a href="{{ route('HfcBase.index') }}" style="text-decoration: none;">
               @if (is_object($modem_statistics))
-                <span data-toggle="tooltip" data-placement="auto" title="{{trans_choice('messages.modem_statistics',1)}}">
+                <span data-toggle="tooltip" data-placement="auto" title="{{ trans('messages.modem_statistics') }}">
                   <i class="{{ $modem_statistics->fa }} fa-lg text-{{ $modem_statistics->style }}"></i>
                   <span class="badge badge-{{ $modem_statistics->style }}">{!! $modem_statistics->text !!}</span>
                 </span>
@@ -134,16 +134,50 @@
         </li>
       </ul>
     {{-- end header navigation right --}}
-    <div class="search-form bg-white">
-      {!! Form::model(null, array('route'=>'Base.fulltextSearch', 'method'=>'GET'), 'simple') !!}
-      {!! Form::hidden('mode', 'simple') !!}
-      {!! Form::hidden('scope', 'all') !!}
-      <button class="search-btn" type="submit">
-        <i class="fa fa-search fa-2x" aria-hidden="true"></i>
-      </button>
-      <input id="globalsearch" type="text" name="query" class="form-control navbar" placeholder="{{\App\Http\Controllers\BaseViewController::translate_view('EnterKeyword', 'Search')}}">
-      <a href="#" class="close" data-dismiss="navbar-search"><i class="fa fa-angle-up fa-2x" aria-hidden="true"></i></a>
-      {!! Form::close() !!}
+    <div class="search-form bg-white" style="height: auto;">
+      <form id="globalSearchForm" class="form-open" method="GET" onsubmit="linkTag();">
+        <div class="btn-group search-btn">
+          <div class="input-group-append">
+            <button class="btn btn-primary" onsubmit="linkTag();" for="prefillSearchbar">{{ trans('view.jQuery_sSearch') }}</button>
+          </div>
+          <select class="custom-select" id="prefillSearchbar" onchange="getSearchTag();">
+            <option selected value="" data-route="{{ route('Base.globalSearch') }}">{{ trans('view.jQuery_All') }}</option>
+            @if (Module::collections()->has('ProvMon')) {
+              <option value="ip:" data-route="{{ route('Ip.globalSearch') }}">IP</option>
+            @endif
+          </select>
+        </div>
+        <input id="globalSearch" type="text" name="query" class="form-control navbar" placeholder="{{ \App\Http\Controllers\BaseViewController::translate_view('EnterKeyword', 'Search') }}">
+        <a href="#" class="close" data-dismiss="navbar-search"><i class="fa fa-angle-up fa-2x" aria-hidden="true"></i></a>
+      </form>
     </div>
   </div> {{-- End ROW --}}
 </nav>
+
+<script type="text/javascript">
+
+function getSearchTag()
+{
+  var element = document.getElementById('prefillSearchbar');
+  document.getElementById('globalSearch').value = element.options[element.selectedIndex].value;
+}
+
+function linkTag()
+{
+  var element = document.getElementById('prefillSearchbar');
+  var select = element.options[element.selectedIndex];
+  var search = document.getElementById('globalSearch');
+
+  // if you search 'ip:...' in 'all', still use the 'ip:' tag
+  // if there is no tag, you search in 'all'
+  Array.from(element.options).forEach(function(option) {
+    if (search.value.startsWith(option.value) && option.value != '') {
+      var querySelector = `[value='${option.value}']`;
+      document.getElementById('globalSearchForm').action = document.querySelectorAll(querySelector)[0].dataset.route;
+    } else {
+      document.getElementById('globalSearchForm').action = select.dataset.route;
+    }
+  });
+}
+
+</script>

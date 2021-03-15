@@ -2,16 +2,16 @@
 
 namespace Modules\HfcReq\Entities;
 
-return [
-    'name' => 'HfcBase',
-    'link' => 'HfcBase.index',
+$config = [
+    'link' => null,
+    'parent' => '',
     'MenuItems' => [
-        'Net Element Types' => [
+        'NetElementType' => [
             'link'	=> 'NetElementType.index',
             'icon'	=> 'fa-object-group',
             'class' => NetElementType::class,
         ],
-        'Net Elements' => [
+        'NetElement' => [
             'link'	=> 'NetElement.index',
             'icon'	=> 'fa-object-ungroup',
             'class' => NetElement::class,
@@ -24,3 +24,10 @@ return [
         'ds_snr' => 'DS SNR',
     ],
 ];
+
+if (\Module::collections()->has('HfcBase')) {
+    $config['link'] = 'HfcBase.index';
+    $config['parent'] = 'HfcBase';
+}
+
+return $config;

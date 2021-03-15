@@ -3,12 +3,9 @@
 namespace App;
 
 use App;
-use Bouncer;
-use Session;
-use Carbon\Carbon;
 use Illuminate\Auth\Authenticatable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Notifications\Notifiable;
-use Modules\Ticketsystem\Entities\Ticket;
 use Silber\Bouncer\Database\HasRolesAndAbilities;
 use Illuminate\Foundation\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
@@ -24,14 +21,35 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
 {
     use Authenticatable, Authorizable, HasRolesAndAbilities, Notifiable;
 
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
     public $table = 'users';
 
+    /**
+     * The authentication guard name.
+     *
+     * @var string
+     */
     protected $guard = 'admin';
 
+    /**
+     * The attributes that should be mutated to dates.
+     *
+     * @var array
+     */
     protected $dates = [
         'last_login_at',
+        'geopos_updated_at',
         'password_changed_at',
     ];
+
+    /**
+     * Expiration duration for the user position data.
+     */
+    public const GEOPOS_EXPIRATION_TIME = '1 day';
 
     /**
      * extending the boot functionality to observe changes
@@ -42,7 +60,7 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
     {
         parent::boot();
 
-        self::observe(new UserObserver);
+        self::observe(new \App\Observers\UserObserver);
     }
 
     /**
@@ -55,11 +73,13 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
         'last_name',
         'login_name',
         'email',
+        'phonenumber',
         'password',
         'language',
         'active',
         'password_changed_at',
         'initial_dashboard',
+        'hasTruck',
     ];
 
     /**
@@ -70,11 +90,27 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
     protected $hidden = [
         'password',
         'remember_token',
+        'api_token',
     ];
 
     public function tickets()
     {
-        return $this->belongsToMany(Ticket::class, 'ticket_user', 'user_id', 'ticket_id');
+        return $this->belongsToMany(\Modules\Ticketsystem\Entities\Ticket::class, 'ticket_user', 'user_id', 'ticket_id');
+    }
+
+    /**
+     * Query for the new and open Tickets only.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function openTickets()
+    {
+        return $this->tickets()->where('state', '!=', 'closed');
+    }
+
+    public function inWorkTickets()
+    {
+        return $this->tickets()->where('state', 'in work');
     }
 
     /**
@@ -82,10 +118,13 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
      *
      *  Add your validation rules here
      */
-    public static function rules($id = null)
+    public function rules()
     {
+        $id = $this->id;
+
         return [
             'email' => 'nullable|email',
+            'phonenumber' => 'nullable|numeric',
             'login_name' => 'required|unique:users,login_name,'.$id.',id,deleted_at,NULL',
             'password' => 'sometimes|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/|confirmed',
             'password_confirmation' => 'min:8|required_with:password|same:password',
@@ -122,7 +161,7 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
     public function view_index_label()
     {
         return ['table' => $this->table,
-            'index_header' => [$this->table.'.login_name', $this->table.'.first_name', $this->table.'.last_name'],
+            'index_header' => [$this->table.'.login_name', $this->table.'.first_name', $this->table.'.last_name', 'email', $this->table.'.geopos_updated_at', 'active'],
             'header' => $this->first_name.' '.$this->last_name,
         ];
     }
@@ -185,7 +224,7 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
      */
     public function isPasswordExpired(): bool
     {
-        $passwordInterval = \Cache::get('GlobalConfig', function () {
+        $passwordInterval = Cache::get('GlobalConfig', function () {
             return \App\GlobalConfig::first();
         })->passwordResetInterval;
 
@@ -193,43 +232,32 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
             return false;
         }
 
-        return Carbon::now()
+        return now()
             ->subDays($passwordInterval)
             ->greaterThan($this->password_changed_at);
     }
-}
 
-class UserObserver
-{
-    public function created($user)
+    /**
+     * Use NmsPrime Helperfunction to calculate geographical distance between
+     * two coordinates.
+     *
+     * @param float $latitude
+     * @param float $longitude
+     *
+     * @return float [km]
+     */
+    public function getDistance($latitude, $longitude)
     {
-        Bouncer::allow($user)->toOwn(User::class);
+        return distanceLatLong($this->geopos_y, $this->geopos_x, $latitude, $longitude) / 1000;
     }
 
-    public function updating($user)
+    /**
+     * Check if the Position of the current user is outdated.
+     *
+     * @return bool
+     */
+    public function isGeoposOutdated()
     {
-        // Rebuild cached sidebar when user changes his language
-        if ($user->isDirty('language')) {
-            Session::forget('menu');
-
-            $userLang = checkLocale($user->language);
-
-            App::setLocale($userLang);
-            Session::put('language', $userLang);
-        }
-    }
-
-    public function deleting($user)
-    {
-        $self = \Auth::user();
-        $authRank = $self->getHighestRank();
-
-        if ($authRank == '101') {
-            return;
-        }
-
-        if ($self->hasSameRankAs($user) || $self->hasLowerRankThan($user)) {
-            return false;
-        }
+        return $this->geopos_updated_at->lte(now()->sub(self::GEOPOS_EXPIRATION_TIME));
     }
 }

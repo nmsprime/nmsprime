@@ -7,11 +7,12 @@ use App\Sla;
 
 class NetGw extends \BaseModel
 {
-    const TYPES = ['cmts', 'bras', 'olt', 'dslam'];
-
-    private static $_us_snr_path = 'data/provmon/us_snr';
+    public const TYPES = ['cmts', 'bras', 'olt', 'dslam'];
     // don't put a trailing slash here!
-    public static $netgw_include_path = '/etc/dhcp-nmsprime/cmts_gws';
+    public const NETGW_INCLUDE_PATH = '/etc/dhcp-nmsprime/cmts_gws';
+    protected const US_SNR_PATH = 'data/provmon/us_snr';
+    protected const DHCP6_GATEWAYS_FILE = '/etc/kea/gateways6.conf';
+    protected const DHCP6_GATEWAYS_DIR = '/etc/kea/gateways6';
 
     // The associated SQL table for this Model
     public $table = 'netgw';
@@ -21,14 +22,17 @@ class NetGw extends \BaseModel
     protected $appends = ['formatted_support_state'];
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
+        $id = $this->id;
+
         $types = implode(self::TYPES, ',');
 
         return [
             'hostname' => 'required|unique:netgw,hostname,'.$id.',id,deleted_at,NULL',  	// unique: table, column, exception , (where clause)
             'company' => 'required',
             'type' => "required|in:$types",
+            'coa_port' => 'nullable|numeric|min:1|max:65535',
         ];
     }
 
@@ -44,13 +48,6 @@ class NetGw extends \BaseModel
         return '<i class="fa fa-server"></i>';
     }
 
-    public static function make_dhcp_conf_all()
-    {
-        foreach (self::where('type', 'cmts')->get() as $cmts) {
-            $cmts->make_dhcp_conf();
-        }
-    }
-
     // AJAX Index list function
     // generates datatable content and classes for model
     public function view_index_label()
@@ -58,7 +55,7 @@ class NetGw extends \BaseModel
         $bsclass = $this->get_bsclass();
 
         $ret = ['table' => $this->table,
-            'index_header' => [$this->table.'.id', $this->table.'.hostname', $this->table.'.ip', $this->table.'.company', $this->table.'.series'],
+            'index_header' => [$this->table.'.id', $this->table.'.hostname', 'type', $this->table.'.ip', $this->table.'.company', $this->table.'.series'],
             'header' =>  $this->hostname,
             'bsclass' => $bsclass,
             'order_by' => ['0' => 'asc'], ];
@@ -125,8 +122,8 @@ class NetGw extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new NetGwObserver);
-        self::observe(new \App\SystemdObserver);
+        self::observe(new \Modules\ProvBase\Observers\NetGwObserver);
+        self::observe(new \App\Observers\SystemdObserver);
     }
 
     /**
@@ -257,11 +254,12 @@ class NetGw extends \BaseModel
         }
 
         // get provisioning IP and interface
-        $this->prov_ip = ProvBase::first()->provisioning_server;
+        $conf = ProvBase::first();
+        $this->prov_ip = $conf->provisioning_server;
         exec('ip a | grep '.$this->prov_ip.' | tr " " "\n" | tail -n1', $prov_if);
         $this->prov_if = (isset($prov_if[0]) ? $prov_if[0] : 'eth');
 
-        $this->domain = ProvBase::first()->domain_name;
+        $this->domain = $conf->domain_name;
         $this->router_ip = env('NETGW_DEFAULT_GW', '172.20.3.254');
         $this->netmask = env('NETGW_IP_NETMASK', '255.255.252.0');
         $this->prefix = env('NETGW_IP_PREFIX', '22');
@@ -269,9 +267,10 @@ class NetGw extends \BaseModel
         $this->nat_ip = env('NETGW_NAT_IP', '172.20.0.2'); // second server ip is mostlikely NAT
         $this->mgmt_vlan = env('MGMT_VLAN', '100');
         $this->customer_vlan = env('CUSTOMER_VLAN', '101');
+        $this->netmask6 = env('NETGW_IP6_NETMASK', '/116');
 
-        $this->snmp_ro = $this->get_ro_community();
-        $this->snmp_rw = $this->get_rw_community();
+        $this->snmp_ro = $this->community_ro ?: $conf->ro_community;
+        $this->snmp_rw = $this->community_rw ?: $conf->rw_community;
 
         // Help section: onhover
         $this->enable_secret = '<span title="NETGW_ENABLE_SECRET and NETGW_SAVE_ENCRYPTED_PASSWORDS"><b>'.$this->enable_secret.'</b></span>';
@@ -352,7 +351,7 @@ class NetGw extends \BaseModel
      */
     public function get_us_snr($ip)
     {
-        $fn = self::$_us_snr_path."/$this->id.json";
+        $fn = self::US_SNR_PATH."/$this->id.json";
 
         if (! \Storage::exists($fn)) {
             \Log::error("Missing Modem US SNR json file of CMTS $this->hostname [$this->id]");
@@ -364,6 +363,17 @@ class NetGw extends \BaseModel
 
         if (array_key_exists($ip, $snrs)) {
             return $snrs[$ip];
+        }
+
+        // L2 CMTSes may share the same IP pools
+        $outdated = now()->subMinutes(10)->timestamp;
+        foreach (\Storage::files(self::US_SNR_PATH) as $file) {
+            // ignore files older than 10 minutes, e.g. from a decommissioned cmts
+            if (\Storage::lastModified($file) > $outdated &&
+                ($snrs = json_decode(\Storage::get($file), true)) !== null &&
+                array_key_exists($ip, $snrs)) {
+                return $snrs[$ip];
+            }
         }
     }
 
@@ -386,15 +396,15 @@ class NetGw extends \BaseModel
 
         try {
             try {
-                $freq = [];
+                $freqs = [];
                 foreach (snmp2_real_walk($this->ip, $com, '.1.3.6.1.2.1.10.127.1.1.2.1.2') as $idx => $f) {
-                    $freq[last(explode('.', $idx))] = strval($f / 1000000);
+                    $freqs[last(explode('.', $idx))] = strval($f / 1000000);
                 }
                 // DOCS-IF3-MIB::docsIf3CmtsCmRegStatusIPv4Addr, ...
                 $ips = snmp2_real_walk($this->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.3.1.5');
                 $snrs = snmp2_real_walk($this->ip, $com, '.1.3.6.1.4.1.4491.2.1.20.1.4.1.4');
 
-                foreach ($ips as $ip_idx => $ip) {
+                foreach ($ips as $ipOid => $ip) {
                     // if all hex values of the given ip address can be interpreted as ASCII,
                     // net-snmp won't return as Hex-STRING but STRING, thus we need to adjust
                     // unfortunately via php we can't supply -Ox to force Hex-STRING output
@@ -405,15 +415,19 @@ class NetGw extends \BaseModel
                     if ($ip == '0.0.0.0') {
                         continue;
                     }
-                    $ip_idx = last(explode('.', $ip_idx));
+                    $ipDeviceId = last(explode('.', $ipOid));
 
-                    foreach ($snrs as $idx => $snr) {
-                        if (strpos($idx, $ip_idx) === false) {
+                    foreach ($snrs as $snrOid => $snr) {
+                        $arr = explode('.', $snrOid);
+                        $snrDeviceId = $arr[count($arr) - 2];
+
+                        if ($snrDeviceId != $ipDeviceId) {
                             continue;
                         }
-                        $idx = last(explode('.', $idx));
 
-                        $ret[$ip][$freq[$idx]] = $snr / 10;
+                        $snrFreqId = last(explode('.', $snrOid));
+
+                        $ret[$ip][$freqs[$snrFreqId]] = $snr / 10;
                     }
                 }
             } catch (\Exception $e) {
@@ -454,7 +468,7 @@ class NetGw extends \BaseModel
             return;
         }
 
-        \Storage::put(self::$_us_snr_path."/$this->id.json", json_encode($ret));
+        \Storage::put(self::US_SNR_PATH."/$this->id.json", json_encode($ret));
     }
 
     /**
@@ -491,9 +505,15 @@ class NetGw extends \BaseModel
         return $mods;
     }
 
+    public function makeDhcpConf()
+    {
+        $this->makeDhcp4Conf();
+        $this->makeDhcp6Conf();
+    }
+
     /**
-     * auto generates the dhcp conf file for a specified cmts and
-     * adds the appropriate include statement in dhcpd.conf
+     * auto generates the dhcp conf file for a specified netgw and
+     * adds the appropriate include statement in cmts_gws.conf
      *
      * (description is automatically taken by phpdoc)
      *
@@ -501,18 +521,14 @@ class NetGw extends \BaseModel
      *
      * @author Nino Ryschawy
      */
-    public function make_dhcp_conf()
+    public function makeDhcp4Conf()
     {
-        $file = self::$netgw_include_path."/$this->id.conf";
+        $file = self::NETGW_INCLUDE_PATH."/$this->id.conf";
 
-        if ($this->id == 0) {
-            return -1;
-        }
-
-        $ippools = $this->ippools;
+        $ippools = $this->ippools->where('version', '4');
 
         // if a cmts doesn't have an ippool the file has to be empty
-        if (! $ippools->has('0')) {
+        if ($ippools->isEmpty()) {
             File::put($file, '');
             goto _exit;
         }
@@ -520,10 +536,6 @@ class NetGw extends \BaseModel
         File::put($file, 'shared-network "'.$this->hostname.'"'."\n".'{'."\n");
 
         foreach ($ippools as $pool) {
-            if ($pool->id == 0) {
-                continue;
-            }
-
             $subnet = $pool->net;
             $netmask = $pool->netmask;
             $broadcast_addr = $pool->broadcast_ip;
@@ -605,9 +617,6 @@ class NetGw extends \BaseModel
 
         _exit:
         self::make_includes();
-
-        // chown for future writes in case this function was called from CLI via php artisan nms:dhcp that changes owner to 'root'
-        system('/bin/chown -R apache /etc/dhcp-nmsprime/');
     }
 
     /**
@@ -618,12 +627,101 @@ class NetGw extends \BaseModel
      */
     public static function make_includes()
     {
-        $path = self::$netgw_include_path;
+        $path = self::NETGW_INCLUDE_PATH;
         $incs = '';
         foreach (self::where('type', 'cmts')->get() as $cmts) {
             $incs .= "include \"$path/$cmts->id.conf\";\n";
         }
         file_put_contents($path.'.conf', $incs);
+    }
+
+    /**
+     * Generates the Kea DHCP configuration file for a NetGw
+     *
+     * @author Nino Ryschawy
+     */
+    public function makeDhcp6Conf()
+    {
+        \Log::debug('Make DHCP6 conf');
+
+        $file = self::DHCP6_GATEWAYS_DIR."/$this->id.conf";
+
+        if ($this->trashed()) {
+            File::delete($file);
+            self::makeIncludesV6();
+
+            return;
+        }
+
+        $data = "{\n\t".'"name": "'.$this->id.'"';
+
+        $pools = $this->ippools->where('version', '6');
+        $subnets = [];
+
+        foreach ($pools as $pool) {
+            $subnet = "\t\t{\n\t\t\t".'"subnet": "'.$pool->net.$pool->netmask.'",';
+            $subnet .= "\n\t\t\t".'"pools": [ { "pool": "'.$pool->ip_pool_start.'-'.$pool->ip_pool_end.'" } ]';
+
+            // Note: Source address of relay forward message (solicit, request) must either be inside the range of the subnet
+            // or specified as relay (global or in a subnet) to be able to select an address from an appropriate subnet
+            if ($pool->router_ip) {
+                $subnet .= ",\n\t\t\t".'"relay": { "ip-addresses": [ "'.$pool->router_ip.'" ] }';
+            }
+
+            $subnet .= ",\n\t\t\t".'"pd-pools" : [{'."\n\t\t\t\t".'"prefix": "'.$pool->prefix.'"';
+            $subnet .= ",\n\t\t\t\t".'"prefix-len": '.str_replace('/', '', $pool->prefix_len);
+            $subnet .= ",\n\t\t\t\t".'"delegated-len": '.str_replace('/', '', $pool->delegated_len)."\n\t\t\t}]";
+
+            // Add DNS servers
+            $dnsServers = [];
+            for ($i = 1; $i <= 3; $i++) {
+                if ($pool->{'dns'.$i.'_ip'}) {
+                    $dnsServers[] = $pool->{'dns'.$i.'_ip'};
+                }
+            }
+
+            if ($dnsServers) {
+                $subnet .= ",\n\t\t\t\"option-data\": [{";
+                $subnet .= "\n\t\t\t\t\"name\": \"dns-servers\"";
+                $subnet .= ",\n\t\t\t\t".'"data": "'.implode(', ', $dnsServers)."\"\n\t\t\t";
+                $subnet .= "\n\t\t\t}]";
+            }
+
+            if ($pool->optional) {
+                $data .= ",\n\t\t\t".$pool->optional;
+            }
+
+            // Make host reservations known to all subnets
+            $subnet .= ",\n\t\t\t".'<?include "/etc/kea/hosts6.conf"?>';
+
+            $subnets[] = $subnet."\n\t\t}";
+        }
+
+        if ($subnets) {
+            $data .= ",\n\t\"subnet6\": [\n".implode(",\n", $subnets)."\n\t]";
+        }
+
+        // end of shared network
+        $data .= "\n}";
+
+        File::put($file, $data, true);
+
+        self::makeIncludesV6();
+    }
+
+    /**
+     * Generates gateways.conf containing includes for the shared-networks of all NetGws for Kea DHCP
+     *
+     * @author Nino Ryschawy
+     */
+    public static function makeIncludesV6()
+    {
+        $incs = [];
+        foreach (self::where('type', 'cmts')->get() as $cmts) {
+            $incs[] = '<?include "'.self::DHCP6_GATEWAYS_DIR."/$cmts->id.conf\"?>";
+        }
+
+        File::put(self::DHCP6_GATEWAYS_FILE, implode(",\n", $incs), true);
     }
 
     /**
@@ -653,89 +751,5 @@ class NetGw extends \BaseModel
 
         // run script in background since this function is called from Kernel.php
         exec("bash \"$script\" \"$this->ip\" \"$this->username\" \"$this->password\" \"$vlan\" > /dev/null &");
-    }
-}
-
-/**
- * CMTS Observer Class
- * Handles changes on CMTS Gateways
- *
- * can handle   'creating', 'created', 'updating', 'updated',
- *              'deleting', 'deleted', 'saving', 'saved',
- *              'restoring', 'restored',
- */
-class NetGwObserver
-{
-    public static $netgw_tftp_path = '/tftpboot/cmts';
-
-    public function created($netgw)
-    {
-        self::updateNas($netgw);
-
-        if ($netgw->type != 'cmts') {
-            return;
-        }
-
-        if (\Module::collections()->has('ProvMon')) {
-            \Artisan::call('nms:cacti', ['--modem-id' => 0, '--netgw-id' => $netgw->id]);
-        }
-        $netgw->make_dhcp_conf();
-
-        File::put(self::$netgw_tftp_path."/$netgw->id.cfg", $netgw->get_raw_netgw_config());
-    }
-
-    public function updated($netgw)
-    {
-        self::updateNas($netgw);
-
-        if ($netgw->type != 'cmts') {
-            return;
-        }
-
-        $netgw->make_dhcp_conf();
-
-        File::put(self::$netgw_tftp_path."/$netgw->id.cfg", $netgw->get_raw_netgw_config());
-    }
-
-    public function deleted($netgw)
-    {
-        self::updateNas($netgw);
-
-        if ($netgw->type != 'cmts') {
-            return;
-        }
-
-        File::delete(NetGw::$netgw_include_path."/$netgw->id.conf");
-        File::delete(self::$netgw_tftp_path."/$netgw->id.cfg");
-
-        NetGw::make_includes();
-    }
-
-    /**
-     * Handle changes of nas based on netgw
-     * This is called on created/updated/deleted in NetGw observer
-     *
-     * @author Ole Ernst
-     */
-    private static function updateNas($netgw)
-    {
-        // netgw is deleted or its type was changed to != bras
-        if ($netgw->deleted_at || $netgw->type != 'bras') {
-            $netgw->nas()->delete();
-            exec('sudo systemctl restart radiusd.service');
-
-            return;
-        }
-
-        // we need to use \Request::get() since nas_secret is guarded
-        $update = ['nasname' => $netgw->ip, 'secret' => \Request::get('nas_secret')];
-
-        if ($netgw->nas()->count()) {
-            $netgw->nas()->update($update);
-        } else {
-            Nas::insert(array_merge($update, ['shortname' => $netgw->id]));
-        }
-
-        exec('sudo systemctl restart radiusd.service');
     }
 }

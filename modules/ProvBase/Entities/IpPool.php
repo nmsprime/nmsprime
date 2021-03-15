@@ -10,18 +10,23 @@ class IpPool extends \BaseModel
     public $table = 'ippool';
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
+        // Check out ExtendedValidator.php for own validations! (ip_larger, netmask)
+        // Note: ip rule is added in IpPoolController
+        // TODO: Take care of IpPoolController::prepare_rules() when adding new rules!
         return [
-            'net' => 'required|ip',
-            'netmask' => 'required|ip|netmask',     // netmask must not be in first place!
-            'ip_pool_start' => 'required|ip|ip_in_range:net,netmask|ip_larger:net',   // own validation - see in classes: ExtendedValidator and IpPoolController
-            'ip_pool_end' => 'required|ip|ip_in_range:net,netmask|ip_larger:ip_pool_start',
-            'router_ip' => 'required|ip|ip_in_range:net,netmask',
-            'broadcast_ip' => 'nullable|ip|ip_in_range:net,netmask|ip_larger:ip_pool_end',
-            'dns1_ip' => 'nullable|ip',
-            'dns2_ip' => 'nullable|ip',
-            'dns3_ip' => 'nullable|ip',
+            'net' => 'required',
+            'netmask' => 'required|netmask',     // netmask must not be in first place!
+            'ip_pool_start' => 'required|ip_in_range:net,netmask|ip_larger:net',
+            'ip_pool_end' => 'required|ip_in_range:net,netmask|ip_larger:ip_pool_start',
+            'router_ip' => 'required|ip_in_range:net,netmask',
+            'broadcast_ip' => 'nullable|ip_in_range:net,netmask|ip_larger:ip_pool_end',
+            'dns1_ip' => 'nullable',
+            'dns2_ip' => 'nullable',
+            'dns3_ip' => 'nullable',
+            'prefix_len' => 'netmask',
+            'delegated_len' => 'netmask',
         ];
     }
 
@@ -44,24 +49,24 @@ class IpPool extends \BaseModel
         $bsclass = $this->get_bsclass();
 
         return ['table' => $this->table,
-            'index_header' => [$this->table.'.id', 'netgw.hostname', $this->table.'.type', $this->table.'.net', $this->table.'.netmask', $this->table.'.router_ip', $this->table.'.description'],
-            'header' =>  $this->type.': '.$this->net.' / '.$this->netmask,
+            'index_header' => [$this->table.'.id', 'netgw.hostname', $this->table.'.type', 'version', $this->table.'.net', $this->table.'.netmask', $this->table.'.router_ip', $this->table.'.description'],
+            'header' =>  $this->type.': '.$this->net.' '.$this->netmask,
             'bsclass' => $bsclass,
             'eager_loading' => ['netgw'], ];
     }
 
     public function get_bsclass()
     {
-        $bsclass = 'success';
+        $bsclass = 'info';
 
         if ($this->type == 'CPEPub') {
-            $bsclass = 'warning';
+            $bsclass = 'active';
         }
         if ($this->type == 'CPEPriv') {
-            $bsclass = 'info';
+            $bsclass = '';
         }
         if ($this->type == 'MTA') {
-            $bsclass = 'danger';
+            $bsclass = 'success';
         }
 
         return $bsclass;
@@ -75,21 +80,39 @@ class IpPool extends \BaseModel
         return DB::table('netgw')->select('id', 'hostname')->get();
     }
 
-    /*
-     * Return the corresponding network size to the netmask,
-     * e.g. 255.255.255.240 will return 28 as integer – means /28 netmask
+    /**
+     * Convert IpPool netmask to CIDR notation
+     * e.g. 255.255.255.240 will return /28
+     *
+     * @return string
      */
-    public function size()
+    public function maskToCidr()
     {
-        // this is crazy shit from http://php.net/manual/de/function.ip2long.php
+        if (self::isCidrNotation($this->netmask)) {
+            return $this->netmask;
+        }
+
         $long = ip2long($this->netmask);
         $base = ip2long('255.255.255.255');
 
-        return 32 - log(($long ^ $base) + 1, 2);
+        return '/'.(string) (32 - log(($long ^ $base) + 1, 2));
     }
 
-    /*
-     * Returns true if provisioning route to $this pool exists, otherwise false
+    /**
+     * Check if netmask is written in Cidr notation (e.g. /16)
+     *
+     * @param string
+     * @return bool
+     */
+    public static function isCidrNotation($netmask)
+    {
+        return preg_match('/^\/\d{1,3}$/', $netmask);
+    }
+
+    /**
+     * Check if route to this pool exists in provisioning server routing table
+     *
+     * @return bool
      */
     public function ip_route_prov_exists()
     {
@@ -99,7 +122,15 @@ class IpPool extends \BaseModel
             return true;
         }
 
-        return strlen(exec('/usr/sbin/ip route show '.$this->net.'/'.$this->size().' via '.$this->netgw->ip)) == 0 ? false : true;
+        $optionIpv6 = '';
+        $ip = $this->netgw->ip;
+
+        if ($this->version == '6') {
+            $optionIpv6 = '-6';
+            $ip = $this->netgw->ipv6;
+        }
+
+        return strlen(exec("/usr/sbin/ip $optionIpv6 route show ".$this->net.$this->maskToCidr().' via '.$ip)) != 0;
     }
 
     /*
@@ -109,7 +140,12 @@ class IpPool extends \BaseModel
     public function ip_route_online()
     {
         // Ping: Only check if device is online
-        exec('sudo ping -c1 -i0 -w1 '.$this->router_ip, $ping, $ret);
+        $cmd = 'ping';
+        if ($this->version == '6') {
+            $cmd .= ' -6';
+        }
+
+        exec("sudo $cmd -c1 -i0 -w1 ".$this->router_ip, $ping, $ret);
 
         return $ret ? false : true;
     }
@@ -140,11 +176,14 @@ class IpPool extends \BaseModel
      */
     public function is_secondary()
     {
-        $cm_pools = $this->netgw->ippools->filter(function ($item) {
-            return $item->type == 'CM';
-        });
+        if ($this->version == '6') {
+            // d($this, $this->netgw->ippools->where('version', '6')->first());
+            return $this->id == $this->netgw->ippools->where('version', '6')->first()->id ? '' : 'secondary';
+        }
 
-        if ($cm_pools->isEmpty() || $this->id != $cm_pools->first()->id) {
+        $cmPools = $this->netgw->ippools->where('type', 'CM');
+
+        if ($cmPools->isEmpty() || $this->id != $cmPools->first()->id) {
             return 'secondary';
         }
 
@@ -162,13 +201,20 @@ class IpPool extends \BaseModel
      */
     public function get_range()
     {
-        $ep_static = Endpoint::where('fixed_ip', '=', '1');
+        $empty = "\t\t\t#pool: $this->type $this->ip_pool_start $this->ip_pool_end\n\t\t\trange $this->ip_pool_start $this->ip_pool_end;\n";
 
-        if ($this->type != 'CPEPub' || $ep_static->count() == 0) {
-            return "\t\t\t#pool: $this->type $this->ip_pool_start $this->ip_pool_end\n\t\t\trange $this->ip_pool_start $this->ip_pool_end;\n";
+        if ($this->type != 'CPEPub') {
+            return $empty;
         }
 
-        foreach ($ep_static->get() as $ep) {
+        // TODO: filter endpoints by DB query with INET_ATON
+        $endpoints = Endpoint::where('fixed_ip', '=', '1')->get();
+
+        if ($endpoints->count() == 0) {
+            return $empty;
+        }
+
+        foreach ($endpoints as $ep) {
             $static[] = ip2long($ep->ip);
         }
 
@@ -210,111 +256,7 @@ class IpPool extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new IpPoolObserver);
-        self::observe(new \App\SystemdObserver);
-    }
-}
-
-/**
- * IP-Pool Observer Class
- * Handles changes on IP-Pools
- *
- * can handle   'creating', 'created', 'updating', 'updated',
- *              'deleting', 'deleted', 'saving', 'saved',
- *              'restoring', 'restored',
- */
-class IpPoolObserver
-{
-    public function created($pool)
-    {
-        self::updateRadIpPool($pool);
-
-        if ($pool->netgw->type != 'cmts') {
-            return;
-        }
-
-        // fetch netgw object that is related to the created ippool and make dhcp conf
-        $pool->netgw->make_dhcp_conf();
-    }
-
-    public function updated($pool)
-    {
-        self::updateRadIpPool($pool);
-
-        if ($pool->netgw->type != 'cmts') {
-            return;
-        }
-
-        $pool->netgw->make_dhcp_conf();
-
-        // make dhcp conf of old netgw if relation got changed
-        if ($pool->isDirty('netgw_id')) {
-            NetGw::find($pool->getOriginal('netgw_id'))->make_dhcp_conf();
-        }
-    }
-
-    public function deleted($pool)
-    {
-        self::updateRadIpPool($pool);
-
-        if ($pool->netgw->type != 'cmts') {
-            return;
-        }
-
-        $pool->netgw->make_dhcp_conf();
-    }
-
-    /**
-     * Handle changes of radippool based on ippool
-     * This is called on created/updated/deleted in IpPool observer
-     *
-     * @author Ole Ernst
-     */
-    private static function updateRadIpPool($pool)
-    {
-        if ($pool->netgw->type != 'bras') {
-            return;
-        }
-
-        $now = array_map('long2ip',
-            range(
-                ip2long($pool->ip_pool_start),
-                ip2long($pool->ip_pool_end)
-            )
-        );
-
-        // delete pool
-        if ($pool->deleted_at) {
-            RadIpPool::whereIn('framedipaddress', $now)->delete();
-
-            return;
-        }
-
-        $org = array_map('long2ip',
-            range(
-                ip2long($pool->getOriginal('ip_pool_start')),
-                ip2long($pool->getOriginal('ip_pool_end'))
-            )
-        );
-
-        // update type (CPEPriv, CPEPub) if it was changed
-        if ($pool->isDirty('type')) {
-            RadIpPool::whereIn('framedipaddress', $org)->update(['pool_name' => $pool->type]);
-        }
-
-        // we don't simply delete the old pool and create a new one,
-        // since we would lose important state, such as the expiry_time
-        if (multi_array_key_exists(['ip_pool_start', 'ip_pool_end'], $pool->getDirty())) {
-            RadIpPool::whereIn('framedipaddress', array_diff($org, $now))->delete();
-
-            $insert = [];
-            foreach (array_diff($now, $org) as $ip) {
-                $insert[] = [
-                    'pool_name' => $pool->type,
-                    'framedipaddress' => $ip,
-                ];
-            }
-            RadIpPool::insert($insert);
-        }
+        self::observe(new \Modules\ProvBase\Observers\IpPoolObserver);
+        self::observe(new \App\Observers\SystemdObserver);
     }
 }

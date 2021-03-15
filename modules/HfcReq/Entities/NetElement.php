@@ -3,9 +3,8 @@
 namespace Modules\HfcReq\Entities;
 
 use Auth;
-use Cache;
-use Session;
-use Modules\HfcBase\Entities\IcingaObject;
+use Nwidart\Modules\Facades\Module;
+use Illuminate\Support\Facades\Cache;
 
 class NetElement extends \BaseModel
 {
@@ -19,13 +18,20 @@ class NetElement extends \BaseModel
 
     public $guarded = ['kml_file_upload'];
 
+    /**
+     * The connection name for the model.
+     *
+     * @var string
+     */
+    protected $connection = 'mysql';
+
     public $kml_path = 'app/data/hfcbase/kml_static';
     private $max_parents = 50;
 
     public $snmpvalues = ['attributes' => [], 'original' => []];
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         $rules = [
             'name' 			=> 'required|string',
@@ -43,7 +49,7 @@ class NetElement extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new NetElementObserver);
+        self::observe(new \Modules\HfcReq\Observers\NetElementObserver);
     }
 
     // Name of View
@@ -63,20 +69,20 @@ class NetElement extends \BaseModel
     {
         $ret = [];
 
-        // if (\Module::collections()->has('ProvBase'))
+        // if (Module::collections()->has('ProvBase'))
         // {
         // 	$ret['Edit']['Modem']['class'] 	  = 'Modem';
         // 	$ret['Edit']['Modem']['relation'] = $this->modems;
         // }
 
-        if (\Module::collections()->has('HfcCustomer')) {
+        if (Module::collections()->has('HfcCustomer')) {
             if ($this->netelementtype->get_base_type() != 9) {
                 $ret['Edit']['Mpr']['class'] = 'Mpr';
                 $ret['Edit']['Mpr']['relation'] = $this->mprs;
             }
         }
 
-        if (\Module::collections()->has('HfcSnmp')) {
+        if (Module::collections()->has('HfcSnmp')) {
             if ($this->netelementtype && ($this->netelementtype->id == 2 || $this->netelementtype->parameters()->count())) {
                 $ret['Edit']['Indices']['class'] = 'Indices';
                 $ret['Edit']['Indices']['relation'] = $this->indices;
@@ -89,6 +95,8 @@ class NetElement extends \BaseModel
             $ret['Edit']['SubNetElement']['class'] = 'NetElement';
             $ret['Edit']['SubNetElement']['relation'] = $this->children;
         }
+
+        $this->addViewHasManyTickets($ret);
 
         return $ret;
     }
@@ -117,21 +125,25 @@ class NetElement extends \BaseModel
         if ($this->netelementtype && $this->netelementtype_id == 9) {
             switch ($this->state) {
                 case 'C': // off
+
                     return 'danger';
                 case 'B': // attenuated
+
                     return 'warning';
                 default: // on
+
                     return 'success';
             }
         }
 
-        if (! array_key_exists('icingaobject', $this->relations) && ! IcingaObject::db_exists()) {
+        if (! Module::collections()->has('HfcBase') || (! array_key_exists('icingaObject', $this->relations) &&
+            ! \Modules\HfcBase\Entities\IcingaObject::db_exists())) {
             return 'warning';
         }
 
-        $icingaObj = $this->icingaobject;
+        $icingaObj = $this->icingaObject;
         if ($icingaObj && $icingaObj->is_active) {
-            $icingaObj = $icingaObj->icingahoststatus;
+            $icingaObj = $icingaObj->hostStatus;
             if ($icingaObj) {
                 return $icingaObj->last_hard_state ? 'danger' : 'success';
             }
@@ -150,11 +162,11 @@ class NetElement extends \BaseModel
     {
         $ret = new \Illuminate\Database\Eloquent\Collection([$this->netelementtype]);
 
-        if ($this->apartment_id) {
+        if (Module::collections()->has('PropertyManagement') && $this->apartment) {
             $ret->add($this->apartment);
         }
 
-        if ($this->parent_id) {
+        if ($this->parent) {
             $ret->add($this->parent);
         }
 
@@ -171,21 +183,47 @@ class NetElement extends \BaseModel
      * @param Illuminate\Database\Query\Builder $query
      * @return Illuminate\Database\Query\Builder
      */
-    public function scopeWithActiveModems($query, $field = 'id', $operator = '>', $id = 2)
+    public function scopeWithActiveModems($query, $field = 'id', $operator = '>', $id = 2, $minify = false)
     {
-        $ModemHelper = \Modules\HfcCustomer\Entities\ModemHelper::class;
+        if ($minify) {
+            $query->select(['id', 'id_name', 'name', 'ip', 'cluster', 'net', 'netelementtype_id', 'netgw_id', 'parent_id', 'link', 'descr', 'pos']);
+        }
 
         return $query->where($field, $operator, $id)
-        ->orderBy('pos')
-        ->withCount([
-            'modems',
-            'modems as modems_online_count' => function ($query) {
-                $query->where('us_pwr', '>', '0');
-            },
-            'modems as modems_critical_count' => function ($query) use ($ModemHelper) {
-                $query->where('us_pwr', '>', $ModemHelper::$single_critical_us);
-            },
-        ]);
+            ->orderBy('pos')
+            ->withCount([
+                'modems' => function ($query) {
+                    $this->excludeCanceledContractsQuery($query);
+                },
+                'modems as modems_online_count' => function ($query) {
+                    $query->where('us_pwr', '>', '0');
+
+                    $this->excludeCanceledContractsQuery($query);
+                },
+                'modems as modems_critical_count' => function ($query) {
+                    $query->where('us_pwr', '>=', config('hfccustomer.threshhold.single.us.critical'));
+
+                    $this->excludeCanceledContractsQuery($query);
+                },
+            ]);
+    }
+
+    /**
+     * This is an extension of scopeWithActiveModems's withCount() method to exclude all modems of canceled contracts
+     * Note: This is not a scope and can not be used as one - this is because withCount method automatically joins named table (modem) and for a scope it would have to be joined here as well - join it twice doesnt work!
+     *
+     * @param Illuminate\Database\Query\Builder $query
+     * @return Illuminate\Database\Query\Builder
+     */
+    private function excludeCanceledContractsQuery($query)
+    {
+        return $query
+            // ->leftJoin('modem', 'modem.netelement_id', 'netelement.id')
+            ->join('contract', 'contract.id', 'modem.contract_id')
+            ->whereNull('modem.deleted_at')
+            ->whereNull('contract.deleted_at')
+            ->where('contract_start', '<=', date('Y-m-d'))
+            ->where(whereLaterOrEqual('contract_end', date('Y-m-d')));
     }
 
     /**
@@ -194,6 +232,21 @@ class NetElement extends \BaseModel
     public function modems()
     {
         return $this->hasMany(\Modules\ProvBase\Entities\Modem::class, 'netelement_id');
+    }
+
+    public function geoPosModems()
+    {
+        return $this->hasMany(\Modules\ProvBase\Entities\Modem::class, 'netelement_id')
+            ->select('modem.id', 'modem.x', 'modem.y', 'modem.netelement_id')
+            ->selectRaw('COUNT(*) AS count')
+            ->selectRaw('COUNT(CASE WHEN `us_pwr` = 0 THEN 1 END) as offline')
+            ->groupBy('modem.x', 'modem.y')
+            ->havingRaw('max(us_pwr) > 0 AND min(us_pwr) = 0 AND count > 1')
+            ->join('contract', 'contract.id', 'modem.contract_id')
+            ->whereNull('modem.deleted_at')
+            ->whereNull('contract.deleted_at')
+            ->where('contract_start', '<=', date('Y-m-d'))
+            ->where(whereLaterOrEqual('contract_end', date('Y-m-d')));
     }
 
     // Relation to MPRs Modem Positioning Rules
@@ -226,12 +279,125 @@ class NetElement extends \BaseModel
      * As Android and Iphone app developers use wrong columns to display object name, we use the relation
      * column to describe the object as well
      */
-    public function icingaobject()
+    public function icingaObject()
     {
         return $this
             ->hasOne(\Modules\HfcBase\Entities\IcingaObject::class, 'name1', 'id_name')
-            ->where('icinga_objects.objecttype_id', '1')
-            ->where('icinga_objects.is_active', '1');
+            ->where('objecttype_id', '1')
+            ->where('is_active', '1');
+    }
+
+    public function getIcingaHostAttribute()
+    {
+        return optional($this->icingaObject)->icingahost;
+    }
+
+    /**
+     * Relation to Objects that refer to IcingaServices.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function icingaServices()
+    {
+        return $this
+            ->hasManyThrough(
+                \Modules\HfcBase\Entities\IcingaServiceStatus::class,
+                \Modules\HfcBase\Entities\IcingaObject::class,
+                'name1', // foreign key on IcingaObject
+                'service_object_id', // Foreign key on IcingaServiceStatus
+                'id_name', // Local Key on Netelement
+                'object_id' // Local Key on IcingaObject
+            )
+            ->select('icinga_objects.name2')
+            ->where('icinga_objects.is_active', 1);
+    }
+
+    public function getIcingaHostStatusAttribute()
+    {
+        if ($this->hostStatus) {
+            return $this->hostStatus;
+        }
+
+        return $this->icingaObject->hostStatus;
+    }
+
+    /**
+     * Link for this Host in IcingaWeb2
+     *
+     * @return string
+     */
+    public function toIcingaWeb()
+    {
+        if ($this->getRelation('icingaObject')) {
+            return 'https://'.request()->server('HTTP_HOST').'/icingaweb2/monitoring/host/show?host='.$this->icingaObject->name1;
+        }
+
+        return 'https://'.request()->server('HTTP_HOST').'/icingaweb2/monitoring/host/show?host='.$this->id.'_'.$this->name;
+    }
+
+    /**
+     * Link to Controlling page in NMS Prime, if this Host is registered as a
+     * NetElement in NMS Prime.
+     *
+     * @return string|void
+     */
+    public function toControlling()
+    {
+        return route('NetElement.controlling_edit', [
+            'id' => $this->id,
+            'parameter' => 0,
+            'index' => 0,
+        ]);
+    }
+
+    /**
+     * Link to ERD overview. Depending of the information available the
+     * netelement.
+     *
+     * @return string
+     */
+    public function toErd()
+    {
+        if ($this->cluster) {
+            return route('TreeErd.show', ['field' => 'cluster', 'search' => $this->cluster]);
+        }
+
+        if ($this->net) {
+            return route('TreeErd.show', ['field' => 'net', 'search' => $this->net]);
+        }
+
+        return route('TreeErd.show', ['field' => 'id', 'search' => $this->id]);
+    }
+
+    /**
+     * Link to Ticket creation form already prefilled.
+     *
+     * @return string
+     */
+    public function toTicket()
+    {
+        if ($this->icingaObject) {
+            return route('Ticket.create', [
+                'name' => e($this->icingaObject->name1),
+                'netelement_id' => $this->id,
+            ]);
+        }
+
+        return route('Ticket.create', [
+            'name' => e($this->name),
+            'netelement_id' => $this->id,
+        ]);
+    }
+
+    /**
+     * Tries to get the amount of affected modems of the related NetElement.
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $netelements
+     * @return int
+     */
+    public function affectedModemsCount($netelements)
+    {
+        return $netelements[$this->netelement->id] ?? 0;
     }
 
     public function clusterObj()
@@ -255,7 +421,8 @@ class NetElement extends \BaseModel
 
         return $this->hasMany(self::class, 'net')
             ->where('id', '!=', $this->id)
-            ->where('netelementtype_id', $cluster_id);
+            ->where('netelementtype_id', $cluster_id)
+            ->orderBy('name');
     }
 
     /**
@@ -389,7 +556,7 @@ class NetElement extends \BaseModel
      */
     public static function getNetsWithClusters()
     {
-        return Cache::remember(Auth::user()->login_name.'-Nets', 5, function () {
+        return Cache::remember(Auth::user()->login_name.'-Nets', now()->addMinutes(5), function () {
             $net_id = array_search('Net', NetElementType::$undeletables);
 
             return self::where('netelementtype_id', '=', $net_id)
@@ -567,6 +734,72 @@ class NetElement extends \BaseModel
     }
 
     /**
+     * Returns all tabs for the view depending on the NetelementType
+     * Note: 1 = Net, 2 = Cluster, 3 = NetGw, 4 = Amplifier, 5 = Node, 6 = Data, 7 = UPS, 8 = Tap, 9 = Tap-Port
+     *
+     * @author Roy Schneider, Nino Ryschawy
+     * @return array
+     */
+    public function tabs()
+    {
+        if (! $this->netelementtype) {
+            return [];
+        }
+
+        $provmonEnabled = Module::collections()->has('ProvMon');
+        $type = $this->netelementtype->get_base_type();
+
+        $tabs = [['name' => 'Edit', 'icon' => 'pencil', 'route' => 'NetElement.edit', 'link' => $this->id]];
+
+        if (Module::collections()->has('HfcBase') && in_array($type, [1, 2, 8])) {
+            $sqlCol = $type == 8 ? 'parent_id' : $this->netelementtype->name;
+
+            array_push($tabs,
+                ['name' => 'Entity Diagram', 'icon' => 'sitemap', 'route' => 'TreeErd.show', 'link' => [$sqlCol, $this->id]],
+                ['name' => 'Topography', 'icon' => 'map', 'route' => 'TreeTopo.show', 'link' => [$sqlCol, $this->id]]
+            );
+        }
+
+        if (! in_array($type, [1, 8, 9])) {
+            array_push($tabs, ['name' => 'Controlling', 'icon' => 'wrench', 'route' => 'NetElement.controlling_edit', 'link' => [$this->id, 0, 0]]);
+        }
+
+        if ($type == 9 && Module::collections()->has('Satkabel')) {
+            array_push($tabs, ['name' => 'Controlling', 'icon' => 'bar-chart fa-rotate-90', 'route' => 'NetElement.tapControlling', 'link' => [$this->id]]);
+        }
+
+        if ($type == 4 || $type == 5) {
+            // Create Analysis tab (for ORA/VGP) if IP address is no valid IP
+            $route = $provmonEnabled ? 'ProvMon.index' : 'Modem.analysis';
+            $tabs[] = ['name' => trans('view.analysis'), 'icon' => 'area-chart', 'route' => $route, 'link' => $this->getModemIdFromHostname($this->ip)];
+        }
+
+        if ($provmonEnabled && Module::collections()->has('HfcCustomer') && ! in_array($type, [4, 5, 8, 9])) {
+            array_push($tabs, ['name' => 'Diagrams', 'icon' => 'area-chart', 'route' => 'ProvMon.diagram_edit', 'link' => [$this->id]]);
+        }
+
+        return $tabs;
+    }
+
+    /**
+     * Return number from IP address field if the record is written like: 'cm-...'.
+     *
+     * @author Roy Schneider
+     * @param string
+     * @return string
+     */
+    private function getModemIdFromHostname($hostname)
+    {
+        preg_match('/[c][m]\-\d+/', $hostname, $return);
+
+        if (empty($return)) {
+            return '0';
+        }
+
+        return substr($return[0], 3);
+    }
+
+    /**
      * Get the IP address if set, otherwise return IP address of parent NetGw
      *
      * @author Ole Ernst
@@ -654,91 +887,6 @@ class NetElement extends \BaseModel
             } catch (\Exception $e) {
                 \Log::error("Error while setting new exptected us power for cluster $this->name ($idx: $r)");
             }
-        }
-    }
-}
-
-class NetElementObserver
-{
-    public function created($netelement)
-    {
-        if (! $netelement->observer_enabled) {
-            return;
-        }
-
-        $this->flushSidebarNetCache();
-
-        // if ($netelement->is_type_cluster())
-        // in created because otherwise netelement does not have an ID yet
-        $netelement->net = $netelement->get_native_net();
-        $netelement->cluster = $netelement->get_native_cluster();
-        $this->checkNetCluster($netelement);
-
-        $netelement->observer_enabled = false;  // don't execute functions in updating again
-        $netelement->save();
-    }
-
-    public function updating($netelement)
-    {
-        if (! $netelement->observer_enabled) {
-            return;
-        }
-
-        if ($netelement->isDirty('parent_id', 'name')) {
-            $this->flushSidebarNetCache();
-
-            $netelement->net = $netelement->get_native_net();
-            $netelement->cluster = $netelement->get_native_cluster();
-            $this->checkNetCluster($netelement);
-
-            // Change Net & cluster of all childrens too
-            Netelement::where('parent_id', '=', $netelement->id)
-                ->update([
-                    'net' => $netelement->net,
-                    'cluster' => $netelement->cluster,
-                ]);
-        }
-
-        // if netelementtype_id changes -> indices have to change there parameter id
-        // otherwise they are not used anymore
-        if ($netelement->isDirty('netelementtype_id')) {
-            $new_params = $netelement->netelementtype->parameters;
-
-            foreach ($netelement->indices as $indices) {
-                // assign each indices of parameter to new parameter with same oid
-                if ($new_params->contains('oid_id', $indices->parameter->oid->id)) {
-                    $indices->parameter_id = $new_params->where('oid_id', $indices->parameter->oid->id)->first()->id;
-                    $indices->save();
-                } else {
-                    // Show Alert that not all indices could be assigned to the new parameter -> user has to create new indices and delete the old ones
-                    // We also could delete them directly, so that user has to add them again
-                    Session::put('alert.info', trans('messages.indices_unassigned'));
-                }
-            }
-        }
-    }
-
-    public function deleted()
-    {
-        $this->flushSidebarNetCache();
-    }
-
-    protected function flushSidebarNetCache()
-    {
-        Cache::forget(Auth::user()->login_name.'-Nets');
-    }
-
-    /**
-     * Return error message when net or cluster ID couldn't be determined as this would result in hiding the element in the ERD
-     */
-    private function checkNetCluster($netelement)
-    {
-        if (! $netelement->net) {
-            return Session::push('tmp_error_above_form', trans('hfcreq::messages.netelement.noNet'));
-        }
-
-        if (! $netelement->net) {
-            return Session::push('tmp_error_above_form', trans('hfcreq::messages.netelement.noCluster'));
         }
     }
 }

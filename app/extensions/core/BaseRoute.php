@@ -2,9 +2,8 @@
 
 namespace Acme\core;
 
-use Route;
-use Request;
 use App\BaseModel;
+use Illuminate\Support\Facades\Route;
 
 /**
  * BaseRoute API
@@ -16,27 +15,6 @@ use App\BaseModel;
 class BaseRoute
 {
     public static $admin_prefix = 'admin';
-
-    /**
-     * Return the correct base URL
-     * @todo move somewhere else
-     * @return type string the actual base url
-     */
-    public static function get_base_url()
-    {
-        $url = Request::root();
-        $port = Request::getPort();
-
-        if ($port == env('HTTPS_ADMIN_PORT', 8080)) {
-            return $url.'/admin';
-        }
-
-        if ($port == env('HTTPS_CCC_PORT', 443)) {
-            return $url.'/customer';
-        }
-
-        return $url; // will not work
-    }
 
     /**
      * Our own custom Route function, which generates generic Routes
@@ -62,7 +40,7 @@ class BaseRoute
         Route::get($name, [
             'as' => $name.'.index',
             'uses' => $controller.'@index',
-            'middleware' => ['web', 'can:view,'.$models[$name]],
+            'middleware' => ['web', 'auth', 'can:view,'.$models[$name]],
             $options,
         ]);
 
@@ -86,7 +64,7 @@ class BaseRoute
         Route::get("$name/create", [
             'as' => $name.'.create',
             'uses' => $controller.'@create',
-            'middleware' => ['web', 'can:create,'.$models[$name]],
+            'middleware' => ['web', 'auth', 'can:create,'.$models[$name]],
             $options,
         ]);
 
@@ -101,7 +79,7 @@ class BaseRoute
         Route::get("$name/{{$name}}", [
             'as' => $name.'.edit',
             'uses' => $controller.'@edit',
-            'middleware' => ['web', 'can:view,'.$models[$name]],
+            'middleware' => ['web', 'auth', 'can:view,'.$models[$name]],
             $options,
         ]);
 
@@ -150,63 +128,63 @@ class BaseRoute
             Route::get("$name", [
                 'as' => $name.'.api_index',
                 'uses' => $controller.'@api_index',
-                'middleware' => ['api', 'auth.basic', 'can:view,'.$models[$name]],
+                'middleware' => ['api', 'can:view,'.$models[$name]],
                 $options,
             ]);
 
             Route::post("$name", [
                 'as' => $name.'.api_store',
                 'uses' => $controller.'@api_store',
-                'middleware' => ['api', 'auth.basic', 'can:create,'.$models[$name]],
+                'middleware' => ['api', 'can:create,'.$models[$name]],
                 $options,
             ]);
 
             Route::get("$name/create", [
                 'as' => $name.'.api_create',
                 'uses' => $controller.'@api_create',
-                'middleware' => ['api', 'auth.basic', 'can:create,'.$models[$name]],
+                'middleware' => ['api', 'can:create,'.$models[$name]],
                 $options,
             ]);
 
             Route::post("$name/create", [
                 'as' => $name.'.api_create',
                 'uses' => $controller.'@api_create',
-                'middleware' => ['api', 'auth.basic', 'can:create,'.$models[$name]],
+                'middleware' => ['api', 'can:create,'.$models[$name]],
                 $options,
             ]);
 
             Route::get("$name/{{$name}}", [
                 'as' => $name.'.api_get',
                 'uses' => $controller.'@api_get',
-                'middleware' => ['api', 'auth.basic', 'can:view,'.$models[$name]],
+                'middleware' => ['api', 'can:view,'.$models[$name]],
                 $options,
             ]);
 
             Route::get("$name/{{$name}}/status", [
                 'as' => $name.'.api_status',
                 'uses' => $controller.'@api_status',
-                'middleware' => ['api', 'auth.basic', 'can:view,'.$models[$name]],
+                'middleware' => ['api', 'can:view,'.$models[$name]],
                 $options,
             ]);
 
             Route::patch("$name/{{$name}}", [
                 'as' => $name.'.api_update',
                 'uses' => $controller.'@api_update',
-                'middleware' => ['api', 'auth.basic', 'can:update,'.$models[$name]],
+                'middleware' => ['api', 'can:update,'.$models[$name]],
                 $options,
             ]);
 
             Route::put("$name/{{$name}}", [
                 'as' => $name.'.api_update',
                 'uses' => $controller.'@api_update',
-                'middleware' => ['api', 'auth.basic', 'can:update,'.$models[$name]],
+                'middleware' => ['api', 'can:update,'.$models[$name]],
                 $options,
             ]);
 
             Route::delete("$name/{{$name}}", [
                 'as' => $name.'.api_destroy',
                 'uses' => $controller.'@api_destroy',
-                'middleware' =>  ['api', 'auth.basic', 'can:delete,'.$models[$name]],
+                'middleware' =>  ['api', 'can:delete,'.$models[$name]],
                 $options,
             ]);
         });
@@ -232,34 +210,34 @@ class BaseRoute
     /**
      * The following functions are simple helpers to adapt automatic authentication stuff
      */
-    public static function appendMiddleware($action = null)
+    public static function appendMiddleware(&$action = null)
     {
-        if (array_key_exists('middleware', $action)) {
-            array_unshift($action['middleware'], 'web');
-        } else {
-            $action['middleware'] = ['web', 'auth'];
+        if (! array_key_exists('middleware', $action)) {
+            return $action['middleware'] = ['web', 'auth'];
         }
 
-        return $action;
+        return array_unshift($action['middleware'], 'web');
     }
 
     public static function get($uri, $action = null)
     {
-        $action = self::appendMiddleware($action);
+        self::appendMiddleware($action);
+        array_splice($action['middleware'], 1, 0, 'auth');
+        $action['middleware'] = array_unique($action['middleware']);
 
         return Route::get($uri, $action);
     }
 
     public static function post($uri, $action = null)
     {
-        $action = self::appendMiddleware($action);
+        self::appendMiddleware($action);
 
         return Route::post($uri, $action);
     }
 
     public static function put($uri, $action = null)
     {
-        $action = self::appendMiddleware($action);
+        self::appendMiddleware($action);
 
         return Route::put($uri, $action);
     }

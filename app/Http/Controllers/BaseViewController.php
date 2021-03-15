@@ -7,7 +7,6 @@ use Str;
 use Auth;
 use Form;
 use Route;
-use Config;
 use Module;
 use Bouncer;
 use Request;
@@ -188,16 +187,16 @@ class BaseViewController extends Controller
         foreach ($fields as $field) {
             // rule exists for actual field ?
             if (isset($rules[$field['name']])) {
+                $rulesArray = is_array($rules[$field['name']]) ? $rules[$field['name']] : explode('|', $rules[$field['name']]);
+
                 // 1. Add a (*) to fields description if validation rule contains required
-                if (preg_match('/(.*?)required(.*?)/', $rules[$field['name']])) {
+                if (in_array('required', $rulesArray)) {
                     $field['description'] = $field['description'].' *';
                 }
 
                 // 2. Add Placeholder YYYY-MM-DD for all date fields if not yet set
-                if (preg_match('/(.*?)date(.*?)/', $rules[$field['name']])) {
-                    if (! isset($field['options']['placeholder'])) {
-                        $field['options']['placeholder'] = 'YYYY-MM-DD';
-                    }
+                if (in_array('date', $rulesArray) && ! isset($field['options']['placeholder'])) {
+                    $field['options']['placeholder'] = 'YYYY-MM-DD';
                 }
             }
 
@@ -206,14 +205,11 @@ class BaseViewController extends Controller
             //          Hiding in create context will only work with hard coded 'hidden' => 1 entry in view_form_fields()
             if (
                 // does a view relation exists?
-                (is_object($view_belongs_to))
-                &&
+                (is_object($view_belongs_to)) &&
                 // not a n:m relation (in which case we have an pivot table)
-                (! ($view_belongs_to instanceof \Illuminate\Support\Collection))
-                &&
+                (! ($view_belongs_to instanceof \Illuminate\Support\Collection)) &&
                 // view table name (*_id) == field name ?
-                ($view_belongs_to->table.'_id' == $field['name'])
-                &&
+                ($view_belongs_to->table.'_id' == $field['name']) &&
                 // hidden was not explicitly set
                 (! isset($field['hidden']))
             ) {
@@ -249,11 +245,22 @@ class BaseViewController extends Controller
             }
 
             // 5. ip online check
-            if ($field['form_type'] == 'ip' || $field['form_type'] == 'ping') {
+            if ($field['form_type'] == 'ip') {
+                $ping = $offline = null;
+
                 // Ping: Only check if ip is online
                 if ($model[$field['name']]) {
+                    $cmd = 'ping';
                     // $model[$field['name']] is null e.g. on NetGw/create
-                    exec('sudo ping -c1 -i0 -w1 '.explode(':', $model[$field['name']])[0], $ping, $offline);
+                    $host = explode(':', $model[$field['name']])[0];
+
+                    // IPv6
+                    if (filter_var($model[$field['name']], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                        $cmd .= ' -6';
+                        $host = $model[$field['name']];
+                    }
+
+                    exec("sudo $cmd -c1 -i0 -w1 ".$host, $ping, $offline);
 
                     if ($offline) {
                         $field['help'] = 'Device seems to be Offline!';
@@ -429,6 +436,13 @@ class BaseViewController extends Controller
                     $s .= $field['html'];
                     break;
 
+                case 'date':
+                    $options['onchange'] = "$('#{$field['name']}')[0].defaultValue = event.target.value;$('#{$field['name']}')[0].value = event.target.value;";
+                    $options['autocomplete'] = 'off';
+
+                    $s .= Form::date($field['name'], $field['field_value'], $options);
+                    break;
+
                 default:
                     $form = $field['form_type'];
                     $s .= Form::$form($field['name'], $field['field_value'], $options);
@@ -540,13 +554,13 @@ class BaseViewController extends Controller
             </div>";
     }
 
-    /*
-     * This Method returns The Menuobjects for the Main Menu
-     * which constist of icon, link and class of the page
+    /**
+     * This Method returns The Menuobjects for the Main Menu which constist of
+     * icon, link and class of the page.
      *
      * NOTE: this function takes care of installed modules and Permissions!
      *
-     * @return: array()
+     * @return array
      * @author: Christian Schramm
      */
     public static function view_main_menus(): array
@@ -556,12 +570,11 @@ class BaseViewController extends Controller
         }
 
         $menu = [];
-        $modules = Module::enabled();
         $configMenuItemKey = 'MenuItems';
 
-        $globalPages = Config::get('base.'.$configMenuItemKey);
+        $globalPages = config('base.'.$configMenuItemKey);
 
-        $menu['Global']['link'] = Config::get('base.link');
+        $menu['Global']['link'] = config('base.link');
         $menu['Global']['translated_name'] = trans('view.Global');
         foreach ($globalPages as $page => $settings) {
             if (Bouncer::can('view', $settings['class'])) {
@@ -571,28 +584,53 @@ class BaseViewController extends Controller
             }
         }
 
-        foreach ($modules as $module) {
-            $moduleMenuConfig = Config::get(Str::lower($module->name).'.'.$configMenuItemKey);
+        $modules = Module::allEnabled();
+        foreach ($modules as $name => $module) {
+            $config = config($module->getLowerName());
 
-            if (! empty($moduleMenuConfig)) {
-                $name = Config::get(Str::lower($module->name).'.'.'name') ?? $module->get('description');
-                $icon = ($module->get('icon') == '' ? '' : $module->get('icon'));
-                $menu[$name]['icon'] = $icon;
-                $menu[$name]['link'] = Config::get(Str::lower($module->name).'.link');
-                $menu[$name]['translated_name'] = static::translate_view($name, 'Menu');
+            if (empty($config[$configMenuItemKey])) {
+                continue;
+            }
 
-                foreach ($moduleMenuConfig as $page => $settings) {
-                    if (Bouncer::can('view', $settings['class'])) {
-                        $menuItem = static::translate_view($page, 'Menu');
-                        $menu[$name]['submenu'][$menuItem] = $settings;
-                    }
+            if (! empty($config['parent'])) {
+                $module = $modules[$config['parent']];
+                $name = $module->getName();
+            }
+
+            $menu[$name]['icon'] = $module->get('icon');
+            $menu[$name]['link'] = $config['link'] ?? null;
+            $menu[$name]['translated_name'] = static::translate_view($name, 'Menu');
+
+            foreach ($config[$configMenuItemKey] as $page => $settings) {
+                if (Bouncer::can('view', $settings['class'])) {
+                    $menuItem = static::translate_view($page, 'Menu');
+                    $menu[$name]['submenu'][$menuItem] = $settings;
                 }
             }
         }
 
+        self::addWorkforceMenuEntry($menu);
+
         Session::put('menu', $menu);
 
         return $menu;
+    }
+
+    /**
+     * Temporary function to add menu entry while code is not outsourced to separate module
+     *
+     * TODO: Remove when workforce module was created
+     */
+    private static function addWorkforceMenuEntry(&$menu)
+    {
+        if (! Module::collections()->has('HfcCustomer')) {
+            return;
+        }
+
+        $name = 'Workforce';
+
+        $menu[$name]['link'] = 'CustomerModem.showWorkforce';
+        $menu[$name]['icon'] = 'icon-workforce.png';
     }
 
     /**
@@ -666,6 +704,9 @@ class BaseViewController extends Controller
         // lambda function to extend the current breadcrumb by its predecessor
         // code within this function originally written by Torsten
         $extend_breadcrumb_path = function ($breadcrumb_path, $model, $i) {
+            if (! $model) {
+                return '';
+            }
 
             // following is the original source code written by Torsten
             $tmp = explode('\\', get_class($model));
@@ -698,8 +739,7 @@ class BaseViewController extends Controller
             while ($parent) {
                 if (
                     // if $parent is not a Collection we have a 1:1 or 1:n relation
-                    (! ($parent instanceof \Illuminate\Support\Collection))
-                    ||
+                    (! ($parent instanceof \Illuminate\Support\Collection)) ||
                     // there is a potential n:m relation, but only one model is really connected
                     ($parent->count() == 1)
                 ) {
@@ -725,7 +765,6 @@ class BaseViewController extends Controller
                     $multicrumbs = '';
 
                     foreach ($parent as $p) {
-
                         // get the breadcrumb for the current parent
                         $extended_path = $extend_breadcrumb_path($breadcrumb_path, $p, $i);
                         $breadcrumb = str_replace($breadcrumb_path_before_split, '', $extended_path);

@@ -1,14 +1,16 @@
 {
     "name": "ProvBase",
-    "alias": "provbase",
-    "description": "Provisioning",
+    "alias": "Provisioning",
+    "description": "Automated provisioning/management/configuration of DOCSIS, FTTH or DSL modems as well as microwave links and point-to-point devices.",
     "keywords": [],
     "active": 1,
-    "icon": "fa-database",
-    "order": 20,
+    "order": 10,
+    "icon": "OS_Provisioning.png",
+    "category": "Provisioning",
     "providers": [
         "Modules\\ProvBase\\Providers\\ProvBaseServiceProvider"
     ],
+    "aliases": {},
     "files": [
         "start.php"
     ],

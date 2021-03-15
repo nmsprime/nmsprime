@@ -27,7 +27,7 @@ return [
         'customerGetContracts' => 'Get envia TEL contracts',
         'customerGetReference' => 'Get envia TEL customer reference',
         'customerGetReferenceLegacy' => 'Get envia TEL customer reference (using legacy customer number)',
-        'customerUpdate' => 'update customer at envia TEL',
+        'customerUpdate' => 'Update customer at envia TEL',
         'customerUpdateNumber' => 'Update customer number at envia TEL',
         'misc' => 'Miscellaneous',
         'miscGetFreeNumbers' => 'Get free phonenumbers',

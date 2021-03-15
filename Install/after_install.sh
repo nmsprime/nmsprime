@@ -1,5 +1,5 @@
-# source environment variables to use php 7.1
-source scl_source enable rh-php71
+# source environment variables to use php 7.3
+source scl_source enable rh-php73
 
 #
 # variables
@@ -34,8 +34,8 @@ systemctl start httpd
 systemctl enable httpd
 
 # start fpm
-systemctl start rh-php71-php-fpm
-systemctl enable rh-php71-php-fpm
+systemctl start rh-php73-php-fpm
+systemctl enable rh-php73-php-fpm
 
 #
 # firewalld
@@ -56,9 +56,9 @@ mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -u root mysql
 zone=$(timedatectl | grep 'Time zone' | cut -d':' -f2 | cut -d' ' -f2)
 sed -e "s|^;date.timezone =.*|date.timezone = $zone|" \
     -e 's/^memory_limit =.*/memory_limit = 1024M/' \
-    -e 's/^upload_max_filesize =.*/upload_max_filesize = 50M/' \
-    -e 's/^post_max_size =.*/post_max_size = 50M/' \
-    -i /etc/{,opt/rh/rh-php71/}php.ini
+    -e 's/^upload_max_filesize =.*/upload_max_filesize = 100M/' \
+    -e 's/^post_max_size =.*/post_max_size = 100M/' \
+    -i /etc/{,opt/rh/rh-php73/}php.ini
 
 sed -e "s|^#APP_TIMEZONE=|APP_TIMEZONE=$zone|" \
     -e "s/^DB_PASSWORD=$/DB_PASSWORD=$pw/" \
@@ -85,23 +85,24 @@ cd "$dir"
 
 # L5 setup
 install -Dm640 -o apache -g root /dev/null /var/www/nmsprime/storage/logs/laravel.log
-chown apache /var/www/nmsprime/storage/logs/laravel.log
+mkdir -p -m755 "$dir/storage/app/tmp/"
+chown -R apache "$dir/storage/"
 rm -rf /var/www/nmsprime/bootstrap/cache/*
-/opt/rh/rh-php71/root/usr/bin/php artisan clear-compiled
-/opt/rh/rh-php71/root/usr/bin/php artisan optimize
+/opt/rh/rh-php73/root/usr/bin/php artisan clear-compiled
+/opt/rh/rh-php73/root/usr/bin/php artisan optimize
 
 # key:generate needs .env in root dir – create symlink to our env file
 ln -srf "$env/global.env" "$dir/.env"
-/opt/rh/rh-php71/root/usr/bin/php artisan key:generate
+/opt/rh/rh-php73/root/usr/bin/php artisan key:generate
 # remove the symlink and create empty .env with comment
 rm -f "$dir/.env"
 echo "# Use $env/*.env files for configuration" > "$dir/.env"
 
-/opt/rh/rh-php71/root/usr/bin/php artisan migrate
+/opt/rh/rh-php73/root/usr/bin/php artisan migrate
 # create default user roles to be later assigned to users
-/opt/rh/rh-php71/root/usr/bin/php artisan auth:roles
+/opt/rh/rh-php73/root/usr/bin/php artisan auth:roles
 
-/opt/rh/rh-php71/root/usr/bin/php artisan config:cache
+/opt/rh/rh-php73/root/usr/bin/php artisan config:cache
 
 # Note: needs to run last. storage/logs is only available after artisan optimize
 chown -R apache storage bootstrap/cache

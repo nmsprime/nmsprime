@@ -1,0 +1,11 @@
+/var/log/nmsprime/tftpd-cm.log {
+    monthly
+    missingok
+    rotate 12
+    compress
+    notifempty
+    create 600 apache apache
+    postrotate
+        systemctl kill -s HUP rsyslog.service || true
+    endscript
+}

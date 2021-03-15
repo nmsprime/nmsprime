@@ -10,17 +10,20 @@ use Modules\ProvBase\Entities\Configfile;
 
 class Mta extends \BaseModel
 {
+    public const CONF_FILE_PATH = '/etc/dhcp-nmsprime/mta.conf';
+
     // The associated SQL table for this Model
     public $table = 'mta';
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
-            'mac' => 'required|mac|unique:mta,mac,'.$id.',id,deleted_at,NULL', //|unique:mta,mac',
-            'modem_id' => 'required|exists:modem,id,deleted_at,NULL|min:1',
-            'configfile_id' => 'required|exists:configfile,id,deleted_at,NULL|min:1',
-            // 'hostname' => 'required|unique:mta,hostname,'.$id,
+            'mac' => ['mac'],
+            'modem_id' => ['required', 'exists:modem,id,deleted_at,NULL', 'min:1'],
+            'configfile_id' => ['required', 'exists:configfile,id,deleted_at,NULL', 'min:1'],
+            'type' => ['required'],
+            // 'hostname' => ['required', "unique:mta,hostname,$id"],
         ];
     }
 
@@ -31,7 +34,7 @@ class Mta extends \BaseModel
     // Name of View
     public static function view_headline()
     {
-        return 'MTAs';
+        return 'MTA';
     }
 
     // View Icon
@@ -46,7 +49,7 @@ class Mta extends \BaseModel
     {
         return ['table' => $this->table,
             'index_header' => [$this->table.'.hostname', $this->table.'.mac', $this->table.'.type', 'configfile.name'],
-            'header' => $this->hostname.' - '.$this->mac,
+            'header' => $this->hostname.($this->mac ? ' - '.$this->mac : ''),
             'bsclass' => $this->get_bsclass(),
             'order_by' => ['3' => 'asc'],
             'edit' => ['configfile.name' => 'has_configfile_assigned'],
@@ -200,14 +203,9 @@ class Mta extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new MtaObserver);
-        self::observe(new \App\SystemdObserver);
+        self::observe(new \Modules\ProvVoip\Observers\MtaObserver);
+        self::observe(new \App\Observers\SystemdObserver);
     }
-
-    /**
-     * Define DHCP Config File for MTA's
-     */
-    const CONF_FILE_PATH = '/etc/dhcp-nmsprime/mta.conf';
 
     /**
      * Writes all mta entries to dhcp configfile
@@ -220,7 +218,7 @@ class Mta extends \BaseModel
 
         foreach (self::all() as $mta) {
             // FF-00-00-00-00 to FF-FF-FF-FF-FF reserved according to RFC7042
-            if ($mta->id == 0 || stripos($mta->mac, 'ff:') === 0) {
+            if ($mta->id == 0 || stripos($mta->mac, 'ff:') === 0 || ! $mta->mac) {
                 continue;
             }
 
@@ -267,7 +265,7 @@ class Mta extends \BaseModel
 
         // Note: dont replace directly as this wouldnt add the entry for a new created mta
         // FF-00-00-00-00 to FF-FF-FF-FF-FF reserved according to RFC7042
-        if (! $delete && stripos($this->mac, 'ff:') !== 0) {
+        if (! $delete && stripos($this->mac, 'ff:') !== 0 && $this->mac) {
             $conf[] = 'host mta-'.$this->id.' { hardware ethernet '.$this->mac.'; filename "mta/mta-'.$this->id.'.cfg"; ddns-hostname "mta-'.$this->id.'"; option host-name "'.$this->id.'"; }'."\n";
         }
 
@@ -329,9 +327,9 @@ class Mta extends \BaseModel
 
             // only ignore error with this error message (catch exception with this string)
             if (((strpos($e->getMessage(), 'php_network_getaddresses: getaddrinfo failed: Name or service not known') !== false) || (strpos($e->getMessage(), 'snmp2_set(): No response from') !== false))) {
-                \Session::push('tmp_warning_above_form', 'Could not restart MTA! (offline?)');
+                \Session::push('tmp_error_above_form', 'Could not restart MTA! (offline?)');
             } elseif (strpos($e->getMessage(), 'noSuchName') !== false) {
-                \Session::push('tmp_info_above_form', 'Could not restart MTA – noSuchName');
+                \Session::push('tmp_error_above_form', 'Could not restart MTA – noSuchName');
             // this is not necessarily an error, e.g. the modem was deleted (i.e. Cisco) and user clicked on restart again
             } else {
                 \Session::push('tmp_error_above_form', 'Unexpected exception: '.$e->getMessage());
@@ -339,58 +337,5 @@ class Mta extends \BaseModel
 
             return -1;
         }
-    }
-}
-
-/**
- * MTA Observer Class
- * Handles changes on MTAs
- *
- * can handle   'creating', 'created', 'updating', 'updated',
- *              'deleting', 'deleted', 'saving', 'saved',
- *              'restoring', 'restored',
- *
- * @author Patrick Reichel
- */
-class MtaObserver
-{
-    public function created($mta)
-    {
-        $mta->hostname = 'mta-'.$mta->id;
-        $mta->save(); 			// forces to call updated method
-        $mta->modem->make_dhcp_cm(false, true);
-        $mta->modem->restart_modem();
-    }
-
-    public function updated($mta)
-    {
-        $modifications = $mta->getDirty();
-        if (isset($modifications['updated_at'])) {
-            unset($modifications['updated_at']);
-        }
-
-        // only make configuration files when relevant data was changed
-        if ($modifications) {
-            if (array_key_exists('mac', $modifications)) {
-                $mta->make_dhcp_mta();
-                $mta->modem->make_configfile();
-
-                // in case mta mac begun with or is changed to 'ff:' the modem dhcp entry has to be changed as well
-                $mta->modem->make_dhcp_cm(false, true);
-            }
-
-            $mta->make_configfile();
-        }
-
-        $mta->restart();
-    }
-
-    public function deleted($mta)
-    {
-        $mta->make_dhcp_mta(true);
-        $mta->modem->make_dhcp_cm(false, true);
-        $mta->delete_configfile();
-        $mta->modem->make_configfile();
-        $mta->modem->restart_modem();
     }
 }

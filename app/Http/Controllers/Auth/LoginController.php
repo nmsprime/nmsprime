@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Auth;
 
 use App;
-use Log;
-use Module;
-use Bouncer;
-use GlobalConfig;
 use App\BaseModel;
 use Carbon\Carbon;
+use App\GlobalConfig;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Nwidart\Modules\Facades\Module;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Silber\Bouncer\BouncerFacade as Bouncer;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 
 class LoginController extends Controller
@@ -30,16 +30,6 @@ class LoginController extends Controller
     use AuthenticatesUsers;
 
     private $prefix = 'admin';
-
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->middleware('adminRedirect', ['except' => 'logout']);
-    }
 
     /**
      * Return a instance of the used guard
@@ -65,13 +55,49 @@ class LoginController extends Controller
      */
     public function showLoginForm()
     {
+        $intended = null;
         $prefix = $this->prefix;
         $globalConfig = GlobalConfig::first();
         $head1 = $globalConfig->headline1;
         $head2 = $globalConfig->headline2;
         $image = 'main-pic-1.jpg';
+        $loginPage = 'admin';
+        $logo = asset('images/nmsprime-logo-white.png');
 
-        return \View::make('auth.login', compact('head1', 'head2', 'prefix', 'image'));
+        if (session()->has('url.intended') && $pos = strpos($url = session('url.intended'), 'admin')) {
+            $intended = substr($url, $pos + 6); // pos + admin/
+        }
+
+        return \View::make('auth.login', compact('head1', 'head2', 'prefix', 'image', 'loginPage', 'logo', 'intended'));
+    }
+
+    /**
+     * Attempt to log the user into the application.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return bool
+     */
+    protected function attemptLogin(Request $request)
+    {
+        if (! $this->guard()->attempt($this->credentials($request), $request->filled('remember'))) {
+            return false;
+        }
+
+        $user = Auth::user();
+
+        if (! $user->active) {
+            Log::info("User {$user->login_name} denied: User is inactive");
+
+            return false;
+        }
+
+        if (! count($user->roles)) {
+            Log::info("User {$user->login_name} denied: User has no roles assigned");
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -141,15 +167,10 @@ class LoginController extends Controller
      *
      * @return type Redirect
      */
-    private function redirectTo()
+    public function redirectTo()
     {
         $user = Auth::user();
-        $roles = $user->roles;
         $activeModules = Module::collections();
-
-        if (! count($roles)) {
-            return \View::make('auth.denied')->with('message', 'No roles assigned. Please contact your administrator.');
-        }
 
         Log::debug($user->login_name.' logged in successfully!');
 

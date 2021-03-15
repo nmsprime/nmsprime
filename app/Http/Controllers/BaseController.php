@@ -6,22 +6,26 @@ use Log;
 use Str;
 use Auth;
 use View;
-use Config;
 use Bouncer;
 use Request;
 use Session;
 use Redirect;
 use BaseModel;
 use Validator;
-use GlobalConfig;
+use App\V1\Service;
+use App\V1\V1Trait;
 use Monolog\Logger;
+use App\GlobalConfig;
+use App\V1\Repository;
 use Yajra\DataTables\DataTables;
+use Nwidart\Modules\Facades\Module;
 
 /*
  * BaseController: The Basic Controller in our MVC design.
  */
 class BaseController extends Controller
 {
+    use V1Trait;
     /*
      * Default VIEW styling options
      * NOTE: All these values could be used in the inheritances classes
@@ -34,10 +38,14 @@ class BaseController extends Controller
     protected $edit_view_second_button = false;
     protected $second_button_name = 'Missing action name';
     protected $second_button_title_key = null;
+    protected $second_button_icon = null;
 
     protected $edit_view_third_button = false;
     protected $third_button_name = 'Missing action name';
     protected $third_button_title_key = null;
+    protected $third_button_icon = null;
+
+    protected $printButton = false;
 
     protected $relation_create_button = 'Create';
 
@@ -48,6 +56,13 @@ class BaseController extends Controller
     protected $edit_left_md_size = 8;
     protected $index_left_md_size = 12;
     protected $edit_right_md_size = null;
+
+    protected $defaultMdSizes = [
+        'leftLeftLg' => 3,
+        'leftLeftXl' => 2,
+        'rightRightLg' => 3,
+        'rightRightXl' => 2,
+    ];
 
     protected $index_tree_view = false;
 
@@ -104,12 +119,14 @@ class BaseController extends Controller
 
         return [[
             'name' => 'Edit',
+            'icon' => 'pencil',
             // 'route' => $class_name.'.edit',
             // 'link' => ['model_id' => $model->id, 'model' => $class_name],
         ],
             [
                 'name' => 'Logging',
                 'route' => 'GuiLog.filter',
+                'icon' => 'history',
                 'link' => ['model_id' => $model->id, 'model' => $class_name],
             ],
         ];
@@ -152,7 +169,7 @@ class BaseController extends Controller
 
     public static function get_config_modules()
     {
-        $modules = \Module::enabled();
+        $modules = Module::allEnabled();
         $links = ['Global Config' => 'GlobalConfig'];
 
         foreach ($modules as $module) {
@@ -163,7 +180,7 @@ class BaseController extends Controller
             $mod_controller = new $mod_controller_name;
 
             if (method_exists($mod_controller, 'view_form_fields')) {
-                $links[($module->get('description') == '') ? $tmp : $module->get('description')] = $tmp;
+                $links[($module->get('alias') == '') ? $tmp : $module->get('alias')] = $tmp;
             }
         }
         // Sla (service level agreement) is not a separate module, but belongs to GlobalConfig
@@ -220,9 +237,8 @@ class BaseController extends Controller
             // this is e.g. the case for the active checkbox on ProvVoip\Phonenumber
             // the value in $_POST seems to be browser dependend – extend the array if needed
             if (
-                ($field['form_type'] == 'checkbox')
-                &&
-                (in_array(\Str::lower($data[$field['name']]), ['on', 'checked']))
+                ($field['form_type'] == 'checkbox') &&
+                (in_array(Str::lower($data[$field['name']]), ['on', 'checked']))
             ) {
                 $data['active'] = '1';
             }
@@ -235,6 +251,26 @@ class BaseController extends Controller
         }
 
         return $data;
+    }
+
+    /**
+     * Normalizes numeric values to minimize problems for e.g. German users (using a comma instead a dot in float).
+     *
+     * @param $value the numeric string to normalize
+     *
+     * @author Patrick Reichel
+     */
+    protected function normalizeNumericString($value)
+    {
+        // take care of nullable fields
+        if (is_null($value)) {
+            return;
+        }
+
+        // Germans use comma as decimal separator – replace by dot
+        $value = str_replace(',', '.', $value);
+
+        return $value;
     }
 
     /**
@@ -329,7 +365,7 @@ class BaseController extends Controller
         // place filename as chosen value in Input field
         Request::merge([$base_field => $filename]);
 
-        if (\Module::collections()->has('ProvBase') && $base_field == 'firmware' && Request::get('device') == 'tr069') {
+        if (Module::collections()->has('ProvBase') && $base_field == 'firmware' && Request::get('device') == 'tr069') {
             // file upload using curl_file_create and method PUT adds headers
             // Content-Disposition, Content-Type and boundaries, which corrupts
             // the file to be uploaded, thus call curl from command line
@@ -388,7 +424,7 @@ class BaseController extends Controller
 
         if (! isset($a['networks'])) {
             $a['networks'] = [];
-            if (\Module::collections()->has('HfcReq') && Bouncer::can('view', \Modules\HfcBase\Entities\TreeErd::class)) {
+            if (Module::collections()->has('HfcBase') && Bouncer::can('view', \Modules\HfcBase\Entities\TreeErd::class)) {
                 $a['networks'] = \Modules\HfcReq\Entities\NetElement::getNetsWithClusters();
             }
         }
@@ -433,6 +469,10 @@ class BaseController extends Controller
             $a['index_left_md_size'] = $this->index_left_md_size;
         }
 
+        if (! isset($a['mdSizes'])) {
+            $a['mdSizes'] = $this->defaultMdSizes;
+        }
+
         if (! is_null($this->edit_right_md_size) && ! isset($a['edit_right_md_size'])) {
             $a['edit_right_md_size'] = $this->edit_right_md_size;
         }
@@ -441,11 +481,11 @@ class BaseController extends Controller
             $a['html_title'] = 'NMS Prime - '.BaseViewController::translate_view(NamespaceController::module_get_pure_model_name(), 'Header');
         }
 
-        if ((\Module::collections()->has('ProvVoipEnvia')) && (! isset($a['envia_interactioncount']))) {
+        if ((Module::collections()->has('ProvVoipEnvia')) && (! isset($a['envia_interactioncount']))) {
             $a['envia_interactioncount'] = \Modules\ProvVoipEnvia\Entities\EnviaOrder::get_user_interaction_needing_enviaorder_count();
         }
 
-        if (\Module::collections()->has('Dashboard')) {
+        if (Module::collections()->has('Dashboard')) {
             $a['modem_statistics'] = \Modules\Dashboard\Http\Controllers\DashboardController::get_modem_statistics();
         }
 
@@ -458,13 +498,17 @@ class BaseController extends Controller
         $a['second_button_name'] = $this->second_button_name;
         $a['edit_view_second_button'] = $this->edit_view_second_button;
         $a['second_button_title_key'] = $this->second_button_title_key;
+        $a['second_button_icon'] = $this->second_button_icon;
         $a['third_button_name'] = $this->third_button_name;
+        $a['third_button_icon'] = $this->third_button_icon;
         $a['edit_view_third_button'] = $this->edit_view_third_button;
         $a['third_button_title_key'] = $this->third_button_title_key;
         $a['save_button_title_key'] = $this->save_button_title_key;
+        $a['printButton'] = $this->printButton;
+        $a['nmsprimeLogoLink'] = Module::collections()->has('Dashboard') ? route('Dashboard.index') : '';
 
         // Get Framework Informations
-        $gc = \Cache::remember('GlobalConfig', 60, function () {
+        $gc = \Cache::remember('GlobalConfig', now()->addHour(), function () {
             return GlobalConfig::first();
         });
         $a['framework']['header1'] = $gc->headline1;
@@ -475,43 +519,125 @@ class BaseController extends Controller
     }
 
     /**
-     * Perform a fulltext search.
+     * Perform a global search.
      *
-     * @author Patrick Reichel
+     * @return Illuminate\Support\Facades\View
+     * @author Roy Schneider
      */
-    public function fulltextSearch()
+    protected function globalSearch($fromTags = null)
     {
-        // get the search scope
-        $scope = Request::get('scope');
-
-        // get the mode to use and transform to sql syntax
-        $mode = Request::get('mode');
-
-        // get the query to search for
         $query = Request::get('query');
+        $view_header = 'Global Search';
+        $basemodel = new BaseModel;
 
-        if ($scope == 'all') {
-            $view_path = 'Generic.searchglobal';
-            $obj = new BaseModel;
-            $view_header = 'Global Search';
-        } else {
-            $obj = static::get_model_obj();
-            $view_path = 'Generic.index';
+        // search for tags?
+        if ($searchTag = $this->getGlobalSearchQuery($query)) {
+            $query = $searchTag[2];
+        }
 
-            if (View::exists(NamespaceController::get_view_name().'.index')) {
-                $view_path = NamespaceController::get_view_name().'.index';
+        $models = collect($basemodel->get_models())->reject(function ($class) {
+            return Bouncer::cannot('view', $class);
+        })->map(function ($name) {
+            return new $name;
+        });
+
+        $view_var = collect($fromTags);
+        if (! $searchTag) {
+            try {
+                foreach ($this->globalSearchResults($query, $models) as $result) {
+                    if ($result->isNotEmpty()) {
+                        $view_var = $view_var->merge($result);
+                    }
+                }
+            } catch (Exception $e) {
+                //
             }
         }
 
-        $create_allowed = static::get_controller_obj()->index_create_allowed;
-        $delete_allowed = static::get_controller_obj()->index_delete_allowed;
+        $view_var = $view_var->unique('id');
+        $results = count($view_var);
 
-        $view_var = collect();
-        foreach ($obj->getFulltextSearchResults($scope, $mode, $query, Request::get('preselect_field'), Request::get('preselect_value')) as $result) {
-            $view_var = $view_var->merge($result->get());
+        return View::make('Generic.searchglobal', $this->compact_prep_view(compact('view_header', 'view_var', 'query', 'results')));
+    }
+
+    /**
+     * Remove tag (like 'ip:') from query and return both.
+     *
+     * @param $query String
+     * @return array|null
+     * @author Roy Schneider
+     */
+    protected function getGlobalSearchQuery($query)
+    {
+        preg_match('/(^[a-zA-Z]+:)(.*)/', $query, $parts);
+
+        if (array_key_exists(2, $parts) && $parts[2] != '') {
+            return $parts;
+        }
+    }
+
+    /**
+     * Get all models where a specific column exists.
+     *
+     * @param $attribute String
+     * @param $name String
+     * @return stdClass
+     * @author Roy Schneider
+     */
+    protected function getTableWithColumn($attribute, $name)
+    {
+        $tables = \DB::select("SELECT table_name, column_name FROM information_schema.columns WHERE column_name='$name';");
+        $devices = [];
+
+        foreach ($tables as $table) {
+            $model = \BaseModel::_guess_model_name($table->table_name);
+            $hasAttribute = $model::where($name, $attribute)->first();
+            if ($hasAttribute) {
+                $devices[] = $hasAttribute;
+            }
         }
 
-        return View::make($view_path, $this->compact_prep_view(compact('view_header', 'view_var', 'create_allowed', 'delete_allowed', 'query', 'scope')));
+        return $devices;
+    }
+
+    /**
+     * Search for $query in all models.
+     *
+     * @param $query String query to search for
+     * @param $models Illuminate\Support\Collection with models to search in
+     * @return $result array of collections of models with $query in any column
+     * @author Roy Schneider
+     */
+    protected function globalSearchResults($query, $models)
+    {
+        if ($query == '') {
+            return collect();
+        }
+
+        // necessary because of the concatenation of all table rows
+        $query = str_replace('*', '%', $query);
+        if (! Str::startsWith($query, '%')) {
+            $query = '%'.$query;
+        }
+
+        if (! Str::endsWith($query, '%')) {
+            $query = $query.'%';
+        }
+
+        $results = [];
+        foreach ($models as $model) {
+            if (! property_exists($model, 'table') || ! \Schema::hasTable($model->getTable())) {
+                continue;
+            }
+
+            $queryResult = $model::whereRaw("CONCAT_WS('|', ".$model::getTableColumns($model->getTable()).') LIKE ?', [$query])->limit(100);
+
+            if ($queryResult) {
+                $results[] = $queryResult->get();
+            }
+        }
+
+        return $results;
     }
 
     /**
@@ -544,7 +670,7 @@ class BaseController extends Controller
      */
     protected function _add_empty_first_element_to_options($options, $first_value = '')
     {
-        $ret = [0 => $first_value];
+        $ret = [null => $first_value];
 
         foreach ($options as $key => $value) {
             $ret[$key] = $value;
@@ -568,7 +694,14 @@ class BaseController extends Controller
 
         if ($this->index_tree_view) {
             // TODO: remove orWhere statement when it is sure that parent_id is nullable and can not be 0 in all NMSPrime instances and after new installation!!!
-            $view_var = $model::whereNull('parent_id')->orWhere('parent_id', 0)->get();
+            $view_var = $model::whereNull('parent_id')->orWhere('parent_id', 0);
+
+            if (method_exists($model, 'children')) {
+                $view_var->with('children');
+            }
+
+            $view_var = $view_var->get();
+
             $undeletables = $model::undeletables();
 
             return View::make('Generic.tree', $this->compact_prep_view(compact('headline', 'view_header', 'view_var', 'create_allowed', 'undeletables')));
@@ -625,14 +758,17 @@ class BaseController extends Controller
     public function api_create($ver)
     {
         if ($ver !== '0') {
-            return response()->json(['ret' => "Version $ver not supported"]);
+            return response()->v0ApiReply(['messages' => ['errors' => ["Version $ver not supported"]]]);
         }
 
         $model = static::get_model_obj();
         $fields = BaseViewController::prepare_form_fields(static::get_controller_obj()->view_form_fields($model), $model);
         $fields = $this->apiHandleHtmlFields($fields);
 
-        return response()->json($fields);
+        // Set key-by-name and rename to models to unify with api_get / api_index
+        $models = collect($fields)->keyBy('name');
+
+        return response()->v0ApiReply(compact('models'), true);
     }
 
     /**
@@ -693,8 +829,9 @@ class BaseController extends Controller
         $controller = static::get_controller_obj();
 
         // Prepare and Validate Input
+        // Note: prepare_input must be before prepare_rules as functionality in some controllers depend on it (e.g. IpPoolController@prepare_rules)
         $data = $controller->prepare_input(Request::all());
-        $rules = $controller->prepare_rules($obj::rules(), $data);
+        $rules = $controller->prepare_rules($obj->rules(), $data);
         $validator = Validator::make($data, $rules);
 
         if ($validator->fails()) {
@@ -735,35 +872,36 @@ class BaseController extends Controller
      */
     public function api_store($ver)
     {
-        if ($ver !== '0') {
-            return response()->json(['ret' => "Version $ver not supported"]);
-        }
+        if ($ver === '0') {
+            $obj = static::get_model_obj();
+            $controller = static::get_controller_obj();
 
-        $obj = static::get_model_obj();
-        $controller = static::get_controller_obj();
+            // Prepare and Validate Input
+            $data = $this->_api_prepopulate_fields($obj, $controller);
+            $data = $controller->prepare_input($data);
+            $rules = $controller->prepare_rules($obj->rules(), $data);
+            $validator = Validator::make($data, $rules);
 
-        // Prepare and Validate Input
-        $data = $this->_api_prepopulate_fields($obj, $controller);
-        $data = $controller->prepare_input($data);
-        $rules = $controller->prepare_rules($obj::rules(), $data);
-        $validator = Validator::make($data, $rules);
-
-        if ($validator->fails()) {
-            $ret = [];
-            foreach ($validator->errors()->getMessages() as $field => $error) {
-                $ret[$field] = $error;
+            if ($validator->fails()) {
+                return response()->v0ApiReply(['validations' => $validator->errors()], false, $obj->id);
             }
 
-            return response()->json(['ret' => $ret]);
+            $data = $controller->prepare_input_post_validation($data);
+
+            $obj = $obj::create($data);
+
+            // Add N:M Relations
+            self::_set_many_to_many_relations($obj, $data);
+
+            return response()->v0ApiReply([], true, $obj->id);
+        } elseif ($ver === '1') {
+            $data = Request::all();
+            $model = (new Service(new Repository(static::get_model_obj())))->create($data);
+
+            return $this->response($model, 200);
+        } else {
+            return response()->v0ApiReply(['messages' => ['errors' => ["Version $ver not supported"]]]);
         }
-        $data = $controller->prepare_input_post_validation($data);
-
-        $obj = $obj::create($data);
-
-        // Add N:M Relations
-        self::_set_many_to_many_relations($obj, $data);
-
-        return response()->json(['ret' => 'success', 'id' => $obj->id]);
     }
 
     /**
@@ -802,8 +940,7 @@ class BaseController extends Controller
             $form_path = NamespaceController::get_view_name().'.form';
         }
 
-        // $config_routes = BaseController::get_config_modules();
-        return View::make($view_path, $this->compact_prep_view(compact('model_name', 'view_var', 'view_header', 'form_path', 'form_fields', 'headline', 'tabs', 'relations', 'action', 'additional_data')));
+        return View::make($view_path, $this->compact_prep_view(compact('view_var', 'view_header', 'form_path', 'form_fields', 'headline', 'tabs', 'relations', 'additional_data')));
     }
 
     /**
@@ -819,7 +956,8 @@ class BaseController extends Controller
 
         // Prepare and Validate Input
         $data = $controller->prepare_input(Request::all());
-        $rules = $controller->prepare_rules($obj::rules($id), $data);
+        $data['id'] = $obj->id = $id;
+        $rules = $controller->prepare_rules($obj->rules(), $data);
         $validator = Validator::make($data, $rules);
 
         if ($validator->fails()) {
@@ -839,7 +977,7 @@ class BaseController extends Controller
         // Note: calling touch() forces a direct save() which calls all observers before we update $data
         //       when exit in middleware to a new view page (like Modem restart) this kill update process
         //       so the solution is not to run touch(), we set the updated_at field directly
-        $data['updated_at'] = \Carbon\Carbon::now(Config::get('app.timezone'));
+        $data['updated_at'] = now();
 
         // Note: Eloquent Update requires updated_at to either be in the fillable array or to have a guarded field
         //       without updated_at field. So we globally use a guarded field from now, to use the update timestamp
@@ -880,37 +1018,38 @@ class BaseController extends Controller
      */
     public function api_update($ver, $id)
     {
-        if ($ver !== '0') {
-            return response()->json(['ret' => "Version $ver not supported"]);
-        }
+        if ($ver === '0') {
+            $obj = static::get_model_obj()->findOrFail($id);
+            $controller = static::get_controller_obj();
 
-        $obj = static::get_model_obj()->findOrFail($id);
-        $controller = static::get_controller_obj();
+            // Prepare and Validate Input
+            $data = $this->_api_prepopulate_fields($obj, $controller);
+            $data['id'] = $obj->id = $id;
+            $data = $controller->prepare_input($data);
+            $rules = $controller->prepare_rules($obj->rules(), $data);
+            $validator = Validator::make($data, $rules);
+            $data = $controller->prepare_input_post_validation($data);
 
-        // Prepare and Validate Input
-        $data = $this->_api_prepopulate_fields($obj, $controller);
-        $data = $controller->prepare_input($data);
-        $rules = $controller->prepare_rules($obj::rules($id), $data);
-        $validator = Validator::make($data, $rules);
-        $data = $controller->prepare_input_post_validation($data);
-
-        if ($validator->fails()) {
-            $ret = [];
-            foreach ($validator->errors()->getMessages() as $field => $error) {
-                $ret[$field] = $error;
+            if ($validator->fails()) {
+                return response()->v0ApiReply(['validations' => $validator->errors()], false, $obj->id);
             }
 
-            return response()->json(['ret' => $ret]);
+            $data['updated_at'] = now();
+
+            $obj->update($data);
+
+            // Add N:M Relations
+            self::_set_many_to_many_relations($obj, $data);
+
+            return response()->v0ApiReply([], true, $obj->id);
+        } elseif ($ver === '1') {
+            $data = Request::all();
+            $model = (new Service(new Repository(static::get_model_obj())))->update($id, $data);
+
+            return $this->response($model, 200);
+        } else {
+            return response()->v0ApiReply(['messages' => ['errors' => ["Version $ver not supported"]]]);
         }
-
-        $data['updated_at'] = \Carbon\Carbon::now(Config::get('app.timezone'));
-
-        $obj->update($data);
-
-        // Add N:M Relations
-        self::_set_many_to_many_relations($obj, $data);
-
-        return response()->json(['ret' => 'success']);
     }
 
     /**
@@ -923,7 +1062,7 @@ class BaseController extends Controller
      */
     private function _api_prepopulate_fields($obj, $ctrl)
     {
-        $fields = BaseViewController::prepare_form_fields($ctrl->view_form_fields($obj), $obj);
+        $fields = BaseViewController::prepare_form_fields($ctrl->view_form_fields(clone $obj), $obj);
         $fields = $this->apiHandleHtmlFields($fields);
         $inputs = Request::all();
         $data = [];
@@ -1084,7 +1223,6 @@ class BaseController extends Controller
 
     /**
      * API equivalent of destroy()
-     * Recursive deletion is not implemented, as this should be handled by the client
      *
      * @author Ole Ernst
      *
@@ -1092,18 +1230,18 @@ class BaseController extends Controller
      */
     public function api_destroy($ver, $id)
     {
-        if ($ver !== '0') {
-            return response()->json(['ret' => "Version $ver not supported"]);
-        }
+        if ($ver === '0') {
+            $obj = static::get_model_obj();
 
-        $obj = static::get_model_obj();
-        if ($obj->findOrFail($id)->delete()) {
-            $ret = 'success';
+            return response()->v0ApiReply([], $obj->findOrFail($id)->delete());
+        } elseif ($ver === '1') {
+            $service = new Service(new Repository(static::get_model_obj()));
+            $data = $service->delete($id);
+
+            return $this->response([]);
         } else {
-            $ret = 'failure';
+            return response()->v0ApiReply(['messages' => ['errors' => ["Version $ver not supported"]]]);
         }
-
-        return response()->json(['ret' => $ret]);
     }
 
     /**
@@ -1137,9 +1275,18 @@ class BaseController extends Controller
     public function api_get($ver, $id)
     {
         if ($ver === '0') {
-            return static::get_model_obj()->findOrFail($id);
+            $obj = static::get_model_obj()->findOrFail($id);
+
+            return response()->v0ApiReply(['models' => [$id => $obj]], true, $id);
+        } elseif ($ver === '1') {
+            $resourceOptions = $this->parseResourceOptions();
+            $service = new Service(new Repository(static::get_model_obj()));
+            $data = $service->getById($id, $resourceOptions);
+            $parsedData = $this->parseData($data, $resourceOptions);
+
+            return $this->response($parsedData);
         } else {
-            return response()->json(['ret' => "Version $ver not supported"]);
+            return response()->v0ApiReply(['messages' => ['errors' => ["Version $ver not supported"]]]);
         }
     }
 
@@ -1153,9 +1300,12 @@ class BaseController extends Controller
     public function api_status($ver, $id)
     {
         if ($ver === '0') {
-            return response()->json(['ret' => 'success']);
+            // Throw ModelNotFoundException if not found, don't return success irrespectively
+            static::get_model_obj()->findOrFail($id);
+
+            return response()->v0ApiReply([], true, $id);
         } else {
-            return response()->json(['ret' => "Version $ver not supported"]);
+            return response()->v0ApiReply(['messages' => ['errors' => ["Version $ver not supported"]]]);
         }
     }
 
@@ -1168,19 +1318,22 @@ class BaseController extends Controller
      */
     public function api_index($ver)
     {
-        if ($ver !== '0') {
-            return response()->json(['ret' => "Version $ver not supported"]);
-        }
+        if ($ver === '0') {
+            $query = static::get_model_obj();
+            foreach (Request::all() as $key => $val) {
+                $query = $query->where($key, $val);
+            }
 
-        $query = static::get_model_obj();
-        foreach (Request::all() as $key => $val) {
-            $query = $query->where($key, $val);
-        }
+            return response()->v0ApiReply(['models' => $query->get()->keyBy('id')], true);
+        } elseif ($ver === '1') {
+            $resourceOptions = $this->parseResourceOptions();
+            $service = new Service(new Repository(static::get_model_obj()));
+            $data = $service->getAll($resourceOptions);
+            $parsedData = $this->parseData($data, $resourceOptions);
 
-        try {
-            return $query->get();
-        } catch (\Exception $e) {
-            return response()->json(['ret' => $e]);
+            return $this->response($parsedData);
+        } else {
+            return response()->v0ApiReply(['messages' => ['errors' => ["Version $ver not supported"]]]);
         }
     }
 
@@ -1442,7 +1595,7 @@ class BaseController extends Controller
             }
         } else {
             $request_query = $model::with($eager_loading_tables)->select($dt_config['table'].'.*'); //eager loading | select($select_column_data);
-            if (starts_with(head($header_fields), $dt_config['table'])) {
+            if (Str::startsWith(head($header_fields), $dt_config['table'])) {
                 $first_column = substr(head($header_fields), strlen($dt_config['table']) + 1);
             } else {
                 $first_column = head($header_fields);
@@ -1502,7 +1655,7 @@ class BaseController extends Controller
 
         $DT->setRowClass(function ($model) {
             if (method_exists($model, 'get_bsclass')) {
-                return $model->get_bsclass() ?: 'info';
+                return $model->get_bsclass();
             }
 
             return $model->view_index_label()['bsclass'] ?? 'info';
@@ -1545,5 +1698,19 @@ class BaseController extends Controller
         $a = explode('\\', strtolower(NamespaceController::get_model_name()));
 
         return config('documentation.'.strtolower(end($a)));
+    }
+
+    /**
+     * Show error message when user clicks on analysis page and ProvMon module is not installed/active
+     *
+     * @author Nino Ryschawy
+     * @return View
+     */
+    public function missingModule($module)
+    {
+        $error = '501';
+        $message = trans('messages.missingModule', ['module' => $module]);
+
+        return \View::make('errors.generic', compact('error', 'message'));
     }
 }

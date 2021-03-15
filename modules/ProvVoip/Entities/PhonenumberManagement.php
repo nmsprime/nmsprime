@@ -16,7 +16,7 @@ class PhonenumberManagement extends \BaseModel
     protected $delete_children = false;
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             'phonenumber_id' => 'required|exists:phonenumber,id,deleted_at,NULL|min:1',
@@ -59,7 +59,7 @@ class PhonenumberManagement extends \BaseModel
     // Name of View
     public static function view_headline()
     {
-        return 'Phonenumber Management';
+        return 'PhonenumberManagement';
     }
 
     public static function view_icon()
@@ -71,7 +71,7 @@ class PhonenumberManagement extends \BaseModel
     public function view_index_label()
     {
         $bsclass = $this->get_bsclass();
-        $header = isset($this->phonenumber) ? 'PhonenumberManagement ('.$this->phonenumber->prefix_number.'/'.$this->phonenumber->number.')' : '';
+        $header = isset($this->phonenumber) ? trans_choice('view.Header_PhonenumberManagement', 1)." ({$this->phonenumber->prefix_number}/{$this->phonenumber->number})" : '';
 
         return ['table' => $this->table,
             'index_header' => [$this->table.'.id'],
@@ -212,7 +212,7 @@ class PhonenumberManagement extends \BaseModel
 
                     return false;
                 }
-                if (in_array($this->envia_contract->state, ['Gekündigt'])) {
+                if (in_array($this->envia_contract->state, ['Gekündigt', 'Nicht ermittelbar'])) {
                     if ($this->envia_contract->end_date > now()) {
                         $msg = trans('provvoipenvia::messages.phonenumbermanagementNotDeletable', [$this->id]).trans('provvoipenvia::messages.phonenumbermanagementNotDeletableReasonEnviaContractEndDate');
                         $this->addAboveMessage($msg, 'error');
@@ -243,34 +243,6 @@ class PhonenumberManagement extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new PhonenumberManagementObserver);
-    }
-}
-
-/**
- * PhonenumberManagement observer class
- * Handles changes on Phonenumbers
- *
- * can handle   'creating', 'created', 'updating', 'updated',
- *              'deleting', 'deleted', 'saving', 'saved',
- *              'restoring', 'restored',
- *
- * @author Patrick Reichel
- */
-class PhonenumberManagementObserver
-{
-    public function created($phonenumbermanagement)
-    {
-        $phonenumbermanagement->phonenumber->set_active_state();
-    }
-
-    public function updated($phonenumbermanagement)
-    {
-        $phonenumbermanagement->phonenumber->set_active_state();
-    }
-
-    public function deleted($phonenumbermanagement)
-    {
-        $phonenumbermanagement->phonenumber->set_active_state();
+        self::observe(new \Modules\ProvVoip\Observers\PhonenumberManagementObserver);
     }
 }

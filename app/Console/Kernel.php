@@ -49,14 +49,13 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('queue:checkup')->everyMinute();
 
-        $schedule->call('\Modules\Dashboard\Entities\BillingAnalysis@saveIncomeToJson')->dailyAt('00:07');
-        $schedule->call('\Modules\Dashboard\Entities\BillingAnalysis@saveContractsToJson')->hourly();
-
         // Remove all Log Entries older than 90 days
         $schedule->call('\App\GuiLog@cleanup')->weekly();
 
         // Parse News from repo server and save to local JSON file
-        $schedule->call('\Modules\Dashboard\Http\Controllers\DashboardController@newsLoadToFile')->hourly();
+        if (\Module::collections()->has('Dashboard')) {
+            $schedule->call('\Modules\Dashboard\Http\Controllers\DashboardController@newsLoadToFile')->hourly();
+        }
 
         // Command to remove obsolete data in storage
         $schedule->command('main:storage_cleaner')->dailyAt('04:18');
@@ -127,8 +126,8 @@ class Kernel extends ConsoleKernel
             // [0] minute, [1] hour, [2] day, [3] month, [4] day of week, [5] year
             $day1 = date('d', strtotime('last sunday of march'));
             $day2 = date('d', strtotime('last sunday of oct'));
-            $schedule->command('nms:dhcp')->cron("0 4 $day1 3 0 *");
-            $schedule->command('nms:dhcp')->cron("0 4 $day2 10 0 *");
+            $schedule->command('nms:dhcp')->cron("0 4 $day1 3 0");
+            $schedule->command('nms:dhcp')->cron("0 4 $day2 10 0");
 
             // Contract - network access, item dates, internet (qos) & voip tariff changes
             // important!! daily conversion has to be run BEFORE monthly conversion
@@ -154,7 +153,7 @@ class Kernel extends ConsoleKernel
             $schedule->call('\Modules\ProvBase\Entities\Modem@update_model_firmware')->daily();
 
             // Hardware support check for modems and CMTS
-            $schedule->command('nms:hardware-support daily')->twiceDaily(10, 14);
+            $schedule->command('nms:hardware-support')->twiceDaily(10, 14);
         }
 
         // Automatic Power Control based on measured SNR
@@ -164,6 +163,8 @@ class Kernel extends ConsoleKernel
 
         // Clean Up of HFC Base
         if (\Module::collections()->has('HfcBase')) {
+            $schedule->command('nms:icingadata')->cron('4-59/5 * * * *');
+
             // Rebuid all Configfiles
             $schedule->call(function () {
                 \Storage::deleteDirectory(\Modules\HfcBase\Http\Controllers\TreeTopographyController::$path_rel);
@@ -179,11 +180,16 @@ class Kernel extends ConsoleKernel
             })->hourly();
 
             // Modem Positioning System
-            $schedule->command('nms:mps')->daily();
+            // TODO: this can be removed in nmsprime > 2.6.0
+            $schedule->command('nms:mps')->dailyAt('00:23');
         }
 
         if (\Module::collections()->has('ProvMon')) {
             $schedule->command('nms:cacti')->daily();
+        } else {
+            $schedule->call(function () {
+                \Queue::push(new \Modules\ProvBase\Jobs\SetModemsOnlineStatusJob());
+            })->everyFiveMinutes();
         }
 
         // TODO: improve
@@ -194,24 +200,15 @@ class Kernel extends ConsoleKernel
         // Create monthly Billing Files and reset flags
         if (\Module::collections()->has('BillingBase')) {
             // Remove all old CDRs & Invoices
+
+            $schedule->call('\Modules\BillingBase\Helpers\BillingAnalysis@saveIncomeToJson')->dailyAt('00:07');
+            $schedule->call('\Modules\BillingBase\Helpers\BillingAnalysis@saveContractsToJson')->hourly();
             $schedule->call('\Modules\BillingBase\Entities\Invoice@cleanup')->monthly();
             // Reset payed_month column for yearly charged items for january settlementrun (in february)
             $schedule->call(function () {
                 \Modules\BillingBase\Entities\Item::where('payed_month', '!=', '0')->update(['payed_month' => '0', 'updated_at' => date('Y-m-d H:i:s')]);
                 \Log::info('Reset all items payed_month flag to 0');
-                // TODO: Remove last * for Laravel version > 5.6
-            })->cron('10 0 1 2 * *');
-
-            // wrapping into a check if table billingbase exists (if not that crashes on every “php artisan” command – e.g. on migrations
-            if (\Schema::hasTable('billingbase')) {
-                $schedule->call('\Modules\BillingBase\Entities\Item@yearly_conversion')->yearly();
-
-                // $rcd = \Modules\BillingBase\Entities\BillingBase::select('rcd')->first()->rcd;
-                // $execute = $rcd ? ($rcd - 5 > 0 ? $rcd - 5 : 1) : 15;
-                // This does not consider CDRs because .env file is not read properly in super global var by executing as cron job - adapt cdrCommand!
-                // $schedule->command('nms:accounting')->monthlyOn($execute, '01:00');
-                // TODO: create SettlementRun here!
-            }
+            })->cron('10 0 1 2 *');
         }
 
         if (\Module::collections()->has('ProvVoip')) {

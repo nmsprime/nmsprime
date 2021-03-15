@@ -68,9 +68,9 @@ BaseRoute::group([], function () {
         'as' => 'SupportRequest.guilog',
     ]);
 
-    BaseRoute::get('base/fulltextSearch', [
-        'as' => 'Base.fulltextSearch',
-        'uses' => 'BaseController@fulltextSearch',
+    BaseRoute::get('globalSearch', [
+        'as' => 'Base.globalSearch',
+        'uses' => 'BaseController@globalSearch',
     ]);
 
     BaseRoute::get('Config', [
@@ -96,6 +96,12 @@ BaseRoute::group([], function () {
         'middleware' => ['can:delete,App\User'],
     ]);
 
+    BaseRoute::post('Role/capability', [
+        'as' => 'capability.update',
+        'uses' => 'Auth\AbilityController@updateCapability',
+        'middleware' => ['can:update,App\Role'],
+    ]);
+
     BaseRoute::post('Role/customAbility', [
         'as' => 'customAbility.update',
         'uses' => 'Auth\AbilityController@updateCustomAbility',
@@ -117,5 +123,28 @@ BaseRoute::group([], function () {
     BaseRoute::post('Sla/clicked', [
         'as' => 'Sla.clicked_sla',
         'uses' => 'SlaController@clicked_sla',
+    ]);
+
+    BaseRoute::post('user/updateGeopos', [
+        'as' => 'user.updateGeopos',
+        'uses' => 'Auth\UserController@updateGeopos',
+        'middleware' => ['can:update,App\User'],
+    ]);
+
+    BaseRoute::get('Apps/active', [
+        'as' => 'Apps.active',
+        'uses' => 'AppController@showApps',
+        'middleware' => ['can:view,App\App'],
+    ]);
+
+    BaseRoute::get('Apps/inactive', [
+        'as' => 'Apps.inactive',
+        'uses' => 'AppController@showApps',
+        'middleware' => ['can:view,App\App'],
+    ]);
+
+    BaseRoute::get('missingModule/{module}', [
+        'as' => 'missingModule',
+        'uses' => 'BaseController@missingModule',
     ]);
 });

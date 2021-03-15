@@ -1455,6 +1455,7 @@ Archäologisches Büro
 Architekt
 Architekt (FH)
 Architekt a.D.
+Architekt BDB
 Architekt für Baukunst
 Architekt für Bauplanung
 Architekt für Bausachverständigung
@@ -1700,6 +1701,7 @@ Arzt für Naturheilverfahren
 Arzt für Nervenheilkunde
 Arzt für Neurochirurgie
 Arzt für Neurologie
+Arzt für Neurologie und Psychiatrie
 Arzt für Neuropathologie
 Arzt für Neurotherapie
 Arzt für Notfallmedizin
@@ -3232,6 +3234,7 @@ Bauabrechnungsbüro
 Bauabrechnungsservice
 Bauamtmann
 Bauamtsleiter
+Bauanwälte
 Bauarbeiten
 Bauarchiv
 Bauartikelvertrieb
@@ -3594,6 +3597,7 @@ Bauprojektionsbüro
 Bauprojektmanagement
 Bauprojektplanung
 Baurat
+Baurat a.D.
 Baurechteverlag
 Baurechtskanzlei
 Baureferent
@@ -4151,6 +4155,7 @@ Beratung für Arbeitnehmer aus Mittel- und Osteuropa
 Beratung für Arbeitssicherheit
 Beratung für Arbeitswissenschaft
 Beratung für artgerechte Tiernahrung
+Beratung für Ärzte
 Beratung für Aussiedler
 Beratung für Ayurveda
 Beratung für Baubiologie
@@ -9508,6 +9513,7 @@ Facharzt für Allgemeinmedizin-Naturheilverfahren
 Facharzt für Allgemeinmedizin-Notfallmedizin
 Facharzt für Allgemeinmedizin-Palliativmedizin
 Facharzt für Allgemeinmedizin-Psychotherapie
+Facharzt für Allgemeinmedizin-Rettungsmedizin
 Facharzt für Allgemeinmedizin-Sportmedizin
 Facharzt für Allgemeinmedizin-Umweltmedizin
 Facharzt für Anästhesiologie
@@ -9908,6 +9914,7 @@ Fachärztinnen für Innere Medizin-Rheumatologie
 Fachärztinnen für Kinder- und Jugendmedizin
 Fachärztinnen für Kinderheilkunde
 Fachärztinnen für Kinderheilkunde und Jugendmedizin
+Fachärztinnen für Neurologie
 Fachärztinnen für Neurologie und Psychiatrie
 Fachärztinnen für Nuklearmedizin
 Fachärztinnen für Psychiatrie
@@ -11987,6 +11994,7 @@ Flüssigzuckerwerk
 Folienatelier
 Folienbeschriftung
 Folienbeutelherstellung
+Folienchirurgie
 Foliendesign
 Foliendesignstudio
 Folienfabrikation
@@ -12385,6 +12393,7 @@ Freibad
 Freibadcafe
 Freibadkiosk
 Freiberufler
+Freiberufliche Künstlerin
 freiberuflicher Physiotherapeut
 Freie Architekten
 Freie Architekten für Energieberatung
@@ -12726,6 +12735,7 @@ Fußbodenverlegung
 Fußchirug
 Fußchirurgie
 Fußfachpflegepraxis
+Fußheilkunde
 Fußkompetenzzentrum
 Fußmassage
 Fußmattenherstellung
@@ -13176,6 +13186,7 @@ Gebärdensprachschule
 Gebauchtwarenhandel
 Gebäude-Energieberater (HWK)
 Gebäude-Energieberaterin (HWK)
+Gebäudeautomation
 Gebäudeautomatisierung
 Gebäudebetreuung
 Gebäudebetreuungssysteme
@@ -13818,6 +13829,7 @@ Gesundheitstherapeut
 Gesundheitstherapeutin
 Gesundheitstrainer
 Gesundheitstrainerin
+Gesundheitstraining
 Gesundheitswissenschaftler
 Gesundheitswissenschaftlerin
 Gesundheitszentrum
@@ -14405,6 +14417,7 @@ Großhandel für Jagdbedarf
 Großhandel für Kerzen
 Großhandel für Kinderbekleidung
 Großhandel für Kommunikationstechnik
+Großhandel für Kosmetikeinrichtung
 Großhandel für Küchen
 Großhandel für Küchengeschirr
 Großhandel für Künstlerbedarf
@@ -15190,6 +15203,7 @@ Hauptsekretär
 Haus- und Familienpfleger
 Haus- und Familienpflegerin
 Haus- und Grundstückspflege
+Haus- und Grundstücksservice
 Haus- und Grundstücksverwaltung
 Haus- und Wohungsverwaltung
 Hausagentur
@@ -15534,6 +15548,7 @@ Heilpraktikerin für Klangtherapie
 Heilpraktikerin für Klassische Homöopathie
 Heilpraktikerin für Körperorientierte Psychotherapie
 Heilpraktikerin für Kunsttherapie
+Heilpraktikerin für LösUS
 Heilpraktikerin für Naturheilverfahren
 Heilpraktikerin für Osteopathie
 Heilpraktikerin für Physiotherapie
@@ -19092,6 +19107,7 @@ KFZ-Betrieb
 KFZ-Betriebswirt
 KFZ-Dienst
 KFZ-Dienstleistungen
+Kfz-Elektrik Meisterin
 KFZ-Elektriker
 KFZ-Elektrikermeister
 KFZ-Elektrikermeisterin
@@ -19235,6 +19251,7 @@ Kieswäscherei
 Kieswerk
 Kinästhetiktrainer
 Kinästhetiktrainerin
+Kinder- u. Jugendlichenpsychotherapeut
 Kinder- u. Jugendlichenpsychotherapeutin
 Kinder- u. Jugendlichenpsychotherapeutinnen
 Kinder- und Jugendarzt
@@ -19402,6 +19419,7 @@ Kindermusikpädagogin
 Kindermusikschule
 Kindermusiktheater
 Kinderneurologische Praxis
+Kinderostheopath
 Kinderpädagogin
 Kinderpark
 Kinderpartyservice
@@ -19413,6 +19431,7 @@ Kinderpsychiater
 Kinderpsychiaterin
 Kinderpsychologin
 Kinderpsychologische Elternberatung
+Kinderpsychotherapie
 Kinderpsychotherapie und Jugendpsychotherapie
 Kinderreisebüro
 Kinderreiterhotel
@@ -21319,6 +21338,7 @@ Labordienstleistungen
 Laborfachhandel
 Laborgerätebau
 Laborgerätevertrieb
+Laborgroßhandel
 Laborhandel
 Labormedizinischer Kurierdienst
 Labormeßtechnik
@@ -23611,6 +23631,7 @@ Meisterbetrieb für Innenausbau
 Meisterbetrieb für Isolierungen
 Meisterbetrieb für Kachelbau
 Meisterbetrieb für Kälte- und Klimatechnik
+Meisterbetrieb für Kaminöfen
 Meisterbetrieb für Karosserie- und Fahrzeugbau
 Meisterbetrieb für KFZ
 Meisterbetrieb für KFZ-Technik
@@ -25288,6 +25309,7 @@ Natursteinvertrieb
 Natursteinwerk
 Natursteinwerke
 Natursteinwerkstatt
+Naturwarenproduktion
 Naturwarenversand
 Naturwerksteinmechaniker
 Naturwerksteinmechanikerin
@@ -25301,6 +25323,7 @@ Neonherstellung
 Neonlichtwerbung
 Neonwerbetechnik
 Neoprenreparaturen
+Neoprenverarbeitung
 Nephrologe
 Nephrologin
 Nephrologische Ambulanz
@@ -25515,6 +25538,7 @@ Nutzviehmarkt
 ö.b.u.v. Sachverständiger für Abwasserbeseitigung
 ö.b.u.v. Sachverständiger für Akustik
 ö.b.u.v. Sachverständiger für Bauschäden
+ö.b.u.v. Sachverständiger für Bautentrocknung
 ö.b.u.v. Sachverständiger für Bauwerksabdichtungen
 ö.b.u.v. Sachverständiger für Blitzschutzbau
 ö.b.u.v. Sachverständiger für das Bootsbauerhandwerk
@@ -26226,6 +26250,7 @@ Optometrist
 Optometristin
 Oralchirurg
 Oralchirurgen
+Oralchirurgie
 Oralchirurgin
 Oralchirurgische Praxis
 Orangerie
@@ -27941,6 +27966,7 @@ Praxis für Kinder- und Jugendpsychiatrie
 Praxis für Kinder- und Jugendpsychiatrie und -psychotherapie
 Praxis für Kinder- und Jugendpsychologie
 Praxis für Kinder- und Jugendpsychotherapie
+Praxis für Kinder- und Jugendtherapie
 Praxis für Kinder- und Jugendzahnheilkunde
 Praxis für Kinderchirurgie
 Praxis für Kinderheilkunde
@@ -28532,6 +28558,7 @@ Psychologische Praxis für Betreuung
 Psychologische Praxis für Individual- Organisationsberatung
 Psychologische Praxis für Paar- und Familientherapie
 Psychologische Praxis für Psychotherapie
+Psychologische Praxis für Verhaltenstherapie
 Psychologische Privatpraxis
 Psychologische Psychotherapeuten
 Psychologische Psychotherapeutin
@@ -31835,6 +31862,7 @@ Schreinerei für Naturholzmöbel
 Schreinerei für Treppenbau
 Schreinereiarbeiten
 Schreinereiausstellung
+Schreinereibedarf
 Schreinereibetrieb
 Schreinereifachbetrieb
 Schreinereiinnenausbau
@@ -32174,6 +32202,7 @@ Schweinezucht
 Schweinezuchtbetrieb
 Schweißaggregate
 Schweißarbeit
+Schweißarbeiten
 Schweißatelier
 Schweißbetrieb
 Schweißdienst
@@ -32430,6 +32459,7 @@ Sendertechniker
 Sendestudio
 Senfmühle
 Senior Master Sergeant
+Senioren Rikschafahrt
 Senioren- und Pflegeheim
 Seniorenbeauftragte
 Seniorenbegegnungsstätte
@@ -34945,6 +34975,7 @@ Systemmontagebau
 Systemprogrammierer
 Systemprogrammierung
 Systemsoftwareberatung
+Systemsteuerung
 Systemtechnik
 Systemtechniker
 Systemtherapeut
@@ -35099,6 +35130,7 @@ Tankzugreinigungsanlagen
 Tannengroßhandel
 Tannengrünversand
 Tannenhofplantagen
+Tantra Massage
 Tantramassage für Frauen
 Tantramassagen
 Tantramasseur
@@ -35332,6 +35364,7 @@ Technische Industrievertretung
 Technische Informatik
 Technische Konfektionärin
 Technische Kundenberatung
+Technische Kunststoffe
 Technische Kunststoffsysteme
 Technische Lehrerin a.D.
 Technische Liegenschaftsverwaltungen
@@ -35603,6 +35636,7 @@ Teilbuchbinderin
 Teilebörse
 Teilezurichter
 Teilezurichterin
+Teilstationäre Altenhilfe
 Telebanking
 Telebau
 Teleberatung
@@ -36187,6 +36221,7 @@ Tierarzt für Kleintiere
 Tierarzt i.R.
 Tierärzte
 Tierärzte für Kleintiere
+Tierärztebedarf
 Tierarzthelfer
 Tierarzthelferin
 Tierärztin
@@ -36989,6 +37024,7 @@ Typographik
 Übersetzungen für Schwedisch
 Übersetzungen für Slowakisch
 Übersetzungen für Spanisch
+Übersetzungen für Thai
 Übersetzungen für Wirtschaftsfranzösisch
 Übersetzungs- und Dolmetscherdienst
 Übersetzungs- und Dolmetschservice
@@ -37578,6 +37614,7 @@ vereidigter Übersetzer für Arabisch
 vereidigter Übersetzer für Italienisch
 vereidigter Übersetzer für Polnisch
 vereidigter Übersetzer für Spanisch
+vereidigter Übersetzer für Tschechisch
 Vereidigter Wirtschaftsprüfer
 Vereinsgaststätte
 Vereinsmanagement
@@ -38154,6 +38191,7 @@ Vermietung von Verkehrszeichen
 Vermietung von Wohnraum
 Vermietungsagentur
 Vermietungsbüro
+Vermietungsservice
 Vermitlung von Investmentfonds
 Vermittler für Werbeflächen
 Vermittlung für Ferienunterkünfte
@@ -38383,6 +38421,7 @@ Versicherungsfachfrau (BWV)
 Versicherungsfachlehrer
 Versicherungsfachmann
 Versicherungsfachmann ( BWV)
+Versicherungsfachmann (IHK)
 Versicherungsfachwirt
 Versicherungsfachwirte
 Versicherungsfachwirtin
@@ -38973,6 +39012,7 @@ Visagistenschule
 Visagistenstudio
 Visagistin
 Visaservice
+Visezeralchirurgie
 Visitenkartendruck
 Visitenkartenvertrieb
 Visualtraining

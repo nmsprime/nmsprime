@@ -7,16 +7,17 @@ class Parameter extends \BaseModel
     public $table = 'parameter';
 
     public $guarded = ['name', 'table'];
+    protected $with = ['oid'];
 
     public static function boot()
     {
         parent::boot();
 
-        self::observe(new ParameterObserver);
+        self::observe(new \Modules\HfcSnmp\Observers\ParameterObserver);
     }
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             'html_frame' => 'numeric|min:1',
@@ -40,12 +41,13 @@ class Parameter extends \BaseModel
     // generates datatable content and classes for model
     public function view_index_label()
     {
-        $header = isset($this->oid) ? $this->oid->name : '';
-        $header .= isset($this->oid) ? ' - '.$this->oid->oid : '';
+        $label = $this->oid ? $this->oid->oid : '';
+        $label .= $this->oid ? ' - '.$this->oid->name : '';
+        $label .= $this->oid && $this->oid->name_gui ? ' - '.$this->oid->name_gui : '';
 
         return ['table' => $this->table,
             'index_header' => ['oid.name', 'oid.oid',  'oid.access'],
-            'header' =>  $header,
+            'header' =>  $label,
             'order_by' => ['1' => 'asc'],
             'bsclass' => $this->get_bsclass(),
             'eager_loading' => ['oid'], ];
@@ -109,18 +111,5 @@ class Parameter extends \BaseModel
         return $this->children()->where('third_dimension', '=', 1);
 
         return self::where('parent_id', '=', $this->id)->where('third_dimension', '=', 1)->orderBy('id')->get()->all();
-    }
-}
-
-class ParameterObserver
-{
-    public function creating($parameter)
-    {
-        $parameter->divide_by = str_replace([' ', "\t"], '', $parameter->divide_by);
-    }
-
-    public function updating($parameter)
-    {
-        $parameter->divide_by = str_replace([' ', "\t"], '', $parameter->divide_by);
     }
 }

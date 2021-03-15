@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use Auth;
 use Bouncer;
+use Request;
 use Session;
 use App\Role;
 use App\User;
@@ -34,10 +35,13 @@ class UserController extends BaseController
                     ->put('browser', 'Browser');
 
         $view_header_links = BaseViewController::view_main_menus();
-        $dashboard_options = ['Dashboard.index' => 'Dashboard'];
+        $dashboard_options = [null => null];
+        if (\Module::collections()->has('Dashboard')) {
+            $dashboard_options['Dashboard.index'] = 'Dashboard';
+        }
         foreach ($view_header_links as $module_name => $typearray) {
             if (isset($typearray['link'])) {
-                $dashboard_options[$typearray['link']] = $typearray['translated_name'];
+                $dashboard_options[$typearray['link']] = $typearray['translated_name'] ?? $module_name;
             }
             if (isset($typearray['submenu'])) {
                 foreach ($typearray['submenu'] as $type => $valuearray) {
@@ -60,6 +64,7 @@ class UserController extends BaseController
             ['form_type' => 'text', 'name' => 'first_name', 'description' => 'Firstname'],
             ['form_type' => 'text', 'name' => 'last_name', 'description' => 'Lastname'],
             ['form_type' => 'text', 'name' => 'email', 'description' => 'Email'],
+            ['form_type' => 'text', 'name' => 'phonenumber', 'description' => 'Phonenumber'],
             ['form_type' => 'select', 'name' => 'language', 'description' => 'Language',
                 'value' => $languages,
                 'help' => trans('helper.translate').' https://crowdin.com/project/nmsprime', ],
@@ -75,6 +80,8 @@ class UserController extends BaseController
             ['form_type' => 'select', 'name' => 'initial_dashboard', 'description' => 'Default login page',
                 'value' => $dashboard_options,
             ],
+            ['form_type' => 'text', 'name' => 'geopos_updated_at', 'description' => 'Last update of geoposition', 'options' => ['readonly']],
+            ['form_type' => 'checkbox', 'name' => 'hasTruck', 'description' => 'Has a truck'],
         ];
     }
 
@@ -141,5 +148,16 @@ class UserController extends BaseController
         parent::update($id);
 
         return redirect()->back();
+    }
+
+    public function updateGeopos()
+    {
+        \Log::debug('User '.Request::get('id').' geopos was updated to x='.Request::get('x').' and y='.Request::get('y'));
+
+        User::where('id', Request::get('id'))->update([
+            'geopos_updated_at' => date('Y-m-d H:i:s'),
+            'geopos_x' => Request::get('x'),
+            'geopos_y' => Request::get('y'),
+        ]);
     }
 }

@@ -8,14 +8,20 @@ class MibFile extends \BaseModel
 
     public $guarded = ['mibfile_upload'];
 
+    protected $withCount = [
+        'oids',
+    ];
+
     /**
      * @Const MibFile Upload Path relativ to storage directory
      */
-    const REL_MIB_UPLOAD_PATH = 'app/data/hfcsnmp/mibs/';
+    public const REL_MIB_UPLOAD_PATH = 'app/data/hfcsnmp/mibs/';
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
+        $id = $this->id;
+
         return [
             'filename' => 'unique:mibfile,filename,'.$id.',id,deleted_at,NULL',
         ];
@@ -27,7 +33,7 @@ class MibFile extends \BaseModel
     // Name of View
     public static function view_headline()
     {
-        return 'MIB-File';
+        return 'MibFile';
     }
 
     // View Icon
@@ -50,7 +56,7 @@ class MibFile extends \BaseModel
 
     public function get_bsclass()
     {
-        $bsclass = $this->oids()->count() ? 'success' : 'info';
+        $bsclass = $this->oids_count ? 'success' : 'info';
 
         return $bsclass;
     }
@@ -79,17 +85,7 @@ class MibFile extends \BaseModel
      */
     public function oids()
     {
-        return $this->hasMany(OID::class, 'mibfile_id')->orderBy('oid');
-    }
-
-    /**
-     * Boot: init observer
-     */
-    public static function boot()
-    {
-        parent::boot();
-
-        self::observe(new MibFileObserver);
+        return $this->hasMany(OID::class, 'mibfile_id')->orderByRaw('LENGTH(oid)')->orderBy('oid');
     }
 
     public function get_full_filepath()
@@ -259,20 +255,4 @@ class MibFile extends \BaseModel
 
     // 	\DB::statement('DELETE from oid WHERE mibfile_id='.$this->id);
     // }
-}
-
-class MibFileObserver
-{
-    public function created($mibfile)
-    {
-        // create oids was moved to MibFileController@store for better responses on errors
-    }
-
-    public function deleting($mibfile)
-    {
-        // hard delete OIDs as Database becomes huge otherwise
-        // $mibfile->hard_delete_oids();
-
-        // TODO: Unlink file ?? - better not -> in case related mibs need this mib the user must not load it again
-    }
 }

@@ -9,14 +9,6 @@ class GuiLog extends \BaseModel
 
     public $index_delete_disabled = false;
 
-    // Add your validation rules here
-    public static function rules($id = null)
-    {
-        return [
-            // 'mail' => 'email',
-        ];
-    }
-
     // Name of View
     public static function view_headline()
     {
@@ -168,10 +160,8 @@ class GuiLogWriter
         // get the latest log message for this model-ID-method
         while ($entry = array_pop($changes_logged)) {
             if (
-                ($entry['model'] == $data['model'])
-                &&
-                ($entry['model_id'] == $data['model_id'])
-                &&
+                ($entry['model'] == $data['model']) &&
+                ($entry['model_id'] == $data['model_id']) &&
                 ($entry['method'] == $data['method'])
             ) {
                 // see if the changes are the same again

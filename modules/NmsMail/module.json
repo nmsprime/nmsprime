@@ -1,15 +1,16 @@
 {
     "name": "NmsMail",
-    "alias": "nmsmail",
-    "description": "",
+    "alias": "Mail",
+    "description": "Fully automated E-Mail system.",
     "keywords": [],
     "active": 0,
-    "order": 24,
-    "icon": "fa-paper-plane-o",
+    "order": 0,
+    "icon": "OS_Mail.png",
+    "category": "Administration",
     "providers": [
         "Modules\\NmsMail\\Providers\\MailServiceProvider"
     ],
-    "aliases": [],
+    "aliases": {},
     "files": [
         "start.php"
     ],

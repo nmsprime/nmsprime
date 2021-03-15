@@ -4,8 +4,7 @@ namespace Modules\ProvBase\Entities;
 
 use DB;
 use Module;
-use Session;
-use Modules\BillingBase\Entities\SettlementRun;
+use Illuminate\Support\Facades\Log;
 
 class Contract extends \BaseModel
 {
@@ -27,8 +26,10 @@ class Contract extends \BaseModel
 
     // Add your validation rules here
     // TODO: dependencies of active modules (billing)
-    public static function rules($id = null)
+    public function rules()
     {
+        $id = $this->id;
+
         $rules = [
             'number' => 'string|unique:contract,number,'.$id.',id,deleted_at,NULL',
             'number2' => 'nullable|string|unique:contract,number2,'.$id.',id,deleted_at,NULL',
@@ -37,17 +38,20 @@ class Contract extends \BaseModel
             'company' => 'required_if:salutation,placeholder_salutations_institution',
             'firstname' => 'required_if:salutation,placeholder_salutations_person',
             'lastname' => 'required_if:salutation,placeholder_salutations_person',
-
-            'street' => 'required_without_all:realty_id,apartment_id',
-            'house_number' => 'required_without_all:realty_id,apartment_id',
-            'zip' => 'required_without_all:realty_id,apartment_id',
-            'city' => 'required_without_all:realty_id,apartment_id',
-            'phone' => 'required',
             'email' => 'nullable|email',
-            'birthday' => 'nullable|date',
-            'contract_start' => 'date',
-            'contract_end' => 'nullable|date', // |after:now -> implies we can not change stuff in an out-dated contract
+            'birthday' => 'nullable|date_format:Y-m-d',
+            'contract_start' => 'date_format:Y-m-d',
+            'contract_end' => 'nullable|date_format:Y-m-d', // |after:now -> implies we can not change stuff in an out-dated contract
         ];
+
+        $addressKeys = ['street', 'house_number', 'zip', 'city'];
+        foreach ($addressKeys as $key) {
+            if (Module::collections()->has('PropertyManagement')) {
+                $rules[$key] = 'required_without_all:realty_id,apartment_id';
+            } else {
+                $rules[$key] = 'required';
+            }
+        }
 
         if (Module::collections()->has('BillingBase')) {
             $rules['costcenter_id'] = 'required|numeric|min:1';
@@ -81,7 +85,7 @@ class Contract extends \BaseModel
         $bsclass = $this->get_bsclass();
 
         $ret = ['table' => $this->table,
-            'index_header' => [$this->table.'.number', $this->table.'.firstname', $this->table.'.lastname', 'company', 'email', $this->table.'.zip', $this->table.'.city', 'district', $this->table.'.street', $this->table.'.house_number', $this->table.'.contract_start', $this->table.'.contract_end'],
+            'index_header' => [$this->table.'.number', $this->table.'.firstname', $this->table.'.lastname', 'company', 'email', $this->table.'.zip', $this->table.'.city', 'district', $this->table.'.street', $this->table.'.house_number',  $this->table.'.additional', $this->table.'.contract_start', $this->table.'.contract_end'],
             'header' =>  self::labelFromData($this),
             'bsclass' => $bsclass,
             'order_by' => ['0' => 'asc'], ];
@@ -253,14 +257,11 @@ class Contract extends \BaseModel
             $ret['Create Connection Infos']['Connection Information']['view']['view'] = 'ccc::prov.conn_info';
         }
 
-        if (Module::collections()->has('Ticketsystem')) {
-            $ret['Edit']['Ticket']['class'] = 'Ticket';
-            $ret['Edit']['Ticket']['relation'] = $this->tickets;
-        }
-
         if (Module::collections()->has('Mail')) {
             $ret['Email']['Email'] = $this->emails;
         }
+
+        $this->addViewHasManyTickets($ret);
 
         return $ret;
     }
@@ -411,11 +412,6 @@ class Contract extends \BaseModel
         return $this->hasOne(\Modules\Ccc\Entities\CccUser::class);
     }
 
-    public function tickets()
-    {
-        return $this->hasMany(\Modules\Ticketsystem\Entities\Ticket::class);
-    }
-
     public function realties()
     {
         return $this->hasMany(\Modules\PropertyManagement\Entities\Realty::class)->orderBy('street')->orderBy('house_nr');
@@ -456,15 +452,6 @@ class Contract extends \BaseModel
             ->whereNull('realty.deleted_at')
             ->select('realty.*')
             ->first();
-    }
-
-    /**
-     * Generate use a new user login password
-     * This does not save the involved model
-     */
-    public function generate_password($length = 10)
-    {
-        $this->password = \Acme\php\Password::generate_password($length);
     }
 
     /**
@@ -597,7 +584,7 @@ class Contract extends \BaseModel
         // (e.g. in case valid_to_fixed=0 and end date would have always set to today)
         $item_max_ended_before = 90;
 
-        \Log::Debug('Starting daily conversion for contract '.$this->number, [$this->id]);
+        Log::debug('Starting daily conversion for contract '.$this->number, [$this->id]);
 
         if (! Module::collections()->has('BillingBase')) {
             $this->_update_internet_access_from_contract();
@@ -656,7 +643,7 @@ class Contract extends \BaseModel
         if ($this->contract_end) {
             $end = $this->_date_to_carbon($this->contract_end);
             if ($end->lt($now) && ! $this->_date_null($end) && $this->internet_access == 1) {
-                \Log::Info('daily: contract: disable based on ending contract date for '.$this->id);
+                Log::info('daily: contract: disable based on ending contract date for '.$this->id);
 
                 $this->internet_access = 0;
                 $this->changes_on_daily_conversion = true;
@@ -672,7 +659,7 @@ class Contract extends \BaseModel
         if ($this->contract_start) {
             $start = $this->_date_to_carbon($this->contract_start);
             if ($start->lt($now) && ! $this->_date_null($start) && $start->diff($now)->days <= 1 && $this->internet_access == 0) {
-                \Log::Info('daily: contract: enable contract based on start contract date for '.$this->id);
+                Log::info('daily: contract: enable contract based on start contract date for '.$this->id);
 
                 $this->internet_access = 1;
                 $this->changes_on_daily_conversion = true;
@@ -703,35 +690,35 @@ class Contract extends \BaseModel
             if ($active_count_internet && ! $this->internet_access) {
                 $this->internet_access = 1;
                 $this->changes_on_daily_conversion = true;
-                \Log::Info('daily: contract: enabling internet_access based on active internet/voip items for contract '.$this->id);
+                Log::info('daily: contract: enabling internet_access based on active internet/voip items for contract '.$this->id);
             // no valid internet tariff
             } elseif (! $active_count_internet && $this->internet_access) {
                 $this->internet_access = 0;
                 $this->changes_on_daily_conversion = true;
-                \Log::Info('daily: contract: disabling internet_access based on active internet/voip items for contract '.$this->id);
+                Log::info('daily: contract: disabling internet_access based on active internet/voip items for contract '.$this->id);
             }
 
             if ($active_count_voip && ! $this->has_telephony) {
                 $this->has_telephony = 1;
                 $this->changes_on_daily_conversion = true;
-                \Log::Info('daily: contract: switch to has_telephony', [$this->id]);
+                Log::info('daily: contract: switch to has_telephony', [$this->id]);
             } elseif (! $active_count_voip && $this->has_telephony) {
                 $this->has_telephony = 0;
                 $this->changes_on_daily_conversion = true;
-                \Log::Info('daily: contract: switch from has_telephony to no telephony tariff', [$this->id]);
+                Log::info('daily: contract: switch from has_telephony to no telephony tariff', [$this->id]);
             }
         } else {
             // invalid contract - disable every access
             if ($this->internet_access) {
                 $this->internet_access = 0;
                 $this->changes_on_daily_conversion = true;
-                \Log::Info('daily: contract: disabling internet_access based on active internet/voip items for contract '.$this->id);
+                Log::info('daily: contract: disabling internet_access based on active internet/voip items for contract '.$this->id);
             }
 
             if ($this->has_telephony) {
                 $this->has_telephony = 0;
                 $this->changes_on_daily_conversion = true;
-                \Log::info('daily: contract: Unset has_telephony as contract is invalid!', [$this->id]);
+                Log::info('daily: contract: Unset has_telephony as contract is invalid!', [$this->id]);
             }
         }
     }
@@ -770,7 +757,7 @@ class Contract extends \BaseModel
 
         foreach ($this->items as $key => $item) {
             if (! $item->product) {
-                \Log::error("Product of item $item->id (ID) of contract ".$item->contract->number.' (number) is missing');
+                Log::error("Product of item $item->id (ID) of contract ".$item->contract->number.' (number) is missing');
                 unset($this->items[$key]);
 
                 continue;
@@ -789,7 +776,7 @@ class Contract extends \BaseModel
                         $new_date = $tomorrow->toDateString();
                         $item->valid_from = $new_date;
                         $item_changed = true;
-                        \Log::Info('contract: changing item '.$item->id.' ('.$item->product->name.') valid_from to '.$new_date.' for Contract '.$this->number, [$this->id]);
+                        Log::info('contract: changing item '.$item->id.' ('.$item->product->name.') valid_from to '.$new_date.' for Contract '.$this->number, [$this->id]);
                     }
                 }
             }
@@ -803,7 +790,7 @@ class Contract extends \BaseModel
                         $new_date = $today->toDateString();
                         $item->valid_to = $new_date;
                         $item_changed = true;
-                        \Log::Info('contract: changing item '.$item->id.' ('.$item->product->name.') valid_to to '.$new_date.' for Contract '.$this->number, [$this->id]);
+                        Log::info('contract: changing item '.$item->id.' ('.$item->product->name.') valid_to to '.$new_date.' for Contract '.$this->number, [$this->id]);
                     }
                 }
             }
@@ -887,11 +874,10 @@ class Contract extends \BaseModel
 
         // Tariff: monthly Tariff change – "Tarifwechsel"
         if (
-            ($this->next_qos_id > 0)
-            &&
+            ($this->next_qos_id > 0) &&
             ($this->qos_id != $this->next_qos_id)
         ) {
-            \Log::Info('monthly: contract: change Tariff for '.$this->id.' from '.$this->qos_id.' to '.$this->next_qos_id);
+            Log::info('monthly: contract: change Tariff for '.$this->id.' from '.$this->qos_id.' to '.$this->next_qos_id);
             $this->qos_id = $this->next_qos_id;
             $this->next_qos_id = 0;
             $contract_changed = true;
@@ -899,7 +885,7 @@ class Contract extends \BaseModel
 
         // VOIP: monthly VOIP change
         if ($this->next_voip_id > 0) {
-            \Log::Info('monthly: contract: change VOIP-ID for '.$this->id.' from '.$this->voip_id.' to '.$this->next_voip_id);
+            Log::info('monthly: contract: change VOIP-ID for '.$this->id.' from '.$this->voip_id.' to '.$this->next_voip_id);
             $this->voip_id = $this->next_voip_id;
             $this->next_voip_id = 0;
             $contract_changed = true;
@@ -907,6 +893,7 @@ class Contract extends \BaseModel
 
         if ($contract_changed) {
             $this->save();
+            $this->push_to_modems();
         }
     }
 
@@ -960,17 +947,32 @@ class Contract extends \BaseModel
         $last = $count = 0;
         $tariff = null;			// item
 
-        $tariffs = $this->items()
-            ->join('product as p', 'item.product_id', '=', 'p.id')
-            ->select('item.*', 'p.*', 'item.id as id')
-            ->where('type', '=', $type)->where('valid_from', '<=', date('Y-m-d'))
-            ->get();
+        // Dont make a DB request when items are already loaded
+        if ($this->relationLoaded('items')) {
+            $tariffs = $this->items->where('valid_from', '<=', date('Y-m-d'));
+        } else {
+            $tariffs = $this->items()
+                ->join('product as p', 'item.product_id', '=', 'p.id')
+                ->select('item.*', 'p.*', 'item.id as id')
+                ->where('type', '=', $type)->where('valid_from', '<=', date('Y-m-d'))
+                ->where(whereLaterOrEqual('valid_to', date('Y-m-d')));
+
+            if (strtolower($type) == 'voip') {
+                $tariffs->with('product.salestariff');
+            }
+
+            $tariffs = $tariffs->get();
+        }
 
         if ($tariffs->isEmpty()) {
             return ['item' => null, 'count' => 0];
         }
 
         foreach ($tariffs as $item) {
+            if ($item->product->type != $type) {
+                continue;
+            }
+
             if (! $item->isValid('Now')) {
                 continue;
             }
@@ -986,7 +988,7 @@ class Contract extends \BaseModel
 
         // This is an error! There should only be one active item per type and contract
         if ($count > 1) {
-            \Log::warning('There are '.$count.' active items of product type '.$type.' assigned to contract '.$this->number.' ['.$this->id.'].');
+            Log::warning('There are '.$count.' active items of product type '.$type.' assigned to contract '.$this->number.' ['.$this->id.'].');
         }
 
         return ['item' => $tariff, 'count' => $count];
@@ -1014,7 +1016,7 @@ class Contract extends \BaseModel
 
         foreach ($this->items as $item) {
             if (! $item->product) {
-                \Log::error("Product of item $item->id (ID) of contract ".$item->contract->number.' (number) is missing');
+                Log::error("Product of item $item->id (ID) of contract ".$item->contract->number.' (number) is missing');
 
                 continue;
             }
@@ -1047,7 +1049,7 @@ class Contract extends \BaseModel
                 if ($valid_tariff_info[$type]['count'] > 1) {
                     // this should never occur!!
                     if ($valid_tariff_info[$type]['item']->id != $item->id) {
-                        \Log::Warning('Using newer item '.$valid_tariff_info[$type]['item']->id.' instead of '.$item->id.' to update current data on contract '.$this->number.' ['.$this->id.'].');
+                        Log::warning('Using newer item '.$valid_tariff_info[$type]['item']->id.' instead of '.$item->id.' to update current data on contract '.$this->number.' ['.$this->id.'].');
                     }
                     $this->_update_product_related_current_data($valid_tariff_info[$type]['item']);
                 } else {
@@ -1103,12 +1105,12 @@ class Contract extends \BaseModel
             if ($this->voip_id != $item->product->voip_sales_tariff_id) {
                 $this->voip_id = $item->product->voip_sales_tariff_id;
                 $this->changes_on_daily_conversion = true;
-                \Log::Info('contract: changing voip_id to '.$this->voip_id.' for contract '.$this->number, [$this->id]);
+                Log::info('contract: changing voip_id to '.$this->voip_id.' for contract '.$this->number, [$this->id]);
             }
             if ($this->purchase_tariff != $item->product->voip_purchase_tariff_id) {
                 $this->purchase_tariff = $item->product->voip_purchase_tariff_id;
                 $this->changes_on_daily_conversion = true;
-                \Log::Info('contract: changing purchase_tariff to '.$this->purchase_tariff.' for contract '.$this->number, [$this->id]);
+                Log::info('contract: changing purchase_tariff to '.$this->purchase_tariff.' for contract '.$this->number, [$this->id]);
             }
         }
 
@@ -1116,7 +1118,7 @@ class Contract extends \BaseModel
             if ($this->qos_id != $item->product->qos_id) {
                 $this->qos_id = $item->product->qos_id;
                 $this->changes_on_daily_conversion = true;
-                \Log::Info('contract: changing  qos_id to '.$this->qos_id.' for contract '.$this->number, [$this->id]);
+                Log::info('contract: changing  qos_id to '.$this->qos_id.' for contract '.$this->number, [$this->id]);
             }
         }
     }
@@ -1141,12 +1143,12 @@ class Contract extends \BaseModel
             if ($this->next_voip_id != $item->product->voip_sales_tariff_id) {
                 $this->next_voip_id = $item->product->voip_sales_tariff_id;
                 $this->changes_on_daily_conversion = true;
-                \Log::Info('contract: changing next_voip_id to '.$this->next_voip_id.' for contract '.$this->number, [$this->id]);
+                Log::info('contract: changing next_voip_id to '.$this->next_voip_id.' for contract '.$this->number, [$this->id]);
             }
             if ($this->next_purchase_tariff != $item->product->voip_purchase_tariff_id) {
                 $this->next_purchase_tariff = $item->product->voip_purchase_tariff_id;
                 $this->changes_on_daily_conversion = true;
-                \Log::Info('contract: changing next_purchase_tariff to '.$this->next_purchase_tariff.' for contract '.$this->number, [$this->id]);
+                Log::info('contract: changing next_purchase_tariff to '.$this->next_purchase_tariff.' for contract '.$this->number, [$this->id]);
             }
         }
 
@@ -1154,7 +1156,7 @@ class Contract extends \BaseModel
             if ($this->next_qos_id != $item->product->qos_id) {
                 $this->next_qos_id = $item->product->qos_id;
                 $this->changes_on_daily_conversion = true;
-                \Log::Info('contract: changing next_qos_id to '.$this->next_qos_id.' for contract '.$this->number, [$this->id]);
+                Log::info('contract: changing next_qos_id to '.$this->next_qos_id.' for contract '.$this->number, [$this->id]);
             }
         }
     }
@@ -1171,14 +1173,24 @@ class Contract extends \BaseModel
      */
     public function push_to_modems()
     {
+        $internetAccessChanged = false;
+
         foreach ($this->modems as $modem) {
+            if ($modem->internet_access != $this->internet_access) {
+                $internetAccessChanged = true;
+            }
+
             $modem->internet_access = $this->internet_access;
             $modem->qos_id = $this->qos_id;
             $modem->observer_enabled = false;
+            $modem->updateRadius(false);
+            $modem->make_configfile();
             $modem->save();
             $modem->restart_modem();
-            $modem->make_configfile();
-            $modem->updateRadius(false);
+        }
+
+        if ($internetAccessChanged) {
+            Modem::createDhcpBlockedCpesFile();
         }
     }
 
@@ -1209,7 +1221,7 @@ class Contract extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new ContractObserver);
+        self::observe(new \Modules\ProvBase\Observers\ContractObserver);
     }
 
     /**
@@ -1266,7 +1278,7 @@ class Contract extends \BaseModel
             }
 
             if ($mandate) {
-                \Log::warning("SepaMandate: Multiple valid mandates active for Contract $this->number", [$this->id]);
+                Log::warning("SepaMandate: Multiple valid mandates active for Contract $this->number", [$this->id]);
             }
 
             $start = $m->get_start_time();
@@ -1575,7 +1587,7 @@ class Contract extends \BaseModel
                 preg_match('/\d*/', $housenr, $nr);
 
                 if (! $nr[0]) {
-                    \ChannelLog::error('billingbase', trans('propertymanagement::messages.invoice.invalidRealtyHousenr', ['id' => $realty->id, 'nr' => $realty->house_nr, 'contractnr' => $contract->number]));
+                    Log::channel('billing')->error(trans('propertymanagement::messages.invoice.invalidRealtyHousenr', ['id' => $realty->id, 'nr' => $realty->house_nr, 'contractnr' => $contract->number]));
 
                     continue;
                 }
@@ -1638,180 +1650,5 @@ class Contract extends \BaseModel
         }
 
         return $objList;
-    }
-}
-
-/**
- * Observer Class
- *
- * can handle   'creating', 'created', 'updating', 'updated',
- *              'deleting', 'deleted', 'saving', 'saved',
- *              'restoring', 'restored',
- */
-class ContractObserver
-{
-    public function creating($contract)
-    {
-        if (! Module::collections()->has('BillingBase')) {
-            $contract->sepa_iban = strtoupper($contract->sepa_iban);
-            $contract->sepa_bic = strtoupper($contract->sepa_bic);
-        }
-    }
-
-    public function created($contract)
-    {
-        $contract->push_to_modems(); 	// should not run, because a new added contract can not have modems..
-
-        $contract->updateAddressFromProperty();
-    }
-
-    public function updating($contract)
-    {
-        $original_number = $contract->getOriginal('number');
-        $original_costcenter_id = $contract->getOriginal('costcenter_id');
-
-        if (! Module::collections()->has('BillingBase')) {
-            $contract->sepa_iban = strtoupper($contract->sepa_iban);
-            $contract->sepa_bic = strtoupper($contract->sepa_bic);
-        }
-    }
-
-    public function updated($contract)
-    {
-        if (! $contract->observer_enabled) {
-            return;
-        }
-
-        $changed_fields = $contract->getDirty();
-
-        if (isset($changed_fields['number'])) {
-            // change customer information - take care - this automatically changes login psw of customer
-            if ($customer = $contract->CccUser) {
-                $customer->update();
-            }
-        }
-
-        // Set all related items start date to contracts start date if this behaviour is wished via global config
-        if (isset($changed_fields['contract_start']) && Module::collections()->has('BillingBase')) {
-            $conf = \Modules\BillingBase\Entities\BillingBase::first();
-
-            if ($conf->adapt_item_start) {
-                // Note: Calling item->save() is not necessary as contract->daily_conversion is called after and manages everything that is to do
-                \Modules\BillingBase\Entities\Item::where('contract_id', $contract->id)->update(['valid_from' => $contract->contract_start]);
-            }
-        }
-
-        if (isset($changed_fields['contract_start']) || isset($changed_fields['contract_end'])) {
-            $contract->daily_conversion();
-
-            if (Module::collections()->has('BillingBase') && $contract->contract_end && isset($changed_fields['contract_end'])) {
-                // Alert if end is lower than tariffs end of term
-                $ret = $contract->getCancelationDates();
-
-                if ($ret['end_of_term'] && $contract->contract_end < $ret['end_of_term']) {
-                    Session::put('alert.danger', trans('messages.contract.early_cancel', ['date' => $ret['end_of_term']]));
-                }
-            }
-        }
-
-        // Show alert when contract is canceled and there are yearly payed items that were charged already (by probably full amount) - customer should get a credit then
-        if (isset($changed_fields['contract_end'])) {
-            $query = $contract->items()->join('product as p', 'item.product_id', '=', 'p.id')
-                    ->where('p.billing_cycle', 'Yearly');
-
-            if (date('Y', strtotime($contract->contract_end)) == date('Y')) {
-                $query = $query->where('payed_month', '!=', 0);
-            } elseif (date('m') == '01' && $contract->contract_end != date('Y-12-31', strtotime('last year')) &&
-                date('Y', strtotime($contract->contract_end)) == (date('Y') - 1)
-                ) {
-                // e.g. in january of current year the user enters belatedly a cancelation date of last year in dec
-            } else {
-                return;
-            }
-
-            $concede_credit = $query->count();
-
-            if ($concede_credit) {
-                Session::put('alert.warning', trans('messages.contract.concede_credit'));
-            }
-        }
-
-        if (multi_array_key_exists(['realty_id', 'apartment_id'], $changed_fields)) {
-            $contract->updateAddressFromProperty();
-        }
-    }
-
-    public function deleting($contract)
-    {
-        if ($contract->cccUser) {
-            $contract->cccUser->delete();
-        }
-    }
-}
-
-/**
- * Base updater for all data that is related to orders and phonenumbers
- *
- * @author Patrick Reichel
- */
-abstract class VoipRelatedDataUpdater
-{
-    // the modules that have to be active to instantiate
-    // set to empty array if no modules are needed
-    protected $modules_to_be_active = ['OverloadThisByTheNeededModules'];
-
-    // Helper flag; set to true if something related to given contract has to be updated
-    protected $has_to_be_updated = true;
-
-    /**
-     * Constructor
-     *
-     * @author Patrick Reichel
-     */
-    public function __construct($contract_id)
-    {
-        if (! $this->_check_modules()) {
-            throw new \RuntimeException('Cannot use class '.__CLASS__.' because at least one of the following modules is not active: '.implode(', ', $this->modules_to_be_active));
-        }
-
-        $this->contract = Contract::findOrFail($contract_id);
-    }
-
-    /**
-     * Check if all needed modules are active
-     *
-     * @author Patrick Reichel
-     */
-    protected function _check_modules()
-    {
-        foreach ($this->modules_to_be_active as $module) {
-            if (! Module::collections()->has($module)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-}
-
-/**
- * Updater using EnviaOrders as data base.
- *
- * @author Patrick Reichel
- */
-class VoipRelatedDataUpdaterByEnvia extends VoipRelatedDataUpdater
-{
-    protected $modules_to_be_active = ['ProvVoipEnvia'];
-
-    /**
-     * Constructor
-     *
-     * @author Patrick Reichel
-     */
-    public function __construct($contract_id)
-    {
-        parent::__construct($contract_id);
-
-        /* dd(__FILE__, __LINE__, $this->contract); */
     }
 }

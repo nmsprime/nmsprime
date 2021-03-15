@@ -3,17 +3,24 @@
 namespace App\Http\Controllers\Auth;
 
 use Str;
-use Module;
 use Bouncer;
 use App\Role;
 use App\Ability;
 use App\BaseModel;
 use Illuminate\Http\Request;
+use Nwidart\Modules\Facades\Module;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\BaseViewController;
 
 class AbilityController extends Controller
 {
+    /**
+     * Action that indicates a capability. These are no authorization abilities
+     * and only determined to determine if a user is capable of something.
+     *
+     * @var array
+     */
+    protected const CAPABILITY_ACTION = 'maintain';
+
     /**
      * Crud Actions Array, that is used to populate the Ability Blade and to
      * iterate through the various actions in Blade context. As key the
@@ -32,6 +39,36 @@ class AbilityController extends Controller
             'update' => ['name' => 'update', 'icon' => 'fa-pencil', 'bsclass' => 'warning'],
             'delete' => ['name' => 'delete', 'icon' => 'fa-trash', 'bsclass' => 'danger'],
         ]);
+    }
+
+    /**
+     * Updates the Abilities that are not explicitly bound to a model and some
+     * Helper Abilities (like "allow all", "view all"). It is bound to the
+     * Route "customAbility.update" and called via AJAX Requests.
+     *
+     * @param Illuminate\Http\Request $requestData
+     * @return Illuminate\Support\Collection
+     * @author Christian Schramm
+     */
+    protected function updateCapability(Request $requestData)
+    {
+        $role = Role::find($requestData->roleId);
+        $netElementTypes = \Modules\HfcReq\Entities\NetElementType::rootNodes()->get()->keyBy('id');
+
+        foreach ($requestData->capabilities as $id => $netElementType) {
+            if ($netElementType['isCapable']) {
+                Bouncer::allow($role->name)->to(self::CAPABILITY_ACTION, $netElementTypes[$id]);
+                continue;
+            }
+
+            Bouncer::disallow($role->name)->to(self::CAPABILITY_ACTION, $netElementTypes[$id]);
+        }
+
+        Bouncer::refresh();
+
+        return collect([
+            'capabilities' => $this->getCapabilities($role),
+        ])->toJson();
     }
 
     /**
@@ -179,6 +216,35 @@ class AbilityController extends Controller
     }
 
     /**
+     * Get all Capabilities and Compose a Collection to use in Blade
+     *
+     * @return Illuminate\Database\Eloquent\Collection
+     * @author Christian Schramm
+     */
+    public static function getCapabilities(Role $role)
+    {
+        if (! Module::collections()->has('HfcReq')) {
+            return;
+        }
+
+        $rootNetElementTypes = \Modules\HfcReq\Entities\NetElementType::rootNodes()->pluck('name', 'id');
+        $capableAbilities = $role->abilities()
+            ->where('abilities.entity_type', \Modules\HfcReq\Entities\NetElementType::class)
+            ->whereIn('abilities.entity_id', $rootNetElementTypes->keys())
+            ->pluck('abilities.entity_id');
+
+        return $rootNetElementTypes
+            ->mapWithKeys(function ($netlEmentType, $id) use ($capableAbilities) {
+                return [
+                    $id => [
+                        'title' => $netlEmentType,
+                        'isCapable' => $capableAbilities->contains($id),
+                    ],
+                ];
+            });
+    }
+
+    /**
      * Get all non-Crud Abilities and Compose a Collection to use in Blade
      *
      * @return Illuminate\Database\Eloquent\Collection
@@ -187,13 +253,14 @@ class AbilityController extends Controller
     public static function getCustomAbilities()
     {
         return Ability::whereNotIn('name', self::getCrudActions()->keys())
+            ->where('name', '!=', self::CAPABILITY_ACTION)
             ->orWhere('entity_type', '*')
             ->get()
             ->pluck('title', 'id')
             ->map(function ($title) {
                 return collect([
                     'title' => $title,
-                    'localTitle' => BaseViewController::translate_label($title),
+                    'localTitle' => trans('view.Ability.'.$title),
                     'helperText' => trans('helper.'.$title),
                 ]);
             });
@@ -215,8 +282,16 @@ class AbilityController extends Controller
             'Dashboard',        // has its own Authorization checks
             'IcingaHostStatus', // has no UI/Route associated
             'IcingaObject',     // has no UI/Route associated
-            'ModemHelper',      // has no UI/Route associated
             'SupportRequest',   // authorization makes no sense
+            // FreeRADIUS models
+            'Nas',
+            'RadAcct',
+            'RadCheck',
+            'RadGroupReply',
+            'RadIpPool',
+            'RadPostAuth',
+            'RadReply',
+            'RadUserGroup',
         ];
 
         $modules = Module::collections()->keys();
@@ -236,17 +311,20 @@ class AbilityController extends Controller
             'GlobalConfig' => collect([
                 'BillingBase',
                 'Ccc',
+                'HfcReq',
                 'HfcBase',
                 'ProvBase',
                 'ProvVoip',
+                'ProvMon',
                 'OverdueDebts',
+                'Ticketsystem',
             ])
                 ->filter(function ($name) use ($modules) {
                     return $modules->contains($name);
                 })
                 ->prepend('GlobalConfig')
-                ->push('GuiLog')
                 ->push('Sla')
+                ->push('GuiLog')
                 ->mapWithKeys(function ($name) use ($models, $allAbilities) {
                     return self::getModelActions($name, $models, $allAbilities);
                 }),
@@ -316,7 +394,7 @@ class AbilityController extends Controller
      * Check if only one or if multiple Custom Abilities were changed.
      *
      * @param Illuminate\Http\Request $requestData
-     * @return bool
+     * @return Illuminate\Support\Collection
      * @author Christian Schramm
      */
     private function getChangedIds($requestData)

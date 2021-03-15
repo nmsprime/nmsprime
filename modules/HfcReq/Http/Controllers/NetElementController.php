@@ -5,12 +5,11 @@ namespace Modules\HfcReq\Http\Controllers;
 use View;
 use Request;
 use Modules\HfcReq\Entities\NetElement;
+use App\Http\Controllers\BaseController;
 use Modules\HfcReq\Entities\NetElementType;
 use App\Http\Controllers\BaseViewController;
-use Modules\HfcBase\Http\Controllers\HfcBaseController;
-use Modules\ProvMon\Http\Controllers\ProvMonController;
 
-class NetElementController extends HfcBaseController
+class NetElementController extends BaseController
 {
     public function index()
     {
@@ -55,13 +54,13 @@ class NetElementController extends HfcBaseController
 
         if ($type == 9) {
             $parents = $netelement->html_list(NetElement::where('netelementtype_id', 8)->get(), 'name');
-            $types = NetElementType::where('id', $type)->get(['id', 'name']);
+            $types = NetElementType::where('id', $type)->get();
             $hidden4TapPort = 1;
 
             $addressDesc1 = 'RKS Port'; // Used as address to control the attenuation setting via Sat-Kabel-RKS-Server
         } else {
             $parents = $netelement->getParentList();
-            $types = NetElementType::get(['id', 'name']);
+            $types = NetElementType::get();
         }
 
         /*
@@ -104,13 +103,13 @@ class NetElementController extends HfcBaseController
          * return
          */
         $a = [
-            ['form_type' => 'select', 'name' => 'netelementtype_id', 'description' => 'NetElement Type', 'value' => $netelement->html_list($types, 'name'), 'hidden' => 0],
+            ['form_type' => 'select', 'name' => 'netelementtype_id', 'description' => 'NetElement Type', 'value' => $netelement->html_list($types, ['name', 'version'], true, ' - '), 'hidden' => 0],
             ['form_type' => 'text', 'name' => 'name', 'description' => 'Name'],
             // array('form_type' => 'select', 'name' => 'type', 'description' => 'Type', 'value' => ['NET' => 'NET', 'NETGW' => 'NETGW', 'DATA' => 'DATA', 'CLUSTER' => 'CLUSTER', 'NODE' => 'NODE', 'AMP' => 'AMP']),
             // net is automatically detected in Observer
             // array('form_type' => 'select', 'name' => 'net', 'description' => 'Net', 'value' => $nets),
             ['form_type' => 'ip', 'name' => 'ip', 'description' => 'IP address', 'hidden' => $hidden4TapPort || $hidden4Tap],
-            ['form_type' => 'text', 'name' => 'link', 'description' => 'HTML Link', 'hidden' => $hidden4TapPort || $hidden4Tap],
+            ['form_type' => 'text', 'name' => 'link', 'description' => 'ERD Link', 'hidden' => $hidden4TapPort || $hidden4Tap],
             ['form_type' => 'select', 'name' => 'prov_device_id', 'description' => 'Provisioning Device', 'value' => $prov_device, 'hidden' => $prov_device_hidden],
             ['form_type' => 'text', 'name' => 'pos', 'description' => 'Geoposition', 'hidden' => $hidden4TapPort],
             ['form_type' => 'select', 'name' => 'parent_id', 'description' => 'Parent Object', 'value' => $parents],
@@ -149,6 +148,7 @@ class NetElementController extends HfcBaseController
 
     public function prepare_input($data)
     {
+        $data['name'] = str_replace(['"', '\\'], '', $data['name']);
         $data = parent::prepare_input($data);
 
         // set default offset if none was given
@@ -171,7 +171,7 @@ class NetElementController extends HfcBaseController
     {
         if ($data['netelementtype_id'] == 9) {
             $id = $data['id'] ?? null;
-            $rules['address1'] = 'required|unique:netelement,address1,'.$id.',id,deleted_at,NULL,netelementtype_id,9|regex:/^([0-9A-F]{2}){4}(~\d)+$/';
+            $rules['address1'] = 'required|unique:netelement,address1,'.$id.',id,deleted_at,NULL,netelementtype_id,9|regex:/^([0-9A-F]{2}){4}(~\d)?$/';
         }
 
         return parent::prepare_rules($rules, $data);
@@ -188,7 +188,7 @@ class NetElementController extends HfcBaseController
     {
         $defaultTabs = parent::editTabs($netelement);
 
-        $tabs = ProvMonController::checkNetelementtype($netelement);
+        $tabs = $netelement->tabs();
         $tabs[] = $defaultTabs[1];
 
         return $tabs;

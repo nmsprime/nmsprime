@@ -8,7 +8,6 @@ use Bouncer;
 use Session;
 use Modules\ProvBase\Entities\Qos;
 use Modules\ProvBase\Entities\Contract;
-use Modules\ProvVoip\Entities\PhoneTariff;
 
 class ContractController extends \BaseController
 {
@@ -95,13 +94,15 @@ class ContractController extends \BaseController
         if (Module::collections()->has('PropertyManagement')) {
             if (! $hasModems) {
                 $a[] = ['form_type' => 'select', 'name' => 'apartment_id', 'value' => $model->getSelectableApartments(), 'select' => 'noContact',  'description' => 'Apartment', 'hidden' => 0];
-                $a[] = ['form_type' => 'select', 'name' => 'contact_id', 'value' => $contactList, 'select' => 'noApartment', 'description' => 'Contact', 'hidden' => 0, 'space' => 1];
+                $a[] = ['form_type' => 'select', 'name' => 'contact_id', 'value' => $contactList, 'select' => 'noApartment', 'description' => 'Contact', 'hidden' => 0];
             } else {
                 $a[14]['space'] = 1;
             }
         } else {
-            $a[] = ['form_type' => 'text', 'name' => 'apartment_nr', 'description' => 'Apartment number', 'space' => 1];
+            $a[] = ['form_type' => 'text', 'name' => 'apartment_nr', 'description' => 'Apartment number'];
         }
+
+        $a[] = ['form_type' => 'text', 'name' => 'additional', 'description' => 'Additional info', 'create' => ['Contract'], 'autocomplete' => [], 'space' => 1];
 
         $b1[] = ['form_type' => 'text', 'name' => 'phone', 'description' => 'Phone'];
 
@@ -112,9 +113,9 @@ class ContractController extends \BaseController
         $b2 = [
             ['form_type' => 'text', 'name' => 'fax', 'description' => 'Fax'],
             ['form_type' => 'text', 'name' => 'email', 'description' => 'E-Mail Address'],
-            ['form_type' => 'text', 'name' => 'birthday', 'description' => 'Birthday', 'create' => ['Modem'], 'space' => '1'],
-            ['form_type' => 'text', 'name' => 'contract_start', 'description' => 'Contract Start'], // TODO: create default 'value' => date("Y-m-d")
-            ['form_type' => 'text', 'name' => 'contract_end', 'description' => 'Contract End'],
+            ['form_type' => 'date', 'name' => 'birthday', 'description' => 'Birthday', 'create' => ['Modem'], 'space' => '1'],
+            ['form_type' => 'date', 'name' => 'contract_start', 'description' => 'Contract Start'],
+            ['form_type' => 'date', 'name' => 'contract_end', 'description' => 'Contract End'],
         ];
 
         if (Module::collections()->has('BillingBase')) {
@@ -146,8 +147,8 @@ class ContractController extends \BaseController
             ];
 
             if (\Module::collections()->has('ProvVoipEnvia')) {
-                $purchase_tariffs = PhoneTariff::get_purchase_tariffs();
-                $sales_tariffs = PhoneTariff::get_sale_tariffs();
+                $purchase_tariffs = \Modules\ProvVoip\Entities\PhoneTariff::get_purchase_tariffs();
+                $sales_tariffs = \Modules\ProvVoip\Entities\PhoneTariff::get_sale_tariffs();
 
                 $c2 = [
                     ['form_type' => 'select', 'name' => 'purchase_tariff', 'description' => 'Purchase tariff', 'value' => $purchase_tariffs],

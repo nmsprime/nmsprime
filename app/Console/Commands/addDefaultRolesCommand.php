@@ -7,8 +7,6 @@ use Bouncer;
 use App\Role;
 use App\BaseModel;
 use Illuminate\Console\Command;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
 
 /**
  * Add default roles
@@ -58,7 +56,9 @@ class addDefaultRolesCommand extends Command
                 Log::warning('Discard adding Role \"'.$role['name'].'\" as there already is an entry in DB!');
                 continue;
             } else {
-                $rules = Role::rules($role['id']);
+                $roleObj = new Role;
+                $roleObj->id = $role['id'];
+                $rules = $roleObj->rules();
                 $validator = \Validator::make($role, $rules);
 
                 if ($validator->fails()) {

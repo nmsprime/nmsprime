@@ -5,12 +5,12 @@
 </div>
 <div id="app" style="display:none;">
     <div id="accordion" class="panel-group">
-        <div class="panel panel-inverse">
-            <div class="panel-heading d-flex align-items-center flex-row">
+        <div class="panel-inverse" style="margin-bottom: 0;background-color: #fff;border: 1px solid transparent;">
+            <div class="d-flex align-items-center flex-row" style="padding:0.75rem 1rem;color:#fff;background:#242a30;border: none;border-top-left-radius: 3px;border-top-right-radius: 3px;">
                 <h3 class="panel-title" style="flex: 1;">
                     <a class="accordion-toggle accordion-toggle-styled collapsed" data-toggle="collapse" data-parent="#accordion" href="#customAbilities" aria-expanded="false">
                         <i class="fa fa-plus-circle"></i>
-                        {{ App\Http\Controllers\BaseViewController::translate_view('Custom Abilities', 'Ability') }}
+                        {{ trans('view.Ability.Custom Abilities') }}
                     </a>
                 </h3>
                 <div class="d-flex align-items-center mx-1">
@@ -20,7 +20,7 @@
                         <i class="fa fa-lg"
                            :class="loadingSpinner.custom ?'fa-circle-o-notch fa-spin' : 'fa-save'">
                         </i>
-                        {{ App\Http\Controllers\BaseViewController::translate_label('Save All') }}
+                        {{ trans('view.Ability.Save All') }}
                     </button>
                 </div>
             </div>
@@ -29,12 +29,12 @@
                     <table class="table table-hover mb-5">
                         <thead class="text-center">
                           <tr>
-                            <th class="text-left">{{ App\Http\Controllers\BaseViewController::translate_label('Ability') }}</th>
-                            <th>{{ App\Http\Controllers\BaseViewController::translate_label('Allow') }}</th>
-                            <th v-if="allowAll">{{ App\Http\Controllers\BaseViewController::translate_label('Forbid') }}</th>
+                            <th class="text-left">{{ trans('view.Ability.Ability') }}</th>
+                            <th>{{ trans('view.Ability.Allow') }}</th>
+                            <th v-if="allowAll">{{ trans('view.Ability.Forbid') }}</th>
                             <th v-show="!showSaveColumn"></th>
-                            <th v-show="showSaveColumn">{{ App\Http\Controllers\BaseViewController::translate_label('Save Changes') }}</th>
-                            <th>{{ App\Http\Controllers\BaseViewController::translate_label('Help') }}</th>
+                            <th v-show="showSaveColumn">{{ trans('view.Ability.Save Changes') }}</th>
+                            <th>{{ trans('view.Ability.Help') }}</th>
                           </tr>
                         </thead>
                         <tr v-for="(ability, id) in customAbilities">
@@ -65,7 +65,7 @@
                                         <i class="fa fa-save fa-lg"
                                            :class="loadingSpinner.custom ?'fa-circle-o-notch fa-spin' : 'fa-save'">
                                         </i>
-                                        {{ App\Http\Controllers\BaseViewController::translate_label('Save') }}
+                                        {{ trans('messages.Save') }}
                                     </button>
                                 </div>
                             </td>
@@ -87,12 +87,12 @@
     @foreach ($modelAbilities as $module => $entities)
         <form method="POST" action="{!! route('modelAbility.update') !!}" accept-charset="UTF-8" id="{{ $module }}" class="form_open" enctype="multipart/form-data">
         {{ csrf_field() }}
-        <div class="panel panel-inverse">
-            <div class="panel-heading d-flex align-items-center flex-row">
+        <div class="panel-inverse" style="margin-bottom: 0;background-color: #fff;border: 1px solid transparent;">
+            <div class="d-flex align-items-center flex-row" style="padding:0.5rem 1rem;color:#fff;background:#242a30;border: none;border-top-left-radius: 3px;border-top-right-radius: 3px;">
                 <h3 class="panel-title" style="flex: 1;">
                     <a class="accordion-toggle accordion-toggle-styled collapsed" data-toggle="collapse" data-parent="#accordion" href="#{{ 'group_'.$module }}" aria-expanded="false">
                         <i class="fa fa-plus-circle"></i>
-                        {{ App\Http\Controllers\BaseViewController::translate_view($module, 'Ability') }}
+                        {{ trans("view.Ability.{$module}") }}
                     </a>
                 </h3>
                 <span class="d-flex align-items-center">
@@ -114,16 +114,16 @@
                                     @if($action['name'] == 'view')
                                     v-if="!(manageAll.{!! $module !!}) && allowViewAll == undefined"
                                     @endif
-                                    title="{{ App\Http\Controllers\BaseViewController::translate_view($action['name'], 'Button' )}}"
+                                    title="{{ trans('view.Button_'.$action['name']) }}"
                                     >
-                                <span class="d-block d-xl-none" style="pointer-events: none;">
+                                <span class="d-block d-wide-none" style="pointer-events: none;">
                                 <i class="fa {!! $action['icon'] !!} fa-lg"
                                     :class="[{!! $action['name'] !!}All.{!! $module !!} ? '' : 'text-dark']"></i>
                                 </span>
-                                <span class="d-none d-xl-block" style="pointer-events: none;">
+                                <span class="d-none d-wide-block" style="pointer-events: none;">
                                     <i class="fa {!! $action['icon'] !!} fa-lg"
                                         :class="[{!! $action['name'] !!}All.{!! $module !!} ? '' : 'text-dark']"></i>
-                                    {{ App\Http\Controllers\BaseViewController::translate_label( Str::title($action['name'])) }}
+                                    {{ trans('view.Ability.'.ucfirst($action['name'])) }}
                                 </span>
                             </button>
                         </span>
@@ -143,7 +143,7 @@
                                 <i class="fa fa-lg"
                                    :class="loadingSpinner.{!! $module !!} ?'fa-circle-o-notch fa-spin' : 'fa-save'">
                                 </i>
-                                {{ App\Http\Controllers\BaseViewController::translate_label('Save') }}
+                                {{ trans('messages.Save') }}
                             </span>
                         </button>
                     </span>
@@ -154,24 +154,24 @@
                 <table class="table table-hover">
                     <thead class="text-center">
                       <tr>
-                        <th class="text-left"> {{ App\Http\Controllers\BaseViewController::translate_label('Name') }} </th>
-                        <th > {{ App\Http\Controllers\BaseViewController::translate_label('Allow'). '-'.
-                                 App\Http\Controllers\BaseViewController::translate_label('Forbid') }} </th>
-                        <th > {{ App\Http\Controllers\BaseViewController::translate_label('Manage') }} </th>
+                        <th class="text-left"> {{ trans('view.name') }} </th>
+                        <th > {{ trans('view.Ability.Allow'). '-'.
+                                 trans('view.Ability.Forbid') }} </th>
+                        <th > {{ trans('view.Ability.Manage') }} </th>
                         <th v-if="!(manageAll.{!! $module !!}) && allowViewAll == undefined">
-                            {{ App\Http\Controllers\BaseViewController::translate_label('View') }}
+                            {{ trans('view.Ability.View') }}
                         </th>
                         @if ($module != 'GlobalConfig')
                         <th v-if="!(manageAll.{!! $module !!})">
-                            {{ App\Http\Controllers\BaseViewController::translate_label('Create') }}
+                            {{ trans('view.Ability.Create') }}
                         </th>
                         @endif
                         <th v-if="!(manageAll.{!! $module !!})">
-                            {{ App\Http\Controllers\BaseViewController::translate_label('Update') }}
+                            {{ trans('view.Ability.Update') }}
                         </th>
                         @if ($module != 'GlobalConfig')
                         <th v-if="!(manageAll.{!! $module !!})">
-                            {{ App\Http\Controllers\BaseViewController::translate_label('Delete') }}
+                            {{ trans('view.Ability.Delete') }}
                         </th>
                         @endif
                       </tr>
@@ -179,7 +179,11 @@
                 @foreach ($entities as $name => $permission)
                     <tr>
                         <td width="44%">
-                            {{ App\Http\Controllers\BaseViewController::translate_label($name) }}
+                            @if(in_array($module, ['GlobalConfig', 'Authentication', 'Ccc']))
+                                {{ trans('messages.'.$name) }}
+                            @else
+                                {{ trans_choice('view.Header_'.$name, 2) }}
+                            @endif
                         </td>
                         <td width="8%" align="center">
                             <span class="badge" :class="[allowAll ? 'badge-danger' : 'badge-success']" >
@@ -220,6 +224,71 @@
     </form>
     @endforeach
     </div>
+    <div id="accordion2" class="panel-group" style="margin-top: 40px" v-if="capabilities">
+        <div class="panel-inverse" style="margin-bottom: 0;background-color: #fff;border: 1px solid transparent;">
+            <div class="d-flex align-items-center flex-row" style="padding:0.75rem 1rem;color:#fff;background:#242a30;border: none;border-top-left-radius: 3px;border-top-right-radius: 3px;">
+                <h3 class="panel-title" style="flex: 1;">
+                    <a class="accordion-toggle accordion-toggle-styled collapsed"
+                        data-toggle="collapse"
+                        data-parent="#accordion"
+                        href="#customCapabilities"
+                        aria-expanded="false">
+                        <i class="fa fa-plus-circle"></i>
+                        {{ trans('view.Ability.Technical Capabilities') }}
+                    </a>
+                </h3>
+                <div class="d-flex align-items-center mx-1">
+                    <button class="btn btn-sm btn-primary"
+                        v-on:click="capabilityUpdate('all')"
+                        v-show="showCapabilitySaveColumn">
+                        <i class="fa fa-lg"
+                            :class="loadingSpinner.custom ?'fa-circle-o-notch fa-spin' : 'fa-save'">
+                        </i>
+                        {{ trans('view.Ability.Save All') }}
+                    </button>
+                </div>
+            </div>
+            <div id="customCapabilities" class="panel-collapse collapse" aria-expanded="true" style="">
+                <div class="panel-body d-flex flex-column">
+                    <table class="table table-hover mb-5">
+                        <thead class="text-center">
+                            <tr>
+                            <th class="text-left">{{ trans('view.Ability.Capability') }}</th>
+                            <th>{{ trans('view.Ability.Can Maintain') }}</th>
+                            <th v-show="!showCapabilitySaveColumn"></th>
+                            <th v-show="showCapabilitySaveColumn">{{ trans('messages.Save Changes') }}</th>
+                            </tr>
+                        </thead>
+                        <tr v-for="(capability, id) in capabilities">
+                            <td v-text="capability.title"></td>
+                            <td align="center">
+                                <input type="checkbox"
+                                :ref="'capability' + id"
+                                :name="'capability[' + id + ']'"
+                                value="maintain"
+                                :checked="capability.isCapable"
+                                v-on:change="capabilityChange(id)">
+                            </td>
+                            <td class="text-center">
+                                <div v-if="(capability.isCapable != originalCapabilities[id].isCapable) && showCapabilitySaveColumn">
+                                    <button type="submit"
+                                        class="btn btn-primary"
+                                        name="saveAbility"
+                                        :value="id"
+                                        v-on:click="capabilityUpdate(id)">
+                                        <i class="fa fa-save fa-lg"
+                                            :class="loadingSpinner.capabilities ?'fa-circle-o-notch fa-spin' : 'fa-save'">
+                                        </i>
+                                        {{ trans('messages.Save') }}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @DivClose()
 
@@ -227,7 +296,7 @@
 <script src="{{asset('components/assets-admin/plugins/Abilities/es6-promise.auto.min.js')}}"></script>
 <script src="{{asset('components/assets-admin/plugins/vue/dist/vue.min.js')}}"></script>
 {{-- When in Development use this Version
-    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="{{asset('components/assets-admin/plugins/vue/dist/vue.js')}}"></script>
 --}}
 <script src="{{asset('components/assets-admin/plugins/Abilities/lodash.core.min.js')}}"></script>
 <script src="{{asset('components/assets-admin/plugins/Abilities/axios.min.js')}}"></script>
@@ -270,16 +339,19 @@ new Vue({
         spinner: false,
         changed: [],
         showSaveColumn: false,
-        customAbilities: {!! $customAbilities->toJson() !!},
-        roleAbilities: {!! $roleAbilities->toJson() !!},
-        originalRoleAbilities: {!! $roleAbilities->toJson() !!},
-        roleForbiddenAbilities: {!! $roleForbiddenAbilities->toJson() !!},
-        originalForbiddenAbilities: {!! $roleForbiddenAbilities->toJson() !!},
-        modelAbilities: {!! $modelAbilities->toJson() !!},
-        originalModelAbilities: {!! $modelAbilities->toJson() !!},
+        showCapabilitySaveColumn: false,
+        capabilities: @json($capabilities),
+        originalCapabilities: @json($capabilities),
+        customAbilities: @json($customAbilities),
+        roleAbilities: @json($roleAbilities),
+        originalRoleAbilities: @json($roleAbilities),
+        roleForbiddenAbilities: @json($roleForbiddenAbilities),
+        originalForbiddenAbilities: @json($roleForbiddenAbilities),
+        modelAbilities: @json($modelAbilities),
+        originalModelAbilities: @json($modelAbilities),
         button: {
-            allow: '{!! App\Http\Controllers\BaseViewController::translate_label("Allow to") !!}',
-            forbid: '{!! App\Http\Controllers\BaseViewController::translate_label("Forbid to") !!}'
+            allow: '{{ trans("view.Ability.Allow to") }}',
+            forbid: '{{ trans("view.Ability.Forbid to") }}'
             }
     }
   },
@@ -440,6 +512,39 @@ new Vue({
 
             return check;
     },
+    capabilityChange: function (id) {
+        this.capabilities[id].isCapable = !this.capabilities[id].isCapable
+        this.showCapabilitySaveColumn = this.checkChangedArray(
+            Object.keys(this.capabilities).map(key => this.capabilities[key].isCapable));
+    },
+    capabilityUpdate: function (id) {
+        let self = this;
+        let token = document.querySelector('input[name="_token"]').value;
+
+        this.loadingSpinner.capabilities = true;
+        this.loadingSpinner = _.clone(this.loadingSpinner);
+
+        axios({
+            method: 'post',
+            url: '{!! route("capability.update") !!}',
+            headers: {'X-CSRF-TOKEN': token},
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+            data: {
+                id: id,
+                capabilities: this.capabilities,
+                roleId: '{{ $view_var->id }}'
+            }
+        })
+        .then(function (response) {
+            self.originalCapabilities = response.data.capabilities
+
+            self.loadingSpinner.capabilities = false;
+            self.showCapabilitySaveColumn = self.checkChangedArray(self.changed);
+        })
+        .catch(function (error) {
+            alert(error);
+        });
+    },
     customUpdate : function (id) {
         let self = this;
         let token = document.querySelector('input[name="_token"]').value;
@@ -457,7 +562,7 @@ new Vue({
                 roleAbilities: this.roleAbilities,
                 roleForbiddenAbilities: this.roleForbiddenAbilities,
                 changed: this.changed,
-                roleId: '{!! $view_var->id !!}'
+                roleId: '{{ $view_var->id }}'
             }
         })
         .then(function (response) {
@@ -492,7 +597,7 @@ new Vue({
         let form = document.getElementById(module);
         let formData = new FormData(form);
 
-        formData.append('roleId', {!! $view_var->id !!});
+        formData.append('roleId', {{ $view_var->id }});
         formData.append('allowAll', this.allowAll);
         formData.append('module', module);
 

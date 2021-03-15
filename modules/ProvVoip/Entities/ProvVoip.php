@@ -2,8 +2,6 @@
 
 namespace Modules\ProvVoip\Entities;
 
-use Modules\ProvBase\Entities\ProvBase;
-
 class ProvVoip extends \BaseModel
 {
     // The associated SQL table for this Model
@@ -13,7 +11,7 @@ class ProvVoip extends \BaseModel
     // protected $fillable = ['startid_mta'];
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
         ];
@@ -41,15 +39,7 @@ class ProvVoip extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new ProvVoipObserver);
-        self::observe(new \App\SystemdObserver);
-    }
-}
-
-class ProvVoipObserver
-{
-    public function updated($provvoip)
-    {
-        ProvBase::first()->make_dhcp_glob_conf();
+        self::observe(new \Modules\ProvVoip\Observers\ProvVoipObserver);
+        self::observe(new \App\Observers\SystemdObserver);
     }
 }

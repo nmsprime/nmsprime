@@ -2,14 +2,13 @@
 
 namespace Modules\HfcSnmp\Http\Controllers;
 
-use Log;
 use Session;
 use Modules\HfcSnmp\Entities\OID;
+use Illuminate\Support\Facades\Log;
+use App\Exceptions\SnmpAccessException;
 use Modules\HfcReq\Entities\NetElement;
 use Modules\HfcSnmp\Entities\Parameter;
-use Modules\HfcReq\Entities\NetElementType;
 use App\Http\Controllers\BaseViewController;
-use Modules\ProvMon\Http\Controllers\ProvMonController;
 
 class SnmpController extends \BaseController
 {
@@ -106,7 +105,7 @@ class SnmpController extends \BaseController
         $view_var = $netelem;
         $route_name = \NamespaceController::get_route_name();
         $headline = BaseViewController::compute_headline($route_name, $view_header, $view_var).' > controlling';
-        $tabs = ProvMonController::checkNetelementtype($netelem);
+        $tabs = $netelem->tabs();
 
         $view_path = 'hfcsnmp::NetElement.controlling';
         $form_path = 'Generic.form';
@@ -496,6 +495,9 @@ class SnmpController extends \BaseController
                 $results = snmp2_real_walk($this->device->ip, $community, $oid_s, $this->timeout, $this->retry);
             } catch (\Exception $e) {
                 try {
+                    // There are devices where querying v1 directly after v2 leads to exception (e.g. kathrein HMS-Transponder)
+                    // usleep(400000);
+
                     $results = snmprealwalk($this->device->ip, $community, $oid_s, $this->timeout, $this->retry);
                 } catch (\Exception $e) {
                     $results = [];
@@ -780,7 +782,19 @@ class SnmpController extends \BaseController
      */
     private function _get_community($access = 'ro')
     {
-        return $this->device->{'community_'.$access} ?: \Modules\HfcBase\Entities\HfcBase::get([$access.'_community'])->first()->{$access.'_community'};
+        $community = $this->device->{'community_'.$access};
+
+        if (! $community) {
+            $community = \Modules\HfcReq\Entities\HfcReq::get([$access.'_community'])->first()->{$access.'_community'};
+        }
+
+        if (! $community) {
+            Log::error("community {$access} access for Netelement is not set!", [$this->device]);
+
+            throw new SnmpAccessException(trans('messages.NoSnmpAccess', ['access' => $access, 'name' => $this->device->name]));
+        }
+
+        return $community;
     }
 
     /**

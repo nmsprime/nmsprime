@@ -29,8 +29,7 @@ class PhonebookEntryController extends \BaseController
         // in most cases the phonebook data is identical to contract's data ⇒ on create we prefill these values with data from contract
         if (! $model->exists) {
             if (
-                (! \Request::filled('phonenumbermanagement_id'))
-                ||
+                (! \Request::filled('phonenumbermanagement_id')) ||
                 ! ($phonenumbermanagement = PhonenumberManagement::find(\Request::get('phonenumbermanagement_id')))
             ) {
                 return [];
@@ -183,7 +182,7 @@ class PhonebookEntryController extends \BaseController
      */
     protected function _get_extra_data($view_var)
     {
-        if ($this->get_model_obj()->module_is_active('ProvVoipEnvia')) {
+        if (\Module::isEnabled('ProvVoipEnvia')) {
             return $this->_get_envia_management_jobs($view_var);
         }
 

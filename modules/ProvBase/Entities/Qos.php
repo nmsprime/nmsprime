@@ -8,10 +8,10 @@ class Qos extends \BaseModel
     public $table = 'qos';
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
-            'name' => 'required',
+            'name' => "required|unique:qos,name,{$this->id},id,deleted_at,NULL",
             'ds_rate_max' => 'required|numeric|min:0',
             'us_rate_max' => 'required|numeric|min:0',
         ];
@@ -43,7 +43,7 @@ class Qos extends \BaseModel
     // Name of View
     public static function view_headline()
     {
-        return 'QoS';
+        return 'Qos';
     }
 
     // View Icon
@@ -106,72 +106,6 @@ class Qos extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new QosObserver);
-    }
-}
-
-/**
- * Qos Observer Class
- * Handles changes on QoSs
- */
-class QosObserver
-{
-    public function __construct()
-    {
-        $file = storage_path('app/config/provbase/radius/attributes.php');
-        $this->radiusAttributes = file_exists($file) ? require $file : RadGroupReply::$radiusAttributes;
-    }
-
-    public function created($qos)
-    {
-        foreach ($this->radiusAttributes as $key => $attributes) {
-            foreach ($attributes as $attribute) {
-                if (! $qos->{$key}) {
-                    continue;
-                }
-                self::addRadGroupReply($qos, $attribute, $key);
-            }
-        }
-    }
-
-    public function updated($qos)
-    {
-        // update only ds/us if their values were changed
-        foreach (array_intersect_key($this->radiusAttributes, $qos->getDirty()) as $key => $attributes) {
-            foreach ($attributes as $attribute) {
-                $reply = $qos->radgroupreplies()->where('attribute', $attribute[0])->where('value', 'like', $attribute[3]);
-
-                // value might be null, since not all QoS vlaues are required (e.g. DS/US QoS name)
-                if ($qos->{$key}) {
-                    if ($reply->count()) {
-                        $reply->update(['value' => sprintf($attribute[2], $qos->{$key})]);
-                    } else {
-                        self::addRadGroupReply($qos, $attribute, $key);
-                    }
-                } else {
-                    $reply->delete();
-                }
-            }
-        }
-    }
-
-    public function deleted($qos)
-    {
-        $qos->radgroupreplies()->delete();
-    }
-
-    /**
-     * Add a RadGroupReply
-     *
-     * @author: Ole Ernst
-     */
-    private static function addRadGroupReply($qos, $attribute, $key)
-    {
-        $new = new RadGroupReply;
-        $new->groupname = $qos->id;
-        $new->attribute = $attribute[0];
-        $new->op = $attribute[1];
-        $new->value = sprintf($attribute[2], $qos->{$key});
-        $new->save();
+        self::observe(new \Modules\ProvBase\Observers\QosObserver);
     }
 }

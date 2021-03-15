@@ -15,6 +15,8 @@
 
 <script src="{{asset('components/assets-admin/plugins/jstree/dist/jstree.min.js')}}"></script>
 
+<script src="{{asset('components/assets-admin/plugins/chart/Chart.min.js')}}"></script>
+
 <!--[if lt IE 9]>
   <script src="{{asset('components/assets-admin/crossbrowserjs/html5shiv.js')}}"></script>
   <script src="{{asset('components/assets-admin/crossbrowserjs/respond.min.js')}}"></script>

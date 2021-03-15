@@ -1,12 +1,10 @@
 <?php
 
-namespace Acme\Validators;
+namespace App\extensions\validators;
 
 use Log;
 use File;
-use IBAN;
-use Modules\BillingBase\Entities\Product;
-use Modules\ProvVoip\Entities\PhonebookEntry;
+use PHP_IBAN\IBAN;
 
 /*
  * Our own ExtendedValidator Class
@@ -94,23 +92,64 @@ class ExtendedValidator
      * Check if ip ($value) is larger than the one specified in $parameters
      *
      * @author Nino Ryschawy
+     * @return bool
      */
     public function ipLarger($attribute, $value, $parameters)
     {
-        $ip = ip2long($value);
-        $ip2 = ip2long($parameters[0]);
+        // IPv6
+        if (filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return $this->inetPtoi($value) > $this->inetPtoi($parameters[0]);
+        }
 
-        return $ip > $ip2;
+        // IPv4
+        return ip2long($value) > ip2long($parameters[0]);
     }
 
     /**
-     * Check if ip ($value) is larger than the one specified in $parameters
+     * Converts an IPv6 string to a decimal value as string to be compareable
+     * See https://www.samclarke.com/php-ipv6-to-128bit-int/
+     *
+     * @param string
+     * @return mixed
+     */
+    private function inetPtoi($ip)
+    {
+        if (! function_exists('bcadd')) {
+            throw new \Exception('PHP bcmath package must be installed!');
+        }
+
+        if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return;
+        }
+
+        $parts = unpack('J*', inet_pton($ip));
+
+        // convert any unsigned ints to signed from unpack
+        foreach ($parts as &$part) {
+            if ($part < 0) {
+                $part = bcadd($part, '18446744073709551616');
+            }
+        }
+
+        return bcadd($parts[2], bcmul($parts[1], '18446744073709551616'));
+    }
+
+    /**
+     * Check if value is a valid IP netmask
      *
      * @author Nino Ryschawy
+     * @return bool
      */
     public function netmask($attribute, $value, $parameters)
     {
-        $netmask = ip2long($value);
+        $netmask = str_replace(' ', '', $value);
+
+        // Allow cidr notation
+        if (\Modules\ProvBase\Entities\IpPool::isCidrNotation($netmask)) {
+            return true;
+        }
+
+        $netmask = ip2long($netmask);
         $base = ip2long('255.255.255.255');
         $prefix = log(($netmask ^ $base) + 1, 2);
 
@@ -119,7 +158,7 @@ class ExtendedValidator
         return is_int($number /= 10000);
     }
 
-    /*
+    /**
      * Validates Sepa Creditor Id
      * see: https://github.com/AbcAeffchen/SepaUtilities/blob/master/src/SepaUtilities.php
      */
@@ -203,7 +242,7 @@ class ExtendedValidator
         $ret = File::put($cf_file, $text);
 
         if ($ret === false) {
-            die('Error writing to file');
+            exit('Error writing to file');
         }
 
         if ($device == 'cm') {
@@ -242,7 +281,7 @@ class ExtendedValidator
     // $value (field value) must only contain strings of product type enums - used on Salesman
     public function validateProductType($attribute, $value, $parameters)
     {
-        $types = Product::getPossibleEnumValues('type');
+        $types = \Modules\BillingBase\Entities\Product::getPossibleEnumValues('type');
 
         $tmp = str_replace([',', '|', '/', ';'], ' ', $value);
         $prods = explode(' ', $tmp);
@@ -279,8 +318,8 @@ class ExtendedValidator
         }
 
         // for easier access and improved readability: get needed informations out of config
-        $maxlen = PhonebookEntry::$config[$attribute]['maxlen'];
-        $valid = str_split(PhonebookEntry::$config[$attribute]['valid']);
+        $maxlen = \Modules\ProvVoip\Entities\PhonebookEntry::$config[$attribute]['maxlen'];
+        $valid = str_split(\Modules\ProvVoip\Entities\PhonebookEntry::$config[$attribute]['valid']);
 
         // check if given value is to long
         if (strlen($value) > $maxlen) {
@@ -324,7 +363,7 @@ class ExtendedValidator
         $search = html_entity_decode($value);
 
         // use the method that builds the array for the selects => that contains all valid values…
-        if (! array_key_exists($search, PhonebookEntry::get_options_from_file($attribute))) {
+        if (! array_key_exists($search, \Modules\ProvVoip\Entities\PhonebookEntry::get_options_from_file($attribute))) {
             $validator->setCustomMessages(['phonebook_predefined_string' => $value.' is not a valid value for '.$attribute]);
 
             return false;
@@ -346,7 +385,7 @@ class ExtendedValidator
         $validator = \func_get_arg(3);
 
         // get the allowed chars out of config
-        $valid = PhonebookEntry::$config[$attribute]['in_list'];
+        $valid = \Modules\ProvVoip\Entities\PhonebookEntry::$config[$attribute]['in_list'];
 
         if (! in_array($value, $valid)) {
             $validator->setCustomMessages(['phonebook_one_character_option' => $value.' is not valid for '.$attribute.' (have to be in ['.implode('', $valid).']).']);
@@ -360,7 +399,7 @@ class ExtendedValidator
     /**
      * Check values that are entry_type dependend
      *
-     * @param $parameters first entry needs to be the entry_type value (add “entry_type” to PhonebookEntry::rules(); will
+     * @param $parameters first entry needs to be the entry_type value (add “entry_type” to \Modules\ProvVoip\Entities\PhonebookEntry::rules(); will
      *          then be set in PhonebookEntryController::prepare_rules
      *
      * @author Patrick Reichel

@@ -3,20 +3,26 @@
 namespace Modules\ProvBase\Entities;
 
 use DB;
-use Log;
 use File;
 use Module;
 use App\Sla;
 use Request;
 use Acme\php\ArrayHelper;
+use Illuminate\Support\Facades\Log;
+use Modules\ProvBase\Http\Controllers\ModemController;
 
 class Modem extends \BaseModel
 {
     // get functions for some address select options
     use \App\AddressFunctionsTrait;
-    use \App\Extensions\Geocoding\Geocoding;
+    use \App\extensions\geocoding\Geocoding;
 
-    const TYPES = ['cm', 'tr069'];
+    public const TYPES = ['cm', 'tr069'];
+    public const CONF_FILE_PATH = '/etc/dhcp-nmsprime/modems-host.conf';
+    protected const CONF_FILE_PATH_PUB = '/etc/dhcp-nmsprime/modems-clients-public.conf';
+    protected const IGNORE_CPE_FILE_PATH = '/etc/dhcp-nmsprime/ignore-cpe.conf';
+    protected const BLOCKED_CPE_FILE_PATH = '/etc/dhcp-nmsprime/blocked.conf';
+    protected $domainName = '';
 
     // The associated SQL table for this Model
     public $table = 'modem';
@@ -24,20 +30,37 @@ class Modem extends \BaseModel
     public $guarded = ['formatted_support_state'];
     protected $appends = ['formatted_support_state'];
 
-    // Add your validation rules here
-    // see: http://stackoverflow.com/questions/22405762/laravel-update-model-with-unique-validation-rule-for-attribute
-    public static function rules($id = null)
+    public function rules()
     {
-        return [
-            'mac' => 'required|mac|unique:modem,mac,'.$id.',id,deleted_at,NULL',
-            'ppp_username' => 'nullable|unique:modem,ppp_username,'.$id.',id,deleted_at,NULL',
-            'birthday' => 'nullable|date',
-            'country_code' => 'regex:/^[A-Z]{2}$/',
-            'contract_id' => 'required|exists:contract,id,deleted_at,NULL',
-            'configfile_id' => 'required|exists:configfile,id,deleted_at,NULL,public,yes',
-            // Note: realty_id and apartment_id validations are done in ModemController@prepare_rules
-            // 'realty_id' => 'nullable|empty_with:apartment_id',
+        $rules = [
+            'mac' => ['mac', "unique:modem,mac,{$this->id},id,deleted_at,NULL"],
+            'birthday' => ['nullable', 'date_format:Y-m-d'],
+            'country_code' => ['regex:/^[A-Z]{2}$/'],
+            'contract_id' => ['required', 'exists:contract,id,deleted_at,NULL'],
+            'configfile_id' => ['required', 'exists:configfile,id,deleted_at,NULL,public,yes'],
+            'serial_num' => ["unique:modem,serial_num,{$this->id},id,deleted_at,NULL"],
+            'ppp_username' => ["unique:modem,ppp_username,{$this->id},id,deleted_at,NULL"],
+            'installation_address_change_date' => ['nullable', 'date_format:Y-m-d'],
         ];
+
+        if (! Module::collections()->has('BillingBase')) {
+            $rules['qos_id'] = ['required', 'exists:qos,id,deleted_at,NULL'];
+        }
+
+        $configfile = Configfile::find(Request::get('configfile_id'));
+        if ($configfile && $configfile->device == 'tr069') {
+            $rules['mac'][] = 'nullable';
+            $rules['ppp_password'][] = 'required';
+            // we wan't to show the required rule first, before any other validation error
+            array_unshift($rules['ppp_username'], 'required');
+            array_unshift($rules['serial_num'], 'required');
+        } else {
+            $rules['mac'][] = 'required';
+            $rules['ppp_username'][] = 'nullable';
+            $rules['serial_num'][] = 'nullable';
+        }
+
+        return $rules;
     }
 
     // Name of View
@@ -69,16 +92,22 @@ class Modem extends \BaseModel
         }
 
         $ret = ['table' => $this->table,
-            'index_header' => [$this->table.'.id', $this->table.'.mac', 'configfile.name', $this->table.'.model', $this->table.'.sw_rev', $this->table.'.name', $this->table.'.firstname', $this->table.'.lastname', $this->table.'.city', $this->table.'.district', $this->table.'.street', $this->table.'.house_number', $this->table.'.us_pwr', $this->table.'.geocode_source', $this->table.'.inventar_num', 'contract_valid'],
+            'index_header' => [$this->table.'.id', $this->table.'.mac', 'configfile.name', $this->table.'.model', $this->table.'.sw_rev', $this->table.'.name', $this->table.'.ppp_username', $this->table.'.firstname', $this->table.'.lastname', $this->table.'.city', $this->table.'.district', $this->table.'.street', $this->table.'.house_number', $this->table.'.geocode_source', $this->table.'.inventar_num', 'contract_valid'],
             'bsclass' => $bsclass,
             'header' => $this->label(),
-            'edit' => ['us_pwr' => 'get_us_pwr', 'contract_valid' => 'get_contract_valid'],
+            'edit' => ['contract_valid' => 'get_contract_valid'],
             'eager_loading' => ['configfile', 'contract'],
             'disable_sortsearch' => ['contract_valid' => 'false'],
             'help' => [$this->table.'.model' => 'modem_update_frequency', $this->table.'.sw_rev' => 'modem_update_frequency'],
             'order_by' => ['0' => 'desc'],
             'where_clauses' => self::_get_where_clause(),
         ];
+
+        if (Module::collections()->has('ProvMon')) {
+            $hfParameters = [$this->table.'.us_pwr', $this->table.'.us_snr', $this->table.'.ds_pwr', $this->table.'.ds_snr'];
+
+            $ret['index_header'] = array_merge($ret['index_header'], $hfParameters);
+        }
 
         if (Sla::firstCached()->valid()) {
             $ret['index_header'][] = $this->table.'.support_state';
@@ -107,8 +136,8 @@ class Modem extends \BaseModel
 
     public function label()
     {
-        // return $this->id.' - '.$this->mac.($this->name ? ' - '.$this->name : '');
-        $label = $this->mac.($this->name ? ' - '.$this->name : '');
+        $label = $this->mac ?: $this->ppp_username;
+        $label .= $this->name ? ' - '.$this->name : '';
         $label .= $this->firstname ? ' - '.$this->firstname.' '.$this->lastname : '';
 
         return $label;
@@ -135,11 +164,6 @@ class Modem extends \BaseModel
         return $this->contract->isValid('Now') ? \App\Http\Controllers\BaseViewController::translate_label('yes') : \App\Http\Controllers\BaseViewController::translate_label('no');
     }
 
-    public function get_us_pwr()
-    {
-        return $this->us_pwr.' dBmV';
-    }
-
     public function getSupportState()
     {
         return $this->formatted_support_state." <i class='pull-right fa fa-2x ".$this->getFaSmileClass()['fa-class'].' text-'.$this->getFaSmileClass()['bs-class']."'></i>";
@@ -162,12 +186,13 @@ class Modem extends \BaseModel
     }
 
     /**
-     * return all Configfile Objects for CMs
+     * return all Configfile Objects for CMs (for Edit view)
      */
     public function configfiles()
     {
-        return DB::table('configfile')->select(['id', 'name'])->whereNull('deleted_at')->whereIn('device', self::TYPES)->where('public', '=', 'yes')->get();
-        // return Configfile::select(['id', 'name'])->where('device', '=', 'CM')->where('public', '=', 'yes')->get();
+        $types = $this->exists ? [$this->configfile->device] : self::TYPES;
+
+        return Configfile::select(['id', 'name'])->where('public', '=', 'yes')->whereIn('device', $types)->get();
     }
 
     /**
@@ -258,6 +283,11 @@ class Modem extends \BaseModel
         return $this->hasMany(Endpoint::class);
     }
 
+    public function netelement()
+    {
+        return $this->belongsTo(\Modules\HfcReq\Entities\NetElement::class);
+    }
+
     public function apartment()
     {
         return $this->belongsTo(\Modules\PropertyManagement\Entities\Apartment::class);
@@ -304,7 +334,7 @@ class Modem extends \BaseModel
         }
 
         if ($relation) {
-            // Let contract be first as just the first relation is used in modem analyses - see top.blade.php
+            // Let contract be first as just the first relation is used in modem analysis - see top.blade.php
             return collect([$this->contract, $relation]);
         }
 
@@ -340,10 +370,33 @@ class Modem extends \BaseModel
 
             // TODO: auth - loading controller from model could be a security issue ?
             $ret['Edit']['EnviaAPI']['view']['view'] = 'provvoipenvia::ProvVoipEnvia.actions';
-            $ret['Edit']['EnviaAPI']['view']['vars']['extra_data'] = \Modules\ProvBase\Http\Controllers\ModemController::_get_envia_management_jobs($this);
+            $ret['Edit']['EnviaAPI']['view']['vars']['extra_data'] = ModemController::_get_envia_management_jobs($this);
         }
 
+        $this->addViewHasManyTickets($ret);
+
         return $ret;
+    }
+
+    public function analysisTabs()
+    {
+        // Always show analysis tab and return error page when ProvMon is not installed/active
+        $tabs[] = ['name' => 'Edit', 'icon' => 'pencil', 'route' => 'Modem.edit', 'link' => $this->id];
+        $tabs[] = ['name' => trans('view.analysis'), 'icon' => 'area-chart', 'route' => 'Modem.analysis', 'link' => $this->id];
+
+        if (Module::collections()->has('ProvMon')) {
+            $tabs[array_key_last($tabs)]['route'] = 'ProvMon.index';
+        }
+
+        if ($this->configfile->device == 'cm') {
+            $tabs[] = ['name' => 'CPE-'.trans('view.analysis'), 'icon' => 'area-chart', 'route' => 'Modem.cpeAnalysis', 'link' => $this->id];
+
+            if (isset($this->mtas) && isset($this->mtas[0])) {
+                $tabs[] = ['name' => 'MTA-'.trans('view.analysis'), 'icon' => 'area-chart', 'route' => 'Modem.mtaAnalysis', 'link' => $this->id];
+            }
+        }
+
+        return $tabs;
     }
 
     /**
@@ -352,20 +405,13 @@ class Modem extends \BaseModel
      */
     public static function boot()
     {
-        Log::debug(__METHOD__.' started');
-
         parent::boot();
 
-        self::observe(new \App\SystemdObserver);
-        self::observe(new ModemObserver);
-    }
+        Log::debug(__METHOD__.' started');
 
-    /**
-     * Define global constants for dhcp config files of modems (private and public)
-     */
-    const CONF_FILE_PATH = '/etc/dhcp-nmsprime/modems-host.conf';
-    const CONF_FILE_PATH_PUB = '/etc/dhcp-nmsprime/modems-clients-public.conf';
-    const IGNORE_CPE_FILE_PATH = '/etc/dhcp-nmsprime/ignore-cpe.conf';
+        self::observe(new \App\Observers\SystemdObserver);
+        self::observe(new \Modules\ProvBase\Observers\ModemObserver);
+    }
 
     /**
      * Returns the config file entry string for a cable modem in dependency of private or public ip
@@ -373,6 +419,7 @@ class Modem extends \BaseModel
      * TODO: use object context instead of parameters (Torsten)
      *
      * @author Nino Ryschawy
+     * @return string
      */
     private function generate_cm_dhcp_entry($server = '')
     {
@@ -380,10 +427,14 @@ class Modem extends \BaseModel
 
         // FF-00-00-00-00 to FF-FF-FF-FF-FF reserved according to RFC7042
         if (stripos($this->mac, 'ff:') === 0) {
-            return;
+            return '';
         }
 
-        $ret = 'host cm-'.$this->id.' { hardware ethernet '.$this->mac.'; filename "cm/cm-'.$this->id.'.cfg"; ddns-hostname "cm-'.$this->id.'";';
+        if (! $this->mac) {
+            return '';
+        }
+
+        $ret = 'host '.$this->hostname.' { hardware ethernet '.$this->mac.'; filename "cm/'.$this->hostname.'.cfg"; ddns-hostname "'.$this->hostname.'";';
 
         if (Module::collections()->has('ProvVoip') && $this->mtas()->pluck('mac')->filter(function ($mac) {
             return stripos($mac, 'ff:') !== 0;
@@ -397,6 +448,10 @@ class Modem extends \BaseModel
     private function generate_cm_dhcp_entry_pub()
     {
         Log::debug(__METHOD__.' started for '.$this->hostname);
+
+        if (! $this->mac) {
+            return '';
+        }
 
         // FF-00-00-00-00 to FF-FF-FF-FF-FF reserved according to RFC7042
         if (stripos($this->mac, 'ff:') !== 0) {
@@ -447,12 +502,12 @@ class Modem extends \BaseModel
 
         $ret = File::put(self::CONF_FILE_PATH, $data);
         if ($ret === false) {
-            die('Error writing to file');
+            exit('Error writing to file');
         }
 
         $ret = File::append(self::CONF_FILE_PATH_PUB, $data_pub);
         if ($ret === false) {
-            die('Error writing to file');
+            exit('Error writing to file');
         }
 
         // chown for future writes in case this function was called from CLI via php artisan nms:dhcp that changes owner to 'root'
@@ -475,7 +530,7 @@ class Modem extends \BaseModel
             // get all not deleted modems
             // attention: do not use “where('internet_access', '>', '0')” to shrink the list
             //   ⇒ MTAs shall get IPs even if internet_access is disabled!
-            $modems_raw = DB::select('SELECT hostname, mac FROM modem WHERE deleted_at IS NULL');
+            $modems_raw = self::whereNotNull('mac')->get();
             $modems = [];
             foreach ($modems_raw as $modem) {
                 $modems[\Str::lower($modem->mac)] = $modem->hostname;
@@ -587,7 +642,7 @@ class Modem extends \BaseModel
 
         $conf = file(self::CONF_FILE_PATH);
 
-        // TODO: check for hostname to avoid deleting the wrong entry when mac exists multiple times in DB !?
+        // Check for hostname to avoid deleting the wrong entry when mac exists multiple times in DB !?
         foreach ($conf as $key => $line) {
             if (strpos($line, "$this->hostname {") !== false) {
                 unset($conf[$key]);
@@ -595,7 +650,7 @@ class Modem extends \BaseModel
             }
         }
 
-        if (! $delete) {
+        if (! $delete && $data) {
             $conf[] = $data;
         }
 
@@ -616,14 +671,13 @@ class Modem extends \BaseModel
             }
 
             foreach ($conf_pub as $key => $line) {
-                if (strpos($line, $replace) !== false) {
+                if ($replace && strpos($line, $replace) !== false) {
                     unset($conf_pub[$key]);
                     break;
                 }
             }
 
-            // $conf_pub = str_replace($replace_pub, '', $conf_pub);
-            if (! $delete && $this->public) {
+            if (! $delete && $this->public && $data_pub) {
                 $conf_pub[] = $data_pub;
             }
 
@@ -640,6 +694,21 @@ class Modem extends \BaseModel
         if (File::put($filename, $data) === false) {
             Log::critcal('Failed to modify DHCPD Configfile '.$filename);
         }
+    }
+
+    /**
+     * Create DHCP config file that blocks the CPEs of modems without internet access
+     */
+    public static function createDhcpBlockedCpesFile()
+    {
+        $comment = '# All Modems (remote agent IDs) without internet access';
+        $modems = [];
+
+        foreach (self::where('internet_access', 0)->get() as $modem) {
+            $modems[] = 'subclass "blocked" '.$modem->mac.'; # CM id: '.$modem->id;
+        }
+
+        File::put(self::BLOCKED_CPE_FILE_PATH, $comment."\n".implode("\n", $modems), true);
     }
 
     /**
@@ -700,22 +769,24 @@ class Modem extends \BaseModel
         // make text and write to file
         $conf = "\tNetworkAccess $internet_access;\n";
 
+        $text = $this->configfile->text_make($this, 'modem');
+
         // don't use auto generated MaxCPE if it is explicitly set in the configfile
         // see https://stackoverflow.com/a/643136 for stripping multiline comments
-        if (! \Str::contains(preg_replace('!/\*.*?\*/!s', '', $this->configfile->text), 'MaxCPE')) {
+        if (! \Str::contains(preg_replace('!/\*.*?\*/!s', '', $text), 'MaxCPE')) {
             $conf .= "\tMaxCPE $max_cpe;\n";
         }
 
-        if (Module::collections()->has('ProvVoip') && $internet_access) {
+        if (Module::collections()->has('ProvVoip') && $internet_access && ! \Str::contains($text, 'CpeMacAddress skip')) {
             foreach ($this->mtas as $mta) {
                 $conf .= "\tCpeMacAddress $mta->mac;\n";
             }
         }
 
-        $text = "Main\n{\n".$conf.$this->configfile->text_make($this, 'modem')."\n}";
+        $text = "Main\n{\n".$conf.$text."\n}";
 
         if (File::put($cf_file, $text) === false) {
-            die('Error writing to file');
+            exit('Error writing to file');
         }
 
         Log::info('Trying to build configfile for modem '.$this->hostname);
@@ -790,21 +861,20 @@ class Modem extends \BaseModel
 
         $preset = [
             'weight' => 0,
-            'precondition' => json_encode([
-                '_deviceId._SerialNumber' => $this->serial_num,
-            ]),
+            'precondition' => "DeviceID.SerialNumber = \"{$this->serial_num}\"",
             'events' => [
                 '0 BOOTSTRAP' => true,
             ],
             'configurations' => [
                 [
                     'type' => 'provision',
-                    'name' => $this->id,
+                    'name' => "prov-$this->id",
+                    'args' => null,
                 ],
             ],
         ];
 
-        self::callGenieAcsApi("presets/$this->id", 'PUT', json_encode($preset));
+        self::callGenieAcsApi("presets/prov-$this->id", 'PUT', json_encode($preset));
 
         unset($preset['events']['0 BOOTSTRAP']);
         $preset['events']['2 PERIODIC'] = true;
@@ -815,7 +885,7 @@ class Modem extends \BaseModel
 
     /**
      * Refresh the online state of all PPP device by checking if their last
-     * accounting update was within the last $defaultInterimIntervall seconds
+     * accounting update was within the last acct_interim_interval seconds
      *
      * @author Ole Ernst
      */
@@ -826,7 +896,7 @@ class Modem extends \BaseModel
         $online = RadAcct::where(
             'acctupdatetime',
             '>=',
-            \Carbon\Carbon::now()->subSeconds(RadGroupReply::$defaultInterimIntervall)
+            \Carbon\Carbon::now()->subSeconds(ProvBase::first()->acct_interim_interval)
         )->pluck('username');
 
         DB::beginTransaction();
@@ -839,9 +909,45 @@ class Modem extends \BaseModel
             ->update(array_merge(array_combine($hf, [0, 0, 0, 0]), ['modem.updated_at' => now()]));
 
         // set all ppp devices online, which sent us an accounting update
-        // in the last $defaultInterimIntervall seconds
+        // in the last acct_interim_interval seconds
         // for now we set them to a sensible DOCIS US power level to make them green
         self::whereIn('ppp_username', $online)->update(array_combine($hf, [40, 36, 0, 36]));
+        DB::commit();
+    }
+
+    /**
+     * Colorize Modem index table when ProvMon module is missing
+     * only for first $count modems as this takes a huge amount of time
+     * Use obvious code generated/fixed amount of ds_pwr
+     *
+     * Status of all other modems is set in refreshPPP()
+     *
+     * @param int $count max count of modems to check
+     */
+    public static function setCableModemsOnlineStatus($count = 0)
+    {
+        $onlineModems = [];
+        $conf = ProvBase::first();
+        $hf = array_flip(config('hfcreq.hfParameters'));
+
+        $modemQuery = self::join('configfile as c', 'modem.configfile_id', 'c.id')
+            ->where('c.device', 'cm');
+
+        if ($count) {
+            $modemQuery->limit($count);
+        }
+
+        foreach ($modemQuery->get() as $modem) {
+            if ($modem->onlineStatus($conf)['online']) {
+                $onlineModems[] = $modem->id;
+            }
+        }
+
+        Log::info('Set modems online status');
+
+        DB::beginTransaction();
+        $modemQuery->update(array_merge(array_combine($hf, [0, 0, 0, 0]), ['modem.updated_at' => now()]));
+        self::whereIn('id', $onlineModems)->update(array_combine($hf, [40, 36, 0, 36]));
         DB::commit();
     }
 
@@ -864,7 +970,7 @@ class Modem extends \BaseModel
 
         foreach (preg_split('/\r\n|\r|\n/', $text) as $line) {
             $vals = str_getcsv(trim($line), ';');
-            if (! count($vals) || ! in_array($vals[0], ['add', 'clr', 'commit', 'del', 'get', 'jmp', 'reboot', 'set', 'fw'])) {
+            if (! count($vals) || ! in_array($vals[0], ['add', 'clr', 'commit', 'del', 'get', 'jmp', 'reboot', 'set', 'fw', 'raw'])) {
                 continue;
             }
 
@@ -903,7 +1009,8 @@ class Modem extends \BaseModel
                     break;
                 case 'set':
                     if (isset($vals[2])) {
-                        $prov[] = "declare('$path', {value: Date.now()} , {value: '$vals[2]'});";
+                        $alias = (empty($vals[3]) || empty($vals[4])) ? '' : ".[$vals[3]].$vals[4]";
+                        $prov[] = "declare('$path$alias', {value: Date.now()} , {value: '$vals[2]'});";
                     }
                     break;
                 case 'fw':
@@ -913,10 +1020,13 @@ class Modem extends \BaseModel
                         $prov[] = "declare('Downloads.[FileType:$vals[1]].Download', {value: 1}, {value: Date.now()});";
                     }
                     break;
+                case 'raw':
+                    $prov[] = "$vals[1]";
+                    break;
             }
         }
 
-        self::callGenieAcsApi("provisions/$this->id", 'PUT', implode("\r\n", $prov));
+        self::callGenieAcsApi("provisions/prov-$this->id", 'PUT', implode("\r\n", $prov));
     }
 
     /**
@@ -997,7 +1107,7 @@ class Modem extends \BaseModel
      */
     public function deleteGenieAcsPreset()
     {
-        self::callGenieAcsApi("presets/$this->id", 'DELETE');
+        self::callGenieAcsApi("presets/prov-$this->id", 'DELETE');
         self::callGenieAcsApi("presets/mon-$this->id", 'DELETE');
     }
 
@@ -1008,7 +1118,7 @@ class Modem extends \BaseModel
      */
     public function deleteGenieAcsProvision()
     {
-        self::callGenieAcsApi("provisions/$this->id", 'DELETE');
+        self::callGenieAcsApi("provisions/prov-$this->id", 'DELETE');
     }
 
     /**
@@ -1021,7 +1131,7 @@ class Modem extends \BaseModel
      */
     public static function get_netgw($ip)
     {
-        $validator = new \Acme\Validators\ExtendedValidator;
+        $validator = new \App\extensions\validators\ExtendedValidator;
 
         $ippools = IpPool::where('type', '=', 'CM')->get();
 
@@ -1048,6 +1158,11 @@ class Modem extends \BaseModel
     public static function get_firmware_tree($id = null)
     {
         $ret = [];
+
+        if (! Module::collections()->has('ProvMon')) {
+            return $ret;
+        }
+
         foreach (glob("/var/lib/cacti/rra/cm-$id*.json") as $file) {
             if (filemtime($file) < time() - 86400 || // ignore json files, which haven't been updated within a day
                 ! ($json = file_get_contents($file)) ||
@@ -1100,20 +1215,28 @@ class Modem extends \BaseModel
         // Log
         Log::info(($factoryReset ? 'factoryReset' : 'restart').' modem '.$this->hostname);
 
+        if (! $factoryReset && $this->successfulRadiusModemDisconnect()) {
+            return;
+        }
+
         if ($this->isTR069()) {
-            $id = $this->getGenieAcsModel('_id');
+            $id = rawurlencode($this->getGenieAcsModel('_id'));
             if (! $id) {
-                \Session::push('tmp_warning_above_form', trans('messages.modem_restart_error'));
+                \Session::push('tmp_error_above_form', trans('messages.modem_restart_error'));
 
                 return;
             }
 
-            $id = rawurlencode($id);
             $action = $factoryReset ? 'factoryReset' : 'reboot';
-            $success = self::callGenieAcsApi("devices/$id/tasks?timeout=3000&connection_request", 'POST', "{ \"name\" : \"$action\" }");
 
+            if (json_decode(self::callGenieAcsApi("tasks?query={\"device\":\"$id\",\"name\":\"$action\"}", 'GET'))) {
+                // A factoryReset/reboot of device has already been scheduled, no need to spawn another task
+                return;
+            }
+
+            $success = self::callGenieAcsApi("devices/$id/tasks?connection_request", 'POST', "{ \"name\" : \"$action\" }");
             if (! $success) {
-                \Session::push('tmp_warning_above_form', trans('messages.modem_restart_error'));
+                \Session::push('tmp_error_above_form', trans('messages.modem_restart_error'));
 
                 return;
             }
@@ -1136,9 +1259,8 @@ class Modem extends \BaseModel
             }
 
             if ($fqdn == $ip) {
-                \Log::error("Could not restart $this->hostname. DNS server can not resolve hostname.");
-
-                return;
+                \Session::push('tmp_warning_above_form', trans('messages.modem_restart_warning_dns'));
+                throw new \Exception(trans('messages.modem_restart_warning_dns'));
             }
 
             if (! $netgw) {
@@ -1193,7 +1315,7 @@ class Modem extends \BaseModel
                     (strpos($e->getMessage(), 'snmpset(): No response from') !== false)) ||
                     // this is not necessarily an error, e.g. the modem was deleted (i.e. Cisco) and user clicked on restart again
                     (strpos($e->getMessage(), 'noSuchName') !== false)) {
-                    \Session::push('tmp_warning_above_form', trans('messages.modem_restart_error'));
+                    \Session::push('tmp_error_above_form', trans('messages.modem_restart_error'));
                 } else {
                     // Inform and log for all other exceptions
                     \Session::push('tmp_error_above_form', \App\Http\Controllers\BaseViewController::translate_label('Unexpected exception').': '.$e->getMessage());
@@ -1203,12 +1325,66 @@ class Modem extends \BaseModel
     }
 
     /**
+     * Disconnect PPPoE devices via Disconnect Request against NAS
+     *
+     * This is comparable to clear cable modem reset/delete, since only the
+     * session is stopped the devices itself won't reboot, rather just reconnect
+     *
+     * @return true if succesfully disconnected, otherwise false
+     *
+     * @author Ole Ernst
+     */
+    private function successfulRadiusModemDisconnect(): bool
+    {
+        if (! $this->isPPP()) {
+            return false;
+        }
+
+        $cur = $this->radacct()->latest('radacctid')->first();
+
+        // no active PPP session or necessary fields aren't set
+        if (! $cur || $cur->acctstoptime || ! $cur->nasipaddress || ! $cur->acctsessionid || ! $cur->username) {
+            return false;
+        }
+
+        $netgw = NetGw::where('ip', $cur->nasipaddress)->first();
+
+        // no NetGw of PPP session found, NetGw has no NAS assigned, NAS has no secret or Change of Authorization port not set
+        if (! $netgw || ! $netgw->nas || ! $netgw->nas->secret || ! $netgw->coa_port) {
+            \Session::push('tmp_warning_above_form', trans('messages.modem_disconnect_radius_warning'));
+
+            return false;
+        }
+
+        // https://tools.ietf.org/html/rfc5176#section-3
+        // https://wiki.freeradius.org/protocol/Disconnect-Messages#example-disconnect-request
+        $cmd = "echo 'Acct-Session-Id={$cur->acctsessionid}, User-Name={$cur->username}, NAS-IP-Address={$cur->nasipaddress}' | radclient -r1 -t1 -s {$netgw->ip}:{$netgw->coa_port} disconnect {$netgw->nas->secret}";
+
+        exec($cmd, $out, $ret);
+
+        if ($ret !== 0) {
+            \Session::push('tmp_error_above_form', implode('<br>', $out));
+
+            return false;
+        }
+
+        \Session::push('tmp_info_above_form', trans('messages.modem_disconnect_radius_success'));
+
+        return true;
+    }
+
+    /**
      * Perform a factory reset on a TR-069 device
      *
      * @author: Ole Ernst
      */
     public function factoryReset()
     {
+        // Don't perform automatic factory reset
+        if (! ProvBase::first()->auto_factory_reset) {
+            return;
+        }
+
         return $this->restart_modem(false, false, true);
     }
 
@@ -1282,6 +1458,33 @@ class Modem extends \BaseModel
         return $ret;
     }
 
+    /**
+     * Get Pre-equalization data of a modem via cacti
+     *
+     * @return: Array
+     * @author: John Adebayo
+     */
+    public function get_preq_data()
+    {
+        $domain = $this->domainName ?: ProvBase::first()->domain_name;
+        $file = "/usr/share/cacti/rra/$this->hostname.$domain.json";
+
+        if (! file_exists($file)) {
+            return ['No pre-equalization data found'];
+        }
+
+        $preq = json_decode(file_get_contents($file), true);
+
+        if (empty($preq['energy']) || empty($preq['fft']) || empty($preq['feature'])) {
+            return ['No pre-equalization data found'];
+        }
+
+        $preq['axis'] = range(-0.5, 0.5, 1 / 128);
+        $preq['chart'] = array_fill(0, count($preq['energy']), floor(min($preq['energy'])));
+
+        return $preq;
+    }
+
     /*
      * Return actual modem state as string or int
      *
@@ -1299,7 +1502,7 @@ class Modem extends \BaseModel
             }
         }
 
-        if ($this->us_pwr > \Modules\HfcCustomer\Entities\ModemHelper::$single_critical_us) {
+        if ($this->us_pwr > config('hfccustomer.threshhold.single.us.critical')) {
             if ($return_type == 'string') {
                 return 'critical';
             } else {
@@ -1307,7 +1510,7 @@ class Modem extends \BaseModel
             }
         }
 
-        if ($this->us_pwr > \Modules\HfcCustomer\Entities\ModemHelper::$single_warning_us) {
+        if ($this->us_pwr > config('hfccustomer.threshhold.single.us.warning')) {
             if ($return_type == 'string') {
                 return 'warning';
             } else {
@@ -1394,31 +1597,6 @@ class Modem extends \BaseModel
     }
 
     /**
-     * Calculates the great-circle distance between this and $modem, with
-     * the Haversine formula.
-     *
-     * see https://stackoverflow.com/questions/514673/how-do-i-open-a-file-from-line-x-to-line-y-in-php#tab-top
-     *
-     * @return float Distance between points in [m] (same as earthRadius)
-     */
-    private function _haversine_great_circle_distance($modem)
-    {
-        // convert from degrees to radians
-        $latFrom = deg2rad($this->y);
-        $lonFrom = deg2rad($this->x);
-        $latTo = deg2rad($modem->y);
-        $lonTo = deg2rad($modem->x);
-
-        $latDelta = $latTo - $latFrom;
-        $lonDelta = $lonTo - $lonFrom;
-
-        $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) + cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
-
-        // earth radius
-        return $angle * 6371000;
-    }
-
-    /**
      * Clean modem from all envia TEL related data – call this e.g. if you delete the last number from this modem.
      * We have to do this to avoid problems in case we want to install this modem at another customer
      *
@@ -1444,7 +1622,7 @@ class Modem extends \BaseModel
     {
         $ids = [0];
         foreach (DB::table('modem')->select('id', 'x', 'y')->where('deleted_at', null)->get() as $modem) {
-            if ($this->_haversine_great_circle_distance($modem) < $radius) {
+            if (distanceLatLong($this->y, $this->x, $modem->y, $modem->x) < $radius) {
                 array_push($ids, $modem->id);
             }
         }
@@ -1634,22 +1812,22 @@ class Modem extends \BaseModel
             return;
         }
 
-        // add RadCheck, if it doesn't exist
-        if (! $this->radcheck()->count()) {
-            $psw = $this->ppp_password;
-            if (! $psw) {
-                $psw = \Acme\php\Password::generate_password();
-                // update ppp_password without invoking the observer
-                self::where('id', $this->id)->update(['ppp_password' => $psw]);
-                // set $this->ppp_password as well to keep model in sync, e.g. getDirty()
-                $this->ppp_password = $psw;
-            }
+        // renew RadCheck, if non-exisiting or not as expected
+        if ($this->radcheck()->count() != 2) {
+            $this->radcheck()->delete();
 
             $check = new RadCheck;
             $check->username = $this->ppp_username;
             $check->attribute = 'Cleartext-Password';
             $check->op = ':=';
-            $check->value = $psw;
+            $check->value = $this->ppp_password;
+            $check->save();
+
+            $check = new RadCheck;
+            $check->username = $this->ppp_username;
+            $check->attribute = 'Pool-Name';
+            $check->op = ':=';
+            $check->value = $this->public ? 'CPEPub' : 'CPEPriv';
             $check->save();
 
             return;
@@ -1672,7 +1850,7 @@ class Modem extends \BaseModel
      */
     private function updateRadUserGroups()
     {
-        if ($this->deleted_at || ! $this->isPPP() || ! $this->internet_access) {
+        if ($this->deleted_at || ! $this->isPPP() || ! $this->internet_access || ! $this->qos_id) {
             $this->radusergroups()->delete();
 
             return;
@@ -1683,7 +1861,10 @@ class Modem extends \BaseModel
             $this->radusergroups()->delete();
 
             // default and QoS-specific group
-            foreach ([RadGroupReply::$defaultGroup, $this->qos_id] as $groupname) {
+            foreach (array_unique([RadGroupReply::$defaultGroup, $this->qos_id]) as $groupname) {
+                if ($groupname === null) {
+                    continue;
+                }
                 $group = new RadUserGroup;
                 $group->username = $this->ppp_username;
                 $group->groupname = $groupname;
@@ -1714,158 +1895,350 @@ class Modem extends \BaseModel
         $this->updateRadCheck();
         $this->updateRadUserGroups();
     }
-}
 
-/**
- * Modem Observer Class
- * Handles changes on CMs, can handle:
- *
- * 'creating', 'created', 'updating', 'updated',
- * 'deleting', 'deleted', 'saving', 'saved',
- * 'restoring', 'restored',
- */
-class ModemObserver
-{
-    public function created($modem)
+    /**
+     * Get base data for Modem analysis page
+     *
+     * @return array
+     */
+    public function getAnalysisBaseData($api = false)
     {
-        Log::debug(__METHOD__.' started for '.$modem->hostname);
+        $this->domainName = ProvBase::first()->domain_name;
+        $mac = strtolower($this->mac);
+        $eventlog = null;
 
-        if (Module::collections()->has('PropertyManagement')) {
-            $modem->updateAddressFromProperty();
+        $genieCmds[json_encode(['name' => 'factoryReset'])] = trans('messages.factory_reset');
+
+        if ($this->isTR069()) {
+            $prov = json_decode(Modem::callGenieAcsApi("provisions/?query={\"_id\":\"prov-{$this->id}\"}", 'GET'));
+
+            if ($prov && isset($prov[0]->script)) {
+                $configfile['text'] = preg_split('/\r\n|\r|\n/', $prov[0]->script);
+
+                preg_match_all('/^cmd;(.*)$/m', $this->configfile->text, $match);
+                foreach ($match[1] as $match) {
+                    $match = explode(';', trim($match));
+                    if (count($match) != 3) {
+                        continue;
+                    }
+                    $val = array_shift($match);
+                    $key = json_encode([
+                        'name' => 'setParameterValues',
+                        'parameterValues' => [$match],
+                    ]);
+                    $genieCmds[$key] = $val;
+                }
+            } else {
+                $configfile['text'] = [];
+            }
+        } else {
+            $configfile = Modem::getConfigfileText("/tftpboot/cm/$this->hostname");
         }
 
-        $hostname = ($modem->isPPP() ? 'ppp-' : 'cm-').$modem->id;
-        $modem->hostname = $hostname;
+        $onlineStatus = $this->onlineStatus();
+        // return $ip and $online
+        foreach ($onlineStatus as $name => $value) {
+            $$name = $value;
+        }
 
-        // always set hostname, even if updating() fails (e.g php warning)
-        // this is needed for a consistent dhcpd config
-        Modem::where('id', $modem->id)->update(['hostname' => $hostname]);
+        if (\Request::has('offline')) {
+            $online = false;
+        }
 
-        $modem->updateRadius();
+        if ($online) {
+            if ($modemConfigfileStatus = $this->configfileStatus()) {
+                $dash['modemConfigfileStatus'] = $modemConfigfileStatus;
+            }
 
-        $modem->save();  // forces to call the updating() and updated() method of the observer !
+            $eventlog = $this->get_eventlog();
+        }
 
-        Modem::create_ignore_cpe_dhcp_file();
+        // time of this function should be observed - can take a huge time as well
+        $dash['modemServicesStatus'] = $this->servicesStatus($configfile);
 
-        if (Module::collections()->has('ProvMon')) {
-            Log::info("Create cacti diagrams for modem: $modem->hostname");
-            \Artisan::call('nms:cacti', ['--netgw-id' => 0, '--modem-id' => $modem->id]);
+        // Log dhcp (discover, ...), tftp (configfile or firmware)
+        // NOTE: This function takes a long time if syslog file is large - 0.4 to 0.6 sec
+        $search = $ip ? "$mac|$this->hostname[^0-9]|$ip " : "$mac|$this->hostname[^0-9]";
+        $log = getSyslogEntries($search, '| grep -v MTA | grep -v CPE | tail -n 30  | tac');
+        $lease['text'] = self::searchLease("hardware ethernet $mac");
+        $lease = $this->validateLease($lease);
+
+        if ($api) {
+            return compact('online', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'ip');
+        }
+
+        $floodPing = ModemController::floodPing($ip);
+
+        $tabs = $this->analysisTabs();
+        $pills = ['log', 'lease', 'configfile', 'eventlog'];
+        $view_header = 'Modem-'.trans('view.analysis');
+        $this->help = 'modem_analysis';
+        $modem = $this;
+
+        return compact('online', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'ip',
+            'floodPing', 'genieCmds', 'modem', 'pills', 'tabs', 'view_header');
+    }
+
+    /**
+     * Determine if modem runs with/has already downloaded actual configfile
+     *
+     * @param object Modem
+     */
+    public function configfileStatus()
+    {
+        if (Configfile::where('id', $this->configfile_id)->first()->device == 'tr069') {
+            return;
+        }
+
+        $path = '/var/log/nmsprime/tftpd-cm.log';
+        $ts_cf = filemtime("/tftpboot/cm/$this->hostname.cfg");
+
+        $hostname = escapeshellarg($this->hostname);
+
+        $ts_dl = exec("zgrep $hostname $path | tail -1 | cut -d' ' -f1");
+
+        if (! $ts_dl) {
+            // get all but the current logfile, order them descending by file modification time
+            // we assume that logrotate adds "-TIMESTAMP" to the logfiles name
+            $logfiles = glob("$path-*");
+            usort($logfiles, function ($a, $b) {
+                return filemtime($b) - filemtime($a);
+            });
+
+            foreach ($logfiles as $path) {
+                // get the latest line indicating a configfile download
+                $ts_dl = exec("zgrep $hostname $path | tail -1 | cut -d' ' -f1");
+
+                if ($ts_dl) {
+                    break;
+                }
+            }
+        }
+
+        if (! $ts_dl) {
+            // inform the user that last download was to long ago to check if the configfile is up-to-date
+            return ['bsclass' => 'info', 'text' => trans('messages.modemAnalysis.missingLD')];
+        }
+
+        if ($ts_dl <= $ts_cf) {
+            return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.cfOutdated')];
         }
     }
 
-    public function updating($modem)
+    /**
+     * Get contents, mtime of configfile and warn if it is outdated
+     *
+     * @author  Ole Ernst
+     * @param   path    String  Path of the configfile excluding its extension
+     * @return  array
+     */
+    public static function getConfigfileText($path)
     {
-        Log::debug(__METHOD__.' started for '.$modem->hostname);
-
-        // reminder: on active envia TEL module: moving modem to other contract is not allowed!
-        // check if this is running if you decide to implement moving of modems to other contracts
-        // watch Ticket LAR-106
-        if (Module::collections()->has('ProvVoipEnvia')) {
-            // updating is also called on create – so we have to check this
-            if ((! $modem->wasRecentlyCreated) && ($modem->isDirty('contract_id'))) {
-                // returning false should cancel the updating: verify this! There has been some problems with deleting modems – we had to put the logic in Modem::delete() probably caused by our Base* classes…
-                // see: http://laravel-tricks.com/tricks/cancelling-a-model-save-update-delete-through-events
-                return false;
-            }
-        }
-
-        if (! $modem->observer_enabled) {
+        if (! is_file("$path.conf") || ! is_file("$path.cfg")) {
             return;
         }
 
-        // get changed values
-        $diff = $modem->getDirty();
-
-        // if testing: do not try to geocode or position modems (faked data; slows down the process)
-        if (\App::runningUnitTests()) {
-            return;
+        if (filemtime("$path.conf") > filemtime("$path.cfg")) {
+            $conf['warn'] = trans('messages.configfile_outdated');
         }
 
-        // Use Updating to set the geopos before a save() is called.
-        // Notice: that we can not call save() in update(). This will re-trigger
-        //         the Observer and re-call update() -> endless loop is the result.
-        if (
-            ($modem->wasRecentlyCreated)    // new modem
-            ||
-            (multi_array_key_exists(['street', 'house_number', 'zip', 'city'], $diff))  // address changed
-        ) {
-            $modem->geocode(false);
-        } elseif (multi_array_key_exists(['x', 'y'], $diff)) {  // manually changed geodata
-            if (! \App::runningInConsole()) {    // change geocode_source only from MVC (and do not overwrite data from geocode command)
-                // set origin to username
-                $user = \Auth::user();
-                $modem->geocode_source = $user->first_name.' '.$user->last_name;
-            }
-        }
+        $conf['mtime'] = strftime('%c', filemtime("$path.cfg"));
 
-        // check if more values have changed – especially “x” and “y” which refreshes MPR
-        $diff = $modem->getDirty();
+        exec("docsis -d $path.cfg", $conf['text']);
+        $conf['text'] = str_replace("\t", '&nbsp;&nbsp;&nbsp;&nbsp;', $conf['text']);
 
-        // Refresh MPS rules
-        // Note: does not perform a save() which could trigger observer.
-        if (Module::collections()->has('HfcCustomer')) {
-            if (multi_array_key_exists(['x', 'y'], $diff)) {
-                // suppress output in this case
-                ob_start();
-                \Modules\HfcCustomer\Entities\Mpr::ruleMatching($modem);
-                ob_end_clean();
-            }
-        }
+        return $conf;
     }
 
-    public function updated($modem)
+    /**
+     * Get IP of Modem and ping it for Analysis page.
+     *
+     * @param   object \Modules\Provbase\Entities\Provbase - to reduce amount of DB queries when looping over all modems
+     * @author  Roy Schneider
+     * @return  array
+     */
+    public function onlineStatus($conf = null)
     {
-        Log::debug(__METHOD__.' started for '.$modem->hostname);
+        $hostname = $this->hostname.'.';
 
-        if (! $modem->observer_enabled) {
-            return;
+        if ($this->domainName) {
+            $hostname .= $this->domainName;
+        } elseif ($conf) {
+            $hostname .= $conf->domain_name;
+        } else {
+            $hostname .= ProvBase::first()->domain_name;
         }
 
-        // only restart, make dhcp and configfile and only restart dhcpd via systemdobserver when it's necessary
-        $diff = $modem->getDirty();
+        $ip = gethostbyname($hostname);
+        $ip = ($ip == $hostname) ? null : $ip;
 
-        if (multi_array_key_exists(['contract_id', 'public', 'internet_access', 'configfile_id', 'qos_id', 'mac'], $diff)) {
-            if (! $modem->isTR069()) {
-                Modem::create_ignore_cpe_dhcp_file();
-                $modem->make_dhcp_cm();
-                $modem->restart_modem(array_key_exists('mac', $diff));
+        if ($this->isPPP()) {
+            $cur = $this->radacct()->latest('radacctid')->first();
+            if ($cur && ! $cur->acctstoptime) {
+                $ip = $hostname = $cur->framedipaddress;
             }
-            $modem->make_configfile();
+
+            // workaround for tr069 devices, which block ICMP requests,
+            // but listen on the HTTP(s) / SSH ports
+            $con = null;
+            foreach ([80, 443, 22] as $port) {
+                try {
+                    $con = fsockopen($ip, $port, $errno, $errstr, 1);
+                } catch (\Exception $e) {
+                    continue;
+                }
+
+                if ($con) {
+                    fclose($con);
+
+                    return ['ip' => $ip, 'online' => true];
+                }
+            }
         }
 
-        $modem->updateRadius();
+        // Ping: Only check if device is online
+        // takes approx 0.1 sec
+        exec('sudo ping -c1 -i0 -w1 '.$hostname, $ping, $ret);
 
-        // ATTENTION:
-        // If we ever think about moving modems to other contracts we have to delete envia TEL related stuff, too –
-        // check contract_ext* and installation_address_change_date
-        // moving then should only be allowed without attached phonenumbers and terminated envia TEL contract!
-        // cleaner in Patrick's opinion would be to delete and re-create the modem
-
-        if (array_key_exists('apartment_id', $diff)) {
-            $modem->updateAddressFromProperty();
-        }
+        return ['ip' => $ip, 'online' => $ret ? false : true];
     }
 
-    public function deleted($modem)
+    /**
+     * Returns the lease entry that contains the search parameter
+     *
+     * TODO: make a seperate class for dhcpd
+     * lease stuff (search, replace, ..)
+     *
+     * @return array    of lease entry strings
+     */
+    public static function searchLease(string $search): array
     {
-        Log::debug(__METHOD__.' started for '.$modem->hostname);
+        $ret = [];
 
-        if ($modem->isTR069()) {
-            $modem->deleteGenieAcsProvision();
-            $modem->deleteGenieAcsPreset();
-            $modem->factoryReset();
+        if (! $search) {
+            return $ret;
         }
 
-        $modem->updateRadius();
+        // parse dhcpd.lease file
+        $file = file_get_contents('/var/lib/dhcpd/dhcpd.leases');
+        // start each lease with a line that begins with "lease" and end with a line that begins with "{"
+        preg_match_all('/^lease(.*?)(^})/ms', $file, $section);
 
-        if ($modem->isPPP()) {
+        // fetch all lines matching hw mac
+        foreach (array_unique($section[0]) as $s) {
+            if (strpos($s, $search)) {
+                $s = str_replace('  ', '&nbsp;&nbsp;', $s);
+
+                // push matching results
+                array_push($ret, preg_replace('/\r|\n/', '<br/>', $s));
+            }
+        }
+
+        // handle multiple lease entries
+        // actual strategy: if possible grep active lease, otherwise return all entries
+        //                  in reverse ordered format from dhcpd.leases
+        if (count($ret) > 1) {
+            foreach ($ret as $text) {
+                if (preg_match('/starts \d ([^;]+);.*;binding state active;/', $text, $match)) {
+                    $start[] = $match[1];
+                    $lease[] = $text;
+                }
+            }
+
+            if (isset($start)) {
+                // return the most recent active lease
+                natsort($start);
+                end($start);
+
+                return [$lease[key($start)]];
+            }
+        }
+
+        return $ret;
+    }
+
+    /**
+     * Proves if the last found lease is actually valid or has already expired
+     */
+    public static function validateLease($lease, $type = null)
+    {
+        if ($lease['text'] && $lease['text'][0]) {
+            // calculate endtime
+            preg_match('/ends [0-6] (.*?);/', $lease['text'][0], $endtime);
+            $et = explode(',', str_replace([':', '/', ' '], ',', $endtime[1]));
+            $endtime = \Carbon\Carbon::create($et[0], $et[1], $et[2], $et[3], $et[4], $et[5], 'UTC');
+
+            // lease calculation
+            // take care changing the state - it's used under cpe analysis
+            $lease['state'] = 'green';
+            $lease['forecast'] = "$type has a valid lease.";
+            if ($endtime < \Carbon\Carbon::now()) {
+                $lease['state'] = 'red';
+                $lease['forecast'] = 'Lease is out of date';
+            }
+        } else {
+            $lease['state'] = 'red';
+            $lease['forecast'] = trans('messages.modem_lease_error');
+        }
+
+        return $lease;
+    }
+
+    /**
+     * Determine modem status of internet access and telephony for analysis dashboard
+     *
+     * @param array     Lines of Configfile
+     * @return array    Color & status text
+     */
+    public function servicesStatus($config)
+    {
+        if ($this->configfile->device == 'tr069') {
             return;
         }
 
-        // $modem->make_dhcp_cm_all();
-        Modem::create_ignore_cpe_dhcp_file();
-        $modem->make_dhcp_cm(true);
-        $modem->restart_modem();
-        $modem->delete_configfile();
+        if (! $config || ! isset($config['text']) || isset($config['warn'])) {
+            return ['bsclass' => 'danger',
+                'text' => $config['warn'] ?? trans('messages.modemAnalysis.cfError'),
+                'instructions' => "docsis -e /tftpboot/cm/{$this->hostname}.conf /tftpboot/keyfile /tftpboot/cm/{$this->hostname}.cfg",
+            ];
+        }
+
+        $networkAccess = preg_grep('/NetworkAccess \d/', $config['text']);
+        preg_match('/NetworkAccess (\d)/', end($networkAccess), $match);
+        $networkAccess = $match[1];
+
+        // Internet and voip blocked
+        if (! $networkAccess) {
+            return ['bsclass' => 'warning', 'text' => trans('messages.modemAnalysis.noNetworkAccess')];
+        }
+
+        $maxCpe = preg_grep('/MaxCPE \d/', $config['text']);
+        preg_match('/MaxCPE (\d)/', end($maxCpe), $match);
+        $maxCpe = $match[1];
+
+        $cpeMacs = preg_grep('/CpeMacAddress (.*?);/', $config['text']);
+
+        // Internet and voip allowed
+        if ($maxCpe > count($cpeMacs)) {
+            return ['bsclass' => 'success', 'text' => trans('messages.modemAnalysis.fullAccess')];
+        }
+
+        // Only voip allowed
+        // Check if configfile contains a different CPE MTA than the MTAs have - this case is actually [2019-03-06] not valid
+        $mtaMacs = $this->mtas->each(function ($mac) {
+            $mac->mac = strtolower($mac->mac);
+        })->pluck('mac')->all();
+
+        foreach ($cpeMacs as $line) {
+            preg_match('/CpeMacAddress (.*?);/', $line, $match);
+
+            $cpeMac = strtolower($match[1]);
+
+            if (! in_array($cpeMac, $mtaMacs)) {
+                return ['bsclass' => 'info', 'text' => trans('messages.modemAnalysis.cpeMacMissmatch')];
+            }
+        }
+
+        return ['bsclass' => 'info', 'text' => trans('messages.modemAnalysis.onlyVoip')];
     }
 }

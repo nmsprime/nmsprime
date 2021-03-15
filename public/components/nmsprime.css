@@ -31,6 +31,10 @@ input[type="checkbox"].form-control:checked:after {
 	font-size: 26px;
 }
 
+.noHover {
+    pointer-events: none;
+}
+
 /* Selectv2 responsive */
 .select2-container {
     width: 100% !important;
@@ -148,7 +152,7 @@ input[type="checkbox"].form-control:checked:after {
 }
 .navbar .search-form .search-btn,
 .navbar .search-form .close {
-    position: absolute;
+    position: relative;
     left: 0;
     top: 0;
     bottom: 0;
@@ -162,6 +166,10 @@ input[type="checkbox"].form-control:checked:after {
     padding: 0;
     outline: none;
 }
+.search-btn {
+    margin-top: 6px;
+    margin-left: 5px;
+}
 .navbar .search-form .search-btn i, .navbar .search-form .close i {
     line-height: 60px;
 }
@@ -171,9 +179,13 @@ input[type="checkbox"].form-control:checked:after {
     box-shadow: none;
     border-radius: 0;
     color: #212121;
-    padding-left: 60px;
+    padding-left: 140px;
     padding-right: 60px;
     font-size: 16px;
+}
+.navbar .search-form .form-open .btn-group,
+.navbar .search-form .form-open .form-control {
+    top: 11px;
 }
 .navbar .search-form .form-control {
     position: absolute;
@@ -534,6 +546,10 @@ table .index_check {
     display: block;
 }
 
+li.expand div img {
+    filter: none !important;
+}
+
 #page-container.page-sidebar-minified .nav li i.fa+span{
   display: none;
 }
@@ -657,6 +673,8 @@ ul.nav.nav-pills li {
     margin: 5px;
     padding: 10px;
     width: 45%;
+    height: auto;
+    border: none;
 }
 .dragdropfield .h {
     cursor: pointer;
@@ -668,12 +686,17 @@ ul.nav.nav-pills li {
     background: transparent;
     border: 0;
 }
-.dragdropfield .listitem div {
+.dragdropfield .dragdroplistitem div {
     margin: 5px;
     padding: 10px;
     background: #f2f2f2;
 }
-.dragdropfield .listitem input {
+.dragdropfield .dragdroplistitem input {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+}
+.dragdropfield .dragdroplistitem select {
     display: block;
     box-sizing: border-box;
     width: 100%;
@@ -684,8 +707,135 @@ ul.nav.nav-pills li {
 .dragdropfield .newlist {
     margin-top: 12px;
 }
-@media(max-width: 800px) {
+@media (max-width: 800px) {
     .dragdropfield .box {
         width: 100%;
     }
+}
+@media (min-width: 1600px) {
+    .d-wide-table-cell {
+        display: table-cell !important;
+    }
+
+    .d-wide-block {
+        display: block !important;
+    }
+
+    .d-wide-none {
+        display: none !important;
+    }
+}
+@media (min-width: 1200px) and (max-width: 1699px) {
+    .breakAll {
+        word-break: break-all;
+    }
+}
+.dragdropinfo {
+    font-size: 28px;
+}
+.dragdroplistitem {
+    position: relative;
+}
+.dragdropitembutton {
+    float: right;
+    cursor: pointer;
+}
+.dragdropitemmenubox {
+    padding: 0 !important;
+    display: none;
+    text-align: left;
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+    position: absolute;
+    right: 0;
+    z-index: 2;
+}
+.dragdropitemmenubutton {
+    padding: 5px;
+    border-top: 1px solid #ccc;
+    display: block;
+    cursor: pointer;
+}
+.dragdropitemmenubutton:hover {
+    background: #f5f5f5;
+}
+#ddsearch {
+    margin: 0 0 5px 0;
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.box {
+    border: 1px solid grey;
+    height: 25px;
+}
+
+div.recolor:hover img {
+    filter: none !important;
+}
+
+@media print {
+    #Edit {
+        width: 170mm !important;
+    }
+
+    a[data-toggle="popover"], textarea:empty, .btn, .panel-heading-btn .select2-selection__arrow, .clearfix {
+        display: none !important;
+    }
+
+    .form-group {
+        display: flex !important;
+    }
+
+    #page-container, #content, .card, .card-block, .tab-content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .form-control, .select2-selection {
+        border: none !important;
+    }
+
+    .col, .col-1, .col-10, .col-11, .col-12, .col-2, .col-3, .col-4, .col-5, .col-6, .col-7, .col-8, .col-9, .col-auto, .col-lg, .col-lg-1, .col-lg-10, .col-lg-11, .col-lg-12, .col-lg-2, .col-lg-3, .col-lg-4, .col-lg-5, .col-lg-6, .col-lg-7, .col-lg-8, .col-lg-9, .col-lg-auto, .col-md, .col-md-1, .col-md-10, .col-md-11, .col-md-12, .col-md-2, .col-md-3, .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9, .col-md-auto, .col-sm, .col-sm-1, .col-sm-10, .col-sm-11, .col-sm-12, .col-sm-2, .col-sm-3, .col-sm-4, .col-sm-5, .col-sm-6, .col-sm-7, .col-sm-8, .col-sm-9, .col-sm-auto, .col-xl, .col-xl-1, .col-xl-10, .col-xl-11, .col-xl-12, .col-xl-2, .col-xl-3, .col-xl-4, .col-xl-5, .col-xl-6, .col-xl-7, .col-xl-8, .col-xl-9, .col-xl-auto {
+        width: unset !important;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+/* Small devices - Smartphones, tablets */
+#mapid, #map {
+    min-height: 80vh;
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+    #mapid, #map {
+        min-height: 50vh;
+    }
+}
+
+
+#nmsprime-brand {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    max-width: 30vh;
+}
+
+#login-img {
+    max-width: initial;
+}
+
+.sidebar .sub-menu:before {
+    background: transparent;
+}
+
+.sidebar .sub-menu.line:before {
+    background: #10181F;
+}
+
+.sidebar .sub-menu.sub-line:before {
+    left: 4px;
 }

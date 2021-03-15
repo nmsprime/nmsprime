@@ -31,9 +31,11 @@ class MtaController extends \BaseController
 //                    if($last_mta = $modem->mtas()->orderBy('updated_at', 'desc')->first()){
 //                        $mac = $last_mta->mac;
 //                    }
-                    $dec_mac = hexdec($mac);
-                    $dec_mac++;
-                    $mac = rtrim(strtoupper(chunk_split(str_pad(dechex($dec_mac), 12, '0', STR_PAD_LEFT), 2, ':')), ':');
+                    if ($mac) {
+                        $dec_mac = hexdec($mac);
+                        $dec_mac++;
+                        $mac = rtrim(strtoupper(chunk_split(str_pad(dechex($dec_mac), 12, '0', STR_PAD_LEFT), 2, ':')), ':');
+                    }
                 }
             }
         }
@@ -56,7 +58,7 @@ class MtaController extends \BaseController
     {
         $data = parent::prepare_input($data);
 
-        return unify_mac($data);
+        return unifyMac($data);
     }
 
     /**
@@ -72,16 +74,10 @@ class MtaController extends \BaseController
         \Session::put('Edit', 'MTA');
 
         $tabs = parent::editTabs($model);
+        $analysisTabs = $model->modem->analysisTabs();
+        unset($analysisTabs[0]);
 
-        if (\Module::collections()->has('ProvMon') && \Bouncer::can('view_analysis_pages_of', Modem::class)) {
-            array_push($tabs,
-                ['name' => 'Analyses', 'route' => 'ProvMon.index', 'link' => $model->modem_id],
-                ['name' => 'CPE-Analysis', 'route' => 'ProvMon.cpe', 'link' => $model->modem_id],
-                ['name' => 'MTA-Analysis', 'route' => 'ProvMon.mta', 'link' => $model->modem_id]
-            );
-        }
-
-        return $tabs;
+        return array_merge($tabs, $analysisTabs);
     }
 
     /**
@@ -94,22 +90,25 @@ class MtaController extends \BaseController
     public function api_restart($ver, $id)
     {
         if ($ver !== '0') {
-            return response()->json(['ret' => "Version $ver not supported"]);
+            return response()->v0ApiReply(['messages' => ['errors' => ["Version $ver not supported"]]]);
         }
 
-        if (! $mta = static::get_model_obj()->find($id)) {
-            return response()->json(['ret' => 'Object not found']);
-        }
-
+        $mta = static::get_model_obj()->findOrFail($id);
         $mta->restart();
 
-        $err = collect([
-            \Session::get('tmp_info_above_form'),
-            \Session::get('tmp_warning_above_form'),
-            \Session::get('tmp_error_above_form'),
-        ])->collapse()
-        ->implode(', ');
+        return response()->v0ApiReply([], true, $id);
+    }
 
-        return response()->json(['ret' => $err ?: 'success']);
+    public function prepare_rules($rules, $data)
+    {
+        $modem = Modem::where('id', $data['modem_id'])->with('configfile')->first();
+
+        if ($modem->configfile->device == 'cm') {
+            $id = $data['id'] ?? null;
+            $rules['mac'][] = 'required';
+            $rules['mac'][] = 'unique:mta,mac,'.$id.',id,deleted_at,NULL'; //|unique:mta,mac',
+        }
+
+        return parent::prepare_rules($rules, $data);
     }
 }

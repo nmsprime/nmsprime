@@ -1,16 +1,12 @@
 <?php
 
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
+
 /**
- * An improved version of laravel's dd() function
- * This will first print some meta information about the caller of dd
- * and then passes all given arguments to the original dd() function
- *
- * Background: I tend to have multiple dd() calls on debugging. Sometimes
- * it is hard to find all of those again ;-)
- *
- * To enable functions within this file run composer dump-auto (if it is autoloaded by composer.json)
- *
- * @author Patrick Reichel
+ * Due to the new Iginition Error Page, the ddd function exists, which does the
+ * same and more than the legacy d() method. This is kept for convinience and
+ * to quickly access this function.
  */
 function d()
 {
@@ -22,11 +18,11 @@ function d()
     echo '<table>';
     echo '<tr>';
     echo $td.'File: </td>';
-    echo $td.array_get($bt[0], 'file', 'n/a').', line '.array_get($bt[0], 'line', 'n/a').'</td>';
+    echo $td.Arr::get($bt[0], 'file', 'n/a').', line '.Arr::get($bt[0], 'line', 'n/a').'</td>';
     echo '</tr>';
     echo '<tr>';
     echo $td.'Method: </td>';
-    echo $td.array_get($bt[1], 'class', 'n/a').'::'.array_get($bt[1], 'function', 'n/a').'()</td>';
+    echo $td.Arr::get($bt[1], 'class', 'n/a').'::'.Arr::get($bt[1], 'function', 'n/a').'()</td>';
     echo '</tr>';
     echo '</table>';
 
@@ -42,12 +38,69 @@ function d()
  *
  * @author Ole Ernst
  */
-function unify_mac($data)
+function unifyMac($data)
 {
+    // return since we don't want to modify null into ''
+    if (! $data['mac']) {
+        return $data;
+    }
+
     $data['mac'] = preg_replace('/[^a-f\d]/i', '', $data['mac']);
     $data['mac'] = wordwrap($data['mac'], 2, ':', true);
 
     return $data;
+}
+
+/**
+ * Try retrieving values via SNMP without throwing exceptions.
+ *
+ * Multiple SNMP sessions (e.g v2 and v1) and OIDs can be supplied.
+ * Once a session or OID leads to a non-exception the values will be processed
+ * according to the divisor and the callback function (including its arguments).
+ *
+ * First all sessions will be tried for the first OID, afterwards the next OID
+ * will be tried with all sessions.
+ */
+function snmpWrapper($trySessions, $tryOids, $div = null, $callback = null, $arg = null)
+{
+    // Try the first OID with the various SNMP sessions
+    // if none provide a result try the next OID with all sessions
+    // stop on first non-exception
+    foreach ((array) $tryOids as $oid) {
+        foreach (is_array($trySessions) ? $trySessions : [$trySessions] as $session) {
+            try {
+                $values = $session->walk($oid, true);
+
+                // Only one value was retrieved via SNMP, thus the subtree prefix
+                // couldn't be removed from keys via walk(..., true);
+                if (count($values) == 1 && count($key = explode('.', array_key_first($values))) > 1) {
+                    $values = [end($key) => end($values)];
+                }
+
+                // Divide all values with the common divisor if possible
+                if (is_numeric($div) && $div != 0) {
+                    $values = array_map(function ($value) use ($div) {
+                        return $value / $div;
+                    }, $values);
+                }
+
+                if (! is_callable($callback)) {
+                    return $values;
+                }
+
+                // Apply callback if available
+                if ($arg) {
+                    return $callback($values, $arg);
+                } else {
+                    return $callback($values);
+                }
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+    }
+
+    return [];
 }
 
 /**
@@ -134,14 +187,14 @@ function concat_pdfs($sourcefiles, $target_fn, $multithreaded = false)
         $cnt = count(explode(' ', trim($sourcefiles)));
     }
 
-    ChannelLog::debug('billing', 'Concat '.$cnt.' PDFs to '.$target_fn);
+    Log::channel('billing')->debug('Concat '.$cnt.' PDFs to '.$target_fn);
 
     $cmd_ext = $multithreaded ? '> /dev/null 2>&1 & echo $!' : '';
     exec("gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile='$target_fn' $sourcefiles $cmd_ext", $output, $ret);
 
     // Note: normally output is [] and ret is 0
     if ($ret) {
-        ChannelLog::error('billing', "Error concatenating target file $target_fn", [$ret]);
+        Log::channel('billing')->error("Error concatenating target file $target_fn", [$ret]);
     }
 
     return $multithreaded ? (int) $output[0] : 0;
@@ -351,4 +404,69 @@ function humanFilesize($bytes, $dec = 2)
     $factor = floor((strlen($bytes) - 1) / 3);
 
     return sprintf("%.{$dec}f ", $bytes / pow(1024, $factor)).@$size[$factor];
+}
+
+/**
+ * Negates all values that are given as parameter
+ *
+ * @param int ...$values
+ * @return array
+ */
+function negate(int ...$values): array
+{
+    return array_map(function ($value) {
+        return -1 * $value;
+    }, $values);
+}
+
+/**
+ * Optimized algorithm from http://www.codexworld.com
+ * see https://stackoverflow.com/a/40929293
+ *
+ * @param float $latitudeFrom
+ * @param float $longitudeFrom
+ * @param float $latitudeTo
+ * @param float $longitudeTo
+ *
+ * @return float [m]
+ */
+function distanceLatLong($latitudeFrom, $longitudeFrom, $latitudeTo, $longitudeTo)
+{
+    $rad = M_PI / 180;
+    //Calculate distance from latitude and longitude
+    $theta = $longitudeFrom - $longitudeTo;
+    $dist = sin($latitudeFrom * $rad)
+        * sin($latitudeTo * $rad) + cos($latitudeFrom * $rad)
+        * cos($latitudeTo * $rad) * cos($theta * $rad);
+
+    return acos($dist) / $rad * 60 * 1853;
+}
+
+/**
+ * Helper to get Syslog entries dependent on what should be searched and discarded
+ *
+ * @param   search      String      to search
+ * @param   grep_pipes  String      restrict matches
+ * @return  array
+ *
+ * Attention: grep_pipes must not contain user input!
+ */
+function getSyslogEntries($search, $grep_pipes)
+{
+    $search = escapeshellarg($search);
+    // $grep_pipes = escapeshellarg($grep_pipes);
+
+    exec("egrep -i $search /var/log/messages $grep_pipes", $log);
+
+    if ($log) {
+        return $log;
+    }
+
+    // Logrotate was probably done during last hours -> consider older logfiles (e.g. /var/log/messages-20170904)
+    $files = glob('/var/log/messages-*');
+    if (! empty($files)) {
+        exec('egrep -i '.$search.' '.max($files).' '.$grep_pipes, $log);
+    }
+
+    return $log;
 }

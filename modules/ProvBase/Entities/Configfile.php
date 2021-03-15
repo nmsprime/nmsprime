@@ -2,10 +2,9 @@
 
 namespace Modules\ProvBase\Entities;
 
-use DB;
-use Log;
-use Schema;
-use Modules\ProvVoip\Entities\Phonenumber;
+use Illuminate\Support\Facades\Log;
+use Nwidart\Modules\Facades\Module;
+use Illuminate\Support\Facades\Schema;
 
 class Configfile extends \BaseModel
 {
@@ -15,8 +14,10 @@ class Configfile extends \BaseModel
     public $guarded = ['firmware_upload', 'import'];
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
+        $id = $this->id;
+
         return [
             'name' => 'required_without:import|unique:configfile,name,'.$id.',id,deleted_at,NULL',
             'text' => 'docsis',
@@ -55,7 +56,7 @@ class Configfile extends \BaseModel
     {
         parent::boot();
 
-        self::observe(new ConfigfileObserver);
+        self::observe(new \Modules\ProvBase\Observers\ConfigfileObserver);
     }
 
     /**
@@ -135,6 +136,7 @@ class Configfile extends \BaseModel
      *   Make Configfile Content for $this Object /
      *   without recursive objects
      *
+     * @todo atm $modem and $provbase is used because of the $$ and should be refactored
      * @param sw_up 	Bool 	true if Software upgrade statement is already set -> then the next one is discarded (child CF has priority)
      */
     private function __text_make($device, $type, $sw_up = false)
@@ -168,16 +170,15 @@ class Configfile extends \BaseModel
 
             // this is for modem's config files
             case 'modem':
-
                 $modem = [$device];
                 $qos = [$device->qos];
 
-                // Set test data rate if no qos is assigned - 1 Mbit
+                // Set test data rate if no qos is assigned - 250 kbit/s (i.e. VoIP only)
                 if (! $this->parent_id && ! $device->qos) {
                     $qos[0] = new Qos;
                     $qos[0]->id = 0;
-                    $qos[0]->ds_rate_max_help = 1024000;
-                    $qos[0]->us_rate_max_help = 512000;
+                    $qos[0]->ds_rate_max_help = 250000;
+                    $qos[0]->us_rate_max_help = 250000;
 
                     Log::warning("Modem $device->id has no qos assigned - use test data rate for Configfile.");
                 }
@@ -190,12 +191,17 @@ class Configfile extends \BaseModel
 
                 // if there is a specific firmware: add entries for upgrade
                 if ($this->firmware && ! $sw_up) {
-                    // $server_ip = ProvBase::first()['provisioning_server'];
-                    // array_push($config_extensions, "SnmpMibObject docsDevSwServerAddress.0 IPAddress $server_ip ; /* tftp server */");
-                    array_push($config_extensions, 'SnmpMibObject docsDevSwFilename.0 String "fw/'.$this->firmware.'"; /* firmware file to download */');
-                    array_push($config_extensions, 'SnmpMibObject docsDevSwAdminStatus.0 Integer 2; /* allow provisioning upgrade */');
-                    // array_push($config_extensions, 'SwUpgradeServer $server_ip;');
-                    array_push($config_extensions, 'SwUpgradeFilename "fw/'.$this->firmware.'";');
+                    /*
+                    $serverIP = ProvBase::first()['provisioning_server'];
+                    array_push($config_extensions, "SwUpgradeServer $serverIP;");
+                    array_push($config_extensions, "SnmpMibObject docsDevSwServer.0 IPAddress $serverIP;");
+                    $serverIP = dechex(ip2long($serverIP));
+                    array_push($config_extensions, "SnmpMibObject docsDevSwServerAddress.0 HexString 0x$serverIP;");
+                    array_push($config_extensions, 'SnmpMibObject docsDevSwServerAddressType.0 Integer 1;');
+                    */
+                    array_push($config_extensions, "SwUpgradeFilename \"fw/$this->firmware\";");
+                    array_push($config_extensions, "SnmpMibObject docsDevSwFilename.0 String \"fw/{$this->firmware}\";");
+                    array_push($config_extensions, 'SnmpMibObject docsDevSwAdminStatus.0 Integer 2;');
                     exec("openssl pkcs7 -print_certs -inform DER -in /tftpboot/fw/$this->firmware | openssl x509 -outform DER | xxd -p -c 254 | sed 's/^/MfgCVCData 0x/; s/$/;/'", $config_extensions);
                 }
 
@@ -203,7 +209,9 @@ class Configfile extends \BaseModel
 
             // this is for mtas
             case 'mta':
-
+                if (! Module::collections()->has('ProvVoip')) {
+                    break;
+                }
                 // same as above – arrays for later generic use
                 // they have to match database table names
                 $mta = [$device];
@@ -215,7 +223,7 @@ class Configfile extends \BaseModel
                 $avm = $hit ? true : false;
 
                 // get Phonenumbers to MTA
-                foreach (Phonenumber::where('mta_id', '=', $device->id)->orderBy('port')->get() as $phone) {
+                foreach (\Modules\ProvVoip\Entities\Phonenumber::where('mta_id', '=', $device->id)->orderBy('port')->get() as $phone) {
                     if (! $phone->active) {
                         $phone->active = 2;
 
@@ -243,9 +251,10 @@ class Configfile extends \BaseModel
                 $qos = [$device->qos];
                 $db_schemata['qos'][0] = Schema::getColumnListing('qos');
 
-                if (! $device->mtas->first()) {
+                if (! Module::collections()->has('ProvVoip') || ! $device->mtas->first()) {
                     break;
                 }
+
                 foreach ($device->mtas->first()->phonenumbers as $phone) {
                     // use the port number as primary index key, so {phonenumber.number.1} will be the phone with port 1, not id 1 !
                     $phonenumber[$phone->port] = $phone;
@@ -258,7 +267,7 @@ class Configfile extends \BaseModel
             default:
                 return false;
 
-        }	// switch
+        } // switch
 
         // Generate search and replace arrays
         $search = [];
@@ -319,27 +328,38 @@ class Configfile extends \BaseModel
      */
     protected static function _calc_eval($row, $match)
     {
+        // allow left-over {} in case of raw genieacs commands,
+        // since this might be valid code, e.g. {value: Date.now()}
+        if (\Str::startsWith($row, 'raw;')) {
+            return $row;
+        }
+
         $match = trim($match[0], '{}');
         $ops = explode(',', $match);
 
-        if (count($ops) != 3 || ! in_array($ops[1], ['+', '-', '*', '/', '?'])) {
-            return;
-        }
-
-        /*
-         * overwrite configfile variable {}, which couldn't be resolved
-         * via the database with a default value (i.e. $ops[2])
-         * syntax: {{phonenumber.active.1},?,2};
-         */
-        if ($ops[1] === '?') {
-            $res = \Str::contains($ops[0], '}') ? $ops[2] : $ops[0];
-        } elseif (is_numeric($ops[0]) || is_numeric($ops[2])) {
+        if (count($ops) == 3 &&
+            is_numeric($ops[0]) &&
+            in_array($ops[1], ['+', '-', '*', '/']) &&
+            is_numeric($ops[2])) {
             try {
                 $res = round(eval("return $ops[0] $ops[1] $ops[2];"));
             } catch (\Exception $e) {
                 // e.g. divide by zero
                 return;
             }
+        } elseif (count($ops) == 3 && $ops[1] == '?') {
+            /*
+            * Overwrite configfile variable {}, which couldn't be resolved
+            * via the database with a default value (i.e. $ops[2])
+            * syntax: {{phonenumber.active.1},?,2};
+            */
+            $res = \Str::contains($ops[0], '}') ? $ops[2] : $ops[0];
+        } elseif (count($ops) == 2) {
+            $res = substr($ops[0], intval($ops[1]));
+        } elseif (count($ops) == 3) {
+            $res = substr($ops[0], intval($ops[1]), intval($ops[2]));
+        } else {
+            return;
         }
 
         return preg_replace('/\\{.*\\}/im', $res, $row);
@@ -380,7 +400,7 @@ class Configfile extends \BaseModel
             $modem->make_configfile();
         }
 
-        $mtas = $this->mtas;		// This should be a one-to-one relation
+        $mtas = $this->mtas; // This should be a one-to-one relation
         foreach ($mtas as $mta) {
             $mta->make_configfile();
         }
@@ -408,7 +428,7 @@ class Configfile extends \BaseModel
      * @author Ole Ernst
      *
      * NOTE: DB::table would reduce time again by 30%, setting index_delete_disabled of CFs
-     *	instead of creating used_ids array slows function down
+     *       instead of creating used_ids array slows function down
      */
     public static function undeletables()
     {
@@ -457,7 +477,7 @@ class Configfile extends \BaseModel
 
         // MTA
         if (! $filter || $filter == 'mta') {
-            if (! \Module::collections()->has('ProvVoip')) {
+            if (! Module::collections()->has('ProvVoip')) {
                 return;
             }
 
@@ -487,82 +507,18 @@ class Configfile extends \BaseModel
     }
 
     /**
-     * Get monitoring config based on the json string found in the configfile
+     * Get monitoring config based on the json string found in the monitoring
+     * column of a configfile
      *
      * @author Ole Ernst
      */
-    public function getMonitoringConfig()
+    public function getMonitoringConfig(): array
     {
-        if (! preg_match('/#monitoring:({.*})/', $this->text, $matches)) {
-            return false;
-        }
-
-        $conf = json_decode($matches[1], true);
-        if (! $conf) {
-            return false;
+        $conf = json_decode($this->monitoring, true);
+        if ($conf === null) {
+            return [];
         }
 
         return $conf;
-    }
-}
-
-/**
- * Configfile Observer Class
- * Handles changes on CMs
- *
- * can handle   'creating', 'created', 'updating', 'updated',
- *              'deleting', 'deleted', 'saving', 'saved',
- *              'restoring', 'restored',
- */
-class ConfigfileObserver
-{
-    public function created($configfile)
-    {
-        $this->updateProvision($configfile, false);
-        // When a Configfile was created we can not already have a relation - so dont call command
-    }
-
-    public function updated($configfile)
-    {
-        $this->updateProvision($configfile, false);
-
-        \Queue::push(new \Modules\ProvBase\Jobs\ConfigfileJob(null, $configfile->id));
-        // $configfile->build_corresponding_configfiles();
-        // with parameter one the children are built
-        // $configfile->search_children(1);
-    }
-
-    public function deleted($configfile)
-    {
-        $this->updateProvision($configfile, true);
-        // Actually it's only possible to delete configfiles that are not related to any cm/mta - so no CFs need to be built
-    }
-
-    /**
-     * Update monitoring provision of the corresponding configfile.
-     *
-     * The provision is assigned to every tr069 device having this configfile.
-     * This makes sure, that we retrieve all objects to be monitored during every PERIODIC INFORM.
-     *
-     * @author Ole Ernst
-     */
-    private function updateProvision($configfile, $deleted)
-    {
-        // always delete provision, GenieACS doesn't mind deleting non-exisiting provisions
-        // this way we don't need to care for a dirty $configfile->device
-        Modem::callGenieAcsApi("provisions/mon-$configfile->id", 'DELETE');
-
-        // nothing to do
-        if ($deleted || $configfile->device != 'tr069') {
-            return;
-        }
-
-        $prov = [];
-        $conf = $configfile->getMonitoringConfig() ?: [];
-        $prov = array_map(function ($value) {
-            return "declare('$value', {value: Date.now() - (290 * 1000)});";
-        }, \Illuminate\Support\Arr::flatten($conf));
-
-        Modem::callGenieAcsApi("provisions/mon-$configfile->id", 'PUT', implode("\r\n", $prov));
     }
 }

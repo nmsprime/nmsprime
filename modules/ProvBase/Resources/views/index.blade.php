@@ -1,18 +1,18 @@
 @extends ('Layout.default')
 
 @section ('contracts_total')
-    <h4>{{ \App\Http\Controllers\BaseViewController::translate_view('Contracts', 'Dashboard') }} {{ date('m/Y') }}</h4>
+    <h4>{{ trans('view.dashboard.contracts') }} {{ date('m/Y') }}</h4>
     <p>
-        @if ($contracts_data['total'])
+        @if ($contracts_data && $contracts_data['total'])
             {{ $contracts_data['total'] }}
         @else
-            {{ \App\Http\Controllers\BaseViewController::translate_view('NoContracts', 'Dashboard') }}
+            {{ trans('view.dashboard.noContracts') }}
         @endif
     </p>
 @stop
 
 @section ('date')
-    <h4>{{ \App\Http\Controllers\BaseViewController::translate_view('Date', 'Dashboard') }}</h4>
+    <h4>{{ trans('view.dashboard.date') }}</h4>
     <p>{{ date('d.m.Y') }}</p>
 @stop
 
@@ -63,26 +63,39 @@
 
                     {!! HTML::decode (HTML::linkRoute('Modem.firmware',
                         '<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
-                            <i style="font-size: 25px;" class="img-center fa fa-file-code-o p-10"></i><br />
+                            <i style="font-size: 25px;" class="img-center fa fa-file-code-o p-10"></i><br>
                             <span class="username text-ellipsis text-center">Firmwares</span>
                         </span>'))
                     !!}
 
-                    {!! HTML::decode (HTML::linkRoute('CustomerTopo.show_impaired',
-                        '<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
-                            <i style="font-size: 25px;" class="img-center fa fa-hdd-o text-danger p-10"></i><br />
-                            <span class="username text-ellipsis text-center">'.trans('view.Dashboard_ImpairedModem').'</span>
-                        </span>'))
-                    !!}
+                    @if (Module::collections()->has('HfcCustomer'))
+                        {!! HTML::decode (HTML::linkRoute('CustomerTopo.show_impaired',
+                            '<span class="btn btn-dark p-10 m-5 m-r-10 text-center">
+                                <i style="font-size: 25px;" class="img-center fa fa-hdd-o text-danger p-10"></i><br>
+                                <span class="username text-ellipsis text-center">'.trans('view.dashboard.impairedModem').'</span>
+                            </span>'))
+                        !!}
+                    @endif
+
+                    <a href="/genieacs/">
+                        <span class="btn btn-dark p-10 m-5 m-r-10 text-center">
+                            <img src="{{asset('images/genieacs.svg')}}" height="45"><br>
+                            <span class="username text-ellipsis text-center">GenieACS</span>
+                        </span>
+                    </a>
 
                     {{-- reference link --}}
-                    <div class="stats-link"><a href="#"><br></a></div>
+                    <div class="stats-link noHover"><a href="#"><br></a></div>
 
                 </div>
             @DivClose()
             </div>
                 <div class="col-md-4">
-                    @include('provbase::widgets.documentation')
+                    @include('Generic.widgets.moduleDocu', [ 'urls' => [
+                        'documentation' => 'https://devel.roetzer-engineering.com/confluence/display/NMS/Provisioning',
+                        'youtube' => 'https://youtu.be/RjMlhKQXgU4',
+                        'forum' => 'https://devel.roetzer-engineering.com/confluence/display/nmsprimeforum/Provisioning+General',
+                    ]])
                 </div>
             </div>
         </div>

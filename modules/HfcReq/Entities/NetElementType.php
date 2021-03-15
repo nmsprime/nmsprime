@@ -2,9 +2,6 @@
 
 namespace Modules\HfcReq\Entities;
 
-use Modules\HfcSnmp\Entities\OID;
-use Modules\HfcSnmp\Entities\Parameter;
-
 class NetElementType extends \BaseModel
 {
     // The associated SQL table for this Model
@@ -13,7 +10,7 @@ class NetElementType extends \BaseModel
     private $max_parents = 15;
 
     // Add your validation rules here
-    public static function rules($id = null)
+    public function rules()
     {
         return [
             'name' => 'required',
@@ -112,9 +109,10 @@ class NetElementType extends \BaseModel
 
     public static function param_list($id)
     {
-        $eager_loading_model = new OID;
-        $params = Parameter::where('netelementtype_id', '=', $id)->with($eager_loading_model->table)->get();
         $list = [];
+        $params = \Modules\HfcSnmp\Entities\Parameter::where('netelementtype_id', '=', $id)
+            ->with('oid')
+            ->get();
 
         if (! $params) {
             return $list;
@@ -143,16 +141,20 @@ class NetElementType extends \BaseModel
      */
     public static function undeletables()
     {
-        $used = [];
-        $all = self::all();
+        return self::has('netelements')
+            ->orWhereHas('children', function ($query) {
+                $query->whereHas('netelements');
+            })
+            ->pluck('name', 'id')
+            ->union(self::$undeletables)
+            ->keys()
+            ->toArray();
+    }
 
-        foreach ($all as $netelementtype) {
-            if ($netelementtype->netelements()->count()) {
-                $used[] = $netelementtype->id;
-            }
-        }
-
-        return array_unique(array_merge(array_keys(self::$undeletables), $used));
+    public static function scopeRootNodes()
+    {
+        return self::whereIn('id', array_keys(self::$undeletables))
+            ->orWhereDoesntHave('parent');
     }
 
     /**

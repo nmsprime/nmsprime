@@ -7,11 +7,10 @@ use Str;
 use Auth;
 use Module;
 use Schema;
-use Bouncer;
 use Session;
+use App\Observers\BaseObserver;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model as Eloquent;
-use App\Extensions\Database\EmptyRelation as EmptyRelation;
 
 /**
  *	Class to add functionality – use instead of Eloquent for your models
@@ -40,6 +39,19 @@ class BaseModel extends Eloquent
 
     // Add Comment here. ..
     protected $guarded = ['id'];
+
+    public const ABOVE_MESSAGES_ALLOWED_TYPES = [
+        'info',    // Blue
+        'success', // Green
+        'warning', // Orange
+        'error',   // Red
+    ];
+
+    public const ABOVE_MESSAGES_ALLOWED_PLACES = [
+        'index_list',
+        'form',
+        'relations',
+    ];
 
     /**
      * Helper to get the model name.
@@ -76,7 +88,7 @@ class BaseModel extends Eloquent
     /**
      * Placeholder if specific Model does not have any rules
      */
-    public static function rules($id = null)
+    public function rules()
     {
         return [];
     }
@@ -114,124 +126,17 @@ class BaseModel extends Eloquent
     }
 
     /**
-     * Checks if the requested relation is installed and enabled.
-     * If so all is fine – otherwise we return flag to create special empty eloquent relation.
+     * Relation to Ticket if Ticketsystem is present.
      *
-     * @return bool
-     *
-     * @author Patrick Reichel
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany|\Illuminate\Support\Optional
      */
-    protected function _relationAvailable($related)
+    public function tickets()
     {
-
-        // remove all leading backslashes
-        $related = ltrim($related, '\\');
-
-        $parts = explode('\\', $related);
-        $context = $parts[0];
-
-        // check if requested relation is in module context
-        if (Str::lower($context) == 'modules') {
-
-            // check if requested module is active
-            $module = $parts[1];
-            if (! \Module::collections()->has($module)) {
-                return false;
-            }
+        if (Module::collections()->has('Ticketsystem')) {
+            return  $this->morphMany(\Modules\Ticketsystem\Entities\Ticket::class, 'ticketable');
         }
 
-        // in all other cases: no special handling needed – we can return the standard eloquent relation
-        return true;
-    }
-
-    /**
-     * Extension to original hasMany – returns an empty relation if the related module is not available.
-     *
-     * @param  string  $related
-     * @param  string  $foreignKey
-     * @param  string  $localKey
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany or \App\Extensions\Database\EmptyRelation
-     * @author Patrick Reichel
-     */
-    public function hasMany($related, $foreignKey = null, $localKey = null)
-    {
-        if ($this->_relationAvailable($related)) {
-            return parent::hasMany($related, $foreignKey, $localKey);
-        } else {
-            return new EmptyRelation();
-        }
-    }
-
-    /**
-     * Extension to original hasOne – returns an empty relation if the related module is not available.
-     *
-     * @param  string  $related
-     * @param  string  $foreignKey
-     * @param  string  $localKey
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne or \App\Extensions\Database\EmptyRelation
-     * @author Patrick Reichel
-     */
-    public function hasOne($related, $foreignKey = null, $localKey = null)
-    {
-        if ($this->_relationAvailable($related)) {
-            return parent::hasOne($related, $foreignKey, $localKey);
-        } else {
-            return new EmptyRelation();
-        }
-    }
-
-    /**
-     * Extension to original belongsTo – returns an empty relation if the related module is not available.
-     *
-     * @param  string  $related
-     * @param  string  $foreignKey
-     * @param  string  $localKey
-     * @param  string  $relation
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo or \App\Extensions\Database\EmptyRelation
-     * @author Patrick Reichel
-     */
-    public function belongsTo($related, $foreignKey = null, $otherKey = null, $relation = null)
-    {
-        if ($this->_relationAvailable($related)) {
-
-            // Patrick Reichel: get $relation if not given (copied from Eloquent/Model.php to get proper backtrace)
-            // If no relation name was given, we will use this debug backtrace to extract
-            // the calling method's name and use that as the relationship name as most
-            // of the time this will be what we desire to use for the relationships.
-            if (is_null($relation)) {
-                [$current, $caller] = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
-
-                $relation = $caller['function'];
-            }
-
-            return parent::belongsTo($related, $foreignKey, $otherKey, $relation);
-        } else {
-            return new EmptyRelation();
-        }
-    }
-
-    /**
-     * Extension to original belongsToMany – returns an empty relation if the related module is not available.
-     *
-     * @param  string  $related
-     * @param  string  $table
-     * @param  string  $foreignKey
-     * @param  string  $otherKey
-     * @param  string  $relation
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany or \App\Extensions\Database\EmptyRelation
-     * @author Patrick Reichel
-     */
-    public function belongsToMany($related, $table = null, $foreignPivotKey = null,
-                                  $relatedPivotKey = null, $parentKey = null,
-                                  $relatedKey = null, $relation = null)
-    {
-        if ($this->_relationAvailable($related)) {
-            return parent::belongsToMany($related, $table, $foreignPivotKey,
-                                         $relatedPivotKey, $parentKey,
-                                         $relatedKey, $relation);
-        } else {
-            return new EmptyRelation();
-        }
+        return optional();
     }
 
     /**
@@ -244,6 +149,22 @@ class BaseModel extends Eloquent
     public function view_has_many()
     {
         return [];
+    }
+
+    /**
+     * Add Ticket relation to an edit view. This method should be called inside
+     * the view_has_many() method and adds a relationship panel to the edit
+     * blade.
+     *
+     * @param array $ret
+     * @return void
+     */
+    public function addViewHasManyTickets(&$ret)
+    {
+        if (Module::collections()->has('Ticketsystem')) {
+            $ret['Edit']['Ticket']['class'] = 'Ticket';
+            $ret['Edit']['Ticket']['relation'] = $this->tickets;
+        }
     }
 
     /**
@@ -351,7 +272,6 @@ class BaseModel extends Eloquent
             'CsvData',
             'helpers',
             'BillingLogger',
-            'BillingAnalysis',
             'TRCClass',	// static data; not for standalone use
             'CarrierCode', // cron updated data; not for standalone use
             'EkpCode', // cron updated data; not for standalone use
@@ -380,7 +300,7 @@ class BaseModel extends Eloquent
          */
         $path = base_path('modules');
         $dirs = [];
-        $modules = \Module::enabled();
+        $modules = \Module::allEnabled();
         foreach ($modules as $module) {
             array_push($dirs, $module->getPath().'/Entities');
         }
@@ -409,102 +329,7 @@ class BaseModel extends Eloquent
 
     protected function _guess_model_name($s)
     {
-        return current(preg_grep('|.*?'.$s.'$|i', $this->get_models()));
-    }
-
-    protected function onlyAllowedModels()
-    {
-        return collect($this->get_models())->reject(function ($class) {
-            return Bouncer::cannot('view', $class);
-        });
-    }
-
-    /**
-     * Preselect a sql field while searching
-     *
-     * Note: If $field is 'net' or 'cluster' we perform a net and cluster specific search
-     * This requires the searched model to have a tree_id coloumn
-     *
-     * @param $field sql field for pre selection
-     * @param $field sql search value for pre selection
-     * @return sql search statement, could be included in a normal while()
-     * @author Torsten Schmidt
-     */
-    private function __preselect_search($field, $value, $model)
-    {
-        $ret = '1';
-
-        if ($field && $value) {
-            $ret = $field.'='.$value;
-
-            if (\Module::collections()->has('HfcBase')) {
-                if (($model[0] == 'Modules\ProvBase\Entities\Modem') && ($field == 'net' || $field == 'cluster')) {
-                    $ret = 'tree_id IN(-1';
-                    foreach (Modules\HfcReq\Entities\NetElement::where($field, '=', $value)->get() as $tree) {
-                        $ret .= ','.$tree->id;
-                    }
-                    $ret .= ')';
-                }
-            }
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Performs a fulltext search in simple mode
-     *
-     * @param $array with models to search in
-     * @param $query query to search for
-     * @param $preselect_field sql field for pre selection
-     * @param $preselect_field sql search value for pre selection
-     * @return search result: array of whereRaw() results, this means array of class Illuminate\Database\Quer\Builder objects
-     * @author Patrick Reichel,
-     *         Torsten Schmidt: add preselection, add Model checking
-     */
-    protected function _doSimpleSearch($_models, $query, $preselect_field = null, $preselect_value = null)
-    {
-        $preselect = $this->__preselect_search($preselect_field, $preselect_value, $_models);
-
-        /*
-         * Model Checking: Prepare $models array: skip Models without a valid SQL table
-         */
-        $models = [];
-        foreach ($_models as $model) {
-            if (! class_exists($model)) {
-                continue;
-            }
-
-            $tmp = new $model;
-
-            if (! property_exists($tmp, 'table')) {
-                continue;
-            }
-
-            if (! Schema::hasTable($tmp->table)) {
-                continue;
-            }
-
-            array_push($models, $model);
-        }
-
-        /*
-         * Perform the search
-         */
-        $result = [];
-        foreach ($models as $model) {
-            // get the database table used for given model
-            $tmp = new $model;
-            $table = $tmp->getTable();
-            $cols = $model::getTableColumns($table);
-
-            $tmp_result = $model::whereRaw("($preselect) AND CONCAT_WS('|', ".$cols.') LIKE ?', [$query]);
-            if ($tmp_result) {
-                array_push($result, $tmp_result);
-            }
-        }
-
-        return $result;
+        return current(preg_grep('|.*?'.str_replace('_', '', $s).'$|i', $this->get_models()));
     }
 
     /**
@@ -528,87 +353,6 @@ class BaseModel extends Eloquent
     }
 
     /**
-     * Switch to decide with search algo shall be used
-     * Here we can add other conditions (e.g. to force mode simple on mac search or %truncation)
-     */
-    protected function _chooseFulltextSearchAlgo($mode, $query)
-    {
-
-        // search query is left truncated => simple search
-        if ((Str::startsWith($query, '%')) || (Str::startsWith($query, '*'))) {
-            $mode = 'simple';
-        }
-
-        // query contains . or : => IP or MAC => simple search
-        if ((Str::contains($query, ':')) || (Str::contains($query, '.'))) {
-            $mode = 'simple';
-        }
-
-        return $mode;
-    }
-
-    /**
-     * Get results for a fulltext search
-     *
-     * @return search result array of whereRaw() results, this means array of Illuminate\Database\Quer\Builder objects
-     *
-     * @author Patrick Reichel
-     */
-    public function getFulltextSearchResults($scope, $mode, $query, $preselect_field = null, $preselect_value = null)
-    {
-
-        // some searches cannot be performed against fulltext index
-        $mode = $this->_chooseFulltextSearchAlgo($mode, $query);
-
-        if ($mode == 'simple') {
-
-            // replace wildcard chars
-            $query = str_replace('*', '%', $query);
-            // wrap with wildcards (if not given) => necessary because of the concatenation of all table rows
-            if (! Str::startsWith($query, '%')) {
-                $query = '%'.$query;
-            }
-            if (! Str::endsWith($query, '%')) {
-                $query = $query.'%';
-            }
-
-            if ($scope == 'all') {
-                $models = $this->onlyAllowedModels();
-
-                $preselect_field = $preselect_value = null;
-            } else {
-                $models = [get_class($this)];
-            }
-
-            $result = $this->_doSimpleSearch($models, $query, $preselect_field, $preselect_value);
-        } elseif (Str::startsWith($mode, 'index_')) {
-            if ($scope == 'all') {
-                echo 'Implement searching over all database tables';
-            } else {
-                $indexed_cols = $this->_getFulltextIndexColumns($this->getTable());
-
-                // for a description of search modes check https://mariadb.com/kb/en/mariadb/fulltext-index-overview
-                if ('index_natural' == $mode) {
-                    $mode = 'IN NATURAL MODE';
-                } elseif ('index_boolean' == $mode) {
-                    $mode = 'IN BOOLEAN MODE';
-                } else {
-                    $mode = 'IN BOOLEAN MODE';
-                }
-
-                // search is against the fulltext index
-                $result = [$this->whereRaw('MATCH('.$indexed_cols.') AGAINST(? '.$mode.')', [$query])];
-            }
-        } else {
-            $result = null;
-        }
-
-        /* echo "$query at $scope in mode $mode<br><pre>"; */
-        /* dd($result); */
-        return $result;
-    }
-
-    /**
      * Generic function to build a list with key of id
      * @param 	array 			$array 	 		list of Models/Objects
      * @param 	String/Array 	$column 		sql column name(s) that contain(s) the description of the entry
@@ -629,8 +373,11 @@ class BaseModel extends Eloquent
 
         // column is array
         foreach ($array as $a) {
+            $desc = [];
             foreach ($columns as $key => $c) {
-                $desc[$key] = $a->{$c};
+                if ($a->{$c}) {
+                    $desc[$key] = $a->{$c};
+                }
             }
 
             $ret[$a->id] = implode($separator, $desc);
@@ -767,7 +514,7 @@ class BaseModel extends Eloquent
                     }
 
                     // seems to be a n:m relation
-                    $parts = explode('_', $tablename);
+                    $parts = $tablename == 'ticket_type_ticket' ? ['ticket_type', 'ticket'] : explode('_', $tablename);
                     foreach ($parts as $part) {
                         $class_child_name = $this->_guess_model_name($part);
 
@@ -816,6 +563,13 @@ class BaseModel extends Eloquent
      */
     public function delete()
     {
+        if (in_array($this->id, $this->undeletables())) {
+            $msg = trans('messages.base.delete.failUndeletable', ['model' => $this->get_model_name(), 'id' => $this->id]);
+            $this->addAboveMessage($msg, 'error');
+
+            return false;
+        }
+
         if ($this->delete_children) {
             $children = $this->get_all_children();
             // find and delete all children
@@ -946,21 +700,9 @@ class BaseModel extends Eloquent
      */
     public function addAboveMessage($msg, $type = 'info', $place = null)
     {
-        $allowed_types = [
-            'info',     // blue
-            'success',  // green
-            'warning',  // orange
-            'error',    // red
-        ];
-        $allowed_places = [
-            'index_list',
-            'form',
-            'relations',
-        ];
-
         // check if type is valid
-        if (! in_array($type, $allowed_types)) {
-            throw new \UnexpectedValueException('$type has to be in ['.implode('|', $allowed_types).'], “'.$type.'” given.');
+        if (! in_array($type, self::ABOVE_MESSAGES_ALLOWED_TYPES)) {
+            throw new \UnexpectedValueException('$type has to be in ['.implode('|', self::ABOVE_MESSAGES_ALLOWED_TYPES).'], “'.$type.'” given.');
         }
 
         // determine or check place
@@ -971,18 +713,19 @@ class BaseModel extends Eloquent
                 $prev_route_name = app('router')->getRoutes()->match(app('request')->create(\URL::previous()))->getName();
             } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $exception) {
                 // Exception is thrown if no mathing route found (e.g. if coming from outside).
-                \Log::warning('Could not determine previous route: '.$exception);
+                \Log::warning('Could not determine previous route');
+                \Log::debug($exception);
 
                 return false;
             }
-            if (\Str::endsWith($prev_route_name, '.edit')) {
+            if (Str::endsWith($prev_route_name, '.edit')) {
                 $place = 'form';
             } else {
                 $place = 'index_list';
             }
         } else {
-            if (! in_array($place, $allowed_places)) {
-                throw new \UnexpectedValueException('$place has to be in ['.implode('|', $allowed_places).'], “'.$place.'” given.');
+            if (! in_array($place, self::ABOVE_MESSAGES_ALLOWED_PLACES)) {
+                throw new \UnexpectedValueException('$place has to be in ['.implode('|', self::ABOVE_MESSAGES_ALLOWED_PLACES).'], “'.$place.'” given.');
             }
         }
 
@@ -995,197 +738,8 @@ class BaseModel extends Eloquent
 
     public static function getUser()
     {
-        $user = \Auth::user();
-
-        return $user ? $user->first_name.' '.$user->last_name : 'cronjob';
-    }
-}
-
-/**
- * Base Observer Class - Logging of all User Interaction
- *
- * @author Nino Ryschawy
- */
-class BaseObserver
-{
-    public function created($model)
-    {
-        if (! $model->observer_enabled) {
-            return;
-        }
-
-        $this->add_log_entry($model, __FUNCTION__);
-
-        // TODO: analyze impacts of different return values
-        //		without return (= return null): all is running, but multiple log entries are created
-        //		return false: only one log entry per change, but created of e.g. PhonenumberObserver is never called (checked this using dd())
-        //		return true: one log entry, other observers are called
-        // that are our observations so far – we definitely should check if there are other side effects!!
-        // possible hint: the BaseObserver is registered before the model's observers
-        return true;
-    }
-
-    public function updated($model)
-    {
-        if (! $model->observer_enabled) {
-            return;
-        }
-
-        $this->add_log_entry($model, __FUNCTION__);
-
-        // TODO: analyze impacts of different return values
-        //		⇒ see comment at created
-        return true;
-    }
-
-    public function deleted($model)
-    {
-        if (! $model->observer_enabled) {
-            return;
-        }
-
-        $this->add_log_entry($model, __FUNCTION__);
-
-        // TODO: analyze impacts of different return values
-        //		⇒ see comment at created
-        return true;
-    }
-
-    /**
-     * Create Log Entry on fired Event
-     */
-    private function add_log_entry($model, $action)
-    {
         $user = Auth::user();
 
-        $model_name = $model->get_model_name();
-
-        $text = '';
-
-        $attributes = $model->getDirty();
-
-        if (array_key_exists('remember_token', $attributes)) {
-            unset($attributes['remember_token']);
-            unset($attributes['updated_at']);
-        }
-
-        if (empty($attributes)) {
-            return;
-        }
-
-        // if really updated (and not updated by model->save() in observer->created() like in contract)
-        if (($action == 'updated') && (! $model->wasRecentlyCreated)) {
-
-            // skip following attributes - TODO:
-            $ignore = [
-                'updated_at',
-            ];
-
-            // hide the changed data (but log the fact of change)
-            $hide = [
-                'password',
-            ];
-
-            // get changed attributes
-            $arr = [];
-
-            foreach ($model->getAttributes() as $key => $value) {
-                if (in_array($key, $ignore)) {
-                    continue;
-                }
-
-                $original = $model->getOriginal($key);
-                if ($original != $value) {
-                    if (in_array($key, $hide)) {
-                        $arr[] = $key;
-                    } elseif (array_key_exists('deleted_at', $attributes) && $attributes['deleted_at'] == null) {
-                        $arr[] = $key.': '.$original.'-> restored';
-                        $action = 'restored';
-                    } else {
-                        $arr[] = $key.': '.$original.'->'.$value;
-                    }
-                }
-            }
-            $text = implode(', ', $arr);
-        }
-
-        $data = [
-            'user_id' 	=> $user ? $user->id : 0,
-            'username' 	=> $user ? $user->first_name.' '.$user->last_name : 'cronjob',
-            'method' 	=> $action,
-            'model' 	=> $model_name,
-            'model_id'  => $model->id,
-            'text' 		=> $text,
-        ];
-
-        GuiLog::log_changes($data);
-    }
-}
-
-/**
- * Systemd Observer Class - Handles changes on Model Gateways - restarts system services
- *
- * TODO:
- * place it somewhere else ...
- * Calling this Observer is practically very bad in case there are more services inserted - then all services will restart even
- *		if Config didn't change - therefore a distinction is necessary - or more Observers,
- * another Suggestion:
- * place the restart file creation in the appropriate observer itself
- * only place a static function restart_dhcpd here that creates the file
- */
-class SystemdObserver
-{
-    // insert all services that need to be restarted after a model changed there configuration in that array
-    private $services = ['dhcpd'];
-
-    public function created($model)
-    {
-        \Log::debug('systemd: observer called from create context');
-
-        if (! is_dir(storage_path('systemd'))) {
-            mkdir(storage_path('systemd'));
-        }
-
-        foreach ($this->services as $service) {
-            touch(storage_path('systemd/'.$service));
-        }
-    }
-
-    public function updated($model)
-    {
-        if (! $model->observer_enabled) {
-            return;
-        }
-
-        // Exception - Dont restart dhcp server for modems where no relevant changes where made
-        $model_name = new \ReflectionClass(get_class($model));
-        $model_name = $model_name->getShortName();
-
-        if ($model_name == 'Modem' && ! $model->needs_restart()) {
-            return;
-        }
-
-        \Log::debug('systemd: observer called from update context', [$model_name, $model->id]);
-
-        if (! is_dir(storage_path('systemd'))) {
-            mkdir(storage_path('systemd'));
-        }
-
-        foreach ($this->services as $service) {
-            touch(storage_path('systemd/'.$service));
-        }
-    }
-
-    public function deleted($model)
-    {
-        \Log::debug('systemd: observer called from delete context');
-
-        if (! is_dir(storage_path('systemd'))) {
-            mkdir(storage_path('systemd'));
-        }
-
-        foreach ($this->services as $service) {
-            touch(storage_path('systemd/'.$service));
-        }
+        return $user ? $user->first_name.' '.$user->last_name : 'cronjob';
     }
 }

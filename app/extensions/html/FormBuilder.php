@@ -210,7 +210,7 @@ class FormBuilder extends CollectiveFormBuilder
         //     '<div class="col-md-12" style="background-color:white">
         //         <div class="form-group"><label style="margin-top: 10px;" class="col-md-4 control-label">OID</label>
         //             <div class="col-md-7">
-        //                 <a class="btn btn-default btn-block" href="'.route('OID.edit', ['id' => $oid->id]).'"> '.$oid->oid.'</a>
+        //                 <a class="btn btn-default btn-block" href="'.route('OID.edit', [$oid->id]).'"> '.$oid->oid.'</a>
         //             </div>
         //         </div>
         //     </div>'),
@@ -245,6 +245,7 @@ class FormBuilder extends CollectiveFormBuilder
     public function open(array $options = [])
     {
         $options['class'] = 'form_open'; // Note: this avoids form input fields with large distances
+
         return parent::open($options);
     }
 

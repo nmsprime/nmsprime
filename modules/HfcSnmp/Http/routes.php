@@ -21,24 +21,24 @@ BaseRoute::group([], function () {
     Route::delete('Parameter/{param}/detach_all', [
         'as' => 'Parameter.detach_all',
         'uses' => 'Modules\HfcSnmp\Http\Controllers\ParameterController@detach_all',
-        'middleware' => ['can:delete,Modules\HfcSnmp\Entities\Parameter'],
+        'middleware' => ['web', 'can:delete,Modules\HfcSnmp\Entities\Parameter'],
     ]);
 
-    BaseRoute::get('NetElement/{id}/tapControlling', [
-        'as' => 'NetElement.tapControlling',
-        'uses' => 'Modules\HfcSnmp\Http\Controllers\TapController@show',
-        'middleware' => ['can:view,Modules\HfcReq\Entities\NetElement'],
+    BaseRoute::get('NetElement/{id}/controlling/{parameter}/{index}', [
+        'as' => 'NetElement.controlling_edit',
+        'uses' => 'Modules\HfcSnmp\Http\Controllers\SnmpController@controlling_edit',
+        'middleware' => ['can:view,Modules\HfcReq\Entities\NetElementType'],
     ]);
 
-    BaseRoute::post('NetElement/switchTapState', [
-        'as' => 'NetElement.switchTapState',
-        'uses' => 'Modules\HfcSnmp\Http\Controllers\TapController@switchTapState',
+    BaseRoute::put('NetElement/{id}/controlling/{parameter}/{index}', [
+        'as' => 'NetElement.controlling_update',
+        'uses' => 'Modules\HfcSnmp\Http\Controllers\SnmpController@controlling_update',
         'middleware' => ['can:update,Modules\HfcReq\Entities\NetElement'],
     ]);
 
-    BaseRoute::post('NetElement/switchVideoLine', [
-        'as' => 'NetElement.switchVideoLine',
-        'uses' => 'Modules\HfcSnmp\Http\Controllers\TapController@switchVideoLine',
+    BaseRoute::get('NetElement/{id}/sse_get_snmpvalues/{parameter}/{index}/{reload}', [
+        'as' => 'NetElement.sse_get_snmpvalues',
+        'uses' => 'Modules\HfcSnmp\Http\Controllers\SnmpController@sse_get_snmpvalues',
         'middleware' => ['can:update,Modules\HfcReq\Entities\NetElement'],
     ]);
 });

@@ -3,7 +3,6 @@
 namespace Modules\ProvVoip\Http\Controllers;
 
 use Bouncer;
-use Modules\ProvVoip\Entities\Mta;
 use Modules\ProvVoip\Entities\Phonenumber;
 
 class PhonenumberController extends \BaseController
@@ -23,11 +22,8 @@ class PhonenumberController extends \BaseController
             $model = new Phonenumber;
         }
 
-        if (\Module::collections()->has('ProvVoipEnvia')) {
-            $login_placeholder = 'Autofilled if empty.';
-        } else {
-            $login_placeholder = '';
-        }
+        $hasProvVoipEnvia = \Module::collections()->has('ProvVoipEnvia');
+        $provVoip = \Modules\ProvVoip\Entities\ProvVoip::first();
 
         // if there is no phonenumbermanagement: make checkbox changeable
         // TODO: should this be the case or do we want to need a management in each case?
@@ -63,7 +59,7 @@ class PhonenumberController extends \BaseController
         }
 
         $reassign_help = 'Can be used to assign the phonenumber (and related data) to another MTA.';
-        if (\Module::collections()->has('ProvVoipEnvia')) {
+        if ($hasProvVoipEnvia) {
             $reassign_help .= 'MTA has to belong to the same contract and modem installation addresses have to be equal.';
         }
 
@@ -96,6 +92,7 @@ class PhonenumberController extends \BaseController
                 'description' => 'International prefix',
                 'help' => 'Usually, 4 digit number required for international calls.',
                 'autocomplete' => [],
+                'init_value' => $provVoip->default_country_code,
             ],
             [
                 'form_type' => 'text',
@@ -114,7 +111,7 @@ class PhonenumberController extends \BaseController
 
         // create the form field for SIP username – envia TEL causes special handling
         $options = [];
-        if (\Module::collections()->has('ProvVoipEnvia')) {
+        if ($hasProvVoipEnvia) {
             if ($model->contract_external_id) {
                 $options = ['readonly'];
             } else {
@@ -132,7 +129,7 @@ class PhonenumberController extends \BaseController
 
         // create the form field for SIP password – envia TEL causes special handling
         $options = [];
-        if (\Module::collections()->has('ProvVoipEnvia')) {
+        if ($hasProvVoipEnvia) {
             $options = ['placeholder' => 'Autofilled if empty.'];
         }
         $password = [
@@ -147,7 +144,7 @@ class PhonenumberController extends \BaseController
 
         // create the form field for SIP domain – envia TEL causes special handling
         $options = [];
-        if (\Module::collections()->has('ProvVoipEnvia')) {
+        if ($hasProvVoipEnvia) {
             if ($model->contract_external_id) {
                 $options = ['readonly'];
             } else {
@@ -159,6 +156,7 @@ class PhonenumberController extends \BaseController
             'name' => 'sipdomain',
             'description' => trans('messages.SIP domain'),
             'autocomplete' => [],
+            'init_value' => $hasProvVoipEnvia ? '' : $provVoip->default_sip_registrar,
         ];
         if ($options) {
             $sipdomain['options'] = $options;
@@ -182,7 +180,6 @@ class PhonenumberController extends \BaseController
      */
     public function prepare_rules($rules, $data)
     {
-
         // check if there is an phonenumber id (= updating), else set to -1 (a not used database id)
         $id = $rules['id'];
         if (! $id) {
@@ -193,10 +190,10 @@ class PhonenumberController extends \BaseController
         unset($rules['id']);
 
         // verify that the chosen port is unique for this mta
-        $rules['port'] .= '|unique:phonenumber,port,'.$id.',id,deleted_at,NULL,mta_id,'.$data['mta_id'];
+        $rules['port'][] = 'unique:phonenumber,port,'.$id.',id,deleted_at,NULL,mta_id,'.$data['mta_id'];
 
         // a phonenumber can only exist once for the same country_code/prefix_number combination
-        $rules['number'] .= '|unique:phonenumber,number,'.$id.',id,deleted_at,NULL,country_code,'.$data['country_code'].',prefix_number,'.$data['prefix_number'];
+        $rules['number'][] = 'unique:phonenumber,number,'.$id.',id,deleted_at,NULL,country_code,'.$data['country_code'].',prefix_number,'.$data['prefix_number'];
 
         return parent::prepare_rules($rules, $data);
     }

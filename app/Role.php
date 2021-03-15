@@ -24,8 +24,10 @@ class Role extends BaseModel
         'rank',
     ];
 
-    public static function rules($id = null)
+    public function rules()
     {
+        $id = $this->id;
+
         return [
             'name' => 'required|unique:roles,name,'.$id.',id,deleted_at,NULL',
             'rank' => 'required|integer|max:101|min:0',
@@ -63,7 +65,7 @@ class Role extends BaseModel
 
     public function view_has_many()
     {
-        $ret['Edit']['Abilities']['view']['view'] = 'auth.abilities';
+        $ret['Edit'][trans('view.Ability.Abilities')]['view']['view'] = 'auth.abilities';
 
         return $ret;
     }
