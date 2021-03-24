@@ -921,7 +921,7 @@ class NetElement extends \BaseModel
             $navi = [
                 'link' => "https://www.google.com/maps/dir/my+location/{$pos[1]},{$pos[0]}",
                 'icon' => 'fa-location-arrow',
-                'title' => trans('messages.Route'),
+                'title' => trans('messages.route'),
             ];
         }
 
@@ -929,10 +929,10 @@ class NetElement extends \BaseModel
             trans('messages.Device') => [
                 'text' => "{$this->netelementtype->vendor} {$this->netelementtype->name} {$this->netelementtype->version}",
             ],
-            trans('messages.Name') => [
+            trans('messages.name') => [
                 'text' => $this->name,
             ],
-            trans('messages.Position') => [
+            trans('messages.position') => [
                 'text' => $this->pos,
                 'action' => $navi ?? null,
             ],
@@ -941,7 +941,7 @@ class NetElement extends \BaseModel
                 'action' => [
                     'link' => route('CustomerTopo.show', ['id', $this->id]),
                     'icon' => 'fa-map',
-                    'title' => trans('view.ticket.View Topography'),
+                    'title' => trans('view.ticket.viewTopography'),
                 ],
             ],
         ];
