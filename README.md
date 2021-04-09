@@ -11,13 +11,13 @@
 
 ## Marketplace
 
-[**Community** Applications](https://devel.roetzer-engineering.com/confluence/x/EYGBAQ)
+**Community** Applications
 - **OS Provisioning**
 - **OS VoIP Provisioning**
 - **OS Control**
 [.. and more](https://devel.roetzer-engineering.com/confluence/display/NMS/Applications)
 
-[**Enterprise** Applications](https://devel.roetzer-engineering.com/confluence/x/EYGBAQ)
+**Enterprise** Applications
 - PRIME **Monitoring**
 - PRIME Detect
 - PRIME **Workforce**
@@ -28,10 +28,12 @@
 [.. and many more](https://devel.roetzer-engineering.com/confluence/display/NMS/Applications)
 
 ## Functionality
-- **Network Management Platform** and **Provisioning Tool*
+**Provisioning Tool**
 - **DOCSIS** 1.0, 1.1, 2.0, **3.0, 3.1**
 - **FTTH**, **DSL**, WiFi Provisioning, via **TR-69** and **Radius**
-- IPv4 / IPv6 – [ISC DHCP](https://www.isc.org)
+- IPv4 / IPv6<br>
+
+**Network Management Platform**
 - **CMTS**, OLT, **Router** and Switch Management via SNMP or TR-69
 - **Cable ingress detection**
 - Show and manage your IT infrastructure in real-time in **topography MAPs** and Entity Relation Diagrams
