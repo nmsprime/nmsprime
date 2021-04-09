@@ -75,6 +75,7 @@ yum install nmsprime-*
 ```
 
 **Enterprise Version**
+
 From version 3.0.0 on - add username & password to repo file before installing full NMSPrime enterprise version
 ```bash
 curl -vsL https://raw.githubusercontent.com/nmsprime/nmsprime/dev/INSTALL-REPO.sh | bash
