@@ -104,23 +104,16 @@ cd /var/www/nmsprime
 ```
 
 ---
+## Contributors
 
-## How to contribute
+**How to contribute**
 
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
-
-## Write your own Application
+**Write your own Application**
 
 If you want to develop your own open-source or propritary application(s), please refere to [Write your own Application](https://devel.roetzer-engineering.com/confluence/x/qYJJ)
 
-
-## Contributors
-
-See the list of [contributors](https://github.com/nmsprime/nmsprime/graphs/contributors) who participated in this project. NMS Prime is an open source project. We encourage you to [become a member](https://www.nmsprime.com/about)!
-
----
-
-## License
+**License**
 
 This project is licensed under the GPLv3 License - see the [LICENSE](LICENSE.md) file for details. For more informations: [License Article](https://devel.roetzer-engineering.com/confluence/display/NMS/License)
