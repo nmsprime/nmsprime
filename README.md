@@ -3,25 +3,43 @@
 [![Crowdin](https://d322cqt584bo4o.cloudfront.net/nmsprime/localized.svg)](https://crowdin.com/project/nmsprime)
 [![StyleCI](https://github.styleci.io/repos/109520753/shield?branch=dev)](https://github.styleci.io/repos/109520753)
 
-# NMS PRIME
+# NMS PRIME – Community Version
 
-[NMS PRIME](https://nmsprime.com) is THE Open Source Network Provisioning Tool and Network Management Platform specialized for Cable-, DOCSIS- and Broadband-Networks.
+[NMS PRIME](https://nmsprime.com) is THE Open Source Network **Provisioning Tool** and **Network Management Platform** that enables access across multiple access technologies/domains, like **DOCSIS**, **FTTH**, FTTx, **DSL** and WiFi. It allows a seamless user experience across multiple connectivity services. It reduces complexity for network operators dramatically, by a simple and easy to adapt open and enterprise **application marketplace**.
 
-**Provisioning Tool**
-- **Network provisioning**
-- **VoIP provisioning**
+<div align="center"><a href="https://nmsprime.com"><img src="https://github.com/nmsprime/nmsprime/blob/schmto-readme-2021-april/public/images/apps_row.png" alt="NMS Prime Logo" title="NMS Prime - Open Source Provisioning Tool for Cable-, DOCSIS- and Broadband-Networks"/></a></div><br>
 
-**ISP Billing**
-- for cable networks
-- **VoIP billing** for cable modems
+## Marketplace
 
-**Network Management Platform**
+[**Community** Applications](https://devel.roetzer-engineering.com/confluence/x/EYGBAQ)
+- **OS Provisioning**
+- **OS VoIP Provisioning**
+- **OS Control**
+[.. and more](https://devel.roetzer-engineering.com/confluence/display/NMS/Applications)
+
+[**Enterprise** Applications](https://devel.roetzer-engineering.com/confluence/x/EYGBAQ)
+- PRIME **Monitoring**
+- PRIME Detect
+- PRIME **Workforce**
+- PRIME Ticket
+- PRIME Billing
+- PRIME Dashboard
+- PRIME **VoIP Monitoring**<br>
+[.. and many more](https://devel.roetzer-engineering.com/confluence/display/NMS/Applications)
+
+## Functionality
+- **Network Management Platform** and **Provisioning Tool*
+- **DOCSIS** 1.0, 1.1, 2.0, **3.0, 3.1**
+- **FTTH**, **DSL**, WiFi Provisioning, via **TR-69** and **Radius**
+- IPv4 / IPv6 – [ISC DHCP](https://www.isc.org)
+- **CMTS**, OLT, **Router** and Switch Management via SNMP or TR-69
 - **Cable ingress detection**
-- Show your IT infrastructure in real-time in topography MAP and ERD - Entity Relation Diagram
-- Auto configuration of **Icinga** and **Cacti** from one database
+- Show and manage your IT infrastructure in real-time in **topography MAPs** and Entity Relation Diagrams
+- Auto configuration of **[Icinga](https://icinga.com/)** and **[Cacti](https://www.cacti.net/index.php)** from one database
 - **Ticket System**
-- Generic SNMP GUI creator
-- **CMTS** Management
+- Generic **SNMP GUI** creator
+- Basic Billing functionality
+- [more informations..](https://devel.roetzer-engineering.com/confluence/display/NMS/Applications)
 
 For more information head over to our [Official Documentation](https://devel.roetzer-engineering.com/confluence/display/NMS/NMS+PRIME)
 
@@ -33,7 +51,8 @@ NMS Prime is based on the [Laravel](https://laravel.com/) Framework and uses [PH
 It is tested and developed under CentOS 7 (RHEL 7).
 
 NMS Prime is build with standard Linux tools, like
-- [ISC DHCP](https://www.isc.org/downloads/dhcp/)
+- [ISC DHCP](https://www.isc.org/downloads/dhcp/) for IPv4
+- [Kea](https://www.isc.org/kea/) for IPv6
 - [Named](https://linux.die.net/man/8/named)
 - [Icinga](https://icinga.com/)
 - [Cacti](https://www.cacti.net/index.php)
@@ -77,14 +96,6 @@ Please read [CONTRIBUTING](CONTRIBUTING.md) for details on our code of conduct, 
 ## Contributors
 
 See the list of [contributors](https://github.com/nmsprime/nmsprime/graphs/contributors) who participated in this project. NMS Prime is an open source project. We encourage you to [become a member](https://www.nmsprime.com/about)!
-
----
-
-## Donate
-
-If you like NMS Prime, feel free to support us.
-
-[![](https://www.paypalobjects.com/en_US/DK/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=EXGQS35VD6UVU&source=url)
 
 ---
 
