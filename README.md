@@ -14,7 +14,7 @@
 **Community** Applications
 - **OS Provisioning**
 - **OS VoIP Provisioning**
-- **OS Control**
+- **OS Control**<br>
 [.. and more](https://devel.roetzer-engineering.com/confluence/display/NMS/Applications)
 
 **Enterprise** Applications
@@ -68,12 +68,30 @@ These tools are actively developed, approved and used. See [Design Architecture]
 
 For CentOS 7 (RHEL 7):
 
+**Community Version**
 ```bash
 curl -vsL https://raw.githubusercontent.com/nmsprime/nmsprime/dev/INSTALL-REPO.sh | bash
 yum install nmsprime-*
 ```
 
+**Enterprise Version**
+From version 3.0.0 on - add username & password to repo file before installing full NMSPrime enterprise version
+```bash
+curl -vsL https://raw.githubusercontent.com/nmsprime/nmsprime/dev/INSTALL-REPO.sh | bash
+sed -i 's/rpm\/nmsprimeOS/rpm\/nmsprimeNG/' /etc/yum.repos.d/nmsprime.repo
+echo $'username=\npassword=' >> /etc/yum.repos.d/nmsprime.repo
+yum install nmsprime-*
+```
+
+For the full documentation see: [Installation with RPM](https://devel.roetzer-engineering.com/confluence/x/AYFB)
+
+### SaaS Cloud hosted
+
+You can run all applications in the cloud here: [Free Trial](https://www.nmsprime.com/free-trial/)
+
 ### From source code:
+
+This is typically only recommanded for developers. For a detailed walk through see: [Installation from Source](https://devel.roetzer-engineering.com/confluence/x/WQBs)
 
 ```bash
 curl -vsL https://raw.githubusercontent.com/nmsprime/nmsprime/dev/INSTALL-REPO.sh | bash
@@ -85,14 +103,16 @@ cd /var/www/nmsprime
 ./install-from-git.sh -y
 ```
 
-For more Information have a look at the [Installation Process](https://devel.roetzer-engineering.com/confluence/display/NMS/Installation)
-
-
 ---
 
 ## How to contribute
 
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+
+
+## Write your own Application
+
+If you want to develop your own open-source or propritary application(s), please refere to [Write your own Application](https://devel.roetzer-engineering.com/confluence/x/qYJJ)
 
 
 ## Contributors
